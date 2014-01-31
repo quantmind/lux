@@ -1,0 +1,30 @@
+{
+    "name": "lux",
+    "title": "Lux Javascript Library",
+    "description": "Asynchronous web application server for python and jquery",
+    "version": "0.1.0",
+    "homepage": "https://github.com/lsbardel/lux",
+    "author": {
+        "name": "Luca Sbardella",
+        "email": "luca.sbardella@gmail.com"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/lsbardel/lux"
+    },
+    "licenses": [{"type": "BSD"}],
+    "dependencies": {
+        "jQuery": "",
+        "lodash": ""
+    },
+    "devDependencies": {
+        "grunt": "~0.4.0",
+        "grunt-contrib-jshint": "~0.6.0",
+        "grunt-contrib-uglify": "~0.2.4",
+        "grunt-contrib-concat": "",
+        "grunt-docco": "~0.3.0",
+        "benchmark": ""
+    },
+    "keywords": [],
+    "contributors": []
+}
