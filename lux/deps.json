@@ -1,0 +1,17 @@
+{
+    "jquery-form": {
+        "deps": ["jquery"]
+    },
+    "jquery-cookies": {
+        "deps": ["jquery"]
+    },
+    "qunit": {
+        "deps": ["jquery"]
+    },
+    "select": {
+        "deps": ["jquery"]
+    },
+    "bootstrap": {
+        "deps": ["jquery"]
+    }
+}

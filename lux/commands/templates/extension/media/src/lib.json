@@ -1,0 +1,11 @@
+{
+    "src": ["${extension_name}/media/src/open.js",
+            "${extension_name}/media/src/main.js",
+            "${extension_name}/media/src/close.js"],
+    "dest": "${extension_name}/media/${extension_name}/${extension_name}.js",
+    "options": {
+        "stripBanners": true,
+        "banner": "${extension_name}/media/src/banner.js",
+        "process": true
+    }
+}

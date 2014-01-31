@@ -1,0 +1,11 @@
+{
+    "src": ["${project_name}/media/src/open.js",
+            "${project_name}/media/src/main.js",
+            "${project_name}/media/src/close.js"],
+    "dest": "${project_name}/media/${project_name}/${project_name}.js",
+    "options": {
+        "stripBanners": true,
+        "banner": "${project_name}/media/src/banner.js",
+        "process": true
+    }
+}
