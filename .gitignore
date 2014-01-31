@@ -1,0 +1,12 @@
+.project
+.pydevproject
+.coverage
+__pycache__
+htmlcov
+.settings
+docs/build
+example/luxweb/settings.py
+*.pyc
+npm*
+node_modules
+MANIFEST
