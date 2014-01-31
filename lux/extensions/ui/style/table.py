@@ -1,0 +1,138 @@
+from .base import *
+
+
+def body_background(gradient):
+    end = gradient.end
+    return lighten(end, 5)
+
+
+def add_css(all):
+    cssv = all.variables
+    css = all.css
+    #
+    cssv.datatable.head.font_weight = 'bold'
+    cssv.datatable.padding = spacing(4, 6)
+    cssv.pagination.padding = spacing(4, 12)
+
+    css('.datagrid',
+        InlineBlock(),
+        Radius(cssv.body.radius),
+        css(' table',
+            border_spacing=0),
+        css('.table',
+            Skin(' td', applyto=['border'], border_width=spacing(1, 0, 0))),
+        css('th, td',
+            padding=cssv.datatable.padding),
+        css('th',
+            css('.sortable',
+                cursor='pointer'),
+            vertical_align='bottom'),
+        css('.table-grid',
+            Skin(' td', applyto=['border'], border_width=spacing(1, 0, 0, 1)),
+            Skin(' th', border_width=spacing(0, 0, 0, 1)),
+            Skin(' .hd td', applyto=['background', 'color']),
+            Skin(applyto=['border'], border_width=spacing(1, 1, 1, 0))),
+        css('.stripped',
+            Skin('tbody tr:nth-child(2n+1) td',
+                 applyto=('background', 'color'),
+                 transform=lighten)),
+        #
+        css(' .hd',
+            font_weight=cssv.datatable.head.font_weight),
+        #
+        css(' thead tr:first-child',
+            css(' th:last-child',
+                border_top_right_radius=cssv.body.radius),
+            css(' th:first-child',
+                border_top_left_radius=cssv.body.radius)),
+        css(' tr:last-child',
+            css(' td:last-child',
+                border_bottom_right_radius=cssv.body.radius),
+            css(' td:first-child',
+                border_bottom_left_radius=cssv.body.radius),
+            border_bottom_left_radius=cssv.body.radius,
+            border_bottom_right_radius=cssv.body.radius),
+        css('.footer tbody tr:last-child',
+            css(' td:last-child',
+                border_bottom_right_radius=0),
+            css(' td:first-child',
+                border_bottom_left_radius=0)),
+        #
+        # Sortable
+        css(' a.sortable-toggle',
+            padding=spacing(2, 0, 2, 10)),
+        #
+        text_align='left')
+
+    css('.section',
+        css(' .datatable',
+            margin=spacing(15, 0, 15)))
+
+    ########################################################## PAGINATION
+    css('.pagination',
+        Skin('ul > li > a',
+             clickable=True, gradient=False,
+             border_width=spacing(1, 1, 1, 0)),
+        css('ul',
+            css('> li',
+                css('> a',
+                    padding=cssv.pagination.padding,
+                    float='left'),
+                css(':first-child > a',
+                    Radius(spacing(cssv.body.radius, 0, 0, cssv.body.radius)),
+                    border_left_width=px(1)),
+                css(':last-child > a',
+                    Radius(spacing(0, cssv.body.radius, cssv.body.radius, 0))),
+                display='inline'),
+            Radius(cssv.body.radius),
+            display='inline-block',
+            margin=0),
+        css('.mini',
+            css('ul > li > a',
+                padding=0.3*cssv.pagination.padding,
+                font_size=cssv.button.mini.font_size)),
+        css('.small',
+            css('ul > li > a',
+                padding=0.5*cssv.pagination.padding,
+                font_size=cssv.button.small.font_size)),
+        css('.large',
+            css('ul > li > a',
+                padding=2*cssv.pagination.padding,
+                font_size=cssv.button.large.font_size))
+        )
+
+    ########################################################## RESPONSIVE TABLE
+    all.add(Media('only screen and (max-width: 767px)')
+            .css('.datagrid',
+                 css('table, thead, tbody, tfoot, th, td, tr',
+                     display='block'),
+                 css('thead tr, tfoot tr',
+                     position='absolute',
+                     top='-9999px',
+                     left='-9999px'),
+                 css('td',
+                     css(':before',
+                         Opacity(0.8),
+                         content='attr(data-content)',
+                         position='absolute',
+                         width=pc(45),
+                         left=px(6),
+                         whitespace='nowrap'),
+                     position='relative',
+                     padding_left=pc(50)),
+                 css('tr:first-child',
+                     css('td:first-child',
+                         border_top_left_radius=cssv.body.radius,
+                         border_top_right_radius=cssv.body.radius)),
+                 css('tr:last-child',
+                     css('td:first-child',
+                         border_bottom_left_radius=0),
+                     css('td:last-child',
+                         border_bottom_left_radius=cssv.body.radius)),
+                 css('.table,.table-grid',
+                     Skin(applyto=['border'], border_width=spacing(0, 0, 1)),
+                     Skin('td', applyto=['border'],
+                          border_width=spacing(1, 1, 0))),
+                 Skin('tr:nth-of-type(2n+1)', applyto=['background', 'color'],
+                      gradient=body_background),
+                 width=pc(100)))
