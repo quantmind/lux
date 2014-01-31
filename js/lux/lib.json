@@ -1,0 +1,13 @@
+{
+    "src": ["js/lux/start.js",
+            "js/lux/model.js",
+            "js/lux/utils.js",
+            "js/lux/web.js",
+            "js/lux/loop.js",
+            "js/utils/utils.js",
+            "js/utils/logger.js",
+            "js/utils/math.js",
+            "js/utils/stats.js",
+            "js/close.js"],
+    "dest": "lux/media/lux/lux.js"
+}

@@ -1,0 +1,21 @@
+{
+    "src": ["js/web/start.js",
+            "js/web/markdown.js",
+            "js/web/ajax.js",
+            "js/web/button.js",
+            "js/web/bootstrap.js",
+            "js/web/draggable.js",
+            "js/web/select.js",
+            "js/web/dialog.js",
+            "js/web/forms.js",
+            "js/web/fullscreen.js",
+            "js/backends/ajax.js",
+            "js/backends/websocket.js",
+            "js/backends/local.js",
+            "js/backends/extension.js",
+            "js/libs/showdown/github.js",
+            "js/libs/showdown/prettify.js",
+            "js/libs/showdown/twitter.js",
+            "js/close.js"],
+    "dest": "lux/media/lux/lux-web.js"
+}
