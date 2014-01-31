@@ -1,0 +1,11 @@
+{
+    "src": ["luxweb/media/src/open.js",
+            "luxweb/media/src/main.js",
+            "luxweb/media/src/close.js"],
+    "dest": "luxweb/media/luxweb/luxweb.js",
+    "options": {
+        "stripBanners": true,
+        "banner": "luxweb/media/src/banner.js",
+        "process": true
+    }
+}

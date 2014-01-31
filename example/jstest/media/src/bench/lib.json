@@ -1,0 +1,6 @@
+{
+    "src": ["jstest/media/src/bench/open.js",
+            "jstest/media/src/bench/main.js",
+            "jstest/media/src/bench/close.js"],
+    "dest": "jstest/media/jstest/bench.js"
+}

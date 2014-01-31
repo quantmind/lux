@@ -1,0 +1,157 @@
+
+Forms
+=============
+
+Default ``form`` styling is stacked, left-aligned labels on top of form controls.
+
+<div class="lux-example">
+
+<form>
+  <fieldset>
+    <label>email</label>
+    <input name="email" type="text" placeholder="Your email">
+    <label>password</label>
+    <input name="password" type="password" placeholder="Your password">
+    <label>Lucky Number</label>
+    <select name="number">
+        <option>1</option>
+        <option>2</option>
+        <option>3</option>
+        <option>4</option>
+        <option>5</option>
+    </select>
+    <label class="checkbox">
+    <input name="agree" type="checkbox">
+    Agree TOC
+    </label>
+    <input value="Submit" type="submit" class="btn primary">
+  </fieldset>
+</form>
+
+</div>
+
+    <form>
+      <fieldset>
+        <label>email</label>
+        <input name="email" type="text" placeholder="Your email">
+        <label>password</label>
+        <input name="password" type="password" placeholder="Your password">
+        <label>Lucky Number</label>
+        <select name="number">
+            <option>1</option>
+            <option>2</option>
+            <option>3</option>
+            <option>4</option>
+            <option>5</option>
+        </select>
+        <label class="checkbox">
+        <input name="agree" type="checkbox">
+        Agree TOC
+        </label>
+        <input value="Submit" type="submit" class="btn primary">
+      </fieldset>
+    </form>
+
+
+Inline form
+--------------------
+
+Add ``.inline`` for left-aligned labels and inline-block controls for
+a compact layout.
+
+<div class="lux-example">
+
+<form class='inline'>
+<input name="email" type="text" placeholder="Email">
+<input name="password" type="password" placeholder="Password">
+<label class="checkbox">
+<input name="agree" type="checkbox">
+Agree TOC
+</label>
+<input value="Submit" type="submit" class="btn primary">
+</form>
+</div>
+
+Horizontal form
+--------------------
+
+Right align labels and float them to the left to make them appear on the same
+line as controls. Simply add ``.horizontal`` to the form.
+
+<div class="lux-example">
+
+<form class='horizontal'>
+<label>email</label>
+<input name="email" type="text" placeholder="Your email">
+<label>password</label>
+<input name="password" type="password" placeholder="Your password">
+<label class="checkbox">
+<input name="agree" type="checkbox">
+Agree TOC
+</label>
+<input value="Submit" type="submit" class="btn primary">
+</form>
+</div>
+
+
+Create a form in javascript
+-------------------------------
+
+<div class="lux-example">
+<div id="jsform"></div>
+
+<script type="text/javascript">
+
+lux.web.ready(function () {
+
+    var form = lux.web.form();
+    
+    form.add_input('input', {
+        name:'email',
+        label:'email',
+        placeholder:'email'
+    });
+    form.add_input('input', {
+        name:'password',
+        type:'password',
+        label:'password',
+        placeholder:'password'
+    });
+    form.add_input('input', {
+        name:'agree',
+        type:'checkbox',
+        label:'Agree TOC'
+    });
+    form.add_input('submit', {
+        value:'submit'
+    });
+    
+    $('#jsform').append(form.element());
+
+});
+
+</script>
+
+</div>
+
+    var form = lux.web.form();
+    
+    form.add_input('input', {
+        name:'email',
+        label:'email',
+        placeholder:'email'
+    });
+    form.add_input('input', {
+        name:'password',
+        type:'password',
+        label:'password',
+        placeholder:'password'
+    });
+    form.add_input('input', {
+        name:'agree',
+        type:'checkbox',
+        label:'Agree TOC'
+    });
+    form.add_input('submit', {
+        value:'submit'
+    });

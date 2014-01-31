@@ -1,0 +1,10 @@
+{
+    src: ["js/tests/visual/start.js",
+          "js/tests/visual/dragdrop.js",
+          //"js/tests/visual/async.js",
+          "js/tests/visual/sortable.js",
+          "js/tests/visual/datagrid.js",
+          "js/tests/visual/buttons.js"
+          ],
+    dest: 'example/csstest/media/csstest/'
+}
