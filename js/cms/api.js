@@ -2,7 +2,7 @@
     // CRUD API Extension
     // ------------------------------
     //
-    // Check for an ``api`` key in the ``html`` document data attribute.
+    // Check for an ``api`` key in the ``html`` document ``data`` attribute.
     // If available, the api key contains the ``url`` for the site API.
     // It build the ``datatable`` ``Content``.
     lux.web.extension('api', {

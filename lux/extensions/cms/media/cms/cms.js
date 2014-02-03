@@ -19,7 +19,9 @@ define(['lux-web'], function () {
     // Content Model
     // ----------------
 
-    // Base class for contents
+    // Base class for contents.
+    // A new content class is created via the higher level utility function
+    // ``cms.create_content_type``.
     var Content = lux.Model.extend({
         show_title: false,
         meta: {
@@ -215,6 +217,7 @@ define(['lux-web'], function () {
 
     //
     // Pop up dialog for editing content within a block element.
+    // ``self`` is a positionview object.
     var edit_content_dialog = function (self, options) {
         if (self._content_dialog) {
             return self._content_dialog;
@@ -226,25 +229,29 @@ define(['lux-web'], function () {
                 fullscreen: true,
                 title: 'Edit Content'
             }),
-            editor = $(document.createElement('div')).addClass('editor'),
+            grid = web.grid(),
             preview = $(document.createElement('div')).addClass('preview'),
+            form = web.form(),
             //
-            // Create the selct element for HTML wrappers
-            wrapper_select = web.create_select(cms.wrapper_types(),
-                    {placeholder: 'Select a container'}),
+            // Create the select element for HTML wrappers
+            wrapper_select = web.create_select(cms.wrapper_types()),
             //
             // create the select element for content types
-            content_select = web.create_select(cms.content_types(),
-                    {placeholder: 'Select a Content'}),
-            top = $(document.createElement('div')).addClass('top')
-                    .append(wrapper_select)
-                    .append(content_select).appendTo(editor),
-            content = $(document.createElement('div')).appendTo(editor);
+            content_select = web.create_select(cms.content_types()),
             //
+            content_search = web.create_select(),
+            //
+            search = $(document.createElement('fieldset')).addClass('search').hide();
+            //
+        form.add_input(wrapper_select);
+        form.add_input(content_select);
+        search.append(content_search);
+        form._element.append(search);
+        grid.column(0).append(form._element);
+        grid.column(1).append(preview);
         //
         dialog.body()
-            .append(editor)
-            .append(preview)
+            .append(grid._element)
             .addClass('edit-content')
             .bind('close-plugin-edit', function () {
                 dialog.destroy();
@@ -256,7 +263,7 @@ define(['lux-web'], function () {
         //
         // Change content type
         content_select.change(function () {
-            var name = $(this).val();
+            var name = this.value;
             self.content = self.content_history[name];
             if (!self.content) {
                 var ContentType = cms.content_type(name);
@@ -267,7 +274,12 @@ define(['lux-web'], function () {
             if (self.content) {
                 web.logger.info(self + ' changed content type to ' + self.content);
                 self.content_history[self.content._meta.name] = self.content;
-                self.content.edit(self, content);
+                if (self.content._meta._persistent) {
+                    search.show();
+                } else {
+                    search.hide();
+                }
+                self.content.edit(self, form);
             } else {
                 web.logger.error('Unknown content type ' + name);
             }
@@ -1120,8 +1132,8 @@ define(['lux-web'], function () {
     //  Default CMS Contents
     //  --------------------------------
     //
-    //  The following are the default CMS contents shipped with ``lux-cms``
-    //  javascript distribution. The are created by invoking the
+    //  The following are the default CMS contents shipped with lux ``cms``
+    //  distribution. The are created by invoking the
     //  ''lux.cms.create_content_type`` function.
 
     //
@@ -1129,7 +1141,7 @@ define(['lux-web'], function () {
     //  -------------------
     //
     //  The first a probably most important content type. It represents
-    //  the response obtained by the backend server without them cms
+    //  the response obtained by the backend server without the cms
     //  system in place.
     lux.cms.create_content_type('contenturl', {
         meta: {
@@ -1231,7 +1243,7 @@ define(['lux-web'], function () {
     // CRUD API Extension
     // ------------------------------
     //
-    // Check for an ``api`` key in the ``html`` document data attribute.
+    // Check for an ``api`` key in the ``html`` document ``data`` attribute.
     // If available, the api key contains the ``url`` for the site API.
     // It build the ``datatable`` ``Content``.
     lux.web.extension('api', {
@@ -1394,7 +1406,9 @@ define(['lux-web'], function () {
         //
         options: {
             editing: false,
-            // backend type, choose websocket if possible
+            // backend url used to communicate with backend server
+            // when updating & creating content as well as when
+            // repositioning it
             backend_url: null,
             // icon for the button which add a new row in a grid
             add_row_icon: 'columns',
@@ -1510,7 +1524,14 @@ define(['lux-web'], function () {
                     col = $(document.createElement('div')).addClass('column span'+span);
                 elem.append(col);
             });
+        },
+        //
+        // Retrieve the jQuery element correspondint to the column at ``index``
+        column: function (index) {
+            var children = this._element[0].childNodes;
+            return $(children[index]);
         }
     });
+
 //
 });

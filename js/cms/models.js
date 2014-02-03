@@ -16,7 +16,9 @@
     // Content Model
     // ----------------
 
-    // Base class for contents
+    // Base class for contents.
+    // A new content class is created via the higher level utility function
+    // ``cms.create_content_type``.
     var Content = lux.Model.extend({
         show_title: false,
         meta: {

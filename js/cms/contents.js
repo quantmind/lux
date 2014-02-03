@@ -2,8 +2,8 @@
     //  Default CMS Contents
     //  --------------------------------
     //
-    //  The following are the default CMS contents shipped with ``lux-cms``
-    //  javascript distribution. The are created by invoking the
+    //  The following are the default CMS contents shipped with lux ``cms``
+    //  distribution. The are created by invoking the
     //  ''lux.cms.create_content_type`` function.
 
     //
@@ -11,7 +11,7 @@
     //  -------------------
     //
     //  The first a probably most important content type. It represents
-    //  the response obtained by the backend server without them cms
+    //  the response obtained by the backend server without the cms
     //  system in place.
     lux.cms.create_content_type('contenturl', {
         meta: {

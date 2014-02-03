@@ -92,9 +92,10 @@
             input = input || {};
             var elem,
                 label = input.label,
-                element = this.element(),
+                element = this._element,
                 fieldset = element.children('fieldset'),
-                // textarea and button dont have value attribute, use as text
+                // textarea and button don't have value attribute,
+                // therefore the value is used as text
                 value = input.value;
             delete input.label;
 
@@ -105,20 +106,18 @@
                     fieldset = element;
                 }
             }
-
-            switch (type) {
-            case 'textarea':
+            if (type === 'textarea') {
                 elem = $(document.createElement('textarea')).attr(input).html(value);
-                break;
-            case 'submit':
+            } else if (type === 'submit') {
                 elem = this.submit(input);
-                break;
-            case 'select':
+            } else if (type === 'select') {
                 elem = this.select(input);
-                break;
-            default:
+            } else if (_.isString(type)) {
                 elem = this.input(input);
+            } else {
+                elem = type;
             }
+            //
             if (label) {
                 label = $(document.createElement('label')).html(label);
             }
@@ -149,7 +148,7 @@
             return web.create_button(options);
         },
         //
-        // A special case of ``add_input``, add a select
+        // A special case of ``add_input``, add a select element
         select: function (options) {
             var value, elem;
             if (options) {

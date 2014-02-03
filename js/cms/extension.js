@@ -9,7 +9,9 @@
         //
         options: {
             editing: false,
-            // backend type, choose websocket if possible
+            // backend url used to communicate with backend server
+            // when updating & creating content as well as when
+            // repositioning it
             backend_url: null,
             // icon for the button which add a new row in a grid
             add_row_icon: 'columns',
@@ -125,5 +127,11 @@
                     col = $(document.createElement('div')).addClass('column span'+span);
                 elem.append(col);
             });
+        },
+        //
+        // Retrieve the jQuery element correspondint to the column at ``index``
+        column: function (index) {
+            var children = this._element[0].childNodes;
+            return $(children[index]);
         }
     });
