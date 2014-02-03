@@ -209,15 +209,12 @@ define(['lux-web'], function () {
     cms.Content = Content;
     //
 
+    //
+    // Dialog for editing Content
+    // ------------------------------------
 
-    var inner_dialog = "<div class='content-editor'>".concat(
-            "<div class='editor'>",
-            "<div class='preview'>",
-            "</div>",
-            "</div>",
-            "</div>");
-
-    // Edit content by opening a dialog
+    //
+    // Pop up dialog for editing content within a block element.
     var edit_content_dialog = function (self, options) {
         if (self._content_dialog) {
             return self._content_dialog;
@@ -231,7 +228,6 @@ define(['lux-web'], function () {
             }),
             editor = $(document.createElement('div')).addClass('editor'),
             preview = $(document.createElement('div')).addClass('preview'),
-            container = $(document.createElement('div')).append(editor).append(preview),
             //
             // Create the selct element for HTML wrappers
             wrapper_select = web.create_select(cms.wrapper_types(),
@@ -240,19 +236,26 @@ define(['lux-web'], function () {
             // create the select element for content types
             content_select = web.create_select(cms.content_types(),
                     {placeholder: 'Select a Content'}),
-            top = $(document.createElement('div')).addClass('top'
-                    ).append(wrapper_select).append(content_select).appendTo(editor),
-            edit_form = $(document.createElement('div'));
+            top = $(document.createElement('div')).addClass('top')
+                    .append(wrapper_select)
+                    .append(content_select).appendTo(editor),
+            content = $(document.createElement('div')).appendTo(editor);
+            //
         //
         dialog.body()
-            .append(container)
+            .append(editor)
+            .append(preview)
             .addClass('edit-content')
             .bind('close-plugin-edit', function () {
                 dialog.destroy();
             });
         //
+        // Apply select
+        web.select(wrapper_select);
+        web.select(content_select);
+        //
         // Change content type
-        content_select.element().change(function () {
+        content_select.change(function () {
             var name = $(this).val();
             self.content = self.content_history[name];
             if (!self.content) {
@@ -264,20 +267,20 @@ define(['lux-web'], function () {
             if (self.content) {
                 web.logger.info(self + ' changed content type to ' + self.content);
                 self.content_history[self.content._meta.name] = self.content;
-                self.content.edit(self, container);
+                self.content.edit(self, content);
             } else {
                 web.logger.error('Unknown content type ' + name);
             }
         });
         //
         // Change container
-        wrapper_select.element().change(function () {
+        wrapper_select.change(function () {
 
         });
         //
         if (self.content) {
             self.content_history[self.content._meta.name] = self.content;
-            content_select.element().val(self.content._meta.name).trigger('change');
+            content_select.val(self.content._meta.name).trigger('change');
         }
         //
         return dialog;

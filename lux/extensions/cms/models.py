@@ -76,11 +76,11 @@ in the sitemap.'''
 
 
 class Content(ModelBase):
-    '''Model for the content displaied on a page ``position`` element.
+    '''Model for the content displayed on a page ``position`` element.
 
     .. attribute:: title
 
-        Optional title for the content#
+        Optional title for the content
 
     .. attribute:: slug
 

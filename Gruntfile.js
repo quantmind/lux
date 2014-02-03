@@ -96,7 +96,7 @@ module.exports = function(grunt) {
         concat: libs,
         uglify: uglify_libs(),
         jshint: jshint_libs(),
-        //docco: docco_libs(),
+        docco: docco_libs(),
         qunit: {
             files: "test/index.html"
         }
@@ -113,7 +113,7 @@ module.exports = function(grunt) {
     grunt.registerTask('gruntfile', 'jshint Gruntfile.js',
             ['jshint:gruntfile']);
     grunt.registerTask('all', 'Compile and lint all Lux libraries',
-            ['concat', 'jshint', 'uglify']);
+            ['concat', 'jshint', 'uglify', 'docco']);
     grunt.registerTask('default', ['all']);
     //
     for_each(libs, function (name) {
