@@ -50,7 +50,6 @@
             _(lux.web.options.content_urls).forEach(function (value) {
                 $(document.createElement('option')).val(value[1]).html(value[0]).appendTo(select);
             });
-            form.add_input('submit', {value: 'Done'});
             return form;
         }
     });
@@ -84,14 +83,13 @@
         },
         //
         get_form: function () {
-            var form = lux.web.form(),
-                text = form.add_input('textarea', {
-                    name:'raw',
-                    value: this.get('raw'),
-                    rows: 15,
-                    placeholder: 'Write markdown'
-                });
-            form.add_input('submit', {value: 'Done'});
+            var form = lux.web.form();
+            form.add_input('textarea', {
+                name:'raw',
+                value: this.get('raw'),
+                rows: 15,
+                placeholder: 'Write markdown'
+            });
             return form;
         }
     });

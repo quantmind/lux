@@ -57,7 +57,7 @@
                     if (api_model) {
                         var columns = [];
                         if (data.fields) {
-                            each(data.fields, function (id) {
+                            _(data.fields).forEach(function (id) {
                                 columns.push(api_model.map[id]);
                             });
                         } else {
@@ -88,10 +88,10 @@
                 models = this.models;
             //
             // Add options to the model select widgets
-            each(sitemap, function (section) {
+            _(sitemap).forEach(function (section) {
                 var group = $(document.createElement('optgroup')).attr('label', section.name);
                 groups.push(group);
-                each(section.routes, function (route) {
+                _(section.routes).forEach(function (route) {
                     $(document.createElement('option'))
                              .val(route.api_url).html(route.model).appendTo(group);
                     // Add the route to the models object
@@ -107,7 +107,7 @@
                 select_model = form.add_input('select', {name: 'url'}),
                 models = this.models;
             select_model.append($(document.createElement('option')).html('Choose a model'));
-            each(sessions, function (group) {
+            _(sessions).forEach(function (group) {
                 select_model.append(group);
             });
             // Create the fields multiple select
@@ -135,13 +135,13 @@
                 fields.val([]).trigger("change");
                 fields.children().remove();
                 if (options) {
-                    each(options, function (option) {
+                    _(options).forEach(function (option) {
                         fields.append(option);
                     });
                 } else {
                     model.options = options = [];
                     model.map = {};
-                    each(models[url].fields, function (field) {
+                    _(models[url].fields).forEach(function (field) {
                         var option = $(document.createElement('option'))
                                         .val(field.code).html(field.name);
                         model.map[field.code] = field;

@@ -892,18 +892,41 @@ define(['jquery', 'lux'], function ($) {
             var elem,
                 label = input.label,
                 element = this._element,
-                fieldset = element.children('fieldset'),
+                fieldsets = element.children('fieldset'),
+                fieldset_selector = input.fieldset,
                 // textarea and button don't have value attribute,
                 // therefore the value is used as text
-                value = input.value;
+                value = input.value,
+                fieldset, fs;
             delete input.label;
 
-            if (!fieldset.length) {
+            // Find the appropiate fieldset
+            if (fieldset_selector) {
+                if (fieldset_selector.id) {
+                    fs = fieldsets.find('#' + fieldset_selector.id);
+                } else if (fieldset_selector.Class) {
+                    fs = fieldsets.find('.' + fieldset_selector.Class);
+                } else {
+                    fs = fieldsets.first();
+                }
+                if (fs.length) {
+                    fieldset = fs;
+                } else {
+                    fieldset = $(document.createElement('fieldset')).appendTo(element);
+                    if (fieldset_selector.id) {
+                        fieldset.attr(id, fieldset_selector.id);
+                    } else if (fieldset_selector.Class) {
+                        fieldset.addClass(fieldset_selector.Class);
+                    }
+                }
+            } else if (!fieldsets.length) {
                 if (!element.children().length) {
                     fieldset = $(document.createElement('fieldset')).appendTo(element);
                 } else {
                     fieldset = element;
                 }
+            } else {
+                fieldset = fieldsets.first();
             }
             if (type === 'textarea') {
                 elem = $(document.createElement('textarea')).attr(input).html(value);

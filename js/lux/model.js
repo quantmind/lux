@@ -191,7 +191,7 @@
         //  Model Meta
         //  ------------------------
 
-        // Model database meta-class, accessed as ``_meta`` attribute on a ``Moodel``
+        // Model database meta-class, accessed as ``_meta`` attribute on a ``Model``
         // instance or from the Model.prototype object. It is a placeholder of
         // live instances and it is the interface between a model and backend
         // servers. A ``Meta`` must be registered with a backend before it can

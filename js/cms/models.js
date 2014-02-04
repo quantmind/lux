@@ -25,26 +25,6 @@
             name: 'content'
         },
         //
-        //  Return the jQuery element for editing the content (the editor),
-        //  ``position`` is an instance of ``PositionView``. This method call
-        //  the ``get_form`` method.
-        edit_element: function (position) {
-            var self = this,
-                form = this.get_form();
-            if (form) {
-                form.ajax({
-                    beforeSubmit: function (arr) {
-                        var fields = self.get_form_fields(arr);
-                        self.update(fields);
-                        position.set(self);
-                        self.close();
-                        return false;
-                    }
-                });
-                return form.element();
-            }
-        },
-        //
         get_form_fields: function (arr) {
             var fields = {};
             _(arr).forEach(function (f) {
@@ -63,28 +43,11 @@
         // Create a jQuery Form element for customising the content.
         // Each subclass of Content can implement this method which by default
         // returns an empty form with the submit button.
-        get_form: function () {
-            var form = lux.web.form();
-            form.add_input('submit', {value: 'Done'});
-            return form;
-        },
+        get_form: function () {},
         //
         // Render this Content into a `container`. Must be implemented
         // by subclasses
         render: function (container) {},
-        //
-        // Edit the Content at `position` in `container`.
-        // `initial` is the optional initial data
-        edit: function (position, container) {
-            this.container = container.html('');
-            if (this.show_title) {
-                container.append($(document.createElement('h3')).html(this._meta.title));
-            }
-            var edit = this.edit_element(position);
-            if (edit) {
-                this.container.append(edit);
-            }
-        },
         //
         close: function () {
             if (this.container) {

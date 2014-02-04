@@ -28,26 +28,6 @@ define(['lux-web'], function () {
             name: 'content'
         },
         //
-        //  Return the jQuery element for editing the content (the editor),
-        //  ``position`` is an instance of ``PositionView``. This method call
-        //  the ``get_form`` method.
-        edit_element: function (position) {
-            var self = this,
-                form = this.get_form();
-            if (form) {
-                form.ajax({
-                    beforeSubmit: function (arr) {
-                        var fields = self.get_form_fields(arr);
-                        self.update(fields);
-                        position.set(self);
-                        self.close();
-                        return false;
-                    }
-                });
-                return form.element();
-            }
-        },
-        //
         get_form_fields: function (arr) {
             var fields = {};
             _(arr).forEach(function (f) {
@@ -66,28 +46,11 @@ define(['lux-web'], function () {
         // Create a jQuery Form element for customising the content.
         // Each subclass of Content can implement this method which by default
         // returns an empty form with the submit button.
-        get_form: function () {
-            var form = lux.web.form();
-            form.add_input('submit', {value: 'Done'});
-            return form;
-        },
+        get_form: function () {},
         //
         // Render this Content into a `container`. Must be implemented
         // by subclasses
         render: function (container) {},
-        //
-        // Edit the Content at `position` in `container`.
-        // `initial` is the optional initial data
-        edit: function (position, container) {
-            this.container = container.html('');
-            if (this.show_title) {
-                container.append($(document.createElement('h3')).html(this._meta.title));
-            }
-            var edit = this.edit_element(position);
-            if (edit) {
-                this.container.append(edit);
-            }
-        },
         //
         close: function () {
             if (this.container) {
@@ -249,6 +212,7 @@ define(['lux-web'], function () {
         form._element.append(search);
         grid.column(0).append(form._element);
         grid.column(1).append(preview);
+        form.add_input('submit', {value: 'Done', fieldset: {Class: 'submit'}});
         //
         dialog.body()
             .append(grid._element)
@@ -260,6 +224,17 @@ define(['lux-web'], function () {
         // Apply select
         web.select(wrapper_select);
         web.select(content_select);
+        web.select(content_search);
+        //
+        form.ajax({
+            beforeSubmit: function (arr) {
+                var fields = self.get_form_fields(arr);
+                self.update(fields);
+                position.set(self);
+                self.close();
+                return false;
+            }
+        });
         //
         // Change content type
         content_select.change(function () {
@@ -279,7 +254,12 @@ define(['lux-web'], function () {
                 } else {
                     search.hide();
                 }
-                self.content.edit(self, form);
+                // Get the form for content editing
+                var cform = self.content.get_form();
+                form._element.find('.content-form').remove();
+                if (cform) {
+                    search.after(cform._element.children('fieldset').addClass('content-form'));
+                }
             } else {
                 web.logger.error('Unknown content type ' + name);
             }
@@ -1180,7 +1160,6 @@ define(['lux-web'], function () {
             _(lux.web.options.content_urls).forEach(function (value) {
                 $(document.createElement('option')).val(value[1]).html(value[0]).appendTo(select);
             });
-            form.add_input('submit', {value: 'Done'});
             return form;
         }
     });
@@ -1214,14 +1193,13 @@ define(['lux-web'], function () {
         },
         //
         get_form: function () {
-            var form = lux.web.form(),
-                text = form.add_input('textarea', {
-                    name:'raw',
-                    value: this.get('raw'),
-                    rows: 15,
-                    placeholder: 'Write markdown'
-                });
-            form.add_input('submit', {value: 'Done'});
+            var form = lux.web.form();
+            form.add_input('textarea', {
+                name:'raw',
+                value: this.get('raw'),
+                rows: 15,
+                placeholder: 'Write markdown'
+            });
             return form;
         }
     });
@@ -1298,7 +1276,7 @@ define(['lux-web'], function () {
                     if (api_model) {
                         var columns = [];
                         if (data.fields) {
-                            each(data.fields, function (id) {
+                            _(data.fields).forEach(function (id) {
                                 columns.push(api_model.map[id]);
                             });
                         } else {
@@ -1329,10 +1307,10 @@ define(['lux-web'], function () {
                 models = this.models;
             //
             // Add options to the model select widgets
-            each(sitemap, function (section) {
+            _(sitemap).forEach(function (section) {
                 var group = $(document.createElement('optgroup')).attr('label', section.name);
                 groups.push(group);
-                each(section.routes, function (route) {
+                _(section.routes).forEach(function (route) {
                     $(document.createElement('option'))
                              .val(route.api_url).html(route.model).appendTo(group);
                     // Add the route to the models object
@@ -1348,7 +1326,7 @@ define(['lux-web'], function () {
                 select_model = form.add_input('select', {name: 'url'}),
                 models = this.models;
             select_model.append($(document.createElement('option')).html('Choose a model'));
-            each(sessions, function (group) {
+            _(sessions).forEach(function (group) {
                 select_model.append(group);
             });
             // Create the fields multiple select
@@ -1376,13 +1354,13 @@ define(['lux-web'], function () {
                 fields.val([]).trigger("change");
                 fields.children().remove();
                 if (options) {
-                    each(options, function (option) {
+                    _(options).forEach(function (option) {
                         fields.append(option);
                     });
                 } else {
                     model.options = options = [];
                     model.map = {};
-                    each(models[url].fields, function (field) {
+                    _(models[url].fields).forEach(function (field) {
                         var option = $(document.createElement('option'))
                                         .val(field.code).html(field.name);
                         model.map[field.code] = field;

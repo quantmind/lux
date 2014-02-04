@@ -36,6 +36,7 @@
         form._element.append(search);
         grid.column(0).append(form._element);
         grid.column(1).append(preview);
+        form.add_input('submit', {value: 'Done', fieldset: {Class: 'submit'}});
         //
         dialog.body()
             .append(grid._element)
@@ -47,6 +48,17 @@
         // Apply select
         web.select(wrapper_select);
         web.select(content_select);
+        web.select(content_search);
+        //
+        form.ajax({
+            beforeSubmit: function (arr) {
+                var fields = self.get_form_fields(arr);
+                self.update(fields);
+                position.set(self);
+                self.close();
+                return false;
+            }
+        });
         //
         // Change content type
         content_select.change(function () {
@@ -66,7 +78,12 @@
                 } else {
                     search.hide();
                 }
-                self.content.edit(self, form);
+                // Get the form for content editing
+                var cform = self.content.get_form();
+                form._element.find('.content-form').remove();
+                if (cform) {
+                    search.after(cform._element.children('fieldset').addClass('content-form'));
+                }
             } else {
                 web.logger.error('Unknown content type ' + name);
             }
