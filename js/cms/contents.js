@@ -70,7 +70,10 @@
     //
     //  Insert a non-breaking space.
     lux.cms.create_content_type('markdown', {
-        model_title: 'Text using markdown',
+        meta: {
+            title: 'Text using markdown',
+            persistent: true
+        },
         //
         render: function (container) {
             var self = this;
@@ -97,7 +100,10 @@
     //  Versions
     //  -------------------
     lux.cms.create_content_type('versions', {
-        model_title: 'Versions of libraries',
+        meta: {
+            title: 'Versions of libraries'
+        },
+        //
         render: function (container) {
             var ul = $(document.createElement('ul')).appendTo(container);
             _(web.libraries).forEach(function (lib) {

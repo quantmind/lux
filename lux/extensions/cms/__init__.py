@@ -100,7 +100,8 @@ from lux.extensions import api
 from .ui import add_css
 from .forms import ContentForm
 from .views import (EditPage, CmsRouter, PageUpdates, PageForm,
-                    PageContentManager, CmsResponse, CmsContent)
+                    PageContentManager, CmsResponse, CmsContent,
+                    CONTENT_API_URL)
 from . import templates
 
 
@@ -161,7 +162,7 @@ class Extension(lux.Extension):
             yield api.Crud('pages', models.page,
                            form_class=PageForm,
                            content_manager=PageContentManager())
-            yield api.Crud('content', models.content)
+            yield api.Crud(CONTENT_API_URL, models.content)
 
     def _get_or_create_site(self, request):
         app = request.app

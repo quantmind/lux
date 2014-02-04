@@ -73,6 +73,9 @@ from .grid import CmsContext
 from .forms import PageForm
 
 
+CONTENT_API_URL = 'content'
+
+
 class PageContentManager(api.ContentManager):
     required_fields = ('url',)
 
@@ -298,20 +301,26 @@ class EditPage(PageMixin, api.Crud):
             edit = form.layout(request, action=request.full_path())
             template = self.page_template(request, page)
             html_page = yield template(request, render=False)
+            #
             doc.body.append(Html('div', edit, cn='cms-control'))
+            #
             doc.data({'this_url': this_url,
                       'content_urls': self.content_urls(request)})
+            #
             scheme = 'ws'
             if request.is_secure:
                 scheme = 'wss'
             ws = request.absolute_uri('updates', scheme=scheme)
-            html_page.data({'editing': page.id, 'backend_url': ws})
+            html_page.data({'editing': page.id,
+                            'backend_url': ws})
             doc.body.append(html_page)
             #
-            # Url for api, to add datatable content
+            # Url for api, to add datatable content and retrieve content
             url = request.app.config.get('API_URL')
             if url:
-                doc.data('api', url)
+                html_page.data({'api': url,
+                                'content_url': '%s%s' % (url,
+                                                         CONTENT_API_URL)})
             response = yield doc.http_response(request)
             coroutine_return(response)
         else:

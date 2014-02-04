@@ -1,4 +1,3 @@
-
     //  Dialog
     //  -----------------------
     web.extension('dialog', {
@@ -78,10 +77,13 @@
                 closable = closable === null ? true : closable;
                 var backdrop = $(document.createElement('div'))
                                     .addClass('modal-backdrop fullscreen')
-                                    .css('z-index', options.modal_zindex)
-                                    .appendTo(document.body);
+                                    .css('z-index', options.modal_zindex);
                 elem.on('remove', function () {
                     backdrop.remove();
+                }).on('show', function () {
+                    backdrop.appendTo(document.body);
+                }).on('hide', function () {
+                    backdrop.detach();
                 });
             }
             if (elem.parent().length === 0) {
@@ -89,10 +91,6 @@
             }
             if (popup) {
                 elem.appendTo(document.body);
-            }
-            // open
-            if(options.autoOpen) {
-                self.fadeIn();
             }
             // set width
             if (width) {
@@ -106,11 +104,11 @@
             if (options.collapsable) {
                 var collapse_button = self.collapsable();
                 self.buttons.append(collapse_button);
-            } 
+            }
             // Add close stuff
             if (closable) {
                 options.closable = false;
-                this.closable();
+                this.closable(closable);
             }
             //
             // Full screen
@@ -118,7 +116,10 @@
             // Movable
             self.make_movable();
             //
-            this.element().addClass('ready');
+            if(options.autoOpen) {
+                self.fadeIn();
+            }
+            elem.addClass('ready');
         },
         //
         body: function () {
@@ -145,7 +146,17 @@
             return web.create_button(opts);
         },
         //
-        closable: function () {
+        // make the dialog closable, unless it is already closable.
+        // The optional ``options``  can specify:
+
+        //  * ``destroy``, if true the dialog is removed when
+        //    closed otherwise it is just fadeOut. Default ``True``.
+        closable: function (options) {
+            var destroy = true;
+            if (_.isObject(options)) {
+                options = _.extend({destroy: true}, options);
+                destroy = options.destroy;
+            }
             if (!this.options.closable) {
                 var self = this;
                 this.options.closable = true;
@@ -153,7 +164,9 @@
                 this.buttons.append(close);
                 close.click(function() {
                     self.fadeOut(function() {
-                        self.destroy();
+                        if (destroy) {
+                            self.destroy();
+                        }
                     });
                 });
             }
@@ -227,7 +240,7 @@
             //}
         }
     });
-    
+
     $.fn.dialog = function (options) {
         return this.each(function() {
             web.dialog(this, options);

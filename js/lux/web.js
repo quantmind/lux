@@ -121,20 +121,43 @@
             return this.constructor;
         },
         //
+        // Destroy the instance
         destroy: function () {
             return this.constructor.destroy(this);
         },
         //
         decorate: function () {},
         //
+        // fadeIn the jQuery element conteining the extension.
+        // Once the fadeIn action is finished a trigger the ``show``
+        // event and invoke the optional ``callback``.
         fadeIn: function (callback) {
-            this.element().fadeIn({duration: this.options.fade.duration,
-                                   complete: callback});
+            var self = this;
+            self._element.fadeIn({
+                duration: this.options.fade.duration,
+                complete: function () {
+                    if (callback) {
+                        callback(self);
+                    }
+                    self._element.trigger('show', self);
+                }
+            });
         },
         //
+        // fadeOut the jQuery element conteining the extension.
+        // Once the fadeOut action is finished a trigger the ``hide``
+        // event and invoke the optional ``callback``.
         fadeOut: function (callback) {
-            this.element().fadeOut({duration: this.options.fade.duration,
-                                    complete: callback});
+            var self = this;
+            self._element.fadeOut({
+                duration: this.options.fade.duration,
+                complete: function () {
+                    if (callback) {
+                        callback(self);
+                    }
+                    self._element.trigger('hide', self);
+                }
+            });
         },
         //
         // extract skin information from element

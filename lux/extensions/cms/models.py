@@ -100,7 +100,10 @@ class Content(ModelBase):
     data = odm.JSONField()
 
     def __unicode__(self):
-        return '%s %s' % (self.content_type, self.id)
+        try:
+            return '%s %s' % (self.content_type, self.id)
+        except Exception:
+            return self.__class__.__name__
 
     def fields(self):
         fields = {'id': self.id,

@@ -177,6 +177,9 @@ class ContentManager(object):
     :param html_object: Optional ``html`` rendering style for a single object.
         If not supplied, ``html`` requests are rendered using a ``dl`` element.
 
+    .. attribute:: required_fields
+
+        optional list/tuple of fields always required by the content manager
     '''
     table_class_name = 'datagrid'
     csv_options = {'lineterminator': '\n'}

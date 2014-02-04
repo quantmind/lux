@@ -35,13 +35,13 @@ def add_css(all):
         overflow_y='auto')
 
     dialog = css('.dialog',
-                 Opacity(0),
+                 #Opacity(0),
                  Skin(applyto=['border']),
                  Skin(' .header', border_width=spacing(0, 0, px(1))),
                  Radius(cssv.dialog.radius),
                  Transition('opacity', '0.2s', 'ease'),
                  css('.ready',
-                     Opacity(1),
+                     #Opacity(1),
                      css('.collapsed',
                          css(' .header', Radius(cssv.dialog.radius)),
                          # Remove border from header

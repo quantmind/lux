@@ -198,6 +198,7 @@
         // use the ``sync`` method. Registration is achieved via the
         // ``set_transport`` method.
         Meta = Class.extend({
+            // prefix for id of model instances not yet persistent
             _newprefix: 'new-',
             //
             // Initialisation, set the ``model`` attribute and the attributes

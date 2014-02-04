@@ -87,7 +87,9 @@
             }
         },
         //
-        // Add a new input to the form
+        // Add a new input/select/textarea to the form
+        // ``type`` is the type of input,valid values are ``input``,
+        // ``select``, ``textarea``, ``checkbox``, ``radio``.
         add_input: function (type, input) {
             input = input || {};
             var elem,
@@ -99,6 +101,7 @@
                 // therefore the value is used as text
                 value = input.value,
                 fieldset, fs;
+            delete input.fieldset;
             delete input.label;
 
             // Find the appropiate fieldset

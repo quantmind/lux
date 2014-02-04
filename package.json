@@ -18,11 +18,12 @@
         "lodash": ""
     },
     "devDependencies": {
-        "grunt": "~0.4.0",
-        "grunt-contrib-jshint": "~0.6.0",
-        "grunt-contrib-uglify": "~0.2.4",
+        "grunt": "",
+        "docco": "",
+        "grunt-docco": "~0.3.2",
+        "grunt-contrib-jshint": "",
+        "grunt-contrib-uglify": "",
         "grunt-contrib-concat": "",
-        "grunt-docco": "~0.3.0",
         "benchmark": ""
     },
     "keywords": [],

@@ -5,7 +5,6 @@
             "js/cms/views.js",
             "js/cms/templates.js",
             "js/cms/contents.js",
-            "js/cms/api.js",
             "js/cms/extension.js",
             "js/close.js"],
     "dest": "lux/extensions/cms/media/cms/cms.js"

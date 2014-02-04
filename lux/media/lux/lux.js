@@ -231,13 +231,14 @@ define(['lodash', 'jquery'], function () {
         //  Model Meta
         //  ------------------------
 
-        // Model database meta-class, accessed as ``_meta`` attribute on a ``Moodel``
+        // Model database meta-class, accessed as ``_meta`` attribute on a ``Model``
         // instance or from the Model.prototype object. It is a placeholder of
         // live instances and it is the interface between a model and backend
         // servers. A ``Meta`` must be registered with a backend before it can
         // use the ``sync`` method. Registration is achieved via the
         // ``set_transport`` method.
         Meta = Class.extend({
+            // prefix for id of model instances not yet persistent
             _newprefix: 'new-',
             //
             // Initialisation, set the ``model`` attribute and the attributes
@@ -842,20 +843,43 @@ define(['lodash', 'jquery'], function () {
             return this.constructor;
         },
         //
+        // Destroy the instance
         destroy: function () {
             return this.constructor.destroy(this);
         },
         //
         decorate: function () {},
         //
+        // fadeIn the jQuery element conteining the extension.
+        // Once the fadeIn action is finished a trigger the ``show``
+        // event and invoke the optional ``callback``.
         fadeIn: function (callback) {
-            this.element().fadeIn({duration: this.options.fade.duration,
-                                   complete: callback});
+            var self = this;
+            self._element.fadeIn({
+                duration: this.options.fade.duration,
+                complete: function () {
+                    if (callback) {
+                        callback(self);
+                    }
+                    self._element.trigger('show', self);
+                }
+            });
         },
         //
+        // fadeOut the jQuery element conteining the extension.
+        // Once the fadeOut action is finished a trigger the ``hide``
+        // event and invoke the optional ``callback``.
         fadeOut: function (callback) {
-            this.element().fadeOut({duration: this.options.fade.duration,
-                                    complete: callback});
+            var self = this;
+            self._element.fadeOut({
+                duration: this.options.fade.duration,
+                complete: function () {
+                    if (callback) {
+                        callback(self);
+                    }
+                    self._element.trigger('hide', self);
+                }
+            });
         },
         //
         // extract skin information from element

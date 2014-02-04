@@ -664,61 +664,15 @@
         },
         // Edit content by opening a dialog.
         edit_content: function () {
-            return edit_content_dialog(this);
-        },
-        //
-        _old_edit_content: function () {
-            if (!this._content_dialog) {
-                var dialog = web.dialog({
-                        modal: true,
-                        movable: true,
-                        fullscreen: true,
-                        title: 'Edit Content'
-                    }),
-                    self = this,
-                    select = $(document.createElement('select')),
-                    top = $(document.createElement('div'))
-                                .addClass('vpadding-small').append(select),
-                    container = $(document.createElement('div')),
-                    cms = lux.cms;
-                //
-                select.append($("<option></option>"));
-                _(cms.content_types()).forEach(function (ct) {
-                    var meta = ct._meta;
-                    select.append($("<option></option>").val(meta.name).text(meta.title));
-                });
-                web.select(select, {placeholder: 'Select a Content'});
-                dialog.body().append(top)
-                    .append(container)
-                    .addClass('edit-content')
-                    .bind('close-plugin-edit', function () {
-                        dialog.destroy();
-                    });
-                select.change(function () {
-                    var name = select.val();
-                    self.content = self.content_history[name];
-                    if (!self.content) {
-                        var ContentType = cms.content_type(name);
-                        if (ContentType) {
-                            self.content = new ContentType();
-                        }
-                    }
-                    if (self.content) {
-                        web.logger.info(self + ' changed content type to ' + self.content);
-                        self.content_history[self.content._meta.name] = self.content;
-                        self.content.edit(self, container);
-                    } else {
-                        web.logger.error('Unknown content type ' + name);
-                    }
-                });
-                //
-                if (this.content) {
-                    this.content_history[this.content._meta.name] = this.content;
-                    select.val(this.content._meta.name).trigger('change');
-                }
-                return dialog;
+            var root = this.page(),
+                dialog = root._content_dialog;
+            if (!dialog) {
+                dialog = edit_content_dialog(root.options);
+                root._content_dialog = dialog;
             }
-            return this._dialog;
+            dialog.set_current_view(this);
+            dialog.fadeIn();
+            return dialog;
         }
     });
 

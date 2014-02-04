@@ -181,17 +181,8 @@ define(['lux-web'], function () {
     //
     // Pop up dialog for editing content within a block element.
     // ``self`` is a positionview object.
-    var edit_content_dialog = function (self, options) {
-        if (self._content_dialog) {
-            return self._content_dialog;
-        }
-        options = options || {};
-        var dialog = web.dialog({
-                modal: true,
-                movable: true,
-                fullscreen: true,
-                title: 'Edit Content'
-            }),
+    var edit_content_dialog = function (options) {
+        var dialog = web.dialog(options.contentedit),
             grid = web.grid(),
             preview = $(document.createElement('div')).addClass('preview'),
             form = web.form(),
@@ -202,14 +193,19 @@ define(['lux-web'], function () {
             // create the select element for content types
             content_select = web.create_select(cms.content_types()),
             //
-            content_search = web.create_select(),
+            content_search,
             //
-            search = $(document.createElement('fieldset')).addClass('search').hide();
+            search,
+            //
+            current_content;
             //
         form.add_input(wrapper_select);
         form.add_input(content_select);
-        search.append(content_search);
-        form._element.append(search);
+        content_search = form.add_input('input', {
+            type: 'hidden',
+            fieldset: {Class: 'search'}
+        });
+        search = form._element.find('fieldset.search').hide();
         grid.column(0).append(form._element);
         grid.column(1).append(preview);
         form.add_input('submit', {value: 'Done', fieldset: {Class: 'submit'}});
@@ -222,16 +218,51 @@ define(['lux-web'], function () {
             });
         //
         // Apply select
-        web.select(wrapper_select);
-        web.select(content_select);
-        web.select(content_search);
+        web.select(wrapper_select, {'placeholder': 'Choose a container'});
+        web.select(content_select, {'placeholder': 'Choose a content'});
+        //
+        // AJAX Content
+        if (options.content_url) {
+            var page_limit = 10;
+            web.select(content_search, {
+                placeholder: 'Search content',
+                minimumInputLength: 2,
+                ajax: {
+                    url: options.content_url,
+                    minimumInputLength: 3,
+                    data: function (term, page) {
+                        return {
+                            q: term, // search term
+                            per_page: page_limit,
+                            field: ['id', 'title'],
+                            content_type: current_content.content._meta.name,
+                            apikey: options.api_key
+                        };
+                    },
+                    results: function (data, page) { // parse the results into the format expected by Select2.
+                        // since we are using custom formatting functions we do not need to alter remote JSON data
+                        return {
+                            results: data,
+                            more: _.size(data) === page_limit
+                        };
+                    },
+                    formatResult: function (data) {
+                        return '<p>' + data.title || 'No title' + '</p>';
+                    }
+                }
+            });
+        }
         //
         form.ajax({
+            // Aijack form submission.
+            // Get the content being edited via the ``edit_content``
+            // attribute in the dialog (check the ``PositionView.edit_content`
+            // method)
             beforeSubmit: function (arr) {
-                var fields = self.get_form_fields(arr);
-                self.update(fields);
-                position.set(self);
-                self.close();
+                var fields = current_content.content.get_form_fields(arr);
+                current_content.update(fields);
+                position.set(current_content);
+                current_content.close();
                 return false;
             }
         });
@@ -239,23 +270,23 @@ define(['lux-web'], function () {
         // Change content type
         content_select.change(function () {
             var name = this.value;
-            self.content = self.content_history[name];
-            if (!self.content) {
+            current_content.content = current_content.content_history[name];
+            if (!current_content.content) {
                 var ContentType = cms.content_type(name);
                 if (ContentType) {
-                    self.content = new ContentType();
+                    current_content.content = new ContentType();
                 }
             }
-            if (self.content) {
-                web.logger.info(self + ' changed content type to ' + self.content);
-                self.content_history[self.content._meta.name] = self.content;
-                if (self.content._meta._persistent) {
+            if (current_content.content) {
+                web.logger.info(current_content + ' changed content type to ' + current_content.content);
+                current_content.content_history[current_content.content._meta.name] = current_content.content;
+                if (current_content.content._meta.persistent) {
                     search.show();
                 } else {
                     search.hide();
                 }
                 // Get the form for content editing
-                var cform = self.content.get_form();
+                var cform = current_content.content.get_form();
                 form._element.find('.content-form').remove();
                 if (cform) {
                     search.after(cform._element.children('fieldset').addClass('content-form'));
@@ -270,10 +301,16 @@ define(['lux-web'], function () {
 
         });
         //
-        if (self.content) {
-            self.content_history[self.content._meta.name] = self.content;
-            content_select.val(self.content._meta.name).trigger('change');
-        }
+        // Inject change content
+        dialog.set_current_view = function (view) {
+            current_content = view;
+            if (current_content.content) {
+                current_content.content_history[current_content.content._meta.name] = current_content.content;
+                content_select.val(current_content.content._meta.name).trigger('change');
+            } else {
+                content_select.val('').trigger('change');
+            }
+        };
         //
         return dialog;
     };
@@ -964,61 +1001,15 @@ define(['lux-web'], function () {
         },
         // Edit content by opening a dialog.
         edit_content: function () {
-            return edit_content_dialog(this);
-        },
-        //
-        _old_edit_content: function () {
-            if (!this._content_dialog) {
-                var dialog = web.dialog({
-                        modal: true,
-                        movable: true,
-                        fullscreen: true,
-                        title: 'Edit Content'
-                    }),
-                    self = this,
-                    select = $(document.createElement('select')),
-                    top = $(document.createElement('div'))
-                                .addClass('vpadding-small').append(select),
-                    container = $(document.createElement('div')),
-                    cms = lux.cms;
-                //
-                select.append($("<option></option>"));
-                _(cms.content_types()).forEach(function (ct) {
-                    var meta = ct._meta;
-                    select.append($("<option></option>").val(meta.name).text(meta.title));
-                });
-                web.select(select, {placeholder: 'Select a Content'});
-                dialog.body().append(top)
-                    .append(container)
-                    .addClass('edit-content')
-                    .bind('close-plugin-edit', function () {
-                        dialog.destroy();
-                    });
-                select.change(function () {
-                    var name = select.val();
-                    self.content = self.content_history[name];
-                    if (!self.content) {
-                        var ContentType = cms.content_type(name);
-                        if (ContentType) {
-                            self.content = new ContentType();
-                        }
-                    }
-                    if (self.content) {
-                        web.logger.info(self + ' changed content type to ' + self.content);
-                        self.content_history[self.content._meta.name] = self.content;
-                        self.content.edit(self, container);
-                    } else {
-                        web.logger.error('Unknown content type ' + name);
-                    }
-                });
-                //
-                if (this.content) {
-                    this.content_history[this.content._meta.name] = this.content;
-                    select.val(this.content._meta.name).trigger('change');
-                }
-                return dialog;
+            var root = this.page(),
+                dialog = root._content_dialog;
+            if (!dialog) {
+                dialog = edit_content_dialog(root.options);
+                root._content_dialog = dialog;
             }
-            return this._dialog;
+            dialog.set_current_view(this);
+            dialog.fadeIn();
+            return dialog;
         }
     });
 
@@ -1180,7 +1171,10 @@ define(['lux-web'], function () {
     //
     //  Insert a non-breaking space.
     lux.cms.create_content_type('markdown', {
-        model_title: 'Text using markdown',
+        meta: {
+            title: 'Text using markdown',
+            persistent: true
+        },
         //
         render: function (container) {
             var self = this;
@@ -1207,7 +1201,10 @@ define(['lux-web'], function () {
     //  Versions
     //  -------------------
     lux.cms.create_content_type('versions', {
-        model_title: 'Versions of libraries',
+        meta: {
+            title: 'Versions of libraries'
+        },
+        //
         render: function (container) {
             var ul = $(document.createElement('ul')).appendTo(container);
             _(web.libraries).forEach(function (lib) {
@@ -1218,16 +1215,117 @@ define(['lux-web'], function () {
     });
 
     //
-    // CRUD API Extension
-    // ------------------------------
+    //  lux web CMS extension
+    //  --------------------------------
     //
-    // Check for an ``api`` key in the ``html`` document ``data`` attribute.
-    // If available, the api key contains the ``url`` for the site API.
-    // It build the ``datatable`` ``Content``.
-    lux.web.extension('api', {
-        selector: 'html',
+    //  This is the javascript handler of ``lux.extensions.cms``.
+    //  Updates to the backend are either via a websocket or ajax requests.
+    lux.web.extension('cms', {
+        selector: 'div.cms-page',
         //
+        options: {
+            editing: false,
+            // backend url used to communicate with backend server
+            // when updating & creating content as well as when
+            // repositioning it
+            backend_url: null,
+            //
+            // content url is used for AJAX retrieval of database contents
+            content_url: null,
+            //
+            // icon for the button which add a new row in a grid
+            add_row_icon: 'columns',
+            // icon for the button which add a new block in a column
+            add_block_icon: 'plus',
+            //
+            skin: 'control',
+            //
+            row_control_class: 'add-row',
+            //
+            columns: 24,
+            //
+            // Options for the dialog controlling page inputs
+            page: {
+                collapsable: true,
+                collapsed: true,
+                class_name: 'control',
+                skin: 'inverse',
+                buttons: {
+                    size: 'default'
+                }
+            },
+            // Options for the dialog controlling one grid
+            grid: {
+                collapsable: true,
+                skin: null,
+                class_name: 'control',
+                buttons: {
+                    size: 'default'
+                }
+            },
+            // Options for the row dialog
+            row: {
+                closable: true,
+                collapsable: true,
+                skin: 'default',
+                size: 'mini',
+                dragdrop: false,
+                dropzone: 'row-control'
+            },
+            // Options for the block dialog
+            block: {
+                closable: true,
+                collapsable: true,
+                skin: 'primary',
+                size: 'mini',
+                dragdrop: true,
+                dropzone: 'block-control'
+            },
+            // Options for content editing dialog
+            contentedit: {
+                modal: true,
+                movable: true,
+                fullscreen: true,
+                autoOpen: false,
+                title: 'Edit Content',
+                fade: {duration: 20},
+                closable: {destroy: false}
+            }
+        },
+        //
+        // The decorator called by ``lux.web``
         decorate: function () {
+            var self = this,
+                options = self.options,
+                elem = self.element(),
+                control = $('.cms-control');
+            // In editing mode, set-up grids
+            if (options.editing) {
+                //self._handle_close();
+                elem.addClass('editing');
+                //
+                // Create backend
+                self.backend = web.backend({
+                    host: options.backend_url,
+                    hartbeat: 5
+                });
+                //
+                lux.cms.set_transport(self.backend.socket);
+                lux.cms.get(options.editing, {
+                    success: function (page) {
+                        self.view = new PageView(page[0], self);
+                        self.view.render();
+                    }
+                });
+                //
+                self._setup_api();
+            } else {
+                self.view = new PageView(null, this);
+                self.view.render();
+            }
+        },
+        //
+        _setup_api: function () {
             this.url = this.element().data('api');
             if (!this.url) {
                 this.on_sitemap();
@@ -1336,15 +1434,16 @@ define(['lux-web'], function () {
             }).select2({
                 placeholder: 'Select fields to display'
             });
-            form.add_input('checkbox', {
+            form.add_input('input', {
+                type: 'checkbox',
                 name: 'editable',
                 label: 'Editable'
             });
-            form.add_input('checkbox', {
+            form.add_input('input', {
+                type: 'checkbox',
                 name: 'footer',
                 label: 'Display footer'
             });
-            form.add_input('submit', {value: 'Done'});
             //
             // When a model change, change the selction as well.
             select_model.select2().change(function (e) {
@@ -1370,102 +1469,6 @@ define(['lux-web'], function () {
                 }
             });
             return form;
-        }
-    });
-
-    //
-    //  lux web CMS extension
-    //  --------------------------------
-    //
-    //  This is the javascript handler of ``lux.extensions.cms``.
-    //  Updates to the backend are either via a websocket or ajax requests.
-    lux.web.extension('cms', {
-        selector: 'div.cms-page',
-        //
-        options: {
-            editing: false,
-            // backend url used to communicate with backend server
-            // when updating & creating content as well as when
-            // repositioning it
-            backend_url: null,
-            // icon for the button which add a new row in a grid
-            add_row_icon: 'columns',
-            // icon for the button which add a new block in a column
-            add_block_icon: 'plus',
-            //
-            skin: 'control',
-            //
-            row_control_class: 'add-row',
-            //
-            columns: 24,
-            //
-            // Options for the dialog controlling page inputs
-            page: {
-                collapsable: true,
-                collapsed: true,
-                class_name: 'control',
-                skin: 'inverse',
-                buttons: {
-                    size: 'default'
-                }
-            },
-            // Options for the dialog controlling one grid
-            grid: {
-                collapsable: true,
-                skin: null,
-                class_name: 'control',
-                buttons: {
-                    size: 'default'
-                }
-            },
-            // Options for the row dialog
-            row: {
-                closable: true,
-                collapsable: true,
-                skin: 'default',
-                size: 'mini',
-                dragdrop: false,
-                dropzone: 'row-control'
-            },
-            // Options for the block dialog
-            block: {
-                closable: true,
-                collapsable: true,
-                skin: 'primary',
-                size: 'mini',
-                dragdrop: true,
-                dropzone: 'block-control'
-            }
-        },
-        //
-        // The decorator called by ``lux.web``
-        decorate: function () {
-            var self = this,
-                options = self.options,
-                elem = self.element(),
-                control = $('.cms-control');
-            // In editing mode, set-up grids
-            if (options.editing) {
-                //self._handle_close();
-                elem.addClass('editing');
-                //
-                // Create backend
-                self.backend = web.backend({
-                    host: options.backend_url,
-                    hartbeat: 5
-                });
-                //
-                lux.cms.set_transport(self.backend.socket);
-                lux.cms.get(options.editing, {
-                    success: function (page) {
-                        self.view = new PageView(page[0], self);
-                        self.view.render();
-                    }
-                });
-            } else {
-                self.view = new PageView(null, this);
-                self.view.render();
-            }
         },
         //
         _handle_close: function () {

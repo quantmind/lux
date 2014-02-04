@@ -562,7 +562,6 @@ define(['jquery', 'lux'], function ($) {
         return elem;
     };
 
-
     //  Dialog
     //  -----------------------
     web.extension('dialog', {
@@ -642,10 +641,13 @@ define(['jquery', 'lux'], function ($) {
                 closable = closable === null ? true : closable;
                 var backdrop = $(document.createElement('div'))
                                     .addClass('modal-backdrop fullscreen')
-                                    .css('z-index', options.modal_zindex)
-                                    .appendTo(document.body);
+                                    .css('z-index', options.modal_zindex);
                 elem.on('remove', function () {
                     backdrop.remove();
+                }).on('show', function () {
+                    backdrop.appendTo(document.body);
+                }).on('hide', function () {
+                    backdrop.detach();
                 });
             }
             if (elem.parent().length === 0) {
@@ -653,10 +655,6 @@ define(['jquery', 'lux'], function ($) {
             }
             if (popup) {
                 elem.appendTo(document.body);
-            }
-            // open
-            if(options.autoOpen) {
-                self.fadeIn();
             }
             // set width
             if (width) {
@@ -670,11 +668,11 @@ define(['jquery', 'lux'], function ($) {
             if (options.collapsable) {
                 var collapse_button = self.collapsable();
                 self.buttons.append(collapse_button);
-            } 
+            }
             // Add close stuff
             if (closable) {
                 options.closable = false;
-                this.closable();
+                this.closable(closable);
             }
             //
             // Full screen
@@ -682,7 +680,10 @@ define(['jquery', 'lux'], function ($) {
             // Movable
             self.make_movable();
             //
-            this.element().addClass('ready');
+            if(options.autoOpen) {
+                self.fadeIn();
+            }
+            elem.addClass('ready');
         },
         //
         body: function () {
@@ -709,7 +710,17 @@ define(['jquery', 'lux'], function ($) {
             return web.create_button(opts);
         },
         //
-        closable: function () {
+        // make the dialog closable, unless it is already closable.
+        // The optional ``options``  can specify:
+
+        //  * ``destroy``, if true the dialog is removed when
+        //    closed otherwise it is just fadeOut. Default ``True``.
+        closable: function (options) {
+            var destroy = true;
+            if (_.isObject(options)) {
+                options = _.extend({destroy: true}, options);
+                destroy = options.destroy;
+            }
             if (!this.options.closable) {
                 var self = this;
                 this.options.closable = true;
@@ -717,7 +728,9 @@ define(['jquery', 'lux'], function ($) {
                 this.buttons.append(close);
                 close.click(function() {
                     self.fadeOut(function() {
-                        self.destroy();
+                        if (destroy) {
+                            self.destroy();
+                        }
                     });
                 });
             }
@@ -791,7 +804,7 @@ define(['jquery', 'lux'], function ($) {
             //}
         }
     });
-    
+
     $.fn.dialog = function (options) {
         return this.each(function() {
             web.dialog(this, options);
@@ -886,7 +899,9 @@ define(['jquery', 'lux'], function ($) {
             }
         },
         //
-        // Add a new input to the form
+        // Add a new input/select/textarea to the form
+        // ``type`` is the type of input,valid values are ``input``,
+        // ``select``, ``textarea``, ``checkbox``, ``radio``.
         add_input: function (type, input) {
             input = input || {};
             var elem,
@@ -898,6 +913,7 @@ define(['jquery', 'lux'], function ($) {
                 // therefore the value is used as text
                 value = input.value,
                 fieldset, fs;
+            delete input.fieldset;
             delete input.label;
 
             // Find the appropiate fieldset
