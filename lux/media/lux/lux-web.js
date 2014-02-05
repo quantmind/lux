@@ -529,16 +529,8 @@ define(['jquery', 'lux'], function ($) {
         decorate: function () {
             var select = this,
                 options = select.options,
-                element = select.element(),
-                temp;
-            // This does not seems to work
-            if (!element.parent().length) {
-                temp = $(document.createElement('div')).append(element);
-            }
-            element.select2(options);
-            if (temp) {
-                this.container().detach();
-            }
+                element = select.element();
+            element.select(options);
         },
         // Retrieve the select2 instance form the element
         select2: function () {
@@ -549,8 +541,6 @@ define(['jquery', 'lux'], function ($) {
             return this.select2().container;
         }
     });
-
-
     //
     // Create and return a ``select`` jQuery element with given ``options``.
     web.create_select = function (options) {
@@ -561,10 +551,24 @@ define(['jquery', 'lux'], function ($) {
         });
         return elem;
     };
+    //
+    // Select2 hook for lux set_value_hooks
+    var get_select2_value = function (element, value) {
+        if (element.hasClass('select2-offscreen')) {
+            element.select2('val', value);
+            return true;
+        }
+    };
+    //
+    lux.set_value_hooks.push(get_select2_value);
 
     // A proxy for select2
     $.fn.select = function (options) {
-        this.select2(options || {});
+        options = options || {};
+        if (!options.width) {
+            options.width = 'element';
+        }
+        this.select2(options);
     };
 
     //  Dialog
@@ -1090,15 +1094,7 @@ define(['jquery', 'lux'], function ($) {
         }
     });
         
-    //
-    var CrudMethod = {
-            create: 'POST',
-            read: 'GET',
-            update: 'PUT',
-            destroy: 'DELETE'
-        };
-    //
-    var Backend = lux.Backend = lux.EventClass.extend({
+    lux.AjaxBackend = lux.Backend.extend({
         //
         options: {
             submit: {
@@ -1106,11 +1102,8 @@ define(['jquery', 'lux'], function ($) {
             }
         },
         //
-        init: function (url, options, type) {
-            this.type = type || 'ajax';
-            this.url = url;
-            this.options = $.extend(true, {}, this.options, options || {});
-            this.submit = this.options.submit || {};
+        init: function (url, options) {
+            this._super(url, options, 'ajax');
         },
         //
         // The sync method for models
@@ -1120,9 +1113,9 @@ define(['jquery', 'lux'], function ($) {
                 data = s.data,
                 model = s.model,
                 action = s.action;
-            s.type = CrudMethod[s.type] || s.type || 'GET';    
+            s.type = lux.CrudMethod[s.type] || s.type || 'GET';
             if (model && data && data.length === 1) {
-                if (s.type !== CrudMethod.create) {
+                if (s.type !== lux.CrudMethod.create) {
                     url = lux.utils.urljoin(url, data[0].id);
                 }
                 s.data = data[0].fields;
@@ -1138,16 +1131,12 @@ define(['jquery', 'lux'], function ($) {
                 throw new TypeError('Send method requires an object as input');
             }
             return $.extend({}, this.submit, s);
-        },
-        //
-        toString: function () {
-            return this.type + ' ' + this.url;
         }
     });
 
     //
     // WebSocket backend
-    var Socket = lux.Socket = Backend.extend({
+    lux.Socket = lux.Backend.extend({
         options: {
             resource: null,
             reconnecting: 1,
@@ -1251,7 +1240,7 @@ define(['jquery', 'lux'], function ($) {
             }
             var obj = {
                     mid: this.new_mid(options),
-                    action: s.action || CrudMethod[s.type] || s.type,
+                    action: s.action || lux.CrudMethod[s.type] || s.type,
                     model: s.model,
                     data: s.data
                 };
@@ -1288,7 +1277,8 @@ define(['jquery', 'lux'], function ($) {
             this.reconnect();
         },
         //
-        // Create a new message id
+        // Create a new message id and add the options object to the
+        // pending messages object
         new_mid: function (options) {
             if (options.success || options.error) {
                 var mid = lux.s4();
@@ -1321,19 +1311,16 @@ define(['jquery', 'lux'], function ($) {
     });
 
     // Local Storage backend
-    var Storage = lux.Storage = Backend.extend({
-        options: {
-            type: 'local' // or session
-        },
+    lux.Storage = lux.Backend.extend({
         //
-        init: function (options, handlers) {
-            this._super(null, options);
-            if (this.options.type === 'local') {
+        init: function (options, handlers, type) {
+            this._super(null, options, type || 'local');
+            if (this.type === 'local') {
                 this.storage = localStorage;
-            } else if (this.options.type === 'session') {
+            } else if (this.type === 'session') {
                 this.storage = sessionStorage;
             } else {
-                throw new lux.NotImplementedError('unknown storage ' + this.options.type);
+                throw new lux.NotImplementedError('unknown storage ' + this.type);
             }
         },
         //
@@ -1447,7 +1434,7 @@ define(['jquery', 'lux'], function ($) {
             }
             //
             self.element().addClass('socket-control').css({float: 'left'});
-            self.socket = new Socket(url, socket_options);
+            self.socket = new lux.Socket(url, socket_options);
         },
         //
         check_status: function () {

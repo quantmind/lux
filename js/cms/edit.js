@@ -20,42 +20,54 @@
             //
             content_search,
             //
+            selection,
             search,
             //
-            current_content,
+            block,
             //
+            // Lo-Dash template for the title select element
+            titletemplate = _.template('<%= title %> (<%= id %>)'),
+            selection_class = 'content-selection',
             dbfields = 'search';
             //
-        form.add_input(wrapper_select);
-        form.add_input(content_select);
+        form.add_input(wrapper_select, {
+            fieldset: {Class: selection_class}
+        });
+        form.add_input(content_select, {
+            fieldset: {Class: selection_class}
+        });
         content_search = form.add_input('input', {
-            type: 'hidden',
+            name: 'id',
             fieldset: {Class: dbfields}
-        }).width(212);
+        });
+        //
+        // Input for title
         form.add_input('input', {
             fieldset: {Class: dbfields},
             name: 'title',
             placeholder: 'title',
+            required: 'required'
         });
+        //
+        // Input for keywords
         form.add_input('input', {
             fieldset: {Class: dbfields},
             name: 'keywords'
-        }).width(212).select({
+        }).select({
+            tags: [],
             placeholder: 'keywords',
-            minimumInputLength: 2,
-            ajax: {
-                url: options.content_url,
-                data: function (term, page) {
-                    return {
-                        q: term, // search term
-                        per_page: page_limit,
-                        field: ['keywords'],
-                        apikey: options.api_key
-                    };
-                },
+            initSelection : function (element, callback) {
+                var data = [];
+                _(element.val().split(",")).forEach(function (val) {
+                    if (val) {
+                        data.push({id: val, text: val});
+                    }
+                });
+                callback(data);
             }
         });
-        search = form._element.find('fieldset.' + dbfields).hide();
+        selection = form._element.find('fieldset.' + selection_class);
+        search = form._element.find('fieldset.' + dbfields).detach();
         grid.column(0).append(form._element);
         grid.column(1).append(preview);
         form.add_input('submit', {value: 'Done', fieldset: {Class: 'submit'}});
@@ -71,11 +83,19 @@
         web.select(wrapper_select, {'placeholder': 'Choose a container'});
         web.select(content_select, {'placeholder': 'Choose a content'});
         //
-        // AJAX Content
+        // AJAX Content Loading
         if (options.content_url) {
             web.select(content_search, {
                 placeholder: 'Search content',
                 minimumInputLength: 2,
+                initSelection: function (element, callback) {
+                    var id = element.val(),
+                        text = titletemplate({
+                            title: block.content.get('title'),
+                            'id': id
+                        });
+                    callback({'id': id, 'text': text});
+                },
                 ajax: {
                     url: options.content_url,
                     minimumInputLength: 3,
@@ -84,7 +104,7 @@
                             q: term, // search term
                             per_page: page_limit,
                             field: ['id', 'title'],
-                            content_type: current_content.content._meta.name,
+                            content_type: block.content._meta.name,
                             apikey: options.api_key
                         };
                     },
@@ -108,34 +128,43 @@
             // attribute in the dialog (check the ``PositionView.edit_content`
             // method)
             beforeSubmit: function (arr) {
-                var fields = current_content.content.get_form_fields(arr);
-                current_content.update(fields);
-                position.set(current_content);
-                current_content.close();
+                var content = block.content,
+                    fields = content.get_form_fields(arr);
+                content.update(fields);
+                block.set(content);
+                dialog.fadeOut();
                 return false;
             }
         });
         //
-        // Change content type
+        // Change content type in the view block
         content_select.change(function () {
             var name = this.value;
-            current_content.content = current_content.content_history[name];
-            if (!current_content.content) {
+            // Try to get the content from the block content history
+            block.content = block.content_history[name];
+            if (!block.content) {
                 var ContentType = cms.content_type(name);
                 if (ContentType) {
-                    current_content.content = new ContentType();
+                    block.content = new ContentType();
                 }
             }
-            if (current_content.content) {
-                web.logger.info(current_content + ' changed content type to ' + current_content.content);
-                current_content.content_history[current_content.content._meta.name] = current_content.content;
-                if (current_content.content._meta.persistent) {
-                    search.show();
+            if (block.content) {
+                web.logger.info(block + ' changed content type to ' + block.content);
+                block.content_history[block.content._meta.name] = block.content;
+                if (block.content._meta.persistent) {
+                    // Set the form values for the dbcore fields block
+                    search.children('input').each(function () {
+                        if (this.name) {
+                            var val = block.content.get(this.name);
+                            lux.set_value($(this), val);
+                        }
+                    });
+                    selection.after(search);
                 } else {
-                    search.hide();
+                    search.detach();
                 }
                 // Get the form for content editing
-                var cform = current_content.content.get_form();
+                var cform = block.content.get_form();
                 form._element.find('.content-form').remove();
                 if (cform) {
                     search.after(cform._element.children('fieldset').addClass('content-form'));
@@ -152,10 +181,10 @@
         //
         // Inject change content
         dialog.set_current_view = function (view) {
-            current_content = view;
-            if (current_content.content) {
-                current_content.content_history[current_content.content._meta.name] = current_content.content;
-                content_select.val(current_content.content._meta.name).trigger('change');
+            block = view;
+            if (block.content) {
+                block.content_history[block.content._meta.name] = block.content;
+                content_select.val(block.content._meta.name).trigger('change');
             } else {
                 content_select.val('').trigger('change');
             }

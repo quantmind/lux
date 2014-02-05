@@ -41,12 +41,15 @@ Mixin
 import os
 import json
 import time
+import asyncio
+
 from collections import Mapping
 from datetime import datetime
 
 from pulsar.utils.structures import OrderedDict, mapping_iterator
 from pulsar.utils.pep import itervalues, iteritems, ispy3k
 from pulsar.utils.html import UnicodeMixin
+from pulsar.apps.http import HttpClient
 
 from lux.utils.test import Stream
 
@@ -454,6 +457,7 @@ class Css(CssBase):
 
     def __init__(self, tag=None, vars=None, config=None):
         self._tag = tag
+        self._http = None
         self._parent = None
         self._children = OrderedDict()
         self._attributes = []
@@ -497,6 +501,15 @@ is a root instance.'''
             return self._parent.root
         else:
             return self
+
+    @property
+    def http(self):
+        if self._parent:
+            return self._parent.http
+        else:
+            if self._http is None:
+                self._http = HttpClient(loop=asyncio.new_event_loop())
+            return self._http
 
     def __setitem__(self, name, value):
         if value is None or isinstance(value, Variables):

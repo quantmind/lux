@@ -1,7 +1,7 @@
 /*
 ------------------------------------------------------------------
 ------------------------------------------------------------------
-Created by lux 2014-02-04 15:51:42 in 0.21 seconds.
+Created by lux 2014-02-05 18:52:23 in 1.39 seconds.
 ------------------------------------------------------------------
 ------------------------------------------------------------------ */
 
@@ -1484,64 +1484,7 @@ a .icon-flip-vertical:before {
 .icon-renren:before {
   content: "\f18b";
 }
-/*! normalize.css v2.1.3 | MIT License | git.io/normalize */
-
-/* ==========================================================================
-   HTML5 display definitions
-   ========================================================================== */
-
-/**
- * Correct `block` display not defined in IE 8/9.
- */
-
-article,
-aside,
-details,
-figcaption,
-figure,
-footer,
-header,
-hgroup,
-main,
-nav,
-section,
-summary {
-    display: block;
-}
-
-/**
- * Correct `inline-block` display not defined in IE 8/9.
- */
-
-audio,
-canvas,
-video {
-    display: inline-block;
-}
-
-/**
- * Prevent modern browsers from displaying `audio` without controls.
- * Remove excess height in iOS 5 devices.
- */
-
-audio:not([controls]) {
-    display: none;
-    height: 0;
-}
-
-/**
- * Address `[hidden]` styling not present in IE 8/9.
- * Hide the `template` element in IE, Safari, and Firefox < 22.
- */
-
-[hidden],
-template {
-    display: none;
-}
-
-/* ==========================================================================
-   Base
-   ========================================================================== */
+/*! normalize.css v3.0.0 | MIT License | git.io/normalize */
 
 /**
  * 1. Set default font family to sans-serif.
@@ -1566,8 +1509,64 @@ body {
     margin: 0;
 }
 
-/* ==========================================================================
-   Links
+/* HTML5 display definitions
+   ========================================================================== */
+
+/**
+ * Correct `block` display not defined in IE 8/9.
+ */
+
+article,
+aside,
+details,
+figcaption,
+figure,
+footer,
+header,
+hgroup,
+main,
+nav,
+section,
+summary {
+    display: block;
+}
+
+/**
+ * 1. Correct `inline-block` display not defined in IE 8/9.
+ * 2. Normalize vertical alignment of `progress` in Chrome, Firefox, and Opera.
+ */
+
+audio,
+canvas,
+progress,
+video {
+    display: inline-block;
+ /* 1 */
+    vertical-align: baseline;
+ /* 2 */
+}
+
+/**
+ * Prevent modern browsers from displaying `audio` without controls.
+ * Remove excess height in iOS 5 devices.
+ */
+
+audio:not([controls]) {
+    display: none;
+    height: 0;
+}
+
+/**
+ * Address `[hidden]` styling not present in IE 8/9.
+ * Hide the `template` element in IE, Safari, and Firefox < 22.
+ */
+
+[hidden],
+template {
+    display: none;
+}
+
+/* Links
    ========================================================================== */
 
 /**
@@ -1579,14 +1578,6 @@ a {
 }
 
 /**
- * Address `outline` inconsistency between Chrome and other browsers.
- */
-
-a:focus {
-    outline: thin dotted;
-}
-
-/**
  * Improve readability when focused and also mouse hovered in all browsers.
  */
 
@@ -1595,19 +1586,8 @@ a:hover {
     outline: 0;
 }
 
-/* ==========================================================================
-   Typography
+/* Text-level semantics
    ========================================================================== */
-
-/**
- * Address variable `h1` font-size and margin within `section` and `article`
- * contexts in Firefox 4+, Safari 5, and Chrome.
- */
-
-h1 {
-    font-size: 2em;
-    margin: 0.67em 0;
-}
 
 /**
  * Address styling not present in IE 8/9, Safari 5, and Chrome.
@@ -1635,13 +1615,13 @@ dfn {
 }
 
 /**
- * Address differences between Firefox and other browsers.
+ * Address variable `h1` font-size and margin within `section` and `article`
+ * contexts in Firefox 4+, Safari 5, and Chrome.
  */
 
-hr {
-    -moz-box-sizing: content-box;
-    box-sizing: content-box;
-    height: 0;
+h1 {
+    font-size: 2em;
+    margin: 0.67em 0;
 }
 
 /**
@@ -1651,34 +1631,6 @@ hr {
 mark {
     background: #ff0;
     color: #000;
-}
-
-/**
- * Correct font family set oddly in Safari 5 and Chrome.
- */
-
-code,
-kbd,
-pre,
-samp {
-    font-family: monospace, serif;
-    font-size: 1em;
-}
-
-/**
- * Improve readability of pre-formatted text in all browsers.
- */
-
-pre {
-    white-space: pre-wrap;
-}
-
-/**
- * Set consistent quote types.
- */
-
-q {
-    quotes: "\201C" "\201D" "\2018" "\2019";
 }
 
 /**
@@ -1709,8 +1661,7 @@ sub {
     bottom: -0.25em;
 }
 
-/* ==========================================================================
-   Embedded content
+/* Embedded content
    ========================================================================== */
 
 /**
@@ -1729,8 +1680,7 @@ svg:not(:root) {
     overflow: hidden;
 }
 
-/* ==========================================================================
-   Figures
+/* Grouping content
    ========================================================================== */
 
 /**
@@ -1738,63 +1688,80 @@ svg:not(:root) {
  */
 
 figure {
-    margin: 0;
+    margin: 1em 40px;
 }
 
-/* ==========================================================================
-   Forms
+/**
+ * Address differences between Firefox and other browsers.
+ */
+
+hr {
+    -moz-box-sizing: content-box;
+    box-sizing: content-box;
+    height: 0;
+}
+
+/**
+ * Contain overflow in all browsers.
+ */
+
+pre {
+    overflow: auto;
+}
+
+/**
+ * Address odd `em`-unit font size rendering in all browsers.
+ */
+
+code,
+kbd,
+pre,
+samp {
+    font-family: monospace, monospace;
+    font-size: 1em;
+}
+
+/* Forms
    ========================================================================== */
 
 /**
- * Define consistent border, margin, and padding.
+ * Known limitation: by default, Chrome and Safari on OS X allow very limited
+ * styling of `select`, unless a `border` property is set.
  */
 
-fieldset {
-    border: 1px solid #c0c0c0;
-    margin: 0 2px;
-    padding: 0.35em 0.625em 0.75em;
-}
-
 /**
- * 1. Correct `color` not being inherited in IE 8/9.
- * 2. Remove padding so people aren't caught out if they zero out fieldsets.
- */
-
-legend {
-    border: 0; /* 1 */
-    padding: 0; /* 2 */
-}
-
-/**
- * 1. Correct font family not being inherited in all browsers.
- * 2. Correct font size not being inherited in all browsers.
+ * 1. Correct color not being inherited.
+ *    Known issue: affects color of disabled elements.
+ * 2. Correct font properties not being inherited.
  * 3. Address margins set differently in Firefox 4+, Safari 5, and Chrome.
  */
 
 button,
 input,
+optgroup,
 select,
 textarea {
-    font-family: inherit; /* 1 */
-    font-size: 100%; /* 2 */
-    margin: 0; /* 3 */
+    color: inherit;
+ /* 1 */
+    font: inherit;
+ /* 2 */
+    margin: 0;
+ /* 3 */
 }
 
 /**
- * Address Firefox 4+ setting `line-height` on `input` using `!important` in
- * the UA stylesheet.
+ * Address `overflow` set to `hidden` in IE 8/9/10.
  */
 
-button,
-input {
-    line-height: normal;
+button {
+    overflow: visible;
 }
 
 /**
  * Address inconsistent `text-transform` inheritance for `button` and `select`.
  * All other form control elements do not inherit `text-transform` values.
- * Correct `button` style inheritance in Chrome, Safari 5+, and IE 8+.
- * Correct `select` style inheritance in Firefox 4+ and Opera.
+ * Correct `button` style inheritance in Firefox, IE 8+, and Opera
+ * Correct `select` style inheritance in Firefox.
  */
 
 button,
@@ -1814,8 +1781,10 @@ button,
 html input[type="button"], /* 1 */
 input[type="reset"],
 input[type="submit"] {
-    -webkit-appearance: button; /* 2 */
-    cursor: pointer; /* 3 */
+    -webkit-appearance: button;
+ /* 2 */
+    cursor: pointer;
+ /* 3 */
 }
 
 /**
@@ -1825,40 +1794,6 @@ input[type="submit"] {
 button[disabled],
 html input[disabled] {
     cursor: default;
-}
-
-/**
- * 1. Address box sizing set to `content-box` in IE 8/9/10.
- * 2. Remove excess padding in IE 8/9/10.
- */
-
-input[type="checkbox"],
-input[type="radio"] {
-    box-sizing: border-box; /* 1 */
-    padding: 0; /* 2 */
-}
-
-/**
- * 1. Address `appearance` set to `searchfield` in Safari 5 and Chrome.
- * 2. Address `box-sizing` set to `border-box` in Safari 5 and Chrome
- *    (include `-moz` to future-proof).
- */
-
-input[type="search"] {
-    -webkit-appearance: textfield; /* 1 */
-    -moz-box-sizing: content-box;
-    -webkit-box-sizing: content-box; /* 2 */
-    box-sizing: content-box;
-}
-
-/**
- * Remove inner padding and search cancel button in Safari 5 and Chrome
- * on OS X.
- */
-
-input[type="search"]::-webkit-search-cancel-button,
-input[type="search"]::-webkit-search-decoration {
-    -webkit-appearance: none;
 }
 
 /**
@@ -1872,17 +1807,105 @@ input::-moz-focus-inner {
 }
 
 /**
- * 1. Remove default vertical scrollbar in IE 8/9.
- * 2. Improve readability and alignment in all browsers.
+ * Address Firefox 4+ setting `line-height` on `input` using `!important` in
+ * the UA stylesheet.
+ */
+
+input {
+    line-height: normal;
+}
+
+/**
+ * It's recommended that you don't attempt to style these elements.
+ * Firefox's implementation doesn't respect box-sizing, padding, or width.
+ *
+ * 1. Address box sizing set to `content-box` in IE 8/9/10.
+ * 2. Remove excess padding in IE 8/9/10.
+ */
+
+input[type="checkbox"],
+input[type="radio"] {
+    box-sizing: border-box;
+ /* 1 */
+    padding: 0;
+ /* 2 */
+}
+
+/**
+ * Fix the cursor style for Chrome's increment/decrement buttons. For certain
+ * `font-size` values of the `input`, it causes the cursor style of the
+ * decrement button to change from `default` to `text`.
+ */
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  height: auto;
+}
+
+/**
+ * 1. Address `appearance` set to `searchfield` in Safari 5 and Chrome.
+ * 2. Address `box-sizing` set to `border-box` in Safari 5 and Chrome
+ *    (include `-moz` to future-proof).
+ */
+
+input[type="search"] {
+  -webkit-appearance: textfield; /* 1 */
+  -moz-box-sizing: content-box;
+  -webkit-box-sizing: content-box; /* 2 */
+  box-sizing: content-box;
+}
+
+/**
+ * Remove inner padding and search cancel button in Safari and Chrome on OS X.
+ * Safari (but not Chrome) clips the cancel button when the search input has
+ * padding (and `textfield` appearance).
+ */
+
+input[type="search"]::-webkit-search-cancel-button,
+input[type="search"]::-webkit-search-decoration {
+  -webkit-appearance: none;
+}
+
+/**
+ * Define consistent border, margin, and padding.
+ */
+
+fieldset {
+  border: 1px solid #c0c0c0;
+  margin: 0 2px;
+  padding: 0.35em 0.625em 0.75em;
+}
+
+/**
+ * 1. Correct `color` not being inherited in IE 8/9.
+ * 2. Remove padding so people aren't caught out if they zero out fieldsets.
+ */
+
+legend {
+    border: 0;
+ /* 1 */
+    padding: 0;
+ /* 2 */
+}
+
+/**
+ * Remove default vertical scrollbar in IE 8/9.
  */
 
 textarea {
-    overflow: auto; /* 1 */
-    vertical-align: top; /* 2 */
+    overflow: auto;
 }
 
-/* ==========================================================================
-   Tables
+/**
+ * Don't inherit the `font-weight` (applied by a rule above).
+ * NOTE: the default cannot safely be changed in Chrome and Safari on OS X.
+ */
+
+optgroup {
+  font-weight: bold;
+}
+
+/* Tables
    ========================================================================== */
 
 /**
@@ -1890,10 +1913,17 @@ textarea {
  */
 
 table {
-    border-collapse: collapse;
-    border-spacing: 0;
+  border-collapse: collapse;
+  border-spacing: 0;
 }
 
+td,
+th {
+  padding: 0;
+}
+/*
+Version: 3.4.5 Timestamp: Mon Nov  4 08:22:42 PST 2013
+*/
 .select2-container {
     margin: 0;
     position: relative;
@@ -1907,7 +1937,7 @@ table {
 .select2-container,
 .select2-drop,
 .select2-search,
-.select2-search input{
+.select2-search input {
   /*
     Force border-box so that % widths fit the parent
     container without overlap because of margin/padding.
@@ -1915,9 +1945,7 @@ table {
     More Info : http://www.quirksmode.org/css/box.html
   */
   -webkit-box-sizing: border-box; /* webkit */
-   -khtml-box-sizing: border-box; /* konqueror */
      -moz-box-sizing: border-box; /* firefox */
-      -ms-box-sizing: border-box; /* ie */
           box-sizing: border-box; /* css3 */
 }
 
@@ -1934,61 +1962,48 @@ table {
     color: #444;
     text-decoration: none;
 
-    -webkit-border-radius: 4px;
-       -moz-border-radius: 4px;
-            border-radius: 4px;
+    border-radius: 4px;
 
-    -webkit-background-clip: padding-box;
-       -moz-background-clip: padding;
-            background-clip: padding-box;
+    background-clip: padding-box;
 
     -webkit-touch-callout: none;
       -webkit-user-select: none;
-       -khtml-user-select: none;
          -moz-user-select: none;
           -ms-user-select: none;
               user-select: none;
 
     background-color: #fff;
-    background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, #eeeeee), color-stop(0.5, white));
-    background-image: -webkit-linear-gradient(center bottom, #eeeeee 0%, white 50%);
-    background-image: -moz-linear-gradient(center bottom, #eeeeee 0%, white 50%);
-    background-image: -o-linear-gradient(bottom, #eeeeee 0%, #ffffff 50%);
-    background-image: -ms-linear-gradient(top, #ffffff 0%, #eeeeee 50%);
+    background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, #eee), color-stop(0.5, #fff));
+    background-image: -webkit-linear-gradient(center bottom, #eee 0%, #fff 50%);
+    background-image: -moz-linear-gradient(center bottom, #eee 0%, #fff 50%);
     filter: progid:DXImageTransform.Microsoft.gradient(startColorstr = '#ffffff', endColorstr = '#eeeeee', GradientType = 0);
-    background-image: linear-gradient(top, #ffffff 0%, #eeeeee 50%);
+    background-image: linear-gradient(top, #fff 0%, #eee 50%);
 }
 
 .select2-container.select2-drop-above .select2-choice {
     border-bottom-color: #aaa;
 
-    -webkit-border-radius:0 0 4px 4px;
-       -moz-border-radius:0 0 4px 4px;
-            border-radius:0 0 4px 4px;
+    border-radius: 0 0 4px 4px;
 
-    background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, #eeeeee), color-stop(0.9, white));
-    background-image: -webkit-linear-gradient(center bottom, #eeeeee 0%, white 90%);
-    background-image: -moz-linear-gradient(center bottom, #eeeeee 0%, white 90%);
-    background-image: -o-linear-gradient(bottom, #eeeeee 0%, white 90%);
-    background-image: -ms-linear-gradient(top, #eeeeee 0%,#ffffff 90%);
-    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#ffffff', endColorstr='#eeeeee',GradientType=0 );
-    background-image: linear-gradient(top, #eeeeee 0%,#ffffff 90%);
+    background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, #eee), color-stop(0.9, #fff));
+    background-image: -webkit-linear-gradient(center bottom, #eee 0%, #fff 90%);
+    background-image: -moz-linear-gradient(center bottom, #eee 0%, #fff 90%);
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ffffff', endColorstr='#eeeeee', GradientType=0);
+    background-image: linear-gradient(top, #eee 0%, #fff 90%);
 }
 
-.select2-container.select2-allowclear .select2-choice span {
+.select2-container.select2-allowclear .select2-choice .select2-chosen {
     margin-right: 42px;
 }
 
-.select2-container .select2-choice span {
+.select2-container .select2-choice > .select2-chosen {
     margin-right: 26px;
     display: block;
     overflow: hidden;
 
     white-space: nowrap;
 
-    -ms-text-overflow: ellipsis;
-     -o-text-overflow: ellipsis;
-        text-overflow: ellipsis;
+    text-overflow: ellipsis;
 }
 
 .select2-container .select2-choice abbr {
@@ -2017,35 +2032,27 @@ table {
     cursor: pointer;
 }
 
-.select2-drop-undermask {
-    border: 0;
-    margin: 0;
-    padding: 0;
-    position: absolute;
-    left: 0;
-    top: 0;
-    z-index: 9998;
-    background-color: transparent;
-    filter: alpha(opacity=0);
-}
-
 .select2-drop-mask {
     border: 0;
     margin: 0;
     padding: 0;
-    position: absolute;
+    position: fixed;
     left: 0;
     top: 0;
+    min-height: 100%;
+    min-width: 100%;
+    height: auto;
+    width: auto;
+    opacity: 0;
     z-index: 9998;
     /* styles required for IE to work */
     background-color: #fff;
-    opacity: 0;
     filter: alpha(opacity=0);
 }
 
 .select2-drop {
     width: 100%;
-    margin-top:-1px;
+    margin-top: -1px;
     position: absolute;
     z-index: 9999;
     top: 100%;
@@ -2055,12 +2062,9 @@ table {
     border: 1px solid #aaa;
     border-top: 0;
 
-    -webkit-border-radius: 0 0 4px 4px;
-       -moz-border-radius: 0 0 4px 4px;
-            border-radius: 0 0 4px 4px;
+    border-radius: 0 0 4px 4px;
 
     -webkit-box-shadow: 0 4px 5px rgba(0, 0, 0, .15);
-       -moz-box-shadow: 0 4px 5px rgba(0, 0, 0, .15);
             box-shadow: 0 4px 5px rgba(0, 0, 0, .15);
 }
 
@@ -2078,16 +2082,22 @@ table {
     border-top: 1px solid #aaa;
     border-bottom: 0;
 
-    -webkit-border-radius: 4px 4px 0 0;
-       -moz-border-radius: 4px 4px 0 0;
-            border-radius: 4px 4px 0 0;
+    border-radius: 4px 4px 0 0;
 
     -webkit-box-shadow: 0 -4px 5px rgba(0, 0, 0, .15);
-       -moz-box-shadow: 0 -4px 5px rgba(0, 0, 0, .15);
             box-shadow: 0 -4px 5px rgba(0, 0, 0, .15);
 }
 
-.select2-container .select2-choice div {
+.select2-drop-active {
+    border: 1px solid #5897fb;
+    border-top: none;
+}
+
+.select2-drop.select2-drop-above.select2-drop-active {
+    border-top: 1px solid #5897fb;
+}
+
+.select2-container .select2-choice .select2-arrow {
     display: inline-block;
     width: 18px;
     height: 100%;
@@ -2096,25 +2106,19 @@ table {
     top: 0;
 
     border-left: 1px solid #aaa;
-    -webkit-border-radius: 0 4px 4px 0;
-       -moz-border-radius: 0 4px 4px 0;
-            border-radius: 0 4px 4px 0;
+    border-radius: 0 4px 4px 0;
 
-    -webkit-background-clip: padding-box;
-       -moz-background-clip: padding;
-            background-clip: padding-box;
+    background-clip: padding-box;
 
     background: #ccc;
     background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, #ccc), color-stop(0.6, #eee));
     background-image: -webkit-linear-gradient(center bottom, #ccc 0%, #eee 60%);
     background-image: -moz-linear-gradient(center bottom, #ccc 0%, #eee 60%);
-    background-image: -o-linear-gradient(bottom, #ccc 0%, #eee 60%);
-    background-image: -ms-linear-gradient(top, #cccccc 0%, #eeeeee 60%);
     filter: progid:DXImageTransform.Microsoft.gradient(startColorstr = '#eeeeee', endColorstr = '#cccccc', GradientType = 0);
-    background-image: linear-gradient(top, #cccccc 0%, #eeeeee 60%);
+    background-image: linear-gradient(top, #ccc 0%, #eee 60%);
 }
 
-.select2-container .select2-choice div b {
+.select2-container .select2-choice .select2-arrow b {
     display: block;
     width: 100%;
     height: 100%;
@@ -2147,21 +2151,16 @@ table {
     font-size: 1em;
 
     border: 1px solid #aaa;
-    -webkit-border-radius: 0;
-       -moz-border-radius: 0;
-            border-radius: 0;
+    border-radius: 0;
 
     -webkit-box-shadow: none;
-       -moz-box-shadow: none;
             box-shadow: none;
 
     background: #fff url('/assets/ui/select2.png') no-repeat 100% -22px;
-    background: url('/assets/ui/select2.png') no-repeat 100% -22px, -webkit-gradient(linear, left bottom, left top, color-stop(0.85, white), color-stop(0.99, #eeeeee));
-    background: url('/assets/ui/select2.png') no-repeat 100% -22px, -webkit-linear-gradient(center bottom, white 85%, #eeeeee 99%);
-    background: url('/assets/ui/select2.png') no-repeat 100% -22px, -moz-linear-gradient(center bottom, white 85%, #eeeeee 99%);
-    background: url('/assets/ui/select2.png') no-repeat 100% -22px, -o-linear-gradient(bottom, white 85%, #eeeeee 99%);
-    background: url('/assets/ui/select2.png') no-repeat 100% -22px, -ms-linear-gradient(top, #ffffff 85%, #eeeeee 99%);
-    background: url('/assets/ui/select2.png') no-repeat 100% -22px, linear-gradient(top, #ffffff 85%, #eeeeee 99%);
+    background: url('/assets/ui/select2.png') no-repeat 100% -22px, -webkit-gradient(linear, left bottom, left top, color-stop(0.85, #fff), color-stop(0.99, #eee));
+    background: url('/assets/ui/select2.png') no-repeat 100% -22px, -webkit-linear-gradient(center bottom, #fff 85%, #eee 99%);
+    background: url('/assets/ui/select2.png') no-repeat 100% -22px, -moz-linear-gradient(center bottom, #fff 85%, #eee 99%);
+    background: url('/assets/ui/select2.png') no-repeat 100% -22px, linear-gradient(top, #fff 85%, #eee 99%);
 }
 
 .select2-drop.select2-drop-above .select2-search input {
@@ -2170,12 +2169,10 @@ table {
 
 .select2-search input.select2-active {
     background: #fff url('/assets/ui/select2-spinner.gif') no-repeat 100%;
-    background: url('/assets/ui/select2-spinner.gif') no-repeat 100%, -webkit-gradient(linear, left bottom, left top, color-stop(0.85, white), color-stop(0.99, #eeeeee));
-    background: url('/assets/ui/select2-spinner.gif') no-repeat 100%, -webkit-linear-gradient(center bottom, white 85%, #eeeeee 99%);
-    background: url('/assets/ui/select2-spinner.gif') no-repeat 100%, -moz-linear-gradient(center bottom, white 85%, #eeeeee 99%);
-    background: url('/assets/ui/select2-spinner.gif') no-repeat 100%, -o-linear-gradient(bottom, white 85%, #eeeeee 99%);
-    background: url('/assets/ui/select2-spinner.gif') no-repeat 100%, -ms-linear-gradient(top, #ffffff 85%, #eeeeee 99%);
-    background: url('/assets/ui/select2-spinner.gif') no-repeat 100%, linear-gradient(top, #ffffff 85%, #eeeeee 99%);
+    background: url('/assets/ui/select2-spinner.gif') no-repeat 100%, -webkit-gradient(linear, left bottom, left top, color-stop(0.85, #fff), color-stop(0.99, #eee));
+    background: url('/assets/ui/select2-spinner.gif') no-repeat 100%, -webkit-linear-gradient(center bottom, #fff 85%, #eee 99%);
+    background: url('/assets/ui/select2-spinner.gif') no-repeat 100%, -moz-linear-gradient(center bottom, #fff 85%, #eee 99%);
+    background: url('/assets/ui/select2-spinner.gif') no-repeat 100%, linear-gradient(top, #fff 85%, #eee 99%);
 }
 
 .select2-container-active .select2-choice,
@@ -2183,33 +2180,24 @@ table {
     border: 1px solid #5897fb;
     outline: none;
 
-    -webkit-box-shadow: 0 0 5px rgba(0,0,0,.3);
-       -moz-box-shadow: 0 0 5px rgba(0,0,0,.3);
-            box-shadow: 0 0 5px rgba(0,0,0,.3);
+    -webkit-box-shadow: 0 0 5px rgba(0, 0, 0, .3);
+            box-shadow: 0 0 5px rgba(0, 0, 0, .3);
 }
 
 .select2-dropdown-open .select2-choice {
     border-bottom-color: transparent;
     -webkit-box-shadow: 0 1px 0 #fff inset;
-       -moz-box-shadow: 0 1px 0 #fff inset;
             box-shadow: 0 1px 0 #fff inset;
 
-    -webkit-border-bottom-left-radius: 0;
-        -moz-border-radius-bottomleft: 0;
-            border-bottom-left-radius: 0;
-
-    -webkit-border-bottom-right-radius: 0;
-        -moz-border-radius-bottomright: 0;
-            border-bottom-right-radius: 0;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
 
     background-color: #eee;
-    background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, white), color-stop(0.5, #eeeeee));
-    background-image: -webkit-linear-gradient(center bottom, white 0%, #eeeeee 50%);
-    background-image: -moz-linear-gradient(center bottom, white 0%, #eeeeee 50%);
-    background-image: -o-linear-gradient(bottom, white 0%, #eeeeee 50%);
-    background-image: -ms-linear-gradient(top, #ffffff 0%,#eeeeee 50%);
-    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#eeeeee', endColorstr='#ffffff',GradientType=0 );
-    background-image: linear-gradient(top, #ffffff 0%,#eeeeee 50%);
+    background-image: -webkit-gradient(linear, left bottom, left top, color-stop(0, #fff), color-stop(0.5, #eee));
+    background-image: -webkit-linear-gradient(center bottom, #fff 0%, #eee 50%);
+    background-image: -moz-linear-gradient(center bottom, #fff 0%, #eee 50%);
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#eeeeee', endColorstr='#ffffff', GradientType=0);
+    background-image: linear-gradient(top, #fff 0%, #eee 50%);
 }
 
 .select2-dropdown-open.select2-drop-above .select2-choice,
@@ -2217,21 +2205,19 @@ table {
     border: 1px solid #5897fb;
     border-top-color: transparent;
 
-    background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0, white), color-stop(0.5, #eeeeee));
-    background-image: -webkit-linear-gradient(center top, white 0%, #eeeeee 50%);
-    background-image: -moz-linear-gradient(center top, white 0%, #eeeeee 50%);
-    background-image: -o-linear-gradient(top, white 0%, #eeeeee 50%);
-    background-image: -ms-linear-gradient(bottom, #ffffff 0%,#eeeeee 50%);
-    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#eeeeee', endColorstr='#ffffff',GradientType=0 );
-    background-image: linear-gradient(bottom, #ffffff 0%,#eeeeee 50%);
+    background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0, #fff), color-stop(0.5, #eee));
+    background-image: -webkit-linear-gradient(center top, #fff 0%, #eee 50%);
+    background-image: -moz-linear-gradient(center top, #fff 0%, #eee 50%);
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#eeeeee', endColorstr='#ffffff', GradientType=0);
+    background-image: linear-gradient(bottom, #fff 0%, #eee 50%);
 }
 
-.select2-dropdown-open .select2-choice div {
+.select2-dropdown-open .select2-choice .select2-arrow {
     background: transparent;
     border-left: none;
     filter: none;
 }
-.select2-dropdown-open .select2-choice div b {
+.select2-dropdown-open .select2-choice .select2-arrow b {
     background-position: -18px 1px;
 }
 
@@ -2243,7 +2229,7 @@ table {
     position: relative;
     overflow-x: hidden;
     overflow-y: auto;
-    -webkit-tap-highlight-color: rgba(0,0,0,0);
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
 }
 
 .select2-results ul.select2-result-sub {
@@ -2278,7 +2264,6 @@ table {
 
     -webkit-touch-callout: none;
       -webkit-user-select: none;
-       -khtml-user-select: none;
          -moz-user-select: none;
           -ms-user-select: none;
               user-select: none;
@@ -2299,7 +2284,7 @@ table {
 }
 
 .select2-results .select2-highlighted ul {
-    background: white;
+    background: #fff;
     color: #000;
 }
 
@@ -2348,7 +2333,7 @@ disabled look for disabled choices in the results dropdown
     cursor: default;
 }
 
-.select2-container.select2-container-disabled .select2-choice div {
+.select2-container.select2-container-disabled .select2-choice .select2-arrow {
     background-color: #f4f4f4;
     background-image: none;
     border-left: 0;
@@ -2373,12 +2358,10 @@ disabled look for disabled choices in the results dropdown
     overflow: hidden;
 
     background-color: #fff;
-    background-image: -webkit-gradient(linear, 0% 0%, 0% 100%, color-stop(1%, #eeeeee), color-stop(15%, #ffffff));
-    background-image: -webkit-linear-gradient(top, #eeeeee 1%, #ffffff 15%);
-    background-image: -moz-linear-gradient(top, #eeeeee 1%, #ffffff 15%);
-    background-image: -o-linear-gradient(top, #eeeeee 1%, #ffffff 15%);
-    background-image: -ms-linear-gradient(top, #eeeeee 1%, #ffffff 15%);
-    background-image: linear-gradient(top, #eeeeee 1%, #ffffff 15%);
+    background-image: -webkit-gradient(linear, 0% 0%, 0% 100%, color-stop(1%, #eee), color-stop(15%, #fff));
+    background-image: -webkit-linear-gradient(top, #eee 1%, #fff 15%);
+    background-image: -moz-linear-gradient(top, #eee 1%, #fff 15%);
+    background-image: linear-gradient(top, #eee 1%, #fff 15%);
 }
 
 .select2-locked {
@@ -2393,9 +2376,8 @@ disabled look for disabled choices in the results dropdown
     border: 1px solid #5897fb;
     outline: none;
 
-    -webkit-box-shadow: 0 0 5px rgba(0,0,0,.3);
-       -moz-box-shadow: 0 0 5px rgba(0,0,0,.3);
-            box-shadow: 0 0 5px rgba(0,0,0,.3);
+    -webkit-box-shadow: 0 0 5px rgba(0, 0, 0, .3);
+            box-shadow: 0 0 5px rgba(0, 0, 0, .3);
 }
 .select2-container-multi .select2-choices li {
     float: left;
@@ -2417,7 +2399,6 @@ disabled look for disabled choices in the results dropdown
     outline: 0;
     border: 0;
     -webkit-box-shadow: none;
-       -moz-box-shadow: none;
             box-shadow: none;
     background: transparent !important;
 }
@@ -2440,35 +2421,27 @@ disabled look for disabled choices in the results dropdown
     cursor: default;
     border: 1px solid #aaaaaa;
 
-    -webkit-border-radius: 3px;
-       -moz-border-radius: 3px;
-            border-radius: 3px;
+    border-radius: 3px;
 
-    -webkit-box-shadow: 0 0 2px #ffffff inset, 0 1px 0 rgba(0,0,0,0.05);
-       -moz-box-shadow: 0 0 2px #ffffff inset, 0 1px 0 rgba(0,0,0,0.05);
-            box-shadow: 0 0 2px #ffffff inset, 0 1px 0 rgba(0,0,0,0.05);
+    -webkit-box-shadow: 0 0 2px #fff inset, 0 1px 0 rgba(0, 0, 0, 0.05);
+            box-shadow: 0 0 2px #fff inset, 0 1px 0 rgba(0, 0, 0, 0.05);
 
-    -webkit-background-clip: padding-box;
-       -moz-background-clip: padding;
-            background-clip: padding-box;
+    background-clip: padding-box;
 
     -webkit-touch-callout: none;
       -webkit-user-select: none;
-       -khtml-user-select: none;
          -moz-user-select: none;
           -ms-user-select: none;
               user-select: none;
 
     background-color: #e4e4e4;
-    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#eeeeee', endColorstr='#f4f4f4', GradientType=0 );
-    background-image: -webkit-gradient(linear, 0% 0%, 0% 100%, color-stop(20%, #f4f4f4), color-stop(50%, #f0f0f0), color-stop(52%, #e8e8e8), color-stop(100%, #eeeeee));
-    background-image: -webkit-linear-gradient(top, #f4f4f4 20%, #f0f0f0 50%, #e8e8e8 52%, #eeeeee 100%);
-    background-image: -moz-linear-gradient(top, #f4f4f4 20%, #f0f0f0 50%, #e8e8e8 52%, #eeeeee 100%);
-    background-image: -o-linear-gradient(top, #f4f4f4 20%, #f0f0f0 50%, #e8e8e8 52%, #eeeeee 100%);
-    background-image: -ms-linear-gradient(top, #f4f4f4 20%, #f0f0f0 50%, #e8e8e8 52%, #eeeeee 100%);
-    background-image: linear-gradient(top, #f4f4f4 20%, #f0f0f0 50%, #e8e8e8 52%, #eeeeee 100%);
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#eeeeee', endColorstr='#f4f4f4', GradientType=0);
+    background-image: -webkit-gradient(linear, 0% 0%, 0% 100%, color-stop(20%, #f4f4f4), color-stop(50%, #f0f0f0), color-stop(52%, #e8e8e8), color-stop(100%, #eee));
+    background-image: -webkit-linear-gradient(top, #f4f4f4 20%, #f0f0f0 50%, #e8e8e8 52%, #eee 100%);
+    background-image: -moz-linear-gradient(top, #f4f4f4 20%, #f0f0f0 50%, #e8e8e8 52%, #eee 100%);
+    background-image: linear-gradient(top, #f4f4f4 20%, #f0f0f0 50%, #e8e8e8 52%, #eee 100%);
 }
-.select2-container-multi .select2-choices .select2-search-choice span {
+.select2-container-multi .select2-choices .select2-search-choice .select2-chosen {
     cursor: default;
 }
 .select2-container-multi .select2-choices .select2-search-choice-focus {
@@ -2500,7 +2473,7 @@ disabled look for disabled choices in the results dropdown
 }
 
 /* disabled styles */
-.select2-container-multi.select2-container-disabled .select2-choices{
+.select2-container-multi.select2-container-disabled .select2-choices {
     background-color: #f4f4f4;
     background-image: none;
     border: 1px solid #ddd;
@@ -2515,7 +2488,7 @@ disabled look for disabled choices in the results dropdown
 }
 
 .select2-container-multi.select2-container-disabled .select2-choices .select2-search-choice .select2-search-choice-close {    display: none;
-    background:none;
+    background: none;
 }
 /* end multiselect */
 
@@ -2526,16 +2499,17 @@ disabled look for disabled choices in the results dropdown
 }
 
 .select2-offscreen, .select2-offscreen:focus {
-    clip: rect(0 0 0 0);
-    width: 1px;
-    height: 1px;
-    border: 0;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    position: absolute;
-    outline: 0;
-    left: 0px;
+    clip: rect(0 0 0 0) !important;
+    width: 1px !important;
+    height: 1px !important;
+    border: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    position: absolute !important;
+    outline: 0 !important;
+    left: 0px !important;
+    top: 0px !important;
 }
 
 .select2-display-none {
@@ -2553,7 +2527,7 @@ disabled look for disabled choices in the results dropdown
 /* Retina-ize icons */
 
 @media only screen and (-webkit-min-device-pixel-ratio: 1.5), only screen and (min-resolution: 144dpi)  {
-  .select2-search input, .select2-search-choice-close, .select2-container .select2-choice abbr, .select2-container .select2-choice div b {
+  .select2-search input, .select2-search-choice-close, .select2-container .select2-choice abbr, .select2-container .select2-choice .select2-arrow b {
       background-image: url('/assets/ui/select2x2.png') !important;
       background-repeat: no-repeat !important;
       background-size: 60px 40px !important;
@@ -2563,13 +2537,13 @@ disabled look for disabled choices in the results dropdown
   }
 }
 body {
-    font-size: 14px;
-    margin: 0;
-    text-align: left;
-    line-height: 20px;
     padding: 0;
-    font-family: Helvetica,Arial,'Liberation Sans',FreeSans,sans-serif;
     color: #333;
+    line-height: 20px;
+    font-family: Helvetica,Arial,'Liberation Sans',FreeSans,sans-serif;
+    margin: 0;
+    font-size: 14px;
+    text-align: left;
     background: #fff;
 }
 
@@ -2633,10 +2607,10 @@ markdown,
 
 .fullscreen {
     top: 0;
-    bottom: 0;
     position: fixed;
     left: 0;
     right: 0;
+    bottom: 0;
 }
 
 .span1 {
@@ -2739,8 +2713,8 @@ dd {
 }
 
 .alert {
-    padding: 8px 14px;
     margin: 0 0 5px;
+    padding: 8px 14px;
     text-align: left;
     background: #fff;
     color: #333;
@@ -2903,17 +2877,17 @@ div.zen,
 
 .alert .close {
     top: -2px;
-    right: -21px;
     position: relative;
+    right: -21px;
 }
 
 .label {
+    white-space: nowrap;
     vertical-align: baseline;
     font-size: 11px;
     display: inline-block;
-    font-weight: bold;
     padding: 2px 4px;
-    white-space: nowrap;
+    font-weight: bold;
     background: #fff;
     color: #333;
     border: 1px solid #e5e5e5;
@@ -2923,16 +2897,16 @@ div.zen,
 }
 
 .fullscreen-container {
-    height: 100%;
+    margin: 0 auto;
     padding: 30px 0;
     max-width: 800px;
-    margin: 0 auto;
+    height: 100%;
 }
 
 .fullscreen-sidebar {
     top: 30px;
-    right: 30px;
     position: absolute;
+    right: 30px;
     text-align: right;
 }
 
@@ -2951,15 +2925,15 @@ textarea:focus {
 }
 
 .btn {
-    vertical-align: middle;
-    padding: 4px 12px;
-    display: inline-block;
-    text-decoration: none;
     font-weight: normal;
+    vertical-align: middle;
     line-height: 20px;
     text-align: center;
-    font-size: 14px;
     font-family: inherit;
+    font-size: 14px;
+    display: inline-block;
+    padding: 4px 12px;
+    text-decoration: none;
     cursor: pointer;
     background-color: #e6e6e6;
     background-image: -moz-linear-gradient(top, #fff, #e6e6e6);
@@ -2979,8 +2953,8 @@ textarea:focus {
 
 .btn.btn-mini {
     font-size: 11px;
-    font-weight: normal;
     padding: 0 5px;
+    font-weight: normal;
     -webkit-border-radius: 2px;
        -moz-border-radius: 2px;
             border-radius: 2px;
@@ -2988,8 +2962,8 @@ textarea:focus {
 
 .btn.btn-small {
     font-size: 13px;
-    font-weight: normal;
     padding: 2px 10px;
+    font-weight: normal;
     -webkit-border-radius: 4px;
        -moz-border-radius: 4px;
             border-radius: 4px;
@@ -2997,8 +2971,8 @@ textarea:focus {
 
 .btn.btn-large {
     font-size: 18px;
-    font-weight: bold;
     padding: 8px 24px;
+    font-weight: bold;
 }
 
 .btn.disabled {
@@ -3316,23 +3290,23 @@ textarea:focus {
 }
 
 .link {
+    cursor: pointer;
     background: none;
     border: none;
     padding: 0;
-    cursor: pointer;
 }
 
 .btn-toolbar {
-    font-size: 0;
     margin: 0;
+    font-size: 0;
 }
 
 .btn-group {
     position: relative;
-    vertical-align: middle;
     font-size: 0;
-    display: inline-block;
     white-space: nowrap;
+    vertical-align: middle;
+    display: inline-block;
 }
 
 .btn-group > .btn {
@@ -3342,22 +3316,22 @@ textarea:focus {
 }
 
 .btn-group > * {
-    float: left;
     position: relative;
+    float: left;
     -webkit-border-radius: 0;
        -moz-border-radius: 0;
             border-radius: 0;
 }
 
 .btn-group > *:first-child {
-    margin-left: 0;
     border-bottom-left-radius: 5px;
+    margin-left: 0;
     border-top-left-radius: 5px;
 }
 
 .btn-group > *:last-child {
-    border-bottom-right-radius: 5px;
     border-top-right-radius: 5px;
+    border-bottom-right-radius: 5px;
 }
 
 .btn-group > * + * {
@@ -3370,10 +3344,10 @@ textarea:focus {
 }
 
 textarea {
-    vertical-align: middle;
-    font-size: 14px;
-    display: inline-block;
     padding: 4px 5px;
+    font-size: 14px;
+    vertical-align: middle;
+    display: inline-block;
     width: 200px;
     background: #fff;
     color: #333;
@@ -3391,12 +3365,12 @@ textarea {
 }
 
 select {
-    vertical-align: middle;
-    font-size: 14px;
-    display: inline-block;
     padding: 4px 5px;
-    line-height: 30px;
+    font-size: 14px;
+    vertical-align: middle;
+    display: inline-block;
     width: 212px;
+    line-height: 30px;
     height: 30px;
     background: #fff;
     color: #333;
@@ -3419,10 +3393,10 @@ input[type="url"],
 input[type="search"],
 input[type="tel"],
 input[type="color"] {
-    vertical-align: middle;
-    font-size: 14px;
-    display: inline-block;
     padding: 4px 5px;
+    font-size: 14px;
+    vertical-align: middle;
+    display: inline-block;
     line-height: 20px;
     height: 20px;
     background: #fff;
@@ -3460,18 +3434,18 @@ input[type="color"]:focus {
 }
 
 fieldset {
-    padding: 0;
     margin: 0;
+    padding: 0;
     border: none;
 }
 
 label {
-    height: 20px;
     cursor: pointer;
-    display: block;
     line-height: 20px;
-    font-weight: normal;
     font-size: 14px;
+    display: block;
+    height: 20px;
+    font-weight: normal;
 }
 
 input[type="file"],
@@ -3492,8 +3466,8 @@ input[type="checkbox"] {
 
 .checkbox input[type="radio"],
 .checkbox input[type="checkbox"] {
-    float: left;
     margin-left: -20px;
+    float: left;
 }
 
 div.zen textarea,
@@ -3557,17 +3531,17 @@ p:last-child {
 }
 
 .toolbar > .group {
+    white-space: nowrap;
     vertical-align: middle;
+    position: relative;
     font-size: 0;
     display: inline-block;
-    position: relative;
-    white-space: nowrap;
 }
 
 .toolbar > .group > * {
-    border-left-width: 0;
-    font-size: 14px;
     position: relative;
+    font-size: 14px;
+    border-left-width: 0;
     -webkit-border-radius: 0;
        -moz-border-radius: 0;
             border-radius: 0;
@@ -3599,12 +3573,12 @@ select[size],
 }
 
 pre {
-    padding: 9px;
-    word-wrap: break-word;
-    line-height: 20px;
-    word-break: break-all;
-    font-size: 13px;
     white-space: pre-wrap;
+    padding: 9px;
+    line-height: 20px;
+    word-wrap: break-word;
+    font-size: 13px;
+    word-break: break-all;
     -webkit-border-radius: 5px;
        -moz-border-radius: 5px;
             border-radius: 5px;
@@ -3670,19 +3644,19 @@ pre {
 }
 
 .prettyprint ol.linenums li {
-    line-height: 20px;
-    text-shadow: 0 1px 0 #fff;
     color: #808080;
     padding-left: 12px;
+    text-shadow: 0 1px 0 #fff;
+    line-height: 20px;
 }
 
 [draggable=true] {
-    -khtml-user-drag: element;
-    -webkit-user-drag: element;
-    -moz-user-select: none;
-    -khtml-user-select: none;
-    -webkit-user-select: none;
     user-select: none;
+    -moz-user-select: none;
+    -webkit-user-drag: element;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -khtml-user-drag: element;
 }
 
 .draggable {
@@ -3778,12 +3752,12 @@ pre {
 }
 
 legend {
-    display: block;
-    font-size: 21px;
-    margin-bottom: 20px;
-    line-height: 40px;
-    width: 100%;
     padding: 0;
+    line-height: 40px;
+    margin-bottom: 20px;
+    font-size: 21px;
+    width: 100%;
+    display: block;
     border-width: 0 0 1px;
     border-style: solid;
     border-color: #ccc;
@@ -3803,8 +3777,8 @@ form.inline input,
 form.inline .input-small,
 form.inline .checkbox,
 form.inline .select2-container {
-    margin-bottom: 0;
     vertical-align: middle;
+    margin-bottom: 0;
     display: inline-block;
 }
 
@@ -3834,9 +3808,9 @@ form label {
 }
 
 form.horizontal .control-label {
-    float: left;
     padding-top: 5px;
     width: 160px;
+    float: left;
     text-align: right;
 }
 
@@ -3845,51 +3819,51 @@ form.horizontal .controls {
 }
 
 h1 {
-    font-weight: bold;
-    text-rendering: optimizelegibility;
     margin: 10px 0;
-    line-height: 40px;
+    text-rendering: optimizelegibility;
+    font-weight: bold;
     font-size: 28px;
+    line-height: 40px;
 }
 
 h2 {
-    font-weight: bold;
-    text-rendering: optimizelegibility;
     margin: 10px 0;
-    line-height: 32px;
+    text-rendering: optimizelegibility;
+    font-weight: bold;
     font-size: 22px;
+    line-height: 32px;
 }
 
 h3 {
-    font-weight: bold;
-    text-rendering: optimizelegibility;
     margin: 10px 0;
-    line-height: 26px;
+    text-rendering: optimizelegibility;
+    font-weight: bold;
     font-size: 18px;
+    line-height: 26px;
 }
 
 h4 {
-    font-weight: bold;
-    text-rendering: optimizelegibility;
     margin: 10px 0;
-    line-height: 24px;
+    text-rendering: optimizelegibility;
+    font-weight: bold;
     font-size: 17px;
+    line-height: 24px;
 }
 
 h5 {
-    font-weight: bold;
-    text-rendering: optimizelegibility;
     margin: 10px 0;
-    line-height: 22px;
+    text-rendering: optimizelegibility;
+    font-weight: bold;
     font-size: 15px;
+    line-height: 22px;
 }
 
 h6 {
-    font-weight: bold;
-    text-rendering: optimizelegibility;
     margin: 10px 0;
-    line-height: 18px;
+    text-rendering: optimizelegibility;
+    font-weight: bold;
     font-size: 13px;
+    line-height: 18px;
     text-transform: uppercase;
 }
 
@@ -3912,10 +3886,10 @@ ul.icons-ul,
 }
 
 .section {
-    float: left;
-    padding: 0 10px;
-    width: 100%;
     margin: 0;
+    padding: 0 10px;
+    float: left;
+    width: 100%;
     background: #fff;
     color: #333;
     border: 1px solid #e5e5e5;
@@ -3945,14 +3919,14 @@ ul.icons-ul,
 }
 
 .section ul:not(.nav) {
-    padding: 0;
     margin: 0 0 9px 25px;
+    padding: 0;
     list-style: disc outside none;
 }
 
 .section ol {
-    padding: 0;
     margin: 0 0 9px 25px;
+    padding: 0;
     list-style: decimal outside none;
 }
 
@@ -3970,9 +3944,9 @@ ul.icons-ul,
 }
 
 .collapse {
-    height: 0;
     position: relative;
     overflow: hidden;
+    height: 0;
     -webkit-transition: height 0.35s ease;
        -moz-transition: height 0.35s ease;
          -o-transition: height 0.35s ease;
@@ -3986,8 +3960,8 @@ ul.icons-ul,
 }
 
 .header h3 {
-    line-height: 24px;
     margin: 0;
+    line-height: 24px;
 }
 
 .body-wrap {
@@ -4500,13 +4474,13 @@ ul.icons-ul,
 }
 
 .datagrid.stripped tbody tr:nth-child(2n+1) td {
-    transform: <function lighten at 0x00000000041DE048>;
+    transform: <function lighten at 0x0000000004B5BF28>;
     background: #fff;
     color: #333;
 }
 
 .datagrid.stripped.default tbody tr:nth-child(2n+1) td {
-    transform: <function lighten at 0x00000000041DE048>;
+    transform: <function lighten at 0x0000000004B5BF28>;
     background-color: #e6e6e6;
     background-image: -moz-linear-gradient(top, #fff, #e6e6e6);
     background-image: -ms-linear-gradient(top, #fff, #e6e6e6);
@@ -4520,7 +4494,7 @@ ul.icons-ul,
 }
 
 .datagrid.stripped.primary tbody tr:nth-child(2n+1) td {
-    transform: <function lighten at 0x00000000041DE048>;
+    transform: <function lighten at 0x0000000004B5BF28>;
     background-color: #006699;
     background-image: -moz-linear-gradient(top, #0088cc, #006699);
     background-image: -ms-linear-gradient(top, #0088cc, #006699);
@@ -4534,7 +4508,7 @@ ul.icons-ul,
 }
 
 .datagrid.stripped.success tbody tr:nth-child(2n+1) td {
-    transform: <function lighten at 0x00000000041DE048>;
+    transform: <function lighten at 0x0000000004B5BF28>;
     background-color: #16a000;
     background-image: -moz-linear-gradient(top, #1dd300, #16a000);
     background-image: -ms-linear-gradient(top, #1dd300, #16a000);
@@ -4548,7 +4522,7 @@ ul.icons-ul,
 }
 
 .datagrid.stripped.error tbody tr:nth-child(2n+1) td {
-    transform: <function lighten at 0x00000000041DE048>;
+    transform: <function lighten at 0x0000000004B5BF28>;
     background-color: #ca0005;
     background-image: -moz-linear-gradient(top, #fd0006, #ca0005);
     background-image: -ms-linear-gradient(top, #fd0006, #ca0005);
@@ -4562,7 +4536,7 @@ ul.icons-ul,
 }
 
 .datagrid.stripped.inverse tbody tr:nth-child(2n+1) td {
-    transform: <function lighten at 0x00000000041DE048>;
+    transform: <function lighten at 0x0000000004B5BF28>;
     background-color: #3c3c3c;
     background-image: -moz-linear-gradient(top, #222, #3c3c3c);
     background-image: -ms-linear-gradient(top, #222, #3c3c3c);
@@ -4576,13 +4550,13 @@ ul.icons-ul,
 }
 
 .datagrid.stripped.zen tbody tr:nth-child(2n+1) td {
-    transform: <function lighten at 0x00000000041DE048>;
+    transform: <function lighten at 0x0000000004B5BF28>;
     background: #fff;
     color: #999;
 }
 
 .datagrid.stripped.zendark tbody tr:nth-child(2n+1) td {
-    transform: <function lighten at 0x00000000041DE048>;
+    transform: <function lighten at 0x0000000004B5BF28>;
     background: #1d1f21;
     color: #a4b1b1;
 }
@@ -4596,8 +4570,8 @@ ul.icons-ul,
 }
 
 .datagrid tr:last-child {
-    border-bottom-right-radius: 5px;
     border-bottom-left-radius: 5px;
+    border-bottom-right-radius: 5px;
 }
 
 .datagrid tr:last-child td:last-child {
@@ -4755,8 +4729,8 @@ ul.icons-ul,
 }
 
 .pagination ul {
-    display: inline-block;
     margin: 0;
+    display: inline-block;
     -webkit-border-radius: 5px;
        -moz-border-radius: 5px;
             border-radius: 5px;
@@ -4768,8 +4742,8 @@ form.content-form .control-group {
 }
 
 .pagination ul > li > a {
-    float: left;
     padding: 4px 12px;
+    float: left;
 }
 
 .pagination ul > li:first-child > a {
@@ -4821,10 +4795,10 @@ form.content-form .control-group {
     }
 
     .datagrid td:before {
-        content: attr(data-content);
         position: absolute;
-        whitespace: nowrap;
         left: 6px;
+        whitespace: nowrap;
+        content: attr(data-content);
         width: 45%;
         opacity: 0.8;
         filter: alpha(opacity=80.0);
@@ -4988,8 +4962,8 @@ form.content-form .control-group {
 }
 .lux-logger {
     background: #ededed;
-    line-height: 14px;
     font-size: 12px;
+    line-height: 14px;
     overflow: scroll;
 }
 
@@ -5096,21 +5070,21 @@ form.content-form .control-group {
 
 .navbar .brand {
     padding: 6px 15px;
+    line-height: 20px;
+    font-size: 18px;
     display: block;
     max-width: none;
-    line-height: 20px;
     float: left;
     text-decoration: none;
-    font-size: 18px;
     cursor: pointer;
     color: #333;
 }
 
 .navbar .nav {
+    margin: 0 10px 0 0;
     position: relative;
     float: left;
     display: block;
-    margin: 0 10px 0 0;
 }
 
 .navbar .nav > li {
@@ -5118,14 +5092,14 @@ form.content-form .control-group {
 }
 
 .navbar .nav > li > a {
-    float: none;
     padding: 6px 15px;
+    float: none;
 }
 
 .nav {
     list-style: none outside none;
-    padding: 0;
     margin: 0;
+    padding: 0;
     *zoom: 1;
 }
 
@@ -5142,8 +5116,8 @@ form.content-form .control-group {
 }
 
 .nav-tabs > li > a {
-    line-height: 20px;
     padding: 8px 14px;
+    line-height: 20px;
     cursor: pointer;
     background-color: #e6e6e6;
     background-image: -moz-linear-gradient(top, #fff, #e6e6e6);
@@ -5159,14 +5133,14 @@ form.content-form .control-group {
 }
 
 form.content-form fieldset {
-    padding: 10px;
     position: relative;
+    padding: 10px;
 }
 
 form.content-form fieldset input {
     min-width: 100%;
-    display: block;
     max-width: 100%;
+    display: block;
     min-height: 35px;
     -webkit-box-sizing: border-box;
        -moz-box-sizing: border-box;
@@ -5175,8 +5149,8 @@ form.content-form fieldset input {
 
 form.content-form fieldset textarea {
     min-width: 100%;
-    display: block;
     max-width: 100%;
+    display: block;
     resize: vertical;
     min-height: 200px;
     max-height: 500px;
@@ -5197,13 +5171,13 @@ form.content-form fieldset textarea {
 }
 
 .grid.fluid {
-    padding-right: 20px;
     padding-left: 20px;
+    padding-right: 20px;
 }
 
 .grid.fixed {
-    width: 940px;
     margin: auto;
+    width: 940px;
 }
 
 .column .row,
@@ -5224,8 +5198,8 @@ form.content-form fieldset textarea {
 
 .cms-position-toolbar {
     padding: 5px 0;
-    overflow: hidden;
     font-size: 11px;
+    overflow: hidden;
 }
 
 .editing .cms-grid .cms-column {
@@ -5242,8 +5216,8 @@ form.content-form fieldset textarea {
 }
 
 .center-page {
-    width: 400px;
     margin: 60px auto;
+    width: 400px;
 }
 
 .grid24 {
@@ -5348,14 +5322,14 @@ form.content-form fieldset textarea {
 }
 
 .grid24 > [class*="span"] {
-    float: left;
     margin-left: 2.5641%;
+    float: left;
 }
 
 .lux-example {
-    padding: 39px 19px 14px;
-    position: relative;
     margin: 15px 0;
+    position: relative;
+    padding: 39px 19px 14px;
     -webkit-border-radius: 5px;
        -moz-border-radius: 5px;
             border-radius: 5px;
@@ -5365,15 +5339,15 @@ form.content-form fieldset textarea {
 }
 
 .lux-example:after {
-    top: -1px;
-    content: "Example";
-    position: absolute;
-    background: #F5F5F5;
     padding: 3px 7px;
-    font-weight: bold;
-    font-size: 12px;
+    position: absolute;
     color: #9DA0A4;
+    top: -1px;
+    font-size: 12px;
     left: -1px;
+    background: #F5F5F5;
+    content: "Example";
+    font-weight: bold;
     -webkit-border-radius: 5px 0;
        -moz-border-radius: 5px 0;
             border-radius: 5px 0;
@@ -5381,6 +5355,6 @@ form.content-form fieldset textarea {
 }
 
 .lux-example + .prettyprint {
-    padding-top: 15px;
     margin-top: -20px;
+    padding-top: 15px;
 }

@@ -25,11 +25,10 @@ class PageForm(forms.Form):
 
 
 class ContentForm(forms.Form):
-    title = forms.CharField()
-    body = forms.CharField(required=False,
-                           widget=forms.field_widget('textarea', cn='preview'))
+    content_type = forms.CharField()
+    title = forms.CharField(required=True)
     slug = forms.HiddenField(required=False)
-    content_type = forms.HiddenField()
+
 
     layout = forms.Layout(forms.Fieldset('title', show_label=False),
                           forms.Fieldset('body', show_label=False))

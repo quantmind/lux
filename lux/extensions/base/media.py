@@ -40,10 +40,13 @@ class Scripts(wsgi.Scripts):
 
     def require_script(self):
         libs = {}
+        js = '.js'
         for key, path in self.known_libraries.items():
             if path[:4] != 'http' and path[0] != '/':
                 path = self.media_path + path;
-            if path[len(path)-3:] == '.js':
+            if path[len(path)-3:] == js:
+                if self.minified:
+                    path = self._minify(path, js)
                 path = path[:len(path)-3]
             libs[key] = path;
         return {'paths': libs,

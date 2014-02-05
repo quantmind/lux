@@ -12,6 +12,7 @@ from stdnet import odm
 
 from pulsar.utils.html import escape
 from pulsar.apps.wsgi import Route
+from pulsar.utils.structures import AttributeDictionary
 
 from .interfaces import PageModel, MarkupMixin
 
@@ -26,6 +27,12 @@ class ModelBase(odm.StdModel):
 
     class Meta:
         abstract = True
+
+    def tojson(self):
+        data = super(ModelBase, self).tojson()
+        if 'keywords' in data:
+            data['keywords'] = data['keywords'].split(',')
+        return data
 
 
 class PageManger(odm.Manager):
@@ -95,9 +102,11 @@ class Content(ModelBase):
         * ``blank`` an empty block
     '''
     title = odm.CharField()
-    slug = odm.SymbolField(required=False)
     content_type = odm.SymbolField()
     data = odm.JSONField()
+
+    class Meta:
+        search = ('title', 'keywords')
 
     def __unicode__(self):
         try:
@@ -106,7 +115,41 @@ class Content(ModelBase):
             return self.__class__.__name__
 
     def fields(self):
-        fields = {'id': self.id,
-                  'title': self.title}
-        fields.update(self.data)
+        fields = self.tojson()
+        data = fields.pop('data', None)
+        fields.pop('timestamp', None)
+        if data:
+            fields.update(data)
         return fields
+
+    def set_fields(self, data):
+        for name in self._meta.dfields:
+            if name in data:
+                self.set(name, data.pop(name))
+        self.data.update(data)
+
+
+class ContentDictionary(AttributeDictionary):
+
+    def fields(self):
+        fields = dict(self)
+        fields.pop('data', None)
+        fields.pop('timestamp', None)
+        if data:
+            fields.update(data)
+        return fields
+
+
+def create_content(manager, content_type, data):
+    '''Create a new content from ``content_type`` and a dictionary of ``data``
+
+    If the ``data`` dictionary contains a ``title`` field, a new model is
+    created, otherwise a simple dictionary is returned.
+    '''
+    title = data.pop('title', None)
+    keywords = data.pop('keywords', None)
+    if title:
+        return manager.new(title=title, keywords=keywords, data=data,
+                           content_type=content_type)
+    else:
+        return ContentDictionary(content_type=content_type, data=data)

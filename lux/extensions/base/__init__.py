@@ -65,8 +65,19 @@ class Extension(lux.Extension):
         Parameter('FAVICON', None,
                   'Adds wsgi middleware to handle favicon url ``/favicon.ico``'
                   'served from ``MEDIA_URL/FAVICON``'),
-        Parameter('CSS', {}, 'Dictionary of css locations.'),
-        Parameter('MINIFIED_MEDIA', False, 'Use minified media files')]
+        Parameter('CSS', {},
+                  'Dictionary of css locations.'),
+        Parameter('MINIFIED_MEDIA', True,
+                  'Use minified media files. All media files will replace '
+                  'their extensions with .min.ext. For example, javascript '
+                  'links *.js become *.min.js'),
+        Parameter('HTML_META',
+                  [{'http-equiv': 'X-UA-Compatible',
+                    'content': 'IE=edge'},
+                   {'name': 'viewport',
+                    'content': 'width=device-width, initial-scale=1'}],
+                  'List of default ``meta`` elements to add to the html head'
+                  'element')]
 
     def on_config(self, app):
         cfg = app.config
@@ -107,15 +118,16 @@ class Extension(lux.Extension):
         scripts to the document media.
         '''
         config = app.config
-        html.head.scripts = scripts = Scripts(
+        head = html.head
+        head.scripts = scripts = Scripts(
             config['MEDIA_URL'],
             minified=config['MINIFIED_MEDIA'],
             known_libraries=lux.javascript_libraries,
             dependencies=lux.javascript_dependencies)
-        html.head.links = wsgi.Css(config['MEDIA_URL'],
-                                   config['MINIFIED_MEDIA'],
-                                   lux.javascript_libraries)
-        html.head.links.append(config['CSS'])
+        head.links = wsgi.Css(config['MEDIA_URL'],
+                              config['MINIFIED_MEDIA'],
+                              lux.javascript_libraries)
+        head.links.append(config['CSS'])
         #
         # Add default scripts
         #scripts.append(Html('script',
@@ -128,6 +140,11 @@ class Extension(lux.Extension):
         scripts.require('bootstrap')  # add json
         scripts.require('select')
         scripts.require('lux-web')  # add jquery
+        #
+        meta = config['HTML_META']
+        if meta:
+            for entry in meta:
+                head.add_meta(**entry)
 
     def etag(self, environ, response):
         if response.has_header('ETag'):

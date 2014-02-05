@@ -61,7 +61,10 @@
     // ----------------
 
     // Base class for html wrappers
-    var Wrapper = lux.Model.extend({
+    var Wrapper = lux.Class.extend({
+        render: function (elem) {
+            return elem;
+        }
     });
     //
     // Page Model
@@ -94,18 +97,6 @@
                 return this._sorted(this._wrapper_types);
             },
             //
-            // Internal method used by `content_tyeps` and `wrapper_types`
-            _sorted: function (iterable) {
-                var sortable = [];
-                _(iterable).forEach(function (ct) {
-                    sortable.push({value: ct._meta.name, text: ct._meta.title});
-                });
-                sortable.sort(function (a, b) {
-                    return a.text > b.text ? 1 : -1;
-                });
-                return sortable;
-            },
-            //
             // Create a new Content model and add it to the available content
             // types.
             create_content_type: function (name, attrs, BaseContent) {
@@ -126,16 +117,16 @@
             // Create a new Html Wrapper model and add it to the available wrappers
             // types.
             create_wrapper: function (name, attrs, BaseWrapper) {
-                var meta = attrs.meta;
-                if (!meta) {
-                    attrs.meta = meta = {};
-                }
-                meta.name = name.toLowerCase();
                 if (!BaseWrapper) {
                     BaseWrapper = Wrapper;
                 }
-                var wrapper = BaseWrapper.extend(attrs);
-                this._wrapper_types[wrapper.prototype._meta.name] = wrapper;
+                if (!attrs.title) {
+                    attrs.title = name;
+                }
+                attrs.name = name.toLowerCase();
+                var NewWrapper = BaseWrapper.extend(attrs),
+                    wrapper = new NewWrapper();
+                this._wrapper_types[wrapper.name] = wrapper;
                 return wrapper;
             },
             //
@@ -144,6 +135,21 @@
                 _(this._content_types).forEach(function (ct) {
                     ct._meta.set_transport(backend);
                 });
+            },
+            //
+            // Internal method used by `content_tyeps` and `wrapper_types`
+            _sorted: function (iterable) {
+                var sortable = [];
+                _(iterable).forEach(function (ct) {
+                    if (ct._meta) {
+                        ct = ct._meta;
+                    }
+                    sortable.push({value: ct.name, text: ct.title});
+                });
+                sortable.sort(function (a, b) {
+                    return a.text > b.text ? 1 : -1;
+                });
+                return sortable;
             }
         },
         //

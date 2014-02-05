@@ -71,9 +71,14 @@ from lux.forms import smart_redirect
 from .templates import Dialog
 from .grid import CmsContext
 from .forms import PageForm
+from .models import create_content
 
 
 CONTENT_API_URL = 'content'
+
+
+def same_pk(pk1, pk2):
+    return str(pk1) == str(pk2)
 
 
 class PageContentManager(api.ContentManager):
@@ -386,6 +391,8 @@ class EditPage(PageMixin, api.Crud):
 
 class PageUpdates(api.CrudWebSocket, PageMixin):
     '''The :class:`.CrudWebSocket` handler for Page and Contents.
+
+    This websocket handler is activated when the cms is in editing mode.
     '''
     def on_open(self, websocket):
         request = websocket.handshake
@@ -408,17 +415,15 @@ class PageUpdates(api.CrudWebSocket, PageMixin):
             return m
 
     def update_create(self, websocket, manager, fields, instance=None):
-        '''Override :ref:`CrudWebSocket <crud-websocket>` method to handle
+        '''Override :meth:`.CrudWebSocket.update_create` method to handle
         Content and Page models.'''
         content_type = getattr(manager, 'content_type', None)
         if content_type:
             if instance is None:
-                return manager(content_type=content_type, data=fields)
-            elif fields.pop('id', None) == instance.id:
-                instance.content_type = content_type
-                instance.title = fields.pop('title', '')
-                instance.data = fields
-                return instance
+                return create_content(manager, content_type, fields)
+            elif same_pk(instance.pkvalue(), fields.pop('id', None)):
+                instance.set_fields(fields)
+                return manager.save(instance)
         else:  # this is a page
             if instance:
                 request = websocket.handshake

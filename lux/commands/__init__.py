@@ -21,7 +21,7 @@ import sys
 import argparse
 import logging
 
-from pulsar import Setting, get_event_loop, new_event_loop, async
+from pulsar import Setting, get_event_loop, new_event_loop, async, Application
 from pulsar.utils.pep import native_str
 
 from lux import __version__
@@ -79,6 +79,12 @@ class ConsoleParser(object):
         for opt in self.option_list:
             opt.add_argument(parser, True)
         return parser
+
+
+class DummyApp(Application):
+
+    def on_config(self, actor):
+        return False
 
 
 class Command(ConsoleParser):
@@ -174,6 +180,23 @@ class Command(ConsoleParser):
         if stream:
             h.write(native_str(stream))
         h.write('\n')
+
+    def pulsar_app(self, argv, application=None):
+        if application is None:
+            application = DummyApp
+        app = self.app
+        return application(callable=app,
+                           desc=app.config.get('DESCRIPTION'),
+                           epilog=app.config.get('EPILOG'),
+                           argv=argv,
+                           version=app.meta.version,
+                           debug=app.debug,
+                           config=app.config_module)
+
+    def pulsar_cfg(self, argv):
+        app = self.pulsar_app(argv)
+        app()
+        return app.cfg
 
 
 def execute_app(app, argv=None, **params):

@@ -28,6 +28,9 @@
             //
             columns: 24,
             //
+            // Hart beat for websocket connections
+            hartbeat: 5,
+            //
             // Options for the dialog controlling page inputs
             page: {
                 collapsable: true,
@@ -91,10 +94,13 @@
                 // Create backend
                 self.backend = web.backend({
                     host: options.backend_url,
-                    hartbeat: 5
+                    hartbeat: options.hartbeat
                 });
                 //
+                // Set transport in the cms handler
                 lux.cms.set_transport(self.backend.socket);
+                //
+                // get page information
                 lux.cms.get(options.editing, {
                     success: function (page) {
                         self.view = new PageView(page[0], self);

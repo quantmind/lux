@@ -1,6 +1,6 @@
     //
     // WebSocket backend
-    var Socket = lux.Socket = Backend.extend({
+    lux.Socket = lux.Backend.extend({
         options: {
             resource: null,
             reconnecting: 1,
@@ -104,7 +104,7 @@
             }
             var obj = {
                     mid: this.new_mid(options),
-                    action: s.action || CrudMethod[s.type] || s.type,
+                    action: s.action || lux.CrudMethod[s.type] || s.type,
                     model: s.model,
                     data: s.data
                 };
@@ -141,7 +141,8 @@
             this.reconnect();
         },
         //
-        // Create a new message id
+        // Create a new message id and add the options object to the
+        // pending messages object
         new_mid: function (options) {
             if (options.success || options.error) {
                 var mid = lux.s4();

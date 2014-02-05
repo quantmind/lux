@@ -25,7 +25,7 @@
             }
             //
             self.element().addClass('socket-control').css({float: 'left'});
-            self.socket = new Socket(url, socket_options);
+            self.socket = new lux.Socket(url, socket_options);
         },
         //
         check_status: function () {

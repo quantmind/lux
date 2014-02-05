@@ -8,13 +8,7 @@ class Command(lux.Command):
 
     def run(self, argv, start=True):
         app = self.app
-        server = wsgi.WSGIServer(callable=app,
-                                 desc=app.config.get('DESCRIPTION'),
-                                 epilog=app.config.get('EPILOG'),
-                                 argv=argv,
-                                 version=app.meta.version,
-                                 debug=app.debug,
-                                 config=app.config_module)
+        server = self.pulsar_app(argv, wsgi.WSGIServer)
         #app.clear_local()
         app.on_start(server)
         if start:   #    pragma    nocover

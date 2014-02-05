@@ -1,12 +1,4 @@
-    //
-    var CrudMethod = {
-            create: 'POST',
-            read: 'GET',
-            update: 'PUT',
-            destroy: 'DELETE'
-        };
-    //
-    var Backend = lux.Backend = lux.EventClass.extend({
+    lux.AjaxBackend = lux.Backend.extend({
         //
         options: {
             submit: {
@@ -14,11 +6,8 @@
             }
         },
         //
-        init: function (url, options, type) {
-            this.type = type || 'ajax';
-            this.url = url;
-            this.options = $.extend(true, {}, this.options, options || {});
-            this.submit = this.options.submit || {};
+        init: function (url, options) {
+            this._super(url, options, 'ajax');
         },
         //
         // The sync method for models
@@ -28,9 +17,9 @@
                 data = s.data,
                 model = s.model,
                 action = s.action;
-            s.type = CrudMethod[s.type] || s.type || 'GET';    
+            s.type = lux.CrudMethod[s.type] || s.type || 'GET';
             if (model && data && data.length === 1) {
-                if (s.type !== CrudMethod.create) {
+                if (s.type !== lux.CrudMethod.create) {
                     url = lux.utils.urljoin(url, data[0].id);
                 }
                 s.data = data[0].fields;
@@ -46,9 +35,5 @@
                 throw new TypeError('Send method requires an object as input');
             }
             return $.extend({}, this.submit, s);
-        },
-        //
-        toString: function () {
-            return this.type + ' ' + this.url;
         }
     });

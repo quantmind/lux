@@ -4,6 +4,7 @@
             "js/cms/edit.js",
             "js/cms/views.js",
             "js/cms/templates.js",
+            "js/cms/wrappers.js",
             "js/cms/contents.js",
             "js/cms/extension.js",
             "js/close.js"],

@@ -1,17 +1,14 @@
     // Local Storage backend
-    var Storage = lux.Storage = Backend.extend({
-        options: {
-            type: 'local' // or session
-        },
+    lux.Storage = lux.Backend.extend({
         //
-        init: function (options, handlers) {
-            this._super(null, options);
-            if (this.options.type === 'local') {
+        init: function (options, handlers, type) {
+            this._super(null, options, type || 'local');
+            if (this.type === 'local') {
                 this.storage = localStorage;
-            } else if (this.options.type === 'session') {
+            } else if (this.type === 'session') {
                 this.storage = sessionStorage;
             } else {
-                throw new lux.NotImplementedError('unknown storage ' + this.options.type);
+                throw new lux.NotImplementedError('unknown storage ' + this.type);
             }
         },
         //

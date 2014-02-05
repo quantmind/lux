@@ -326,7 +326,8 @@ define(['lodash', 'jquery'], function () {
                 return all;
             },
             //
-            // Set a new value for a field. It returns a value different from undefined
+            // Set a new value for a field.
+            // It returns a value different from undefined
             // only when the field has changed
             set_field: function (instance, field, value) {
                 if (value === undefined) return;
@@ -340,10 +341,14 @@ define(['lodash', 'jquery'], function () {
                 var prev = instance.get(field);
                 if (value === prev) return;
                 if (field === this.pkname) {
-                    this.liveStorage.removeItem(instance.id());
-                    instance._fields[field] = value;
-                    delete instance._id;
-                    this.liveStorage.setItem(instance.id(), instance);
+                    if (value) {
+                        this.liveStorage.removeItem(instance.id());
+                        instance._fields[field] = value;
+                        delete instance._id;
+                        this.liveStorage.setItem(instance.id(), instance);
+                    } else {
+                        return;
+                    }
                 } else {
                     instance._fields[field] = value;
                 }
@@ -790,6 +795,18 @@ define(['lodash', 'jquery'], function () {
         });
     };
 
+    // Generalised value setter for jQuery elements
+    lux.set_value_hooks = [];
+    lux.set_value = function (element, value) {
+        var hook;
+        for (var i=0; i<lux.set_value_hooks.length; i++) {
+            if (lux.set_value_hooks[i](element, value)) {
+                return;
+            }
+        }
+        element.val(value);
+    };
+
     //  Web Extensions
     //  ------------------------
 
@@ -1207,6 +1224,50 @@ define(['lodash', 'jquery'], function () {
     // Default event loop
     lux.eventloop = new EventLoop();
 
+    //
+    var CrudMethod = lux.CrudMethod = {
+            create: 'POST',
+            read: 'GET',
+            update: 'PUT',
+            destroy: 'DELETE'
+        };
+    //
+    // Base class for backends to use when synchronising Models
+    //
+    // Usage::
+    //
+    //      backend = lux.Socket('ws://...')
+    lux.Backend = lux.EventClass.extend({
+        //
+        options: {
+            submit: {
+                dataType: 'json'
+            }
+        },
+        //
+        init: function (url, options, type) {
+            this.type = type;
+            this.url = url;
+            this.options = _.merge({}, this.options, options);
+            this.submit = this.options.submit || {};
+        },
+        //
+        // The synchoronisation method for models
+        // Submit a bunch of data related to an instance of a model or a
+        // group of model instances
+        send: function (options) {},
+        //
+        submit_options: function (options) {
+            if (options !== Object(options)) {
+                throw new TypeError('Send method requires an object as input');
+            }
+            return _.extend({}, this.submit, options);
+        },
+        //
+        toString: function () {
+            return this.type + ' ' + this.url;
+        }
+    });
     var each = lux.each;
 
     //  Lux Utils

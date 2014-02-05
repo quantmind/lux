@@ -52,19 +52,23 @@ class CrudWebSocket(ws.WS):
                 self.write_instances(websocket, message, instances)
 
     def post(self, websocket, message):
-        '''Handle get response. Requires a model.'''
+        '''Handle post response for a bulk update/creation of models.
+
+        Requires a model.
+        '''
         manager = self.manager(websocket, message)
         if manager:
             create = self.update_create
             if websocket.handshake.has_permission('create', manager):
                 data_list = message.get('data')
-                with manager.session().begin() as t:
-                    for data in data_list:
-                        instance = create(websocket, manager, data['fields'])
-                        instance._cid = data['id']
-                        t.add(instance)
-                yield t.on_result
-                self.write_instances(websocket, message, t.saved[manager])
+                saved = []
+                for data in data_list:
+                    cid = data.get('id')
+                    instance = yield create(websocket, manager, data['fields'])
+                    if cid:
+                        instance._cid = cid
+                    saved.append(instance)
+                self.write_instances(websocket, message, saved)
             else:
                 self.error(websocket, message, 'Permission denied')
 
@@ -76,20 +80,18 @@ class CrudWebSocket(ws.WS):
             pkname = manager._meta.pkname()
             data = message['data']
             pks = {}
-            pks = dict(((d['id'], d.get('fields')) for d in data if 'id' in d))
+            pks = dict(((str(d['id']), d.get('fields'))
+                        for d in data if 'id' in d))
+            saved = []
             if pks:
                 instances = yield manager.filter(**{pkname: tuple(pks)}).all()
-                with manager.session().begin() as t:
-                    for instance in instances:
-                        if websocket.handshake.has_permission('update',
-                                                              instance):
-                            instance._cid = instance.pkvalue()
-                            t.add(update(websocket, manager,
-                                         pks[instance._cid], instance))
-                yield t.on_result
-                saved = t.saved[manager]
-            else:
-                saved = []
+                for instance in instances:
+                    if websocket.handshake.has_permission('update', instance):
+                        pk = str(instance.pkvalue())
+                        instance = yield update(websocket, manager, pks[pk],
+                                                instance)
+                        instance._cid = pk
+                        saved.append(instance)
             self.write_instances(websocket, message, saved)
 
     def delete(self, websocket, message):
@@ -134,11 +136,11 @@ method, respectively when creating and updating an ``instance`` of a model.
 :return: a new or an updated ``instance``
 '''
         if instance is None:
-            return manager(**fields)
+            return manager.new(**fields)
         else:
             for name in fields:
                 instance.set(name, fields[name])
-            return instance
+            return manager.save(instance)
 
     def write_instances(self, websocket, message, instances):
         if instances:

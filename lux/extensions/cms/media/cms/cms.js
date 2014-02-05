@@ -64,7 +64,10 @@ define(['lux-web'], function () {
     // ----------------
 
     // Base class for html wrappers
-    var Wrapper = lux.Model.extend({
+    var Wrapper = lux.Class.extend({
+        render: function (elem) {
+            return elem;
+        }
     });
     //
     // Page Model
@@ -97,18 +100,6 @@ define(['lux-web'], function () {
                 return this._sorted(this._wrapper_types);
             },
             //
-            // Internal method used by `content_tyeps` and `wrapper_types`
-            _sorted: function (iterable) {
-                var sortable = [];
-                _(iterable).forEach(function (ct) {
-                    sortable.push({value: ct._meta.name, text: ct._meta.title});
-                });
-                sortable.sort(function (a, b) {
-                    return a.text > b.text ? 1 : -1;
-                });
-                return sortable;
-            },
-            //
             // Create a new Content model and add it to the available content
             // types.
             create_content_type: function (name, attrs, BaseContent) {
@@ -129,16 +120,16 @@ define(['lux-web'], function () {
             // Create a new Html Wrapper model and add it to the available wrappers
             // types.
             create_wrapper: function (name, attrs, BaseWrapper) {
-                var meta = attrs.meta;
-                if (!meta) {
-                    attrs.meta = meta = {};
-                }
-                meta.name = name.toLowerCase();
                 if (!BaseWrapper) {
                     BaseWrapper = Wrapper;
                 }
-                var wrapper = BaseWrapper.extend(attrs);
-                this._wrapper_types[wrapper.prototype._meta.name] = wrapper;
+                if (!attrs.title) {
+                    attrs.title = name;
+                }
+                attrs.name = name.toLowerCase();
+                var NewWrapper = BaseWrapper.extend(attrs),
+                    wrapper = new NewWrapper();
+                this._wrapper_types[wrapper.name] = wrapper;
                 return wrapper;
             },
             //
@@ -147,6 +138,21 @@ define(['lux-web'], function () {
                 _(this._content_types).forEach(function (ct) {
                     ct._meta.set_transport(backend);
                 });
+            },
+            //
+            // Internal method used by `content_tyeps` and `wrapper_types`
+            _sorted: function (iterable) {
+                var sortable = [];
+                _(iterable).forEach(function (ct) {
+                    if (ct._meta) {
+                        ct = ct._meta;
+                    }
+                    sortable.push({value: ct.name, text: ct.title});
+                });
+                sortable.sort(function (a, b) {
+                    return a.text > b.text ? 1 : -1;
+                });
+                return sortable;
             }
         },
         //
@@ -196,42 +202,54 @@ define(['lux-web'], function () {
             //
             content_search,
             //
+            selection,
             search,
             //
-            current_content,
+            block,
             //
+            // Lo-Dash template for the title select element
+            titletemplate = _.template('<%= title %> (<%= id %>)'),
+            selection_class = 'content-selection',
             dbfields = 'search';
             //
-        form.add_input(wrapper_select);
-        form.add_input(content_select);
+        form.add_input(wrapper_select, {
+            fieldset: {Class: selection_class}
+        });
+        form.add_input(content_select, {
+            fieldset: {Class: selection_class}
+        });
         content_search = form.add_input('input', {
-            type: 'hidden',
+            name: 'id',
             fieldset: {Class: dbfields}
-        }).width(212);
+        });
+        //
+        // Input for title
         form.add_input('input', {
             fieldset: {Class: dbfields},
             name: 'title',
             placeholder: 'title',
+            required: 'required'
         });
+        //
+        // Input for keywords
         form.add_input('input', {
             fieldset: {Class: dbfields},
             name: 'keywords'
-        }).width(212).select({
+        }).select({
+            tags: [],
             placeholder: 'keywords',
-            minimumInputLength: 2,
-            ajax: {
-                url: options.content_url,
-                data: function (term, page) {
-                    return {
-                        q: term, // search term
-                        per_page: page_limit,
-                        field: ['keywords'],
-                        apikey: options.api_key
-                    };
-                },
+            initSelection : function (element, callback) {
+                var data = [];
+                _(element.val().split(",")).forEach(function (val) {
+                    if (val) {
+                        data.push({id: val, text: val});
+                    }
+                });
+                callback(data);
             }
         });
-        search = form._element.find('fieldset.' + dbfields).hide();
+        selection = form._element.find('fieldset.' + selection_class);
+        search = form._element.find('fieldset.' + dbfields).detach();
         grid.column(0).append(form._element);
         grid.column(1).append(preview);
         form.add_input('submit', {value: 'Done', fieldset: {Class: 'submit'}});
@@ -247,11 +265,19 @@ define(['lux-web'], function () {
         web.select(wrapper_select, {'placeholder': 'Choose a container'});
         web.select(content_select, {'placeholder': 'Choose a content'});
         //
-        // AJAX Content
+        // AJAX Content Loading
         if (options.content_url) {
             web.select(content_search, {
                 placeholder: 'Search content',
                 minimumInputLength: 2,
+                initSelection: function (element, callback) {
+                    var id = element.val(),
+                        text = titletemplate({
+                            title: block.content.get('title'),
+                            'id': id
+                        });
+                    callback({'id': id, 'text': text});
+                },
                 ajax: {
                     url: options.content_url,
                     minimumInputLength: 3,
@@ -260,7 +286,7 @@ define(['lux-web'], function () {
                             q: term, // search term
                             per_page: page_limit,
                             field: ['id', 'title'],
-                            content_type: current_content.content._meta.name,
+                            content_type: block.content._meta.name,
                             apikey: options.api_key
                         };
                     },
@@ -284,34 +310,43 @@ define(['lux-web'], function () {
             // attribute in the dialog (check the ``PositionView.edit_content`
             // method)
             beforeSubmit: function (arr) {
-                var fields = current_content.content.get_form_fields(arr);
-                current_content.update(fields);
-                position.set(current_content);
-                current_content.close();
+                var content = block.content,
+                    fields = content.get_form_fields(arr);
+                content.update(fields);
+                block.set(content);
+                dialog.fadeOut();
                 return false;
             }
         });
         //
-        // Change content type
+        // Change content type in the view block
         content_select.change(function () {
             var name = this.value;
-            current_content.content = current_content.content_history[name];
-            if (!current_content.content) {
+            // Try to get the content from the block content history
+            block.content = block.content_history[name];
+            if (!block.content) {
                 var ContentType = cms.content_type(name);
                 if (ContentType) {
-                    current_content.content = new ContentType();
+                    block.content = new ContentType();
                 }
             }
-            if (current_content.content) {
-                web.logger.info(current_content + ' changed content type to ' + current_content.content);
-                current_content.content_history[current_content.content._meta.name] = current_content.content;
-                if (current_content.content._meta.persistent) {
-                    search.show();
+            if (block.content) {
+                web.logger.info(block + ' changed content type to ' + block.content);
+                block.content_history[block.content._meta.name] = block.content;
+                if (block.content._meta.persistent) {
+                    // Set the form values for the dbcore fields block
+                    search.children('input').each(function () {
+                        if (this.name) {
+                            var val = block.content.get(this.name);
+                            lux.set_value($(this), val);
+                        }
+                    });
+                    selection.after(search);
                 } else {
-                    search.hide();
+                    search.detach();
                 }
                 // Get the form for content editing
-                var cform = current_content.content.get_form();
+                var cform = block.content.get_form();
                 form._element.find('.content-form').remove();
                 if (cform) {
                     search.after(cform._element.children('fieldset').addClass('content-form'));
@@ -328,10 +363,10 @@ define(['lux-web'], function () {
         //
         // Inject change content
         dialog.set_current_view = function (view) {
-            current_content = view;
-            if (current_content.content) {
-                current_content.content_history[current_content.content._meta.name] = current_content.content;
-                content_select.val(current_content.content._meta.name).trigger('change');
+            block = view;
+            if (block.content) {
+                block.content_history[block.content._meta.name] = block.content;
+                content_select.val(block.content._meta.name).trigger('change');
             } else {
                 content_select.val('').trigger('change');
             }
@@ -1040,7 +1075,7 @@ define(['lux-web'], function () {
 
     // Map a view type to a view class
 
-    var ContentViewMap = {
+    var ContentViewMap = lux.cms.ContentViewMap = {
             'page': PageView,
             'grid': GridView,
             'row': RowView,
@@ -1052,7 +1087,6 @@ define(['lux-web'], function () {
     // Export to ``lux.cms`` namespace
 
     lux.cms.ContentView = ContentView;
-    lux.cms.ContentViewMap = ContentViewMap;
 
     //
     //  CMS Layouts
@@ -1124,6 +1158,48 @@ define(['lux-web'], function () {
     BLOCK_TEMPLATES.set('3 tabs', new Tabs(3));
     BLOCK_TEMPLATES.set('4 tabs', new Tabs(4));
 
+    //
+    //  Default CMS Wrappers
+    //  --------------------------------
+
+    lux.cms.create_wrapper('well', {
+        title: 'Well',
+        render: function (elem) {
+            return elem.wrap("<div class='well'></div>");
+        }
+    });
+
+    lux.cms.create_wrapper('welllg', {
+        title: 'Well Large',
+        render: function (elem) {
+            return elem.wrap("<div class='well-lg'></div>");
+        }
+    });
+
+    lux.cms.create_wrapper('wellsm', {
+        title: 'Well Small',
+        render: function (elem) {
+            return elem.wrap("<div class='well-sm'></div>");
+        }
+    });
+
+    lux.cms.create_wrapper('panel', {
+        title: 'Panel',
+        render: function (elem) {
+            return elem.wrap("<div class='panel-body'></div>")
+                       .wrap("<div class='panel panel-default'></div>");
+        }
+    });
+
+    lux.cms.create_wrapper('paneltitle', {
+        title: 'Panel with Title',
+        render: function (elem) {
+            var p = elem.wrap(
+                "<div class='panel-body'></div>").wrap(
+                "<div class='panel panel-default'></div>");
+            return p;
+        }
+    });
     //
     //  Default CMS Contents
     //  --------------------------------
@@ -1269,6 +1345,9 @@ define(['lux-web'], function () {
             //
             columns: 24,
             //
+            // Hart beat for websocket connections
+            hartbeat: 5,
+            //
             // Options for the dialog controlling page inputs
             page: {
                 collapsable: true,
@@ -1332,10 +1411,13 @@ define(['lux-web'], function () {
                 // Create backend
                 self.backend = web.backend({
                     host: options.backend_url,
-                    hartbeat: 5
+                    hartbeat: options.hartbeat
                 });
                 //
+                // Set transport in the cms handler
                 lux.cms.set_transport(self.backend.socket);
+                //
+                // get page information
                 lux.cms.get(options.editing, {
                     success: function (page) {
                         self.view = new PageView(page[0], self);

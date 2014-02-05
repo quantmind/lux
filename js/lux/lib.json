@@ -4,6 +4,7 @@
             "js/lux/utils.js",
             "js/lux/web.js",
             "js/lux/loop.js",
+            "js/lux/backend.js",
             "js/utils/utils.js",
             "js/utils/logger.js",
             "js/utils/math.js",

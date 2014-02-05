@@ -791,7 +791,11 @@ path can be both an internett address as well as a local url.
             else:
                 stream = path
         else:
-            raise NotImplementedError('http fetching not yet implemented')
+            response = elem.http.get(path)
+            if response.status_code == 200:
+                stream = response.decode_content()
+            else:
+                response.raise_for_status()
         root = elem.root
         if self.location:
             stream = '\n'.join(self.correct(root, stream))

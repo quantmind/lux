@@ -286,7 +286,8 @@
                 return all;
             },
             //
-            // Set a new value for a field. It returns a value different from undefined
+            // Set a new value for a field.
+            // It returns a value different from undefined
             // only when the field has changed
             set_field: function (instance, field, value) {
                 if (value === undefined) return;
@@ -300,10 +301,14 @@
                 var prev = instance.get(field);
                 if (value === prev) return;
                 if (field === this.pkname) {
-                    this.liveStorage.removeItem(instance.id());
-                    instance._fields[field] = value;
-                    delete instance._id;
-                    this.liveStorage.setItem(instance.id(), instance);
+                    if (value) {
+                        this.liveStorage.removeItem(instance.id());
+                        instance._fields[field] = value;
+                        delete instance._id;
+                        this.liveStorage.setItem(instance.id(), instance);
+                    } else {
+                        return;
+                    }
                 } else {
                     instance._fields[field] = value;
                 }

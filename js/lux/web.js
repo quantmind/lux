@@ -68,6 +68,18 @@
         });
     };
 
+    // Generalised value setter for jQuery elements
+    lux.set_value_hooks = [];
+    lux.set_value = function (element, value) {
+        var hook;
+        for (var i=0; i<lux.set_value_hooks.length; i++) {
+            if (lux.set_value_hooks[i](element, value)) {
+                return;
+            }
+        }
+        element.val(value);
+    };
+
     //  Web Extensions
     //  ------------------------
 

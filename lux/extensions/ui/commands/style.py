@@ -42,6 +42,7 @@ class Command(lux.Command):
     def run(self, argv, dump=True, **params):
         if 'base' not in self.app.extensions:
             raise RuntimeError('"ui" requires the "base" extension.')
+        self.pulsar_cfg(argv)
         options = self.options(argv)
         target = options.file
         app = self.app
@@ -86,12 +87,9 @@ class Command(lux.Command):
     def minify(self, options, data):
         b = convert_bytes(len(data))
         self.write('Minimise %s css file via http://cssminifier.com' % b)
-        proxy_info = None
-        if options.http_proxy:
-            proxy_info = {'http': options.http_proxy}
-        http = HttpClient(proxy_info=proxy_info, loop=new_event_loop())
+        http = HttpClient(loop=new_event_loop())
         response = http.post('http://cssminifier.com/raw',
-                             data={'input': data}).on_finished
+                             data={'input': data})
         if response.status_code == 200:
             return native_str(response.get_content())
         else:

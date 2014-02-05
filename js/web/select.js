@@ -14,16 +14,8 @@
         decorate: function () {
             var select = this,
                 options = select.options,
-                element = select.element(),
-                temp;
-            // This does not seems to work
-            if (!element.parent().length) {
-                temp = $(document.createElement('div')).append(element);
-            }
-            element.select2(options);
-            if (temp) {
-                this.container().detach();
-            }
+                element = select.element();
+            element.select(options);
         },
         // Retrieve the select2 instance form the element
         select2: function () {
@@ -34,8 +26,6 @@
             return this.select2().container;
         }
     });
-
-
     //
     // Create and return a ``select`` jQuery element with given ``options``.
     web.create_select = function (options) {
@@ -46,8 +36,22 @@
         });
         return elem;
     };
+    //
+    // Select2 hook for lux set_value_hooks
+    var get_select2_value = function (element, value) {
+        if (element.hasClass('select2-offscreen')) {
+            element.select2('val', value);
+            return true;
+        }
+    };
+    //
+    lux.set_value_hooks.push(get_select2_value);
 
     // A proxy for select2
     $.fn.select = function (options) {
-        this.select2(options || {});
+        options = options || {};
+        if (!options.width) {
+            options.width = 'element';
+        }
+        this.select2(options);
     };

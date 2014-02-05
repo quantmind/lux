@@ -51,6 +51,19 @@ The example above adds one single :class:`Crud` router to the :class:`Api`
 router. The router serves requests at the ``/api/blog/`` url.
 
 
+Object Data Mapper
+======================
+
+The object data mapper must provide the following:
+
+* ``Mapper`` class for managing models
+* ``search_engine`` to create a full text search engine handler
+
+The mapper object must expose the following methods:
+
+* ``register_applications``
+
+
 API
 =====
 
@@ -272,15 +285,20 @@ class Extension(lux.Extension):
         default_address = None
         if not odm:
             from pulsar.apps.data import odm
+            config['ODM'] = odm
             default_address = DEFAULT_ADDRESS
         self.html_crud_routers = odm.ModelDictionary()
         self.api_crud_routers = odm.ModelDictionary()
         datastore = config['DATASTORE'] or {}
-        address = datastore.get('', default_address)
+        address = datastore.get('')
         if not address:
-            raise ValueError('Default datastore not set')
+            if default_address:
+                address = default_address
+                config['DATASTORE'][''] = address
+            else:
+                raise ValueError('Default datastore not set')
         mapper = odm.Mapper(address)
-        mapper.set_search_engine()
+        self.set_search_engine(app, mapper)
         # don't need lux has we know it does not have any model
         extensions = config['EXTENSIONS'][1:]
         mapper.register_applications(extensions, stores=datastore)
@@ -302,3 +320,13 @@ already available.'''
         router = self.api.manager_map.get(manager.model)
         if router:
             return router.get_url(instance)
+
+    def set_search_engine(self, app, mapper):
+        '''Set the full-text search engine.
+        '''
+        engine = app.config['SEARCHENGINE']
+        if engine is None:
+            engine = app.config['DATASTORE'].get('')
+        odm = app.config['ODM']
+        engine = odm.search_engine(engine)
+        mapper.set_search_engine(engine)

@@ -678,7 +678,7 @@
 
     // Map a view type to a view class
 
-    var ContentViewMap = {
+    var ContentViewMap = lux.cms.ContentViewMap = {
             'page': PageView,
             'grid': GridView,
             'row': RowView,
@@ -690,4 +690,3 @@
     // Export to ``lux.cms`` namespace
 
     lux.cms.ContentView = ContentView;
-    lux.cms.ContentViewMap = ContentViewMap;
