@@ -46,3 +46,8 @@
         });
         return elem;
     };
+
+    // A proxy for select2
+    $.fn.select = function (options) {
+        this.select2(options || {});
+    };

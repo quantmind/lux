@@ -183,6 +183,7 @@ define(['lux-web'], function () {
     // ``self`` is a positionview object.
     var edit_content_dialog = function (options) {
         var dialog = web.dialog(options.contentedit),
+            page_limit = options.page_limit || 10,
             grid = web.grid(),
             preview = $(document.createElement('div')).addClass('preview'),
             form = web.form(),
@@ -197,15 +198,40 @@ define(['lux-web'], function () {
             //
             search,
             //
-            current_content;
+            current_content,
+            //
+            dbfields = 'search';
             //
         form.add_input(wrapper_select);
         form.add_input(content_select);
         content_search = form.add_input('input', {
             type: 'hidden',
-            fieldset: {Class: 'search'}
+            fieldset: {Class: dbfields}
+        }).width(212);
+        form.add_input('input', {
+            fieldset: {Class: dbfields},
+            name: 'title',
+            placeholder: 'title',
         });
-        search = form._element.find('fieldset.search').hide();
+        form.add_input('input', {
+            fieldset: {Class: dbfields},
+            name: 'keywords'
+        }).width(212).select({
+            placeholder: 'keywords',
+            minimumInputLength: 2,
+            ajax: {
+                url: options.content_url,
+                data: function (term, page) {
+                    return {
+                        q: term, // search term
+                        per_page: page_limit,
+                        field: ['keywords'],
+                        apikey: options.api_key
+                    };
+                },
+            }
+        });
+        search = form._element.find('fieldset.' + dbfields).hide();
         grid.column(0).append(form._element);
         grid.column(1).append(preview);
         form.add_input('submit', {value: 'Done', fieldset: {Class: 'submit'}});
@@ -223,7 +249,6 @@ define(['lux-web'], function () {
         //
         // AJAX Content
         if (options.content_url) {
-            var page_limit = 10;
             web.select(content_search, {
                 placeholder: 'Search content',
                 minimumInputLength: 2,

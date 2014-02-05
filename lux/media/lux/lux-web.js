@@ -562,6 +562,11 @@ define(['jquery', 'lux'], function ($) {
         return elem;
     };
 
+    // A proxy for select2
+    $.fn.select = function (options) {
+        this.select2(options || {});
+    };
+
     //  Dialog
     //  -----------------------
     web.extension('dialog', {
@@ -819,6 +824,7 @@ define(['jquery', 'lux'], function ($) {
                     web: 'http://malsup.com/jquery/form/'};
         };
     //
+    // Form with ajax features and styling options
     web.extension('form', {
         selector: 'form',
         defaultElement: 'form',
@@ -901,7 +907,7 @@ define(['jquery', 'lux'], function ($) {
         //
         // Add a new input/select/textarea to the form
         // ``type`` is the type of input,valid values are ``input``,
-        // ``select``, ``textarea``, ``checkbox``, ``radio``.
+        // ``select``, ``textarea``.
         add_input: function (type, input) {
             input = input || {};
             var elem,
@@ -919,11 +925,11 @@ define(['jquery', 'lux'], function ($) {
             // Find the appropiate fieldset
             if (fieldset_selector) {
                 if (fieldset_selector.id) {
-                    fs = fieldsets.find('#' + fieldset_selector.id);
+                    fs = element.find('#' + fieldset_selector.id);
                 } else if (fieldset_selector.Class) {
-                    fs = fieldsets.find('.' + fieldset_selector.Class);
+                    fs = element.find('.' + fieldset_selector.Class);
                 } else {
-                    fs = fieldsets.first();
+                    fs = fieldsets.last();
                 }
                 if (fs.length) {
                     fieldset = fs;

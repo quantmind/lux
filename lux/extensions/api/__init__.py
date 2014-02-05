@@ -188,6 +188,8 @@ class Extension(lux.Extension):
     _config = [
         Parameter('DATASTORE', None,
                   'Dictionary for mapping models to their back-ends database'),
+        Parameter('SEARCHENGINE', None,
+                  'Search engine for models'),
         Parameter('ODM', None,
                   'Object Data Mapper. Must provide the Mapper class.'),
         Parameter('DUMPDB_EXTENSIONS', None, ''),
@@ -264,6 +266,7 @@ class Extension(lux.Extension):
 
     #    INTERNALS
     def _create_mapper(self, app):
+        # Create the object data mapper
         config = app.config
         odm = config['ODM']
         default_address = None
@@ -277,6 +280,7 @@ class Extension(lux.Extension):
         if not address:
             raise ValueError('Default datastore not set')
         mapper = odm.Mapper(address)
+        mapper.set_search_engine()
         # don't need lux has we know it does not have any model
         extensions = config['EXTENSIONS'][1:]
         mapper.register_applications(extensions, stores=datastore)

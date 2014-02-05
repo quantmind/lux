@@ -84,15 +84,15 @@ class Content(ModelBase):
 
     .. attribute:: slug
 
-        Optional slug field for urls.
+        Optional slug field for urls
 
     .. attribute:: content_type
 
         Type of content, by default the extension provides:
 
-        * ``markdown``.
-        * ``contenturl`` for :ref:`content from a url <cms-contenturl>`.
-        * ``blank`` an empty block.
+        * ``markdown``
+        * ``contenturl`` for :ref:`content from a url <cms-contenturl>`
+        * ``blank`` an empty block
     '''
     title = odm.CharField()
     slug = odm.SymbolField(required=False)
