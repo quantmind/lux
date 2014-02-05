@@ -137,7 +137,9 @@ class Command(ConsoleParser):
         Return the options namespace
         '''
         parser = self.get_parser(description=self.help or self.name)
-        options = parser.parse_args(argv)
+        options, rest = parser.parse_known_args(argv)
+        if rest:
+            self.pulsar_cfg(rest)
         return options
 
     def log_config(self):

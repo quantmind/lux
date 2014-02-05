@@ -1,5 +1,6 @@
 import os
 
+import lux
 from lux.extensions.ui.lib import *
 
 UI_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -90,7 +91,7 @@ def add_css(all):
 
     css('body',
         gradient(base.default.background),
-        CssInclude(os.path.join(UI_DIR, 'media', 'normalize.css')),
+        CssInclude('http:%s' % lux.javascript_libraries.get('normalize')),
         color=base.default.color,
         font_family=cssv.body.font_family,
         font_size=cssv.body.font_size,

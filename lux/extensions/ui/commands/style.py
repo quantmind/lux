@@ -30,10 +30,7 @@ class Command(lux.Command):
                       'otherwise in the local directory.')),
         Setting('minify', ('--minify',), action='store_true',
                 default=False,
-                desc='Minify the file'),
-        Setting('http_proxy', ('--http-proxy',),
-                default='',
-                desc='The HTTP proxy server to use in the minify request.')
+                desc='Minify the file')
     )
 
     def __call__(self, argv, **params):
@@ -42,7 +39,6 @@ class Command(lux.Command):
     def run(self, argv, dump=True, **params):
         if 'base' not in self.app.extensions:
             raise RuntimeError('"ui" requires the "base" extension.')
-        self.pulsar_cfg(argv)
         options = self.options(argv)
         target = options.file
         app = self.app

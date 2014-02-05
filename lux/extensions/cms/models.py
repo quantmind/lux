@@ -116,8 +116,8 @@ class Content(ModelBase):
 
     def fields(self):
         fields = self.tojson()
-        data = fields.pop('data', None)
         fields.pop('timestamp', None)
+        data = fields.pop('data', None)
         if data:
             fields.update(data)
         return fields
@@ -133,8 +133,8 @@ class ContentDictionary(AttributeDictionary):
 
     def fields(self):
         fields = dict(self)
-        fields.pop('data', None)
         fields.pop('timestamp', None)
+        data = fields.pop('data', None)
         if data:
             fields.update(data)
         return fields
