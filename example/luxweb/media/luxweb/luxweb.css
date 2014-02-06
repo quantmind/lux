@@ -1,7 +1,7 @@
 /*
 ------------------------------------------------------------------
 ------------------------------------------------------------------
-Created by lux 2014-02-05 21:11:23 in 0.16 seconds.
+Created by lux 2014-02-06 18:38:58 in 1.37 seconds.
 ------------------------------------------------------------------
 ------------------------------------------------------------------ */
 
@@ -2526,11 +2526,11 @@ disabled look for disabled choices in the results dropdown
 body {
     padding: 0;
     text-align: left;
-    font-size: 14px;
     margin: 0;
     font-family: Helvetica,Arial,'Liberation Sans',FreeSans,sans-serif;
     line-height: 20px;
     color: #333;
+    font-size: 14px;
     background: #fff;
 }
 
@@ -2691,9 +2691,9 @@ dd {
 }
 
 .dl-horizontal dt {
-    text-align: left;
     clear: left;
     float: left;
+    text-align: left;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -2912,15 +2912,15 @@ textarea:focus {
 }
 
 .btn {
-    display: inline-block;
     font-weight: normal;
+    display: inline-block;
     line-height: 20px;
     font-size: 14px;
+    font-family: inherit;
     text-decoration: none;
     vertical-align: middle;
     text-align: center;
     padding: 4px 12px;
-    font-family: inherit;
     cursor: pointer;
     background-color: #e6e6e6;
     background-image: -moz-linear-gradient(top, #fff, #e6e6e6);
@@ -2939,8 +2939,8 @@ textarea:focus {
 }
 
 .btn.btn-mini {
-    font-weight: normal;
     padding: 0 5px;
+    font-weight: normal;
     font-size: 11px;
     -webkit-border-radius: 2px;
        -moz-border-radius: 2px;
@@ -2948,8 +2948,8 @@ textarea:focus {
 }
 
 .btn.btn-small {
-    font-weight: normal;
     padding: 2px 10px;
+    font-weight: normal;
     font-size: 13px;
     -webkit-border-radius: 4px;
        -moz-border-radius: 4px;
@@ -2957,8 +2957,8 @@ textarea:focus {
 }
 
 .btn.btn-large {
-    font-weight: bold;
     padding: 8px 24px;
+    font-weight: bold;
     font-size: 18px;
 }
 
@@ -3289,10 +3289,10 @@ textarea:focus {
 }
 
 .btn-group {
+    vertical-align: middle;
     display: inline-block;
     white-space: nowrap;
     font-size: 0;
-    vertical-align: middle;
     position: relative;
 }
 
@@ -3331,8 +3331,8 @@ textarea:focus {
 }
 
 textarea {
-    display: inline-block;
     padding: 4px 5px;
+    display: inline-block;
     font-size: 14px;
     vertical-align: middle;
     width: 200px;
@@ -3352,8 +3352,8 @@ textarea {
 }
 
 select {
-    display: inline-block;
     padding: 4px 5px;
+    display: inline-block;
     font-size: 14px;
     vertical-align: middle;
     height: 30px;
@@ -3380,8 +3380,8 @@ input[type="url"],
 input[type="search"],
 input[type="tel"],
 input[type="color"] {
-    display: inline-block;
     padding: 4px 5px;
+    display: inline-block;
     font-size: 14px;
     vertical-align: middle;
     height: 20px;
@@ -3429,8 +3429,8 @@ fieldset {
 label {
     display: block;
     font-size: 14px;
-    height: 20px;
     font-weight: normal;
+    height: 20px;
     cursor: pointer;
     line-height: 20px;
 }
@@ -3631,10 +3631,10 @@ pre {
 }
 
 .prettyprint ol.linenums li {
-    line-height: 20px;
+    text-shadow: 0 1px 0 #fff;
     padding-left: 12px;
     color: #808080;
-    text-shadow: 0 1px 0 #fff;
+    line-height: 20px;
 }
 
 [draggable=true] {
@@ -3795,8 +3795,8 @@ form label {
 }
 
 form.horizontal .control-label {
-    text-align: right;
     width: 160px;
+    text-align: right;
     float: left;
     padding-top: 5px;
 }
@@ -3942,7 +3942,7 @@ ul.icons-ul,
 
 .header,
 .cms-block,
-.cms-position {
+.cms-content {
     overflow: hidden;
 }
 
@@ -4461,13 +4461,13 @@ ul.icons-ul,
 }
 
 .datagrid.stripped tbody tr:nth-child(2n+1) td {
-    transform: <function lighten at 0x107845170>;
+    transform: <function lighten at 0x0000000004BF70D0>;
     background: #fff;
     color: #333;
 }
 
 .datagrid.stripped.default tbody tr:nth-child(2n+1) td {
-    transform: <function lighten at 0x107845170>;
+    transform: <function lighten at 0x0000000004BF70D0>;
     background-color: #e6e6e6;
     background-image: -moz-linear-gradient(top, #fff, #e6e6e6);
     background-image: -ms-linear-gradient(top, #fff, #e6e6e6);
@@ -4481,7 +4481,7 @@ ul.icons-ul,
 }
 
 .datagrid.stripped.primary tbody tr:nth-child(2n+1) td {
-    transform: <function lighten at 0x107845170>;
+    transform: <function lighten at 0x0000000004BF70D0>;
     background-color: #006699;
     background-image: -moz-linear-gradient(top, #0088cc, #006699);
     background-image: -ms-linear-gradient(top, #0088cc, #006699);
@@ -4495,7 +4495,7 @@ ul.icons-ul,
 }
 
 .datagrid.stripped.success tbody tr:nth-child(2n+1) td {
-    transform: <function lighten at 0x107845170>;
+    transform: <function lighten at 0x0000000004BF70D0>;
     background-color: #16a000;
     background-image: -moz-linear-gradient(top, #1dd300, #16a000);
     background-image: -ms-linear-gradient(top, #1dd300, #16a000);
@@ -4509,7 +4509,7 @@ ul.icons-ul,
 }
 
 .datagrid.stripped.error tbody tr:nth-child(2n+1) td {
-    transform: <function lighten at 0x107845170>;
+    transform: <function lighten at 0x0000000004BF70D0>;
     background-color: #ca0005;
     background-image: -moz-linear-gradient(top, #fd0006, #ca0005);
     background-image: -ms-linear-gradient(top, #fd0006, #ca0005);
@@ -4523,7 +4523,7 @@ ul.icons-ul,
 }
 
 .datagrid.stripped.inverse tbody tr:nth-child(2n+1) td {
-    transform: <function lighten at 0x107845170>;
+    transform: <function lighten at 0x0000000004BF70D0>;
     background-color: #3c3c3c;
     background-image: -moz-linear-gradient(top, #222, #3c3c3c);
     background-image: -ms-linear-gradient(top, #222, #3c3c3c);
@@ -4537,13 +4537,13 @@ ul.icons-ul,
 }
 
 .datagrid.stripped.zen tbody tr:nth-child(2n+1) td {
-    transform: <function lighten at 0x107845170>;
+    transform: <function lighten at 0x0000000004BF70D0>;
     background: #fff;
     color: #999;
 }
 
 .datagrid.stripped.zendark tbody tr:nth-child(2n+1) td {
-    transform: <function lighten at 0x107845170>;
+    transform: <function lighten at 0x0000000004BF70D0>;
     background: #1d1f21;
     color: #a4b1b1;
 }
@@ -5183,7 +5183,7 @@ form.content-form fieldset textarea {
     border: 1px solid #e5e5e5;
 }
 
-.cms-position-toolbar {
+.cms-content-toolbar {
     overflow: hidden;
     font-size: 11px;
     padding: 5px 0;
@@ -5205,6 +5205,14 @@ form.content-form fieldset textarea {
 .center-page {
     width: 400px;
     margin: 60px auto;
+}
+
+.cms-info {
+    padding: 0 10px;
+    display: inline-block;
+    line-height: 30px;
+    vertical-align: middle;
+    position: relative;
 }
 
 .grid24 {
@@ -5328,12 +5336,12 @@ form.content-form fieldset textarea {
 .lux-example:after {
     content: "Example";
     font-weight: bold;
-    padding: 3px 7px;
     background: #F5F5F5;
     left: -1px;
-    top: -1px;
+    padding: 3px 7px;
     font-size: 12px;
     color: #9DA0A4;
+    top: -1px;
     position: absolute;
     -webkit-border-radius: 5px 0;
        -moz-border-radius: 5px 0;

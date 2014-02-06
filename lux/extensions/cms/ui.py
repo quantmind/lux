@@ -66,7 +66,7 @@ def add_css(all):
                 margin_top=0),
             margin_top=cssv.grid.fluid_padding))
     #
-    css('.cms-block, .cms-position',
+    css('.cms-block, .cms-content',
         overflow='hidden')
     #
     css('.cms-grid',
@@ -75,7 +75,7 @@ def add_css(all):
         Skin(' > .body'),
         display='none')
     # Position toolbar
-    css('.cms-position-toolbar',
+    css('.cms-content-toolbar',
         padding=spacing(5, 0),
         font_size=0.8*cssv.body.font_size,
         overflow='hidden')
@@ -98,6 +98,13 @@ def add_css(all):
     css('.center-page',
         width=cssv.centerpage.width,
         margin=spacing(cssv.centerpage.margin, 'auto'))
+
+    css('.cms-info',
+        display='inline-block',
+        position='relative',
+        vertical_align='middle',
+        line_height=px(30),
+        padding=spacing(0,10))
 
     Gridfluid(24)(all)
 

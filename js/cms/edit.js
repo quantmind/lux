@@ -181,7 +181,7 @@
         //
         // Change container
         wrapper_select.change(function () {
-
+            block.wrapper = this.value;
         });
         //
         // Inject change content

@@ -305,7 +305,7 @@ class EditPage(PageMixin, api.Crud):
             doc.body.addClass(page.body_class)
             edit = form.layout(request, action=request.full_path())
             template = self.page_template(request, page)
-            html_page = yield template(request, render=False)
+            html_page = yield template(request)
             #
             doc.body.append(Html('div', edit, cn='cms-control'))
             #

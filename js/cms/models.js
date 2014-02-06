@@ -76,7 +76,7 @@
             if (this._meta.persistent) {
                 var pk = this.pk();
                 if (pk) {
-                    return {id: pk};
+                    return pk;
                 }
             } else {
                 return this.fields();

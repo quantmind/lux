@@ -84,35 +84,30 @@
         decorate: function () {
             var self = this,
                 options = self.options,
-                elem = self.element(),
-                control = $('.cms-control');
+                elem = self._element;
             // In editing mode, set-up grids
             if (options.editing) {
                 //self._handle_close();
                 elem.addClass('editing');
                 //
                 // Create backend
-                self.backend = web.backend({
-                    host: options.backend_url,
-                    hartbeat: options.hartbeat
-                });
-                //
-                // Set transport in the cms handler
-                lux.cms.set_transport(self.backend.socket);
-                //
-                // get page information
-                lux.cms.get(options.editing, {
-                    success: function (page) {
-                        self.view = new PageView(page[0], self);
-                        self.view.render();
-                    }
-                });
-                //
+                if (!lux.cms._backend) {
+                    self.backend = web.backend({
+                        host: options.backend_url,
+                        hartbeat: options.hartbeat
+                    });
+                    //
+                    // Set transport in the cms handler
+                    lux.cms.set_transport(self.backend.socket);
+                } else {
+                    self.backend = web.backend({
+                        socket: lux.cms._backend
+                    });
+                }
                 self._setup_api();
-            } else {
-                self.view = new PageView(null, this);
-                self.view.render();
             }
+            self.view = new PageView(elem, options);
+            self.view.render();
         },
         //
         _setup_api: function () {

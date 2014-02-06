@@ -50,7 +50,8 @@ from .contents import apply_content
 
 
 class Column(Template):
-    '''A column can have one or more :class:`Block`.'''
+    '''A column can have one or more :class:`Block`.
+    '''
     tag = 'div'
     classes = 'column'
 
@@ -63,17 +64,20 @@ class Column(Template):
 
 class Row(Template):
     '''A :class:`Row` is a container of :class:`Column` elements.
-It  must contain at least one :class:`Column`.
+    It  must contain at least one :class:`Column`.
 
-:param column: Optional parameter which set the :attr:`column` attribute.
+    Note that a :class:`.Row` template can be used indipendently
+    from the content management system.
 
-.. attribute:: column
+    :param column: Optional parameter which set the :attr:`column` attribute.
 
-    It can be either 12 or 24 and it indicates the number of column
-    spans available.
+    .. attribute:: column
 
-    Default: 24
-'''
+        It can be either 12 or 24 and it indicates the number of column
+        spans available.
+
+        Default: 24
+    '''
     tag = 'div'
     columns = 24
 
@@ -93,14 +97,17 @@ It  must contain at least one :class:`Column`.
 class Grid(Template):
     '''A container of :class:`Row` or :class:`CmsContext` templates.
 
-:parameter fixed: optional boolean flag to indicate if the grid is
-    fixed (html class ``grid fixed``) or fluid (html class ``grid fluid``).
-    If not specified the grid is considered fluid (it changes width when
-    the browser window changes width).
+    Note that a :class:`.Grid` template can be used indipendently
+    from the content management system.
 
-A :class:`Grid` elements is usually a direct child of a :class:`PageTemplate`,
-unless additional wrapping elements are used.
-'''
+    :parameter fixed: optional boolean flag to indicate if the grid is
+        fixed (html class ``grid fixed``) or fluid (html class ``grid fluid``).
+        If not specified the grid is considered fluid (it changes width when
+        the browser window changes width).
+
+    A :class:`Grid` elements is usually a direct child of a :class:`PageTemplate`,
+    unless additional wrapping elements are used.
+    '''
     tag = 'div'
 
     def html(self, request, context, children, **kwargs):
@@ -163,15 +170,13 @@ class CmsContext(Context):
     tag = 'div'
     classes = 'cms-grid'
 
-    def html(self, request, context, children, render=True, **params):
+    def html(self, request, context, children, **kw):
         page = request.cache.page if request else None
-        if render:
-            if page:
-                context[self.key] = self._get_content(page, context)
-            elif self.all_pages:
-                pass
-        return super(CmsContext, self).html(request, context, children,
-                                            **params)
+        if page:
+            context[self.key] = self._get_content(page, context)
+        elif self.all_pages:
+            pass
+        return super(CmsContext, self).html(request, context, children, **kw)
 
     @property
     def all_pages(self):
@@ -190,24 +195,20 @@ class CmsContext(Context):
                 column = Html('div')
                 for bc in content or ():
                     block = Html('div', template=bc.get('template'))
-                    for id, html in self._contents(bc.get('children'),
-                                                   context):
-                        if id:
-                            if id in ids:
-                                ids[id].append(html)
+                    for data in bc.get('children') or ():
+                        if not data:
+                            continue
+                        elif isinstance(data, dict):
+                            elem = Html('div', data=data)
+                        else:
+                            # id, we need to retrieve the content
+                            elem = Html('div')
+                            if data in ids:
+                                ids[data].append(html)
                             else:
-                                ids[id] = [html]
-                        block.append(html)
+                                ids[data] = [elem]
+                        block.append(elem)
                     column.append(block)
                 row.append(column)
             container.append(row)
         return container
-
-    def _contents(self, contents, context):
-        for content in contents or ():
-            if content:
-                id = content.get('id')
-                if id:
-                    yield id, Html('div', id='cms-content-%s' % id)
-                else:
-                    yield None, Html('div', data=content)

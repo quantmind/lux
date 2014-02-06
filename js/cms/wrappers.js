@@ -5,21 +5,21 @@
     lux.cms.create_wrapper('well', {
         title: 'Well',
         render: function (elem) {
-            return elem.wrap("<div class='well'></div>");
+            return $("<div class='well'></div>").appendTo(elem);
         }
     });
 
     lux.cms.create_wrapper('welllg', {
         title: 'Well Large',
         render: function (elem) {
-            return elem.wrap("<div class='well-lg'></div>");
+            return $("<div class='well-lg'></div>").appendTo(elem);
         }
     });
 
     lux.cms.create_wrapper('wellsm', {
         title: 'Well Small',
         render: function (elem) {
-            return elem.wrap("<div class='well-sm'></div>");
+            return $("<div class='well-sm'></div>").appendTo(elem);
         }
     });
 

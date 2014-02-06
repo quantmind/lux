@@ -24,7 +24,7 @@
             }
         }
     });
-    
+
     var Tabs = Layout.extend({
         append: function (pos, block, index) {
             var elem = pos.container();
@@ -44,23 +44,37 @@
             }
         }
     });
-    
-    
-    ROW_TEMPLATES.set('One Column', [1]);
-    ROW_TEMPLATES.set('Half-Half', [1/2, 1/2]);
-    ROW_TEMPLATES.set('33-66', [1/3, 2/3]);
-    ROW_TEMPLATES.set('66-33', [2/3, 1/3]);
-    ROW_TEMPLATES.set('25-75', [1/4, 3/4]);
-    ROW_TEMPLATES.set('75-25', [3/4, 1/4]);
-    
-    ROW_TEMPLATES.set('33-33-33', [1/3, 1/3, 1/3]);
-    ROW_TEMPLATES.set('50-25-25', [1/2, 1/4, 1/4]);
-    ROW_TEMPLATES.set('25-25-50', [1/4, 1/4, 1/2]);
-    ROW_TEMPLATES.set('25-50-25', [1/4, 1/2, 1/4]);
-    
-    ROW_TEMPLATES.set('25-25-25-25', [1/4, 1/4, 1/4, 1/4]);
-    
-    
+
+    var RowTemplate = lux.Class.extend({
+        //
+        init: function (splits) {
+            this.splits = splits;
+            this.length = splits.length;
+        },
+        //
+        append: function (child, parent, index) {
+            var elem = child.container();
+            elem.addClass('column span' + this.splits[index]*parent.options.columns);
+            parent.elem.append(elem);
+        }
+    });
+
+
+    ROW_TEMPLATES.set('One Column', new RowTemplate([1]));
+    ROW_TEMPLATES.set('Half-Half', new RowTemplate([1/2, 1/2]));
+    ROW_TEMPLATES.set('33-66', new RowTemplate([1/3, 2/3]));
+    ROW_TEMPLATES.set('66-33', new RowTemplate([2/3, 1/3]));
+    ROW_TEMPLATES.set('25-75', new RowTemplate([1/4, 3/4]));
+    ROW_TEMPLATES.set('75-25', new RowTemplate([3/4, 1/4]));
+
+    ROW_TEMPLATES.set('33-33-33', new RowTemplate([1/3, 1/3, 1/3]));
+    ROW_TEMPLATES.set('50-25-25', new RowTemplate([1/2, 1/4, 1/4]));
+    ROW_TEMPLATES.set('25-25-50', new RowTemplate([1/4, 1/4, 1/2]));
+    ROW_TEMPLATES.set('25-50-25', new RowTemplate([1/4, 1/2, 1/4]));
+
+    ROW_TEMPLATES.set('25-25-25-25', new RowTemplate([1/4, 1/4, 1/4, 1/4]));
+
+
     BLOCK_TEMPLATES.set('1 element', new Layout(1));
     BLOCK_TEMPLATES.set('2 elements', new Layout(2));
     BLOCK_TEMPLATES.set('3 elements', new Layout(3));

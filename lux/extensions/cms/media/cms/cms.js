@@ -79,7 +79,7 @@ define(['lux-web'], function () {
             if (this._meta.persistent) {
                 var pk = this.pk();
                 if (pk) {
-                    return {id: pk};
+                    return pk;
                 }
             } else {
                 return this.fields();
@@ -390,7 +390,7 @@ define(['lux-web'], function () {
         //
         // Change container
         wrapper_select.change(function () {
-
+            block.wrapper = this.value;
         });
         //
         // Inject change content
@@ -435,9 +435,7 @@ define(['lux-web'], function () {
     //  The content view can be either in ``editing`` or ``read`` mode.
     //  When in editing mode the ``this.options.editing`` attribute is ``true``.
 
-    var ContentView = lux.View.extend({
-        type: 'page',
-        childType: 'grid',
+    var BaseContentView = lux.View.extend({
         // The constructor takes an HTML or jQuery element, an ``options`` object
         // and a ``parent`` ContentView.
         init: function (elem, options, parent) {
@@ -446,20 +444,36 @@ define(['lux-web'], function () {
             this.parentType = parent ? parent.type : null;
             this.name = this.elem.data('context');
             this.elem.addClass('cms-' + this.type).data('cmsview', this);
-            this.setup();
-            if (this.options.editing) {
-                this.setupEdit(parent);
-                web.logger.info('Created ' + this);
-            }
         },
-        // Setup the view by adding specific classes to the view ``elem``.
-        setup: function () {},
+        //
+        // render the view and build children
+        render: function () {
+            var self = this;
+            this.elem.children().each(function () {
+                self.create_child(this);
+            });
+            this.elem.fadeTo('fast', 1);
+        },
         // Setup the view for editing mode. Called during construction.
-        setupEdit: function (parent) {},
+        setupEdit: function () {
+            if (this.childType && !this.editing) {
+                _(this.childrenElem()).forEach(function(elem) {
+                    var child = $(elem).data('cmsview');
+                    if (child) {
+                        child.setupEdit();
+                    }
+                });
+            }
+            this.editing = true;
+        },
+        //
         // The parent view of this view.
         parent: function () {
-            return this.container().closest('.cms-'+this.parentType).data('cmsview');
+            if (this.parentType) {
+                return this.container().closest('.cms-'+this.parentType).data('cmsview');
+            }
         },
+        //
         // Fetch the child view at ``index``.
         child: function (index) {
             var child;
@@ -471,30 +485,35 @@ define(['lux-web'], function () {
             });
             return child;
         },
-        // Number of children
-        numChildren: function () {
-            return this.childrenElem().length;
-        },
+        //
         // jQuery element containing all children
         childrenElem: function () {
-            return this.elem.find('.cms-' + this.childType);
+            if (this.childType) {
+                return this.elem.find('.cms-' + this.childType);
+            } else {
+                return [];
+            }
         },
+        //
         // Iterate over children views
         iter: function (callback) {
             _(this.childrenElem()).forEach(function (child, index) {
-                return callback($(child).data('cmsview'), index);
+                callback($(child).data('cmsview'), index);
             });
         },
         //
         page: function () {
-            return $('.cms-page').data('cmsview');
+            return this.parent().page();
         },
+        //
         grid: function () {
             return this.parent().grid();
         },
+        //
         current_column: function () {
             return this.page().current_column();
         },
+        //
         // position within its parent
         index: function () {
             var parent = this.parent(),
@@ -510,57 +529,29 @@ define(['lux-web'], function () {
             }
             return index;
         },
-        // The default render method
-        render: function (contents) {
-            contents = this.create_children(contents);
-            _(contents).forEach(function (content, index) {
-                var child = this.child(index);
-                if (!child) {
-                    this.create_child(null, content);
-                } else {
-                    child.render(content);
-                }
-            }, this);
-            this.elem.fadeTo('fast', 1);
-        },
         //
-        // Create child.
+        // Create child element and append it to this view
         create_child: function (elem, content) {
-            var View = ContentViewMap[this.childType];
-            if (!View) {
-                throw new lux.NotImplementedError(this + ' has no create_child method.');
-            }
-            if (!elem) elem = $(document.createElement('div'));
-            var child = new View(elem, this.options, this);
-            this.elem.append(child.container());
-            child.render(content);
-            return child;
-        },
-        //
-        // Create children from HTML children of ``this.elem``. This operation
-        // is performed once only, when no children available.
-        create_children: function (content) {
-            if (!this.numChildren()) {
-                var self = this;
-                this.elem.children().detach().each(function (index) {
-                    self.create_child(this, content ? content[index]: null);
-                });
-                var len = this.numChildren();
-                if (len && content) {
-                    return content.splice(len);
+            if (this.childType) {
+                var View = ContentViewMap[this.childType];
+                if (!View) {
+                    throw new lux.NotImplementedError(this + ' has no create_child method.');
                 }
+                if (!elem) elem = $(document.createElement('div'));
+                var child = new View(elem, this.options, this);
+                if (content === Object(content)) {
+                    elem.data(content);
+                }
+                child.render(this);
+                return child;
             }
-            return content;
         },
         //
-        // The jQuery element containing this view. It can be different form the
-        // view jQuery ``elem``.
+        // The jQuery element containing this view.
+        //
+        // It can be different form the view jQuery ``elem``.
         container: function () {
-            if (this.dialog) {
-                return this.dialog.element();
-            } else {
-                return this.elem;
-            }
+            return this.dialog ? this.dialog.element() : this.elem;
         },
         //
         // Retrieve a column from the child at ``index``. If index is not provided
@@ -585,19 +576,22 @@ define(['lux-web'], function () {
             });
             return all.length ? all : null;
         },
-        // Create a ``DragDrop`` dialog for this view. used by ``RowView``
-        // and ``BlockView``.
-        drag_drop_dialog: function (parent, opts) {
-            var dialog = web.dialog(opts),
-                page = this.page();
-            // append the row element to the body of the row dialog
-            dialog.body().append(this.elem);
-            parent.elem.append(dialog.container().addClass(opts.dropzone));
-            this.dialog = dialog;
-            dialog.element().bind('removed', function () {
-                page.sync();
-            });
-            return dialog;
+        //
+        // Create dialog
+        _create_edit_dialog: function (opts) {
+            if (!this.dialog) {
+                this.dialog = web.dialog(opts);
+                this.elem.before(this.dialog.element());
+                this.dialog.body().append(this.elem);
+            }
+            return this.dialog;
+        },
+        //
+        log: function (msg) {
+            var page = this.page();
+            if (page && page.logger) {
+                page.logger.html('<p>' + msg + '</p>');
+            }
         },
         //
         toString: function () {
@@ -609,64 +603,63 @@ define(['lux-web'], function () {
     //  PageView
     //  --------------
 
-    //  Handle the CMS page. This is the view which contains children ``GridView``.
+    //  Handle the CMS page.
+    //  This is the view which contains children ``GridView``.
     //  GridView are created for all descendant which match the
     //  ``.cms-grid`` selector.
-    var PageView = ContentView.extend({
-        // Constructor from a model instance and a cms instance of the cms web
-        // extension.
-        init: function (model, cms) {
+    //  A page does not add any child during editing, it is just a container
+    //  of grid elements.
+    var PageView = BaseContentView.extend({
+        type: 'page',
+        //
+        childType: 'grid',
+        //
+        // Setup the view and build children which match cms
+        render: function () {
             var self = this;
-            this.model = model;
-            this.cms = cms;
-            this._super(cms.element(), cms.options);
-            _(this.childrenElem()).forEach(function (elem) {
-                elem = $(elem);
-                var next = elem.next(),
-                    parent = elem.parent();
-                var g = new GridView(elem, self.options, self);
-                if (next.length) {
-                    next.before(g.container());
-                } else {
-                    parent.append(g.container());
-                }
+            this.childrenElem().each(function () {
+                self.create_child(this);
             });
-        },
-        // Setup page
-        //  * Add control button "Add new block"
-        //  * Setup Drag & Drop for rows and blocks.
-        setupEdit: function (parent) {
-            var cms = this.cms,
-                control = $('.cms-control');
-            if (!control.length) {
-                control = $(document.createElement('div'))
-                    .addClass('cms-control').prependTo(document.body);
-            }
-            delete this.cms;
-            this.control = web.dialog(control, this.options.page);
-            control.show();
-            cms.backend.element().prependTo(this.control.header());
-            this._add_block_control();
-            //
-            // Create Drag & drop elements for the dialogs
-            if (this.options.block.dragdrop) {
-                this.options.block.dragdrop = this._create_drag_drop(this.options.block);
-            }
-            if (this.options.row.dragdrop) {
-                this.options.row.dragdrop = this._create_drag_drop(this.options.row);
+            // setup editing first
+            if (this.options.editing) {
+                self.model = new Page({id: this.options.editing});
+                this.setupEdit();
             }
         },
         //
-        parent: function () {
-            return null;
+        // Setup editing view
+        setupEdit: function () {
+            if (!this.editing) {
+                var control = $('.cms-control');
+                this.logger = $('<div class="cms-info"></div>');
+                if (!control.length) {
+                    control = $(document.createElement('div'))
+                        .addClass('cms-control').prependTo(document.body);
+                }
+                this.control = web.dialog(control, this.options.page);
+                this.control.header().prepend(this.logger);
+                control.show();
+                this._add_block_control();
+                //
+                // Create Drag & drop elements for the dialogs
+                if (this.options.block.dragdrop) {
+                    this.options.block.dragdrop = this._create_drag_drop(this.options.block);
+                }
+                if (this.options.row.dragdrop) {
+                    this.options.row.dragdrop = this._create_drag_drop(this.options.row);
+                }
+                this._super();
+            }
         },
         //
         page: function () {
             return this;
         },
+        //
         grid: function () {
             return null;
         },
+        //
         index: function () {
             return -1;
         },
@@ -680,7 +673,7 @@ define(['lux-web'], function () {
             }
             this._current_column = column;
             if (column) {
-                web.logger.info('Selected current ' + column);
+                this.log('Selected current ' + column);
                 column.elem.addClass('active');
             }
         },
@@ -695,29 +688,11 @@ define(['lux-web'], function () {
             });
             return all;
         },
-        // Render page from model content or from html if model is not provided.
-        render: function () {
-            if (this.model) {
-                var children = {},
-                    child;
-                this.iter(function (child) {
-                    children[child.name] = child;
-                });
-                _(this.model.get('content')).forEach(function (grid, name) {
-                    child = children[name];
-                    if (child) child.render(grid);
-                }, this);
-            } else {
-                this.iter(function (child) {
-                    child.render();
-                });
-            }
-        },
         //
         // Synchronise this view with the backend
         sync: function (options) {
             this.model.set('content', this.layout());
-            web.logger.info(this + ' sync with backend');
+            this.log('saving layout...');
             this.model.sync(options);
         },
         //
@@ -742,9 +717,9 @@ define(['lux-web'], function () {
                     self.set_current_column(column);
                 }
                 if (column) {
-                    column.create_child(null, {template: templateName});
+                    column.add_block(templateName);
                 } else {
-                    web.logger.warning('No column available!');
+                    self.log('WARNING: No column available!');
                 }
             });
         },
@@ -777,38 +752,46 @@ define(['lux-web'], function () {
     //  Grid View
     //  --------------------
     //
-    //  View manager for a Grid, or better a CmsContext. A grid is a container
-    // of Rows. In editing mode it is used to add and remove rows.
-    var GridView = ContentView.extend({
+    //  View manager for a Grid. A grid is a container of Rows.
+    //  In editing mode it is used to add and remove Rows.
+    var GridView = BaseContentView.extend({
         type: 'grid',
+        //
         childType: 'row',
         //
-        setupEdit: function (parent) {
-            var self = this,
-                dialog = this.dialog = web.dialog(this.options.grid),
-                add_row = dialog.create_button({
-                    icon: this.options.add_row_icon,
-                    title: 'Add new row'
-                }),
-                select = $(document.createElement('select')).addClass(dialog.options.skin);
-            //
-            ROW_TEMPLATES.each(function (_, name) {
-                select.append($("<option></option>").attr("value", name).text(name));
-            });
-            dialog.buttons.prepend(select).prepend(add_row);
-            // Adds a bright new row
-            add_row.click(function () {
-                self.create_child(null, {template: select.val()});
-            });
-            dialog.title(this.name);
-            dialog.body().append(this.elem.fadeTo('fast', 1));
+        setupEdit: function () {
+            if (!this.editing) {
+                var self = this,
+                    dialog = this._create_edit_dialog(this.options.grid),
+                    add_row = dialog.create_button({
+                        icon: this.options.add_row_icon,
+                        title: 'Add new row'
+                    }),
+                    select = $(document.createElement('select')).addClass(dialog.options.skin);
+                //
+                dialog.title(this.name);
+                ROW_TEMPLATES.each(function (_, name) {
+                    select.append($("<option></option>").attr("value", name).text(name));
+                });
+                dialog.buttons.prepend(select).prepend(add_row);
+                // Adds a bright new row
+                add_row.click(function () {
+                    var row = self.create_child(null, {template: select.val()});
+                    self.elem.append(row.container());
+                    row.setupEdit();
+                });
+                this._super();
+            }
         },
+        //
         grid: function () {
             return this;
         },
+        //
         index: function () {
             return this.name;
         },
+        //
         toString: function () {
             return this.type + '-' + this.name;
         }
@@ -817,61 +800,49 @@ define(['lux-web'], function () {
     //  Row View
     //  -------------------
     //
-    //  Rows are created with a prefixed number of children, the columns. They
-    //  are rendered by the template chosen when the Row is created.
-    var RowView = ContentView.extend({
+    //  Rows are created with a prefixed number of Columns.
+    //  They are rendered by the template chosen when the Row is created.
+    //  Therefore no columns are added nor deleted once a Row is created.
+    //
+    //   * The number of children is fixed by the ``template`` attribute.
+    //   * The ``template`` is retrieved from the ``data-template``.
+    var RowView = BaseContentView.extend({
         type: 'row',
+        //
         childType: 'column',
+        //
         templates: ROW_TEMPLATES,
         //
-        setup: function () {
-            this.elem.addClass('row grid' + this.options.columns);
+        render: function () {
+            if (this.type == 'row') {
+                this.elem.addClass('row grid' + this.options.columns);
+            }
             this.templateName = this.elem.data('template');
-        },
-        //
-        setupEdit: function (parent) {
-            this.drag_drop_dialog(parent, this.options.row);
-        },
-        //
-        render: function (content) {
-            this.template = this.get_template(content);
-            if (content && content.children)
-                content = content.children.splice(0, this.template.length);
-            else content = [];
-            for (var i=content.length;i<this.template.length;i++) content[i] = null;
-            content = this.create_children(content);
-            var start = this.template.length - content.length;
-            _(content).forEach(function (c, index) {
-                var child = this.child(index+start);
-                if (!child) this.create_child(null, content[index]);
-                else child.render(content[index]);
-            }, this);
-        },
-        //
-        create_child: function (elem, content) {
-            var c = this.numChildren();
-            if (c < this.template.length) {
-                var child = this._super(elem, content);
-                child.container().addClass('column span' + this.template[c]*this.options.columns);
-                return child;
-            }
-        },
-        //
-        get_template: function (content) {
-            var template = this.templateName ? this.templates.get(this.templateName) : null;
-            if (content && content.template) {
-                var temp = this.templates.get(content.template);
-                if (temp) {
-                    this.templateName = content.template;
-                    template = temp;
-                }
-            }
-            if (!template) {
+            this.template = this.templateName ? this.templates.get(this.templateName) : null;
+            if (!this.template) {
                 this.templateName = this.templates.order[0];
-                template = this.templates.get(this.templateName);
+                this.template = this.templates.get(this.templateName);
             }
-            if (this.dialog) this.dialog.title(this.templateName);
-            return template;
+            var self = this,
+                num = this.template.length,
+                index = 0;
+
+            this.elem.children().detach().each(function () {
+                if (index < num) {
+                    self.template.append(self.create_child(this), self, index);
+                    index += 1;
+                }
+            });
+            // Need more children for the template
+            for (; index<num; index++) {
+                self.template.append(self.create_child(), self, index);
+            }
+
+        },
+        //
+        setupEdit: function () {
+            this._create_edit_dialog(this.options[this.type]);
+            this._super();
         },
         //
         // Serialise the layout of a row
@@ -893,75 +864,76 @@ define(['lux-web'], function () {
                     children: all
                 };
             }
-        }
+        },
+        //
+        _create_edit_dialog: function (opts) {
+            if (!this.dialog) {
+                var dialog = this._super(opts),
+                    page = this.page();
+                dialog.container().addClass(opts.dropzone);
+                dialog.element().bind('removed', function () {
+                    if (page) {
+                        page.sync();
+                    }
+                });
+            }
+            return this.dialog;
+        },
     });
 
     //  Column View
     //  -------------------
     //
-    //  Handle the A Column within a RowView. A column is a container of several
-    //  Blocks vertically aligned.
-    var ColumnView = ContentView.extend({
+    //  Handle the A Column within a Row.
+    //  A column is a container of several Blocks vertically aligned.
+    var ColumnView = BaseContentView.extend({
         type: 'column',
+        //
         childType: 'block',
+        //
         setupEdit: function () {
-            var self = this;
-            this.elem.click(function (e) {
-                self.page().set_current_column(self);
-            });
+            if (!this.editing) {
+                var self = this;
+                this.elem.click(function () {
+                    self.page().set_current_column(self);
+                });
+                this._super();
+            }
         },
         //
         // Return self
         get_column: function () {
             return this;
+        },
+        //
+        // Add a new block to the column
+        add_block: function (templateName) {
+            var child = this.create_child(null, {template: templateName});
+            this.elem.append(child.container());
+            this.log('Added new ' + child);
+            if (this.editing) {
+                child.setupEdit();
+            }
         }
     });
 
     //  Block View
     //  -------------------
     //
-    //  The Block View inherits from the ``RowView`` since it shares several
-    //  features.
-    //
-    //   * The number of children is fixed by the ``template`` attribute.
-    //   * The ``template`` is retrieved from the ``data-template``.
+    //  The Block View inherits from the ``RowView``
     var BlockView = RowView.extend({
         type: 'block',
-        childType: 'position',
+        //
+        childType: 'content',
+        //
         templates: BLOCK_TEMPLATES,
-        //
-        setup: function () {
-            this.elem.addClass('block');
-            this.templateName = this.elem.data('template');
-        },
-        //
-        setupEdit: function (parent) {
-            this.drag_drop_dialog(parent, this.options.block);
-        },
-        //
-        //  Create a new child (Position) within a block. Nothing special
-        //  here, but it needs to override the ``RowView`` method.
-        create_child: function (elem, content) {
-            var c = this.numChildren();
-            if (c < this.template.length) {
-                var View = ContentViewMap[this.childType];
-                if (!View) {
-                    throw new lux.NotImplementedError(this + ' has no create_child method.');
-                }
-                if (!elem) elem = $(document.createElement('div'));
-                var child = new View(elem, this.options, this);
-                this.template.append(child, this, c);
-                child.render(content);
-                return child;
-            }
-        },
         //
         get_column: function () {
             return this.parent();
         }
     });
 
-    //  Position View
+    //  Content View
     //  --------------------
     //
     //  The container of contents and therefore the atom of lux CMS.
@@ -969,44 +941,56 @@ define(['lux-web'], function () {
     //  Or accessed via children elements when in read mode. Childern elements
     //  have the ``field`` entry in their html data attribute. The field contains
     //  the name of the field for which the inner html of the element provides value.
-    var PositionView = ContentView.extend({
-        type: 'position',
-        childType: null,
+    var ContentView = BaseContentView.extend({
+        type: 'content',
         //
-        setup: function () {
-            var info = this.elem.attr('id');
-            this.elem.addClass('content');
-            if (info) {
-                info = info.split('-');
-                if (info.length === 2 && lux.cms.content_type(info[0])) {
-                    this.content_type = {
-                        content_type: info[0],
-                        id: info[1]
-                    };
-                }
+        render: function () {
+            var data = this.elem.data(),
+                Content = lux.cms.content_type(data.content_type),
+                content;
+            if (Content) {
+                // remove the content_type & cmsview
+                this.wrapper = data.wrapper;
+                delete data.wrapper;
+                delete data.content_type;
+                delete data.cmsview;
+                this.elem.children().each(function () {
+                    elem = $(elem);
+                    var field = elem.data('field');
+                    if (field) {
+                        data[field] = elem.data('value') || elem.html();
+                    } else {
+                        //TODO: whoat is this?
+                        this.content_type.fields.jQuery = elem;
+                    }
+                });
+                this.set(new Content(data), false);
             }
         },
         //
         // Setup the editing view by adding the edit button which trigger the
         // ``edit_content`` method when clicked.
-        setupEdit: function (parent) {
-            var self = this,
-                container = $(document.createElement('div')),
-                toolbar = $(document.createElement('div'))
-                            .addClass('cms-position-toolbar').appendTo(container),
-                group = $(document.createElement('div'))
-                            .addClass('btn-group right').appendTo(toolbar),
-                button = parent.dialog.create_button({icon: 'edit', size: 'mini'})
-                            .click(function () {
-                                self.edit_content();
-                            }).appendTo(group),
-                title = $(document.createElement('span')).prependTo(toolbar);
-            this.button_group = group;
-            this.title = title;
-            container.appendTo(this.elem.parent());
-            this.elem.addClass('preview').appendTo(container);
-            this._container = container;
-            this.content_history = {};
+        setupEdit: function () {
+            if (!this.editing) {
+                var self = this,
+                    container = $(document.createElement('div')),
+                    toolbar = $(document.createElement('div'))
+                                .addClass('cms-content-toolbar').appendTo(container),
+                    group = $(document.createElement('div'))
+                                .addClass('btn-group right').appendTo(toolbar),
+                    parent = this.parent(),
+                    button = parent.dialog.create_button({icon: 'edit', size: 'mini'})
+                                .click(function () {
+                                    self.edit_content();
+                                }).appendTo(group);
+                this.button_group = group;
+                this.title = $(document.createElement('span')).prependTo(toolbar);
+                container.appendTo(this.elem.parent());
+                this.elem.addClass('preview').appendTo(container);
+                this._container = container;
+                this.content_history = {};
+                this.editing = true;
+            }
         },
         //
         container: function () {
@@ -1016,34 +1000,7 @@ define(['lux-web'], function () {
         child: function (index) {
             return null;
         },
-        // This method doesn't actually create any child, instead it collects
-        // field information form a child ``elem`` if it is available.
-        // If the ``elem`` has a ``field`` entry in the data dictionary, its
-        // content is either in the inner html or in the ``value`` field in
-        // the element data. The content is added to the ``content_type.fields``
-        // object at ``field``.
-        create_child: function (elem, content) {
-            if (this.content_type && elem) {
-                elem = $(elem);
-                var field = elem.data('field');
-                if (!this.content_type.fields) this.content_type.fields = {};
-                if (field) {
-                    this.content_type.fields[field] = elem.data('value') || elem.html();
-                } else {
-                    this.content_type.fields.jQuery = elem;
-                }
-            }
-        },
         //
-        render: function (content) {
-            this.create_children(content);
-            if (this.content_type) {
-                this.get_content(this.content_type);
-                delete this.content_type;
-            } else if (content && content.content_type) {
-                this.get_content(content);
-            }
-        },
         // Retrieve content from backend when in editing mode, otherwise
         // set the fields obtained from subelements in the ``create_child`` method.
         get_content: function (ct) {
@@ -1066,7 +1023,7 @@ define(['lux-web'], function () {
                         }
                     });
                 } else {
-                    web.logger.warning('Could not understand content');
+                   self.log('WARNING: could not understand content!');
                 }
             }
         },
@@ -1080,7 +1037,12 @@ define(['lux-web'], function () {
         // the content is synchronised with the backend (editing mode).
         set: function (content, sync) {
             this.content = content;
-            content.render(this.elem);
+            var wrapper = cms.wrapper_type(this.wrapper),
+                elem = this.elem.html('');
+            if (wrapper) {
+                elem = wrapper.wrap(this);
+            }
+            content.render(elem);
             // Set the toolbar title if in editing mode
             if (this.title) {
                 this.title.html(content._meta.title);
@@ -1092,18 +1054,20 @@ define(['lux-web'], function () {
                 try {
                     content.sync({
                         success: function () {
-                            web.logger.info(self + ' set content to ' + self.content);
+                            self.log(self + ' set content to ' + self.content);
                             page.sync();
                         }
                     });
                 } catch (e) {
-                    web.logger.error(e);
+                    self.log('ERROR while synching. ' + e);
                 }
             }
         },
+        //
         get_column: function () {
             return this.parent.get_column();
         },
+        //
         // Edit content by opening a dialog.
         edit_content: function () {
             var root = this.page(),
@@ -1126,12 +1090,8 @@ define(['lux-web'], function () {
             'row': RowView,
             'column': ColumnView,
             'block': BlockView,
-            'position': PositionView
+            'content': ContentView
         };
-
-    // Export to ``lux.cms`` namespace
-
-    lux.cms.ContentView = ContentView;
 
     //
     //  CMS Layouts
@@ -1159,7 +1119,7 @@ define(['lux-web'], function () {
             }
         }
     });
-    
+
     var Tabs = Layout.extend({
         append: function (pos, block, index) {
             var elem = pos.container();
@@ -1179,23 +1139,37 @@ define(['lux-web'], function () {
             }
         }
     });
-    
-    
-    ROW_TEMPLATES.set('One Column', [1]);
-    ROW_TEMPLATES.set('Half-Half', [1/2, 1/2]);
-    ROW_TEMPLATES.set('33-66', [1/3, 2/3]);
-    ROW_TEMPLATES.set('66-33', [2/3, 1/3]);
-    ROW_TEMPLATES.set('25-75', [1/4, 3/4]);
-    ROW_TEMPLATES.set('75-25', [3/4, 1/4]);
-    
-    ROW_TEMPLATES.set('33-33-33', [1/3, 1/3, 1/3]);
-    ROW_TEMPLATES.set('50-25-25', [1/2, 1/4, 1/4]);
-    ROW_TEMPLATES.set('25-25-50', [1/4, 1/4, 1/2]);
-    ROW_TEMPLATES.set('25-50-25', [1/4, 1/2, 1/4]);
-    
-    ROW_TEMPLATES.set('25-25-25-25', [1/4, 1/4, 1/4, 1/4]);
-    
-    
+
+    var RowTemplate = lux.Class.extend({
+        //
+        init: function (splits) {
+            this.splits = splits;
+            this.length = splits.length;
+        },
+        //
+        append: function (child, parent, index) {
+            var elem = child.container();
+            elem.addClass('column span' + this.splits[index]*parent.options.columns);
+            parent.elem.append(elem);
+        }
+    });
+
+
+    ROW_TEMPLATES.set('One Column', new RowTemplate([1]));
+    ROW_TEMPLATES.set('Half-Half', new RowTemplate([1/2, 1/2]));
+    ROW_TEMPLATES.set('33-66', new RowTemplate([1/3, 2/3]));
+    ROW_TEMPLATES.set('66-33', new RowTemplate([2/3, 1/3]));
+    ROW_TEMPLATES.set('25-75', new RowTemplate([1/4, 3/4]));
+    ROW_TEMPLATES.set('75-25', new RowTemplate([3/4, 1/4]));
+
+    ROW_TEMPLATES.set('33-33-33', new RowTemplate([1/3, 1/3, 1/3]));
+    ROW_TEMPLATES.set('50-25-25', new RowTemplate([1/2, 1/4, 1/4]));
+    ROW_TEMPLATES.set('25-25-50', new RowTemplate([1/4, 1/4, 1/2]));
+    ROW_TEMPLATES.set('25-50-25', new RowTemplate([1/4, 1/2, 1/4]));
+
+    ROW_TEMPLATES.set('25-25-25-25', new RowTemplate([1/4, 1/4, 1/4, 1/4]));
+
+
     BLOCK_TEMPLATES.set('1 element', new Layout(1));
     BLOCK_TEMPLATES.set('2 elements', new Layout(2));
     BLOCK_TEMPLATES.set('3 elements', new Layout(3));
@@ -1210,21 +1184,21 @@ define(['lux-web'], function () {
     lux.cms.create_wrapper('well', {
         title: 'Well',
         render: function (elem) {
-            return elem.wrap("<div class='well'></div>");
+            return $("<div class='well'></div>").appendTo(elem);
         }
     });
 
     lux.cms.create_wrapper('welllg', {
         title: 'Well Large',
         render: function (elem) {
-            return elem.wrap("<div class='well-lg'></div>");
+            return $("<div class='well-lg'></div>").appendTo(elem);
         }
     });
 
     lux.cms.create_wrapper('wellsm', {
         title: 'Well Small',
         render: function (elem) {
-            return elem.wrap("<div class='well-sm'></div>");
+            return $("<div class='well-sm'></div>").appendTo(elem);
         }
     });
 
@@ -1446,35 +1420,30 @@ define(['lux-web'], function () {
         decorate: function () {
             var self = this,
                 options = self.options,
-                elem = self.element(),
-                control = $('.cms-control');
+                elem = self._element;
             // In editing mode, set-up grids
             if (options.editing) {
                 //self._handle_close();
                 elem.addClass('editing');
                 //
                 // Create backend
-                self.backend = web.backend({
-                    host: options.backend_url,
-                    hartbeat: options.hartbeat
-                });
-                //
-                // Set transport in the cms handler
-                lux.cms.set_transport(self.backend.socket);
-                //
-                // get page information
-                lux.cms.get(options.editing, {
-                    success: function (page) {
-                        self.view = new PageView(page[0], self);
-                        self.view.render();
-                    }
-                });
-                //
+                if (!lux.cms._backend) {
+                    self.backend = web.backend({
+                        host: options.backend_url,
+                        hartbeat: options.hartbeat
+                    });
+                    //
+                    // Set transport in the cms handler
+                    lux.cms.set_transport(self.backend.socket);
+                } else {
+                    self.backend = web.backend({
+                        socket: lux.cms._backend
+                    });
+                }
                 self._setup_api();
-            } else {
-                self.view = new PageView(null, this);
-                self.view.render();
             }
+            self.view = new PageView(elem, options);
+            self.view.render();
         },
         //
         _setup_api: function () {
