@@ -10,6 +10,8 @@
             page_limit = options.page_limit || 10,
             grid = web.grid(),
             preview = $(document.createElement('div')).addClass('preview'),
+            //
+            // Build the form container
             form = web.form(),
             //
             // Create the select element for HTML wrappers
@@ -169,8 +171,11 @@
                 if (cform) {
                     search.after(cform._element.children('fieldset').addClass('content-form'));
                 }
-            } else {
+            } else if (name) {
                 web.logger.error('Unknown content type ' + name);
+            } else {
+                search.detach();
+                form._element.find('.content-form').remove();
             }
         });
         //

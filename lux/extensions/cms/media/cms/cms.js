@@ -57,6 +57,33 @@ define(['lux-web'], function () {
                 this.container.trigger('close-plugin-edit');
                 delete this.container;
             }
+        },
+        //
+        // Sync only if the content is persistent in the backend,
+        // otherwise no need to do anything
+        sync: function (options) {
+            if (this._meta.persistent) {
+                return this._super(options);
+            } else {
+                this.set('content_type', this._meta.name);
+                if (options && options.success) {
+                    options.success.call(this._meta, this.fields());
+                }
+            }
+        },
+        //
+        // Serialize the content.
+        //
+        // Used by the PositionView when sychronosing with backend
+        serialize: function() {
+            if (this._meta.persistent) {
+                var pk = this.pk();
+                if (pk) {
+                    return {id: pk};
+                }
+            } else {
+                return this.fields();
+            }
         }
     });
     //
@@ -192,6 +219,8 @@ define(['lux-web'], function () {
             page_limit = options.page_limit || 10,
             grid = web.grid(),
             preview = $(document.createElement('div')).addClass('preview'),
+            //
+            // Build the form container
             form = web.form(),
             //
             // Create the select element for HTML wrappers
@@ -351,8 +380,11 @@ define(['lux-web'], function () {
                 if (cform) {
                     search.after(cform._element.children('fieldset').addClass('content-form'));
                 }
-            } else {
+            } else if (name) {
                 web.logger.error('Unknown content type ' + name);
+            } else {
+                search.detach();
+                form._element.find('.content-form').remove();
             }
         });
         //
@@ -520,6 +552,7 @@ define(['lux-web'], function () {
             }
             return content;
         },
+        //
         // The jQuery element containing this view. It can be different form the
         // view jQuery ``elem``.
         container: function () {
@@ -537,8 +570,12 @@ define(['lux-web'], function () {
                 view = child.data('cmsview');
             return view.get_column();
         },
-        // Layout information for this view. This method is invoked
-        // when the page needs to sync with the backend database
+        //
+        // Layout information for this view.
+        //
+        // This method is invoked when a view needs to sync with the backend
+        // database. By default a view returns an array containing the layout
+        // information of its children.
         layout: function () {
             var all = [],
                 layout;
@@ -647,7 +684,8 @@ define(['lux-web'], function () {
                 column.elem.addClass('active');
             }
         },
-        // Override layout to pick up children layouts
+        //
+        // Returns an object rather than a list of children layouts
         layout: function () {
             var all = {},
                 layout;
@@ -676,6 +714,7 @@ define(['lux-web'], function () {
             }
         },
         //
+        // Synchronise this view with the backend
         sync: function (options) {
             this.model.set('content', this.layout());
             web.logger.info(this + ' sync with backend');
@@ -834,7 +873,11 @@ define(['lux-web'], function () {
             if (this.dialog) this.dialog.title(this.templateName);
             return template;
         },
-        // Keep the location of columns in a row. if no columns have data skip the row
+        //
+        // Serialise the layout of a row
+        //
+        // * Keep the location of columns in a row.
+        // * If no columns have data skip the row
         layout: function () {
             var all = [],
                 avail = false;
@@ -867,6 +910,8 @@ define(['lux-web'], function () {
                 self.page().set_current_column(self);
             });
         },
+        //
+        // Return self
         get_column: function () {
             return this;
         }
@@ -879,15 +924,17 @@ define(['lux-web'], function () {
     //  features.
     //
     //   * The number of children is fixed by the ``template`` attribute.
-    //   * The ``template`` is retrieved from the data ``template`` key.
+    //   * The ``template`` is retrieved from the ``data-template``.
     var BlockView = RowView.extend({
         type: 'block',
         childType: 'position',
         templates: BLOCK_TEMPLATES,
+        //
         setup: function () {
             this.elem.addClass('block');
             this.templateName = this.elem.data('template');
         },
+        //
         setupEdit: function (parent) {
             this.drag_drop_dialog(parent, this.options.block);
         },
@@ -925,6 +972,7 @@ define(['lux-web'], function () {
     var PositionView = ContentView.extend({
         type: 'position',
         childType: null,
+        //
         setup: function () {
             var info = this.elem.attr('id');
             this.elem.addClass('content');
@@ -1025,10 +1073,7 @@ define(['lux-web'], function () {
         //
         layout: function () {
             if (this.content) {
-                return {
-                    id: this.content.pk(),
-                    content_type: this.content._meta.name
-                };
+                return this.content.serialize();
             }
         },
         // Set the ``content`` for this Position View. When ``sync`` is not ``false``

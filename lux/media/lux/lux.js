@@ -253,6 +253,7 @@ define(['lodash', 'jquery'], function () {
                 this.liveStorage = new this.liveStorage(this.name+'.');
                 this._backend = null;
             },
+            //
             // Initialise an instance
             init_instance: function (o, fields) {
                 o._fields = {};

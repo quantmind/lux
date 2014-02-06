@@ -225,7 +225,7 @@ test("Type", function () {
 
 test("Model", function () {
     var Model = lux.Model;
-    equal(typeof(Model), 'function', 'Type is an function');
+    equal(typeof(Model), 'function', 'Model is an function');
     var meta = Model.prototype._meta;
     equal(Model._meta, meta, '_meta attribute available both in constructor as well as prototype');
     equal(meta.model, Model, 'meta model attribute is equal to Model');

@@ -154,6 +154,7 @@ class PageTemplate(Template):
 class CmsContext(Context):
     '''A specialised :class:`.Context` for rendering
     the dynamic content in a :class:`PageTemplate`.
+
     The dynamic content is retrieved from data in a backend database.
 
     :param all_pages: optional boolean to pass during initialisation,
@@ -191,10 +192,11 @@ class CmsContext(Context):
                     block = Html('div', template=bc.get('template'))
                     for id, html in self._contents(bc.get('children'),
                                                    context):
-                        if id in ids:
-                            ids[id].append(html)
-                        else:
-                            ids[id] = [html]
+                        if id:
+                            if id in ids:
+                                ids[id].append(html)
+                            else:
+                                ids[id] = [html]
                         block.append(html)
                     column.append(block)
                 row.append(column)
@@ -203,7 +205,9 @@ class CmsContext(Context):
 
     def _contents(self, contents, context):
         for content in contents or ():
-            id = content.get('id') if content else None
-            if id:
-                content_type = content['content_type']
-                yield id, Html('div', id='%s-%s' % (content_type, id))
+            if content:
+                id = content.get('id')
+                if id:
+                    yield id, Html('div', id='cms-content-%s' % id)
+                else:
+                    yield None, Html('div', data=content)

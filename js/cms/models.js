@@ -54,6 +54,33 @@
                 this.container.trigger('close-plugin-edit');
                 delete this.container;
             }
+        },
+        //
+        // Sync only if the content is persistent in the backend,
+        // otherwise no need to do anything
+        sync: function (options) {
+            if (this._meta.persistent) {
+                return this._super(options);
+            } else {
+                this.set('content_type', this._meta.name);
+                if (options && options.success) {
+                    options.success.call(this._meta, this.fields());
+                }
+            }
+        },
+        //
+        // Serialize the content.
+        //
+        // Used by the PositionView when sychronosing with backend
+        serialize: function() {
+            if (this._meta.persistent) {
+                var pk = this.pk();
+                if (pk) {
+                    return {id: pk};
+                }
+            } else {
+                return this.fields();
+            }
         }
     });
     //

@@ -134,10 +134,14 @@ class ContentDictionary(AttributeDictionary):
     def fields(self):
         fields = dict(self)
         fields.pop('timestamp', None)
+        fields.pop('_cid', None)
         data = fields.pop('data', None)
         if data:
             fields.update(data)
         return fields
+
+    def pkvalue(self):
+        pass
 
 
 def create_content(manager, content_type, data):
