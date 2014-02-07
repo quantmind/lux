@@ -30,9 +30,26 @@ define(['lux-web'], function () {
     var Content = lux.Model.extend({
         show_title: false,
         meta: {
-            name: 'content'
+            name: 'content',
+            attributes: {
+                keywords: function (value) {
+                    if (_.isString(value)) {
+                        var result = [];
+                        _(value.split(',')).forEach(function (el) {
+                            el = el.trim();
+                            if (el) {
+                                result.push(el);
+                            }
+                        });
+                        return result;
+                    } else {
+                        return value;
+                    }
+                }
+            }
         },
         //
+        // Retrieve content fields form an array ``arr`` of form inputs
         get_form_fields: function (arr) {
             var fields = {};
             _(arr).forEach(function (f) {
@@ -137,13 +154,11 @@ define(['lux-web'], function () {
             // types.
             create_content_type: function (name, attrs, BaseContent) {
                 var meta = attrs.meta;
-                if (!meta) {
-                    attrs.meta = meta = {};
-                }
-                meta.name = name.toLowerCase();
                 if (!BaseContent) {
                     BaseContent = Content;
                 }
+                attrs.meta = attrs.meta || {};
+                attrs.meta.name = name.toLowerCase();
                 var ct = BaseContent.extend(attrs);
                 ct._meta.set_transport(this._backend);
                 this._content_types[ct.prototype._meta.name] = ct;
@@ -750,7 +765,7 @@ define(['lux-web'], function () {
             return s;
         },
         //
-        // Create the drag and drop for both Rows and Blocks
+        // Enable drag and drop
         _create_drag_drop: function (opts) {
             var self = this,
                 dd = new web.DragDrop({
@@ -963,7 +978,8 @@ define(['lux-web'], function () {
         type: 'content',
         //
         render: function () {
-            var data = this.elem.data(),
+            var self = this,
+                data = this.elem.data(),
                 Content = lux.cms.content_type(data.content_type),
                 content;
             if (Content) {
@@ -974,13 +990,14 @@ define(['lux-web'], function () {
                 delete data.content_type;
                 delete data.cmsview;
                 this.elem.children().each(function () {
-                    elem = $(elem);
-                    var field = elem.data('field');
+                    var elem = $(this),
+                        field = elem.data('field');
                     if (field) {
-                        data[field] = elem.data('value') || elem.html();
+                        data[field] = elem.html();
                     } else {
-                        //TODO: whoat is this?
-                        this.content_type.fields.jQuery = elem;
+                        self.log('Field not available in content', 'WARNING');
+                        //TODO: what is this?
+                        //this.content_type.fields.jQuery = elem;
                     }
                 });
                 this.set(new Content(data), false);
@@ -1055,16 +1072,19 @@ define(['lux-web'], function () {
                 return this.content.serialize();
             }
         },
-        // Set the ``content`` for this Position View. When ``sync`` is not ``false``
+        //
+        // Set the ``content`` for this Content View.
+        // When ``sync`` is not ``false``
         // the content is synchronised with the backend (editing mode).
         set: function (content, sync) {
             this.content = content;
-            var wrapper = cms.wrapper_type(this.wrapper),
-                elem = this.elem.html('');
+            var wrapper = cms.wrapper_type(this.wrapper);
+            this.elem.html('');
             if (wrapper) {
-                elem = wrapper.wrap(this);
+                wrapper.render(this);
+            } else {
+                content.render(this.elem);
             }
-            content.render(elem);
             // Set the toolbar title if in editing mode
             if (this.title) {
                 this.title.html(content._meta.title);
@@ -1203,44 +1223,68 @@ define(['lux-web'], function () {
     //  Default CMS Wrappers
     //  --------------------------------
 
+    var _panel = function (view, with_title) {
+        var outer = $("<div class='panel panel-default'></div>").appendTo(view.elem),
+            head = $("<div class='panel-heading'></div>").appendTo(outer),
+            elem = $("<div class='panel-body'></div>").appendTo(outer),
+            title = view.content.get('title');
+        if (with_title) {
+            head = $("<h3 class='panel-title'></h3>").appendTo(head);
+        }
+        if (title) {
+            head.html(title);
+        }
+        view.content.render(elem);
+    };
+
+
     lux.cms.create_wrapper('well', {
         title: 'Well',
-        render: function (elem) {
-            return $("<div class='well'></div>").appendTo(elem);
+        render: function (view) {
+            var elem = $("<div class='well'></div>").appendTo(view.elem);
+            view.content.render(elem);
         }
     });
 
     lux.cms.create_wrapper('welllg', {
         title: 'Well Large',
-        render: function (elem) {
-            return $("<div class='well-lg'></div>").appendTo(elem);
+        render: function (view) {
+            var elem = $("<div class='well-lg'></div>").appendTo(view.elem);
+            view.content.render(elem);
         }
     });
 
     lux.cms.create_wrapper('wellsm', {
         title: 'Well Small',
-        render: function (elem) {
-            return $("<div class='well-sm'></div>").appendTo(elem);
+        render: function (view) {
+            var elem = $("<div class='well-sm'></div>").appendTo(view.elem);
+            view.content.render(elem);
         }
     });
 
     lux.cms.create_wrapper('panel', {
         title: 'Panel',
-        render: function (elem) {
-            return elem.wrap("<div class='panel-body'></div>")
-                       .wrap("<div class='panel panel-default'></div>");
+        render: function (view) {
+            var outer = $("<div class='panel panel-default'></div>").appendTo(view.elem),
+                elem = $("<div class='panel-body'></div>").appendTo(outer);
+            view.content.render(elem);
+        }
+    });
+
+    lux.cms.create_wrapper('panelheading', {
+        title: 'Panel with heading',
+        render: function (view) {
+            _panel(view);
         }
     });
 
     lux.cms.create_wrapper('paneltitle', {
-        title: 'Panel with Title',
-        render: function (elem) {
-            var p = elem.wrap(
-                "<div class='panel-body'></div>").wrap(
-                "<div class='panel panel-default'></div>");
-            return p;
+        title: 'Panel with title',
+        render: function (view) {
+            _panel(view, true);
         }
     });
+
     //
     //  Default CMS Contents
     //  --------------------------------

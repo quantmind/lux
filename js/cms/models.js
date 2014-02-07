@@ -27,7 +27,23 @@
     var Content = lux.Model.extend({
         show_title: false,
         meta: {
-            name: 'content'
+            name: 'content',
+            attributes: {
+                keywords: function (value) {
+                    if (_.isString(value)) {
+                        var result = [];
+                        _(value.split(',')).forEach(function (el) {
+                            el = el.trim();
+                            if (el) {
+                                result.push(el);
+                            }
+                        });
+                        return result;
+                    } else {
+                        return value;
+                    }
+                }
+            }
         },
         //
         // Retrieve content fields form an array ``arr`` of form inputs
@@ -135,13 +151,11 @@
             // types.
             create_content_type: function (name, attrs, BaseContent) {
                 var meta = attrs.meta;
-                if (!meta) {
-                    attrs.meta = meta = {};
-                }
-                meta.name = name.toLowerCase();
                 if (!BaseContent) {
                     BaseContent = Content;
                 }
+                attrs.meta = attrs.meta || {};
+                attrs.meta.name = name.toLowerCase();
                 var ct = BaseContent.extend(attrs);
                 ct._meta.set_transport(this._backend);
                 this._content_types[ct.prototype._meta.name] = ct;

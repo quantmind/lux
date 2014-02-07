@@ -40,13 +40,13 @@ CmsContext
 '''
 import json
 from collections import Mapping
+from itertools import chain
 
 from pulsar import coroutine_return
+from pulsar.utils.pep import iteritems, is_string
 
 import lux
 from lux import Html, Template, Context
-
-from .contents import apply_content
 
 
 class Column(Template):
@@ -97,7 +97,7 @@ class Row(Template):
 class Grid(Template):
     '''A container of :class:`Row` or :class:`CmsContext` templates.
 
-    Note that a :class:`.Grid` template can be used indipendently
+    Note that a :class:`.Grid` template can be used independently
     from the content management system.
 
     :parameter fixed: optional boolean flag to indicate if the grid is
@@ -105,8 +105,6 @@ class Grid(Template):
         If not specified the grid is considered fluid (it changes width when
         the browser window changes width).
 
-    A :class:`Grid` elements is usually a direct child of a :class:`PageTemplate`,
-    unless additional wrapping elements are used.
     '''
     tag = 'div'
 
@@ -151,11 +149,21 @@ class PageTemplate(Template):
             if ids:
                 contents = yield request.models.content.filter(id=ids).all()
                 for content in contents:
-                    for pos in ids.get(content.id, ()):
-                        apply_content(pos, content, context)
+                    for elem in ids.get(content.id, ()):
+                        self.apply_content(elem, content)
             doc = request.html_document
             doc.head.scripts.require('cms')
         coroutine_return(html)
+
+    def apply_content(self, elem, content):
+        elem.data({'id': content.id, 'content_type': content.content_type})
+        for name, value in chain((('title', content.title),
+                                  ('keywords', content.keywords)),
+                                 iteritems(content.data)):
+            if not is_string(value):
+                elem.data(name, value)
+            elif value:
+                elem.append(Html('div', value, field=name))
 
 
 class CmsContext(Context):

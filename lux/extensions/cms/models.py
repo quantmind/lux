@@ -20,9 +20,17 @@ additional_where = ((1, 'head'),
                     (2, 'body javascript'))
 
 
+class KeywordsField(odm.CharField):
+
+    def to_python(self, value, backend=None):
+        if isinstance(value, (list, tuple)):
+            value = ','.join(value)
+        return super(KeywordsField, self).to_python(value, backend=backend)
+
+
 class ModelBase(odm.StdModel):
     timestamp = odm.DateTimeField(default=datetime.now)
-    keywords = odm.CharField()
+    keywords = KeywordsField()
     history = odm.ListField()
 
     class Meta:

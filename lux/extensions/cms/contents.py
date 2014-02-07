@@ -11,7 +11,7 @@ def apply_content(html, content, context):
         handler = content_types[content.content_type]
     else:
         handler = content_types['contenttype']
-    handler(html, content.data, context)
+    handler(html, content, context)
 
 
 class ContentTypeMeta(type):

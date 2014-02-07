@@ -182,9 +182,7 @@
         default_meta_attributes = {
             'pkname': 'id',
             'name': 'model',
-            'title': null,
-            'attributes': null,
-            'liveStorage': Storage,
+            'LiveStorage': Storage,
             'defaults': {}
         },
         //
@@ -205,12 +203,12 @@
             // for this Meta. The available attributes are the same as
             // ``default_meta_attributes`` object above.
             init: function (model, attrs) {
+                var LiveStorage = attrs.LiveStorage;
+                delete attrs.LiveStorage;
                 this.model = model;
-                for (var name in attrs) {
-                    this[name] = attrs[name];
-                }
+                _.extend(this, attrs);
                 this.title = this.title || this.name;
-                this.liveStorage = new this.liveStorage(this.name+'.');
+                this.liveStorage = new LiveStorage(this.name+'.');
                 this._backend = null;
             },
             //
@@ -292,9 +290,10 @@
             // only when the field has changed
             set_field: function (instance, field, value) {
                 if (value === undefined) return;
+                // Check if there is a validater for the field
                 if (this.attributes) {
                     var validator = this.attributes[field];
-                    if (validator === undefined && field !== this.pkname) return;
+                    //if (validator === undefined && field !== this.pkname) return;
                     if (validator) {
                         value = validator.call(instance, value);
                     }
@@ -384,7 +383,11 @@
     var ModelType = Type.extend({
         new_class: function (Prototype, attrs) {
             var mattr = {},
-                meta = _.extend({}, default_meta_attributes, attrs.meta || {});
+                meta = Prototype._meta;
+            if (meta && meta.attributes) {
+                mattr.attributes = meta.attributes;
+            }
+            meta = _.merge(mattr, default_meta_attributes, attrs.meta);
             delete attrs.meta;
             var cls = this._super(Prototype, attrs);
             cls._meta = cls.prototype._meta = new Meta(cls, meta);

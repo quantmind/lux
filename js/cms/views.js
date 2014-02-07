@@ -528,7 +528,8 @@
         type: 'content',
         //
         render: function () {
-            var data = this.elem.data(),
+            var self = this,
+                data = this.elem.data(),
                 Content = lux.cms.content_type(data.content_type),
                 content;
             if (Content) {
@@ -539,13 +540,14 @@
                 delete data.content_type;
                 delete data.cmsview;
                 this.elem.children().each(function () {
-                    elem = $(elem);
-                    var field = elem.data('field');
+                    var elem = $(this),
+                        field = elem.data('field');
                     if (field) {
-                        data[field] = elem.data('value') || elem.html();
+                        data[field] = elem.html();
                     } else {
-                        //TODO: whoat is this?
-                        this.content_type.fields.jQuery = elem;
+                        self.log('Field not available in content', 'WARNING');
+                        //TODO: what is this?
+                        //this.content_type.fields.jQuery = elem;
                     }
                 });
                 this.set(new Content(data), false);
@@ -620,16 +622,19 @@
                 return this.content.serialize();
             }
         },
-        // Set the ``content`` for this Position View. When ``sync`` is not ``false``
+        //
+        // Set the ``content`` for this Content View.
+        // When ``sync`` is not ``false``
         // the content is synchronised with the backend (editing mode).
         set: function (content, sync) {
             this.content = content;
-            var wrapper = cms.wrapper_type(this.wrapper),
-                elem = this.elem.html('');
+            var wrapper = cms.wrapper_type(this.wrapper);
+            this.elem.html('');
             if (wrapper) {
-                elem = wrapper.wrap(this);
+                wrapper.render(this);
+            } else {
+                content.render(this.elem);
             }
-            content.render(elem);
             // Set the toolbar title if in editing mode
             if (this.title) {
                 this.title.html(content._meta.title);
