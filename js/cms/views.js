@@ -27,11 +27,14 @@
         },
         // Setup the view for editing mode. Called during construction.
         setupEdit: function () {
+            var self = this;
             if (this.childType && !this.editing) {
                 _(this.childrenElem()).forEach(function(elem) {
                     var child = $(elem).data('cmsview');
                     if (child) {
                         child.setupEdit();
+                    } else {
+                        self.log('could not find editing element', 'WARNING');
                     }
                 });
             }
@@ -158,10 +161,14 @@
             return this.dialog;
         },
         //
-        log: function (msg) {
+        log: function (msg, lvl) {
             var page = this.page();
             if (page && page.logger) {
-                page.logger.html('<p>' + msg + '</p>');
+                if (lvl) {
+                    page.logger.html('<p class="text-danger">' + lvl + ': ' + msg + '</p>');
+                } else {
+                    page.logger.html('<p>' + msg + '</p>');
+                }
             }
         },
         //
@@ -261,10 +268,15 @@
         },
         //
         // Synchronise this view with the backend
-        sync: function (options) {
+        sync: function () {
+            var self = this;
             this.model.set('content', this.layout());
             this.log('saving layout...');
-            this.model.sync(options);
+            this.model.sync({
+                success: function () {
+                    self.log('Layout saved');
+                }
+            });
         },
         //
         // Create the "Add Block" button for adding a block into a column.
@@ -303,7 +315,7 @@
             return s;
         },
         //
-        // Create the drag and drop for both Rows and Blocks
+        // Enable drag and drop
         _create_drag_drop: function (opts) {
             var self = this,
                 dd = new web.DragDrop({
@@ -522,6 +534,7 @@
             if (Content) {
                 // remove the content_type & cmsview
                 this.wrapper = data.wrapper;
+                data = _.merge({}, data);
                 delete data.wrapper;
                 delete data.content_type;
                 delete data.cmsview;
@@ -561,6 +574,9 @@
                 this._container = container;
                 this.content_history = {};
                 this.editing = true;
+                if (this.content) {
+                    this.title.html(this.content._meta.title);
+                }
             }
         },
         //
@@ -594,7 +610,7 @@
                         }
                     });
                 } else {
-                   self.log('WARNING: could not understand content!');
+                   self.log('could not understand content!', 'WARNING');
                 }
             }
         },

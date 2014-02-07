@@ -19,12 +19,18 @@
     // Base class for contents.
     // A new content class is created via the higher level utility function
     // ``cms.create_content_type``.
+    // A content can be persistent (its data is stored in a database) or not.
+    // A non-persistent content stores its data in the page layout,
+    // while the persistent one has also its own database representation.
+    // To mark a model persistent, add the ``persistent: true`` attribute to
+    // the ``meta`` object in the class definition.
     var Content = lux.Model.extend({
         show_title: false,
         meta: {
             name: 'content'
         },
         //
+        // Retrieve content fields form an array ``arr`` of form inputs
         get_form_fields: function (arr) {
             var fields = {};
             _(arr).forEach(function (f) {
@@ -62,7 +68,6 @@
             if (this._meta.persistent) {
                 return this._super(options);
             } else {
-                this.set('content_type', this._meta.name);
                 if (options && options.success) {
                     options.success.call(this._meta, this.fields());
                 }
@@ -79,7 +84,9 @@
                     return pk;
                 }
             } else {
-                return this.fields();
+                return _.extend({
+                    'content_type': this._meta.name
+                }, this.fields());
             }
         }
     });

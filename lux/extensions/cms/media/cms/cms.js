@@ -22,6 +22,11 @@ define(['lux-web'], function () {
     // Base class for contents.
     // A new content class is created via the higher level utility function
     // ``cms.create_content_type``.
+    // A content can be persistent (its data is stored in a database) or not.
+    // A non-persistent content stores its data in the page layout,
+    // while the persistent one has also its own database representation.
+    // To mark a model persistent, add the ``persistent: true`` attribute to
+    // the ``meta`` object in the class definition.
     var Content = lux.Model.extend({
         show_title: false,
         meta: {
@@ -65,7 +70,6 @@ define(['lux-web'], function () {
             if (this._meta.persistent) {
                 return this._super(options);
             } else {
-                this.set('content_type', this._meta.name);
                 if (options && options.success) {
                     options.success.call(this._meta, this.fields());
                 }
@@ -82,7 +86,9 @@ define(['lux-web'], function () {
                     return pk;
                 }
             } else {
-                return this.fields();
+                return _.extend({
+                    'content_type': this._meta.name
+                }, this.fields());
             }
         }
     });
@@ -360,7 +366,7 @@ define(['lux-web'], function () {
                 }
             }
             if (block.content) {
-                web.logger.info(block + ' changed content type to ' + block.content);
+                block.log(block + ' changed content type to ' + block.content);
                 block.content_history[block.content._meta.name] = block.content;
                 if (block.content._meta.persistent) {
                     // Set the form values for the dbcore fields block
@@ -456,11 +462,14 @@ define(['lux-web'], function () {
         },
         // Setup the view for editing mode. Called during construction.
         setupEdit: function () {
+            var self = this;
             if (this.childType && !this.editing) {
                 _(this.childrenElem()).forEach(function(elem) {
                     var child = $(elem).data('cmsview');
                     if (child) {
                         child.setupEdit();
+                    } else {
+                        self.log('could not find editing element', 'WARNING');
                     }
                 });
             }
@@ -587,10 +596,14 @@ define(['lux-web'], function () {
             return this.dialog;
         },
         //
-        log: function (msg) {
+        log: function (msg, lvl) {
             var page = this.page();
             if (page && page.logger) {
-                page.logger.html('<p>' + msg + '</p>');
+                if (lvl) {
+                    page.logger.html('<p class="text-danger">' + lvl + ': ' + msg + '</p>');
+                } else {
+                    page.logger.html('<p>' + msg + '</p>');
+                }
             }
         },
         //
@@ -690,10 +703,15 @@ define(['lux-web'], function () {
         },
         //
         // Synchronise this view with the backend
-        sync: function (options) {
+        sync: function () {
+            var self = this;
             this.model.set('content', this.layout());
             this.log('saving layout...');
-            this.model.sync(options);
+            this.model.sync({
+                success: function () {
+                    self.log('Layout saved');
+                }
+            });
         },
         //
         // Create the "Add Block" button for adding a block into a column.
@@ -951,6 +969,7 @@ define(['lux-web'], function () {
             if (Content) {
                 // remove the content_type & cmsview
                 this.wrapper = data.wrapper;
+                data = _.merge({}, data);
                 delete data.wrapper;
                 delete data.content_type;
                 delete data.cmsview;
@@ -990,6 +1009,9 @@ define(['lux-web'], function () {
                 this._container = container;
                 this.content_history = {};
                 this.editing = true;
+                if (this.content) {
+                    this.title.html(this.content._meta.title);
+                }
             }
         },
         //
@@ -1023,7 +1045,7 @@ define(['lux-web'], function () {
                         }
                     });
                 } else {
-                   self.log('WARNING: could not understand content!');
+                   self.log('could not understand content!', 'WARNING');
                 }
             }
         },

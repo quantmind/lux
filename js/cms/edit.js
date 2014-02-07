@@ -151,7 +151,7 @@
                 }
             }
             if (block.content) {
-                web.logger.info(block + ' changed content type to ' + block.content);
+                block.log(block + ' changed content type to ' + block.content);
                 block.content_history[block.content._meta.name] = block.content;
                 if (block.content._meta.persistent) {
                     // Set the form values for the dbcore fields block
