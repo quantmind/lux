@@ -11,7 +11,21 @@
     //  ``Columns``.
     var ROW_TEMPLATES = new lux.Ordered(),
         BLOCK_TEMPLATES = new lux.Ordered(),
-        web = lux.web;
+        web = lux.web,
+        split_keywords = function (value) {
+            if (_.isString(value)) {
+                var result = [];
+                _(value.split(',')).forEach(function (el) {
+                    el = el.trim();
+                    if (el) {
+                        result.push(el);
+                    }
+                });
+                return result;
+            } else {
+                return value;
+            }
+        };
     //
     // Content Model
     // ----------------
@@ -29,20 +43,7 @@
         meta: {
             name: 'content',
             attributes: {
-                keywords: function (value) {
-                    if (_.isString(value)) {
-                        var result = [];
-                        _(value.split(',')).forEach(function (el) {
-                            el = el.trim();
-                            if (el) {
-                                result.push(el);
-                            }
-                        });
-                        return result;
-                    } else {
-                        return value;
-                    }
-                }
+                keywords: split_keywords
             }
         },
         //

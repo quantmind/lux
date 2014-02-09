@@ -508,7 +508,18 @@
         },
         //
         // Get a jQuery form element for this model.
-        get_form: function () {}
+        get_form: function () {},
+        //
+        // Update the input/select elements in a jQuery form element with data
+        // from the model
+        update_form: function (form) {
+            _(this.fields()).forEach(function (val, name) {
+                var elem = form.find("[name=" + name + "]");
+                if (elem.length) {
+                    lux.set_value(elem, val);
+                }
+            });
+        }
     });
 
     lux.View = Class.extend({

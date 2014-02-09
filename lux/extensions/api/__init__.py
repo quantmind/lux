@@ -212,10 +212,12 @@ class Extension(lux.Extension):
         Parameter('ADMIN_TEMPLATE', '',
                   'Optional template class for the admin site'),
         Parameter('API_DOCS_URL', 'api/docs', ''),
-        Parameter('QUERY_FIELD_KEY', 'field',
-                  'The query key to retrieve specific fields of a model'),
         Parameter('QUERY_MAX_LENGTH', 100,
                   'Maximum number of elements per query'),
+        Parameter('QUERY_FIELD_KEY', 'field',
+                  'The query key to retrieve specific fields of a model'),
+        Parameter('QUERY_SEARCH_KEY', 'q',
+                  'The query key for full text search'),
         Parameter('QUERY_START_KEY', 'start', ''),
         Parameter('QUERY_LENGTH_KEY', 'per_page', '')]
     html_crud_routers = None
@@ -277,6 +279,15 @@ class Extension(lux.Extension):
         for router in handler.middleware:
             self.add_to_html_router(router)
 
+    def on_html_document(self, app, request, html):
+        '''When the document is created add stylesheet and default
+        scripts to the document media.
+        '''
+        config = app.config
+        html.data('api', {'search': config['QUERY_SEARCH_KEY'],
+                          'start': config['QUERY_START_KEY'],
+                          'per_page': config['QUERY_LENGTH_KEY']})
+
     #    INTERNALS
     def _create_mapper(self, app):
         # Create the object data mapper
@@ -306,8 +317,8 @@ class Extension(lux.Extension):
 
     def add_to_html_router(self, router):
         '''Add ``router`` to the :attr:`html_crud_routers` dictionary if
-the default content type is ``text/html`` and the router model is not
-already available.'''
+        the default content type is ``text/html`` and the router model is not
+        already available.'''
         if isinstance(router, Crud):
             if (router.default_content_type == 'text/html'
                     and router.manager not in self.html_crud_routers):

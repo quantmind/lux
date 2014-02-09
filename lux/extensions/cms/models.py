@@ -29,6 +29,7 @@ class KeywordsField(odm.CharField):
 
 
 class ModelBase(odm.StdModel):
+    created = odm.DateTimeField(default=datetime.now)
     timestamp = odm.DateTimeField(default=datetime.now)
     keywords = KeywordsField()
     history = odm.ListField()

@@ -188,8 +188,9 @@ class ContentManager(object):
     length_key = 'pLength'
     required_fields = None
 
-    pag_info = namedtuple('PaginationInfo', 'data start length total columns')
-    obj_info = namedtuple('Instance', 'instance columns')
+    pag_info = namedtuple('PaginationInfo',
+                          'data start length total columns pretty')
+    obj_info = namedtuple('Instance', 'instance columns pretty')
 
     _router = None
 
@@ -288,11 +289,17 @@ class ContentManager(object):
         if not hasattr(data, '__len__'):
             data = tuple(data)
         size = len(data)
-        return self.pag_info(data, 0, size, size, self.columns(request))
+        pretty = params.pop('pretty', False)
+        return self.pag_info(data, 0, size, size,
+                             self.columns(request), pretty)
 
     def get_object(self, request, data, params):
-        '''get a single object from data. By default it returns the data.'''
-        return self.obj_info(data, self.columns(request))
+        '''get a single object from data.
+
+        By default it returns the data.
+        '''
+        return self.obj_info(data, self.columns(request),
+                             params.pop('pretty', False))
 
     def fields(self):
         all = set()
@@ -374,7 +381,7 @@ class ContentManager(object):
         formatter = self.json_format
         for elem in info.data:
             obj = self.extract_column_data(request, elem, columns, formatter)
-            objs.append(OrderedDict(self.column_to_name(obj)))
+            objs.append(OrderedDict(self.column_to_name(obj, info.pretty)))
         return Json(objs)
 
     ##  INSTANCE RENDERERS
@@ -390,7 +397,7 @@ class ContentManager(object):
         '''Render ``instance`` as ``JSON``.'''
         obj = self.extract_column_data(request, info.instance, info.columns,
                                        self.json_format)
-        return Json(OrderedDict(self.column_to_name(obj)))
+        return Json(OrderedDict(self.column_to_name(obj, info.pretty)))
 
     #   INTERNALS
 
@@ -416,7 +423,7 @@ class ContentManager(object):
         return Html(None, data)
 
     def extract_column_data(self, request, elem, columns, formatter):
-        '''Extract ``column`` data form ``elem``.
+        '''Extract ``column`` data form an object ``elem``.
 
         :param request: client request wrapper
         :param elem: model/data to extract column values
@@ -476,10 +483,10 @@ class ContentManager(object):
             w.writerow(self.extract_column_data(elem))
         yield stream.getvalue()
 
-    def column_to_name(self, gen):
+    def column_to_name(self, gen, pretty=False):
         for col, value in gen:
             if isinstance(col, Column):
-                yield col.name, value
+                yield col.name if pretty else col.code, value
             else:
                 yield col, value
 

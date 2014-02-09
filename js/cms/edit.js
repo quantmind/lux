@@ -22,13 +22,14 @@
             //
             content_search,
             //
+            content_id,
+            //
             selection,
+            //
             search,
             //
             block,
             //
-            // Lo-Dash template for the title select element
-            titletemplate = _.template('<%= title %> (<%= id %>)'),
             selection_class = 'content-selection',
             dbfields = 'search';
             //
@@ -38,17 +39,18 @@
         form.add_input(content_select, {
             fieldset: {Class: selection_class}
         });
-        content_search = form.add_input('input', {
+        content_id = form.add_input('input', {
             name: 'id',
+            type: 'hidden',
             fieldset: {Class: dbfields}
         });
         //
         // Input for title
-        form.add_input('input', {
-            fieldset: {Class: dbfields},
+        content_search = form.add_input('input', {
             name: 'title',
             placeholder: 'title',
-            required: 'required'
+            required: 'required',
+            fieldset: {Class: dbfields}
         });
         //
         // Input for keywords
@@ -90,13 +92,38 @@
             web.select(content_search, {
                 placeholder: 'Search content',
                 minimumInputLength: 2,
+                id: function (data) {
+                    return data.title;
+                },
                 initSelection: function (element, callback) {
-                    var id = element.val(),
-                        text = titletemplate({
-                            title: block.content.get('title'),
-                            'id': id
+                    var value = element.val();
+                    callback({'title': value});
+                },
+                formatResult: function (data, c, query) {
+                    if (!data.title) {
+                        // This must be the first entry
+                        data.title = query.term;
+                    }
+                    return '<p>' + data.title + '</p>';
+                },
+                formatSelection: function (object, container) {
+                    if (object.id === -1) {
+                        content_id.val('');
+                    } else if (object.id) {
+                        $.ajax({
+                            url: options.content_url + '/' + object.id,
+                            success: function (data) {
+                                if (data.data) {
+                                    var d = data.data;
+                                    delete data.data;
+                                    _.extend(data, d);
+                                }
+                                block.content.update(data);
+                                block.content.update_form(form._element);
+                            }
                         });
-                    callback({'id': id, 'text': text});
+                    }
+                    return object.title;
                 },
                 ajax: {
                     url: options.content_url,
@@ -110,15 +137,15 @@
                             apikey: options.api_key
                         };
                     },
-                    results: function (data, page) { // parse the results into the format expected by Select2.
-                        // since we are using custom formatting functions we do not need to alter remote JSON data
+                    results: function (data, page) {
+                        // Insert the null element at the beginning so that we
+                        // put the typed test as an option to create a new
+                        // content
+                        data.splice(0, 0, {title: '', id: -1});
                         return {
                             results: data,
-                            more: _.size(data) === page_limit
+                            more: _.size(data)-1 === page_limit
                         };
-                    },
-                    formatResult: function (data) {
-                        return '<p>' + data.title || 'No title' + '</p>';
                     }
                 }
             });
@@ -154,14 +181,8 @@
                 block.log(block + ' changed content type to ' + block.content);
                 block.content_history[block.content._meta.name] = block.content;
                 if (block.content._meta.persistent) {
-                    // Set the form values for the dbcore fields block
-                    search.children('input').each(function () {
-                        if (this.name) {
-                            var val = block.content.get(this.name);
-                            lux.set_value($(this), val);
-                        }
-                    });
                     selection.after(search);
+                    block.content.update_form(form._element);
                 } else {
                     search.detach();
                 }

@@ -206,8 +206,10 @@ class CmsContext(Context):
                     for data in bc.get('children') or ():
                         if not data:
                             continue
-                        elif isinstance(data, dict):
-                            elem = Html('div', data=data)
+                        wrapper = data.get('wrapper')
+                        content = data.get('content')
+                        if isinstance(content, dict):
+                            elem = Html('div', data=content)
                         else:
                             # id, we need to retrieve the content
                             elem = Html('div')
@@ -215,6 +217,8 @@ class CmsContext(Context):
                                 ids[data].append(html)
                             else:
                                 ids[data] = [elem]
+                        if wrapper:
+                            elem.data('wrapper', wrapper)
                         block.append(elem)
                     column.append(block)
                 row.append(column)

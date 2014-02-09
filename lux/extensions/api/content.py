@@ -21,8 +21,6 @@ types = {'integer': 'numeric',
 
 class ContentManager(lux.ContentManager):
     '''Model-based :ref:`ContentManager <api-content>`.
-
-    A pagination for models.
     '''
     def html_form(self, form, **params):
         '''Return an Html ``form`` element.'''
@@ -74,9 +72,18 @@ class ContentManager(lux.ContentManager):
         return Column.get(field.attname, type=get_field_type(field))
 
     def paginate(self, request, query, parameters):
+        '''Refine ``query`` from input ``parameters`` and perform
+        pagination.
+
+        Return a pagination info object
+        '''
         config = request.app.config
         columns = self.columns(request, query.model)
         #
+        search = parameters.pop(config['QUERY_SEARCH_KEY'], None)
+        pretty = parameters.pop('pretty', False)
+        if search:
+            query = query.search(search)
         # pick up the fields
         field_key = config['QUERY_FIELD_KEY']
         if field_key not in parameters:
@@ -116,16 +123,19 @@ class ContentManager(lux.ContentManager):
         else:
             length = total_size
             data = yield query.all()
-        info = self.pag_info(data, start, length, total_size, columns)
+        info = self.pag_info(data, start, length, total_size, columns, pretty)
         coroutine_return(info)
 
     def get_object(self, request, query, parameters):
+        pretty = request.url_data.get('pretty')
         q = yield self.safe_filter(query, parameters)
         size = yield q.count()
         if size == 1:
             all = yield q.all()
             if len(all) == 1:
-                o = self.obj_info(all[0], self.columns(request, query.model))
+                o = self.obj_info(all[0],
+                                  self.columns(request, query.model),
+                                  pretty)
                 coroutine_return(o)
         raise Http404
 

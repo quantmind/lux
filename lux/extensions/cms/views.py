@@ -418,6 +418,8 @@ class PageUpdates(api.CrudWebSocket, PageMixin):
         '''Override :meth:`.CrudWebSocket.update_create` method to handle
         Content and Page models.'''
         content_type = getattr(manager, 'content_type', None)
+        fields.pop('timestamp', None)
+        fields.pop('created', None)
         if content_type:
             if instance is None:
                 return create_content(manager, content_type, fields)

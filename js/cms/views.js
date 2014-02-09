@@ -619,7 +619,10 @@
         //
         layout: function () {
             if (this.content) {
-                return this.content.serialize();
+                return {
+                    content: this.content.serialize(),
+                    wrapper: this.wrapper
+                };
             }
         },
         //
