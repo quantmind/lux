@@ -20,10 +20,11 @@ from . import select
 from . import table
 from . import topography
 from . import dialog
+from . import panel
 from . import logger
 
 
 def add_css(body):
     for m in (base, inputs, select, code, draggable, forms, topography,
-              dialog, table, logger):
+              dialog, panel, table, logger):
         m.add_css(body)

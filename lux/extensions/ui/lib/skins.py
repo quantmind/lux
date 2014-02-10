@@ -1,3 +1,22 @@
+'''
+To add skins to an element one uses the :class:`.Skin` mixin.
+
+To create a new skin one uses the :func:`.createskin` function which sets
+background, color, border and other properties for three the different states:
+``default``, ``hover``, ``active``. For example::
+
+    def add_css(all):
+        myskin = createskin(all.cssv, 'myskin', {'background': '#fff'})
+
+Skin Mixin
+~~~~~~~~~~~~~~~~~~~~
+.. autoclass:: Skin
+
+
+create skin
+~~~~~~~~~~~~~~~~~~~~
+.. autofunction:: createskin
+'''
 from collections import Mapping
 
 from .base import *
@@ -90,44 +109,48 @@ def transform_skin(cssv, name, default, transform, size=10, background=None,
 
 
 class Skin(Mixin):
-    '''A :class:`Mixin` which adds :ref:`available skins <ui-create-skin>` to
-an element. A Skin cover the following css properties:
+    '''A :class:`.Mixin` which adds :ref:`available skins <ui-create-skin>` to
+    an element.
 
-* background
-* color
-* border
-* text_decoration
+    A Skin cover the following css properties:
 
-:parameter child: an optional css selector for the child element to which this
-    :class:`Skin` will be applied. If not supplied, the mixin is applied to the
-    element which has it.
-:parameter clickable: if ``True`` the element is clickable and css
-    will be added to handle ``hover`` and ``active`` states. If set to one
-    of ``default``, ``hover`` or ``active``, all the states will be set
-    with values from the ``clickable`` state.
-    Otherwise, it only handles the ``default`` state.
-:parameter only: specify a tuple of skin names to apply (can also be a string).
-    If not provided all skins created with :ref:`createskin` are applied.
-    Skins with same class name are not applied.
-:parameter exclude: specify a tuple of skins to exclude (can also be a string).
-    If not provided, none of the skins are excluded.
-:parameter gradient: if set to ``False`` background are monocromatic only (no
-    gradients). If a callable, it is called with the background gradient and
-    should return another background gradient or color or nothing.
-:parameter cursor: if set it overrides the default ``cursor`` in the
-    :class:`Clickable` mixin. This parameter is meaningful only when
-    ``clickable`` is ``True``.
-:parameter applyto: optional tuple/list containing the properties required in
-    the styling. If this is specified only the properties in the list
-    are applied. For example one could pass::
+    * background
+    * color
+    * border
+    * text_decoration
 
-        ..., applyto=('background', 'border')
+    :parameter child: an optional css selector for the child element to which
+        this :class:`.Skin` will be applied. If not supplied, the mixin
+        is applied to the element which has it.
+    :parameter clickable: if ``True`` the element is clickable and css
+        will be added to handle ``hover`` and ``active`` states. If set to one
+        of ``default``, ``hover`` or ``active``, all the states will be set
+        with values from the ``clickable`` state.
+        Otherwise, it only handles the ``default`` state.
+    :parameter only: specify a tuple of skin names to apply (can also be
+        a string). If not provided all skins created with :ref:`createskin`
+        are applied.
+        Skins with same class name are not applied.
+    :parameter exclude: specify a tuple of skins to exclude (can also be
+        a string). If not provided, none of the skins are excluded.
+    :parameter gradient: if set to ``False`` background are monocromatic
+        only (no gradients). If a callable, it is called with the
+        background gradient and should return another background gradient
+        or color or nothing.
+    :parameter cursor: if set it overrides the default ``cursor`` in the
+        :class:`.Clickable` mixin. This parameter is meaningful only when
+        ``clickable`` is ``True``.
+    :parameter applyto: optional tuple/list containing the properties
+        required in the styling. If this is specified only the properties
+        in the list are applied. For example one could pass::
 
-:parameter border_with: optional border width (as spacing too) which overrides
-    the default value in all the applied skins.
-:parameter border_style: optional border style which overrides
-    the default value in all the applied skins.
-'''
+            ..., applyto=('background', 'border')
+
+    :parameter border_with: optional border width (as spacing too) which
+        overrides the default value in all the applied skins.
+    :parameter border_style: optional border style which overrides
+        the default value in all the applied skins.
+    '''
     def __init__(self, child=None, clickable=False, only=None, exclude=None,
                  gradient=None, cursor=None, applyto=None, border_width=None,
                  border_style=None, default=None, active=None, hover=None,

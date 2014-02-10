@@ -213,10 +213,10 @@ class CmsContext(Context):
                         else:
                             # id, we need to retrieve the content
                             elem = Html('div')
-                            if data in ids:
-                                ids[data].append(html)
+                            if content in ids:
+                                ids[content].append(html)
                             else:
-                                ids[data] = [elem]
+                                ids[content] = [elem]
                         if wrapper:
                             elem.data('wrapper', wrapper)
                         block.append(elem)

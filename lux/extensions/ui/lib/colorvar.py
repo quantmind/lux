@@ -1,3 +1,17 @@
+'''
+RGBA
+~~~~~
+
+.. autoclass:: RGBA
+   :members:
+   :member-order: bysource
+
+color
+~~~~~~~~~~~
+
+.. autofunction:: color
+
+'''
 import colorsys
 from collections import namedtuple
 
@@ -132,6 +146,8 @@ new :class:`RGBA` color with lightness increased by that amount.'''
 #############################################################################
 ##    color factory
 def color(col, *cols, **kwargs):
+    '''Safely build a :class:`RGBA` from several type of inputs.
+    '''
     alpha = kwargs.pop('alpha', None)
     if isinstance(col, RGBA):
         if cols:

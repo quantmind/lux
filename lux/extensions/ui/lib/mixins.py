@@ -47,10 +47,6 @@ Shadow
 ~~~~~~~~
 .. autoclass:: Shadow
 
-Skin
-~~~~~~~
-.. autoclass:: Skin
-
 Stack
 ~~~~~~~
 .. autoclass:: Stack

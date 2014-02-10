@@ -1274,7 +1274,7 @@ define(['lux-web'], function () {
     lux.cms.create_wrapper('welllg', {
         title: 'Well Large',
         render: function (view) {
-            var elem = $("<div class='well-lg'></div>").appendTo(view.elem);
+            var elem = $("<div class='well well-lg'></div>").appendTo(view.elem);
             view.content.render(elem);
         }
     });
@@ -1282,7 +1282,7 @@ define(['lux-web'], function () {
     lux.cms.create_wrapper('wellsm', {
         title: 'Well Small',
         render: function (view) {
-            var elem = $("<div class='well-sm'></div>").appendTo(view.elem);
+            var elem = $("<div class='well well-sm'></div>").appendTo(view.elem);
             view.content.render(elem);
         }
     });

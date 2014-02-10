@@ -31,6 +31,12 @@ Variables and Symbols
 
 .. automodule:: lux.extensions.ui.lib.base
 
+Colours
+===========
+
+.. automodule:: lux.extensions.ui.lib.colorvar
+
+
 Mixins
 =========================
 
@@ -42,17 +48,8 @@ Mixins
 Creating Skins
 =======================
 
-To create a new skin one uses the :func:`createskin` function which sets
-background, color, border and other properties for three the different states:
-``default``, ``hover``, ``active``. For example::
+.. automodule:: lux.extensions.ui.lib.skins
 
-    def add_css(all):
-        myskin = createskin(all.cssv, 'myskin', {'background': '#fff'})
-
-
-create skin
-~~~~~~~~~~~~~~~~~~~~
-.. autofunction:: createskin
 '''
 import lux
 from lux import Parameter
