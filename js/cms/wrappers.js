@@ -17,6 +17,10 @@
     };
 
 
+    lux.cms.create_wrapper('nothing', {
+        title: 'No Wrapper'
+    });
+
     lux.cms.create_wrapper('well', {
         title: 'Well',
         render: function (view) {

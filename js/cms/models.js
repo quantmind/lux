@@ -113,8 +113,8 @@
 
     // Base class for html wrappers
     var Wrapper = lux.Class.extend({
-        render: function (elem) {
-            return elem;
+        render: function (view) {
+            view.content.render(view.elem);
         }
     });
     //

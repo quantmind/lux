@@ -1,7 +1,7 @@
 /*
 ------------------------------------------------------------------
 ------------------------------------------------------------------
-Created by lux 2014-02-10 07:46:48 in 0.61 seconds.
+Created by lux 2014-02-10 13:20:24 in 1.52 seconds.
 ------------------------------------------------------------------
 ------------------------------------------------------------------ */
 
@@ -2524,13 +2524,13 @@ disabled look for disabled choices in the results dropdown
   }
 }
 body {
-    font-family: Helvetica,Arial,'Liberation Sans',FreeSans,sans-serif;
-    text-align: left;
     font-size: 14px;
-    line-height: 20px;
-    padding: 0;
     margin: 0;
+    padding: 0;
+    font-family: Helvetica,Arial,'Liberation Sans',FreeSans,sans-serif;
     color: #333;
+    line-height: 20px;
+    text-align: left;
     background: #fff;
 }
 
@@ -2554,8 +2554,8 @@ form.horizontal .control-group:before,
 .grid:before,
 .grid24:before {
     display: table;
-    content: "";
     line-height: 0;
+    content: "";
 }
 
 .clearfix:after,
@@ -2565,8 +2565,8 @@ form.horizontal .control-group:after,
 .grid:after,
 .grid24:after {
     display: table;
-    content: "";
     line-height: 0;
+    content: "";
     clear: both;
 }
 
@@ -2583,21 +2583,21 @@ markdown,
 }
 
 .vpadding-small {
-    padding: 5px 0;
     overflow: hidden;
+    padding: 5px 0;
 }
 
 .vpadding {
-    padding: 20px 0;
     overflow: hidden;
+    padding: 20px 0;
 }
 
 .fullscreen {
-    left: 0;
-    top: 0;
     bottom: 0;
-    position: fixed;
+    left: 0;
     right: 0;
+    top: 0;
+    position: fixed;
 }
 
 .span1 {
@@ -2700,9 +2700,9 @@ dd {
 }
 
 .alert {
-    padding: 8px 14px;
     text-align: left;
     margin: 0 0 5px;
+    padding: 8px 14px;
     background: #fff;
     color: #333;
     border: 1px solid #e5e5e5;
@@ -2864,18 +2864,18 @@ div.zen,
 }
 
 .alert .close {
-    top: -2px;
     right: -21px;
+    top: -2px;
     position: relative;
 }
 
 .label {
-    padding: 2px 4px;
-    font-weight: bold;
     font-size: 11px;
+    vertical-align: baseline;
+    font-weight: bold;
+    padding: 2px 4px;
     display: inline-block;
     white-space: nowrap;
-    vertical-align: baseline;
     background: #fff;
     color: #333;
     border: 1px solid #e5e5e5;
@@ -2885,16 +2885,16 @@ div.zen,
 }
 
 .fullscreen-container {
-    padding: 30px 0;
-    max-width: 800px;
     height: 100%;
+    max-width: 800px;
     margin: 0 auto;
+    padding: 30px 0;
 }
 
 .fullscreen-sidebar {
     text-align: right;
-    top: 30px;
     right: 30px;
+    top: 30px;
     position: absolute;
 }
 
@@ -2913,15 +2913,15 @@ textarea:focus {
 }
 
 .btn {
-    font-family: inherit;
-    padding: 4px 12px;
-    text-align: center;
-    font-weight: normal;
-    vertical-align: middle;
-    line-height: 20px;
-    display: inline-block;
-    text-decoration: none;
     font-size: 14px;
+    vertical-align: middle;
+    font-weight: normal;
+    padding: 4px 12px;
+    font-family: inherit;
+    display: inline-block;
+    text-align: center;
+    line-height: 20px;
+    text-decoration: none;
     cursor: pointer;
     background-color: #e6e6e6;
     background-image: -moz-linear-gradient(top, #fff, #e6e6e6);
@@ -2940,27 +2940,27 @@ textarea:focus {
 }
 
 .btn.btn-mini {
-    padding: 0 5px;
-    font-weight: normal;
     font-size: 11px;
+    font-weight: normal;
+    padding: 0 5px;
     -webkit-border-radius: 2px;
        -moz-border-radius: 2px;
             border-radius: 2px;
 }
 
 .btn.btn-small {
-    padding: 2px 10px;
-    font-weight: normal;
     font-size: 13px;
+    font-weight: normal;
+    padding: 2px 10px;
     -webkit-border-radius: 4px;
        -moz-border-radius: 4px;
             border-radius: 4px;
 }
 
 .btn.btn-large {
-    padding: 8px 24px;
-    font-weight: bold;
     font-size: 18px;
+    font-weight: bold;
+    padding: 8px 24px;
 }
 
 .btn.disabled {
@@ -3279,22 +3279,23 @@ textarea:focus {
 
 .link {
     background: none;
-    cursor: pointer;
-    padding: 0;
     border: none;
+    padding: 0;
+    cursor: pointer;
 }
 
 .btn-toolbar {
-    font-size: 0;
     margin: 0;
+    font-size: 0;
 }
 
-.btn-group {
+.btn-group,
+.toolbar > .group {
     display: inline-block;
-    white-space: nowrap;
     font-size: 0;
-    position: relative;
+    white-space: nowrap;
     vertical-align: middle;
+    position: relative;
 }
 
 .btn-group > .btn {
@@ -3304,22 +3305,22 @@ textarea:focus {
 }
 
 .btn-group > * {
-    position: relative;
     float: left;
+    position: relative;
     -webkit-border-radius: 0;
        -moz-border-radius: 0;
             border-radius: 0;
 }
 
 .btn-group > *:first-child {
-    border-bottom-left-radius: 5px;
     border-top-left-radius: 5px;
+    border-bottom-left-radius: 5px;
     margin-left: 0;
 }
 
 .btn-group > *:last-child {
-    border-top-right-radius: 5px;
     border-bottom-right-radius: 5px;
+    border-top-right-radius: 5px;
 }
 
 .btn-group > * + * {
@@ -3333,9 +3334,9 @@ textarea:focus {
 
 textarea {
     display: inline-block;
-    padding: 4px 5px;
     font-size: 14px;
     vertical-align: middle;
+    padding: 4px 5px;
     width: 200px;
     background: #fff;
     color: #333;
@@ -3354,12 +3355,12 @@ textarea {
 
 select {
     display: inline-block;
-    padding: 4px 5px;
     font-size: 14px;
     vertical-align: middle;
-    width: 212px;
+    padding: 4px 5px;
     height: 30px;
     line-height: 30px;
+    width: 212px;
     background: #fff;
     color: #333;
     border: 1px solid #e5e5e5;
@@ -3382,9 +3383,9 @@ input[type="search"],
 input[type="tel"],
 input[type="color"] {
     display: inline-block;
-    padding: 4px 5px;
     font-size: 14px;
     vertical-align: middle;
+    padding: 4px 5px;
     height: 20px;
     line-height: 20px;
     background: #fff;
@@ -3422,18 +3423,18 @@ input[type="color"]:focus {
 }
 
 fieldset {
-    padding: 0;
     margin: 0;
+    padding: 0;
     border: none;
 }
 
 label {
-    font-weight: normal;
     font-size: 14px;
-    line-height: 20px;
-    display: block;
-    height: 20px;
+    font-weight: normal;
     cursor: pointer;
+    height: 20px;
+    display: block;
+    line-height: 20px;
 }
 
 input[type="file"],
@@ -3506,8 +3507,8 @@ div.zen .btn,
 div.zen textarea,
 div .zendark textarea {
     resize: vertical;
-    width: 100%;
     font-size: 21px;
+    width: 100%;
     -webkit-box-sizing: border-box;
        -moz-box-sizing: border-box;
             box-sizing: border-box;
@@ -3518,18 +3519,10 @@ p:last-child {
     margin: 0;
 }
 
-.toolbar > .group {
-    display: inline-block;
-    position: relative;
-    vertical-align: middle;
-    white-space: nowrap;
-    font-size: 0;
-}
-
 .toolbar > .group > * {
     font-size: 14px;
-    position: relative;
     border-left-width: 0;
+    position: relative;
     -webkit-border-radius: 0;
        -moz-border-radius: 0;
             border-radius: 0;
@@ -3561,12 +3554,12 @@ select[size],
 }
 
 pre {
-    padding: 9px;
-    font-size: 13px;
-    line-height: 20px;
-    word-break: break-all;
     word-wrap: break-word;
+    font-size: 13px;
+    padding: 9px;
+    line-height: 20px;
     white-space: pre-wrap;
+    word-break: break-all;
     -webkit-border-radius: 5px;
        -moz-border-radius: 5px;
             border-radius: 5px;
@@ -3632,19 +3625,19 @@ pre {
 }
 
 .prettyprint ol.linenums li {
-    padding-left: 12px;
     text-shadow: 0 1px 0 #fff;
-    color: #808080;
+    padding-left: 12px;
     line-height: 20px;
+    color: #808080;
 }
 
 [draggable=true] {
+    -webkit-user-drag: element;
+    -moz-user-select: none;
+    -khtml-user-drag: element;
     -khtml-user-select: none;
     user-select: none;
-    -khtml-user-drag: element;
     -webkit-user-select: none;
-    -moz-user-select: none;
-    -webkit-user-drag: element;
 }
 
 .draggable {
@@ -3740,12 +3733,12 @@ pre {
 }
 
 legend {
-    padding: 0;
-    margin-bottom: 20px;
     font-size: 21px;
-    line-height: 40px;
-    display: block;
     width: 100%;
+    padding: 0;
+    display: block;
+    line-height: 40px;
+    margin-bottom: 20px;
     border-width: 0 0 1px;
     border-style: solid;
     border-color: #ccc;
@@ -3766,8 +3759,8 @@ form.inline .input-small,
 form.inline .checkbox,
 form.inline .select2-container {
     display: inline-block;
-    margin-bottom: 0;
     vertical-align: middle;
+    margin-bottom: 0;
 }
 
 form textarea,
@@ -3796,10 +3789,10 @@ form label {
 }
 
 form.horizontal .control-label {
-    padding-top: 5px;
     text-align: right;
-    width: 160px;
     float: left;
+    width: 160px;
+    padding-top: 5px;
 }
 
 form.horizontal .controls {
@@ -3807,49 +3800,49 @@ form.horizontal .controls {
 }
 
 h1 {
-    font-weight: bold;
     text-rendering: optimizelegibility;
     margin: 10px 0;
+    font-weight: bold;
     font-size: 28px;
     line-height: 40px;
 }
 
 h2 {
-    font-weight: bold;
     text-rendering: optimizelegibility;
     margin: 10px 0;
+    font-weight: bold;
     font-size: 22px;
     line-height: 32px;
 }
 
 h3 {
-    font-weight: bold;
     text-rendering: optimizelegibility;
     margin: 10px 0;
+    font-weight: bold;
     font-size: 18px;
     line-height: 26px;
 }
 
 h4 {
-    font-weight: bold;
     text-rendering: optimizelegibility;
     margin: 10px 0;
+    font-weight: bold;
     font-size: 17px;
     line-height: 24px;
 }
 
 h5 {
-    font-weight: bold;
     text-rendering: optimizelegibility;
     margin: 10px 0;
+    font-weight: bold;
     font-size: 15px;
     line-height: 22px;
 }
 
 h6 {
-    font-weight: bold;
     text-rendering: optimizelegibility;
     margin: 10px 0;
+    font-weight: bold;
     font-size: 13px;
     line-height: 18px;
     text-transform: uppercase;
@@ -3874,10 +3867,10 @@ ul.icons-ul,
 }
 
 .section {
-    padding: 0 10px;
-    width: 100%;
-    float: left;
     margin: 0;
+    float: left;
+    width: 100%;
+    padding: 0 10px;
     background: #fff;
     color: #333;
     border: 1px solid #e5e5e5;
@@ -3907,14 +3900,14 @@ ul.icons-ul,
 }
 
 .section ul:not(.nav) {
-    padding: 0;
     margin: 0 0 9px 25px;
+    padding: 0;
     list-style: disc outside none;
 }
 
 .section ol {
-    padding: 0;
     margin: 0 0 9px 25px;
+    padding: 0;
     list-style: decimal outside none;
 }
 
@@ -3948,8 +3941,8 @@ ul.icons-ul,
 }
 
 .header h3 {
-    line-height: 24px;
     margin: 0;
+    line-height: 24px;
 }
 
 .body-wrap {
@@ -4514,13 +4507,13 @@ ul.icons-ul,
 }
 
 .datagrid.stripped tbody tr:nth-child(2n+1) td {
-    transform: <function lighten at 0x10e9ac0e0>;
+    transform: <function lighten at 0x0000000004C16158>;
     background: #fff;
     color: #333;
 }
 
 .datagrid.stripped.default tbody tr:nth-child(2n+1) td {
-    transform: <function lighten at 0x10e9ac0e0>;
+    transform: <function lighten at 0x0000000004C16158>;
     background-color: #e6e6e6;
     background-image: -moz-linear-gradient(top, #fff, #e6e6e6);
     background-image: -ms-linear-gradient(top, #fff, #e6e6e6);
@@ -4534,7 +4527,7 @@ ul.icons-ul,
 }
 
 .datagrid.stripped.primary tbody tr:nth-child(2n+1) td {
-    transform: <function lighten at 0x10e9ac0e0>;
+    transform: <function lighten at 0x0000000004C16158>;
     background-color: #006699;
     background-image: -moz-linear-gradient(top, #0088cc, #006699);
     background-image: -ms-linear-gradient(top, #0088cc, #006699);
@@ -4548,7 +4541,7 @@ ul.icons-ul,
 }
 
 .datagrid.stripped.success tbody tr:nth-child(2n+1) td {
-    transform: <function lighten at 0x10e9ac0e0>;
+    transform: <function lighten at 0x0000000004C16158>;
     background-color: #16a000;
     background-image: -moz-linear-gradient(top, #1dd300, #16a000);
     background-image: -ms-linear-gradient(top, #1dd300, #16a000);
@@ -4562,7 +4555,7 @@ ul.icons-ul,
 }
 
 .datagrid.stripped.error tbody tr:nth-child(2n+1) td {
-    transform: <function lighten at 0x10e9ac0e0>;
+    transform: <function lighten at 0x0000000004C16158>;
     background-color: #ca0005;
     background-image: -moz-linear-gradient(top, #fd0006, #ca0005);
     background-image: -ms-linear-gradient(top, #fd0006, #ca0005);
@@ -4576,7 +4569,7 @@ ul.icons-ul,
 }
 
 .datagrid.stripped.inverse tbody tr:nth-child(2n+1) td {
-    transform: <function lighten at 0x10e9ac0e0>;
+    transform: <function lighten at 0x0000000004C16158>;
     background-color: #3c3c3c;
     background-image: -moz-linear-gradient(top, #222, #3c3c3c);
     background-image: -ms-linear-gradient(top, #222, #3c3c3c);
@@ -4590,13 +4583,13 @@ ul.icons-ul,
 }
 
 .datagrid.stripped.zen tbody tr:nth-child(2n+1) td {
-    transform: <function lighten at 0x10e9ac0e0>;
+    transform: <function lighten at 0x0000000004C16158>;
     background: #fff;
     color: #999;
 }
 
 .datagrid.stripped.zendark tbody tr:nth-child(2n+1) td {
-    transform: <function lighten at 0x10e9ac0e0>;
+    transform: <function lighten at 0x0000000004C16158>;
     background: #1d1f21;
     color: #a4b1b1;
 }
@@ -4782,8 +4775,8 @@ form.content-form .control-group {
 }
 
 .pagination ul > li > a {
-    padding: 4px 12px;
     float: left;
+    padding: 4px 12px;
 }
 
 .pagination ul > li:first-child > a {
@@ -4800,18 +4793,18 @@ form.content-form .control-group {
 }
 
 .pagination.mini ul > li > a {
-    padding: 1px 4px;
     font-size: 11px;
+    padding: 1px 4px;
 }
 
 .pagination.small ul > li > a {
-    padding: 2px 6px;
     font-size: 13px;
+    padding: 2px 6px;
 }
 
 .pagination.large ul > li > a {
-    padding: 8px 24px;
     font-size: 18px;
+    padding: 8px 24px;
 }
 
 @media only screen and (max-width: 767px) {
@@ -4838,22 +4831,22 @@ form.content-form .control-group {
         left: 6px;
         whitespace: nowrap;
         width: 45%;
-        content: attr(data-content);
         position: absolute;
+        content: attr(data-content);
         opacity: 0.8;
         filter: alpha(opacity=80.0);
     }
 
     .datagrid thead tr,
     .datagrid tfoot tr {
-        top: -9999px;
         left: -9999px;
+        top: -9999px;
         position: absolute;
     }
 
     .datagrid tr:first-child td:first-child {
-        border-top-right-radius: 5px;
         border-top-left-radius: 5px;
+        border-top-right-radius: 5px;
     }
 
     .datagrid tr:last-child td:first-child {
@@ -5002,9 +4995,9 @@ form.content-form .control-group {
 }
 .lux-logger {
     background: #ededed;
-    overflow: scroll;
-    line-height: 14px;
     font-size: 12px;
+    line-height: 14px;
+    overflow: scroll;
 }
 
 .lux-logger pre.debug {
@@ -5109,22 +5102,22 @@ form.content-form .control-group {
 }
 
 .navbar .brand {
-    padding: 6px 15px;
     font-size: 18px;
     line-height: 20px;
     max-width: none;
     display: block;
-    text-decoration: none;
+    padding: 6px 15px;
     float: left;
+    text-decoration: none;
     cursor: pointer;
     color: #333;
 }
 
 .navbar .nav {
     display: block;
-    position: relative;
-    float: left;
     margin: 0 10px 0 0;
+    float: left;
+    position: relative;
 }
 
 .navbar .nav > li {
@@ -5132,8 +5125,8 @@ form.content-form .control-group {
 }
 
 .navbar .nav > li > a {
-    padding: 6px 15px;
     float: none;
+    padding: 6px 15px;
 }
 
 .nav {
@@ -5156,8 +5149,8 @@ form.content-form .control-group {
 }
 
 .nav-tabs > li > a {
-    padding: 8px 14px;
     line-height: 20px;
+    padding: 8px 14px;
     cursor: pointer;
     background-color: #e6e6e6;
     background-image: -moz-linear-gradient(top, #fff, #e6e6e6);
@@ -5173,14 +5166,14 @@ form.content-form .control-group {
 }
 
 form.content-form fieldset {
-    padding: 10px;
     position: relative;
+    padding: 10px;
 }
 
 form.content-form fieldset input {
+    max-width: 100%;
     display: block;
     min-width: 100%;
-    max-width: 100%;
     min-height: 35px;
     -webkit-box-sizing: border-box;
        -moz-box-sizing: border-box;
@@ -5188,12 +5181,12 @@ form.content-form fieldset input {
 }
 
 form.content-form fieldset textarea {
+    max-width: 100%;
     display: block;
     min-width: 100%;
-    max-width: 100%;
+    max-height: 500px;
     resize: vertical;
     min-height: 200px;
-    max-height: 500px;
     -webkit-box-sizing: border-box;
        -moz-box-sizing: border-box;
             box-sizing: border-box;
@@ -5216,11 +5209,12 @@ form.content-form fieldset textarea {
 }
 
 .grid.fixed {
-    width: 940px;
     margin: auto;
+    width: 940px;
 }
 
 .column .row,
+.cms-block + .cms-block,
 .editing .cms-grid .row-control {
     margin-top: 20px;
 }
@@ -5237,9 +5231,9 @@ form.content-form fieldset textarea {
 }
 
 .cms-content-toolbar {
-    padding: 5px 0;
     font-size: 11px;
     overflow: hidden;
+    padding: 5px 0;
 }
 
 .editing .cms-grid .cms-column {
@@ -5256,16 +5250,16 @@ form.content-form fieldset textarea {
 }
 
 .center-page {
-    width: 400px;
     margin: 60px auto;
+    width: 400px;
 }
 
 .cms-info {
     display: inline-block;
-    padding: 0 10px;
+    line-height: 30px;
     vertical-align: middle;
     position: relative;
-    line-height: 30px;
+    padding: 0 10px;
 }
 
 .grid24 {
@@ -5375,9 +5369,9 @@ form.content-form fieldset textarea {
 }
 
 .lux-example {
-    padding: 39px 19px 14px;
-    position: relative;
     margin: 15px 0;
+    position: relative;
+    padding: 39px 19px 14px;
     -webkit-border-radius: 5px;
        -moz-border-radius: 5px;
             border-radius: 5px;
@@ -5387,15 +5381,15 @@ form.content-form fieldset textarea {
 }
 
 .lux-example:after {
+    background: #F5F5F5;
+    font-size: 12px;
+    font-weight: bold;
+    content: "Example";
+    left: -1px;
     padding: 3px 7px;
     top: -1px;
-    font-weight: bold;
-    font-size: 12px;
-    background: #F5F5F5;
-    left: -1px;
-    color: #9DA0A4;
     position: absolute;
-    content: "Example";
+    color: #9DA0A4;
     -webkit-border-radius: 5px 0;
        -moz-border-radius: 5px 0;
             border-radius: 5px 0;
@@ -5403,6 +5397,6 @@ form.content-form fieldset textarea {
 }
 
 .lux-example + .prettyprint {
-    padding-top: 15px;
     margin-top: -20px;
+    padding-top: 15px;
 }

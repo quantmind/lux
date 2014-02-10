@@ -31,7 +31,11 @@
             block,
             //
             selection_class = 'content-selection',
-            dbfields = 'search';
+            dbfields = 'search',
+            //
+            edit_preview = function () {
+
+            };
             //
         form.add_input(wrapper_select, {
             fieldset: {Class: selection_class}
@@ -167,7 +171,7 @@
         });
         //
         // Change content type in the view block
-        content_select.change(function () {
+        content_select.change(function (e) {
             var name = this.value;
             // Try to get the content from the block content history
             block.content = block.content_history[name];
@@ -198,11 +202,17 @@
                 search.detach();
                 form._element.find('.content-form').remove();
             }
+            if (block.wrapper !== wrapper_select.val()) {
+                wrapper_select.val(block.wrapper).trigger('change');
+            } else {
+                edit_preview();
+            }
         });
         //
         // Change container
         wrapper_select.change(function () {
             block.wrapper = this.value;
+            edit_preview();
         });
         //
         // Inject change content

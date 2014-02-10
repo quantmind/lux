@@ -116,8 +116,8 @@ define(['lux-web'], function () {
 
     // Base class for html wrappers
     var Wrapper = lux.Class.extend({
-        render: function (elem) {
-            return elem;
+        render: function (view) {
+            view.content.render(view.elem);
         }
     });
     //
@@ -262,7 +262,11 @@ define(['lux-web'], function () {
             block,
             //
             selection_class = 'content-selection',
-            dbfields = 'search';
+            dbfields = 'search',
+            //
+            edit_preview = function () {
+
+            };
             //
         form.add_input(wrapper_select, {
             fieldset: {Class: selection_class}
@@ -398,7 +402,7 @@ define(['lux-web'], function () {
         });
         //
         // Change content type in the view block
-        content_select.change(function () {
+        content_select.change(function (e) {
             var name = this.value;
             // Try to get the content from the block content history
             block.content = block.content_history[name];
@@ -429,11 +433,17 @@ define(['lux-web'], function () {
                 search.detach();
                 form._element.find('.content-form').remove();
             }
+            if (block.wrapper !== wrapper_select.val()) {
+                wrapper_select.val(block.wrapper).trigger('change');
+            } else {
+                edit_preview();
+            }
         });
         //
         // Change container
         wrapper_select.change(function () {
             block.wrapper = this.value;
+            edit_preview();
         });
         //
         // Inject change content
@@ -1262,6 +1272,10 @@ define(['lux-web'], function () {
         view.content.render(elem);
     };
 
+
+    lux.cms.create_wrapper('nothing', {
+        title: 'No Wrapper'
+    });
 
     lux.cms.create_wrapper('well', {
         title: 'Well',

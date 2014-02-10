@@ -36,6 +36,7 @@ def add_css(all):
     css = all.css
     cssv = all.variables
     cssv.grid.fluid_padding = px(20)
+    cssv.grid.block_margin = px(20)
     cssv.grid.fixed_width = px(940)
     cssv.centerpage.width = px(400)
     cssv.centerpage.margin = px(60)
@@ -68,6 +69,9 @@ def add_css(all):
     #
     css('.cms-block, .cms-content',
         overflow='hidden')
+    #
+    css('.cms-block + .cms-block',
+        margin_top=cssv.grid.block_margin)
     #
     css('.cms-grid',
         Opacity(0))
