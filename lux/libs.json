@@ -14,7 +14,7 @@
     "lux": "lux/lux.js",
     "lux-web": "lux/lux-web.js",
     "cms": "cms/cms.js",
-    "datagrid": "lux/lux-datagrid.js",
+    "datagrid": "lux/datagrid.js",
     "mathjax": "https://c328740.ssl.cf1.rackcdn.com/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML",
     "mustache": "//cdnjs.cloudflare.com/ajax/libs/mustache.js/0.7.2/mustache.js",
     "pjax": "//cdnjs.cloudflare.com/ajax/libs/jquery.pjax/1.7.0/jquery.pjax.js",

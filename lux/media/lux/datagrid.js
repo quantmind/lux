@@ -1,8 +1,6 @@
 define(['jquery', 'lux'], function ($) {
     "use strict";
     var web = lux.web,
-        each = lux.each,
-        extend = lux.extend,
         exports = {};
 
     //  Column
@@ -48,7 +46,7 @@ define(['jquery', 'lux'], function ($) {
             return index;
         }
     });
-    
+
     //  DataGridView
     //  -------------------------
     //
@@ -64,18 +62,18 @@ define(['jquery', 'lux'], function ($) {
                 body = g.tbody(),
                 tr, td;
             body.html('');
-            each(this.g.data, function (row, index) {
+            _(this.g.data).forEach(function (row, index) {
                 tr = $(document.createElement('tr')).appendTo(body);
                 if (g.options.rowHeaders) {
                     tr.append($(document.createElement('th')).html(index+1));
                 }
-                each(row, function (value) {
+                _(row).forEach(function (value) {
                     tr.append($(document.createElement('td')).html(value));
                 });
             });
         }
     });
-    
+
     //  DataGrid
     //  ----------------
     //
@@ -129,13 +127,13 @@ define(['jquery', 'lux'], function ($) {
             } else if(elem.is('table')) {
                 container = $(document.createElement('div'));
                 elem.before(container);
-                container.append(elem);                
+                container.append(elem);
             }
             container.addClass(classes.container);
             var id = container.attr('id');
             if (!id) {
                 container.attr('id', 'dg' + lux.s4());
-            }                
+            }
             this.elem = container;
             container.data('datagrid', this);
             this.data = [];
@@ -376,11 +374,11 @@ define(['jquery', 'lux'], function ($) {
         name: null,
         input_data: function (g, data) {}
     });
-    
+
     DataGrid.Extension = function (name, attrs) {
         DataGrid.prototype.extensions.push(DataGridExtension.extend(attrs));
     };
-    
+
     //
     // Perform client side column sorting
     DataGrid.Extension('sorting', {

@@ -8,7 +8,8 @@ class Command(lux.Command):
 
     def run(self, argv, start=True):
         app = self.app
-        server = self.pulsar_app(argv, PulsarShell)
+        server = self.pulsar_app(argv, PulsarShell,
+                                 imported_objects={'app': app})
         #app.clear_local()
         app.on_start(server)
         if start:   #    pragma    nocover

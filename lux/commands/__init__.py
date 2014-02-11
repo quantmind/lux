@@ -183,7 +183,7 @@ class Command(ConsoleParser):
             h.write(native_str(stream))
         h.write('\n')
 
-    def pulsar_app(self, argv, application=None):
+    def pulsar_app(self, argv, application=None, **kw):
         if application is None:
             application = DummyApp
         app = self.app
@@ -193,7 +193,8 @@ class Command(ConsoleParser):
                            argv=argv,
                            version=app.meta.version,
                            debug=app.debug,
-                           config=app.config_module)
+                           config=app.config_module,
+                           **kw)
 
     def pulsar_cfg(self, argv):
         app = self.pulsar_app(argv)

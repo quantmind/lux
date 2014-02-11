@@ -23,8 +23,7 @@ Parameters
 Usage
 ================
 
-The base url for the web API is defined by the ``API_URL``
-config parameters which, by default is equal to ``api``.
+The base url for the web API is defined by the :setting:`API_URL` setting.
 
 Adding Handlers
 ~~~~~~~~~~~~~~~~
@@ -47,7 +46,7 @@ in the ``Api`` documentation. The second element is an iterable
 over :class:`Crud` routers which handles requests.
 The Routers will be appended to the :class:`Api` Router.
 
-The example above adds one single :class:`Crud` router to the :class:`Api`
+The example above adds one single :class:`.Crud` router to the :class:`Api`
 router. The router serves requests at the ``/api/blog/`` url.
 
 
