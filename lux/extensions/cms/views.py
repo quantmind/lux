@@ -323,8 +323,7 @@ class EditPage(PageMixin, api.Crud):
             # Url for api, to add datatable content and retrieve content
             url = request.app.config.get('API_URL')
             if url:
-                html_page.data({'api': url,
-                                'content_url': '%s%s' % (url,
+                html_page.data({'content_url': '%s%s' % (url,
                                                          CONTENT_API_URL)})
             response = yield doc.http_response(request)
             coroutine_return(response)

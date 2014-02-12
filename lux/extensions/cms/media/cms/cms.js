@@ -43,6 +43,7 @@ define(['lux-web'], function () {
     // the ``meta`` object in the class definition.
     var Content = lux.Model.extend({
         show_title: false,
+        //
         meta: {
             name: 'content',
             attributes: {
@@ -1396,6 +1397,7 @@ define(['lux-web'], function () {
     //
     //  Insert a non-breaking space.
     lux.cms.create_content_type('markdown', {
+        //
         meta: {
             title: 'Text using markdown',
             persistent: true
@@ -1436,6 +1438,82 @@ define(['lux-web'], function () {
                 ul.append($('<li><a href="' + lib.web + '">' + lib.name +
                             '</a> ' + lib.version + '</li>'));
             });
+        }
+    });
+    //
+    //  Datatable
+    //  --------------------
+
+    // Data table for models
+    //
+    cms.create_content_type('datatable', {
+        //
+        meta: {
+            title: 'Data Grid',
+            persistent: true,
+            render_queue: [],
+            api_info: function (api) {
+                this.api = api || {};
+                var queue = this.render_queue;
+                delete this.render_queue;
+                _.each(queue, function (o) {
+                    o.content._render(o.container);
+                });
+            }
+        },
+        //
+        render: function (container) {
+            var self = this;
+            require(['datagrid'], function () {
+                if (self._meta.api === undefined) {
+                    self._meta.render_queue.push({
+                        content: self,
+                        'container': container
+                    });
+                } else {
+                    self._render(container);
+                }
+            });
+        },
+        //
+        // Actually does the datagrid rendering
+        _render: function (container) {
+            var elem = $(document.createElement('div')).appendTo(container),
+                options = this.fields();
+            options.colHeaders = options.fields;
+            options.ajaxUrl = this._meta.api.url;
+            lux.web.datagrid(elem, options);
+        },
+        //
+        // Once the form is submitted get the fields to store in the
+        // model content
+        get_form_fields: function (arr) {
+            var data = this._super(arr),
+                api_model = models[data.url];
+            if (api_model) {
+                var columns = [];
+                if (data.fields) {
+                    _(data.fields).forEach(function (id) {
+                        columns.push(api_model.map[id]);
+                    });
+                } else {
+                    columns = api_model.fields;
+                }
+                data.fields = columns;
+                return data;
+            } else {
+                return {};
+            }
+        },
+        //
+        get_form: function () {
+            // The select model is not yet available, create it.
+            if(!groups && sitemap) {
+                groups = self.create_groups(sitemap);
+            }
+            if (groups) {
+                return self.create_form(groups);
+            }
         }
     });
 
@@ -1545,22 +1623,25 @@ define(['lux-web'], function () {
                         socket: lux.cms._backend
                     });
                 }
-                self._setup_api();
             }
+            self._setup_api();
             self.view = new PageView(elem, options);
             self.view.render();
         },
         //
         _setup_api: function () {
-            this.url = this.element().data('api');
-            if (!this.url) {
+            var api = $('html').data('api');
+            if (!api) {
                 this.on_sitemap();
             } else {
                 var self = this;
-                $.ajax(this.url, {
+                $.ajax(api.url, {
                     dataType: 'json',
                     success: function (data, status, xhr) {
-                        self.on_sitemap(data);
+                        self.on_sitemap(api, data);
+                    },
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        self.on_sitemap(api);
                     }
                 });
             }
@@ -1568,61 +1649,14 @@ define(['lux-web'], function () {
         //
         // When the api sitemap is available, this method setup the
         // datatable content type.
-        on_sitemap: function (sitemap) {
-            var self = this,
-                // Dictionary of models urls and fields
-                models = {},
-                groups = null;
-            this.models = models;
-            //
-            lux.cms.create_content_type('datatable', {
-                model_title: 'Data Grid',
-                //
-                render: function (container) {
-                    var elem = this.get('jQuery');
-                    if (!elem) {
-                        elem = $(document.createElement('div')).data({
-                            colHeaders: this.get('fields'),
-                            ajaxUrl: this.get('url')
-                        });
-                    }
-                    elem.appendTo(container.html(''));
-                    require(['datagrid'], function () {
-                        lux.web.datagrid(elem);
-                    });
-                },
-                //
-                // Once the form is submitted get the fields to store in the
-                // model content
-                get_form_fields: function (arr) {
-                    var data = this._super(arr),
-                        api_model = models[data.url];
-                    if (api_model) {
-                        var columns = [];
-                        if (data.fields) {
-                            _(data.fields).forEach(function (id) {
-                                columns.push(api_model.map[id]);
-                            });
-                        } else {
-                            columns = api_model.fields;
-                        }
-                        data.fields = columns;
-                        return data;
-                    } else {
-                        return {};
-                    }
-                },
-                //
-                get_form: function () {
-                    // The select model is not yet available, create it.
-                    if(!groups && sitemap) {
-                        groups = self.create_groups(sitemap);
-                    }
-                    if (groups) {
-                        return self.create_form(groups);
-                    }
+        on_sitemap: function (api, sitemap) {
+            var datatable = cms.content_type('datatable');
+            if (datatable) {
+                if (api) {
+                    api.sitemap = sitemap;
                 }
-            });
+                datatable._meta.api_info(api);
+            }
         },
         //
         // sitemap is a list of api section handlers

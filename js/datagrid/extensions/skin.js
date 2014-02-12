@@ -32,7 +32,7 @@
         // Set the style of the table
         style: function (g, name) {
             if (g.options.styles[name] !== undefined) {
-                each(g.options.styles, function (cn) {
+                _(g.options.styles).forEach(function (cn) {
                     g.elem.removeClass(cn);
                 });
                 g.elem.addClass(g.options.styles[name]);

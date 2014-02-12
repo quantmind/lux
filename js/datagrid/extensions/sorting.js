@@ -102,11 +102,11 @@
                     return sorter(a[1], b[1]);
                 });
                 var data = [];
-                each(rows, function (value) {
+                _(rows).forEach(function (value) {
                     data.push(g.data[value[0]]);
                 });
                 g.data = data;
-                each(g.columns, function (c) {
+                _(g.columns).forEach(function (c) {
                     self.set_icon(c, g.options.sorting_icon);
                 });
                 this.set_icon(col, g.options['sorting_' + g.sortOrder + '_icon']);
@@ -118,7 +118,7 @@
             var classes = this.classes,
                 thead = g.thead(),
                 self = this;
-            each(g.columns, function (col) {
+            _(g.columns).forEach(function (col) {
                 if (col.sortable === false) {
                     col.th.removeClass(classes.enabled);
                 } else {

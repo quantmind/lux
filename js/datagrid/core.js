@@ -119,7 +119,7 @@
         init: function (elem, options) {
             var container = $(elem),
                 classes = this.classes;
-            this.options = options = extend({}, this.options, options || {});
+            this.options = options = _.merge({}, this.options, options);
             if (container.length === 0) {
                 container = $(document.createElement('div'));
             } else if(elem.is('table')) {
@@ -250,7 +250,7 @@
             var footer = this.tfoot().children('tr');
             if (!footer.length) {
                 footer = $(document.createElement('tr')).appendTo(this.tfoot());
-                each(this.columns, function (col) {
+                _(this.columns).forEach(function (col) {
                     footer.append('<td>' + col.name + '</td>');
                 });
             }
@@ -310,10 +310,10 @@
                 headers = this.headers(),
                 map = {},
                 col, id, th;
-            each(this.columns, function (col) {
+            _(this.columns).forEach(function (col) {
                 map[col.id()] = col;
             });
-            each(this.options.colHeaders, function (header) {
+            _(this.options.colHeaders).forEach(function (header) {
                 if (typeof(header) === 'string') {
                     header = {name: header};
                 }
@@ -336,11 +336,11 @@
         add_extensions: function () {
             var self = this;
             this.extensions = {};
-            each(this.constructor.prototype.extensions, function (Extension) {
+            _(this.constructor.prototype.extensions).forEach(function (Extension) {
                 var extOptions = Extension.prototype.options,
                     options= self.options;
                 if (extOptions) {
-                    each(extOptions, function (value, name) {
+                    _(extOptions).forEach(function (value, name) {
                         if (options[name] === undefined) {
                             options[name] = value;
                         }
@@ -353,7 +353,7 @@
         input_data: function () {
             var self = this,
                 data = {'field': this.fields()};
-            each(self.extensions, function (ext) {
+            _(self.extensions).forEach(function (ext) {
                 ext.input_data(self, data);
             });
             return data;
@@ -361,7 +361,7 @@
         // A list of column codes
         fields: function () {
             var fields = [];
-            each(this.columns, function (col) {
+            _(this.columns).forEach(function (col) {
                 fields.push(col.code());
             });
             return fields;

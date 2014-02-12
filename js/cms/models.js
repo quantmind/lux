@@ -40,6 +40,7 @@
     // the ``meta`` object in the class definition.
     var Content = lux.Model.extend({
         show_title: false,
+        //
         meta: {
             name: 'content',
             attributes: {

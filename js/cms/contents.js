@@ -70,6 +70,7 @@
     //
     //  Insert a non-breaking space.
     lux.cms.create_content_type('markdown', {
+        //
         meta: {
             title: 'Text using markdown',
             persistent: true
@@ -110,5 +111,81 @@
                 ul.append($('<li><a href="' + lib.web + '">' + lib.name +
                             '</a> ' + lib.version + '</li>'));
             });
+        }
+    });
+    //
+    //  Datatable
+    //  --------------------
+
+    // Data table for models
+    //
+    cms.create_content_type('datatable', {
+        //
+        meta: {
+            title: 'Data Grid',
+            persistent: true,
+            render_queue: [],
+            api_info: function (api) {
+                this.api = api || {};
+                var queue = this.render_queue;
+                delete this.render_queue;
+                _.each(queue, function (o) {
+                    o.content._render(o.container);
+                });
+            }
+        },
+        //
+        render: function (container) {
+            var self = this;
+            require(['datagrid'], function () {
+                if (self._meta.api === undefined) {
+                    self._meta.render_queue.push({
+                        content: self,
+                        'container': container
+                    });
+                } else {
+                    self._render(container);
+                }
+            });
+        },
+        //
+        // Actually does the datagrid rendering
+        _render: function (container) {
+            var elem = $(document.createElement('div')).appendTo(container),
+                options = this.fields();
+            options.colHeaders = options.fields;
+            options.ajaxUrl = this._meta.api.url;
+            lux.web.datagrid(elem, options);
+        },
+        //
+        // Once the form is submitted get the fields to store in the
+        // model content
+        get_form_fields: function (arr) {
+            var data = this._super(arr),
+                api_model = models[data.url];
+            if (api_model) {
+                var columns = [];
+                if (data.fields) {
+                    _(data.fields).forEach(function (id) {
+                        columns.push(api_model.map[id]);
+                    });
+                } else {
+                    columns = api_model.fields;
+                }
+                data.fields = columns;
+                return data;
+            } else {
+                return {};
+            }
+        },
+        //
+        get_form: function () {
+            // The select model is not yet available, create it.
+            if(!groups && sitemap) {
+                groups = self.create_groups(sitemap);
+            }
+            if (groups) {
+                return self.create_form(groups);
+            }
         }
     });

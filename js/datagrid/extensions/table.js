@@ -13,7 +13,7 @@
                 model = options.model,
                 colHeaders = options.colHeaders;
             if (!colHeaders) {
-                
+
             }
         }
     });

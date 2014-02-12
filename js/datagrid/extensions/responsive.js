@@ -23,7 +23,7 @@
             if (width < 767 && !this.switched) {
                 this.switched = true;
                 var body = g.tbody();
-                each(g.columns, function (col, index) {
+                _(g.columns).forEach(function (col, index) {
                     index += 1;
                     body.find('td:nth-of-type('+index+')').attr(
                                 'data-content', col.name);

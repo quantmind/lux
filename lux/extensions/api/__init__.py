@@ -283,9 +283,12 @@ class Extension(lux.Extension):
         scripts to the document media.
         '''
         config = app.config
-        html.data('api', {'search': config['QUERY_SEARCH_KEY'],
-                          'start': config['QUERY_START_KEY'],
-                          'per_page': config['QUERY_LENGTH_KEY']})
+        url = config['API_URL']
+        if url:
+            html.data('api', {'url': url,
+                              'search': config['QUERY_SEARCH_KEY'],
+                              'start': config['QUERY_START_KEY'],
+                              'per_page': config['QUERY_LENGTH_KEY']})
 
     #    INTERNALS
     def _create_mapper(self, app):
