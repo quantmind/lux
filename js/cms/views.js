@@ -503,7 +503,9 @@
     //  Block View
     //  -------------------
     //
-    //  The Block View inherits from the ``RowView``
+    //  The Block View inherits from the ``RowView``.
+    //  Blocks are displaied within a ColumnView in
+    //  a vertical layout.
     var BlockView = RowView.extend({
         type: 'block',
         //

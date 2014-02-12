@@ -117,8 +117,11 @@
     //  Datatable
     //  --------------------
 
-    // Data table for models
+    // Data table for models allows to build highly configurable tables or grids
+    // which represents collections of models.
     //
+    // THis content is available only when lux provide an api for models in the
+    // html tag via the ``api`` data key.
     cms.create_content_type('datatable', {
         //
         meta: {
@@ -149,6 +152,42 @@
             });
         },
         //
+        // Once the form is submitted get the fields to store in the
+        // model content
+        get_form_fields: function (arr) {
+            var data = this._super(arr),
+                model = this._meta.api.models[data.url];
+            if (model) {
+                var fields = [];
+                if (data.fields) {
+                    _(data.fields).forEach(function (id) {
+                        fields.push(model.map[id]);
+                    });
+                } else {
+                    fields = model.fields;
+                }
+                data.fields = fields;
+                return data;
+            } else {
+                return {};
+            }
+        },
+        //
+        get_form: function () {
+            // The select model is not yet available, create it.
+            var api = this._meta.api;
+            if (api) {
+                if (!api.groups && api.sitemap) {
+                    this.create_groups(api);
+                }
+                if (api.groups) {
+                    return this._get_form(api);
+                }
+            }
+        },
+        // Internal methods
+
+        //
         // Actually does the datagrid rendering
         _render: function (container) {
             var elem = $(document.createElement('div')).appendTo(container),
@@ -158,34 +197,77 @@
             lux.web.datagrid(elem, options);
         },
         //
-        // Once the form is submitted get the fields to store in the
-        // model content
-        get_form_fields: function (arr) {
-            var data = this._super(arr),
-                api_model = models[data.url];
-            if (api_model) {
-                var columns = [];
-                if (data.fields) {
-                    _(data.fields).forEach(function (id) {
-                        columns.push(api_model.map[id]);
-                    });
-                } else {
-                    columns = api_model.fields;
-                }
-                data.fields = columns;
-                return data;
-            } else {
-                return {};
-            }
+        // sitemap is a list of api section handlers
+        create_groups: function (api) {
+            var groups = [],
+                models = {};
+            //
+            // Add options to the model select widgets
+            _(api.sitemap).forEach(function (section) {
+                var group = $(document.createElement('optgroup')).attr('label', section.name);
+                groups.push(group);
+                _(section.routes).forEach(function (route) {
+                    $(document.createElement('option'))
+                             .val(route.api_url).html(route.model).appendTo(group);
+                    // Add the route to the models object
+                    models[route.api_url] = route;
+                });
+            });
+            api.groups = groups;
+            api.models = models;
         },
         //
-        get_form: function () {
-            // The select model is not yet available, create it.
-            if(!groups && sitemap) {
-                groups = self.create_groups(sitemap);
-            }
-            if (groups) {
-                return self.create_form(groups);
-            }
-        }
+        // Create the form for adding a data grid
+        _get_form: function (api) {
+            var form = lux.web.form(),
+                select_model = form.add_input('select', {name: 'url'}),
+                models = api.models;
+
+            select_model.append($(document.createElement('option')).html('Choose a model'));
+            _(api.groups).forEach(function (group) {
+                select_model.append(group);
+            });
+            // Create the fields multiple select
+            var fields = form.add_input('select', {
+                multiple: 'multiple',
+                name: 'fields'
+            }).select2({
+                placeholder: 'Select fields to display'
+            });
+            form.add_input('input', {
+                type: 'checkbox',
+                name: 'editable',
+                label: 'Editable'
+            });
+            form.add_input('input', {
+                type: 'checkbox',
+                name: 'footer',
+                label: 'Display footer'
+            });
+            //
+            // When a model change, change the selction as well.
+            select_model.select2().change(function (e) {
+                var url = $(this).val(),
+                    model = models[url],
+                    options = model.options;
+                fields.val([]).trigger("change");
+                fields.children().remove();
+                if (options) {
+                    _(options).forEach(function (option) {
+                        fields.append(option);
+                    });
+                } else {
+                    model.options = options = [];
+                    model.map = {};
+                    _(models[url].fields).forEach(function (field) {
+                        var option = $(document.createElement('option'))
+                                        .val(field.code).html(field.name);
+                        model.map[field.code] = field;
+                        options.push(option);
+                        fields.append(option);
+                    });
+                }
+            });
+            return form;
+        },
     });
