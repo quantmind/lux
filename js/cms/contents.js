@@ -135,6 +135,10 @@
                 _.each(queue, function (o) {
                     o.content._render(o.container);
                 });
+            },
+            fields: {
+                editable: new lux.BooleanField({label: 'Editable'}),
+                footer: new lux.BooleanField({label: 'Display Footer'})
             }
         },
         //
@@ -154,7 +158,7 @@
         //
         // Once the form is submitted get the fields to store in the
         // model content
-        get_form_fields: function (arr) {
+        __get_form_fields: function (arr) {
             var data = this._super(arr),
                 model = this._meta.api.models[data.url];
             if (model) {
@@ -219,55 +223,64 @@
         //
         // Create the form for adding a data grid
         _get_form: function (api) {
-            var form = lux.web.form(),
+            var self = this,
+                form = lux.web.form(),
                 select_model = form.add_input('select', {name: 'url'}),
-                models = api.models;
+                models = api.models,
+                fields = this._meta.fields;
 
             select_model.append($(document.createElement('option')).html('Choose a model'));
             _(api.groups).forEach(function (group) {
                 select_model.append(group);
             });
             // Create the fields multiple select
-            var fields = form.add_input('select', {
+            var fields_select = form.add_input('select', {
                 multiple: 'multiple',
-                name: 'fields'
-            }).select2({
+                name: 'fields',
                 placeholder: 'Select fields to display'
-            });
-            form.add_input('input', {
-                type: 'checkbox',
-                name: 'editable',
-                label: 'Editable'
-            });
-            form.add_input('input', {
-                type: 'checkbox',
-                name: 'footer',
-                label: 'Display footer'
-            });
+            }).select();
+            fields.editable.add_to_form(form, this);
+            fields.footer.add_to_form(form, this);
             //
             // When a model change, change the selction as well.
-            select_model.select2().change(function (e) {
+            select_model.select().change(function (e) {
                 var url = $(this).val(),
-                    model = models[url],
-                    options = model.options;
-                fields.val([]).trigger("change");
-                fields.children().remove();
-                if (options) {
-                    _(options).forEach(function (option) {
-                        fields.append(option);
-                    });
-                } else {
-                    model.options = options = [];
-                    model.map = {};
-                    _(models[url].fields).forEach(function (field) {
-                        var option = $(document.createElement('option'))
-                                        .val(field.code).html(field.name);
-                        model.map[field.code] = field;
-                        options.push(option);
-                        fields.append(option);
-                    });
+                    model = models[url];
+                // there is a model
+                fields_select.val([]).trigger("change");
+                fields_select.children().remove();
+                if (model) {
+                    //
+                    // Add options
+                    if (model.options) {
+                        _(model.options).forEach(function (option) {
+                            fields_select.append(option);
+                        });
+                    } else {
+                        model.options = [];
+                        model.map = {};
+                        _(models[url].fields).forEach(function (field) {
+                            var option = $(document.createElement('option'))
+                                            .val(field.code).html(field.name);
+                            model.map[field.code] = field;
+                            model.options.push(option);
+                            fields_select.append(option);
+                        });
+                    }
+                    //
+                    // The model correspoend with the current content model
+                    // selct fields accordignly
+                    if (url === self.get('url')) {
+                        _(self.get('fields')).forEach(function (field) {
+
+                        });
+                    }
                 }
             });
+            //
+            // If the model url is available trigger the changes in the select
+            // element
+            select_model.val(this.get('url')).trigger('change');
             return form;
         },
     });

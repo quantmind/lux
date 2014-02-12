@@ -50,8 +50,8 @@
     // A proxy for select2
     $.fn.select = function (options) {
         options = options || {};
-        if (!options.width) {
+        if (options === Object(options) && !options.width) {
             options.width = 'element';
         }
-        this.select2(options);
+        return this.select2(options);
     };

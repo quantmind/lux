@@ -291,11 +291,10 @@
             set_field: function (instance, field, value) {
                 if (value === undefined) return;
                 // Check if there is a validater for the field
-                if (this.attributes) {
-                    var validator = this.attributes[field];
-                    //if (validator === undefined && field !== this.pkname) return;
-                    if (validator) {
-                        value = validator.call(instance, value);
+                if (this.fields) {
+                    var f = this.fields[field];
+                    if (f) {
+                        value = f.validate(instance, value);
                     }
                 }
                 var prev = instance.get(field);
@@ -380,15 +379,23 @@
         });
     //
     // Metaclass for models
+    // --------------------------------
+
+    // Override the standard ``Type`` so that the new model class
+    // contains the ``_meta`` attribute, and instance of ``Meta``.
     var ModelType = Type.extend({
         new_class: function (Prototype, attrs) {
             var mattr = {},
                 meta = Prototype._meta;
-            if (meta && meta.attributes) {
-                mattr.attributes = meta.attributes;
+            // Make sure we inherit fields for parent models
+            if (meta && meta.fields) {
+                mattr.fields = meta.fields;
             }
             meta = _.merge(mattr, default_meta_attributes, attrs.meta);
             delete attrs.meta;
+            _(meta.fields).forEach(function (field, name) {
+                field.name = name;
+            });
             var cls = this._super(Prototype, attrs);
             cls._meta = cls.prototype._meta = new Meta(cls, meta);
             return cls;
@@ -519,7 +526,35 @@
                     lux.set_value(elem, val);
                 }
             });
-        }
+        },
+        //
+        // Set fields data from a form
+        set_form_fields: function (arr) {
+            var fields = {},
+                model = this;
+            _(arr).forEach(function (f) {
+                var values = fields[f.name];
+                if (values === undefined) {
+                    fields[f.name] = f.value;
+                } else if($.isArray(values)) {
+                    values.push(f.value);
+                } else {
+                    fields[f.name] = [values, f.value];
+                }
+            });
+            // Now loop through fields in the meta class
+            _(this._meta.fields).forEach(function (field) {
+                var value = field.validate(model, fields[field.name]);
+                if (value !== undefined) {
+                    fields[field.name] = value;
+                } else {
+                    delete fields[field.name];
+                }
+            });
+            //
+            this._fields = fields;
+            this.trigger('change', this);
+        },
     });
 
     lux.View = Class.extend({

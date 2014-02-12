@@ -15,7 +15,8 @@
             form = web.form(),
             //
             // Create the select element for HTML wrappers
-            wrapper_select = web.create_select(cms.wrapper_types()),
+            wrapper_select = web.create_select(cms.wrapper_types()).attr(
+                'name', 'content_type'),
             //
             // create the select element for content types
             content_select = web.create_select(cms.content_types()),
@@ -161,9 +162,8 @@
             // attribute in the dialog (check the ``PositionView.edit_content`
             // method)
             beforeSubmit: function (arr) {
-                var content = block.content,
-                    fields = content.get_form_fields(arr);
-                content.update(fields);
+                var content = block.content;
+                content.set_form_fields(arr);
                 block.set(content);
                 dialog.fadeOut();
                 return false;

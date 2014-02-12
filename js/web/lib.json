@@ -8,6 +8,7 @@
             "js/web/select.js",
             "js/web/dialog.js",
             "js/web/forms.js",
+            "js/web/fields.js",
             "js/web/fullscreen.js",
             "js/backends/ajax.js",
             "js/backends/websocket.js",

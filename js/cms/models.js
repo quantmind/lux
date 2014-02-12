@@ -11,21 +11,7 @@
     //  ``Columns``.
     var ROW_TEMPLATES = new lux.Ordered(),
         BLOCK_TEMPLATES = new lux.Ordered(),
-        web = lux.web,
-        split_keywords = function (value) {
-            if (_.isString(value)) {
-                var result = [];
-                _(value.split(',')).forEach(function (el) {
-                    el = el.trim();
-                    if (el) {
-                        result.push(el);
-                    }
-                });
-                return result;
-            } else {
-                return value;
-            }
-        };
+        web = lux.web;
     //
     // Content Model
     // ----------------
@@ -43,25 +29,9 @@
         //
         meta: {
             name: 'content',
-            attributes: {
-                keywords: split_keywords
+            fields: {
+                keywords: new lux.KeywordsField()
             }
-        },
-        //
-        // Retrieve content fields form an array ``arr`` of form inputs
-        get_form_fields: function (arr) {
-            var fields = {};
-            _(arr).forEach(function (f) {
-                var values = fields[f.name];
-                if (values === undefined) {
-                    fields[f.name] = f.value;
-                } else if($.isArray(values)) {
-                    values.push(f.value);
-                } else {
-                    fields[f.name] = [values, f.value];
-                }
-            });
-            return fields;
         },
         //
         // Create a jQuery Form element for customising the content.
@@ -83,6 +53,7 @@
         // Sync only if the content is persistent in the backend,
         // otherwise no need to do anything
         sync: function (options) {
+            self._fields.content_type = this._meta.name;
             if (this._meta.persistent) {
                 return this._super(options);
             } else {
