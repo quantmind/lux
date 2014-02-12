@@ -14,6 +14,7 @@ define(['lux-web'], function () {
     //  ``Columns``.
     var ROW_TEMPLATES = new lux.Ordered(),
         BLOCK_TEMPLATES = new lux.Ordered(),
+        content_type = 'content_type',
         web = lux.web;
     //
     // Content Model
@@ -56,7 +57,7 @@ define(['lux-web'], function () {
         // Sync only if the content is persistent in the backend,
         // otherwise no need to do anything
         sync: function (options) {
-            self._fields.content_type = this._meta.name;
+            this.set(content_type, this._meta.name);
             if (this._meta.persistent) {
                 return this._super(options);
             } else {
@@ -76,9 +77,8 @@ define(['lux-web'], function () {
                     return pk;
                 }
             } else {
-                return _.extend({
-                    'content_type': this._meta.name
-                }, this.fields());
+                this.set(content_type, this._meta.name);
+                return this.fields();
             }
         }
     });
@@ -1437,6 +1437,7 @@ define(['lux-web'], function () {
                 });
             },
             fields: {
+                sortable: new lux.BooleanField({label: 'Sortable'}),
                 editable: new lux.BooleanField({label: 'Editable'}),
                 footer: new lux.BooleanField({label: 'Display Footer'})
             }
@@ -1456,53 +1457,61 @@ define(['lux-web'], function () {
             });
         },
         //
-        // Once the form is submitted get the fields to store in the
-        // model content
-        __get_form_fields: function (arr) {
-            var data = this._super(arr),
-                model = this._meta.api.models[data.url];
-            if (model) {
-                var fields = [];
-                if (data.fields) {
-                    _(data.fields).forEach(function (id) {
-                        fields.push(model.map[id]);
-                    });
-                } else {
-                    fields = model.fields;
-                }
-                data.fields = fields;
-                return data;
-            } else {
-                return {};
+        get_form: function () {
+            // The select model is not yet available, create it.
+            var api = this._api();
+            if (api.groups) {
+                return this._get_form(api);
             }
         },
         //
-        get_form: function () {
-            // The select model is not yet available, create it.
-            var api = this._meta.api;
-            if (api) {
-                if (!api.groups && api.sitemap) {
-                    this.create_groups(api);
-                }
-                if (api.groups) {
-                    return this._get_form(api);
-                }
-            }
-        },
         // Internal methods
 
         //
         // Actually does the datagrid rendering
         _render: function (container) {
             var elem = $(document.createElement('div')).appendTo(container),
-                options = this.fields();
-            options.colHeaders = options.fields;
-            options.ajaxUrl = this._meta.api.url;
-            lux.web.datagrid(elem, options);
+                options = _.extend({}, this.fields()),
+                models = this._api().models,
+                model = models ? models[options.url] : null,
+                headers = [];
+            if (model) {
+                if (options.fields) {
+                    var available_fields = {};
+                    _(model.fields).forEach(function (elem) {
+                        available_fields[elem.code] = elem;
+                    });
+                    _(options.fields).forEach(function (code) {
+                        var head = available_fields[code];
+                        if (head) {
+                            headers.push(head);
+                        }
+                    });
+                }
+                if (headers.length) {
+                    options.colHeaders = headers;
+                } else {
+                    options.colHeaders = model.fields;
+                }
+                options.ajaxUrl = options.url;
+                lux.web.datagrid(elem, options);
+            }
+        },
+        //
+        _api: function () {
+            var api = this._meta.api;
+            if (api) {
+                if (!api.groups && api.sitemap) {
+                    this._create_groups(api);
+                }
+                return api;
+            } else {
+                return {};
+            }
         },
         //
         // sitemap is a list of api section handlers
-        create_groups: function (api) {
+        _create_groups: function (api) {
             var groups = [],
                 models = {};
             //
@@ -1539,6 +1548,8 @@ define(['lux-web'], function () {
                 name: 'fields',
                 placeholder: 'Select fields to display'
             }).select();
+            //
+            fields.sortable.add_to_form(form, this);
             fields.editable.add_to_form(form, this);
             fields.footer.add_to_form(form, this);
             //

@@ -11,6 +11,7 @@
     //  ``Columns``.
     var ROW_TEMPLATES = new lux.Ordered(),
         BLOCK_TEMPLATES = new lux.Ordered(),
+        content_type = 'content_type',
         web = lux.web;
     //
     // Content Model
@@ -53,7 +54,7 @@
         // Sync only if the content is persistent in the backend,
         // otherwise no need to do anything
         sync: function (options) {
-            self._fields.content_type = this._meta.name;
+            this.set(content_type, this._meta.name);
             if (this._meta.persistent) {
                 return this._super(options);
             } else {
@@ -73,9 +74,8 @@
                     return pk;
                 }
             } else {
-                return _.extend({
-                    'content_type': this._meta.name
-                }, this.fields());
+                this.set(content_type, this._meta.name);
+                return this.fields();
             }
         }
     });

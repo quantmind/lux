@@ -135,7 +135,8 @@ class Content(ModelBase):
         for name in self._meta.dfields:
             if name in data:
                 self.set(name, data.pop(name))
-        self.data.update(data)
+        self.data = data
+        #self.data.update(data)
 
 
 class ContentDictionary(AttributeDictionary):

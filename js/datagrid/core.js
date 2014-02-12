@@ -128,9 +128,9 @@
                 container.append(elem);
             }
             container.addClass(classes.container);
-            var id = container.attr('id');
-            if (!id) {
-                container.attr('id', 'dg' + lux.s4());
+            // create an id if one is not available
+            if (!container.attr('id')) {
+                container.attr('id', 'dg-' + lux.s4());
             }
             this.elem = container;
             container.data('datagrid', this);
