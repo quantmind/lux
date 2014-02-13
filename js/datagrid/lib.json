@@ -1,11 +1,14 @@
 {
     "src": ["js/datagrid/start.js",
+            "js/datagrid/collection.js",
             "js/datagrid/core.js",
             "js/datagrid/extensions/sorting.js",
+            "js/datagrid/extensions/server.js",
+            "js/datagrid/extensions/checkbox.js",
             "js/datagrid/extensions/skin.js",
             "js/datagrid/extensions/responsive.js",
-            "js/datagrid/extensions/ajax.js",
             "js/datagrid/web.js",
+            "js/datagrid/internals.js",
             "js/close.js"],
     "dest": "lux/media/lux/datagrid.js"
 }

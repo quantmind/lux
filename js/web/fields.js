@@ -48,6 +48,19 @@
         }
     });
 
+    c.MultiField = c.Field.extend({
+        tag: 'select',
+        //
+        init: function (options) {
+            this.options = Object(options);
+            this.options.multiple = 'multiple';
+        }
+    });
+
+    c.TextArea = c.Field.extend({
+        tag: 'textarea'
+    });
+
     c.KeywordsField = c.Field.extend({
 
         validate: function (instance, value) {

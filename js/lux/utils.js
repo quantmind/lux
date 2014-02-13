@@ -1,3 +1,23 @@
+    var ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+    //
+    //  Convert a number into a letter representation
+    //
+    //  num_to_letter(1) == 'A'
+    //  num_to_letter(2) == 'B'
+    //  num_to_letter(27) == 'AA'
+    lux.num_to_letter = function (num) {
+        var len = ALPHABET.length,
+            s = '';
+        while (num >= len) {
+            var rem = num % len;
+            num = Math.floor(num/len);
+            s += ALPHABET[rem];
+        }
+        s += ALPHABET[num];
+        return s;
+    };
+
     //
     // An object which remember insertion order:
     //

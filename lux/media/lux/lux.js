@@ -39,6 +39,11 @@ define(['lodash', 'jquery'], function () {
         });
     };
     //
+    // Create a lux event handler (proxy for a jQuery event)
+    lux.event = function () {
+        return $.Event();
+    };
+    //
     // Create a method for a derived Class
     var fnTest = /xyz/.test(function(){var xyz;}) ? /\b_super\b/ : /.*/;
     var create_method = function (type, name, attr, _super) {
@@ -205,6 +210,9 @@ define(['lodash', 'jquery'], function () {
                 });
             }
         }),
+        //
+        // Lux exception:
+        //  throw new lux.Exception(message)
         Exception = Class.extend({
             name: 'Exception',
             init: function (message) {
@@ -613,6 +621,26 @@ define(['lodash', 'jquery'], function () {
     lux.ModelException = ModelException;
     lux.NotImplementedError = NotImplementedError;
 
+    var ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+    //
+    //  Convert a number into a letter representation
+    //
+    //  num_to_letter(1) == 'A'
+    //  num_to_letter(2) == 'B'
+    //  num_to_letter(27) == 'AA'
+    lux.num_to_letter = function (num) {
+        var len = ALPHABET.length,
+            s = '';
+        while (num >= len) {
+            var rem = num % len;
+            num = Math.floor(num/len);
+            s += ALPHABET[rem];
+        }
+        s += ALPHABET[num];
+        return s;
+    };
+
     //
     // An object which remember insertion order:
     //
@@ -879,11 +907,11 @@ define(['lodash', 'jquery'], function () {
             fade: {duration: 200}
         },
         //
-        // Constructor
+        // Constructor of a web extension instance
         init: function (id, html, options) {
             this._id = id;
             this._element = html;
-            this.options = $.extend(true, {}, this.options, options || {});
+            this.options = _.merge({}, this.options, options);
         },
         // String representation of this extension
         toString: function () {
@@ -969,6 +997,7 @@ define(['lodash', 'jquery'], function () {
     //    ``lux.web.ExtInstance`` is used.
     web.create_extension = function (name, ext, superClass) {
         var instances = [],
+            // prefix for the data key storing an extension instance
             prefix = name + '-',
             lux_idkey = 'lux-' + name + '-id',
             creation_count = 0,
@@ -977,8 +1006,9 @@ define(['lodash', 'jquery'], function () {
                 return prefix + creation_count;
             };
         superClass = superClass ? superClass : web.ExtInstance;
-        ext.options = $.extend(true, {}, superClass.prototype.options, ext.options || {});
+        ext.options = _.merge({}, superClass.prototype.options, ext.options);
         ext.name = name;
+        // Extension class
         var Extension = superClass.extend(ext);
         //
         // Class methods
@@ -1020,7 +1050,7 @@ define(['lodash', 'jquery'], function () {
             } else {
                 var opts = html.data(name) || html.data();
                 if (options) {
-                    options = $.extend(opts, options);
+                    options = _.extend(options, opts);
                 } else {
                     options = opts;
                 }

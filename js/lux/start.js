@@ -38,3 +38,8 @@ define(['lodash', 'jquery'], function () {
             callback(obj[name], name);
         });
     };
+    //
+    // Create a lux event handler (proxy for a jQuery event)
+    lux.event = function () {
+        return $.Event();
+    };

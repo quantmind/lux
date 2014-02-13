@@ -1,2 +1,2 @@
-define(['jquery', 'lux'], function ($) {
+define(['lux-web'], function () {
     "use strict";

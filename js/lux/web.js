@@ -102,11 +102,11 @@
             fade: {duration: 200}
         },
         //
-        // Constructor
+        // Constructor of a web extension instance
         init: function (id, html, options) {
             this._id = id;
             this._element = html;
-            this.options = $.extend(true, {}, this.options, options || {});
+            this.options = _.merge({}, this.options, options);
         },
         // String representation of this extension
         toString: function () {
@@ -192,6 +192,7 @@
     //    ``lux.web.ExtInstance`` is used.
     web.create_extension = function (name, ext, superClass) {
         var instances = [],
+            // prefix for the data key storing an extension instance
             prefix = name + '-',
             lux_idkey = 'lux-' + name + '-id',
             creation_count = 0,
@@ -200,8 +201,9 @@
                 return prefix + creation_count;
             };
         superClass = superClass ? superClass : web.ExtInstance;
-        ext.options = $.extend(true, {}, superClass.prototype.options, ext.options || {});
+        ext.options = _.merge({}, superClass.prototype.options, ext.options);
         ext.name = name;
+        // Extension class
         var Extension = superClass.extend(ext);
         //
         // Class methods
@@ -243,7 +245,7 @@
             } else {
                 var opts = html.data(name) || html.data();
                 if (options) {
-                    options = $.extend(opts, options);
+                    options = _.extend(options, opts);
                 } else {
                     options = opts;
                 }

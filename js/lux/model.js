@@ -165,6 +165,9 @@
                 });
             }
         }),
+        //
+        // Lux exception:
+        //  throw new lux.Exception(message)
         Exception = Class.extend({
             name: 'Exception',
             init: function (message) {

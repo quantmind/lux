@@ -1372,13 +1372,24 @@ define(['lux-web'], function () {
         //
         meta: {
             title: 'Text using markdown',
-            persistent: true
+            persistent: true,
+            fields: {
+                raw: new lux.TextArea({
+                    rows: 15,
+                    placeholder: 'Write markdown'
+                }),
+                javascript: new lux.TextArea({
+                    rows: 10,
+                    placeholder: 'javascript'
+                })
+            }
         },
         //
         render: function (container) {
             var self = this;
             require(['showdown'], function () {
                 var raw = self.get('raw') || '',
+                    js = self.get('javascript') || '',
                     converter = new Showdown.converter(),
                     html = converter.makeHtml(raw);
                 web.refresh(container.html(html));
@@ -1386,13 +1397,10 @@ define(['lux-web'], function () {
         },
         //
         get_form: function () {
-            var form = lux.web.form();
-            form.add_input('textarea', {
-                name:'raw',
-                value: this.get('raw'),
-                rows: 15,
-                placeholder: 'Write markdown'
-            });
+            var f = this._meta.fields,
+                form = lux.web.form();
+            f.raw.add_to_form(form, this);
+            f.javascript.add_to_form(form, this);
             return form;
         }
     });
@@ -1438,7 +1446,12 @@ define(['lux-web'], function () {
             fields: {
                 sortable: new lux.BooleanField({label: 'Sortable'}),
                 editable: new lux.BooleanField({label: 'Editable'}),
-                footer: new lux.BooleanField({label: 'Display Footer'})
+                footer: new lux.BooleanField({label: 'Display Footer'}),
+                row_actions: new lux.MultiField({
+                    label: 'Row actions',
+                    placeholder: 'Action on rows',
+                    options: [{value: 'delete'}]
+                })
             }
         },
         //
@@ -1488,9 +1501,9 @@ define(['lux-web'], function () {
                     });
                 }
                 if (headers.length) {
-                    options.colHeaders = headers;
+                    options.columns = headers;
                 } else {
-                    options.colHeaders = model.fields;
+                    options.columns = model.fields;
                 }
                 options.ajaxUrl = options.url;
                 lux.web.datagrid(elem, options);
@@ -1551,6 +1564,7 @@ define(['lux-web'], function () {
             fields.sortable.add_to_form(form, this);
             fields.editable.add_to_form(form, this);
             fields.footer.add_to_form(form, this);
+            fields.row_actions.add_to_form(form, this).select();
             //
             // When a model change, change the selction as well.
             select_model.select().change(function (e) {

@@ -1,17 +1,17 @@
     // jQuery extension
     $.fn.datagrid = function (options) {
         var $this = this.first(), // Use only first element from list
-            instance = $this.data('datagrid');
+            instance = $this.data(DATAGRID);
         if (options === 'instance') {
             return instance;
         } else {
             if (!instance) {
                 instance = new lux.DataGrid($this, options);
             }
-            return $this;
+            return instance.elem;
         }
     };
-    
+
     //
     web.extension('datagrid', {
         //
@@ -21,8 +21,7 @@
         //
         // table constructor
         decorate: function () {
-            this.datagrid = new DataGrid(this.element(), this.options);
+            var elem = $(this.element()).datagrid(this.options);
+            this.datagrid = elem.data(DATAGRID);
         }
     });
-    
-    return exports;

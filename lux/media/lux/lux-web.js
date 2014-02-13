@@ -821,7 +821,9 @@ define(['jquery', 'lux'], function ($) {
     };
     //
     // jQuery Form
-    var special_inputs = ['checkbox', 'radio'],
+    var SELECT = document.createElement('select'),
+        OPTION = document.createElement('option'),
+        special_inputs = ['checkbox', 'radio'],
         jquery_form_info = function () {
             return {name: 'jquery-form',
                     version: '3.48',
@@ -997,15 +999,23 @@ define(['jquery', 'lux'], function ($) {
         },
         //
         // A special case of ``add_input``, add a select element
-        select: function (options) {
-            var value, elem;
-            if (options) {
-                delete options.type;
-                value = options.value;
-                delete options.value;
+        select: function (opts) {
+            var value, elem, options, opt;
+            if (opts) {
+                delete opts.type;
+                value = opts.value;
+                delete opts.value;
+                options = opts.options;
+                delete opts.options;
             }
-            elem = $(document.createElement('select')).attr(options);
-            return elem;
+            elem = SELECT.cloneNode(false);
+            _(options).forEach(function (o) {
+                opt = OPTION.cloneNode(false);
+                opt.value = o.value;
+                opt.text = o.text || o.value;
+                elem.appendChild(opt);
+            });
+            return $(elem).attr(opts);
         },
         //
         on_error: function (o, s, xhr, form) {
@@ -1098,6 +1108,19 @@ define(['jquery', 'lux'], function ($) {
             if (value !== undefined)
                 return value === true || value === 'on';
         }
+    });
+
+    c.MultiField = c.Field.extend({
+        tag: 'select',
+        //
+        init: function (options) {
+            this.options = Object(options);
+            this.options.multiple = 'multiple';
+        }
+    });
+
+    c.TextArea = c.Field.extend({
+        tag: 'textarea'
     });
 
     c.KeywordsField = c.Field.extend({

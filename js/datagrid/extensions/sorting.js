@@ -1,16 +1,19 @@
     //
     // Perform client side column sorting
     DataGrid.Extension('sorting', {
+        //
         options: {
             sortable: false,
             sorting_icon: 'sort',
             sorting_asc_icon: 'sort-down',
             sorting_desc_icon: 'sort-up'
         },
+        //
         classes: {
             enabled: 'sortable',
             sorted: 'sorted'
         },
+        //
         sort_string: {
             asc: function (a, b) {
                 a = (a + '').toLowerCase();
@@ -23,6 +26,7 @@
                 return ((a < b) ? 1 : ((a > b) ? -1 : 0));
             }
         },
+        //
         sort_number: {
             is: function (a) {
                 if(typeof(a) !== 'number') {
@@ -46,7 +50,14 @@
         init: function (g) {
             if (g.options.sortable) {
                 var self = this;
-                this._enable_sorting(g);
+                //
+                // Inject sort method
+                g.sort = function (col, acending) {
+                    self.sort(g, col, acending);
+                };
+                //
+                self._enable_sorting(g);
+                //
                 g.elem.on('click', 'th', function(e) {
                     var col = g.column(e.currentTarget);
                     if(col && col.sorting !== false) {
