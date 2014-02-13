@@ -429,7 +429,7 @@ define(['lodash', 'jquery'], function () {
                 meta = Prototype._meta;
             // Make sure we inherit fields for parent models
             if (meta && meta.fields) {
-                mattr.fields = meta.fields;
+                mattr.fields = _.extend({}, meta.fields);
             }
             meta = _.merge(mattr, default_meta_attributes, attrs.meta);
             delete attrs.meta;

@@ -12,6 +12,7 @@
     var ROW_TEMPLATES = new lux.Ordered(),
         BLOCK_TEMPLATES = new lux.Ordered(),
         content_type = 'content_type',
+        dbfields = 'dbfields',
         web = lux.web;
     //
     // Content Model
@@ -31,7 +32,19 @@
         meta: {
             name: 'content',
             fields: {
-                keywords: new lux.KeywordsField()
+                id: new lux.Field({
+                    type: 'hidden',
+                    fieldset: {Class: dbfields}
+                }),
+                title: new lux.Field({
+                    required: 'required',
+                    placeholder: 'title',
+                    fieldset: {Class: dbfields}
+                }),
+                keywords: new lux.KeywordsField({
+                    placeholder: 'keywords',
+                    fieldset: {Class: dbfields}
+                })
             }
         },
         //

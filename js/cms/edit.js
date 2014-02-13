@@ -10,6 +10,7 @@
             page_limit = options.page_limit || 10,
             grid = web.grid(),
             preview = $(document.createElement('div')).addClass('preview'),
+            db = Content._meta.fields,
             //
             // Build the form container
             form = web.form(),
@@ -21,7 +22,7 @@
             // create the select element for content types
             content_select = web.create_select(cms.content_types()),
             //
-            content_search,
+            content_title,
             //
             content_id,
             //
@@ -32,7 +33,6 @@
             block,
             //
             selection_class = 'content-selection',
-            dbfields = 'search',
             //
             edit_preview = function () {
 
@@ -44,27 +44,12 @@
         form.add_input(content_select, {
             fieldset: {Class: selection_class}
         });
-        content_id = form.add_input('input', {
-            name: 'id',
-            type: 'hidden',
-            fieldset: {Class: dbfields}
-        });
         //
-        // Input for title
-        content_search = form.add_input('input', {
-            name: 'title',
-            placeholder: 'title',
-            required: 'required',
-            fieldset: {Class: dbfields}
-        });
-        //
-        // Input for keywords
-        form.add_input('input', {
-            fieldset: {Class: dbfields},
-            name: 'keywords'
-        }).select({
+        // database fields
+        content_id = db.id.add_to_form(form);
+        content_title = db.title.add_to_form(form);
+        db.keywords.add_to_form(form).select({
             tags: [],
-            placeholder: 'keywords',
             initSelection : function (element, callback) {
                 var data = [];
                 _(element.val().split(",")).forEach(function (val) {
@@ -94,7 +79,7 @@
         //
         // AJAX Content Loading
         if (options.content_url) {
-            web.select(content_search, {
+            content_title.select({
                 placeholder: 'Search content',
                 minimumInputLength: 2,
                 id: function (data) {
@@ -117,11 +102,12 @@
                     } else if (object.id) {
                         $.ajax({
                             url: options.content_url + '/' + object.id,
-                            success: function (data) {
-                                if (data.data) {
-                                    var d = data.data;
-                                    delete data.data;
-                                    _.extend(data, d);
+                            success: function (model_data) {
+                                var data = model_data;
+                                if (model_data.data) {
+                                    data = model_data.data;
+                                    delete model_data.data;
+                                    _.extend(data, model_data);
                                 }
                                 block.content.update(data);
                                 block.content.update_form(form._element);
