@@ -4,11 +4,10 @@ define(['lodash', 'jquery'], function () {
     var root = window,
         lux = {
             //version: "<%= pkg.version %>"
-        };
+        },
+        slice = Array.prototype.slice;
+    //
     root.lux = lux;
-
-    var ArrayProto = Array.prototype,
-        slice = ArrayProto.slice;
     //
     // Showdown extensions
     lux.showdown = {};
@@ -43,10 +42,20 @@ define(['lodash', 'jquery'], function () {
     lux.event = function () {
         return $.Event();
     };
+
+    var
+    //
+    CID = 'cid',
+    // Custom event fired by models when their custom id change
+    CID_CHANGE = 'cidchange',
+    //
+    // Test for ``_super`` methods
+    // Check http://ejohn.org/blog/simple-javascript-inheritance/
+    // for details.
+    fnTest = /xyz/.test(function(){var xyz;}) ? /\b_super\b/ : /.*/,
     //
     // Create a method for a derived Class
-    var fnTest = /xyz/.test(function(){var xyz;}) ? /\b_super\b/ : /.*/;
-    var create_method = function (type, name, attr, _super) {
+    create_method = function (type, name, attr, _super) {
         if (typeof attr === "function" && typeof _super[name] === "function" &&
                 fnTest.test(attr)) {
             return type.new_attr(name, function() {
@@ -63,11 +72,14 @@ define(['lodash', 'jquery'], function () {
         } else {
             return type.new_attr(name, attr);
         }
-    };
+    },
     //
-    // A Type is a factory of Classes. This is the correspondent of
-    // python metaclasses.
-    var Type = (function (t) {
+    //  Type
+    //  -------------
+
+    //  A Type is a factory of Classes. This is the correspondent of
+    //  python metaclasses.
+    Type = (function (t) {
 
         t.new_class = function (Caller, attrs) {
             var type = this,
@@ -122,11 +134,14 @@ define(['lodash', 'jquery'], function () {
         };
         //
         return t;
-    }(function(){}));
+    }(function(){})),
     //
-    // Lux base class.
-    // The `extend` method is the most important function of this object.
-    var Class = (function (c) {
+    //  Class
+    //  ----------------
+
+    //  Lux base class.
+    //  The `extend` method is the most important function of this object.
+    Class = (function (c) {
         c.__class__ = Type;
         //
         c.extend = function (attrs) {
@@ -137,12 +152,12 @@ define(['lodash', 'jquery'], function () {
         };
         //
         return c;
-    }(function() {}));
+    }(function() {})),
 
     //
     // Class With Events
     // requires jQuery loaded
-    var EventClass = Class.extend({
+    EventClass = Class.extend({
         //
         // Bind this class to a jQuery element
         bindToElement: function (jElem) {
@@ -160,278 +175,145 @@ define(['lodash', 'jquery'], function () {
         jElem: function () {
             return this._jquery_element ? this._jquery_element : $(window);
         }
-    });
+    }),
     //
-    // Models
+    // Lux exception:
+    //  throw new lux.Exception(message)
+    Exception = Class.extend({
+        name: 'Exception',
+        init: function (message) {
+            this.message = message || '';
+        },
+        toString: function () {
+            return this.name + ': ' + this.message;
+        }
+    }),
+    ModelException = Exception.extend({name: 'ModelException'}),
     //
-    var Storage = Class.extend({
-            data: {},
-            init: function (prefix) {
-                this.prefix = prefix;
-            },
-            decode: function (value) {
-                return value;
-            },
-            encode: function (value) {
-                return value;
-            },
-            setItem: function (key, value) {
-                this.data[this.prefix+key] = this.encode(value);
-            },
-            getItem: function (key) {
-                return this.decode(this.data[this.prefix+key]);
-            },
-            removeItem: function (key) {
-                delete this.data[this.prefix+key];
-            },
-            keys: function () {
-                var all = [],
-                    prefix = this.prefix,
-                    N = this.prefix.length;
-                for (var name in this.data) {
-                    if (name.substring(0,N) === prefix) {
-                        all.push(name.substring(N));
-                    }
-                }
-                return all;
-            },
-            all: function () {
-                var self = this,
-                    all = [];
-                _(this.keys()).forEach(function (key) {
-                    all.push(self.getItem(key));
-                });
-                return all;
-            },
-            clear: function () {
-                var self = this;
-                _(this.keys()).forEach(function (key) {
-                    self.removeItem(key);
-                });
-            }
-        }),
+    NotImplementedError = Exception.extend({name: 'NotImplementedError'}),
+    //
+    // Default values for ``Meta`` attributes.
+    default_meta_attributes = {
+        'pkname': 'id',
+        'name': 'model',
+        'defaults': {}
+    },
+    //
+    //  Model Meta
+    //  ------------------------
+
+    // Model database meta-class, accessed as ``_meta`` attribute on a ``Model``
+    // instance or from the Model.prototype object. It is a placeholder of
+    // live instances and it is the interface between a model and backend
+    // servers. A ``Meta`` must be registered with a backend before it can
+    // use the ``sync`` method. Registration is achieved via the
+    // ``set_transport`` method.
+    Meta = Class.extend({
         //
-        // Lux exception:
-        //  throw new lux.Exception(message)
-        Exception = Class.extend({
-            name: 'Exception',
-            init: function (message) {
-                this.message = message || '';
-            },
-            toString: function () {
-                return this.name + ': ' + this.message;
-            }
-        }),
-        ModelException = Exception.extend({name: 'ModelException'}),
-        //
-        NotImplementedError = Exception.extend({name: 'NotImplementedError'}),
-        //
-        // Default values for ``Meta`` attributes.
-        default_meta_attributes = {
-            'pkname': 'id',
-            'name': 'model',
-            'LiveStorage': Storage,
-            'defaults': {}
+        // Initialisation, set the ``model`` attribute and the attributes
+        // for this Meta. The available attributes are the same as
+        // ``default_meta_attributes`` object above.
+        init: function (model, attrs) {
+            this.model = model;
+            _.extend(this, attrs);
+            this.title = this.title || this.name;
         },
         //
-        //  Model Meta
-        //  ------------------------
-
-        // Model database meta-class, accessed as ``_meta`` attribute on a ``Model``
-        // instance or from the Model.prototype object. It is a placeholder of
-        // live instances and it is the interface between a model and backend
-        // servers. A ``Meta`` must be registered with a backend before it can
-        // use the ``sync`` method. Registration is achieved via the
-        // ``set_transport`` method.
-        Meta = Class.extend({
-            // prefix for id of model instances not yet persistent
-            _newprefix: 'new-',
-            //
-            // Initialisation, set the ``model`` attribute and the attributes
-            // for this Meta. The available attributes are the same as
-            // ``default_meta_attributes`` object above.
-            init: function (model, attrs) {
-                var LiveStorage = attrs.LiveStorage;
-                delete attrs.LiveStorage;
-                this.model = model;
-                _.extend(this, attrs);
-                this.title = this.title || this.name;
-                this.liveStorage = new LiveStorage(this.name+'.');
-                this._backend = null;
-            },
-            //
-            // Initialise an instance
-            init_instance: function (o, fields) {
-                o._fields = {};
-                o._changed = {};
-                if (fields === Object(fields)) {
-                    _(fields).forEach(function (field, name) {
-                        this.set_field(o, name, field);
-                    }, this);
-                }
-                if (o.pk() === undefined) {
-                    var avail = true;
-                    while (avail) {
-                        o._id = this._newprefix + lux.s4();
-                        avail = this.liveStorage.getItem(o.id());
-                    }
-                }
-                this.liveStorage.setItem(o.id(), o);
-            },
-            //
-            // Retrieve a ``live`` instance from the live storage. A live
-            // instance is an instance of a model available in the current
-            // Html doc.
-            live: function (id) {
-                if (id) {
-                    return this.liveStorage.getItem(id);
-                } else {
-                    return this.liveStorage.all();
-                }
-            },
-            //
-            clear: function (id) {
-                this.liveStorage.clear();
-            },
-            //
-            // Fetch a bunch of ids from the backend server
-            get: function (ids, options) {
-                if (this._backend) {
-                    if (!options) {
-                        options = {};
-                    }
-                    if (!$.isArray(ids)) {
-                        ids = [ids];
-                    }
-                    var crud = {},
-                        meta = this;
-                    _(ids).forEach(function (id) {
-                        meta._add_to_crud(crud, 'read', id, options);
-                    });
-                    meta._backend.send(crud.read);
-                } else {
-                    throw new ModelException('Cannot sync ' + this + '. No backend registered.');
-                }
-            },
-            //
-            // update live data with information from the server
-            update: function (data) {
-                var self = this,
-                    all = [],
-                    instance;
-                _(data).forEach(function (o) {
-                    var instance = self.liveStorage.getItem(o.id);
-                    if (instance) {
-                        instance.update(o.fields);
-                        // reset the changed object
-                        instance._changed = {};
-                    } else {
-                        instance = new self.model(o.fields);
-                    }
-                    all.push(instance);
-                });
-                return all;
-            },
-            //
-            // Set a new value for a field.
-            // It returns a value different from undefined
-            // only when the field has changed
-            set_field: function (instance, field, value) {
-                if (value === undefined) return;
-                // Check if there is a validater for the field
-                if (this.fields) {
-                    var f = this.fields[field];
-                    if (f) {
-                        value = f.validate(instance, value);
-                    }
-                }
-                var prev = instance.get(field);
-                if (value === prev) return;
-                if (field === this.pkname) {
-                    if (value) {
-                        this.liveStorage.removeItem(instance.id());
-                        instance._fields[field] = value;
-                        delete instance._id;
-                        this.liveStorage.setItem(instance.id(), instance);
-                    } else {
-                        return;
-                    }
-                } else {
-                    instance._fields[field] = value;
-                }
-                return prev === undefined ? null : prev;
-            },
-            //
-            // Synchronise the ``models`` with a backend server.
-            sync: function (options, models) {
-                var meta = this;
-                if (meta instanceof Model) {
-                    meta = this._meta;
-                    models = [this];
-                } else if (!models) {
-                    models = this.liveStorage.all();
-                }
-                if (meta._backend) {
-                    options = options || {};
-                    var crud = {};
-                    _(models).forEach(function (m) {
-                        if (m._meta !== meta) {
-                            throw new TypeError('Got an invalid model ' + m + ' in sync');
-                        }
-                        if (m.isNew()) {
-                            meta._add_to_crud(crud, 'create', m.backend_data(), options);
-                        } else if (m.isDeleted()) {
-                            meta._add_to_crud(crud, 'destroy', m.pk(), options);
-                        } else if (m.hasChanged()) {
-                            meta._add_to_crud(crud, 'update', m.backend_data(), options);
-                        } else {
-                            meta._add_to_crud(crud, 'read', m.pk(), options);
-                        }
-                    });
-                    _(crud).forEach(function (m) {
-                        meta._backend.send(m);
-                    });
-                } else {
-                    throw new ModelException('Cannot sync ' + meta + '. No backend registered.');
-                }
-            },
-            //
-            // Register the meta with a backend transport
-            set_transport: function (backend) {
-                this._backend = backend;
-            },
-            //
-            toString: function () {
-                return this.name;
-            },
-            //
-            _add_to_crud: function (crud, type, data, options) {
-                var opts = crud[type];
-                if (!opts) {
-                    opts = _.extend({}, options);
-                    var success = opts.success,
-                        meta = this;
-                    opts.type = type;
-                    opts.data = [];
-                    opts.model = meta.name;
-                    opts.success = function (data) {
-                        data = meta.update(data);
-                        if (success) {
-                            success.call(this, data, slice.call(arguments, 1));
-                        }
-                    };
-                    crud[type] = opts;
-                }
-                opts.data.push(data);
+        // Initialise an instance
+        init_instance: function (o, fields) {
+            o._fields = {};
+            o._changed = {};
+            if (fields === Object(fields)) {
+                _(fields).forEach(function (field, name) {
+                    this.set_field(o, name, field);
+                }, this);
             }
-        });
+            if (!o.pk()) {
+                o._id = CID + lux.s4();
+            }
+        },
+        //
+        // Fetch a bunch of ids from the backend server
+        get: function (ids, options) {
+            if (this._backend) {
+                if (!options) {
+                    options = {};
+                }
+                if (!$.isArray(ids)) {
+                    ids = [ids];
+                }
+                var crud = {},
+                    meta = this;
+                _(ids).forEach(function (id) {
+                    meta._add_to_crud(crud, 'read', id, options);
+                });
+                meta._backend.send(crud.read);
+            } else {
+                throw new ModelException('Cannot sync ' + this + '. No backend registered.');
+            }
+        },
+        //
+        // update live data with information from the server
+        update: function (data) {
+            var self = this,
+                all = [],
+                instance;
+            _(data).forEach(function (o) {
+                var instance = self.liveStorage.getItem(o.id);
+                if (instance) {
+                    instance.update(o.fields);
+                    // reset the changed object
+                    instance._changed = {};
+                } else {
+                    instance = new self.model(o.fields);
+                }
+                all.push(instance);
+            });
+            return all;
+        },
+        //
+        // Set a new value for a field.
+        // It returns a value different from undefined
+        // only when the field has changed
+        set_field: function (instance, field, value) {
+            if (value === undefined) return;
+            // Check if there is a validater for the field
+            if (this.fields) {
+                var f = this.fields[field];
+                if (f) {
+                    value = f.validate(instance, value);
+                }
+            }
+            var prev = instance.get(field);
+            if (value === prev) return;
+            if (field === this.pkname) {
+                if (value) {
+                    var cid = instance.cid();
+                    instance._fields[field] = value;
+                    delete instance._id;
+                    if (cid !== instance.cid()) {
+                        instance.trigger(CID_CHANGE, [instance, cid]);
+                    }
+                } else {
+                    return;
+                }
+            } else {
+                instance._fields[field] = value;
+            }
+            return prev === undefined ? null : prev;
+        },
+        //
+        toString: function () {
+            return this.name;
+        }
+    }),
     //
     // Metaclass for models
     // --------------------------------
 
     // Override the standard ``Type`` so that the new model class
     // contains the ``_meta`` attribute, and instance of ``Meta``.
-    var ModelType = Type.extend({
+    ModelType = Type.extend({
         new_class: function (Prototype, attrs) {
             var mattr = {},
                 meta = Prototype._meta;
@@ -448,7 +330,7 @@ define(['lodash', 'jquery'], function () {
             cls._meta = cls.prototype._meta = new Meta(cls, meta);
             return cls;
         }
-    });
+    }),
     //
     // Model
     // --------------------------
@@ -456,7 +338,7 @@ define(['lodash', 'jquery'], function () {
     // The base class for a model. A model is a single, definitive source
     // of data about your data. A Model consists of ``fields`` and behaviours
     // of the data you are storing.
-    var Model = EventClass.extend({
+    Model = EventClass.extend({
         // Use a different metaclass
         Metaclass: ModelType,
         //
@@ -470,10 +352,8 @@ define(['lodash', 'jquery'], function () {
             return this.get(this._meta.pkname);
         },
         //
-        // The ``id`` is always available. If the ``pk`` is not available, a temporary
-        // unique identifier is used.
-        id: function () {
-            return this.pk() || this._id;
+        cid: function () {
+            return this._meta.name + '-' + (this.pk() || this._id);
         },
         // Has this model been saved to the server yet? If the model does
         // not yet have a pk value, it is considered to be new.
@@ -501,7 +381,7 @@ define(['lodash', 'jquery'], function () {
                     fields[name] = value;
                 }
             });
-            return {id: this.id(), 'fields': fields};
+            return fields;
         },
         //
         // Set a field value
@@ -509,7 +389,7 @@ define(['lodash', 'jquery'], function () {
             var prev = this._meta.set_field(this, field, value);
             if (prev !== undefined) {
                 this._changed[field] = prev;
-                this.trigger('change', this, field);
+                this.trigger('change', [this, field]);
             }
         },
         //
@@ -542,24 +422,48 @@ define(['lodash', 'jquery'], function () {
             }
         },
         //
-        sync: function (options) {
-            return this._meta.sync.call(this, options);
+        'delete': function () {
+            this._deleted = true;
         },
         //
-        destroy: function (options) {
-            this._deleted = true;
-            if (this.isNew()) {
-                this._meta.liveStorage.removeItem(this.id());
-                if (options && options.success) {
-                    options.success(this);
+        // Sync a single model
+        sync: function (store, options) {
+            options = Object(options);
+            var pk = this.pk(),
+                data;
+            if (this.isDeleted() && pk) {
+                // DELETE
+                options.type = Crud.delete;
+                options.model = {'pk': pk};
+            } else if (pk && this.hasChanged()) {
+                // UPDATE
+                data = this.backend_data();
+                delete data[this._meta.pkname];
+                options.type = Crud.update;
+                options.model = {
+                    'data': data,
+                    'pk': pk
+                };
+            } else if (!pk) {
+                // CREATE
+                data = this.backend_data();
+                if (data) {
+                    options.type = Crud.create;
+                    options.model = {
+                        'data': data,
+                        cid: this.cid()
+                    };
+                } else {
+                    return;
                 }
-            } else if (!(options && options.wait)) {
-                this.sync(options);
+            } else {
+                return;
             }
+            return store.execute(options);
         },
         //
         toString: function () {
-            return this._meta.name + '.' + this.id();
+            return this.cid();
         },
         //
         // Get a jQuery form element for this model.
@@ -603,6 +507,220 @@ define(['lodash', 'jquery'], function () {
             this._fields = fields;
             this.trigger('change', this);
         },
+    }),
+
+    //  Collection of Models
+    //  -------------------------
+
+    //  A collection maintain an ordered group of model instances
+    Collection = lux.Collection = Class.extend({
+        //
+        init: function (model, store) {
+            var self = this,
+                _data = [],
+                _map = {},
+                NewModel = self.model = model || Model.extend({});
+            self.store = create_store(store);
+
+
+            Object.defineProperty(self, 'length', {
+                get: function () {
+                    return _data.length;
+                }
+            });
+            //
+            _.extend(self, {
+
+                // Get a model from a collection, specified by index
+                at: function (index) {
+                    var id = _data[index];
+                    if (id) return _map[id];
+                },
+                //
+                // Get a model from a collection, specified by an id
+                get: function (id) {
+                    return _map[id];
+                },
+                //
+                // Add a model (or an array of models) to the collection,
+                // firing an "add" event.
+                //
+                // * Can pass raw attributes objects, and have them be
+                //   vivified as instances of the model.
+                // * Returns the added (or preexisting, if duplicate) models.
+                // *  Pass {at: index} to splice the model into the collection at
+                //    the specified index.
+                // * If you're adding models to the collection that are already
+                //   in the collection, they'll be ignored, unless you pass
+                //   ``{merge: true}``, in which case their attributes will
+                //   be merged into the corresponding models, firing any
+                //   appropriate "change" events.
+                add: function (data, options) {
+                    var models = [],
+                        existing, cid;
+                    //
+                    options = Object(options);
+                    if (!_.isArray(data)) {
+                        data = [data];
+                    }
+                    //
+                    _(data).forEach(function (o) {
+                        if (!(o instanceof self.model)) {
+                            o = new NewModel(o);
+                        }
+                        cid = o.cid();
+                        existing = _map[cid];
+                        if (existing) {
+                            if (options.merge) {
+                                existing.update(o.fields());
+                                if (existing.hasChanged()) {
+                                    models.push(existing);
+                                }
+                            }
+                        } else {
+                            _map[cid] = o;
+                            _data.push(cid);
+                            models.push(o);
+                        }
+                    });
+                    return models;
+                },
+                //
+                set: function (models) {
+                    _(models).forEach(function (model) {
+                        var id = model.id(),
+                            existing = _map[id];
+                        if (existing) {
+                            existing.update(model.fields());
+                        } else {
+                            _map[id] = model;
+                            _data.push(id);
+                        }
+                    });
+                },
+                //
+                // Clear the collection
+                clear: function () {
+                    _data = [];
+                    _map = {};
+                },
+                //
+                //
+                forEach: function (callback) {
+                    var len = _data.length,
+                        res;
+                    for (var i=0; i<len; i++) {
+                        if(callback(_map[_data[i]], i) === false) break;
+                    }
+                },
+                //
+                each: function (callback) {
+                    self.forEach(callback);
+                }
+            });
+        },
+        //
+        reset: function (models) {
+            this.clear();
+            this.set(models);
+        },
+        //
+        //
+        // Fetch a new Collection of models from the store
+        fetch: function (options) {
+            options = Object(options);
+            var self = this;
+            if (!options.success) {
+                options.success || function (data) {
+                    data = self.parse(data);
+                    self.reset(data);
+                };
+            }
+            options.meta = this.model._meta;
+            self.store.execute(options);
+        },
+        //
+        sync: function (options) {
+            options = Object(options);
+            var self = this,
+                groups = {},
+                callback = options.success,
+                errback = options.error,
+                group, item;
+
+            this.forEach(function (model) {
+                var op;
+                if (model.isNew()) {
+                    op = Crud.create;
+                    item = model.backend_fields();
+                } else if(mode.isDeleted()) {
+                    op = Crud.delete;
+                    item = model.pk();
+                } else if (mode.hasChanged()) {
+                    op = Crud.update;
+                    item = model.backend_fields();
+                }
+                if (op) {
+                    group = groups[op];
+                    if (!group) {
+                        group = groups[op] = [];
+                    }
+                    group.push(item);
+                }
+            });
+            //
+            var done = [],
+                fail = [];
+                fire = function () {
+                    if (done.length === groups.length) {
+                        if (fail.length) {
+                            if (errback) {
+                                errback(self, done, fail);
+                            }
+                        } else if (callback) {
+                            callback(self);
+                        }
+                    }
+                };
+
+            _(groups).forEach(function (group, op) {
+                self.store.execute({
+                    meta: self.model._meta,
+                    type: op,
+                    data: group,
+                    success: function (data) {
+                        done.push(op);
+                        try {
+                            self.afterSync(op, data);
+                        } finally {
+                            fire();
+                        }
+                    },
+                    error: function (exc) {
+                        done.push(op);
+                        fail.push(op);
+                        fire();
+                    }
+                });
+            });
+        },
+        //
+        // Parse data into a collection of models
+        parse: function (data) {
+            return data;
+        },
+        //
+        toString: function () {
+            return this.model._meta.name + '[' + this.length + ']';
+        },
+        //
+        afterSync: function (op, data) {
+            if (op === Crud.delete) {
+
+            } else if (op === Crud.create) {
+            } else if (op === Crud.update) {
+            }
+        }
     });
 
     lux.View = Class.extend({
@@ -621,6 +739,444 @@ define(['lodash', 'jquery'], function () {
     lux.ModelException = ModelException;
     lux.NotImplementedError = NotImplementedError;
 
+    //
+    //  Lux Logger
+    //  --------------------
+
+    // Usage:
+    //
+    //      logger = new Logger();
+    //      logger.info('info message')
+    var
+    log_mapping = {
+        'debug': 10,
+        'info': 20,
+        'warning': 30,
+        'error': 40,
+        'critical': 50
+    },
+    //
+    default_level = 'info',
+    //
+    Logger = lux.Logger = Class.extend({
+        //
+        init: function (opts, parent) {
+            var self = this,
+                //
+                children = {},
+                //
+                config = {
+                    level: default_level,
+                    //
+                    formatter: function (msg, level) {
+                        return level + ': ' + msg;
+                    }
+                };
+
+            _(log_mapping).forEach(function (n, level) {
+                //
+                self[level] = function (msg) {
+                    self.log(msg, level);
+                };
+            });
+
+            _.extend(self, {
+                handlers: [],
+                //
+                config: function (opts) {
+                    opts = Object(opts);
+                    if (opts.level && log_mapping[opts.level]) {
+                        config.level = opts.level;
+                    }
+                    return config;
+                },
+                //
+                getConfig: function () {
+                    return config;
+                },
+                //
+                log: function (msg, level) {
+                    var nlevel = log_mapping[level] || 0;
+                    if (nlevel > log_mapping[config.level]) {
+                        var handlers = self.getHandlers(),
+                            hnd;
+
+                        for (var i=0; i<handlers.length; i++) {
+                            hnd = handlers[i];
+                            if (nlevel >= hnd.nlevel) hnd.log(msg, level);
+                        }
+                    }
+                },
+                //
+                get: function (name) {
+                    var log = children[name];
+                    if (!log) {
+                        log = new Logger({namespace: name}, self);
+                        children[name] = log;
+                    }
+                    return log;
+                },
+                //
+                getHandlers: function () {
+                    if (!self.handler.length && parent) {
+                        return parent.getHandlers();
+                    } else {
+                        return self.handlers;
+                    }
+                }
+            });
+            //
+            self.config(opts);
+        },
+        //
+        addHandler: function(options, handler) {
+            handler = handler || new LogHandler();
+            handler.config(_.extend({}, this.getConfig(), options));
+            this.handler.push(handler);
+        }
+    }),
+    //
+    //  Default LogHandler
+    //  ---------------------------
+    //
+    //  Logs messages to the console
+    LogHandler = lux.LogHandler = Class.extend({
+
+        config: function (options) {
+            _.extend(this, options);
+            this.nlevel = log_mapping[this.level] || 0;
+        },
+        //
+        log: function(msg, level) {
+            console.log(this.format_message(msg, level));
+        }
+    }),
+    //
+    //  HTML LogHandler
+    //  ---------------------------
+    //
+    //  Logs messages to an HTML element
+    HtmlHandler = lux.HtmlLogHandler = LogHandler.extend({
+
+        init: function (elem) {
+            this.elem = $(elem);
+            this.elem.addClass('lux-logger');
+        },
+        //
+        log: function(msg, level) {
+            msg = this.format_message(msg, level);
+            msg = '<pre class="' + level + '">' + msg + '</pre>';
+            self.elem.prepend(msg);
+        }
+    });
+    //
+    var logger = new Logger();
+    //
+    lux.getLogger = function (namespace, options) {
+        var log = logger;
+        if (namespace) {
+            _.each(namespace.split('.'), function (name) {
+                log = log.get(name);
+            });
+        }
+        if (options) {
+            log.config(options);
+        }
+        return log;
+    };
+    //
+    var
+    // CRUD actions
+    Crud = {
+        create: 'create',
+        read: 'read',
+        update: 'update',
+        'delete': 'delete',
+    },
+    CrudMethod = lux.CrudMethod = {
+        create: 'POST',
+        read: 'GET',
+        update: 'PUT',
+        destroy: 'DELETE'
+    },
+    //
+    stores = {},
+    //
+    register_store = lux.register_store = function (scheme, Store) {
+        stores[scheme] = Store;
+    },
+    //
+    create_store = lux.create_store = function (store, options) {
+        if (store instanceof Backend) {
+            return store;
+        } else if (_.isString(store)) {
+            var idx = store.search('://');
+            if (idx > -1) {
+                var scheme = store.substr(0, idx),
+                    Store = stores[scheme];
+                if (Store) {
+                    return new Store(store, options, scheme);
+                }
+            }
+        }
+        // A dummy backend
+        return new Backend(store, options, 'dummy');
+    };
+    //
+    // Base class for backends to use when synchronising Models
+    //
+    // Usage::
+    //
+    //      backend = lux.Socket('ws://...')
+    var Backend = lux.Backend = lux.Class.extend({
+        //
+        options: {
+            dataType: 'json'
+        },
+        //
+        init: function (url, options, type) {
+            this.type = type;
+            this.url = url;
+            this.options = _.merge({}, this.options, options);
+        },
+        //
+        // The synchoronisation method
+        //
+        // It has an API which match jQuery.ajax method
+        //
+        // Available options entries:
+        // * ``beforeSend`` A pre-request callback function that can be used to
+        //   modify the object before it is sent. Returning false will cancel the
+        //   execution.
+        // * ``error`` callback invoked if the execution fails
+        // * ``meta`` optional Model metadata
+        // * ``model`` optional Model instance
+        // * ``success`` callback invoked on a successful execution
+        // * ``type`` the type of CRUD operation
+        execute: function (options) {
+            if (options.success) {
+                options.success([]);
+            }
+        },
+        //
+        toString: function () {
+            return this.type + ' ' + this.url;
+        }
+    });
+
+    //  AJAX Backend
+    //  -------------------------
+    //
+    //  Uses jQuery.ajax method to execute CRUD operations
+    var AjaxBackend = lux.Backend.extend({
+        //
+        init: function (url, options, type) {
+            this._super(url, options, 'ajax');
+        },
+        //
+        // The sync method for models
+        execute: function (options) {
+            var url = this.url,
+                model = options.model;
+            //
+            options.type = lux.CrudMethod[options.type] || s.type || 'GET';
+            //
+            // When there is a model with data
+            if (model) {
+                delete options.model;
+                if (model.pk) url = lux.utils.urljoin(url, pk);
+                options.data = model.data;
+            }
+            $.ajax(url, options);
+        }
+    });
+    //
+    register_store('http', AjaxBackend);
+    register_store('https', AjaxBackend);
+
+    //
+    //  WebSocket Backend
+    //  ----------------------------------------
+    //
+    //  Uses lux websocket CRUD protocol
+    var Socket = lux.Backend.extend({
+        //
+        options: {
+            resource: null,
+            reconnecting: 1,
+            hartbeat: 5,
+            maxDelay: 3600,
+            maxRetries: null,
+            factor: 2.7182818284590451, // (e)
+            jitters: 0,
+            jitter: 0.11962656472
+        },
+        //
+        init: function (url, options, type) {
+            var self = this;
+            url = this.websocket_uri(url);
+            this._super(url, options, 'websocket');
+            this._retries = 0;
+            this._transport = null;
+            this._opened = false;
+            this._pending_messages = {};
+            this._delay = this.options.reconnecting;
+            this._queue = [];
+            self.connect();
+        },
+        //
+        opened: function () {
+            return this._opened;
+        },
+        //
+        // Connect the websocket
+        // This method can be called several times by the
+        // reconnect method (reconnecting must be positive).
+        connect: function () {
+            var options = this.options,
+                uri = this.url,
+                self = this;
+            if (options.resource) {
+                uri += options.resource;
+            }
+            logger.info('Connecting with ' + self);
+            this._transport = new WebSocket(uri);
+            this._transport.onopen = function (e) {
+                self.onopen();
+            };
+            this._transport.onmessage = function (e) {
+                if (e.type === 'message') {
+                    self.onmessage(e);
+                }
+            };
+            this._transport.onclose = function (e) {
+                self.onclose();
+            };
+        },
+        //
+        onopen: function () {
+            this._opened = true;
+            logger.info(this + ' opened.');
+            if (this.options.onopen) {
+                this.options.onopen.call(this);
+            }
+            if (this._queue) {
+                var queue = this._queue;
+                this._queue = [];
+                _(queue).forEach(function (msg) {
+                    this._transport.send(msg);
+                }, this);
+            }
+        },
+        //
+        reconnect: function () {
+            var o = this.options,
+                self = this;
+            if (!this._delay) {
+                web.logger.info('Exiting websocket');
+                return;
+            }
+            this._retries += 1;
+            if (o.maxRetries !== null && (this._retries > o.maxRetries)) {
+                web.logger.info('Exiting websocket after ' + this.retries + ' retries.');
+                return;
+            }
+            //
+            this._delay = Math.min(this._delay * o.factor, o.maxDelay);
+            if (o.jitter) {
+                this._delay = lux.math.normalvariate(this._delay, this._delay * o.jitter);
+            }
+            //
+            web.logger.info('Try to reconnect websocket in ' + this._delay + ' seconds');
+            this.trigger('reconnecting', this._delay);
+            this._reconnect = lux.eventloop.call_later(this._delay, function () {
+                self._reconnect = null;
+                self.connect();
+            });
+        },
+        //
+        // this.send({resource: 'status', success: function (){...}});
+        execute: function (options) {
+            if (options.beforeSend && options.beforeSend.call(options, this) === false) {
+                // Don't send anything, simply return
+                return;
+            }
+            var obj = {
+                // new message id
+                mid: this.new_mid(options),
+                action: options.action || lux.CrudMethod[options.type] || options.type,
+                model: options.model,
+                data: options.data
+            };
+            obj = JSON.stringify(obj);
+            if (this._opened) {
+                this._transport.send(obj);
+            } else {
+                this._queue.push(obj);
+            }
+        },
+        //
+        // Handle incoming messages
+        onmessage: function (e) {
+            var obj = JSON.parse(e.data),
+                mid = obj.mid,
+                options = mid ? this._pending_messages[mid] : undefined;
+            if (options) {
+                delete this._pending_messages[mid];
+                if (obj.error) {
+                    return options.error ? options.error(obj.error, this, obj) : obj;
+                } else {
+                    return options.success ? options.success(obj.data, this, obj) : obj;
+                }
+            } else {
+                web.logger.error('No message');
+            }
+        },
+        //
+        // The socket is closed
+        // If enabled, it auto-reconnects with an exponential back-off
+        onclose: function () {
+            this._opened = false;
+            logger.warning(this + ' closed.');
+            this.reconnect();
+        },
+        //
+        // Create a new message id and add the options object to the
+        // pending messages object
+        new_mid: function (options) {
+            if (options.success || options.error) {
+                var mid = lux.s4();
+                while (this._pending_messages[mid]) {
+                    mid = lux.s4();
+                }
+                this._pending_messages[mid] = options;
+                return mid;
+            }
+        },
+        //
+        websocket_uri: function (url) {
+            var loc = window.location;
+            if (!url) {
+                url = loc.href.split('?')[0];
+            }
+            if (url.substring(0, 7) === 'http://') {
+                return 'ws://' + url.substring(7);
+            } else if (url.substring(0, 8) === 'https://') {
+                return 'wss://' + url.substring(8);
+            } else {
+                if (url.substring(0, 5) === 'ws://' || url.substring(0, 6) === 'wss://') {
+                    return url;
+                } else {
+                    var protocol = loc.protocol === 'http:' ? 'ws:' : 'wss:';
+                    return lux.utils.urljoin(protocol, loc.host, loc.pathname, url);
+                }
+            }
+        }
+    });
+    //
+    register_store('ws', Socket);
+    register_store('wss', Socket);
+    //
     var ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
     //
@@ -861,7 +1417,10 @@ define(['lodash', 'jquery'], function () {
                 data = doc.find('html').data() || {};
             web.options = _.extend(web.options, data);
             if (web.options.debug) {
-                web.logger.level = 'debug';
+                logger.config({level: 'debug'});
+                if (!logger.handlers.length) {
+                    logger.addHandler();
+                }
             }
             web.element = doc;
             var to_load = web_extensions_to_load;
@@ -1086,8 +1645,8 @@ define(['lodash', 'jquery'], function () {
             if (Extension.prototype.selector) {
                 var elements = $(Extension.prototype.selector, html);
                 if (elements.length) {
-                    web.logger.info('Apply extension ' + name + ' to ' +
-                            elements.length + ' elements');
+                    logger.info('Apply extension ' + name + ' to ' +
+                                elements.length + ' elements');
                     elements.each(function () {
                         instances.push(Extension.create(this));
                     });
@@ -1304,50 +1863,6 @@ define(['lodash', 'jquery'], function () {
     // Default event loop
     lux.eventloop = new EventLoop();
 
-    //
-    var CrudMethod = lux.CrudMethod = {
-            create: 'POST',
-            read: 'GET',
-            update: 'PUT',
-            destroy: 'DELETE'
-        };
-    //
-    // Base class for backends to use when synchronising Models
-    //
-    // Usage::
-    //
-    //      backend = lux.Socket('ws://...')
-    lux.Backend = lux.EventClass.extend({
-        //
-        options: {
-            submit: {
-                dataType: 'json'
-            }
-        },
-        //
-        init: function (url, options, type) {
-            this.type = type;
-            this.url = url;
-            this.options = _.merge({}, this.options, options);
-            this.submit = this.options.submit || {};
-        },
-        //
-        // The synchoronisation method for models
-        // Submit a bunch of data related to an instance of a model or a
-        // group of model instances
-        send: function (options) {},
-        //
-        submit_options: function (options) {
-            if (options !== Object(options)) {
-                throw new TypeError('Send method requires an object as input');
-            }
-            return _.extend({}, this.submit, options);
-        },
-        //
-        toString: function () {
-            return this.type + ' ' + this.url;
-        }
-    });
     var each = lux.each;
 
     //  Lux Utils
@@ -1454,113 +1969,6 @@ define(['lodash', 'jquery'], function () {
                 }
             }
         }
-    };
-    /**
-     * A logger class. Usage:
-     * 
-     * logger = new Logger();
-     */
-    lux.utils.Logger = function (level) {
-        var handlers = [],
-            logger = this,
-            log_mapping = {'debug': 10, 'info': 20, 'warning': 30, 'error': 40};
-        logger.level = level && log_mapping[level] ? level : 'info';
-        //
-        function default_formatter(msg, level) {
-            return level + ': ' + msg;
-        }
-        function dummy_log(msg, level) {}
-        //
-        function log_all(level, msg) {
-            for (var i=0; i<handlers.length; ++i) {
-                handlers[i].log(msg, level);
-            }
-        }
-        //
-        function create_handler(options) {
-            options = options || {};
-            var slevel = options.level,
-                formatter = options.formatter || default_formatter,
-                logfunc = options.log || dummy_log,
-                nlevel = function () {
-                    return log_mapping[slevel ? slevel : logger.level];
-                },
-                format_message = function (msg, level) {
-                    var nl;
-                    level = level ? level : 'info';
-                    level = level.toLowerCase();
-                    nl = log_mapping[level];
-                    if (nl !== undefined && nl >= nlevel()) {
-                        return {
-                            'msg': formatter(msg, level),
-                            'level': level
-                        };
-                    }
-                };
-            
-            if (slevel) {
-                slevel = slevel.toLowerCase();
-                if (!log_mapping[slevel]) slevel = null;
-            }
-            
-            return {
-                level: function () {
-                    return slevel ? slevel : logger.level;
-                },
-                format: format_message,
-                log: function(msg, level) {
-                    var data = format_message(msg, level);
-                    if (data) {
-                        logfunc(data);
-                    }
-                }
-            };
-        }
-        //
-        $.each(log_mapping, function(level) {
-            logger[level] = function (msg) {
-                log_all(level, msg);
-            };
-        });
-        //
-        return $.extend(logger, {
-            'handlers': handlers,
-            addHandler: function(hnd) {
-                if(hnd !== undefined && hnd.log !== undefined) {
-                    handlers.push(hnd);
-                }
-            },
-            log: function (msg, level) {
-                log_all(level, msg);
-            },
-            addConsole: function(options) {
-                if(console !== undefined && console.log !== undefined) {
-                    options = options || {};
-                    options.log = function(data) {
-                        console.log(data.msg);
-                    };
-                    var console_logger = create_handler(options);
-                    logger.addHandler(console_logger);
-                    return console_logger;
-                }
-            },
-            addElement: function(html_elem, options) {
-                html_elem = $(html_elem);
-                if (html_elem.length) {
-                    html_elem.addClass('lux-logger');
-                    options = $.extend({
-                        log: function(data) {
-                            var msg = '<pre class="' + data.level + '">' + data.msg + '</pre>';
-                            html_elem.prepend(msg);
-                        }
-                    }, options);
-                    var hnd = create_handler(options);
-                    hnd.htmlElement = html_elem;
-                    logger.addHandler(hnd);
-                    return hnd;
-                }
-            }
-        });
     };
 var math = {},
     PI = Math.PI;

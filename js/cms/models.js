@@ -143,8 +143,7 @@
                 attrs.meta = attrs.meta || {};
                 attrs.meta.name = name.toLowerCase();
                 var ct = BaseContent.extend(attrs);
-                ct._meta.set_transport(this._backend);
-                this._content_types[ct.prototype._meta.name] = ct;
+                this._content_types[ct._meta.name] = ct;
                 return ct;
             },
             //

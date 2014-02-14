@@ -1,5 +1,10 @@
 define(['lux-web'], function () {
     "use strict";
+    //
+    //  DATAGRID
+    //  -------------------------
+    //
+    //  Requires ``lux`` and its dependencies (``jQuery`` and ``LoDash``).
     var web = lux.web,
         TH = document.createElement('th'),
         TR = document.createElement('tr'),
@@ -88,7 +93,7 @@ define(['lux-web'], function () {
         },
         //
         render: function () {
-            var name = this.name || this.letter();
+            var name = this.name || this.letter(),
                 opts = this.getOptions(),
                 th = this.th;
             if (opts.minWidth) {
@@ -98,7 +103,7 @@ define(['lux-web'], function () {
         },
         //
         // Data from input elements within this column
-        input_data: function () {
+        inputData: function () {
         }
     });
     //  DataGrid
@@ -125,6 +130,12 @@ define(['lux-web'], function () {
         //
         // default options which can be overwritten duting initialisation
         options: {
+            // Auto load the grid as soon as it is ready
+            autoload: true,
+            // Optional model
+            model: null,
+            // Optional store object or url
+            store: null,
             // Minimum number of rows
             minRows: 0,
             // Minimum number of columns
@@ -134,11 +145,20 @@ define(['lux-web'], function () {
             // Maximum number of columns
             maxColumns: Infinity,
             //
+            // Columns can be an integer indicating the number of columns
+            // or an array of column labels, objects or DataGridColumn
             columns: null,
+            //
+            // Can be a integer indicating the number of rows to render,
+            // if provided it overrides minRows
+            rows: null,
             //
             rowHeaders: false,
             // Display table footer
-            foot: false
+            foot: false,
+            //
+            // Callback to execute when an error during loading of data occurs
+            onLoadError: null
         },
         //
         classes: {
@@ -182,14 +202,10 @@ define(['lux-web'], function () {
             table.prepend(this._addtag('thead').addClass('hd'));
             table.prepend(this._addtag('div.' + classes.top).addClass(classes.top).hide());
             //
-            // Create the data collection
-            var data;
+            // Create the data from Html if not provided
             if (!this.options.data) {
-                data = _getHTML(this);
-            } else {
-                data = this.options.data;
+                this.options.data = _getHTML(this);
             }
-            delete this.options.data;
             //
             // Initialise headers
             _initHeaders(this);
@@ -199,11 +215,23 @@ define(['lux-web'], function () {
             if (options.foot) {
                 this.show_tfoot();
             }
+            //
+            self.onLoadError = options.onLoadError || function(){};
+            //
+            if (options.rows) {
+                options.minRows = Math.max(options.rows, 0);
+            }
+            delete options.rows;
+            //
             _register_events(this);
             _add_extensions(this);
+            this.setData(this.options.data);
+            delete this.options.data;
+            //
             if (!this.onReady.fire().isDefaultPrevented()) {
-                this.set_data(data);
-                this.render();
+                if (options.autoload) {
+                    this.load({add: true});
+                }
             }
         },
         //
@@ -211,12 +239,38 @@ define(['lux-web'], function () {
         //
         //  Note that this doesn't render the new rows - you can follow it with
         //  a call to render() to do that.
-        set_data: function (data) {
-            if (!(data instanceof Collection)) {
-                data = new Collection(data);
+        setData: function (data) {
+            if (!this.data) {
+                if (!(data instanceof lux.Collection)) {
+                    var o = this.options;
+                    data = new lux.Collection(o.model, o.store);
+                }
+                this.data = data;
+            } else {
+                this.data.reset(data);
             }
-            this.data = data;
             this.tbody().html('');
+        },
+        //
+        // Load data via the datagrid store
+        load: function (options) {
+            var self = this,
+                add = options.add;
+            //
+            this.data.fetch({
+                data: this.inputData(),
+                success: function (data) {
+                    if (add) {
+                        self.data.add(data);
+                    } else {
+                        self.setData(data);
+                    }
+                    self.render();
+                },
+                error: function (exc) {
+                    self.onLoadError(exc);
+                }
+            });
         },
         // The Html id, always available.
         id: function () {
@@ -274,11 +328,11 @@ define(['lux-web'], function () {
         // Gather all input data in the datagrid
         //
         // Return an object
-        input_data: function () {
+        inputData: function () {
             var self = this,
                 data = {'field': this.fields()};
             _(self.extensions).forEach(function (ext) {
-                ext.input_data(self, data);
+                ext.inputData(self, data);
             });
             return data;
         },
@@ -344,7 +398,7 @@ define(['lux-web'], function () {
         fields: function () {
             var fields = [];
             _(this.columns).forEach(function (col) {
-                var data = col.input_data();
+                var data = col.inputData();
                 if (data) {
                     fields.push(data);
                 }
@@ -357,35 +411,48 @@ define(['lux-web'], function () {
         // Render Rows in the dom
         render: function () {
             var body = this.tbody()[0],
+                maxRows = this.options.maxRows,
+                minRows = this.options.minRows,
                 columns = this.columns,
                 data = this.data;
-            //
-            if (!data) return;
             //
             _(this.columns).forEach(function (col) {
                 col.render();
             });
             //
-            for (var index=0; index<data.length(); index++) {
-                var item = data.get_item(index),
-                    tr = TR.cloneNode(false);
-
+            if (data.length < minRows) {
+                var extra = [],
+                    empty = {};
+                for(var i=data.length; i<minRows; i++) {
+                    extra.push(empty);
+                }
+                data.add(extra);
+            }
+            //
+            data.forEach(function (item, row) {
+                if (row >= maxRows) return false;
+                var tr = TR.cloneNode(false);
+                //
                 for (var j=0; j<columns.length; j++) {
                     var col = columns[j],
-                        value = item[col.code()],
+                        value = item[col.id()],
                         td = TD.cloneNode(false);
                     tr.appendChild(td);
                 }
-
+                //
                 body.appendChild(tr);
-            }
+            });
+        },
+        //
+        toString: function () {
+            return 'DataGrid - ' + this.data.toString();
         }
     });
 
 
     // Base class for Datagrid Extension classes
     var DataGridExtension = lux.Class.extend({
-        input_data: function (g, data) {}
+        inputData: function (g, data) {}
     });
 
     // Add a new extension to the Datagrid class
@@ -553,6 +620,42 @@ define(['lux-web'], function () {
             }
         }
     });
+
+    var CheckboxColumn = DataGridColumn.extend({
+
+    });
+
+    // Add a checkbox column as the first column in the datagrid
+    DataGrid.Extension('checkboxSelector', {
+        options: {
+            checkbox_selector: false
+        },
+
+        init: function (g) {
+            if (g.options.checkbox_selector && g.options.colHeaders) {
+                g.options.colHeaders.splice(0, 0, new CheckboxColumn());
+            }
+        }
+    });
+
+
+    // Add a checkbox column as the first column in the datagrid
+    DataGrid.Extension('RowActions', {
+        //
+        options: {
+            row_actions: []
+        },
+        //
+        init: function (g) {
+            var o = g.options;
+            if (o.colHeaders && o.row_actions && o.row_actions.length) {
+                if (!o.checkbox_selector) {
+                    o.checkbox_selector = true;
+                    o.colHeaders.splice(0, 0, new CheckboxColumn());
+                }
+            }
+        }
+    });
     // Perform client side column sorting
     DataGrid.Extension('skin', {
         options: {
@@ -657,5 +760,92 @@ define(['lux-web'], function () {
             this.datagrid = elem.data(DATAGRID);
         }
     });
+    //
+    // Internal methods
+    // ---------------------------------------------
+    //
+    // Internal functions used by DataGrid
+    //
+    //
+    // Initialise table data from HTML
+    var
+
+    _getHTML = function (self) {
+        var heads = self.thead().children('tr'),
+            data = [];
+        if (heads.length) {
+            var h = this.thead().children('tr.headers');
+            heads = h.length ? h : heads.last();
+            heads.children('th').each(function () {
+                self.columns.push(new DataGridColumn(this));
+            });
+        }
+        self.tbody().children('tr').each(function () {
+            var row = {};
+            $(this).children().each(function () {
+                if (data.length <= length) {
+                    data.push(this.innerHTML);
+                }
+            });
+            data.push(row);
+        });
+        return data;
+    },
+    //
+    // Initialise headers when supplied in the options object.
+    _initHeaders = function (self) {
+        var columns = [],
+            tr = TRH.cloneNode(false),
+            cols = self.options.columns;
+        //
+        self.columns = columns;
+        if (_.isNumber(cols)) {
+            var num = parseInt(cols, 10);
+            cols = [];
+            for(var i=0; i<num; i++) {
+                cols.push(new DataGridColumn());
+            }
+        }
+        _(cols).forEach(function (column) {
+            if (!(column instanceof DataGridColumn)) {
+                if (typeof(column) === 'string') {
+                    column = {name: column};
+                }
+                column = new DataGridColumn(column);
+            }
+            tr.appendChild(column.th[0]);
+            columns.push(column);
+        });
+        self.thead().append($(tr));
+    },
+    //
+    _add_extensions = function (self) {
+        var extensions = self.extensions,
+            options = self.options;
+        self.extensions = {};
+        _(extensions).forEach(function (Extension) {
+            _(Extension.prototype.options).forEach(function (value, name) {
+                if (!(name in options)) {
+                    options[name] = value;
+                }
+            });
+            self.extensions[Extension.prototype.name] = new Extension(self);
+        });
+    },
+    //
+    // Register events to this instance,
+    // called during initialisation
+    _register_events = function (self) {
+        _.extend(self, {
+            onReady: new Event('ready', self),
+            onScroll: new Event('scroll', self),
+            onSort: new Event('sort', self),
+            // Fired when on a click event
+            onClick: new Event('click', self),
+            // Fired when a new column is added to the datagrid
+            onColumn: new Event('column', self)
+        });
+    };
+
 //
 });

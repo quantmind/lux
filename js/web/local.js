@@ -1,5 +1,6 @@
-    // Local Storage backend
-    lux.Storage = lux.Backend.extend({
+    //
+    // Web Broweser Local Storage backend
+    var Storage = lux.Backend.extend({
         //
         init: function (options, handlers, type) {
             this._super(null, options, type || 'local');
@@ -95,3 +96,7 @@
             callback({'data': ids});
         }
     });
+
+    lux.register_store('local', Storage);
+    lux.register_store('session', Storage);
+    //

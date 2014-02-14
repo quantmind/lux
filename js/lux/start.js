@@ -4,11 +4,10 @@ define(['lodash', 'jquery'], function () {
     var root = window,
         lux = {
             //version: "<%= pkg.version %>"
-        };
+        },
+        slice = Array.prototype.slice;
+    //
     root.lux = lux;
-
-    var ArrayProto = Array.prototype,
-        slice = ArrayProto.slice;
     //
     // Showdown extensions
     lux.showdown = {};

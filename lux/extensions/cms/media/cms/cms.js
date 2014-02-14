@@ -1,6 +1,8 @@
 define(['lux-web'], function () {
     "use strict";
 
+    var logger = lux.getLogger('cms');
+
     //
     //  LUX CMS
     //  ---------------------------------
@@ -146,8 +148,7 @@ define(['lux-web'], function () {
                 attrs.meta = attrs.meta || {};
                 attrs.meta.name = name.toLowerCase();
                 var ct = BaseContent.extend(attrs);
-                ct._meta.set_transport(this._backend);
-                this._content_types[ct.prototype._meta.name] = ct;
+                this._content_types[ct._meta.name] = ct;
                 return ct;
             },
             //
@@ -464,7 +465,8 @@ define(['lux-web'], function () {
         // and a ``parent`` ContentView.
         init: function (elem, options, parent) {
             this.elem = $(elem);
-            this.options = options || {};
+            this.options = Object(options);
+            this.store = this.options.store;
             this.parentType = parent ? parent.type : null;
             this.name = this.elem.data('context');
             this.elem.addClass('cms-' + this.type).data('cmsview', this);
@@ -725,7 +727,7 @@ define(['lux-web'], function () {
             var self = this;
             this.model.set('content', this.layout());
             this.log('saving layout...');
-            this.model.sync({
+            self.model.sync(self.store, {
                 success: function () {
                     self.log('Layout saved');
                 }
@@ -1101,16 +1103,15 @@ define(['lux-web'], function () {
                 var self = this,
                     page = this.page();
                 // save the content if it needs to be saved
-                try {
-                    content.sync({
-                        success: function () {
-                            self.log(self + ' set content to ' + self.content);
-                            page.sync();
-                        }
-                    });
-                } catch (e) {
-                    self.log('ERROR while synching. ' + e);
-                }
+                content.sync(self.store, {
+                    success: function () {
+                        self.log(self + ' set content to ' + self.content);
+                        page.sync();
+                    },
+                    error: function (status) {
+                        self.log('ERROR while synching. ' + status);
+                    }
+                });
             }
         },
         //
@@ -1396,9 +1397,9 @@ define(['lux-web'], function () {
                 if (js) {
                     var b = $('body'),
                         script = $("<script type='application/javascript'>" + js + "</script>"),
-                        sid = 'markdown-'+self.id();
-                    $('#' + sid, b).remove();
-                    b.append(script.attr('id', sid));
+                        cid = self.cid();
+                    $('#' + cid, b).remove();
+                    b.append(script.attr('id', cid));
                 }
             });
         },
@@ -1708,19 +1709,12 @@ define(['lux-web'], function () {
                 //self._handle_close();
                 elem.addClass('editing');
                 //
-                // Create backend
-                if (!lux.cms._backend) {
-                    self.backend = web.backend({
-                        host: options.backend_url,
+                options.store = new lux.create_store(
+                    options.backend_url, {
                         hartbeat: options.hartbeat
                     });
-                    //
-                    // Set transport in the cms handler
-                    lux.cms.set_transport(self.backend.socket);
-                } else {
-                    self.backend = web.backend({
-                        socket: lux.cms._backend
-                    });
+                if (options.store.type === 'websocket') {
+                    self.backend = web.backend({store: options.store});
                 }
             }
             self._setup_api();

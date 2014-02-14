@@ -11,7 +11,8 @@
         // and a ``parent`` ContentView.
         init: function (elem, options, parent) {
             this.elem = $(elem);
-            this.options = options || {};
+            this.options = Object(options);
+            this.store = this.options.store;
             this.parentType = parent ? parent.type : null;
             this.name = this.elem.data('context');
             this.elem.addClass('cms-' + this.type).data('cmsview', this);
@@ -272,7 +273,7 @@
             var self = this;
             this.model.set('content', this.layout());
             this.log('saving layout...');
-            this.model.sync({
+            self.model.sync(self.store, {
                 success: function () {
                     self.log('Layout saved');
                 }
@@ -648,16 +649,15 @@
                 var self = this,
                     page = this.page();
                 // save the content if it needs to be saved
-                try {
-                    content.sync({
-                        success: function () {
-                            self.log(self + ' set content to ' + self.content);
-                            page.sync();
-                        }
-                    });
-                } catch (e) {
-                    self.log('ERROR while synching. ' + e);
-                }
+                content.sync(self.store, {
+                    success: function () {
+                        self.log(self + ' set content to ' + self.content);
+                        page.sync();
+                    },
+                    error: function (status) {
+                        self.log('ERROR while synching. ' + status);
+                    }
+                });
             }
         },
         //

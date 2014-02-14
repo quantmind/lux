@@ -3,7 +3,6 @@
             "js/datagrid/collection.js",
             "js/datagrid/core.js",
             "js/datagrid/extensions/sorting.js",
-            "js/datagrid/extensions/server.js",
             "js/datagrid/extensions/checkbox.js",
             "js/datagrid/extensions/skin.js",
             "js/datagrid/extensions/responsive.js",

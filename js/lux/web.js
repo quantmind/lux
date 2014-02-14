@@ -56,7 +56,10 @@
                 data = doc.find('html').data() || {};
             web.options = _.extend(web.options, data);
             if (web.options.debug) {
-                web.logger.level = 'debug';
+                logger.config({level: 'debug'});
+                if (!logger.handlers.length) {
+                    logger.addHandler();
+                }
             }
             web.element = doc;
             var to_load = web_extensions_to_load;
@@ -281,8 +284,8 @@
             if (Extension.prototype.selector) {
                 var elements = $(Extension.prototype.selector, html);
                 if (elements.length) {
-                    web.logger.info('Apply extension ' + name + ' to ' +
-                            elements.length + ' elements');
+                    logger.info('Apply extension ' + name + ' to ' +
+                                elements.length + ' elements');
                     elements.each(function () {
                         instances.push(Extension.create(this));
                     });

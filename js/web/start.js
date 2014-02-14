@@ -5,12 +5,7 @@ define(['jquery', 'lux'], function ($) {
     var web = lux.web,
         SKIN_NAMES = ['default', 'primary', 'success', 'inverse', 'error'],
         slice = Array.prototype.slice,
-        logger = new lux.utils.Logger();
-
-    logger.addConsole();
-
-    // The logger for the web
-    web.logger = logger;
+        logger = new lux.getLogger();
 
     // Array of skin names
     web.SKIN_NAMES = SKIN_NAMES;

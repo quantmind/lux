@@ -1,7 +1,17 @@
+
+    var
+    //
+    CID = 'cid',
+    // Custom event fired by models when their custom id change
+    CID_CHANGE = 'cidchange',
+    //
+    // Test for ``_super`` methods
+    // Check http://ejohn.org/blog/simple-javascript-inheritance/
+    // for details.
+    fnTest = /xyz/.test(function(){var xyz;}) ? /\b_super\b/ : /.*/,
     //
     // Create a method for a derived Class
-    var fnTest = /xyz/.test(function(){var xyz;}) ? /\b_super\b/ : /.*/;
-    var create_method = function (type, name, attr, _super) {
+    create_method = function (type, name, attr, _super) {
         if (typeof attr === "function" && typeof _super[name] === "function" &&
                 fnTest.test(attr)) {
             return type.new_attr(name, function() {
@@ -18,11 +28,14 @@
         } else {
             return type.new_attr(name, attr);
         }
-    };
+    },
     //
-    // A Type is a factory of Classes. This is the correspondent of
-    // python metaclasses.
-    var Type = (function (t) {
+    //  Type
+    //  -------------
+
+    //  A Type is a factory of Classes. This is the correspondent of
+    //  python metaclasses.
+    Type = (function (t) {
 
         t.new_class = function (Caller, attrs) {
             var type = this,
@@ -77,11 +90,14 @@
         };
         //
         return t;
-    }(function(){}));
+    }(function(){})),
     //
-    // Lux base class.
-    // The `extend` method is the most important function of this object.
-    var Class = (function (c) {
+    //  Class
+    //  ----------------
+
+    //  Lux base class.
+    //  The `extend` method is the most important function of this object.
+    Class = (function (c) {
         c.__class__ = Type;
         //
         c.extend = function (attrs) {
@@ -92,12 +108,12 @@
         };
         //
         return c;
-    }(function() {}));
+    }(function() {})),
 
     //
     // Class With Events
     // requires jQuery loaded
-    var EventClass = Class.extend({
+    EventClass = Class.extend({
         //
         // Bind this class to a jQuery element
         bindToElement: function (jElem) {
@@ -115,278 +131,145 @@
         jElem: function () {
             return this._jquery_element ? this._jquery_element : $(window);
         }
-    });
+    }),
     //
-    // Models
+    // Lux exception:
+    //  throw new lux.Exception(message)
+    Exception = Class.extend({
+        name: 'Exception',
+        init: function (message) {
+            this.message = message || '';
+        },
+        toString: function () {
+            return this.name + ': ' + this.message;
+        }
+    }),
+    ModelException = Exception.extend({name: 'ModelException'}),
     //
-    var Storage = Class.extend({
-            data: {},
-            init: function (prefix) {
-                this.prefix = prefix;
-            },
-            decode: function (value) {
-                return value;
-            },
-            encode: function (value) {
-                return value;
-            },
-            setItem: function (key, value) {
-                this.data[this.prefix+key] = this.encode(value);
-            },
-            getItem: function (key) {
-                return this.decode(this.data[this.prefix+key]);
-            },
-            removeItem: function (key) {
-                delete this.data[this.prefix+key];
-            },
-            keys: function () {
-                var all = [],
-                    prefix = this.prefix,
-                    N = this.prefix.length;
-                for (var name in this.data) {
-                    if (name.substring(0,N) === prefix) {
-                        all.push(name.substring(N));
-                    }
-                }
-                return all;
-            },
-            all: function () {
-                var self = this,
-                    all = [];
-                _(this.keys()).forEach(function (key) {
-                    all.push(self.getItem(key));
-                });
-                return all;
-            },
-            clear: function () {
-                var self = this;
-                _(this.keys()).forEach(function (key) {
-                    self.removeItem(key);
-                });
-            }
-        }),
+    NotImplementedError = Exception.extend({name: 'NotImplementedError'}),
+    //
+    // Default values for ``Meta`` attributes.
+    default_meta_attributes = {
+        'pkname': 'id',
+        'name': 'model',
+        'defaults': {}
+    },
+    //
+    //  Model Meta
+    //  ------------------------
+
+    // Model database meta-class, accessed as ``_meta`` attribute on a ``Model``
+    // instance or from the Model.prototype object. It is a placeholder of
+    // live instances and it is the interface between a model and backend
+    // servers. A ``Meta`` must be registered with a backend before it can
+    // use the ``sync`` method. Registration is achieved via the
+    // ``set_transport`` method.
+    Meta = Class.extend({
         //
-        // Lux exception:
-        //  throw new lux.Exception(message)
-        Exception = Class.extend({
-            name: 'Exception',
-            init: function (message) {
-                this.message = message || '';
-            },
-            toString: function () {
-                return this.name + ': ' + this.message;
-            }
-        }),
-        ModelException = Exception.extend({name: 'ModelException'}),
-        //
-        NotImplementedError = Exception.extend({name: 'NotImplementedError'}),
-        //
-        // Default values for ``Meta`` attributes.
-        default_meta_attributes = {
-            'pkname': 'id',
-            'name': 'model',
-            'LiveStorage': Storage,
-            'defaults': {}
+        // Initialisation, set the ``model`` attribute and the attributes
+        // for this Meta. The available attributes are the same as
+        // ``default_meta_attributes`` object above.
+        init: function (model, attrs) {
+            this.model = model;
+            _.extend(this, attrs);
+            this.title = this.title || this.name;
         },
         //
-        //  Model Meta
-        //  ------------------------
-
-        // Model database meta-class, accessed as ``_meta`` attribute on a ``Model``
-        // instance or from the Model.prototype object. It is a placeholder of
-        // live instances and it is the interface between a model and backend
-        // servers. A ``Meta`` must be registered with a backend before it can
-        // use the ``sync`` method. Registration is achieved via the
-        // ``set_transport`` method.
-        Meta = Class.extend({
-            // prefix for id of model instances not yet persistent
-            _newprefix: 'new-',
-            //
-            // Initialisation, set the ``model`` attribute and the attributes
-            // for this Meta. The available attributes are the same as
-            // ``default_meta_attributes`` object above.
-            init: function (model, attrs) {
-                var LiveStorage = attrs.LiveStorage;
-                delete attrs.LiveStorage;
-                this.model = model;
-                _.extend(this, attrs);
-                this.title = this.title || this.name;
-                this.liveStorage = new LiveStorage(this.name+'.');
-                this._backend = null;
-            },
-            //
-            // Initialise an instance
-            init_instance: function (o, fields) {
-                o._fields = {};
-                o._changed = {};
-                if (fields === Object(fields)) {
-                    _(fields).forEach(function (field, name) {
-                        this.set_field(o, name, field);
-                    }, this);
-                }
-                if (o.pk() === undefined) {
-                    var avail = true;
-                    while (avail) {
-                        o._id = this._newprefix + lux.s4();
-                        avail = this.liveStorage.getItem(o.id());
-                    }
-                }
-                this.liveStorage.setItem(o.id(), o);
-            },
-            //
-            // Retrieve a ``live`` instance from the live storage. A live
-            // instance is an instance of a model available in the current
-            // Html doc.
-            live: function (id) {
-                if (id) {
-                    return this.liveStorage.getItem(id);
-                } else {
-                    return this.liveStorage.all();
-                }
-            },
-            //
-            clear: function (id) {
-                this.liveStorage.clear();
-            },
-            //
-            // Fetch a bunch of ids from the backend server
-            get: function (ids, options) {
-                if (this._backend) {
-                    if (!options) {
-                        options = {};
-                    }
-                    if (!$.isArray(ids)) {
-                        ids = [ids];
-                    }
-                    var crud = {},
-                        meta = this;
-                    _(ids).forEach(function (id) {
-                        meta._add_to_crud(crud, 'read', id, options);
-                    });
-                    meta._backend.send(crud.read);
-                } else {
-                    throw new ModelException('Cannot sync ' + this + '. No backend registered.');
-                }
-            },
-            //
-            // update live data with information from the server
-            update: function (data) {
-                var self = this,
-                    all = [],
-                    instance;
-                _(data).forEach(function (o) {
-                    var instance = self.liveStorage.getItem(o.id);
-                    if (instance) {
-                        instance.update(o.fields);
-                        // reset the changed object
-                        instance._changed = {};
-                    } else {
-                        instance = new self.model(o.fields);
-                    }
-                    all.push(instance);
-                });
-                return all;
-            },
-            //
-            // Set a new value for a field.
-            // It returns a value different from undefined
-            // only when the field has changed
-            set_field: function (instance, field, value) {
-                if (value === undefined) return;
-                // Check if there is a validater for the field
-                if (this.fields) {
-                    var f = this.fields[field];
-                    if (f) {
-                        value = f.validate(instance, value);
-                    }
-                }
-                var prev = instance.get(field);
-                if (value === prev) return;
-                if (field === this.pkname) {
-                    if (value) {
-                        this.liveStorage.removeItem(instance.id());
-                        instance._fields[field] = value;
-                        delete instance._id;
-                        this.liveStorage.setItem(instance.id(), instance);
-                    } else {
-                        return;
-                    }
-                } else {
-                    instance._fields[field] = value;
-                }
-                return prev === undefined ? null : prev;
-            },
-            //
-            // Synchronise the ``models`` with a backend server.
-            sync: function (options, models) {
-                var meta = this;
-                if (meta instanceof Model) {
-                    meta = this._meta;
-                    models = [this];
-                } else if (!models) {
-                    models = this.liveStorage.all();
-                }
-                if (meta._backend) {
-                    options = options || {};
-                    var crud = {};
-                    _(models).forEach(function (m) {
-                        if (m._meta !== meta) {
-                            throw new TypeError('Got an invalid model ' + m + ' in sync');
-                        }
-                        if (m.isNew()) {
-                            meta._add_to_crud(crud, 'create', m.backend_data(), options);
-                        } else if (m.isDeleted()) {
-                            meta._add_to_crud(crud, 'destroy', m.pk(), options);
-                        } else if (m.hasChanged()) {
-                            meta._add_to_crud(crud, 'update', m.backend_data(), options);
-                        } else {
-                            meta._add_to_crud(crud, 'read', m.pk(), options);
-                        }
-                    });
-                    _(crud).forEach(function (m) {
-                        meta._backend.send(m);
-                    });
-                } else {
-                    throw new ModelException('Cannot sync ' + meta + '. No backend registered.');
-                }
-            },
-            //
-            // Register the meta with a backend transport
-            set_transport: function (backend) {
-                this._backend = backend;
-            },
-            //
-            toString: function () {
-                return this.name;
-            },
-            //
-            _add_to_crud: function (crud, type, data, options) {
-                var opts = crud[type];
-                if (!opts) {
-                    opts = _.extend({}, options);
-                    var success = opts.success,
-                        meta = this;
-                    opts.type = type;
-                    opts.data = [];
-                    opts.model = meta.name;
-                    opts.success = function (data) {
-                        data = meta.update(data);
-                        if (success) {
-                            success.call(this, data, slice.call(arguments, 1));
-                        }
-                    };
-                    crud[type] = opts;
-                }
-                opts.data.push(data);
+        // Initialise an instance
+        init_instance: function (o, fields) {
+            o._fields = {};
+            o._changed = {};
+            if (fields === Object(fields)) {
+                _(fields).forEach(function (field, name) {
+                    this.set_field(o, name, field);
+                }, this);
             }
-        });
+            if (!o.pk()) {
+                o._id = CID + lux.s4();
+            }
+        },
+        //
+        // Fetch a bunch of ids from the backend server
+        get: function (ids, options) {
+            if (this._backend) {
+                if (!options) {
+                    options = {};
+                }
+                if (!$.isArray(ids)) {
+                    ids = [ids];
+                }
+                var crud = {},
+                    meta = this;
+                _(ids).forEach(function (id) {
+                    meta._add_to_crud(crud, 'read', id, options);
+                });
+                meta._backend.send(crud.read);
+            } else {
+                throw new ModelException('Cannot sync ' + this + '. No backend registered.');
+            }
+        },
+        //
+        // update live data with information from the server
+        update: function (data) {
+            var self = this,
+                all = [],
+                instance;
+            _(data).forEach(function (o) {
+                var instance = self.liveStorage.getItem(o.id);
+                if (instance) {
+                    instance.update(o.fields);
+                    // reset the changed object
+                    instance._changed = {};
+                } else {
+                    instance = new self.model(o.fields);
+                }
+                all.push(instance);
+            });
+            return all;
+        },
+        //
+        // Set a new value for a field.
+        // It returns a value different from undefined
+        // only when the field has changed
+        set_field: function (instance, field, value) {
+            if (value === undefined) return;
+            // Check if there is a validater for the field
+            if (this.fields) {
+                var f = this.fields[field];
+                if (f) {
+                    value = f.validate(instance, value);
+                }
+            }
+            var prev = instance.get(field);
+            if (value === prev) return;
+            if (field === this.pkname) {
+                if (value) {
+                    var cid = instance.cid();
+                    instance._fields[field] = value;
+                    delete instance._id;
+                    if (cid !== instance.cid()) {
+                        instance.trigger(CID_CHANGE, [instance, cid]);
+                    }
+                } else {
+                    return;
+                }
+            } else {
+                instance._fields[field] = value;
+            }
+            return prev === undefined ? null : prev;
+        },
+        //
+        toString: function () {
+            return this.name;
+        }
+    }),
     //
     // Metaclass for models
     // --------------------------------
 
     // Override the standard ``Type`` so that the new model class
     // contains the ``_meta`` attribute, and instance of ``Meta``.
-    var ModelType = Type.extend({
+    ModelType = Type.extend({
         new_class: function (Prototype, attrs) {
             var mattr = {},
                 meta = Prototype._meta;
@@ -403,7 +286,7 @@
             cls._meta = cls.prototype._meta = new Meta(cls, meta);
             return cls;
         }
-    });
+    }),
     //
     // Model
     // --------------------------
@@ -411,7 +294,7 @@
     // The base class for a model. A model is a single, definitive source
     // of data about your data. A Model consists of ``fields`` and behaviours
     // of the data you are storing.
-    var Model = EventClass.extend({
+    Model = EventClass.extend({
         // Use a different metaclass
         Metaclass: ModelType,
         //
@@ -425,10 +308,8 @@
             return this.get(this._meta.pkname);
         },
         //
-        // The ``id`` is always available. If the ``pk`` is not available, a temporary
-        // unique identifier is used.
-        id: function () {
-            return this.pk() || this._id;
+        cid: function () {
+            return this._meta.name + '-' + (this.pk() || this._id);
         },
         // Has this model been saved to the server yet? If the model does
         // not yet have a pk value, it is considered to be new.
@@ -456,7 +337,7 @@
                     fields[name] = value;
                 }
             });
-            return {id: this.id(), 'fields': fields};
+            return fields;
         },
         //
         // Set a field value
@@ -464,7 +345,7 @@
             var prev = this._meta.set_field(this, field, value);
             if (prev !== undefined) {
                 this._changed[field] = prev;
-                this.trigger('change', this, field);
+                this.trigger('change', [this, field]);
             }
         },
         //
@@ -497,24 +378,48 @@
             }
         },
         //
-        sync: function (options) {
-            return this._meta.sync.call(this, options);
+        'delete': function () {
+            this._deleted = true;
         },
         //
-        destroy: function (options) {
-            this._deleted = true;
-            if (this.isNew()) {
-                this._meta.liveStorage.removeItem(this.id());
-                if (options && options.success) {
-                    options.success(this);
+        // Sync a single model
+        sync: function (store, options) {
+            options = Object(options);
+            var pk = this.pk(),
+                data;
+            if (this.isDeleted() && pk) {
+                // DELETE
+                options.type = Crud.delete;
+                options.model = {'pk': pk};
+            } else if (pk && this.hasChanged()) {
+                // UPDATE
+                data = this.backend_data();
+                delete data[this._meta.pkname];
+                options.type = Crud.update;
+                options.model = {
+                    'data': data,
+                    'pk': pk
+                };
+            } else if (!pk) {
+                // CREATE
+                data = this.backend_data();
+                if (data) {
+                    options.type = Crud.create;
+                    options.model = {
+                        'data': data,
+                        cid: this.cid()
+                    };
+                } else {
+                    return;
                 }
-            } else if (!(options && options.wait)) {
-                this.sync(options);
+            } else {
+                return;
             }
+            return store.execute(options);
         },
         //
         toString: function () {
-            return this._meta.name + '.' + this.id();
+            return this.cid();
         },
         //
         // Get a jQuery form element for this model.
@@ -558,20 +463,21 @@
             this._fields = fields;
             this.trigger('change', this);
         },
-    });
+    }),
 
     //  Collection of Models
     //  -------------------------
 
     //  A collection maintain an ordered group of model instances
-    var Collection = lux.Collection = Class.extend({
+    Collection = lux.Collection = Class.extend({
         //
         init: function (model, store) {
             var self = this,
                 _data = [],
-                _map = {};
-            this.model = model || Model.extend({});
-            this.store = create_store(store);
+                _map = {},
+                NewModel = self.model = model || Model.extend({});
+            self.store = create_store(store);
+
 
             Object.defineProperty(self, 'length', {
                 get: function () {
@@ -592,6 +498,50 @@
                     return _map[id];
                 },
                 //
+                // Add a model (or an array of models) to the collection,
+                // firing an "add" event.
+                //
+                // * Can pass raw attributes objects, and have them be
+                //   vivified as instances of the model.
+                // * Returns the added (or preexisting, if duplicate) models.
+                // *  Pass {at: index} to splice the model into the collection at
+                //    the specified index.
+                // * If you're adding models to the collection that are already
+                //   in the collection, they'll be ignored, unless you pass
+                //   ``{merge: true}``, in which case their attributes will
+                //   be merged into the corresponding models, firing any
+                //   appropriate "change" events.
+                add: function (data, options) {
+                    var models = [],
+                        existing, cid;
+                    //
+                    options = Object(options);
+                    if (!_.isArray(data)) {
+                        data = [data];
+                    }
+                    //
+                    _(data).forEach(function (o) {
+                        if (!(o instanceof self.model)) {
+                            o = new NewModel(o);
+                        }
+                        cid = o.cid();
+                        existing = _map[cid];
+                        if (existing) {
+                            if (options.merge) {
+                                existing.update(o.fields());
+                                if (existing.hasChanged()) {
+                                    models.push(existing);
+                                }
+                            }
+                        } else {
+                            _map[cid] = o;
+                            _data.push(cid);
+                            models.push(o);
+                        }
+                    });
+                    return models;
+                },
+                //
                 set: function (models) {
                     _(models).forEach(function (model) {
                         var id = model.id(),
@@ -609,6 +559,19 @@
                 clear: function () {
                     _data = [];
                     _map = {};
+                },
+                //
+                //
+                forEach: function (callback) {
+                    var len = _data.length,
+                        res;
+                    for (var i=0; i<len; i++) {
+                        if(callback(_map[_data[i]], i) === false) break;
+                    }
+                },
+                //
+                each: function (callback) {
+                    self.forEach(callback);
                 }
             });
         },
@@ -619,28 +582,102 @@
         },
         //
         //
-        // Fetch anew Collection of models from the store
+        // Fetch a new Collection of models from the store
         fetch: function (options) {
             options = Object(options);
-            var callback = options.callback;
-            self.store.fetch(options, function (data) {
-                data = self.parse(data);
-                if (callback) {
-                    callback(data);
+            var self = this;
+            if (!options.success) {
+                options.success || function (data) {
+                    data = self.parse(data);
+                    self.reset(data);
+                };
+            }
+            options.meta = this.model._meta;
+            self.store.execute(options);
+        },
+        //
+        sync: function (options) {
+            options = Object(options);
+            var self = this,
+                groups = {},
+                callback = options.success,
+                errback = options.error,
+                group, item;
+
+            this.forEach(function (model) {
+                var op;
+                if (model.isNew()) {
+                    op = Crud.create;
+                    item = model.backend_fields();
+                } else if(mode.isDeleted()) {
+                    op = Crud.delete;
+                    item = model.pk();
+                } else if (mode.hasChanged()) {
+                    op = Crud.update;
+                    item = model.backend_fields();
                 }
+                if (op) {
+                    group = groups[op];
+                    if (!group) {
+                        group = groups[op] = [];
+                    }
+                    group.push(item);
+                }
+            });
+            //
+            var done = [],
+                fail = [];
+                fire = function () {
+                    if (done.length === groups.length) {
+                        if (fail.length) {
+                            if (errback) {
+                                errback(self, done, fail);
+                            }
+                        } else if (callback) {
+                            callback(self);
+                        }
+                    }
+                };
+
+            _(groups).forEach(function (group, op) {
+                self.store.execute({
+                    meta: self.model._meta,
+                    type: op,
+                    data: group,
+                    success: function (data) {
+                        done.push(op);
+                        try {
+                            self.afterSync(op, data);
+                        } finally {
+                            fire();
+                        }
+                    },
+                    error: function (exc) {
+                        done.push(op);
+                        fail.push(op);
+                        fire();
+                    }
+                });
             });
         },
         //
         // Parse data into a collection of models
         parse: function (data) {
-            c.set(data);
+            return data;
+        },
+        //
+        toString: function () {
+            return this.model._meta.name + '[' + this.length + ']';
+        },
+        //
+        afterSync: function (op, data) {
+            if (op === Crud.delete) {
+
+            } else if (op === Crud.create) {
+            } else if (op === Crud.update) {
+            }
         }
     });
-
-
-    var create_store = lux.create_store = function (store, options) {
-        return store;
-    };
 
     lux.View = Class.extend({
         remove: function() {

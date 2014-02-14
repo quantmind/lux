@@ -97,9 +97,9 @@
                 if (js) {
                     var b = $('body'),
                         script = $("<script type='application/javascript'>" + js + "</script>"),
-                        sid = 'markdown-'+self.id();
-                    $('#' + sid, b).remove();
-                    b.append(script.attr('id', sid));
+                        cid = self.cid();
+                    $('#' + cid, b).remove();
+                    b.append(script.attr('id', cid));
                 }
             });
         },

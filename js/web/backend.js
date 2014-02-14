@@ -3,8 +3,7 @@
     web.extension('backend', {
         defaultElement: 'div',
         defaults: {
-            host: null,
-            resource: '',
+            store: null,
             hartbeat: 0
         },
         //
@@ -25,7 +24,7 @@
             }
             //
             self.element().addClass('socket-control').css({float: 'left'});
-            self.socket = new lux.Socket(url, socket_options);
+            self.socket = lux.create_store(options.store);
         },
         //
         check_status: function () {

@@ -90,19 +90,12 @@
                 //self._handle_close();
                 elem.addClass('editing');
                 //
-                // Create backend
-                if (!lux.cms._backend) {
-                    self.backend = web.backend({
-                        host: options.backend_url,
+                options.store = new lux.create_store(
+                    options.backend_url, {
                         hartbeat: options.hartbeat
                     });
-                    //
-                    // Set transport in the cms handler
-                    lux.cms.set_transport(self.backend.socket);
-                } else {
-                    self.backend = web.backend({
-                        socket: lux.cms._backend
-                    });
+                if (options.store.type === 'websocket') {
+                    self.backend = web.backend({store: options.store});
                 }
             }
             self._setup_api();
