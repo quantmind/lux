@@ -5,7 +5,15 @@
         TRH = document.createElement('tr'),
         DATAGRID = 'DATAGRID',
         DGHDROW = 'dg-hd-row',
-        exports = lux;
+        exports = lux,
+        columnDefaults = {
+            resizable: true,
+            sortable: false,
+            focusable: true,
+            selectable: true,
+            minWidth: 30
+        };
+    //
     TRH.className = DGHDROW;
     TR.className = 'dg-bd-row';
 
@@ -38,27 +46,30 @@
     //  A column in a ``DataGrid``. It contains the ``th`` element and several
     //  important information about the column.
     var DataGridColumn = exports.DataGridColumn = lux.Class.extend({
-        //
-        defaults: {
-            resizable: true,
-            sortable: false,
-            minWidth: 30,
-            focusable: true,
-            selectable: true
-        },
 
         init: function (options) {
-            var defaults = this.defaults;
-            delete this.defaults;
-            _.extend(this, defaults, options);
+            var self = this;
+            //
+            options = _.extend({}, columnDefaults, options);
             this.th = $(TH.cloneNode(false)).data('column', this);
-            if (!this.code) {
-                this.code = this.name;
+            if (!options.code) {
+                options.code = options.name;
             }
-        },
-        //
-        id: function () {
-            return this.th.attr('id');
+            //
+            _.extend(this, {
+                //
+                getOptions: function () {
+                    return options;
+                },
+                //
+                id: function () {
+                    return options.id || self.index();
+                },
+                //
+                label: function () {
+                    return options.name || self.letter();
+                }
+            });
         },
         // Retrieve the ``DataGrid`` instance for this ``DataGridColumn``.
         datagrid: function () {
@@ -76,6 +87,11 @@
         //
         render: function () {
             var name = this.name || this.letter();
+                opts = this.getOptions(),
+                th = this.th;
+            if (opts.minWidth) {
+                th.css('min-width', opts.minWidth+'px');
+            }
             this.th.html(name);
         },
         //
@@ -193,7 +209,7 @@
         //
         //  Note that this doesn't render the new rows - you can follow it with
         //  a call to render() to do that.
-        set_data: function (data) {
+        setData: function (data) {
             if (!(data instanceof Collection)) {
                 data = new Collection(data);
             }

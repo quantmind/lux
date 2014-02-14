@@ -560,6 +560,88 @@
         },
     });
 
+    //  Collection of Models
+    //  -------------------------
+
+    //  A collection maintain an ordered group of model instances
+    var Collection = lux.Collection = Class.extend({
+        //
+        init: function (model, store) {
+            var self = this,
+                _data = [],
+                _map = {};
+            this.model = model || Model.extend({});
+            this.store = create_store(store);
+
+            Object.defineProperty(self, 'length', {
+                get: function () {
+                    return _data.length;
+                }
+            });
+            //
+            _.extend(self, {
+
+                // Get a model from a collection, specified by index
+                at: function (index) {
+                    var id = _data[index];
+                    if (id) return _map[id];
+                },
+                //
+                // Get a model from a collection, specified by an id
+                get: function (id) {
+                    return _map[id];
+                },
+                //
+                set: function (models) {
+                    _(models).forEach(function (model) {
+                        var id = model.id(),
+                            existing = _map[id];
+                        if (existing) {
+                            existing.update(model.fields());
+                        } else {
+                            _map[id] = model;
+                            _data.push(id);
+                        }
+                    });
+                },
+                //
+                // Clear the collection
+                clear: function () {
+                    _data = [];
+                    _map = {};
+                }
+            });
+        },
+        //
+        reset: function (models) {
+            this.clear();
+            this.set(models);
+        },
+        //
+        //
+        // Fetch anew Collection of models from the store
+        fetch: function (options) {
+            options = Object(options);
+            var callback = options.callback;
+            self.store.fetch(options, function (data) {
+                data = self.parse(data);
+                if (callback) {
+                    callback(data);
+                }
+            });
+        },
+        //
+        // Parse data into a collection of models
+        parse: function (data) {
+            c.set(data);
+        }
+    });
+
+
+    var create_store = lux.create_store = function (store, options) {
+        return store;
+    };
+
     lux.View = Class.extend({
         remove: function() {
             this.elem.remove();

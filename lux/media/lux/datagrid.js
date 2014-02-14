@@ -1,42 +1,5 @@
 define(['lux-web'], function () {
     "use strict";
-
-    var Collection = lux.Collection = lux.Class.extend({
-
-        init: function (options) {
-            _new_collection(this, Object(options));
-        }
-    });
-
-
-    var _new_collection = function (self, options) {
-        var _data = [],
-            Model = options.Model || lux.Model.extend({});
-
-
-        _.extend(self, {
-            set_items: function (data) {
-                if (_.isArray(data)) {
-                    _data = data;
-                } else {
-                    throw new lux.Exception('Collection.setItems accepts an array of objects only!');
-                }
-            },
-            //
-            get_item: function (index) {
-                return _data[index];
-            },
-            //
-            get_items: function () {
-                return _data;
-            },
-            //
-            length: function () {
-                return _data.length;
-            }
-        });
-    };
-
     var web = lux.web,
         TH = document.createElement('th'),
         TR = document.createElement('tr'),
@@ -44,7 +7,15 @@ define(['lux-web'], function () {
         TRH = document.createElement('tr'),
         DATAGRID = 'DATAGRID',
         DGHDROW = 'dg-hd-row',
-        exports = lux;
+        exports = lux,
+        columnDefaults = {
+            resizable: true,
+            sortable: false,
+            focusable: true,
+            selectable: true,
+            minWidth: 30
+        };
+    //
     TRH.className = DGHDROW;
     TR.className = 'dg-bd-row';
 
@@ -77,27 +48,30 @@ define(['lux-web'], function () {
     //  A column in a ``DataGrid``. It contains the ``th`` element and several
     //  important information about the column.
     var DataGridColumn = exports.DataGridColumn = lux.Class.extend({
-        //
-        defaults: {
-            resizable: true,
-            sortable: false,
-            minWidth: 30,
-            focusable: true,
-            selectable: true
-        },
 
         init: function (options) {
-            var defaults = this.defaults;
-            delete this.defaults;
-            _.extend(this, defaults, options);
+            var self = this;
+            //
+            options = _.extend({}, columnDefaults, options);
             this.th = $(TH.cloneNode(false)).data('column', this);
-            if (!this.code) {
-                this.code = this.name;
+            if (!options.code) {
+                options.code = options.name;
             }
-        },
-        //
-        id: function () {
-            return this.th.attr('id');
+            //
+            _.extend(this, {
+                //
+                getOptions: function () {
+                    return options;
+                },
+                //
+                id: function () {
+                    return options.id || self.index();
+                },
+                //
+                label: function () {
+                    return options.name || self.letter();
+                }
+            });
         },
         // Retrieve the ``DataGrid`` instance for this ``DataGridColumn``.
         datagrid: function () {
@@ -115,6 +89,11 @@ define(['lux-web'], function () {
         //
         render: function () {
             var name = this.name || this.letter();
+                opts = this.getOptions(),
+                th = this.th;
+            if (opts.minWidth) {
+                th.css('min-width', opts.minWidth+'px');
+            }
             this.th.html(name);
         },
         //
@@ -574,101 +553,6 @@ define(['lux-web'], function () {
             }
         }
     });
-    //  Server side data
-    //  -----------------------
-    //
-    //  Retrieve data via AJAX or WebSockets
-    DataGrid.Extension('server', {
-        options: {
-            ajaxUrl: null,
-            ajaxDataType: 'json',
-            ajaxMethod: 'GET',
-            //
-            websocket: null,
-            // When true, the data is requested immidiately
-            autoload: true
-        },
-        //
-        init: function (g) {
-            var o = g.options,
-                self = this;
-            if (o.ajaxUrl || o.websocket) {
-                //
-                g.load = function () {
-                    self.load(g);
-                };
-                //
-                // Override sort method
-                g.sort = function (col, ascending) {
-                    self.sort(g, col, ascending);
-                };
-                //
-                //
-                if (o.autoload) {
-                    // Hook into onReady
-                    g.onReady.one(function (e) {
-                        e.preventDefault();
-                        self.load(g);
-                    });
-                }
-            }
-        },
-        // Load Data via AJAX
-        load: function (g) {
-            var self = this,
-                o = g.options;
-            $.ajax(o.ajaxUrl, {
-                dataType: o.ajaxDataType,
-                data: g.input_data(),
-                type: o.ajaxMethod,
-                success: function (data) {
-                    g.data = data;
-                    g.render();
-                }
-            });
-        },
-        //
-        // Server side sorting
-        sort: function (g, col, acending) {
-
-        }
-    });
-
-    var CheckboxColumn = DataGridColumn.extend({
-
-    });
-
-    // Add a checkbox column as the first column in the datagrid
-    DataGrid.Extension('checkboxSelector', {
-        options: {
-            checkbox_selector: false
-        },
-
-        init: function (g) {
-            if (g.options.checkbox_selector && g.options.colHeaders) {
-                g.options.colHeaders.splice(0, 0, new CheckboxColumn());
-            }
-        }
-    });
-
-
-    // Add a checkbox column as the first column in the datagrid
-    DataGrid.Extension('RowActions', {
-        //
-        options: {
-            row_actions: []
-        },
-        //
-        init: function (g) {
-            var o = g.options;
-            if (o.colHeaders && o.row_actions && o.row_actions.length) {
-                if (!o.checkbox_selector) {
-                    o.checkbox_selector = true;
-                    o.colHeaders.splice(0, 0, new CheckboxColumn());
-                }
-            }
-        }
-    });
     // Perform client side column sorting
     DataGrid.Extension('skin', {
         options: {
@@ -773,91 +657,5 @@ define(['lux-web'], function () {
             this.datagrid = elem.data(DATAGRID);
         }
     });
-    //
-    // Internal methods
-    // ---------------------------------------------
-    //
-    // Internal functions used by DataGrid
-    //
-    //
-    // Initialise table data from HTML
-    var
-
-    _getHTML = function (self) {
-        var heads = self.thead().children('tr'),
-            data = [];
-        if (heads.length) {
-            var h = this.thead().children('tr.headers');
-            heads = h.length ? h : heads.last();
-            heads.children('th').each(function () {
-                self.columns.push(new DataGridColumn(this));
-            });
-        }
-        self.tbody().children('tr').each(function () {
-            var row = {};
-            $(this).children().each(function () {
-                if (data.length <= length) {
-                    data.push(this.innerHTML);
-                }
-            });
-            data.push(row);
-        });
-        return data;
-    },
-    //
-    // Initialise headers when supplied in the options object.
-    _initHeaders = function (self) {
-        var columns = [],
-            tr = TRH.cloneNode(false);
-        //
-        self.columns = columns;
-        if (_.isNumber(self.options.columns)) {
-            var num = parseInt(self.options.columns, 10);
-            self.options.columns = [];
-            for(var i=0; i<num; i++) {
-                self.options.columns.push(new DataGridColumn());
-            }
-        }
-        _(self.options.columns).forEach(function (column) {
-            if (!(column instanceof DataGridColumn)) {
-                if (typeof(column) === 'string') {
-                    column = {name: column};
-                }
-                column = new DataGridColumn(column);
-            }
-            tr.appendChild(column.th[0]);
-            columns.push(column);
-        });
-        self.thead().append($(tr));
-    },
-    //
-    _add_extensions = function (self) {
-        var extensions = self.extensions,
-            options = self.options;
-        self.extensions = {};
-        _(extensions).forEach(function (Extension) {
-            _(Extension.prototype.options).forEach(function (value, name) {
-                if (!(name in options)) {
-                    options[name] = value;
-                }
-            });
-            self.extensions[Extension.prototype.name] = new Extension(self);
-        });
-    },
-    //
-    // Register events to this instance,
-    // called during initialisation
-    _register_events = function (self) {
-        _.extend(self, {
-            onReady: new Event('ready', self),
-            onScroll: new Event('scroll', self),
-            onSort: new Event('sort', self),
-            // Fired when on a click event
-            onClick: new Event('click', self),
-            // Fired when a new column is added to the datagrid
-            onColumn: new Event('column', self)
-        });
-    };
-
 //
 });

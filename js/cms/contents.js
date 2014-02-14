@@ -94,6 +94,13 @@
                     converter = new Showdown.converter(),
                     html = converter.makeHtml(raw);
                 web.refresh(container.html(html));
+                if (js) {
+                    var b = $('body'),
+                        script = $("<script type='application/javascript'>" + js + "</script>"),
+                        sid = 'markdown-'+self.id();
+                    $('#' + sid, b).remove();
+                    b.append(script.attr('id', sid));
+                }
             });
         },
         //
