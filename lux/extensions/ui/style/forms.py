@@ -1,6 +1,8 @@
 from .base import *
 from .inputs import input_types, input_defaults
 
+requires = ['inputs']
+
 
 def add_css(all):
     cssv = all.variables

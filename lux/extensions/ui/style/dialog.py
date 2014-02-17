@@ -1,6 +1,9 @@
 from .base import *
 
 
+requires = ['base']
+
+
 def add_css(all):
     cssv = all.variables
     css = all.css
@@ -37,7 +40,7 @@ def add_css(all):
     dialog = css('.dialog',
                  #Opacity(0),
                  Skin(applyto=['border']),
-                 Skin(' .header', border_width=spacing(0, 0, px(1))),
+                 Skin(' > .header', border_width=spacing(0, 0, px(1))),
                  Radius(cssv.dialog.radius),
                  Transition('opacity', '0.2s', 'ease'),
                  css('.ready',

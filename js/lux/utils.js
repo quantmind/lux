@@ -18,6 +18,20 @@
         return s;
     };
 
+    lux.fields_from_array = function (arr) {
+        var fields = {};
+        _(arr).forEach(function (f) {
+            var values = fields[f.name];
+            if (values === undefined) {
+                fields[f.name] = f.value;
+            } else if(_.isArray(values)) {
+                values.push(f.value);
+            } else {
+                fields[f.name] = [values, f.value];
+            }
+        });
+        return fields;
+    };
     //
     // An object which remember insertion order:
     //

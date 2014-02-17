@@ -181,10 +181,11 @@ class unfixtop(Mixin):
 class Border(Mixin):
     '''A :class:`Mixin` for adding border to a css element.
 
-:param color: border color. If not set no border color is specified.
-:param style: border style. If not set, ``solid`` is used. Could be
-    one of: ``solid``, ``dotted``, ``none``.
-:param width: border width. If not set ``1px`` is used.'''
+    :param color: border color. If not set no border color is specified.
+    :param style: border style. If not set, ``solid`` is used. Could be
+        one of: ``solid``, ``dotted``, ``none``.
+    :param width: border width. If not set ``1px`` is used.
+    '''
     def __init__(self, color=None, style=None, width=None):
         self.color = color
         self.style = style

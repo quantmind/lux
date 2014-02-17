@@ -109,7 +109,11 @@
 
             // Find the appropiate fieldset
             if (fieldset_selector) {
-                if (fieldset_selector.id) {
+                if (fieldset_selector instanceof jQuery) {
+                    fs = fieldset_selector;
+                } else if (fieldset_selector instanceof HTMLElement) {
+                    fs = $(fieldset_selector);
+                } else if (fieldset_selector.id) {
                     fs = element.find('#' + fieldset_selector.id);
                 } else if (fieldset_selector.Class) {
                     fs = element.find('.' + fieldset_selector.Class);

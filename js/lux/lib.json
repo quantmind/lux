@@ -1,6 +1,7 @@
 {
     "src": ["js/lux/start.js",
             "js/lux/model.js",
+            "js/lux/view.js",
             "js/lux/logger.js",
             "js/lux/backend.js",
             "js/lux/utils.js",

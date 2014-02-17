@@ -13,8 +13,10 @@
         // The constructor takes an HTML or jQuery element, an ``options`` object
         // and a ``parent`` ContentView.
         init: function (elem, options, parent) {
-            this.elem = $(elem);
-            this.options = Object(options);
+            options = Object(options);
+            options.elem = elem;
+            this._super(options);
+            this.options = options;
             this.store = this.options.store;
             this.parentType = parent ? parent.type : null;
             this.name = this.elem.data('context');
@@ -541,8 +543,10 @@
             if (Content) {
                 // remove the content_type & cmsview
                 this.wrapper = data.wrapper;
+                this.skin = data.skin;
                 data = _.merge({}, data);
                 delete data.wrapper;
+                delete data.skin;
                 delete data.cmsview;
                 this.elem.children().each(function () {
                     var elem = $(this),
@@ -555,6 +559,7 @@
                         //this.content_type.fields.jQuery = elem;
                     }
                 });
+                if (!data.keywords) data.keywords = [];
                 this.set(new Content(data), false);
             }
         },
@@ -568,7 +573,7 @@
                     toolbar = $(document.createElement('div'))
                                 .addClass('cms-content-toolbar').appendTo(container),
                     group = $(document.createElement('div'))
-                                .addClass('btn-group right').appendTo(toolbar),
+                                .addClass('btn-group pull-right').appendTo(toolbar),
                     parent = this.parent(),
                     button = parent.dialog.create_button({icon: 'edit', size: 'mini'})
                                 .click(function () {
@@ -626,6 +631,7 @@
             if (this.content) {
                 return {
                     content: this.content.serialize(),
+                    skin: this.skin,
                     wrapper: this.wrapper
                 };
             }
@@ -641,7 +647,7 @@
             if (wrapper) {
                 wrapper.render(this);
             } else {
-                content.render(this.elem);
+                content.render(this.elem, this.skin);
             }
             // Set the toolbar title if in editing mode
             if (this.title) {

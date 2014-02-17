@@ -49,6 +49,13 @@ import lux
 from lux import Html, Template, Context
 
 
+def int_or_string(value):
+    try:
+        return int(value)
+    except ValueError:
+        return value
+
+
 class Column(Template):
     '''A column can have one or more :class:`Block`.
     '''
@@ -206,19 +213,18 @@ class CmsContext(Context):
                     for data in bc.get('children') or ():
                         if not data:
                             continue
-                        wrapper = data.get('wrapper')
-                        content = data.get('content')
+                        content = data.pop('content', None)
                         if isinstance(content, dict):
                             elem = Html('div', data=content)
                         else:
                             # id, we need to retrieve the content
+                            content = int_or_string(content)
                             elem = Html('div')
                             if content in ids:
                                 ids[content].append(html)
                             else:
                                 ids[content] = [elem]
-                        if wrapper:
-                            elem.data('wrapper', wrapper)
+                        elem.data(data)
                         block.append(elem)
                     column.append(block)
                 row.append(column)

@@ -102,7 +102,8 @@ def add_css(all):
         margin=0)
 
     ##################################################### Global classes
-    css('.right', float='right')
+    css('.pull-right', float='right !important')
+    css('.pull-left', float='left !important')
     css('.close', float='right')
     css('.clearfix', Clearfix())
     css('markdown', display='none')

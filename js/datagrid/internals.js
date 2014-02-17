@@ -33,7 +33,7 @@
     // Initialise headers when supplied in the options object.
     _initHeaders = function (self) {
         var columns = [],
-            tr = TRH.cloneNode(false),
+            tr = TR.cloneNode(false),
             cols = self.options.columns;
         //
         self.columns = columns;

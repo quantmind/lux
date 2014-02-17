@@ -18,7 +18,7 @@
             title: 'Site Content',
         },
         //
-        render: function (container) {
+        render: function (container, skin) {
             var url = this.get('content_url'),
                 elem = this.get('jQuery');
             if (url === 'this') {
@@ -76,11 +76,11 @@
             persistent: true,
             fields: {
                 raw: new lux.TextArea({
-                    rows: 15,
+                    rows: 10,
                     placeholder: 'Write markdown'
                 }),
                 javascript: new lux.TextArea({
-                    rows: 10,
+                    rows: 7,
                     placeholder: 'javascript'
                 })
             }
@@ -141,16 +141,20 @@
         //
         meta: {
             title: 'Data Grid',
+            //
             persistent: true,
+            //
             render_queue: [],
+            //
             api_info: function (api) {
                 this.api = api || {};
                 var queue = this.render_queue;
                 delete this.render_queue;
                 _.each(queue, function (o) {
-                    o.content._render(o.container);
+                    o.content._render(o.container, o.skin);
                 });
             },
+            //
             fields: {
                 sortable: new lux.BooleanField({label: 'Sortable'}),
                 editable: new lux.BooleanField({label: 'Editable'}),
@@ -163,16 +167,17 @@
             }
         },
         //
-        render: function (container) {
+        render: function (container, skin) {
             var self = this;
             require(['datagrid'], function () {
                 if (self._meta.api === undefined) {
                     self._meta.render_queue.push({
                         content: self,
-                        'container': container
+                        'container': container,
+                        'skin': skin
                     });
                 } else {
-                    self._render(container);
+                    self._render(container, skin);
                 }
             });
         },
@@ -189,7 +194,7 @@
 
         //
         // Actually does the datagrid rendering
-        _render: function (container) {
+        _render: function (container, skin) {
             var elem = $(document.createElement('div')).appendTo(container),
                 options = _.extend({}, this.fields()),
                 models = this._api().models,
@@ -214,7 +219,8 @@
                     options.columns = model.fields;
                 }
                 options.ajaxUrl = options.url;
-                lux.web.datagrid(elem, options);
+                options.skin = skin;
+                web.datagrid(elem, options);
             }
         },
         //

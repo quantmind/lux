@@ -32,6 +32,7 @@
         var elem = $(document.createElement('select'));
         elem.append($("<option></option>"));
         _(options).forEach(function (o) {
+            if (_.isString(o)) o = {value: o};
             elem.append($("<option></option>").val(o.value).text(o.text || o.value));
         });
         return elem;

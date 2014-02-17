@@ -1,11 +1,16 @@
 from .base import *
 
 
+requires = ['base']
+
+
 def add_css(all):
     cssv = all.variables
     css = all.css
     #
     cssv.well.radius = cssv.body.radius
+    cssv.panel.radius = cssv.body.radius
+    cssv.panel.padding = px(9)
     #
     css('.well',
         css('.well-sm',
@@ -20,3 +25,15 @@ def add_css(all):
         Radius(cssv.well.radius),
         min_height=px(20),
         padding=px(19))
+
+    #
+    css('.panel',
+        Radius(cssv.panel.radius),
+        Skin(applyto=['border']),
+             Radius(cssv.panel.radius),
+             Skin(' .header', border_width=spacing(0, 0, px(1))),
+        css(' .header',
+            Radius(spacing(cssv.panel.radius, cssv.panel.radius, 0, 0)),
+            padding=cssv.panel.padding),
+        css(' .body',
+            padding=cssv.panel.padding))

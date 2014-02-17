@@ -9,20 +9,16 @@ define(['lux-web'], function () {
         TH = document.createElement('th'),
         TR = document.createElement('tr'),
         TD = document.createElement('td'),
-        TRH = document.createElement('tr'),
         DATAGRID = 'DATAGRID',
-        DGHDROW = 'dg-hd-row',
         exports = lux,
         columnDefaults = {
             resizable: true,
             sortable: false,
             focusable: true,
-            selectable: true,
-            minWidth: 30
+            selectable: true
         };
     //
-    TRH.className = DGHDROW;
-    TR.className = 'dg-bd-row';
+    TR.className = 'row';
 
     var Event = lux.Class.extend({
         //
@@ -96,10 +92,6 @@ define(['lux-web'], function () {
             var name = this.name || this.letter(),
                 opts = this.getOptions(),
                 th = this.th;
-            if (opts.minWidth) {
-                //th.css('min-width', opts.minWidth+'px');
-                th.width(opts.minWidth);
-            }
             this.th.html(name);
         },
         //
@@ -462,6 +454,28 @@ define(['lux-web'], function () {
         DataGrid.prototype.extensions.push(DataGridExtension.extend(attrs));
     };
 
+
+    var Cell = exports.Cell = lux.View.extend({
+        tagName: "td",
+
+        init: function (elem, options) {
+            this._super(elem);
+            this.column = options.column;
+            if (!(this.column instanceof DataGridColumn)) {
+                this.column = new DataGridColumn(this.column);
+            }
+        },
+
+        exitEditMode: function () {
+            this.elem.removeClass("error");
+            this.currentEditor.remove();
+            this.stopListening(this.currentEditor);
+            delete this.currentEditor;
+            this.elem.removeClass("editor");
+            this.render();
+        }
+
+    });
     //
     // Perform client side column sorting
     DataGrid.Extension('sorting', {
@@ -659,26 +673,41 @@ define(['lux-web'], function () {
     });
     // Perform client side column sorting
     DataGrid.Extension('skin', {
+        //
         options: {
             styles: {
                 'plain': '',
                 'table': 'table',
-                'grid': 'table-grid'
+                'grid': 'grid'
             },
+            //
             style: 'table',
-            skin: 'default'
+            //
+            skin: 'default',
+            //
+            rowHeight: 20,
+            //
+            minWidth: 30,
         },
+        //
         init: function (g) {
             var self = this;
             g.skin = function (name) {
                 self.skin(g, name);
             };
+            //
             g.style = function (name) {
                 self.style(g, name);
             };
+            //
             g.skin(g.options.skin);
+            //
             g.style(g.options.style);
+            //
+            if (g.options.rowHeight)
+                this._createCssRules(g);
         },
+        //
         skin: function (g, name) {
             var web = lux.web;
             if (web) {
@@ -695,6 +724,27 @@ define(['lux-web'], function () {
                     g.elem.removeClass(cn);
                 });
                 g.elem.addClass(g.options.styles[name]);
+            }
+        },
+        //
+        _createCssRules: function (g) {
+            var cellHeightDiff = 0,
+                uid = g.elem[0].id,
+                style = $("<style type='text/css' rel='stylesheet' />"
+                    ).appendTo($("head")),
+                rowHeight = (g.options.rowHeight - cellHeightDiff),
+                rules = [
+                    "#" + uid + " .row { height:" + g.options.rowHeight + "px; }",
+                    "#" + uid + " .row > td { height:" + rowHeight + "px; }"
+                  ];
+                if (g.options.minWidth) {
+                    rules.push('#' + uid + " .row > th { min-width:" + g.options.minWidth + "px; }");
+                }
+
+            if (style[0].styleSheet) { // IE
+                style[0].styleSheet.cssText = rules.join(" ");
+            } else {
+                style[0].appendChild(document.createTextNode(rules.join(" ")));
             }
         }
     });
@@ -796,7 +846,7 @@ define(['lux-web'], function () {
     // Initialise headers when supplied in the options object.
     _initHeaders = function (self) {
         var columns = [],
-            tr = TRH.cloneNode(false),
+            tr = TR.cloneNode(false),
             cols = self.options.columns;
         //
         self.columns = columns;

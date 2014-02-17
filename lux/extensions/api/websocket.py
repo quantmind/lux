@@ -147,13 +147,14 @@ method, respectively when creating and updating an ``instance`` of a model.
             return manager.save(instance)
 
     def write_instances(self, websocket, message, instances):
+        data = []
         if instances:
-            pk = i.pkvalue()
-            instances = [{'fields': i.tojson(),
-                          'pk': pk,
-                          'cid': getattr(i, '_cid', pk)}
-                         for i in instances]
-        message['data'] = instances
+            for i in instances:
+                pk = i.pkvalue()
+                data.append({'fields': i.tojson(),
+                             'pk': pk,
+                             'cid': getattr(i, '_cid', pk)})
+        message['data'] = data
         self.write(websocket, message)
 
     def error(self, websocket, message, msg):

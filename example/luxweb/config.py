@@ -4,6 +4,7 @@ DESCRIPTION = 'Welcome to the test website for lux!'
 HTML_HEAD_TITLE = 'Lux'
 EXTENSIONS = ['lux.extensions.base',
               'lux.extensions.ui',
+              'lux.extensions.ui.style.all',
               'lux.extensions.sessions',
               'lux.extensions.sitemap',
               'lux.extensions.api',

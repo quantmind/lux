@@ -235,7 +235,7 @@ define(['lodash', 'jquery'], function (_, $) {
             o._changed = {};
             if (fields === Object(fields)) {
                 _(fields).forEach(function (field, name) {
-                    this.set_field(o, name, field);
+                    this.set_field(o, name, field, true);
                 }, this);
             }
             if (!o.pk()) {
@@ -285,32 +285,39 @@ define(['lodash', 'jquery'], function (_, $) {
         // Set a new value for a field.
         // It returns a value different from undefined
         // only when the field has changed
-        set_field: function (instance, field, value) {
+        set_field: function (instance, field, value, initialising) {
             if (value === undefined) return;
             // Check if there is a validater for the field
             if (this.fields) {
                 var f = this.fields[field];
                 if (f) {
                     value = f.validate(instance, value);
-                }
-            }
-            var prev = instance.get(field);
-            if (_.isEqual(value, prev)) return;
-            if (field === this.pkname) {
-                if (value) {
-                    var cid = instance.cid();
-                    instance._fields[field] = value;
-                    delete instance._id;
-                    if (cid !== instance.cid()) {
-                        instance.trigger(CID_CHANGE, [instance, cid]);
-                    }
-                } else {
+                } else if (f === null) {
+                    instance[field] = value;
                     return;
                 }
-            } else {
-                instance._fields[field] = value;
             }
-            return prev === undefined ? null : prev;
+            if (initialising) {
+                instance._fields[field] = value;
+            } else {
+                var prev = instance.get(field);
+                if (_.isEqual(value, prev)) return;
+                if (field === this.pkname) {
+                    if (value) {
+                        var cid = instance.cid();
+                        instance._fields[field] = value;
+                        delete instance._id;
+                        if (cid !== instance.cid()) {
+                            instance.trigger(CID_CHANGE, [instance, cid]);
+                        }
+                    } else {
+                        return;
+                    }
+                } else {
+                    instance._fields[field] = value;
+                }
+                return prev === undefined ? null : prev;
+            }
         },
         //
         toString: function () {
@@ -335,7 +342,7 @@ define(['lodash', 'jquery'], function (_, $) {
             meta = _.merge(mattr, default_meta_attributes, attrs.meta);
             delete attrs.meta;
             _(meta.fields).forEach(function (field, name) {
-                field.name = name;
+                if (field) field.name = name;
             });
             var cls = this._super(Prototype, attrs);
             cls._meta = cls.prototype._meta = new Meta(cls, meta);
@@ -454,16 +461,19 @@ define(['lodash', 'jquery'], function (_, $) {
         //
         // Sync a single model
         sync: function (store, options) {
-            options = this._sync_data(options);
-            if (options) {
-                options.model = this._meta.name;
-                var callback = options.success,
-                    self = this;
-                options.success = function (data) {
+            options = Object(options);
+            var callback = options.success,
+                info = this._sync_data(options),
+                self = this;
+            if (info) {
+                info.model = this._meta.name;
+                info.success = function (data) {
                     self._changed = {};
-                    if (callback) callback(data);
+                    if (callback) callback(self);
                 };
-                return store.execute(options);
+                return store.execute(info);
+            } else if (callback) {
+                callback(self);
             }
         },
         //
@@ -485,27 +495,19 @@ define(['lodash', 'jquery'], function (_, $) {
             });
         },
         //
-        // Set fields data from a form
-        set_form_fields: function (arr) {
-            var fields = {},
-                self = this;
-            _(arr).forEach(function (f) {
-                var values = fields[f.name];
-                if (values === undefined) {
-                    fields[f.name] = f.value;
-                } else if($.isArray(values)) {
-                    values.push(f.value);
-                } else {
-                    fields[f.name] = [values, f.value];
-                }
-            });
+        // Replace fields with a new set
+        // If available fields are not present in ``new_fields``, they will be
+        // removed
+        replace: function (new_fields) {
+            var self = this;
+            //
             _(this._fields).forEach(function (value, name) {
-                if (fields[name] === undefined) {
+                if (new_fields[name] === undefined) {
                     delete self._fields[name];
                     self.trigger('change', name);
                 }
             });
-            this.update(fields);
+            this.update(new_fields);
         },
         //
         //  Private method which return serialised representation of model
@@ -759,12 +761,6 @@ define(['lodash', 'jquery'], function (_, $) {
         }
     });
 
-    lux.View = Class.extend({
-        remove: function() {
-            this.elem.remove();
-            return this;
-        }
-    });
 
     lux.Type = Type;
     lux.Class = Class;
@@ -775,6 +771,73 @@ define(['lodash', 'jquery'], function (_, $) {
     lux.ModelException = ModelException;
     lux.NotImplementedError = NotImplementedError;
 
+
+
+    // Cached regex to split keys for `delegate`.
+    var
+    //
+    delegateEventSplitter = /^(\S+)\s*(.*)$/,
+    //
+    viewOptions = ['model', 'collection', 'elem', 'id', 'attributes', 'className', 'tagName', 'events'],
+    //
+    View = lux.View = Class.extend({
+        tagName: 'div',
+
+        init: function (options) {
+            this.cid = _.uniqueId('view');
+            options || (options = {});
+            _.extend(this, _.pick(options, viewOptions));
+            if (!this.elem) {
+                this.setElement($(document.CreateElement(this.tagName)), false);
+            } else {
+                this.elem = $(_.result(this, 'elem'));
+                this.setElement(this.elem, false);
+            }
+        },
+
+        remove: function() {
+            this.elem.remove();
+            return this;
+        },
+
+        delegateEvents: function(events) {
+            events = events || this.events;
+            if (!events) return this;
+            this.undelegateEvents();
+            for (var key in events) {
+                var method = events[key];
+                if (!_.isFunction(method)) method = this[method];
+                if (!method) continue;
+                //
+                var match = key.match(delegateEventSplitter);
+                var eventName = match[1], selector = match[2];
+                method = _.bind(method, this);
+                eventName += '.delegateEvents' + this.cid;
+                if (selector === '') {
+                    this.elem.on(eventName, method);
+                } else {
+                    this.elem.on(eventName, selector, method);
+                }
+            }
+            return this;
+        },
+
+        undelegateEvents: function() {
+            this.elem.off('.delegateEvents' + this.cid);
+            return this;
+        },
+
+        render: function () {
+            return this;
+        },
+        //
+        setElement: function (elem, delegate) {
+            if (this.elem) this.undelegateEvents();
+            this.elem = $(elem);
+            if (delegate !== false) this.delegateEvents();
+            return this;
+        }
+    });
     //
     //  Lux Logger
     //  --------------------
@@ -1261,6 +1324,20 @@ define(['lodash', 'jquery'], function (_, $) {
         return s;
     };
 
+    lux.fields_from_array = function (arr) {
+        var fields = {};
+        _(arr).forEach(function (f) {
+            var values = fields[f.name];
+            if (values === undefined) {
+                fields[f.name] = f.value;
+            } else if(_.isArray(values)) {
+                values.push(f.value);
+            } else {
+                fields[f.name] = [values, f.value];
+            }
+        });
+        return fields;
+    };
     //
     // An object which remember insertion order:
     //

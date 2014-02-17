@@ -7,20 +7,16 @@
         TH = document.createElement('th'),
         TR = document.createElement('tr'),
         TD = document.createElement('td'),
-        TRH = document.createElement('tr'),
         DATAGRID = 'DATAGRID',
-        DGHDROW = 'dg-hd-row',
         exports = lux,
         columnDefaults = {
             resizable: true,
             sortable: false,
             focusable: true,
-            selectable: true,
-            minWidth: 30
+            selectable: true
         };
     //
-    TRH.className = DGHDROW;
-    TR.className = 'dg-bd-row';
+    TR.className = 'row';
 
     var Event = lux.Class.extend({
         //
@@ -94,10 +90,6 @@
             var name = this.name || this.letter(),
                 opts = this.getOptions(),
                 th = this.th;
-            if (opts.minWidth) {
-                //th.css('min-width', opts.minWidth+'px');
-                th.width(opts.minWidth);
-            }
             this.th.html(name);
         },
         //

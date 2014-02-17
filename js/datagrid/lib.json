@@ -2,6 +2,7 @@
     "src": ["js/datagrid/start.js",
             "js/datagrid/collection.js",
             "js/datagrid/core.js",
+            "js/datagrid/cell.js",
             "js/datagrid/extensions/sorting.js",
             "js/datagrid/extensions/checkbox.js",
             "js/datagrid/extensions/skin.js",

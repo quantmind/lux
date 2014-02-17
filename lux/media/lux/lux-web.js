@@ -542,6 +542,7 @@ define(['jquery', 'lux'], function ($, lux) {
         var elem = $(document.createElement('select'));
         elem.append($("<option></option>"));
         _(options).forEach(function (o) {
+            if (_.isString(o)) o = {value: o};
             elem.append($("<option></option>").val(o.value).text(o.text || o.value));
         });
         return elem;
@@ -624,7 +625,7 @@ define(['jquery', 'lux'], function ($, lux) {
             this._body = $(document.createElement('div')).addClass('body').append(elem.contents());
             this._foot = null;
             options.skin = this.get_skin();
-            self.buttons = $(document.createElement('div')).addClass('btn-group').addClass('right');
+            self.buttons = $(document.createElement('div')).addClass('btn-group').addClass('pull-right');
             header.append(self.buttons).append(h3);
             if (title) {
                 h3.append(title);
@@ -929,7 +930,11 @@ define(['jquery', 'lux'], function ($, lux) {
 
             // Find the appropiate fieldset
             if (fieldset_selector) {
-                if (fieldset_selector.id) {
+                if (fieldset_selector instanceof jQuery) {
+                    fs = fieldset_selector;
+                } else if (fieldset_selector instanceof HTMLElement) {
+                    fs = $(fieldset_selector);
+                } else if (fieldset_selector.id) {
                     fs = element.find('#' + fieldset_selector.id);
                 } else if (fieldset_selector.Class) {
                     fs = element.find('.' + fieldset_selector.Class);
@@ -1073,7 +1078,7 @@ define(['jquery', 'lux'], function ($, lux) {
         },
         //
         validate: function (model, value) {
-            return value;
+            if (value || value === 0) return value + '';
         },
         //
         set_value: function (model, elem) {
@@ -1091,6 +1096,22 @@ define(['jquery', 'lux'], function ($, lux) {
                 this.set_value(model, elem);
             }
             return elem;
+        }
+    });
+
+    c.IntegerField = c.Field.extend({
+        type: 'number',
+        //
+        validate: function (model, value) {
+            return parseInt(value, 10);
+        }
+    });
+
+    c.FloatField = c.Field.extend({
+        type: 'number',
+        //
+        validate: function (model, value) {
+            return parseFloat(value);
         }
     });
 
@@ -1134,6 +1155,12 @@ define(['jquery', 'lux'], function ($, lux) {
                     }
                 });
                 return result;
+            } else if (!_.isArray(value)) {
+                var val = [];
+                _(value).forEach(function (v) {
+                    val.push(v);
+                });
+                return val;
             } else {
                 return value;
             }
@@ -1188,8 +1215,10 @@ define(['jquery', 'lux'], function ($, lux) {
     // Web Broweser Local Storage backend
     var Storage = lux.Backend.extend({
         //
-        init: function (options, handlers, type) {
-            this._super(null, options, type || 'local');
+        init: function (url, options, type) {
+            this._super(url, options, type);
+            var idx = this.url.search('://');
+            this.namespace = this.url.substr(idx+3);
             if (this.type === 'local') {
                 this.storage = localStorage;
             } else if (this.type === 'session') {
@@ -1200,86 +1229,37 @@ define(['jquery', 'lux'], function ($, lux) {
         },
         //
         // this.send({resource: 'status', success: function (){...}});
-        send: function (options) {
-            var s = this.submit_options(options);
-            if (s.beforeSend && s.beforeSend.call(s, this) === false) {
+        execute: function (options) {
+            if (options.beforeSend && options.beforeSend.call(options, this) === false) {
                 // Don't send anything, simply return
                 return;
             }
-            var handler,
-                action = s.action || CrudMethod[s.type] || s.type;
-            if (action) {
-                handler = this[action.toLowerCase().replace('-','_')];
+            //
+            // This is an execution for a single item
+            if (options.item) {
+                options.data = [options.item];
             }
-            if (handler) {
-                var self = this;
-                handler.call(this, s.data, s.model, function (response) {
-                    response.action = action;
-                    if (response.error && s.error) {
-                        s.error(response.error, self, response);
-                    } else if (s.success && !response.error) {
-                        s.success(response.data, self, response);
+            var action = options.crud,
+                storage = this.storage,
+                prefix = this.namespace;
+            //
+            if (action === Crud.create) {
+                _(options.data).forEach(function (obj) {
+                    storage.setItem(prefix + obj.cid, JSON.stringify(obj.fields));
+                });
+            } else if (action === Crud.update) {
+                _(options.data).forEach(function (obj) {
+                    var fields = storage.getItem(prefix + obj.cid);
+                    if (fields) {
+                        fields = _.extend(SON.parse(fields), obj.fields);
+                        storage.setItem(prefix + obj.cid, JSON.stringify(fields));
                     }
                 });
-            } else {
-                if (s.error) {
-                    var response = {
-                            error: 'Unknown "' + action + '" action.',
-                            'action': action
-                        };
-                    s.error(response.error, this, response);
-                }
+            } else if (action === Crud.delete) {
+                _(options.data).forEach(function (obj) {
+                    storage.removeItem(prefix + obj.cid);
+                });
             }
-        },
-        //
-        ping: function (data, model, callback) {
-            callback({'data': 'pong'});
-        },
-        //
-        post: function (models, model, callback) {
-            var storage = this.storage;
-            $.each(models, function () {
-                var avail = true, id, key;
-                while (avail) {
-                    id = lux.s4();
-                    key = model + '.' + id;
-                    avail = storage.getItem(key);
-                }
-                this.fields.id = id;
-                storage.setItem(key, JSON.stringify(this.fields));
-            });
-            callback({data: models});
-        },
-        //
-        get: function (ids, model, callback) {
-            var storage = this.storage,
-                data = [];
-            $.each(ids, function () {
-                var key = model + '.' + this,
-                    item = storage.getItem(key);
-                if (item) {
-                    data.push({id: this, fields: JSON.parse(item)});
-                }
-            });
-            callback({'data': data});
-        },
-        //
-        put: function (models, model, callback) {
-            var storage = this.storage;
-            $.each(models, function () {
-                var key = model + '.' + this.id;
-                storage.setItem(key, JSON.stringify(this.fields));
-            });
-            callback({data: models});
-        },
-        //
-        // Delete models with primary keys in pks.
-        destroy: function (ids, model, callback) {
-            var storage = this.storage;
-            $.each(ids, function () {
-                storage.removeItem(model + '.' + this);
-            });
-            callback({'data': ids});
         }
     });
 

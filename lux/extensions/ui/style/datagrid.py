@@ -1,6 +1,9 @@
 from .base import *
 
 
+requires = ['base']
+
+
 def body_background(gradient):
     end = gradient.end
     return lighten(end, 5)
@@ -11,58 +14,74 @@ def add_css(all):
     css = all.css
     #
     cssv.datatable.head.font_weight = 'bold'
+    cssv.datagrid.radius = cssv.body.radius
     cssv.datatable.padding = spacing(4, 6)
     cssv.pagination.padding = spacing(4, 12)
 
-    css('.datagrid',
-        InlineBlock(),
-        Radius(cssv.body.radius),
-        css(' table',
-            border_spacing=0),
-        css('.table',
-            Skin(' td', applyto=['border'], border_width=spacing(1, 0, 0))),
-        css('th, td',
-            padding=cssv.datatable.padding),
-        css('th',
-            css('.sortable',
-                cursor='pointer'),
-            vertical_align='bottom'),
-        css('.table-grid',
-            Skin(' td', applyto=['border'], border_width=spacing(1, 0, 0, 1)),
-            Skin(' th', border_width=spacing(0, 0, 0, 1)),
-            Skin(' .hd td', applyto=['background', 'color']),
-            Skin(applyto=['border'], border_width=spacing(1, 1, 1, 0))),
-        css('.stripped',
-            Skin('tbody tr:nth-child(2n+1) td',
-                 applyto=('background', 'color'),
-                 transform=lighten)),
-        #
-        css(' .hd',
-            font_weight=cssv.datatable.head.font_weight),
-        #
-        css(' thead tr:first-child',
-            css(' th:last-child',
-                border_top_right_radius=cssv.body.radius),
-            css(' th:first-child',
-                border_top_left_radius=cssv.body.radius)),
-        css(' tr:last-child',
-            css(' td:last-child',
-                border_bottom_right_radius=cssv.body.radius),
-            css(' td:first-child',
-                border_bottom_left_radius=cssv.body.radius),
-            border_bottom_left_radius=cssv.body.radius,
-            border_bottom_right_radius=cssv.body.radius),
-        css('.footer tbody tr:last-child',
-            css(' td:last-child',
-                border_bottom_right_radius=0),
-            css(' td:first-child',
-                border_bottom_left_radius=0)),
-        #
-        # Sortable
-        css(' a.sortable-toggle',
-            padding=spacing(2, 0, 2, 10)),
-        #
-        text_align='left')
+    dg = css('.datagrid',
+             InlineBlock(),
+             css(' > table',
+                 Radius(cssv.datagrid.radius),
+                 css(' th, td',
+                     padding=cssv.datatable.padding),
+                 css(' > thead',
+                     css(' > tr',
+                         border='none'),
+                     css(' > tr:first-child',
+                         Radius(cssv.datagrid.radius, 'top'),
+                         css(' > th:first-child',
+                             Radius(cssv.datagrid.radius, 'top-left')),
+                         css(' > th:last-child',
+                             Radius(cssv.datagrid.radius, 'top-right'))),
+                     border='none'),
+                 border_collapse='separate',
+                 border_spacing=0))
+
+    if False:
+        dg.css(
+                   css('th',
+                       css('.sortable',
+                            cursor='pointer'),
+                        vertical_align='bottom'),
+                    css('.stripped',
+                        Skin('tbody tr:nth-child(2n+1) td',
+                             applyto=('background', 'color'),
+                             transform=lighten)),
+                    #
+                    css(' .hd',
+                        font_weight=cssv.datatable.head.font_weight),
+                    #
+                    css('.footer tbody tr:last-child',
+                        css(' td:last-child',
+                            border_bottom_right_radius=0),
+                        css(' td:first-child',
+                            border_bottom_left_radius=0)),
+                    #
+                    # Sortable
+                    css(' a.sortable-toggle',
+                        padding=spacing(2, 0, 2, 10)),
+                    #
+                    text_align='left')
+
+    # TABLE LAYOUT
+    dg.css('.table',
+                 Skin(' td', applyto=['border'],
+                      border_width=spacing(1, 0, 0)))
+
+    # GRID LAYOUT
+    dg.css('.grid',
+           Skin(' table', applyto=['border']),
+           #
+           # header grid
+           Skin(' tr.row > th',  border_width=spacing(0, 0, 1, 1)),
+           css(' tr.row > th:first-child', border_left='none'),
+           #
+           # Body grid
+           Skin(' tr.row > td', applyto=['border'],
+                border_width=spacing(0, 0, 1, 1)),
+           css(' tr.row > td:first-child', border_left='none'),
+           css(' tbody > tr.row:last-child > td',
+                border_bottom='none'))
 
     css('.section',
         css(' .datatable',
@@ -129,7 +148,7 @@ def add_css(all):
                          border_bottom_left_radius=0),
                      css('td:last-child',
                          border_bottom_left_radius=cssv.body.radius)),
-                 css('.table,.table-grid',
+                 css('.table, .grid',
                      Skin(applyto=['border'], border_width=spacing(0, 0, 1)),
                      Skin('td', applyto=['border'],
                           border_width=spacing(1, 1, 0))),

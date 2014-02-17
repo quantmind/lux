@@ -52,7 +52,7 @@
             this._body = $(document.createElement('div')).addClass('body').append(elem.contents());
             this._foot = null;
             options.skin = this.get_skin();
-            self.buttons = $(document.createElement('div')).addClass('btn-group').addClass('right');
+            self.buttons = $(document.createElement('div')).addClass('btn-group').addClass('pull-right');
             header.append(self.buttons).append(h3);
             if (title) {
                 h3.append(title);

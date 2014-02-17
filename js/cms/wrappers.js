@@ -2,18 +2,20 @@
     //  Default CMS Wrappers
     //  --------------------------------
 
-    var _panel = function (view, with_title) {
-        var outer = $("<div class='panel panel-default'></div>").appendTo(view.elem),
-            head = $("<div class='panel-heading'></div>").appendTo(outer),
-            elem = $("<div class='panel-body'></div>").appendTo(outer),
-            title = view.content.get('title');
-        if (with_title) {
-            head = $("<h3 class='panel-title'></h3>").appendTo(head);
+    var _panel = function (view, with_header, with_title) {
+        var outer = $("<div class='panel panel-default'></div>").appendTo(view.elem).addClass(view.skin);
+        if (with_header) {
+            var head = $("<div class='header'></div>").appendTo(outer),
+                title = view.content.get('title');
+            if (with_title) {
+                head = $("<h3 class='title'></h3>").appendTo(head);
+            }
+            if (title) {
+                head.html(title);
+            }
         }
-        if (title) {
-            head.html(title);
-        }
-        view.content.render(elem);
+        var elem = $("<div class='body'></div>").appendTo(outer);
+        view.content.render(elem, view.skin);
     };
 
 
@@ -32,7 +34,7 @@
     cms.create_wrapper('welllg', {
         title: 'Well Large',
         render: function (view) {
-            var elem = $("<div class='well well-lg'></div>").appendTo(view.elem);
+            var elem = $("<div class='well well-lg'></div>").appendTo(view.elem).addClass(view.skin);
             view.content.render(elem);
         }
     });
@@ -40,7 +42,7 @@
     cms.create_wrapper('wellsm', {
         title: 'Well Small',
         render: function (view) {
-            var elem = $("<div class='well well-sm'></div>").appendTo(view.elem);
+            var elem = $("<div class='well well-sm'></div>").appendTo(view.elem).addClass(view.skin);
             view.content.render(elem);
         }
     });
@@ -48,22 +50,20 @@
     cms.create_wrapper('panel', {
         title: 'Panel',
         render: function (view) {
-            var outer = $("<div class='panel panel-default'></div>").appendTo(view.elem),
-                elem = $("<div class='panel-body'></div>").appendTo(outer);
-            view.content.render(elem);
+            _panel(view);
         }
     });
 
     cms.create_wrapper('panelheading', {
         title: 'Panel with heading',
         render: function (view) {
-            _panel(view);
+            _panel(view, true);
         }
     });
 
     cms.create_wrapper('paneltitle', {
         title: 'Panel with title',
         render: function (view) {
-            _panel(view, true);
+            _panel(view, true, true);
         }
     });

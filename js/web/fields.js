@@ -12,7 +12,7 @@
         },
         //
         validate: function (model, value) {
-            return value;
+            if (value || value === 0) return value + '';
         },
         //
         set_value: function (model, elem) {
@@ -30,6 +30,22 @@
                 this.set_value(model, elem);
             }
             return elem;
+        }
+    });
+
+    c.IntegerField = c.Field.extend({
+        type: 'number',
+        //
+        validate: function (model, value) {
+            return parseInt(value, 10);
+        }
+    });
+
+    c.FloatField = c.Field.extend({
+        type: 'number',
+        //
+        validate: function (model, value) {
+            return parseFloat(value);
         }
     });
 
@@ -73,6 +89,12 @@
                     }
                 });
                 return result;
+            } else if (!_.isArray(value)) {
+                var val = [];
+                _(value).forEach(function (v) {
+                    val.push(v);
+                });
+                return val;
             } else {
                 return value;
             }

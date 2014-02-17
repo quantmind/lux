@@ -117,7 +117,12 @@ define(['lux', 'lux-web'], function (lux) {
         //
         meta: {
             name: 'content',
+            //
             fields: {
+                created: null,
+                //
+                timestamp: null,
+                //
                 id: new lux.Field({
                     type: 'hidden',
                     fieldset: {Class: dbfields}
@@ -221,8 +226,17 @@ define(['lux', 'lux-web'], function (lux) {
     var edit_content_dialog = function (options) {
         var dialog = web.dialog(options.contentedit),
             page_limit = options.page_limit || 10,
-            grid = web.grid(),
-            preview = $(document.createElement('div')).addClass('preview'),
+            // The grid containing the form
+            grid = $(document.createElement('div')).addClass('columns'),
+            content_fields = $(document.createElement('div')).addClass('content-fields column pull-left span8'),
+            content_data = $(document.createElement('div')).addClass('content-data column'),
+            //
+            fieldset_selection = $(document.createElement('fieldset')).addClass(
+                'content-selection').appendTo(content_fields),
+            fieldset_dbfields= $(document.createElement('fieldset')).addClass(
+                dbfields).appendTo(content_fields),
+            fieldset_submit= $(document.createElement('fieldset')).addClass(
+                'submit').appendTo(content_fields),
             db = Content._meta.fields,
             //
             // Build the form container
@@ -230,32 +244,33 @@ define(['lux', 'lux-web'], function (lux) {
             //
             // Create the select element for HTML wrappers
             wrapper_select = web.create_select(cms.wrapper_types()).attr(
-                'name', 'content_type'),
+                'name', 'wrapper'),
+            color_select = web.create_select(lux.web.SKIN_NAMES).attr(
+                'name', 'style'),
             //
             // create the select element for content types
-            content_select = web.create_select(cms.content_types()),
+            content_select = web.create_select(cms.content_types()).attr(
+                'name', 'content_type'),
             //
             content_title,
             //
             content_id,
             //
-            selection,
+            block;
             //
-            search,
-            //
-            block,
-            //
-            selection_class = 'content-selection',
-            //
-            edit_preview = function () {
-
-            };
-            //
+        form._element.append(content_fields).append(content_data).appendTo(grid);
         form.add_input(wrapper_select, {
-            fieldset: {Class: selection_class}
+            fieldset: fieldset_selection
+        });
+        form.add_input(color_select, {
+            fieldset: fieldset_selection
         });
         form.add_input(content_select, {
-            fieldset: {Class: selection_class}
+            fieldset: fieldset_selection
+        });
+        form.add_input('submit', {
+            value: 'Done',
+            fieldset: fieldset_submit
         });
         //
         // database fields
@@ -273,14 +288,11 @@ define(['lux', 'lux-web'], function (lux) {
                 callback(data);
             }
         });
-        selection = form._element.find('fieldset.' + selection_class);
-        search = form._element.find('fieldset.' + dbfields).detach();
-        grid.column(0).append(form._element);
-        grid.column(1).append(preview);
-        form.add_input('submit', {value: 'Done', fieldset: {Class: 'submit'}});
+        // Detach data fields
+        fieldset_dbfields.detach();
         //
         dialog.body()
-            .append(grid._element)
+            .append(grid)
             .addClass('edit-content')
             .bind('close-plugin-edit', function () {
                 dialog.destroy();
@@ -289,6 +301,14 @@ define(['lux', 'lux-web'], function (lux) {
         // Apply select
         web.select(wrapper_select, {'placeholder': 'Choose a container'});
         web.select(content_select, {'placeholder': 'Choose a content'});
+        color_select.select({
+            placeholder: 'Choose a skin',
+            formatResult: skin_color_element,
+            formatSelection: skin_color_element,
+            escapeMarkup: function(m) { return m; }
+        }).change(function () {
+            block.skin = this.value;
+        });
         //
         // AJAX Content Loading
         if (options.content_url) {
@@ -316,13 +336,14 @@ define(['lux', 'lux-web'], function (lux) {
                         $.ajax({
                             url: options.content_url + '/' + object.id,
                             success: function (model_data) {
-                                var data = model_data;
+                                var data = model_data,
+                                    Content = cms.content_type(data.content_type);
                                 if (model_data.data) {
                                     data = model_data.data;
                                     delete model_data.data;
                                     _.extend(data, model_data);
                                 }
-                                block.content.update(data);
+                                block.content = new Content(data);
                                 block.content.update_form(form._element);
                             }
                         });
@@ -361,8 +382,12 @@ define(['lux', 'lux-web'], function (lux) {
             // attribute in the dialog (check the ``PositionView.edit_content`
             // method)
             beforeSubmit: function (arr) {
-                var content = block.content;
-                content.set_form_fields(arr);
+                var content = block.content,
+                    fields = lux.fields_from_array(arr),
+                    wrapper = fields.wrapper;
+                delete fields.wrapper;
+                content.replace(fields);
+                block.wrapper = wrapper;
                 block.set(content);
                 dialog.fadeOut();
                 return false;
@@ -384,34 +409,31 @@ define(['lux', 'lux-web'], function (lux) {
                 block.log(block + ' changed content type to ' + block.content);
                 block.content_history[block.content._meta.name] = block.content;
                 if (block.content._meta.persistent) {
-                    selection.after(search);
+                    fieldset_selection.after(fieldset_dbfields);
                     block.content.update_form(form._element);
                 } else {
-                    search.detach();
+                    fieldset_dbfields.detach();
                 }
                 // Get the form for content editing
                 var cform = block.content.get_form();
-                form._element.find('.content-form').remove();
+                content_data.html('');
                 if (cform) {
-                    search.after(cform._element.children('fieldset').addClass('content-form'));
+                    content_data.append(cform._element.children('fieldset'));
                 }
             } else if (name) {
                 web.logger.error('Unknown content type ' + name);
             } else {
-                search.detach();
-                form._element.find('.content-form').remove();
+                fieldset_dbfields.detach();
+                content_data.html('');
             }
             if (block.wrapper !== wrapper_select.val()) {
                 wrapper_select.val(block.wrapper).trigger('change');
-            } else {
-                edit_preview();
             }
         });
         //
         // Change container
         wrapper_select.change(function () {
             block.wrapper = this.value;
-            edit_preview();
         });
         //
         // Inject change content
@@ -427,25 +449,10 @@ define(['lux', 'lux-web'], function (lux) {
         //
         return dialog;
     };
-    //
-    // The Html element for editing a content block
-    var edit_content_element = function (self) {
-        var container = $(document.createElement('div')),
-            toolbar = $(document.createElement('div'))
-                        .addClass('cms-position-toolbar').appendTo(container),
-            group = $(document.createElement('div'))
-                        .addClass('btn-group right').appendTo(toolbar),
-            button = parent.dialog.create_button({icon: 'edit', size: 'mini'})
-                        .click(function () {
-                            self.edit_content();
-                        }).appendTo(group),
-            title = $(document.createElement('span')).prependTo(toolbar);
-        this.button_group = group;
-        this.title = title;
-        container.appendTo(self.elem.parent());
-        this.elem.addClass('preview').appendTo(container);
-        this._container = container;
-        this.content_history = {};
+
+    var skin_color_element = function (state) {
+        if (!state.id) return state.text; // optgroup
+        return "<div class='colored " + state.id + "'>" + state.text + "</div>";
     };
 
     //
@@ -463,8 +470,10 @@ define(['lux', 'lux-web'], function (lux) {
         // The constructor takes an HTML or jQuery element, an ``options`` object
         // and a ``parent`` ContentView.
         init: function (elem, options, parent) {
-            this.elem = $(elem);
-            this.options = Object(options);
+            options = Object(options);
+            options.elem = elem;
+            this._super(options);
+            this.options = options;
             this.store = this.options.store;
             this.parentType = parent ? parent.type : null;
             this.name = this.elem.data('context');
@@ -991,8 +1000,10 @@ define(['lux', 'lux-web'], function (lux) {
             if (Content) {
                 // remove the content_type & cmsview
                 this.wrapper = data.wrapper;
+                this.skin = data.skin;
                 data = _.merge({}, data);
                 delete data.wrapper;
+                delete data.skin;
                 delete data.cmsview;
                 this.elem.children().each(function () {
                     var elem = $(this),
@@ -1005,6 +1016,7 @@ define(['lux', 'lux-web'], function (lux) {
                         //this.content_type.fields.jQuery = elem;
                     }
                 });
+                if (!data.keywords) data.keywords = [];
                 this.set(new Content(data), false);
             }
         },
@@ -1018,7 +1030,7 @@ define(['lux', 'lux-web'], function (lux) {
                     toolbar = $(document.createElement('div'))
                                 .addClass('cms-content-toolbar').appendTo(container),
                     group = $(document.createElement('div'))
-                                .addClass('btn-group right').appendTo(toolbar),
+                                .addClass('btn-group pull-right').appendTo(toolbar),
                     parent = this.parent(),
                     button = parent.dialog.create_button({icon: 'edit', size: 'mini'})
                                 .click(function () {
@@ -1076,6 +1088,7 @@ define(['lux', 'lux-web'], function (lux) {
             if (this.content) {
                 return {
                     content: this.content.serialize(),
+                    skin: this.skin,
                     wrapper: this.wrapper
                 };
             }
@@ -1091,7 +1104,7 @@ define(['lux', 'lux-web'], function (lux) {
             if (wrapper) {
                 wrapper.render(this);
             } else {
-                content.render(this.elem);
+                content.render(this.elem, this.skin);
             }
             // Set the toolbar title if in editing mode
             if (this.title) {
@@ -1219,18 +1232,20 @@ define(['lux', 'lux-web'], function (lux) {
     //  Default CMS Wrappers
     //  --------------------------------
 
-    var _panel = function (view, with_title) {
-        var outer = $("<div class='panel panel-default'></div>").appendTo(view.elem),
-            head = $("<div class='panel-heading'></div>").appendTo(outer),
-            elem = $("<div class='panel-body'></div>").appendTo(outer),
-            title = view.content.get('title');
-        if (with_title) {
-            head = $("<h3 class='panel-title'></h3>").appendTo(head);
+    var _panel = function (view, with_header, with_title) {
+        var outer = $("<div class='panel panel-default'></div>").appendTo(view.elem).addClass(view.skin);
+        if (with_header) {
+            var head = $("<div class='header'></div>").appendTo(outer),
+                title = view.content.get('title');
+            if (with_title) {
+                head = $("<h3 class='title'></h3>").appendTo(head);
+            }
+            if (title) {
+                head.html(title);
+            }
         }
-        if (title) {
-            head.html(title);
-        }
-        view.content.render(elem);
+        var elem = $("<div class='body'></div>").appendTo(outer);
+        view.content.render(elem, view.skin);
     };
 
 
@@ -1249,7 +1264,7 @@ define(['lux', 'lux-web'], function (lux) {
     cms.create_wrapper('welllg', {
         title: 'Well Large',
         render: function (view) {
-            var elem = $("<div class='well well-lg'></div>").appendTo(view.elem);
+            var elem = $("<div class='well well-lg'></div>").appendTo(view.elem).addClass(view.skin);
             view.content.render(elem);
         }
     });
@@ -1257,7 +1272,7 @@ define(['lux', 'lux-web'], function (lux) {
     cms.create_wrapper('wellsm', {
         title: 'Well Small',
         render: function (view) {
-            var elem = $("<div class='well well-sm'></div>").appendTo(view.elem);
+            var elem = $("<div class='well well-sm'></div>").appendTo(view.elem).addClass(view.skin);
             view.content.render(elem);
         }
     });
@@ -1265,23 +1280,21 @@ define(['lux', 'lux-web'], function (lux) {
     cms.create_wrapper('panel', {
         title: 'Panel',
         render: function (view) {
-            var outer = $("<div class='panel panel-default'></div>").appendTo(view.elem),
-                elem = $("<div class='panel-body'></div>").appendTo(outer);
-            view.content.render(elem);
+            _panel(view);
         }
     });
 
     cms.create_wrapper('panelheading', {
         title: 'Panel with heading',
         render: function (view) {
-            _panel(view);
+            _panel(view, true);
         }
     });
 
     cms.create_wrapper('paneltitle', {
         title: 'Panel with title',
         render: function (view) {
-            _panel(view, true);
+            _panel(view, true, true);
         }
     });
 
@@ -1305,7 +1318,7 @@ define(['lux', 'lux-web'], function (lux) {
             title: 'Site Content',
         },
         //
-        render: function (container) {
+        render: function (container, skin) {
             var url = this.get('content_url'),
                 elem = this.get('jQuery');
             if (url === 'this') {
@@ -1363,11 +1376,11 @@ define(['lux', 'lux-web'], function (lux) {
             persistent: true,
             fields: {
                 raw: new lux.TextArea({
-                    rows: 15,
+                    rows: 10,
                     placeholder: 'Write markdown'
                 }),
                 javascript: new lux.TextArea({
-                    rows: 10,
+                    rows: 7,
                     placeholder: 'javascript'
                 })
             }
@@ -1428,16 +1441,20 @@ define(['lux', 'lux-web'], function (lux) {
         //
         meta: {
             title: 'Data Grid',
+            //
             persistent: true,
+            //
             render_queue: [],
+            //
             api_info: function (api) {
                 this.api = api || {};
                 var queue = this.render_queue;
                 delete this.render_queue;
                 _.each(queue, function (o) {
-                    o.content._render(o.container);
+                    o.content._render(o.container, o.skin);
                 });
             },
+            //
             fields: {
                 sortable: new lux.BooleanField({label: 'Sortable'}),
                 editable: new lux.BooleanField({label: 'Editable'}),
@@ -1450,16 +1467,17 @@ define(['lux', 'lux-web'], function (lux) {
             }
         },
         //
-        render: function (container) {
+        render: function (container, skin) {
             var self = this;
             require(['datagrid'], function () {
                 if (self._meta.api === undefined) {
                     self._meta.render_queue.push({
                         content: self,
-                        'container': container
+                        'container': container,
+                        'skin': skin
                     });
                 } else {
-                    self._render(container);
+                    self._render(container, skin);
                 }
             });
         },
@@ -1476,7 +1494,7 @@ define(['lux', 'lux-web'], function (lux) {
 
         //
         // Actually does the datagrid rendering
-        _render: function (container) {
+        _render: function (container, skin) {
             var elem = $(document.createElement('div')).appendTo(container),
                 options = _.extend({}, this.fields()),
                 models = this._api().models,
@@ -1501,7 +1519,8 @@ define(['lux', 'lux-web'], function (lux) {
                     options.columns = model.fields;
                 }
                 options.ajaxUrl = options.url;
-                lux.web.datagrid(elem, options);
+                options.skin = skin;
+                web.datagrid(elem, options);
             }
         },
         //

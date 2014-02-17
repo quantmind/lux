@@ -54,8 +54,6 @@ Creating Skins
 import lux
 from lux import Parameter
 
-from .style import add_css
-
 
 class Extension(lux.Extension):
     attributions = ['Font Awesome by Dave Gandy - '

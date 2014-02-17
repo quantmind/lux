@@ -4,6 +4,7 @@ import lux
 
 from .base import *
 
+requires = ['inputs']
 
 def add_css(all):
     select = lux.javascript_libraries.get('select')
@@ -40,3 +41,8 @@ def add_css(all):
 
     css('select[multiple], select[size]',
         height='auto')
+
+    css('div.colored',
+        Skin(),
+        min_height=px(20),
+        padding_left=px(5))

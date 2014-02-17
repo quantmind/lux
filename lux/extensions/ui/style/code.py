@@ -1,5 +1,6 @@
 from .base import *
 
+requires = ['base']
 
 def add_css(all):
     cssv = all.variables

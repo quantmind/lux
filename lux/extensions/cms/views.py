@@ -422,7 +422,7 @@ class PageUpdates(api.CrudWebSocket, PageMixin):
         if content_type:
             if instance is None:
                 return create_content(manager, content_type, fields)
-            elif same_pk(instance.pkvalue(), fields.pop('id', None)):
+            else:
                 instance.set_fields(fields)
                 return manager.save(instance)
         else:  # this is a page

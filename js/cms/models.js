@@ -31,7 +31,12 @@
         //
         meta: {
             name: 'content',
+            //
             fields: {
+                created: null,
+                //
+                timestamp: null,
+                //
                 id: new lux.Field({
                     type: 'hidden',
                     fieldset: {Class: dbfields}
