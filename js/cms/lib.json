@@ -7,6 +7,6 @@
             "js/cms/wrappers.js",
             "js/cms/contents.js",
             "js/cms/extension.js",
-            "js/close.js"],
+            "js/cms/close.js"],
     "dest": "lux/extensions/cms/media/cms/cms.js"
 }

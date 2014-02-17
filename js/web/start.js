@@ -1,4 +1,4 @@
-define(['jquery', 'lux'], function ($) {
+define(['jquery', 'lux'], function ($, lux) {
     "use strict";
     //
     // Lux web site manager

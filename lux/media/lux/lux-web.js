@@ -1,4 +1,4 @@
-define(['jquery', 'lux'], function ($) {
+define(['jquery', 'lux'], function ($, lux) {
     "use strict";
     //
     // Lux web site manager
@@ -559,11 +559,15 @@ define(['jquery', 'lux'], function ($) {
 
     // A proxy for select2
     $.fn.select = function (options) {
-        options = options || {};
-        if (options === Object(options) && !options.width) {
-            options.width = 'element';
-        }
-        return this.select2(options);
+        var self = this;
+        require(['select'], function () {
+            options = options || {};
+            if (options === Object(options) && !options.width) {
+                options.width = 'element';
+            }
+            self.select2(options);
+        });
+        return this;
     };
 
     //  Dialog
@@ -1406,5 +1410,7 @@ define(['jquery', 'lux'], function ($) {
             { type: 'lang', regex: '\\\\@', replace: '@' }
         ];
     };
-//
+
+	return lux.web;
+	//
 });

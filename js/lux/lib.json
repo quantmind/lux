@@ -9,6 +9,6 @@
             "js/utils/utils.js",
             "js/utils/math.js",
             "js/utils/stats.js",
-            "js/close.js"],
+            "js/lux/close.js"],
     "dest": "lux/media/lux/lux.js"
 }

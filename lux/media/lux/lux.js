@@ -1,4 +1,4 @@
-define(['lodash', 'jquery'], function () {
+define(['lodash', 'jquery'], function (_, $) {
     "use strict";
 
     var root = window,
@@ -45,11 +45,14 @@ define(['lodash', 'jquery'], function () {
 
     var
     //
-    CID = 'cid',
+    CID_PREFIX = 'cid',
+    //
+    CID_FIELD = '_cid_',
     // Custom event fired by models when their custom id change
     CID_CHANGE = 'cidchange',
     //
-    // Test for ``_super`` methods
+    // Test for ``_super`` method in a ``Class``.
+    //
     // Check http://ejohn.org/blog/simple-javascript-inheritance/
     // for details.
     fnTest = /xyz/.test(function(){var xyz;}) ? /\b_super\b/ : /.*/,
@@ -164,8 +167,14 @@ define(['lodash', 'jquery'], function () {
             this._jquery_element = jElem;
         },
         //
-        trigger: function (name) {
-            this.jElem().trigger(name, this, slice.call(arguments, 1));
+        trigger: function (name, params) {
+            if (params) {
+                if (!_.isArray(params)) params = [params];
+                params.splice(0, 0, this);
+            } else {
+                params = [this];
+            }
+            this.jElem().trigger(name, params);
         },
         //
         on: function (name, callback) {
@@ -188,6 +197,7 @@ define(['lodash', 'jquery'], function () {
             return this.name + ': ' + this.message;
         }
     }),
+    //
     ModelException = Exception.extend({name: 'ModelException'}),
     //
     NotImplementedError = Exception.extend({name: 'NotImplementedError'}),
@@ -229,7 +239,7 @@ define(['lodash', 'jquery'], function () {
                 }, this);
             }
             if (!o.pk()) {
-                o._id = CID + lux.s4();
+                o._id = CID_PREFIX + lux.s4();
             }
         },
         //
@@ -285,7 +295,7 @@ define(['lodash', 'jquery'], function () {
                 }
             }
             var prev = instance.get(field);
-            if (value === prev) return;
+            if (_.isEqual(value, prev)) return;
             if (field === this.pkname) {
                 if (value) {
                     var cid = instance.cid();
@@ -314,6 +324,7 @@ define(['lodash', 'jquery'], function () {
     // Override the standard ``Type`` so that the new model class
     // contains the ``_meta`` attribute, and instance of ``Meta``.
     ModelType = Type.extend({
+        //
         new_class: function (Prototype, attrs) {
             var mattr = {},
                 meta = Prototype._meta;
@@ -339,7 +350,7 @@ define(['lodash', 'jquery'], function () {
     // of data about your data. A Model consists of ``fields`` and behaviours
     // of the data you are storing.
     Model = EventClass.extend({
-        // Use a different metaclass
+        // Model uses a specialised metaclass
         Metaclass: ModelType,
         //
         init: function (data) {
@@ -352,6 +363,9 @@ define(['lodash', 'jquery'], function () {
             return this.get(this._meta.pkname);
         },
         //
+        // Custom Identifier
+        //
+        // Uniquely identify this model and it is **always available**.
         cid: function () {
             return this._meta.name + '-' + (this.pk() || this._id);
         },
@@ -370,18 +384,26 @@ define(['lodash', 'jquery'], function () {
             return this._fields;
         },
         //
-        // Data for back-end database
-        // Override if needs a different implementation
-        backend_data: function () {
-            var fields = {};
-            _(this._fields).forEach(function (value, name) {
+        // Return a shallow copy of the model's attributes for JSON
+        // stringification.
+        // This can be used for persistence, serialization, or for augmentation
+        // before being sent to the server.
+        // If ``changed`` is ``true`` it returnes only fields which
+        // have changed if the model is already persistent.
+        toJSON: function (changed) {
+            var data = {},
+                fields = this._fields,
+                all = fields;
+            if (changed && !this.isNew()) all = this._changed;
+            _(all).forEach(function (value, name) {
+                value = fields[name];
                 if (value instanceof Date) {
-                    fields[name] = 0.001*value.getTime();
+                    data[name] = 0.001*value.getTime();
                 } else {
-                    fields[name] = value;
+                    data[name] = value;
                 }
             });
-            return fields;
+            return data;
         },
         //
         // Set a field value
@@ -407,6 +429,10 @@ define(['lodash', 'jquery'], function () {
             return _.size(this._changed) > 0;
         },
         //
+        previous: function (field) {
+            return this._changed[field];
+        },
+        //
         // get a field value
         get: function (field) {
             return this._fields[field];
@@ -428,38 +454,17 @@ define(['lodash', 'jquery'], function () {
         //
         // Sync a single model
         sync: function (store, options) {
-            options = Object(options);
-            var pk = this.pk(),
-                data;
-            if (this.isDeleted() && pk) {
-                // DELETE
-                options.type = Crud.delete;
-                options.model = {'pk': pk};
-            } else if (pk && this.hasChanged()) {
-                // UPDATE
-                data = this.backend_data();
-                delete data[this._meta.pkname];
-                options.type = Crud.update;
-                options.model = {
-                    'data': data,
-                    'pk': pk
+            options = this._sync_data(options);
+            if (options) {
+                options.model = this._meta.name;
+                var callback = options.success,
+                    self = this;
+                options.success = function (data) {
+                    self._changed = {};
+                    if (callback) callback(data);
                 };
-            } else if (!pk) {
-                // CREATE
-                data = this.backend_data();
-                if (data) {
-                    options.type = Crud.create;
-                    options.model = {
-                        'data': data,
-                        cid: this.cid()
-                    };
-                } else {
-                    return;
-                }
-            } else {
-                return;
+                return store.execute(options);
             }
-            return store.execute(options);
         },
         //
         toString: function () {
@@ -483,7 +488,7 @@ define(['lodash', 'jquery'], function () {
         // Set fields data from a form
         set_form_fields: function (arr) {
             var fields = {},
-                model = this;
+                self = this;
             _(arr).forEach(function (f) {
                 var values = fields[f.name];
                 if (values === undefined) {
@@ -494,19 +499,59 @@ define(['lodash', 'jquery'], function () {
                     fields[f.name] = [values, f.value];
                 }
             });
-            // Now loop through fields in the meta class
-            _(this._meta.fields).forEach(function (field) {
-                var value = field.validate(model, fields[field.name]);
-                if (value !== undefined) {
-                    fields[field.name] = value;
-                } else {
-                    delete fields[field.name];
+            _(this._fields).forEach(function (value, name) {
+                if (fields[name] === undefined) {
+                    delete self._fields[name];
+                    self.trigger('change', name);
                 }
             });
-            //
-            this._fields = fields;
-            this.trigger('change', this);
+            this.update(fields);
         },
+        //
+        //  Private method which return serialised representation of model
+        //  data for synchronisation with backend store.
+        //  It returns an object containing:
+        //
+        //  * ``crud`` - the CRUD action to perform (``create``, ``update`` or ``delete``)
+        //  * ``item`` - object containg the following entries
+        //    * ``pk`` primary key (not available for ``create`` action)
+        //    * ``fields`` - object with model fields (not available for ``delete`` action)
+        //    * ``cid`` - custom identifier
+        _sync_data: function (options) {
+            options = Object(options);
+            var pkvalue = this.pk();
+            if (this.isDeleted() && pkvalue) {
+                // DELETE THE MODEL
+                options.crud = Crud.delete;
+                options.item = {
+                    pk: pkvalue,
+                    cid: this.cid()
+                };
+            } else if (pkvalue && this.hasChanged()) {
+                // UPDATE THE MODEL
+                options.crud = Crud.update;
+                options.item = {
+                    fields: this.toJSON(true),
+                    pk: pkvalue,
+                    cid: this.cid()
+                };
+            } else if (!pkvalue) {
+                // CREATE A NEW MODEL
+                data = this.toJSON();
+                if (data) {
+                    options.crud = Crud.create;
+                    options.item = {
+                        fields: data,
+                        cid: this.cid()
+                    };
+                } else {
+                    return;
+                }
+            } else {
+                return;
+            }
+            return options;
+        }
     }),
 
     //  Collection of Models
@@ -640,6 +685,7 @@ define(['lodash', 'jquery'], function () {
             self.store.execute(options);
         },
         //
+        //  Commit changes to backend store
         sync: function (options) {
             options = Object(options);
             var self = this,
@@ -649,23 +695,13 @@ define(['lodash', 'jquery'], function () {
                 group, item;
 
             this.forEach(function (model) {
-                var op;
-                if (model.isNew()) {
-                    op = Crud.create;
-                    item = model.backend_fields();
-                } else if(mode.isDeleted()) {
-                    op = Crud.delete;
-                    item = model.pk();
-                } else if (mode.hasChanged()) {
-                    op = Crud.update;
-                    item = model.backend_fields();
-                }
-                if (op) {
-                    group = groups[op];
+                var info = model._sync_data();
+                if (info) {
+                    group = groups[item.crud];
                     if (!group) {
-                        group = groups[op] = [];
+                        group = groups[item.crud] = [];
                     }
-                    group.push(item);
+                    group.push(info.item);
                 }
             });
             //
@@ -763,8 +799,10 @@ define(['lodash', 'jquery'], function () {
         init: function (opts, parent) {
             var self = this,
                 //
+                // children for this logger
                 children = {},
                 //
+                // config object
                 config = {
                     level: default_level,
                     //
@@ -773,6 +811,7 @@ define(['lodash', 'jquery'], function () {
                     }
                 };
 
+            // Logging shortcut methods
             _(log_mapping).forEach(function (n, level) {
                 //
                 self[level] = function (msg) {
@@ -818,7 +857,7 @@ define(['lodash', 'jquery'], function () {
                 },
                 //
                 getHandlers: function () {
-                    if (!self.handler.length && parent) {
+                    if (!self.handlers.length && parent) {
                         return parent.getHandlers();
                     } else {
                         return self.handlers;
@@ -832,7 +871,7 @@ define(['lodash', 'jquery'], function () {
         addHandler: function(options, handler) {
             handler = handler || new LogHandler();
             handler.config(_.extend({}, this.getConfig(), options));
-            this.handler.push(handler);
+            this.handlers.push(handler);
         }
     }),
     //
@@ -848,7 +887,7 @@ define(['lodash', 'jquery'], function () {
         },
         //
         log: function(msg, level) {
-            console.log(this.format_message(msg, level));
+            console.log(this.formatter(msg, level));
         }
     }),
     //
@@ -857,19 +896,20 @@ define(['lodash', 'jquery'], function () {
     //
     //  Logs messages to an HTML element
     HtmlHandler = lux.HtmlLogHandler = LogHandler.extend({
-
+        //
         init: function (elem) {
             this.elem = $(elem);
             this.elem.addClass('lux-logger');
         },
         //
         log: function(msg, level) {
-            msg = this.format_message(msg, level);
+            msg = this.formatter(msg, level);
             msg = '<pre class="' + level + '">' + msg + '</pre>';
-            self.elem.prepend(msg);
+            this.elem.prepend(msg);
         }
     });
     //
+    //  Create the root logger
     var logger = new Logger();
     //
     lux.getLogger = function (namespace, options) {
@@ -905,6 +945,8 @@ define(['lodash', 'jquery'], function () {
     register_store = lux.register_store = function (scheme, Store) {
         stores[scheme] = Store;
     },
+    //
+    // Create a new Backend Store from a ``store`` url
     //
     create_store = lux.create_store = function (store, options) {
         if (store instanceof Backend) {
@@ -974,18 +1016,21 @@ define(['lodash', 'jquery'], function () {
             this._super(url, options, 'ajax');
         },
         //
-        // The sync method for models
+        // The ajax execute method for single model or group of models
         execute: function (options) {
             var url = this.url,
-                model = options.model;
+                model = options.model,
+                item = options.item;
+            delete options.model;
             //
-            options.type = lux.CrudMethod[options.type] || s.type || 'GET';
+            options.type = lux.CrudMethod[options.crud] || options.type || 'GET';
             //
-            // When there is a model with data
-            if (model) {
-                delete options.model;
-                if (model.pk) url = lux.utils.urljoin(url, pk);
-                options.data = model.data;
+            // If a model is given, this is an operation on a single instance
+            if (item) {
+                delete options.item;
+                // primary key given, change url
+                if (item.pk) url = lux.utils.urljoin(url, item.pk);
+                options.data = item.fields;
             }
             $.ajax(url, options);
         }
@@ -1095,16 +1140,24 @@ define(['lodash', 'jquery'], function () {
             });
         },
         //
-        // this.send({resource: 'status', success: function (){...}});
+        // Send a set of operations to the backend
+        // If ``options`` contains the ``item`` entry, than it is converted into
+        // a sinle ``data`` entry ``options.data = [options.item]``
         execute: function (options) {
             if (options.beforeSend && options.beforeSend.call(options, this) === false) {
                 // Don't send anything, simply return
                 return;
             }
+            //
+            // This is an execution for a single item
+            if (options.item) {
+                options.data = [options.item];
+            }
+            //
             var obj = {
                 // new message id
                 mid: this.new_mid(options),
-                action: options.action || lux.CrudMethod[options.type] || options.type,
+                action: options.action || lux.CrudMethod[options.crud] || options.crud,
                 model: options.model,
                 data: options.data
             };
@@ -1120,16 +1173,27 @@ define(['lodash', 'jquery'], function () {
         onmessage: function (e) {
             var obj = JSON.parse(e.data),
                 mid = obj.mid,
-                options = mid ? this._pending_messages[mid] : undefined;
+                options = mid ? this._pending_messages[mid] : undefined,
+                data = obj.data;
             if (options) {
                 delete this._pending_messages[mid];
-                if (obj.error) {
-                    return options.error ? options.error(obj.error, this, obj) : obj;
+                if (options.item) {
+                    data = data[0];
+                }
+            }
+            if (obj.error) {
+                if (options && options.error) {
+                    options.error(obj.error, this, obj);
                 } else {
-                    return options.success ? options.success(obj.data, this, obj) : obj;
+                    logger.error(this.toString() + ' - ' + obj.error);
                 }
             } else {
-                web.logger.error('No message');
+                if (options && options.success) {
+                    options.success(data, this, obj);
+                } else {
+                    logger.warning(
+                        this.toString() + ' - Got message with no callback registered');
+                }
             }
         },
         //
@@ -1374,14 +1438,10 @@ define(['lodash', 'jquery'], function () {
             extensions: {},
             libraries: [],
             extension: function (name, ext) {
-                if (lux.$) {
-                    ext = this.create_extension(name, ext);
-                    this.extension_list.push(ext);
-                    this.extensions[name] = ext;
-                    return ext;
-                } else {
-                    web_extensions_to_load.push({'name': name, 'ext': ext});
-                }
+                ext = this.create_extension(name, ext);
+                this.extension_list.push(ext);
+                this.extensions[name] = ext;
+                return ext;
             },
             // Execute a callback when lux.web is ready.
             ready: function (requires, callback) {
@@ -2028,5 +2088,6 @@ $.extend(math, {
         return mu + z*sigma;
     }
 });
-//
+
+	return lux;
 });

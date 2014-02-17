@@ -13,7 +13,7 @@
     //  The first a probably most important content type. It represents
     //  the response obtained by the backend server without the cms
     //  system in place.
-    lux.cms.create_content_type('contenturl', {
+    cms.create_content_type('contenturl', {
         meta: {
             title: 'Site Content',
         },
@@ -58,7 +58,7 @@
     //  -------------------
     //
     //  Insert a non-breaking space.
-    lux.cms.create_content_type('blank', {
+    cms.create_content_type('blank', {
         model_title: 'The content served by the url',
         render: function (container) {
             container.html('&nbsp;');
@@ -69,7 +69,7 @@
     //  -------------------
     //
     //  Insert a non-breaking space.
-    lux.cms.create_content_type('markdown', {
+    cms.create_content_type('markdown', {
         //
         meta: {
             title: 'Text using markdown',
@@ -115,7 +115,7 @@
     //
     //  Versions
     //  -------------------
-    lux.cms.create_content_type('versions', {
+    cms.create_content_type('versions', {
         meta: {
             title: 'Versions of libraries'
         },

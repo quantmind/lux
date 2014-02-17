@@ -1,4 +1,7 @@
     //
+    var
+    views = cms.views = {},
+    //
     //  ContentView
     //  ------------------------
 
@@ -6,7 +9,7 @@
     //  The content view can be either in ``editing`` or ``read`` mode.
     //  When in editing mode the ``this.options.editing`` attribute is ``true``.
 
-    var BaseContentView = lux.View.extend({
+    BaseContentView = views.base = lux.View.extend({
         // The constructor takes an HTML or jQuery element, an ``options`` object
         // and a ``parent`` ContentView.
         init: function (elem, options, parent) {
@@ -108,7 +111,7 @@
         // Create child element and append it to this view
         create_child: function (elem, content) {
             if (this.childType) {
-                var View = ContentViewMap[this.childType];
+                var View = views[this.childType];
                 if (!View) {
                     throw new lux.NotImplementedError(this + ' has no create_child method.');
                 }
@@ -177,7 +180,7 @@
             var n = this.index();
             return n === -1 ? this.type : this.type + '-' + n;
         }
-    });
+    }),
 
     //  PageView
     //  --------------
@@ -188,7 +191,7 @@
     //  ``.cms-grid`` selector.
     //  A page does not add any child during editing, it is just a container
     //  of grid elements.
-    var PageView = BaseContentView.extend({
+    PageView = views.page = BaseContentView.extend({
         type: 'page',
         //
         childType: 'grid',
@@ -330,7 +333,7 @@
             dd.add('.' + opts.dropzone, '.' + opts.dropzone + ' > .header');
             return dd;
         }
-    });
+    }),
 
     //
     //  Grid View
@@ -338,7 +341,7 @@
     //
     //  View manager for a Grid. A grid is a container of Rows.
     //  In editing mode it is used to add and remove Rows.
-    var GridView = BaseContentView.extend({
+    GridView = views.grid = BaseContentView.extend({
         type: 'grid',
         //
         childType: 'row',
@@ -379,7 +382,7 @@
         toString: function () {
             return this.type + '-' + this.name;
         }
-    });
+    }),
 
     //  Row View
     //  -------------------
@@ -390,7 +393,7 @@
     //
     //   * The number of children is fixed by the ``template`` attribute.
     //   * The ``template`` is retrieved from the ``data-template``.
-    var RowView = BaseContentView.extend({
+    RowView = views.row = BaseContentView.extend({
         type: 'row',
         //
         childType: 'column',
@@ -463,14 +466,14 @@
             }
             return this.dialog;
         },
-    });
+    }),
 
     //  Column View
     //  -------------------
     //
     //  Handle the A Column within a Row.
     //  A column is a container of several Blocks vertically aligned.
-    var ColumnView = BaseContentView.extend({
+    ColumnView = views.column = BaseContentView.extend({
         type: 'column',
         //
         childType: 'block',
@@ -507,7 +510,7 @@
     //  The Block View inherits from the ``RowView``.
     //  Blocks are displaied within a ColumnView in
     //  a vertical layout.
-    var BlockView = RowView.extend({
+    var BlockView = views.block = RowView.extend({
         type: 'block',
         //
         childType: 'content',
@@ -517,7 +520,7 @@
         get_column: function () {
             return this.parent();
         }
-    });
+    }),
 
     //  Content View
     //  --------------------
@@ -527,7 +530,7 @@
     //  Or accessed via children elements when in read mode. Childern elements
     //  have the ``field`` entry in their html data attribute. The field contains
     //  the name of the field for which the inner html of the element provides value.
-    var ContentView = BaseContentView.extend({
+    ContentView = views.content = BaseContentView.extend({
         type: 'content',
         //
         render: function () {
@@ -540,7 +543,6 @@
                 this.wrapper = data.wrapper;
                 data = _.merge({}, data);
                 delete data.wrapper;
-                delete data.content_type;
                 delete data.cmsview;
                 this.elem.children().each(function () {
                     var elem = $(this),
@@ -678,14 +680,3 @@
             return dialog;
         }
     });
-
-    // Map a view type to a view class
-
-    var ContentViewMap = lux.cms.ContentViewMap = {
-            'page': PageView,
-            'grid': GridView,
-            'row': RowView,
-            'column': ColumnView,
-            'block': BlockView,
-            'content': ContentView
-        };

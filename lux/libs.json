@@ -19,7 +19,7 @@
     "mustache": "//cdnjs.cloudflare.com/ajax/libs/mustache.js/0.7.2/mustache.js",
     "pjax": "//cdnjs.cloudflare.com/ajax/libs/jquery.pjax/1.7.0/jquery.pjax.js",
     "prettify": "//cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify.js",
-    "qunit": "//code.jquery.com/qunit/qunit-1.11.0.js",
+    "qunit": "//code.jquery.com/qunit/qunit-1.14.0.js",
     "qunit-css": "//code.jquery.com/qunit/qunit-1.11.0.css",
     "require": "//cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.js",
     "select": "//cdnjs.cloudflare.com/ajax/libs/select2/3.4.5/select2.js",

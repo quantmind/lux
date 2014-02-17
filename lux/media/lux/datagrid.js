@@ -97,7 +97,8 @@ define(['lux-web'], function () {
                 opts = this.getOptions(),
                 th = this.th;
             if (opts.minWidth) {
-                th.css('min-width', opts.minWidth+'px');
+                //th.css('min-width', opts.minWidth+'px');
+                th.width(opts.minWidth);
             }
             this.th.html(name);
         },

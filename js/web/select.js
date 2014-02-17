@@ -49,9 +49,13 @@
 
     // A proxy for select2
     $.fn.select = function (options) {
-        options = options || {};
-        if (options === Object(options) && !options.width) {
-            options.width = 'element';
-        }
-        return this.select2(options);
+        var self = this;
+        require(['select'], function () {
+            options = options || {};
+            if (options === Object(options) && !options.width) {
+                options.width = 'element';
+            }
+            self.select2(options);
+        });
+        return this;
     };

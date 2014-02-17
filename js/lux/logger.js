@@ -22,8 +22,10 @@
         init: function (opts, parent) {
             var self = this,
                 //
+                // children for this logger
                 children = {},
                 //
+                // config object
                 config = {
                     level: default_level,
                     //
@@ -32,6 +34,7 @@
                     }
                 };
 
+            // Logging shortcut methods
             _(log_mapping).forEach(function (n, level) {
                 //
                 self[level] = function (msg) {
@@ -77,7 +80,7 @@
                 },
                 //
                 getHandlers: function () {
-                    if (!self.handler.length && parent) {
+                    if (!self.handlers.length && parent) {
                         return parent.getHandlers();
                     } else {
                         return self.handlers;
@@ -91,7 +94,7 @@
         addHandler: function(options, handler) {
             handler = handler || new LogHandler();
             handler.config(_.extend({}, this.getConfig(), options));
-            this.handler.push(handler);
+            this.handlers.push(handler);
         }
     }),
     //
@@ -107,7 +110,7 @@
         },
         //
         log: function(msg, level) {
-            console.log(this.format_message(msg, level));
+            console.log(this.formatter(msg, level));
         }
     }),
     //
@@ -116,19 +119,20 @@
     //
     //  Logs messages to an HTML element
     HtmlHandler = lux.HtmlLogHandler = LogHandler.extend({
-
+        //
         init: function (elem) {
             this.elem = $(elem);
             this.elem.addClass('lux-logger');
         },
         //
         log: function(msg, level) {
-            msg = this.format_message(msg, level);
+            msg = this.formatter(msg, level);
             msg = '<pre class="' + level + '">' + msg + '</pre>';
-            self.elem.prepend(msg);
+            this.elem.prepend(msg);
         }
     });
     //
+    //  Create the root logger
     var logger = new Logger();
     //
     lux.getLogger = function (namespace, options) {

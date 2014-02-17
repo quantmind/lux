@@ -15,6 +15,6 @@
             "js/libs/showdown/github.js",
             "js/libs/showdown/prettify.js",
             "js/libs/showdown/twitter.js",
-            "js/close.js"],
+            "js/web/close.js"],
     "dest": "lux/media/lux/lux-web.js"
 }

@@ -1,4 +1,4 @@
-define(['lodash', 'jquery'], function () {
+define(['lodash', 'jquery'], function (_, $) {
     "use strict";
 
     var root = window,

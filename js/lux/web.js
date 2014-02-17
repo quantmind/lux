@@ -13,14 +13,10 @@
             extensions: {},
             libraries: [],
             extension: function (name, ext) {
-                if (lux.$) {
-                    ext = this.create_extension(name, ext);
-                    this.extension_list.push(ext);
-                    this.extensions[name] = ext;
-                    return ext;
-                } else {
-                    web_extensions_to_load.push({'name': name, 'ext': ext});
-                }
+                ext = this.create_extension(name, ext);
+                this.extension_list.push(ext);
+                this.extensions[name] = ext;
+                return ext;
             },
             // Execute a callback when lux.web is ready.
             ready: function (requires, callback) {

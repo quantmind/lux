@@ -6,7 +6,8 @@
         "deps": ["jquery"]
     },
     "qunit": {
-        "deps": ["jquery"]
+        "deps": ["jquery"],
+        "exports": "QUnit"
     },
     "select": {
         "deps": ["jquery"]

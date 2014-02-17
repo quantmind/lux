@@ -1,7 +1,9 @@
-define(['lux-web', 'qunit'], function () {
+define(['lux-web', 'cms', 'qunit'], function (web, cms) {
     "use strict";
-    var web = lux.web,
-        test_destroy = function (instance) {
+    //
+    QUnit.config.autorun = false;
+    //
+    var test_destroy = function (instance) {
             var elem = instance.element(),
                 ext = instance.extension(),
                 id = instance.id();

@@ -20,6 +20,8 @@
         stores[scheme] = Store;
     },
     //
+    // Create a new Backend Store from a ``store`` url
+    //
     create_store = lux.create_store = function (store, options) {
         if (store instanceof Backend) {
             return store;
@@ -88,18 +90,21 @@
             this._super(url, options, 'ajax');
         },
         //
-        // The sync method for models
+        // The ajax execute method for single model or group of models
         execute: function (options) {
             var url = this.url,
-                model = options.model;
+                model = options.model,
+                item = options.item;
+            delete options.model;
             //
-            options.type = lux.CrudMethod[options.type] || s.type || 'GET';
+            options.type = lux.CrudMethod[options.crud] || options.type || 'GET';
             //
-            // When there is a model with data
-            if (model) {
-                delete options.model;
-                if (model.pk) url = lux.utils.urljoin(url, pk);
-                options.data = model.data;
+            // If a model is given, this is an operation on a single instance
+            if (item) {
+                delete options.item;
+                // primary key given, change url
+                if (item.pk) url = lux.utils.urljoin(url, item.pk);
+                options.data = item.fields;
             }
             $.ajax(url, options);
         }
@@ -209,16 +214,24 @@
             });
         },
         //
-        // this.send({resource: 'status', success: function (){...}});
+        // Send a set of operations to the backend
+        // If ``options`` contains the ``item`` entry, than it is converted into
+        // a sinle ``data`` entry ``options.data = [options.item]``
         execute: function (options) {
             if (options.beforeSend && options.beforeSend.call(options, this) === false) {
                 // Don't send anything, simply return
                 return;
             }
+            //
+            // This is an execution for a single item
+            if (options.item) {
+                options.data = [options.item];
+            }
+            //
             var obj = {
                 // new message id
                 mid: this.new_mid(options),
-                action: options.action || lux.CrudMethod[options.type] || options.type,
+                action: options.action || lux.CrudMethod[options.crud] || options.crud,
                 model: options.model,
                 data: options.data
             };
@@ -234,16 +247,27 @@
         onmessage: function (e) {
             var obj = JSON.parse(e.data),
                 mid = obj.mid,
-                options = mid ? this._pending_messages[mid] : undefined;
+                options = mid ? this._pending_messages[mid] : undefined,
+                data = obj.data;
             if (options) {
                 delete this._pending_messages[mid];
-                if (obj.error) {
-                    return options.error ? options.error(obj.error, this, obj) : obj;
+                if (options.item) {
+                    data = data[0];
+                }
+            }
+            if (obj.error) {
+                if (options && options.error) {
+                    options.error(obj.error, this, obj);
                 } else {
-                    return options.success ? options.success(obj.data, this, obj) : obj;
+                    logger.error(this.toString() + ' - ' + obj.error);
                 }
             } else {
-                web.logger.error('No message');
+                if (options && options.success) {
+                    options.success(data, this, obj);
+                } else {
+                    logger.warning(
+                        this.toString() + ' - Got message with no callback registered');
+                }
             }
         },
         //

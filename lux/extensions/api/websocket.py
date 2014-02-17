@@ -35,7 +35,7 @@ class CrudWebSocket(ws.WS):
                 self.error(websocket, message, 'Unknown "%s" action.'
                            % message['action'])
             else:
-                self.error(websocket, mid, 'Message action not available')
+                self.error(websocket, message, 'Message action not available')
         else:
             return handle(websocket, message)
 
@@ -73,24 +73,28 @@ class CrudWebSocket(ws.WS):
                 self.error(websocket, message, 'Permission denied')
 
     def put(self, websocket, message):
-        '''Handle put response. Requires a model.'''
+        '''Handle put response.
+
+        Requires a the ``data`` key in ``message`` to be
+        a list of dictionaries containg ``pk`` and ``fields`` to update.
+        '''
         manager = self.manager(websocket, message)
         if manager:
             update = self.update_create
             pkname = manager._meta.pkname()
             data = message['data']
-            pks = {}
-            pks = dict(((str(d['id']), d.get('fields'))
-                        for d in data if 'id' in d))
+            pks = dict(((str(d['pk']), d) for d in data if 'pk' in d))
             saved = []
             if pks:
                 instances = yield manager.filter(**{pkname: tuple(pks)}).all()
                 for instance in instances:
                     if websocket.handshake.has_permission('update', instance):
                         pk = str(instance.pkvalue())
-                        instance = yield update(websocket, manager, pks[pk],
+                        item = pks[pk]
+                        instance = yield update(websocket, manager,
+                                                item.get('fields'),
                                                 instance)
-                        instance._cid = pk
+                        instance._cid = item.get('cid')
                         saved.append(instance)
             self.write_instances(websocket, message, saved)
 
@@ -144,8 +148,10 @@ method, respectively when creating and updating an ``instance`` of a model.
 
     def write_instances(self, websocket, message, instances):
         if instances:
+            pk = i.pkvalue()
             instances = [{'fields': i.tojson(),
-                          'id': getattr(i, '_cid', i.pkvalue())}
+                          'pk': pk,
+                          'cid': getattr(i, '_cid', pk)}
                          for i in instances]
         message['data'] = instances
         self.write(websocket, message)

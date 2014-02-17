@@ -1,11 +1,14 @@
 
     var
     //
-    CID = 'cid',
+    CID_PREFIX = 'cid',
+    //
+    CID_FIELD = '_cid_',
     // Custom event fired by models when their custom id change
     CID_CHANGE = 'cidchange',
     //
-    // Test for ``_super`` methods
+    // Test for ``_super`` method in a ``Class``.
+    //
     // Check http://ejohn.org/blog/simple-javascript-inheritance/
     // for details.
     fnTest = /xyz/.test(function(){var xyz;}) ? /\b_super\b/ : /.*/,
@@ -120,8 +123,14 @@
             this._jquery_element = jElem;
         },
         //
-        trigger: function (name) {
-            this.jElem().trigger(name, this, slice.call(arguments, 1));
+        trigger: function (name, params) {
+            if (params) {
+                if (!_.isArray(params)) params = [params];
+                params.splice(0, 0, this);
+            } else {
+                params = [this];
+            }
+            this.jElem().trigger(name, params);
         },
         //
         on: function (name, callback) {
@@ -144,6 +153,7 @@
             return this.name + ': ' + this.message;
         }
     }),
+    //
     ModelException = Exception.extend({name: 'ModelException'}),
     //
     NotImplementedError = Exception.extend({name: 'NotImplementedError'}),
@@ -185,7 +195,7 @@
                 }, this);
             }
             if (!o.pk()) {
-                o._id = CID + lux.s4();
+                o._id = CID_PREFIX + lux.s4();
             }
         },
         //
@@ -241,7 +251,7 @@
                 }
             }
             var prev = instance.get(field);
-            if (value === prev) return;
+            if (_.isEqual(value, prev)) return;
             if (field === this.pkname) {
                 if (value) {
                     var cid = instance.cid();
@@ -270,6 +280,7 @@
     // Override the standard ``Type`` so that the new model class
     // contains the ``_meta`` attribute, and instance of ``Meta``.
     ModelType = Type.extend({
+        //
         new_class: function (Prototype, attrs) {
             var mattr = {},
                 meta = Prototype._meta;
@@ -295,7 +306,7 @@
     // of data about your data. A Model consists of ``fields`` and behaviours
     // of the data you are storing.
     Model = EventClass.extend({
-        // Use a different metaclass
+        // Model uses a specialised metaclass
         Metaclass: ModelType,
         //
         init: function (data) {
@@ -308,6 +319,9 @@
             return this.get(this._meta.pkname);
         },
         //
+        // Custom Identifier
+        //
+        // Uniquely identify this model and it is **always available**.
         cid: function () {
             return this._meta.name + '-' + (this.pk() || this._id);
         },
@@ -326,18 +340,26 @@
             return this._fields;
         },
         //
-        // Data for back-end database
-        // Override if needs a different implementation
-        backend_data: function () {
-            var fields = {};
-            _(this._fields).forEach(function (value, name) {
+        // Return a shallow copy of the model's attributes for JSON
+        // stringification.
+        // This can be used for persistence, serialization, or for augmentation
+        // before being sent to the server.
+        // If ``changed`` is ``true`` it returnes only fields which
+        // have changed if the model is already persistent.
+        toJSON: function (changed) {
+            var data = {},
+                fields = this._fields,
+                all = fields;
+            if (changed && !this.isNew()) all = this._changed;
+            _(all).forEach(function (value, name) {
+                value = fields[name];
                 if (value instanceof Date) {
-                    fields[name] = 0.001*value.getTime();
+                    data[name] = 0.001*value.getTime();
                 } else {
-                    fields[name] = value;
+                    data[name] = value;
                 }
             });
-            return fields;
+            return data;
         },
         //
         // Set a field value
@@ -363,6 +385,10 @@
             return _.size(this._changed) > 0;
         },
         //
+        previous: function (field) {
+            return this._changed[field];
+        },
+        //
         // get a field value
         get: function (field) {
             return this._fields[field];
@@ -384,38 +410,17 @@
         //
         // Sync a single model
         sync: function (store, options) {
-            options = Object(options);
-            var pk = this.pk(),
-                data;
-            if (this.isDeleted() && pk) {
-                // DELETE
-                options.type = Crud.delete;
-                options.model = {'pk': pk};
-            } else if (pk && this.hasChanged()) {
-                // UPDATE
-                data = this.backend_data();
-                delete data[this._meta.pkname];
-                options.type = Crud.update;
-                options.model = {
-                    'data': data,
-                    'pk': pk
+            options = this._sync_data(options);
+            if (options) {
+                options.model = this._meta.name;
+                var callback = options.success,
+                    self = this;
+                options.success = function (data) {
+                    self._changed = {};
+                    if (callback) callback(data);
                 };
-            } else if (!pk) {
-                // CREATE
-                data = this.backend_data();
-                if (data) {
-                    options.type = Crud.create;
-                    options.model = {
-                        'data': data,
-                        cid: this.cid()
-                    };
-                } else {
-                    return;
-                }
-            } else {
-                return;
+                return store.execute(options);
             }
-            return store.execute(options);
         },
         //
         toString: function () {
@@ -439,7 +444,7 @@
         // Set fields data from a form
         set_form_fields: function (arr) {
             var fields = {},
-                model = this;
+                self = this;
             _(arr).forEach(function (f) {
                 var values = fields[f.name];
                 if (values === undefined) {
@@ -450,19 +455,59 @@
                     fields[f.name] = [values, f.value];
                 }
             });
-            // Now loop through fields in the meta class
-            _(this._meta.fields).forEach(function (field) {
-                var value = field.validate(model, fields[field.name]);
-                if (value !== undefined) {
-                    fields[field.name] = value;
-                } else {
-                    delete fields[field.name];
+            _(this._fields).forEach(function (value, name) {
+                if (fields[name] === undefined) {
+                    delete self._fields[name];
+                    self.trigger('change', name);
                 }
             });
-            //
-            this._fields = fields;
-            this.trigger('change', this);
+            this.update(fields);
         },
+        //
+        //  Private method which return serialised representation of model
+        //  data for synchronisation with backend store.
+        //  It returns an object containing:
+        //
+        //  * ``crud`` - the CRUD action to perform (``create``, ``update`` or ``delete``)
+        //  * ``item`` - object containg the following entries
+        //    * ``pk`` primary key (not available for ``create`` action)
+        //    * ``fields`` - object with model fields (not available for ``delete`` action)
+        //    * ``cid`` - custom identifier
+        _sync_data: function (options) {
+            options = Object(options);
+            var pkvalue = this.pk();
+            if (this.isDeleted() && pkvalue) {
+                // DELETE THE MODEL
+                options.crud = Crud.delete;
+                options.item = {
+                    pk: pkvalue,
+                    cid: this.cid()
+                };
+            } else if (pkvalue && this.hasChanged()) {
+                // UPDATE THE MODEL
+                options.crud = Crud.update;
+                options.item = {
+                    fields: this.toJSON(true),
+                    pk: pkvalue,
+                    cid: this.cid()
+                };
+            } else if (!pkvalue) {
+                // CREATE A NEW MODEL
+                data = this.toJSON();
+                if (data) {
+                    options.crud = Crud.create;
+                    options.item = {
+                        fields: data,
+                        cid: this.cid()
+                    };
+                } else {
+                    return;
+                }
+            } else {
+                return;
+            }
+            return options;
+        }
     }),
 
     //  Collection of Models
@@ -596,6 +641,7 @@
             self.store.execute(options);
         },
         //
+        //  Commit changes to backend store
         sync: function (options) {
             options = Object(options);
             var self = this,
@@ -605,23 +651,13 @@
                 group, item;
 
             this.forEach(function (model) {
-                var op;
-                if (model.isNew()) {
-                    op = Crud.create;
-                    item = model.backend_fields();
-                } else if(mode.isDeleted()) {
-                    op = Crud.delete;
-                    item = model.pk();
-                } else if (mode.hasChanged()) {
-                    op = Crud.update;
-                    item = model.backend_fields();
-                }
-                if (op) {
-                    group = groups[op];
+                var info = model._sync_data();
+                if (info) {
+                    group = groups[item.crud];
                     if (!group) {
-                        group = groups[op] = [];
+                        group = groups[item.crud] = [];
                     }
-                    group.push(item);
+                    group.push(info.item);
                 }
             });
             //

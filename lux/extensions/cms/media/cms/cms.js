@@ -1,7 +1,88 @@
-define(['lux-web'], function () {
+define(['lux', 'lux-web'], function (lux) {
     "use strict";
 
-    var logger = lux.getLogger('cms');
+    var
+    logger = lux.getLogger('cms'),
+    //
+    cms = lux.cms = {
+        name: 'page',
+        //
+        _content_types: {},
+        //
+        _wrapper_types: {},
+        //
+        // retrieve a content type by name
+        content_type: function (name) {
+            return this._content_types[name];
+        },
+        //
+        // retrieve a wrapper type by name
+        wrapper_type: function (name) {
+            return this._wrapper_types[name];
+        },
+        //
+        // Return an array of Content types sorted by name
+        content_types: function () {
+            return this._sorted(this._content_types);
+        },
+        //
+        // Return an array of Wrapper types sorted by name
+        wrapper_types: function () {
+            return this._sorted(this._wrapper_types);
+        },
+        //
+        // Create a new Content model and add it to the available content
+        // types.
+        create_content_type: function (name, attrs, BaseContent) {
+            var meta = attrs.meta;
+            if (!BaseContent) {
+                BaseContent = Content;
+            }
+            attrs.meta = attrs.meta || {};
+            attrs.meta.name = name.toLowerCase();
+            var ct = BaseContent.extend(attrs);
+            this._content_types[ct._meta.name] = ct;
+            return ct;
+        },
+        //
+        // Create a new Html Wrapper model and add it to the available wrappers
+        // types.
+        create_wrapper: function (name, attrs, BaseWrapper) {
+            if (!BaseWrapper) {
+                BaseWrapper = Wrapper;
+            }
+            if (!attrs.title) {
+                attrs.title = name;
+            }
+            attrs.name = name.toLowerCase();
+            var NewWrapper = BaseWrapper.extend(attrs),
+                wrapper = new NewWrapper();
+            this._wrapper_types[wrapper.name] = wrapper;
+            return wrapper;
+        },
+        //
+        set_transport: function (backend) {
+            this._backend = backend;
+            _(this._content_types).forEach(function (ct) {
+                ct._meta.set_transport(backend);
+            });
+        },
+        //
+        // Internal method used by `content_tyeps` and `wrapper_types`
+        _sorted: function (iterable) {
+            var sortable = [];
+            _(iterable).forEach(function (ct) {
+                if (ct._meta) {
+                    ct = ct._meta;
+                }
+                sortable.push({value: ct.name, text: ct.title});
+            });
+            sortable.sort(function (a, b) {
+                return a.text > b.text ? 1 : -1;
+            });
+            return sortable;
+        }
+    };
 
     //
     //  LUX CMS
@@ -31,7 +112,7 @@ define(['lux-web'], function () {
     // while the persistent one has also its own database representation.
     // To mark a model persistent, add the ``persistent: true`` attribute to
     // the ``meta`` object in the class definition.
-    var Content = lux.Model.extend({
+    var Content = cms.Content = lux.Model.extend({
         show_title: false,
         //
         meta: {
@@ -71,10 +152,10 @@ define(['lux-web'], function () {
         //
         // Sync only if the content is persistent in the backend,
         // otherwise no need to do anything
-        sync: function (options) {
+        sync: function (store, options) {
             this.set(content_type, this._meta.name);
             if (this._meta.persistent) {
-                return this._super(options);
+                return this._super(store, options);
             } else {
                 if (options && options.success) {
                     options.success.call(this._meta, this.fields());
@@ -102,7 +183,7 @@ define(['lux-web'], function () {
     // ----------------
 
     // Base class for html wrappers
-    var Wrapper = lux.Class.extend({
+    var Wrapper = cms.Wrapper = lux.Class.extend({
         render: function (view) {
             view.content.render(view.elem);
         }
@@ -113,83 +194,7 @@ define(['lux-web'], function () {
 
     // A container of ``Content`` models displaied on a grid.
     var Page = lux.Model.extend({
-        meta: {
-            name: 'page',
-            _content_types: {},
-            _wrapper_types: {},
-            //
-            // retrieve a content type by name
-            content_type: function (name) {
-                return this._content_types[name];
-            },
-            //
-            // retrieve a wrapper type by name
-            wrapper_type: function (name) {
-                return this._wrapper_types[name];
-            },
-            //
-            // Return an array of Content types sorted by name
-            content_types: function () {
-                return this._sorted(this._content_types);
-            },
-            //
-            // Return an array of Wrapper types sorted by name
-            wrapper_types: function () {
-                return this._sorted(this._wrapper_types);
-            },
-            //
-            // Create a new Content model and add it to the available content
-            // types.
-            create_content_type: function (name, attrs, BaseContent) {
-                var meta = attrs.meta;
-                if (!BaseContent) {
-                    BaseContent = Content;
-                }
-                attrs.meta = attrs.meta || {};
-                attrs.meta.name = name.toLowerCase();
-                var ct = BaseContent.extend(attrs);
-                this._content_types[ct._meta.name] = ct;
-                return ct;
-            },
-            //
-            // Create a new Html Wrapper model and add it to the available wrappers
-            // types.
-            create_wrapper: function (name, attrs, BaseWrapper) {
-                if (!BaseWrapper) {
-                    BaseWrapper = Wrapper;
-                }
-                if (!attrs.title) {
-                    attrs.title = name;
-                }
-                attrs.name = name.toLowerCase();
-                var NewWrapper = BaseWrapper.extend(attrs),
-                    wrapper = new NewWrapper();
-                this._wrapper_types[wrapper.name] = wrapper;
-                return wrapper;
-            },
-            //
-            set_transport: function (backend) {
-                this._backend = backend;
-                _(this._content_types).forEach(function (ct) {
-                    ct._meta.set_transport(backend);
-                });
-            },
-            //
-            // Internal method used by `content_tyeps` and `wrapper_types`
-            _sorted: function (iterable) {
-                var sortable = [];
-                _(iterable).forEach(function (ct) {
-                    if (ct._meta) {
-                        ct = ct._meta;
-                    }
-                    sortable.push({value: ct.name, text: ct.title});
-                });
-                sortable.sort(function (a, b) {
-                    return a.text > b.text ? 1 : -1;
-                });
-                return sortable;
-            }
-        },
+        meta: cms,
         //
         // Got new content update
         update_content: function (o) {
@@ -205,15 +210,6 @@ define(['lux-web'], function () {
             web.logger.error('Could not understand content');
         }
     });
-    //
-    // CMS handler
-    // -----------------------
-    //
-    // cms handler is given by the ``Page`` model prototype
-    var cms = lux.cms = Page._meta;
-    // Export ``Content`` base class
-    cms.Content = Content;
-    //
 
     //
     // Dialog for editing Content
@@ -453,6 +449,9 @@ define(['lux-web'], function () {
     };
 
     //
+    var
+    views = cms.views = {},
+    //
     //  ContentView
     //  ------------------------
 
@@ -460,7 +459,7 @@ define(['lux-web'], function () {
     //  The content view can be either in ``editing`` or ``read`` mode.
     //  When in editing mode the ``this.options.editing`` attribute is ``true``.
 
-    var BaseContentView = lux.View.extend({
+    BaseContentView = views.base = lux.View.extend({
         // The constructor takes an HTML or jQuery element, an ``options`` object
         // and a ``parent`` ContentView.
         init: function (elem, options, parent) {
@@ -562,7 +561,7 @@ define(['lux-web'], function () {
         // Create child element and append it to this view
         create_child: function (elem, content) {
             if (this.childType) {
-                var View = ContentViewMap[this.childType];
+                var View = views[this.childType];
                 if (!View) {
                     throw new lux.NotImplementedError(this + ' has no create_child method.');
                 }
@@ -631,7 +630,7 @@ define(['lux-web'], function () {
             var n = this.index();
             return n === -1 ? this.type : this.type + '-' + n;
         }
-    });
+    }),
 
     //  PageView
     //  --------------
@@ -642,7 +641,7 @@ define(['lux-web'], function () {
     //  ``.cms-grid`` selector.
     //  A page does not add any child during editing, it is just a container
     //  of grid elements.
-    var PageView = BaseContentView.extend({
+    PageView = views.page = BaseContentView.extend({
         type: 'page',
         //
         childType: 'grid',
@@ -784,7 +783,7 @@ define(['lux-web'], function () {
             dd.add('.' + opts.dropzone, '.' + opts.dropzone + ' > .header');
             return dd;
         }
-    });
+    }),
 
     //
     //  Grid View
@@ -792,7 +791,7 @@ define(['lux-web'], function () {
     //
     //  View manager for a Grid. A grid is a container of Rows.
     //  In editing mode it is used to add and remove Rows.
-    var GridView = BaseContentView.extend({
+    GridView = views.grid = BaseContentView.extend({
         type: 'grid',
         //
         childType: 'row',
@@ -833,7 +832,7 @@ define(['lux-web'], function () {
         toString: function () {
             return this.type + '-' + this.name;
         }
-    });
+    }),
 
     //  Row View
     //  -------------------
@@ -844,7 +843,7 @@ define(['lux-web'], function () {
     //
     //   * The number of children is fixed by the ``template`` attribute.
     //   * The ``template`` is retrieved from the ``data-template``.
-    var RowView = BaseContentView.extend({
+    RowView = views.row = BaseContentView.extend({
         type: 'row',
         //
         childType: 'column',
@@ -917,14 +916,14 @@ define(['lux-web'], function () {
             }
             return this.dialog;
         },
-    });
+    }),
 
     //  Column View
     //  -------------------
     //
     //  Handle the A Column within a Row.
     //  A column is a container of several Blocks vertically aligned.
-    var ColumnView = BaseContentView.extend({
+    ColumnView = views.column = BaseContentView.extend({
         type: 'column',
         //
         childType: 'block',
@@ -961,7 +960,7 @@ define(['lux-web'], function () {
     //  The Block View inherits from the ``RowView``.
     //  Blocks are displaied within a ColumnView in
     //  a vertical layout.
-    var BlockView = RowView.extend({
+    var BlockView = views.block = RowView.extend({
         type: 'block',
         //
         childType: 'content',
@@ -971,7 +970,7 @@ define(['lux-web'], function () {
         get_column: function () {
             return this.parent();
         }
-    });
+    }),
 
     //  Content View
     //  --------------------
@@ -981,7 +980,7 @@ define(['lux-web'], function () {
     //  Or accessed via children elements when in read mode. Childern elements
     //  have the ``field`` entry in their html data attribute. The field contains
     //  the name of the field for which the inner html of the element provides value.
-    var ContentView = BaseContentView.extend({
+    ContentView = views.content = BaseContentView.extend({
         type: 'content',
         //
         render: function () {
@@ -994,7 +993,6 @@ define(['lux-web'], function () {
                 this.wrapper = data.wrapper;
                 data = _.merge({}, data);
                 delete data.wrapper;
-                delete data.content_type;
                 delete data.cmsview;
                 this.elem.children().each(function () {
                     var elem = $(this),
@@ -1133,17 +1131,6 @@ define(['lux-web'], function () {
         }
     });
 
-    // Map a view type to a view class
-
-    var ContentViewMap = lux.cms.ContentViewMap = {
-            'page': PageView,
-            'grid': GridView,
-            'row': RowView,
-            'column': ColumnView,
-            'block': BlockView,
-            'content': ContentView
-        };
-
     //
     //  CMS Layouts
     //  -------------------------
@@ -1247,11 +1234,11 @@ define(['lux-web'], function () {
     };
 
 
-    lux.cms.create_wrapper('nothing', {
+    cms.create_wrapper('nothing', {
         title: 'No Wrapper'
     });
 
-    lux.cms.create_wrapper('well', {
+    cms.create_wrapper('well', {
         title: 'Well',
         render: function (view) {
             var elem = $("<div class='well'></div>").appendTo(view.elem);
@@ -1259,7 +1246,7 @@ define(['lux-web'], function () {
         }
     });
 
-    lux.cms.create_wrapper('welllg', {
+    cms.create_wrapper('welllg', {
         title: 'Well Large',
         render: function (view) {
             var elem = $("<div class='well well-lg'></div>").appendTo(view.elem);
@@ -1267,7 +1254,7 @@ define(['lux-web'], function () {
         }
     });
 
-    lux.cms.create_wrapper('wellsm', {
+    cms.create_wrapper('wellsm', {
         title: 'Well Small',
         render: function (view) {
             var elem = $("<div class='well well-sm'></div>").appendTo(view.elem);
@@ -1275,7 +1262,7 @@ define(['lux-web'], function () {
         }
     });
 
-    lux.cms.create_wrapper('panel', {
+    cms.create_wrapper('panel', {
         title: 'Panel',
         render: function (view) {
             var outer = $("<div class='panel panel-default'></div>").appendTo(view.elem),
@@ -1284,14 +1271,14 @@ define(['lux-web'], function () {
         }
     });
 
-    lux.cms.create_wrapper('panelheading', {
+    cms.create_wrapper('panelheading', {
         title: 'Panel with heading',
         render: function (view) {
             _panel(view);
         }
     });
 
-    lux.cms.create_wrapper('paneltitle', {
+    cms.create_wrapper('paneltitle', {
         title: 'Panel with title',
         render: function (view) {
             _panel(view, true);
@@ -1313,7 +1300,7 @@ define(['lux-web'], function () {
     //  The first a probably most important content type. It represents
     //  the response obtained by the backend server without the cms
     //  system in place.
-    lux.cms.create_content_type('contenturl', {
+    cms.create_content_type('contenturl', {
         meta: {
             title: 'Site Content',
         },
@@ -1358,7 +1345,7 @@ define(['lux-web'], function () {
     //  -------------------
     //
     //  Insert a non-breaking space.
-    lux.cms.create_content_type('blank', {
+    cms.create_content_type('blank', {
         model_title: 'The content served by the url',
         render: function (container) {
             container.html('&nbsp;');
@@ -1369,7 +1356,7 @@ define(['lux-web'], function () {
     //  -------------------
     //
     //  Insert a non-breaking space.
-    lux.cms.create_content_type('markdown', {
+    cms.create_content_type('markdown', {
         //
         meta: {
             title: 'Text using markdown',
@@ -1415,7 +1402,7 @@ define(['lux-web'], function () {
     //
     //  Versions
     //  -------------------
-    lux.cms.create_content_type('versions', {
+    cms.create_content_type('versions', {
         meta: {
             title: 'Versions of libraries'
         },
@@ -1795,5 +1782,6 @@ define(['lux-web'], function () {
         }
     });
 
-//
+	//
+	return cms;
 });
