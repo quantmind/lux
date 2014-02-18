@@ -53,10 +53,10 @@
             }
         },
         //
-        // Create a jQuery Form element for customising the content.
+        // Create a jQuery Form element and passit to the ``callback``.
         // Each subclass of Content can implement this method which by default
-        // returns an empty form with the submit button.
-        get_form: function () {},
+        // does nothing.
+        get_form: function (callback) {},
         //
         // Render this Content into a `container`. Must be implemented
         // by subclasses

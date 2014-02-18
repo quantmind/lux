@@ -15,7 +15,6 @@ from pulsar.apps import wsgi
 from pulsar.apps.wsgi import Html
 
 
-
 class Scripts(wsgi.Scripts):
 
     def __init__(self, *args, **kwargs):
@@ -39,16 +38,8 @@ class Scripts(wsgi.Scripts):
                 required.append(script)
 
     def require_script(self):
-        libs = {}
-        js = '.js'
-        for key, path in self.known_libraries.items():
-            if path[:4] != 'http' and path[0] != '/':
-                path = self.media_path + path;
-            if path[len(path)-3:] == js:
-                if self.minified:
-                    path = self._minify(path, js)
-                path = path[:len(path)-3]
-            libs[key] = path;
+        libs = dict(((key, self.absolute_path(key, False))
+                     for key in self.known_libraries))
         return {'paths': libs,
                 'deps': self.required,
                 'shim': self.dependencies,

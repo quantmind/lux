@@ -139,10 +139,10 @@ define(['lux', 'lux-web'], function (lux) {
             }
         },
         //
-        // Create a jQuery Form element for customising the content.
+        // Create a jQuery Form element and passit to the ``callback``.
         // Each subclass of Content can implement this method which by default
-        // returns an empty form with the submit button.
-        get_form: function () {},
+        // does nothing.
+        get_form: function (callback) {},
         //
         // Render this Content into a `container`. Must be implemented
         // by subclasses
@@ -415,11 +415,10 @@ define(['lux', 'lux-web'], function (lux) {
                     fieldset_dbfields.detach();
                 }
                 // Get the form for content editing
-                var cform = block.content.get_form();
                 content_data.html('');
-                if (cform) {
-                    content_data.append(cform._element.children('fieldset'));
-                }
+                block.content.get_form(function (cform) {
+                    content_data.append(cform._element.children());
+                });
             } else if (name) {
                 web.logger.error('Unknown content type ' + name);
             } else {
@@ -1343,14 +1342,14 @@ define(['lux', 'lux-web'], function (lux) {
             }
         },
         //
-        get_form: function () {
+        get_form: function (callback) {
             var form = lux.web.form(),
                 select = form.add_input('select', {name: 'content_url'});
             $(document.createElement('option')).val('this').html('this').appendTo(select);
             _(lux.web.options.content_urls).forEach(function (value) {
                 $(document.createElement('option')).val(value[1]).html(value[0]).appendTo(select);
             });
-            return form;
+            callback(form);
         }
     });
     //
@@ -1404,12 +1403,16 @@ define(['lux', 'lux-web'], function (lux) {
             });
         },
         //
-        get_form: function () {
+        get_form: function (callback) {
             var f = this._meta.fields,
                 form = lux.web.form();
-            f.raw.add_to_form(form, this);
-            f.javascript.add_to_form(form, this);
-            return form;
+            var raw = f.raw.add_to_form(form, this);
+            var js = f.javascript.add_to_form(form, this);
+            require(['codemirror'], function () {
+                CodeMirror.fromTextArea(raw[0]);
+                CodeMirror.fromTextArea(js[0]);
+                callback(form);
+            });
         }
     });
     //
@@ -1482,11 +1485,11 @@ define(['lux', 'lux-web'], function (lux) {
             });
         },
         //
-        get_form: function () {
+        get_form: function (callback) {
             // The select model is not yet available, create it.
             var api = this._api();
             if (api.groups) {
-                return this._get_form(api);
+                callback(this._get_form(api));
             }
         },
         //

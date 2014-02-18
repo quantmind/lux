@@ -43,14 +43,14 @@
             }
         },
         //
-        get_form: function () {
+        get_form: function (callback) {
             var form = lux.web.form(),
                 select = form.add_input('select', {name: 'content_url'});
             $(document.createElement('option')).val('this').html('this').appendTo(select);
             _(lux.web.options.content_urls).forEach(function (value) {
                 $(document.createElement('option')).val(value[1]).html(value[0]).appendTo(select);
             });
-            return form;
+            callback(form);
         }
     });
     //
@@ -104,12 +104,16 @@
             });
         },
         //
-        get_form: function () {
+        get_form: function (callback) {
             var f = this._meta.fields,
                 form = lux.web.form();
-            f.raw.add_to_form(form, this);
-            f.javascript.add_to_form(form, this);
-            return form;
+            var raw = f.raw.add_to_form(form, this);
+            var js = f.javascript.add_to_form(form, this);
+            require(['codemirror'], function () {
+                CodeMirror.fromTextArea(raw[0]);
+                CodeMirror.fromTextArea(js[0]);
+                callback(form);
+            });
         }
     });
     //
@@ -182,11 +186,11 @@
             });
         },
         //
-        get_form: function () {
+        get_form: function (callback) {
             // The select model is not yet available, create it.
             var api = this._api();
             if (api.groups) {
-                return this._get_form(api);
+                callback(this._get_form(api));
             }
         },
         //

@@ -197,11 +197,10 @@
                     fieldset_dbfields.detach();
                 }
                 // Get the form for content editing
-                var cform = block.content.get_form();
                 content_data.html('');
-                if (cform) {
-                    content_data.append(cform._element.children('fieldset'));
-                }
+                block.content.get_form(function (cform) {
+                    content_data.append(cform._element.children());
+                });
             } else if (name) {
                 web.logger.error('Unknown content type ' + name);
             } else {
