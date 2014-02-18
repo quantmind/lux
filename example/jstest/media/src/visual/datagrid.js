@@ -3,7 +3,7 @@
     //  -----------------------------
     //
     // Datagrid visual tests
-    lux.web.visual_test('datagrid', function () {
+    web.visual_test('datagrid', function () {
         var container = this,
             web = lux.web,
             toolbar = $(document.createElement('div')).addClass('btn-toolbar').appendTo(container),
@@ -50,14 +50,14 @@
             },
             options = $(document.createElement('div')).addClass('btn-group'),
             foot = web.create_button({text:'foot'}).data('toggle', 'button').appendTo(options);
-        
+
         foot.click(function (e) {
             e.preventDefault();
             container.find('.datagrid').each(function () {
                 $(this).datagrid('instance').toggle_tfoot();
             });
         });
-            
+
         // Create a plain html table
         var create_html_table = function (headers, data) {
             var table = $(document.createElement('table')),
@@ -79,7 +79,7 @@
             }
             return table;
         };
-        
+
         var from_html = function () {
             var html = create_html_table(['first name', 'surname', 'age'],
                                         [['luca', 'sbardella', 41],
@@ -94,7 +94,7 @@
                 responsive: true
             });
         };
-        
+
         require(['datagrid'], function () {
             from_html();
         });

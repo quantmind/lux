@@ -7,22 +7,11 @@ from .base import *
 requires = ['inputs']
 
 def add_css(all):
-    select = lux.javascript_libraries.get('select')
-    url = None
-    if select:
-        bits = select.split('/')
-        if bits[-1] == 'select2.js':
-            bits[-1] = 'select2.css'
-            url = '/'.join(bits)
-            if not url.startswith('http'):
-                url = 'http:%s' % url
-
     cssv = all.variables
     css = all.css
 
-    if url:
-        css('body',
-            CssInclude(url, location='ui/'))
+    css('body',
+        CssInclude(all.get_media_url('select'), location='ui/'))
 
     def select_height():
         p = as_value(cssv.input.padding)

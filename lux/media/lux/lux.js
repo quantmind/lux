@@ -3,14 +3,14 @@ define(['lodash', 'jquery'], function (_, $) {
 
     var root = window,
         lux = {
+            data_api: true,
+            // Showdown extensions
+            showdown: {}
             //version: "<%= pkg.version %>"
         },
         slice = Array.prototype.slice;
     //
     root.lux = lux;
-    //
-    // Showdown extensions
-    lux.showdown = {};
     //
     // Create a random s4 string
     lux.s4 = function () {
@@ -778,8 +778,10 @@ define(['lodash', 'jquery'], function (_, $) {
     //
     delegateEventSplitter = /^(\S+)\s*(.*)$/,
     //
-    viewOptions = ['model', 'collection', 'elem', 'id', 'attributes', 'className', 'tagName', 'events'],
+    viewOptions = ['model', 'collection', 'elem', 'id', 'attributes',
+                   'className', 'tagName', 'name', 'events'],
     //
+    // A view class
     View = lux.View = Class.extend({
         tagName: 'div',
 
@@ -788,12 +790,18 @@ define(['lodash', 'jquery'], function (_, $) {
             options || (options = {});
             _.extend(this, _.pick(options, viewOptions));
             if (!this.elem) {
-                this.setElement($(document.CreateElement(this.tagName)), false);
+                this.setElement($(document.createElement(this.tagName)), false);
             } else {
                 this.elem = $(_.result(this, 'elem'));
                 this.setElement(this.elem, false);
             }
+            if (this.name) this.elem.data(this.name + 'view', this);
+            this.initialise(options);
         },
+
+        // Callat the end of the ``init`` method.
+        // A chance to perform view specific initialisation
+        initialise: function (options) {},
 
         remove: function() {
             this.elem.remove();
@@ -836,8 +844,66 @@ define(['lodash', 'jquery'], function (_, $) {
             this.elem = $(elem);
             if (delegate !== false) this.delegateEvents();
             return this;
+        },
+        //
+        jQuery: function () {
+            var self = this,
+                key = this.name + 'view';
+            self.elem.data(key, self);
+            //
+            $.fn[self.name] = function (options) {
+                var view = this.data(key);
+                if (!view) {
+                    ViewClass = self.prototype.constructor;
+                    options.elem = this;
+                    view = new ViewClass(options);
+                }
+                return view.elem;
+            };
         }
     });
+
+    //
+    // Create a new view and build a jQuery plugin
+    lux.createView = function (name, obj, BaseView) {
+        var jQuery = obj.jQuery;
+        delete obj.jQuery;
+        //
+        obj.name = name;
+        BaseView = BaseView || View;
+        //
+        // Build the new View
+        var NewView = BaseView.extend(obj),
+            proto = NewView.prototype,
+            key = name + 'view',
+            create = function (elem, options, render) {
+                var view = elem.data(key);
+                if (!view) {
+                    if (lux.data_api)
+                        options = _.extend({}, elem.data(), options);
+                    options.elem = elem;
+                    view = new NewView(options);
+                    if (render) view.render();
+                }
+                return view;
+            };
+
+        if (jQuery) {
+            $.fn[name] = function (options) {
+                return create(this, options).elem;
+            };
+        }
+
+        if (proto.selector) {
+            $(document).ready(function () {
+                var opts = {};
+                $(proto.selector, this).each(function () {
+                    create($(this), opts, true);
+                });
+            });
+        }
+        return NewView;
+    };
     //
     //  Lux Logger
     //  --------------------

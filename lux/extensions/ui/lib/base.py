@@ -42,6 +42,7 @@ import os
 import json
 import time
 import asyncio
+from importlib import import_module
 
 from collections import Mapping
 from datetime import datetime
@@ -50,8 +51,7 @@ from pulsar.utils.structures import OrderedDict, mapping_iterator
 from pulsar.utils.pep import itervalues, iteritems, ispy3k
 from pulsar.utils.html import UnicodeMixin
 from pulsar.apps.http import HttpClient
-
-from lux.utils.test import Stream
+from pulsar.apps import wsgi
 
 
 __all__ = ['Css', 'Variable', 'Symbol', 'Mixin',
@@ -438,30 +438,35 @@ contains them.'''
 class Css(CssBase):
     '''A :class:`css` element in python.
 
-.. attribute:: attributes
+    .. attribute:: attributes
 
-    List of css attributes for the css element.
+        List of css attributes for the css element.
 
-.. attribute:: children
+    .. attribute:: children
 
-    An ordered dictionary of children for this :class:`css` element.
-    Children are either other :class:`css` elements or :class:`Mixin`.
+        An ordered dictionary of children for this :class:`css` element.
+        Children are either other :class:`css` elements or :class:`Mixin`.
 
-.. attribute:: parent
+    .. attribute:: parent
 
-    The :class:`css` ancestor for this :class:`css` element.
+        The :class:`css` ancestor for this :class:`css` element.
 
-'''
-    # pointer to the global css body. The root of all css elements
+    '''
     rendered = False
+    _app = None
+    _css_libs = None
 
-    def __init__(self, tag=None, vars=None, config=None):
+    def __init__(self, tag=None, vars=None, app=None, known_libraries=None):
         self._tag = tag
         self._http = None
         self._parent = None
         self._children = OrderedDict()
         self._attributes = []
-        self._config = config
+        if app:
+            assert tag is None, 'app should be passed to the root element only'
+            self._app = app
+            self._css_libs = wsgi.Css(self.config('MEDIA_URL'),
+                                      known_libraries=known_libraries)
         if self._tag is None:
             self.variables = Variables() if vars is None else vars
             self.classes = Variables()
@@ -472,8 +477,10 @@ class Css(CssBase):
 
     @property
     def tag(self):
-        '''The tag for this :class:`Css` element. Always defined unless this
-is a root instance.'''
+        '''The tag for this :class:`Css` element.
+
+        Always defined unless this is the root instance.
+        '''
         return self._full_tag(self._tag)
 
     @property
@@ -503,6 +510,10 @@ is a root instance.'''
             return self
 
     @property
+    def app(self):
+        return self.root._app
+
+    @property
     def http(self):
         if self._parent:
             return self._parent.http
@@ -524,8 +535,9 @@ is a root instance.'''
         raise NotImplementedError('cannot get item')
 
     def config(self, name):
-        if self._config:
-            return self._config.get(name)
+        app = self.app
+        if app:
+            return app.config.get(name)
 
     def css(self, tag, *components, **attributes):
         '''A child :class:`Css` elements.'''
@@ -545,13 +557,26 @@ is a root instance.'''
                     css.add(c)
         return elems[0] if len(elems) == 1 else elems
 
+    def get_media_url(self, path):
+        '''Build the url for a media path.
+        '''
+        libs = self.root._css_libs
+        if libs:
+            path = libs.absolute_path(path)
+            if not path.startswith('http'):
+                path = 'http:%s' % path
+            return path
+        else:
+            raise RuntimeError('No css libs configured')
+
     def update(self, iterable):
         for name, value in mapping_iterator(iterable):
             self[name] = value
 
     def add(self, c):
         '''Add a child :class:`css` or a class:`Mixin`.'''
-        c.set_parent(self)
+        if isinstance(c, CssBase):
+            c.set_parent(self)
 
     def add_child(self, child):
         clist = self._children.get(child.code)
@@ -672,20 +697,26 @@ Created by lux {0} in {1} seconds.
 '''.format(created.isoformat(' '), nice_dt)
         return intro + body
 
-    def dump(self, theme=None, dump_variables=False, minify=False):
+    def dump(self, theme=None, dump_variables=False):
         root = self.root
-        target = Stream()
+        app = root.app
+        if app:
+            module = None
+            # Import applications styles if available
+            for extension in app.config['EXTENSIONS']:
+                try:
+                    module = import_module(extension)
+                    if hasattr(module, 'add_css'):
+                        module.add_css(root)
+                        app.write('Imported style from "%s".' % extension)
+                except ImportError as e:
+                    app.write_err('Cannot import style %s: "%s".' %
+                                   (extension, e))
         if dump_variables:
             data = root.variables.tojson()
-            target.write(json.dumps(data, indent=4))
-            data = target.getvalue()
+            return json.dumps(data, indent=4)
         else:
-            data = root.render_all()
-            target.write(data)
-            if minify:
-                target = csscompress(target)
-            data = target.getvalue()
-        return data
+            return root.render_all()
 
     ########################################################################
     ##    PRIVATE METHODS
@@ -813,10 +844,3 @@ of named variables.'''
 
     def __getitem__(self, name):
         return self.get(name)
-
-
-############################################################################
-##    API FUNCTIONS
-############################################################################
-def csscompress(target):  # pragma: no cover
-    os.system('yuicompressor.jar --type css -o {0} {0}'.format(target))

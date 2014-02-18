@@ -3,14 +3,14 @@ define(['lodash', 'jquery'], function (_, $) {
 
     var root = window,
         lux = {
+            data_api: true,
+            // Showdown extensions
+            showdown: {}
             //version: "<%= pkg.version %>"
         },
         slice = Array.prototype.slice;
     //
     root.lux = lux;
-    //
-    // Showdown extensions
-    lux.showdown = {};
     //
     // Create a random s4 string
     lux.s4 = function () {

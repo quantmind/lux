@@ -326,7 +326,7 @@ class EditPage(PageMixin, api.Crud):
                 html_page.data({'content_url': '%s%s' % (url,
                                                          CONTENT_API_URL)})
             # Add codemirror css
-            doc.http.links.append('codemirror')
+            doc.head.links.append('codemirror')
             response = yield doc.http_response(request)
             coroutine_return(response)
         else:

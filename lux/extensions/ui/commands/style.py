@@ -52,32 +52,23 @@ class Command(lux.Command):
         data = self.render(self.theme, options.variables)
         if dump:
             if target:
+                targets = ['%s.css' % target]
                 if options.minify:
-                    target = '%s.min' % target
-                    data = self.minify(options, data)
-                target = '%s.css' % target
-                with open(target, 'w') as f:
-                    f.write(data)
-                b = convert_bytes(len(data))
-                self.write('Created %s file. Size %s.' % (target, b))
+                    targets.append('%s.min.css' % target)
+                for minify, target in enumerate(targets):
+                    if minify:
+                        data = self.minify(options, data)
+                    with open(target, 'w') as f:
+                        f.write(data)
+                    b = convert_bytes(len(data))
+                    self.write('Created %s file. Size %s.' % (target, b))
             else:
                 self.write(data)
         return data
 
     def render(self, theme, dump_variables):
         self.write('Building theme "%s".' % theme)
-        css = Css(config=self.app.config)
-        module = None
-        # Import applications styles if available
-        for extension in self.app.config['EXTENSIONS']:
-            try:
-                module = import_module(extension)
-                if hasattr(module, 'add_css'):
-                    module.add_css(css)
-                    self.write('Imported style from "%s".' % extension)
-            except ImportError as e:
-                self.write_err('Cannot import style %s: "%s".' %
-                               (extension, e))
+        css = Css(app=self.app, known_libraries=lux.media_libraries)
         return css.dump(theme, dump_variables=dump_variables)
 
     def minify(self, options, data):

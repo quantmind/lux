@@ -11,7 +11,8 @@
             // The grid containing the form
             grid = $(document.createElement('div')).addClass('columns'),
             content_fields = $(document.createElement('div')).addClass('content-fields column pull-left span8'),
-            content_data = $(document.createElement('div')).addClass('content-data column'),
+            content_data = $(document.createElement('div')).addClass(
+                'content-data column').css('padding-left', content_fields.width()),
             //
             fieldset_selection = $(document.createElement('fieldset')).addClass(
                 'content-selection').appendTo(content_fields),

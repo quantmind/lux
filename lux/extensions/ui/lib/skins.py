@@ -117,22 +117,40 @@ class Skin(Mixin):
     * background
     * color
     * border
-    * text_decoration
 
     :parameter child: an optional css selector for the child element to which
         this :class:`.Skin` will be applied. If not supplied, the mixin
         is applied to the element which has it.
     :parameter clickable: if ``True`` the element is clickable and css
-        will be added to handle ``hover`` and ``active`` states. If set to one
-        of ``default``, ``hover`` or ``active``, all the states will be set
-        with values from the ``clickable`` state.
-        Otherwise, it only handles the ``default`` state.
-    :parameter only: specify a tuple of skin names to apply (can also be
-        a string). If not provided all skins created with :ref:`createskin`
+        will be added to handle ``hover`` and ``active`` states.
+        There are several whay for customising behaviour:
+
+        * if not provided it only handles the ``default`` state or the state
+          set by the ``default`` keyword. For example::
+
+              Skin()
+
+          handle the ``default`` state with values from the ``default`` state,
+          while::
+
+              Skin(default='active')
+
+          handle the ``default`` state with values from the ``active`` state.
+        * if ``clickable`` is set to one  of ``default``, ``hover`` or
+          ``active``, all the states will be set with values from the
+          ``clickable`` state.
+        * If ``clickable`` is switch on, single states can be switched off
+          by specifying the state with ``False`` value. For exmple::
+
+              Skin(ckickable=True, active=False)
+
+          Only affect the ``default`` and ``hover`` states
+    :parameter only: specify a tuple of ``skin names`` to apply (can also be
+        a string). If not provided all skins created with :func:`createskin`
         are applied.
         Skins with same class name are not applied.
-    :parameter exclude: specify a tuple of skins to exclude (can also be
-        a string). If not provided, none of the skins are excluded.
+    :parameter exclude: specify a tuple of ``skin names`` to exclude (can also
+        be a string). If not provided, none of the skins are excluded.
     :parameter gradient: if set to ``False`` background are monocromatic
         only (no gradients). If a callable, it is called with the
         background gradient and should return another background gradient
@@ -153,15 +171,16 @@ class Skin(Mixin):
     '''
     def __init__(self, child=None, clickable=False, only=None, exclude=None,
                  gradient=None, cursor=None, applyto=None, border_width=None,
-                 border_style=None, default=None, active=None, hover=None,
-                 **params):
+                 border_style=None, **params):
         self.child = child or ''
         self.clickable = clickable
-        self.states = {'default': default,
-                       'hover': hover,
-                       'active': active}
+        self.states = {}
+        for state in STATES:
+            value = params.pop(state, None)
+            if value is not False: # if False, the state is switched off
+                self.states[state] = value
         self.cursor = cursor
-        self.applyto = applyto
+        self.applyto = as_tuple(applyto)
         self.border_width = border_width
         self.border_style = border_style
         self.only = as_tuple(only)
@@ -192,29 +211,33 @@ class Skin(Mixin):
                 if self.cursor:
                     params['cursor'] = self.cursor
                 if self.clickable is True:
-                    for dha in skin:
-                        if isinstance(dha, Variables) and dha.name in STATES:
-                            bcd = self._bcd_params(dha.name, dha.params())
-                            params[dha.name] = self.bcd(bcd)
+                    # Loop through skin variables and pick states
+                    for state in skin:
+                        params = self.state(skin, state)
+                        if params is not None:
+                            params[state.name] = self.bcd(params)
                 elif self.clickable in STATES:
-                    bcd = skin[self.clickable].params()
-                    bcd = self._bcd_params(self.clickable, bcd)
-                    override = self.bcd(bcd)
-                    for dha in skin:
-                        if isinstance(dha, Variables) and dha.name in STATES:
-                            params[dha.name] = override
+                    # the parameters for the clickable state
+                    params = self.state(skin, skin[self.clickable], True)
+                    override = self.bcd(params)
+                    for state in skin:
+                        params = self.state(skin, state)
+                        if params is not None:
+                            params[state.name] = override
                 if params:
                     mixin = Clickable(**params)
                 else:
                     mixin = Mixin()
             else:
-                mixin = self.bcd(skin.default.params())
+                params = self.state(skin, skin['default'], True)
+                mixin = self.bcd(params)
             css = elem.css
             if not class_name:
                 if self.child:
                     css(self.child, mixin, **self.params)
                 else:
-                    mixin(elem)
+                    if mixin is not None:
+                        mixin(elem)
                     elem.update(self.params)
             else:
                 if self.child:
@@ -226,11 +249,20 @@ class Skin(Mixin):
                     except:
                         raise
 
-    def _bcd_params(self, name, params):
-        p = self.states.get(name)
-        if p:
-            params.update(p)
-        return params
+    def state(self, skin, state, force=False):
+        if isinstance(state, Variables):
+            if state.name not in self.states:
+                return state.params() if force else None
+            val = self.states[state.name]
+            if isinstance(val, str):
+                state = skin[val]
+                if isinstance(state, Variables):
+                    return state.params()
+            else:
+                params = state.params()
+                if val is not None:
+                    params.update(val)
+                return params
 
     def bcd(self, params):
         if self.applyto:
@@ -240,6 +272,7 @@ class Skin(Mixin):
                 if v is not None:
                     nparams[name] = v
             params = nparams
+        #
         # Remove gradient
         if self.gradient is not None:
             bg = as_value(params.get('background'))
@@ -251,9 +284,9 @@ class Skin(Mixin):
                     bg = bg.end
                 params['background'] = as_value(bg)
         #
-        # get border infomation
-        if self.border_width or self.border_style:
-            bd = params.get('border')
+        # get border information
+        bd = params.get('border')
+        if bd and self.border_width or self.border_style:
             if bd:
                 bd = as_params(bd, 'style')
                 # copy parameters

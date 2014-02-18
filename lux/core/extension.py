@@ -5,6 +5,7 @@ from copy import copy
 from inspect import getfile
 
 from pulsar.utils.path import Path
+from pulsar.utils.pep import native_str
 
 from lux import __version__
 
@@ -185,6 +186,22 @@ class Extension(ExtensionType('ExtBase', (object,), {'abstract': True})):
         By default it returns an empty tuple.
         '''
         return ()
+
+    def write(self, msg='', stream=None):
+        '''Write ``msg`` into ``stream`` or ``sys.stdout``
+        '''
+        h = stream or sys.stdout
+        if msg:
+            h.write(native_str(msg))
+        h.write('\n')
+
+    def write_err(self, msg='', stream=None):
+        '''Write ``msg`` into ``stream`` or ``sys.stderr``
+        '''
+        h = stream or sys.stderr
+        if msg:
+            h.write(native_str(msg))
+        h.write('\n')
 
     def check(self, request, data):
         pass

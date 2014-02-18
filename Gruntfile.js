@@ -10,6 +10,7 @@ module.exports = function(grunt) {
             lux: grunt.file.readJSON('js/lux/lib.json'),
             web: grunt.file.readJSON('js/web/lib.json'),
             cms: grunt.file.readJSON('js/cms/lib.json'),
+            lorem: grunt.file.readJSON('js/lorem/lib.json'),
             datagrid: grunt.file.readJSON('js/datagrid/lib.json')
         };
     //

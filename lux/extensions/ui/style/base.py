@@ -1,6 +1,5 @@
 import os
 
-import lux
 from lux.extensions.ui.lib import *
 
 UI_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -27,9 +26,10 @@ def add_css(all):
     classes.dl_horizontal = 'dl-horizontal'
     #
     # Define the skins
-    base = createskin(cssv, 'base', default={'background': '#fff',
-                                             'color': '#333',
-                                             'border': {'color': '#e5e5e5'}},
+    base = createskin(cssv, 'base',
+                      default={'background': '#fff',
+                               'color': '#333',
+                               'border': {'color': '#e5e5e5'}},
                       class_name=None)
     default = darkenskin(cssv, 'default', base.default, class_name=None)
     primary = darkenskin(cssv, 'primary', base.default,
@@ -91,7 +91,7 @@ def add_css(all):
 
     css('body',
         gradient(base.default.background),
-        CssInclude('http:%s' % lux.javascript_libraries.get('normalize')),
+        CssInclude(all.get_media_url('normalize')),
         color=base.default.color,
         font_family=cssv.body.font_family,
         font_size=cssv.body.font_size,
@@ -124,6 +124,12 @@ def add_css(all):
     size = lambda n: 30*n
     for n in range(1, 21):
         css('.span%s' % n, width=px(size(n)))
+
+    # Border box by default
+    css('*',
+        BoxSizing('border-box'),
+        css(':before,:after',
+            BoxSizing('border-box')))
 
     ##################################################### Anchor
     #css('a',

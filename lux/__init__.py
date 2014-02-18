@@ -3,7 +3,7 @@ import os
 import json
 PACKAGE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-__version__ = '0.1b2'
+__version__ = '0.1a2'
 
 
 def load_pkg(name, dir=None):
@@ -13,7 +13,7 @@ def load_pkg(name, dir=None):
         data = f.read()
     return json.loads(data)
 
-javascript_libraries = load_pkg('libs.json')
+media_libraries = load_pkg('libs.json')
 javascript_dependencies = load_pkg('deps.json')
 
 from .media import *

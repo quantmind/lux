@@ -10,7 +10,7 @@
     "json": "//cdnjs.cloudflare.com/ajax/libs/json3/3.2.4/json3",
     "kineticjs": "//cdnjs.cloudflare.com/ajax/libs/kineticjs/4.6.0/kinetic",
     "lodash": "//cdnjs.cloudflare.com/ajax/libs/lodash.js/2.4.1/lodash",
-    "lorem": "lux/lux-lorem",
+    "lorem": "lux/lorem",
     "lux": "lux/lux",
     "lux-web": "lux/lux-web",
     "cms": "cms/cms",

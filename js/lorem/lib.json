@@ -1,0 +1,6 @@
+{
+    "src": ["js/lorem/start.js",
+            "js/lorem/core.js",
+            "js/lorem/close.js"],
+    "dest": "lux/media/lux/lorem.js"
+}

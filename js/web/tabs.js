@@ -1,65 +1,73 @@
-// Tabs
-//
-//
-web.extension('tabs', {
-    selector: '.tabs',
-    defaultElement: 'div',
-    options: {
-        layout: 'horizontal',
-        tabs: null
-    },
- // Create the tabs
-    decorate: function () {
-        var tabs = this,
-            elem = tabs.element(),
-            options = tabs.options,
-            ul = elem.children('ul'),
-            target = elem.children('div');
+    //  Tabs
+    //  ----------------
+    //
+    //  Uses bootstrap ``tab`` component
+    var TabView = lux.TabView = lux.View.extend({
+        data_key: 'tabview',
         //
-        if (!ul.length && !target.length && options.tabs) {
-            ul = $(document.createElement('ul')).appendTo(elem);
-            target = $(document.createElement('div')).appendTo(elem);
-        }
-        // Process ul
-        ul.find('a').each(function () {
-            
-        });
-        //
-        $.extend(tabs, {
-            current: null,
-            'target': function () {
-                return target;
-            },
-            'ul': function () {
-                return ul;
-            },
-            add_tab: function (tab) {
-                self.add_tab(tabs, tab);
+        initialise: function (options) {
+            var self = this;
+            //
+            this.tabs = this.elem.children('ul');
+            this.content = this.elem.children('div');
+            if (!this.tabs.length) {
+                this.tabs = $(document.createElement('ul'));
             }
-        });
-        //
-        if (options.tabs) {
-            $.each(options.tabs, function () {
-                self.add_tab(tabs, this);
+            if (!this.content.length) {
+                this.content = $(document.createElement('div'));
+            }
+            if (options.pills) {
+                this.tabs.addClass('nav-pills');
+            } else {
+                this.tabs.addClass('nav-tabs');
+            }
+            this.elem.prepend(this.tabs.addClass('nav').addClass(options.skin));
+            this.elem.append(this.content.addClass('tab-content'));
+            //
+            _(options.tabs).each(function (tab) {
+                self.add_tab(tab);
             });
-        }
-        self.select(tabs, 0);
-    },
-    //
-    add_tab: function (tabs, tab) {
-        var ul = tabs.ul(),
-            target = tabs.target(),
-            a = $(document.createElement('a')).attr('href', tab.link).html(tab.text);
-        ul.append($(document.createElement('li')).append(a));
-        a.click(function (), {
-            if (tabs.current) {
-                tabs.current.hide();
+
+            require(['bootstrap'], function () {
+                self.tabs.on('click', 'a', function (e) {
+                    e.preventDefault();
+                    $(this).tab('show');
+                });
+                self.activate_tab();
+            });
+        },
+
+        add_tab: function (tab) {
+            if (_.isString(tab)) {
+                tab = {name: tab};
             }
-            
-        });
-    },
-    //
-    select: fynction (tabs, index) {
-        
-    }
-});
+            if (!tab.link) {
+                tab.link = '#' + this.cid + '-' + tab.name;
+            }
+            var
+            a = $(document.createElement('a')).attr({
+                'href': tab.link,
+                'id': this.cid + '-name-' + tab.name
+            }).html(tab.name),
+            pane = $(document.createElement('div')).addClass('tab-pane').html(tab.content);
+            if (tab.link.substr(0, 1) === '#')
+                pane.attr('id', tab.link.substr(1));
+            this.tabs.append($(document.createElement('li')).append(a));
+            this.content.append(pane);
+        },
+
+        activate_tab: function (tab) {
+            var tabs = this.tabs.find('a');
+            tab = tab ? tabs.find('#' + this.cid + '-name-' + tab) : tabs.first();
+            tab.trigger('click');
+        }
+    });
+
+    $.fn.tabs = function (options) {
+        var view = this.data('tabview');
+        if (!view) {
+            options.elem = this;
+            view = new TabView(options);
+        }
+        return view.elem;
+    };

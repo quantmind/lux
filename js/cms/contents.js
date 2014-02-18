@@ -104,16 +104,35 @@
             });
         },
         //
-        get_form: function (callback) {
+        get_form_new: function (callback) {
             var f = this._meta.fields,
-                form = lux.web.form();
-            var raw = f.raw.add_to_form(form, this);
-            var js = f.javascript.add_to_form(form, this);
+                form = lux.web.form(),
+                raw = f.raw.add_to_form(form, this),
+                js = f.javascript.add_to_form(form, this),
+                tabs = new lux.TabView({tabs: [
+                    {
+                        name: 'markdown',
+                        content: raw
+                    },
+                    {
+                        name: 'javascript',
+                        content: js
+                    }]
+                });
+            form._element.empty().append(tabs.elem);
             require(['codemirror'], function () {
                 CodeMirror.fromTextArea(raw[0]);
                 CodeMirror.fromTextArea(js[0]);
                 callback(form);
             });
+        },
+        //
+        get_form: function (callback) {
+            var f = this._meta.fields,
+                form = lux.web.form(),
+                raw = f.raw.add_to_form(form, this),
+                js = f.javascript.add_to_form(form, this);
+            callback(form);
         }
     });
     //

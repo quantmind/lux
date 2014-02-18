@@ -4,9 +4,13 @@ try:
     import lux
 except ImportError:
     import sys
-    sys.path.append('../../pulsar')
-    sys.path.append('../../python-stdnet')
-    sys.path.append('../')
+    import os
+    # Development!
+    luxdir = os.path.dirname(os.path.dirname(__file__))
+    workdir = os.path.dirname(luxdir)
+    sys.path.append(os.path.join(luxdir))
+    sys.path.append(os.path.join(workdir, 'pulsar'))
+    sys.path.append(os.path.join(workdir, 'python-stdnet'))
     import lux
 
 

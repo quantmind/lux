@@ -7,6 +7,7 @@ module.exports = function(grunt) {
             luxweb: grunt.file.readJSON('luxweb/media/src/lib.json'),
             bitcoin: grunt.file.readJSON('bitcoin/media/src/lib.json'),
             bench: grunt.file.readJSON('jstest/media/src/bench/lib.json'),
+            visual: grunt.file.readJSON('jstest/media/src/visual/lib.json'),
             unit: grunt.file.readJSON('jstest/media/src/unit/lib.json')
         };
     //

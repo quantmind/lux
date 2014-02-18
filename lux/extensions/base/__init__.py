@@ -122,11 +122,11 @@ class Extension(lux.Extension):
         head.scripts = scripts = Scripts(
             config['MEDIA_URL'],
             minified=config['MINIFIED_MEDIA'],
-            known_libraries=lux.javascript_libraries,
+            known_libraries=lux.media_libraries,
             dependencies=lux.javascript_dependencies)
         head.links = wsgi.Css(config['MEDIA_URL'],
-                              config['MINIFIED_MEDIA'],
-                              lux.javascript_libraries)
+                              minified=config['MINIFIED_MEDIA'],
+                              known_libraries=lux.media_libraries)
         head.links.append(config['CSS'])
         #
         # Add default scripts

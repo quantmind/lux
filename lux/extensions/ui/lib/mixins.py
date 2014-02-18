@@ -115,11 +115,9 @@ itself, so that you don't need to add additional markup.
 It's generally used in float layouts where elements are floated to be
 stacked horizontally.'''
     def apply(self, elem, value):
-        elem['*zoom'] = 1
         elem.css(':before,:after',
                  display='table',
-                 line_height=0,
-                 content='""')
+                 content='" "')
         elem.css(':after', clear='both')
 
 
@@ -197,18 +195,30 @@ class Border(Mixin):
         w = as_value(self.width)
         if s == 'none':
             elem['border'] = s
-        elif (c, s, w) is not (None, None, None):
-            s = s or 'solid'
-            w = '%s' % (w if w is not None else px(1))
-            if ' ' in w:
-                elem['border-width'] = w
-                elem['border-style'] = s
-                if c:
-                    elem['border-color'] = color(c)
-            elif c:
-                elem['border'] = '%s %s %s' % (w, s, c)
-            else:
-                elem['border'] = '%s %s' % (w, s)
+        else:
+            bits = []
+            if w is not None:
+                w = str(w)
+                if ' ' in w:
+                    elem['border-width'] = w
+                else:
+                    bits.append(w)
+            if s:
+                if bits:
+                    bits.append(s)
+                else:
+                    elem['border-style'] = s
+            elif bits:
+                bits.append('solid')
+            if c:
+                c = str(color(c))
+                if bits:
+                    bits.append(c)
+                else:
+                    elem['border-color'] = c
+            if bits:
+                elem['border'] = ' '.join(bits)
+
 
 
 ################################################# CSS3 BOX SHADOW
@@ -467,16 +477,18 @@ class Placeholder(Mixin):
 
 ################################################# BCD - BACKGROUND-COLOR-DECO
 class Bcd(Mixin):
-    '''Background-color-decorator :class:`Mixin`. It can be applied to any
-element and tt forms the basis for the :class:`Clickable` Mixin.
+    '''Background-color-decorator :class:`Mixin`.
 
-:parameter background: backgroud or css3 :class:`Gradient`.
-:parameter colour: text colour
-:parameter text_shadow: text shadow
-:parameter text_decoration: text decoration
-:parameter border: :class:`Border` or parameters for :class:`Border`. If
-    specified, the element will have a border definition.
-'''
+    It can be applied to any element and it forms the basis for the
+    :class:`Clickable` Mixin.
+
+    :parameter background: backgroud or css3 :class:`Gradient`.
+    :parameter colour: text colour
+    :parameter text_shadow: text shadow
+    :parameter text_decoration: text decoration
+    :parameter border: :class:`Border` or parameters for :class:`Border`. If
+        specified, the element will have a border definition.
+    '''
     def __init__(self, background=None, color=None, text_shadow=None,
                  text_decoration=None, border=None):
         self.background = background

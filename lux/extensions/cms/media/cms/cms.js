@@ -229,7 +229,8 @@ define(['lux', 'lux-web'], function (lux) {
             // The grid containing the form
             grid = $(document.createElement('div')).addClass('columns'),
             content_fields = $(document.createElement('div')).addClass('content-fields column pull-left span8'),
-            content_data = $(document.createElement('div')).addClass('content-data column'),
+            content_data = $(document.createElement('div')).addClass(
+                'content-data column').css('padding-left', content_fields.width()),
             //
             fieldset_selection = $(document.createElement('fieldset')).addClass(
                 'content-selection').appendTo(content_fields),
@@ -1403,16 +1404,35 @@ define(['lux', 'lux-web'], function (lux) {
             });
         },
         //
-        get_form: function (callback) {
+        get_form_new: function (callback) {
             var f = this._meta.fields,
-                form = lux.web.form();
-            var raw = f.raw.add_to_form(form, this);
-            var js = f.javascript.add_to_form(form, this);
+                form = lux.web.form(),
+                raw = f.raw.add_to_form(form, this),
+                js = f.javascript.add_to_form(form, this),
+                tabs = new lux.TabView({tabs: [
+                    {
+                        name: 'markdown',
+                        content: raw
+                    },
+                    {
+                        name: 'javascript',
+                        content: js
+                    }]
+                });
+            form._element.empty().append(tabs.elem);
             require(['codemirror'], function () {
                 CodeMirror.fromTextArea(raw[0]);
                 CodeMirror.fromTextArea(js[0]);
                 callback(form);
             });
+        },
+        //
+        get_form: function (callback) {
+            var f = this._meta.fields,
+                form = lux.web.form(),
+                raw = f.raw.add_to_form(form, this),
+                js = f.javascript.add_to_form(form, this);
+            callback(form);
         }
     });
     //

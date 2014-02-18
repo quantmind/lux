@@ -78,6 +78,7 @@ def add_css(all):
                  box_shadow='none'),
             ),
         Skin(clickable=True, exclude=('base', 'zen', 'zen-dark')),
+        Border(width=px(1)),
         Radius(cssv.body.radius),
         padding=cssv.button.padding,
         display='inline-block',

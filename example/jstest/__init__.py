@@ -34,6 +34,14 @@ class JsTests(lux.Router):
         scripts.require('jstest/bench.js')
         return html.http_response(request)
 
+    @route('/visual')
+    def visual(self, request):
+        html = request.html_document
+        scripts = html.head.scripts
+        scripts.require('jstest/visual.js')
+        html.body.append('<div class="visual-test"></div>')
+        return html.http_response(request)
+
 
 class TestSocket(api.CrudWebSocket):
 

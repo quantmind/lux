@@ -1,10 +1,6 @@
 {
-    src: ["js/tests/visual/start.js",
-          "js/tests/visual/dragdrop.js",
-          //"js/tests/visual/async.js",
-          "js/tests/visual/sortable.js",
-          "js/tests/visual/datagrid.js",
-          "js/tests/visual/buttons.js"
-          ],
-    dest: 'example/csstest/media/csstest/'
+    "src": ["jstest/media/src/visual/start.js",
+            "jstest/media/src/visual/buttons.js",
+            "jstest/media/src/visual/close.js"],
+    "dest": "jstest/media/jstest/visual.js"
 }
