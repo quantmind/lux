@@ -1319,14 +1319,11 @@ define(['lux', 'lux-web'], function (lux) {
         },
         //
         render: function (container, skin) {
-            var url = this.get('content_url'),
-                elem = this.get('jQuery');
+            var url = this.get('content_url');
             if (url === 'this') {
-                url = lux.web.options.this_url;
+                url = window.location.href;
             }
-            if (elem) {
-                container.append(elem);
-            } else if (url) {
+            if (url) {
                 container.html('&nbsp;');
                 $.ajax(url, {
                     dataType: 'json',
@@ -1339,7 +1336,7 @@ define(['lux', 'lux-web'], function (lux) {
                     }
                 });
             } else {
-                web.logger.warning('Missing underlying page url and html');
+                logger.warning('Missing underlying page url and html');
             }
         },
         //

@@ -1,7 +1,7 @@
 from pulsar.apps.ws import WebSocket
 
 import lux
-from lux import route
+from lux import route, Html
 from lux.extensions import api
 
 template = '''
@@ -36,11 +36,10 @@ class JsTests(lux.Router):
 
     @route('/visual')
     def visual(self, request):
-        html = request.html_document
-        scripts = html.head.scripts
+        doc = request.html_document
+        scripts = doc.head.scripts
         scripts.require('jstest/visual.js')
-        html.body.append('<div class="visual-test"></div>')
-        return html.http_response(request)
+        return Html('div', cn='visual-test').http_response(request)
 
 
 class TestSocket(api.CrudWebSocket):

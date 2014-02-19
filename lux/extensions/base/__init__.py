@@ -114,9 +114,10 @@ class Extension(lux.Extension):
         return middleware
 
     def on_html_document(self, app, request, html):
-        '''When the document is created add stylesheet and default
+        '''When the document is created add style sheets and default
         scripts to the document media.
         '''
+        response = request.response
         config = app.config
         head = html.head
         head.scripts = scripts = Scripts(

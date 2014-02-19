@@ -159,3 +159,21 @@ class Html(wsgi.Html):
         inner = html['body']
         doc.body.append(html['body'])
         return doc.http_response(request)
+
+
+class JsonDocument(wsgi.Json):
+
+    def __init__(self, **params):
+        self.scripts = None
+        child = {'requires': self.requires,
+                 'css': [],
+                 'html': ''}
+        super(JsonDocument, self).__init__(child, **params)
+
+    @property
+    def head(self):
+        return self
+
+    @property
+    def body(self):
+        return self

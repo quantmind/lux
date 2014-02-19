@@ -23,7 +23,7 @@ from lux.commands import ConsoleParser, CommandError, execute_app
 
 from .extension import Extension, Parameter
 from .permissions import PermissionHandler
-from .wrappers import WsgiRequest
+from .wrappers import WsgiRequest, JsonDocument
 
 
 __all__ = ['App',
@@ -201,16 +201,20 @@ class App(ConsoleParser, LocalMixin, Extension):
         Usually there is no need to call directly this method.
         Instead one can use the :attr:`.WsgiRequest.html_document`.
         '''
-        handler = request.app_handler
-        title = None
-        if handler:
-            title = handler.parameters.get('title')
-        config = self.config
-        html = HtmlDocument(title=title or config['HTML_HEAD_TITLE'],
-                            debug=self.debug,
-                            charset=config['ENCODING'])
-        self.fire('on_html_document', request, html)
-        return html
+        content_type = request.response.content_type
+        if content_type == 'text/html':
+            handler = request.app_handler
+            title = None
+            if handler:
+                title = handler.parameters.get('title')
+            doc = HtmlDocument(title=title or self.config['HTML_HEAD_TITLE'],
+                               debug=self.debug,
+                               charset=self.config['ENCODING'])
+            self.fire('on_html_document', request, doc)
+        else:
+            # a Json representation of the HtmlContent
+            doc = JsonDocument(charset=self.config['ENCODING'])
+        return doc
 
     @local_property
     def commands(self):
