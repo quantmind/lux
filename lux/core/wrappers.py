@@ -156,7 +156,7 @@ class Html(wsgi.Html):
 
     def http_response(self, request):
         doc = request.html_document
-        if doc.is_html:
+        if doc.has_default_content_type:
             # if the content type is text/html fire the on_html_response event
             html = {'body': self}
             request.app.fire('on_html_response', request, html)

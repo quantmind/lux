@@ -220,7 +220,6 @@ class Border(Mixin):
                 elem['border'] = ' '.join(bits)
 
 
-
 ################################################# CSS3 BOX SHADOW
 class Shadow(Mixin):
     '''The box-shadow css3 property attaches one or more drop-shadows to the

@@ -64,7 +64,7 @@ class Extension(lux.Extension):
         Parameter('ICON_PROVIDER', 'fontawesome', 'Icons used')]
 
     def on_html_document(self, app, request, doc):
-        if doc.is_html:
+        if doc.has_default_content_type:
             icon = app.config['ICON_PROVIDER']
             if icon == 'fontawesome':
                 doc.head.links.append(

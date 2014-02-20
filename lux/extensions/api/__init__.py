@@ -282,7 +282,7 @@ class Extension(lux.Extension):
         '''When the document is created add stylesheet and default
         scripts to the document media.
         '''
-        if doc.is_html:
+        if doc.has_default_content_type:
             config = app.config
             url = config['API_URL']
             if url:

@@ -20,6 +20,7 @@ from pulsar.utils.log import (LocalMixin, local_property, local_method,
                               configured_logger)
 
 from lux.commands import ConsoleParser, CommandError, execute_app
+from lux import media_libraries, javascript_dependencies
 
 from .extension import Extension, Parameter
 from .permissions import PermissionHandler
@@ -104,7 +105,21 @@ class App(ConsoleParser, LocalMixin, Extension):
         Parameter('MINIFIED_MEDIA', True,
                   'Use minified media files. All media files will replace '
                   'their extensions with .min.ext. For example, javascript '
-                  'links *.js become *.min.js')
+                  'links *.js become *.min.js'),
+        Parameter('CSS', {},
+                  'Dictionary of css locations.'),
+        Parameter('JSREQUIRED', ('jquery', 'lodash', 'json', 'lux'),
+                  'Default Required javascript. Loaded via requirejs.'),
+        Parameter('JSREQUIRE_CALLBACK', 'lux.init_web',
+                  'Callback used by requirejs.'),
+        Parameter('HTML_META',
+                  [{'http-equiv': 'X-UA-Compatible',
+                    'content': 'IE=edge'},
+                   {'name': 'viewport',
+                    'content': 'width=device-width, initial-scale=1'}],
+                  'List of default ``meta`` elements to add to the html head'
+                  'element'),
+
         ]
 
     def __init__(self, config_file, **params):
@@ -213,11 +228,27 @@ class App(ConsoleParser, LocalMixin, Extension):
         doc = HtmlDocument(title=title or cfg['HTML_HEAD_TITLE'],
                            media_path=cfg['MEDIA_URL'],
                            minified=cfg['MINIFIED_MEDIA'],
-                           known_libraries=lux.media_libraries,
-                           scripts_dependencies=lux.javascript_dependencies,
+                           known_libraries=media_libraries,
+                           scripts_dependencies=javascript_dependencies,
+                           require_callback=cfg['JSREQUIRE_CALLBACK'],
                            debug=self.debug,
+                           content_type=content_type,
                            charset=cfg['ENCODING'])
-        self.fire('on_html_document', request, doc)
+        #
+        if doc.has_default_content_type:
+            head = doc.head
+            head.links.append(cfg['CSS'])
+            #
+            required = cfg['JSREQUIRED']
+            if required:
+                scripts = head.scripts
+                scripts.append('require')
+                scripts.require(*required)
+            #
+            for entry in cfg['HTML_META'] or ():
+                head.add_meta(**entry)
+
+            self.fire('on_html_document', request, doc)
         return doc
 
     @local_property

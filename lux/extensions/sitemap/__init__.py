@@ -253,7 +253,7 @@ class Extension(lux.Extension):
         :class:`NavigationInfo` and can be used to add navigation
         items as well as logos and search boxes.
         '''
-        if doc.is_html:
+        if doc.has_default_content_type:
             brand = app.config['NAVIGATION_BRAND']
             request.cache.html_navigation = NavigationInfo(brand)
 

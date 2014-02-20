@@ -15,17 +15,6 @@ from pulsar.apps import wsgi
 from pulsar.apps.wsgi import Html
 
 
-def stream_scripts(self, request):
-    require = self.require_script()
-    yield '''\
-<script type="text/javascript">
-var require = %s, lux_media_path = "%s";
-require.callback = function () {lux.init_web();}
-</script>\n''' % (json.dumps(require), self.media_path)
-    for bit in super(Scripts, self).do_stream(request):
-        yield bit
-
-
 def filesystem_path(request, base, bits):
     name = bits[0]
     if name == 'lux':
