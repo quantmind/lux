@@ -63,12 +63,13 @@ class Extension(lux.Extension):
         Parameter('THEME', None, ''),
         Parameter('ICON_PROVIDER', 'fontawesome', 'Icons used')]
 
-    def on_html_document(self, app, request, html):
-        icon = app.config['ICON_PROVIDER']
-        if icon == 'fontawesom':
-            html.head.links.append({'all':
-                                    [('ui/font-awesome-ie7.min.css', 'IE 7')]})
-        html.data('icon', icon)
+    def on_html_document(self, app, request, doc):
+        if doc.is_html:
+            icon = app.config['ICON_PROVIDER']
+            if icon == 'fontawesome':
+                doc.head.links.append(
+                    {'all': [('ui/font-awesome-ie7.min.css', 'IE 7')]})
+            doc.data('icon', icon)
 
 
 class Tabs(lux.Html):

@@ -27,7 +27,9 @@ Wsgi Request
 '''
 from functools import wraps
 
-from pulsar import HttpException, ContentNotAccepted, Http404, get_event_loop
+from pulsar import (HttpException, ContentNotAccepted, Http404, get_event_loop,
+                    multi_async)
+from pulsar.utils.system import json
 from pulsar.utils.structures import AttributeDictionary
 from pulsar.apps.wsgi import (route, wsgi_request, cached_property,
                               EnvironMixin, html_factory)
@@ -154,26 +156,28 @@ class Html(wsgi.Html):
 
     def http_response(self, request):
         doc = request.html_document
-        html = {'body': self}
-        request.app.fire('on_html_response', request, html)
-        inner = html['body']
-        doc.body.append(html['body'])
+        if doc.is_html:
+            # if the content type is text/html fire the on_html_response event
+            html = {'body': self}
+            request.app.fire('on_html_response', request, html)
+            inner = html['body']
+            doc.body.append(html['body'])
         return doc.http_response(request)
 
 
-class JsonDocument(wsgi.Json):
-
-    def __init__(self, **params):
-        self.scripts = None
-        child = {'requires': self.requires,
-                 'css': [],
-                 'html': ''}
-        super(JsonDocument, self).__init__(child, **params)
+class JsonDocument(wsgi.HtmlDocument):
 
     @property
-    def head(self):
-        return self
+    def is_html(self):
+        return False
 
-    @property
-    def body(self):
-        return self
+    def do_stream(self, request):
+        yield self.to_json(request)
+
+    def to_json(self):
+        self.body._tag = None
+        body = yield multi_async(self.body.stream(request))
+        self.head._tag = None
+        data = {'body': body}
+        data.extend(self.head.to_json())
+        coroutine_return(json.dumps(data))

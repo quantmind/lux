@@ -8,53 +8,22 @@ from email.utils import parsedate_tz, mktime_tz
 import lux
 
 from pulsar.utils.importer import import_module
-from pulsar.utils.httpurl import http_date, CacheControl, remove_double_slash
+from pulsar.utils.httpurl import http_date, CacheControl
 from pulsar.utils.system import json
 from pulsar import Http404, PermissionDenied
 from pulsar.apps import wsgi
 from pulsar.apps.wsgi import Html
 
 
-class Scripts(wsgi.Scripts):
-
-    def __init__(self, *args, **kwargs):
-        self.dependencies = kwargs.pop('dependencies', {})
-        self.required = []
-        super(Scripts, self).__init__(*args, **kwargs)
-
-    def require(self, *scripts):
-        '''Add a ``script`` to the list of :attr:`required` scripts.
-
-        The ``script`` can be a name in the :attr:`~Media.known_libraries`,
-        an absolute uri or a relative url.
-
-        The script will be loaded using the ``require`` javascript package.
-        '''
-        for script in scripts:
-            if script not in self.known_libraries:
-                script = self.absolute_path(script)
-            required = self.required
-            if script not in required:
-                required.append(script)
-
-    def require_script(self):
-        libs = dict(((key, self.absolute_path(key, False))
-                     for key in self.known_libraries))
-        return {'paths': libs,
-                'deps': self.required,
-                'shim': self.dependencies,
-                'waitSeconds': 200}
-
-
-    def do_stream(self, request):
-        require = self.require_script()
-        yield '''\
+def stream_scripts(self, request):
+    require = self.require_script()
+    yield '''\
 <script type="text/javascript">
 var require = %s, lux_media_path = "%s";
 require.callback = function () {lux.init_web();}
 </script>\n''' % (json.dumps(require), self.media_path)
-        for bit in super(Scripts, self).do_stream(request):
-            yield bit
+    for bit in super(Scripts, self).do_stream(request):
+        yield bit
 
 
 def filesystem_path(request, base, bits):

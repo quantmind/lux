@@ -10,11 +10,11 @@ Parameters
 import sys
 import os
 from inspect import isclass
+from collections import OrderedDict
+from importlib import import_module
 
-from pulsar.apps import wsgi, get_application
-from pulsar.utils.importer import import_module
-from pulsar.utils.structures import OrderedDict
-from pulsar.apps.wsgi import HtmlDocument, test_wsgi_environ
+from pulsar.utils.httpurl import remove_double_slash
+from pulsar.apps.wsgi import WsgiHandler, HtmlDocument, test_wsgi_environ
 from pulsar.utils.pep import itervalues
 from pulsar.utils.log import (LocalMixin, local_property, local_method,
                               configured_logger)
@@ -99,9 +99,12 @@ class App(ConsoleParser, LocalMixin, Extension):
                   'Default HTML Title'),
         Parameter('LOGGING_CONFIG', None,
                   'Dictionary for configuring logging'),
-        Parameter('USE_SOCKET_IO', False,
-                  'Indicate if to use SocketIO rather than standard WebSocket'
-                  ' when websocket middleware is used.')
+        Parameter('MEDIA_URL', 'media',
+                  'the base url for static files'),
+        Parameter('MINIFIED_MEDIA', True,
+                  'Use minified media files. All media files will replace '
+                  'their extensions with .min.ext. For example, javascript '
+                  'links *.js become *.min.js')
         ]
 
     def __init__(self, config_file, **params):
@@ -166,7 +169,7 @@ class App(ConsoleParser, LocalMixin, Extension):
                 rmiddleware.extend(_middleware)
         # Response middleware executed in reversed order
         rmiddleware = list(reversed(rmiddleware))
-        handler = wsgi.WsgiHandler(middleware, response_middleware=rmiddleware)
+        handler = WsgiHandler(middleware, response_middleware=rmiddleware)
         self.fire('on_loaded', handler)
         return handler
 
@@ -202,18 +205,19 @@ class App(ConsoleParser, LocalMixin, Extension):
         Instead one can use the :attr:`.WsgiRequest.html_document`.
         '''
         content_type = request.response.content_type
-        if content_type == 'text/html':
-            handler = request.app_handler
-            title = None
-            if handler:
-                title = handler.parameters.get('title')
-            doc = HtmlDocument(title=title or self.config['HTML_HEAD_TITLE'],
-                               debug=self.debug,
-                               charset=self.config['ENCODING'])
-            self.fire('on_html_document', request, doc)
-        else:
-            # a Json representation of the HtmlContent
-            doc = JsonDocument(charset=self.config['ENCODING'])
+        handler = request.app_handler
+        title = None
+        if handler:
+            title = handler.parameters.get('title')
+        cfg = self.config
+        doc = HtmlDocument(title=title or cfg['HTML_HEAD_TITLE'],
+                           media_path=cfg['MEDIA_URL'],
+                           minified=cfg['MINIFIED_MEDIA'],
+                           known_libraries=lux.media_libraries,
+                           scripts_dependencies=lux.javascript_dependencies,
+                           debug=self.debug,
+                           charset=cfg['ENCODING'])
+        self.fire('on_html_document', request, doc)
         return doc
 
     @local_property
@@ -263,6 +267,7 @@ class App(ConsoleParser, LocalMixin, Extension):
         apps = list(config['EXTENSIONS'])
         add_app(apps, 'lux', 0)
         add_app(apps, self.meta.name)
+        config['MEDIA_URL'] = remove_double_slash('/%s/' % config['MEDIA_URL'])
         config['EXTENSIONS'] = tuple(apps)
         config['EXTENSION_HANDLERS'] = extensions = OrderedDict()
         for name in config['EXTENSIONS'][1:]:

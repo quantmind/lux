@@ -278,17 +278,18 @@ class Extension(lux.Extension):
         for router in handler.middleware:
             self.add_to_html_router(router)
 
-    def on_html_document(self, app, request, html):
+    def on_html_document(self, app, request, doc):
         '''When the document is created add stylesheet and default
         scripts to the document media.
         '''
-        config = app.config
-        url = config['API_URL']
-        if url:
-            html.data('api', {'url': url,
-                              'search': config['QUERY_SEARCH_KEY'],
-                              'start': config['QUERY_START_KEY'],
-                              'per_page': config['QUERY_LENGTH_KEY']})
+        if doc.is_html:
+            config = app.config
+            url = config['API_URL']
+            if url:
+                doc.data('api', {'url': url,
+                                 'search': config['QUERY_SEARCH_KEY'],
+                                 'start': config['QUERY_START_KEY'],
+                                 'per_page': config['QUERY_LENGTH_KEY']})
 
     #    INTERNALS
     def _create_mapper(self, app):

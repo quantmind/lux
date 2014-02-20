@@ -245,7 +245,7 @@ class Extension(lux.Extension):
                   'Layout of the Navigation Toolbar'),
         Parameter('NAVIGATION_CLASSES', 'nav nav-list standard', '')]
 
-    def on_html_document(self, app, request, html):
+    def on_html_document(self, app, request, doc):
         '''Add the ``html_navigation`` entry in the ``request.cache``.
 
         Loop over all Routers which have the ``navigation_visit`` method
@@ -253,8 +253,9 @@ class Extension(lux.Extension):
         :class:`NavigationInfo` and can be used to add navigation
         items as well as logos and search boxes.
         '''
-        brand = app.config['NAVIGATION_BRAND']
-        request.cache.html_navigation = NavigationInfo(brand)
+        if doc.is_html:
+            brand = app.config['NAVIGATION_BRAND']
+            request.cache.html_navigation = NavigationInfo(brand)
 
     def navigation(self, request, routers, levels=None):
         '''Create an ul with links.'''

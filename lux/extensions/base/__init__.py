@@ -46,7 +46,7 @@ from pulsar.utils.html import mark_safe
 import lux
 from lux import Parameter
 
-from .media import Scripts, FileRouter, MediaRouter, remove_double_slash
+from .media import stream_scripts, FileRouter, MediaRouter
 
 
 class Extension(lux.Extension):
@@ -60,17 +60,11 @@ class Extension(lux.Extension):
                   'are converted to valid url and redirected.'),
         Parameter('SERVE_STATIC_FILES', False,
                   'if ``True`` add middleware to serve static files.'),
-        Parameter('MEDIA_URL', 'media',
-                  'the base url for static files'),
         Parameter('FAVICON', None,
                   'Adds wsgi middleware to handle favicon url ``/favicon.ico``'
                   'served from ``MEDIA_URL/FAVICON``'),
         Parameter('CSS', {},
                   'Dictionary of css locations.'),
-        Parameter('MINIFIED_MEDIA', True,
-                  'Use minified media files. All media files will replace '
-                  'their extensions with .min.ext. For example, javascript '
-                  'links *.js become *.min.js'),
         Parameter('HTML_META',
                   [{'http-equiv': 'X-UA-Compatible',
                     'content': 'IE=edge'},
@@ -113,39 +107,35 @@ class Extension(lux.Extension):
             middleware.append(self.etag)
         return middleware
 
-    def on_html_document(self, app, request, html):
+    def on_html_document(self, app, request, doc):
         '''When the document is created add style sheets and default
         scripts to the document media.
         '''
         response = request.response
         config = app.config
-        head = html.head
-        head.scripts = scripts = Scripts(
-            config['MEDIA_URL'],
-            minified=config['MINIFIED_MEDIA'],
-            known_libraries=lux.media_libraries,
-            dependencies=lux.javascript_dependencies)
-        head.links = wsgi.Css(config['MEDIA_URL'],
-                              minified=config['MINIFIED_MEDIA'],
-                              known_libraries=lux.media_libraries)
-        head.links.append(config['CSS'])
+        head = doc.head
+        scripts = head.scripts
+        scripts.minified = config['MINIFIED_MEDIA']
+        scripts.media_path = config['MEDIA_URL']
+        scripts.known_libraries.update(lux.media_libraries)
+        scripts.do_stream = partial(stream_scripts, scripts)
         #
-        # Add default scripts
-        #scripts.append(Html('script',
-        #                    type='application/javascript;version=1.8'))
-        scripts.append('require')
-        #scripts.append('lodash')
-        scripts.require('jquery')
-        scripts.require('lux')
-        scripts.require('json')  # add json
-        scripts.require('bootstrap')  # add json
-        scripts.require('select')
-        scripts.require('lux-web')  # add jquery
+        links = head.links
+        links.minified = config['MINIFIED_MEDIA']
+        links.media_path = config['MEDIA_URL']
+        links.known_libraries.update(lux.media_libraries)
         #
-        meta = config['HTML_META']
-        if meta:
-            for entry in meta:
-                head.add_meta(**entry)
+        if response.content_type == 'text/html':
+            head.links.append(config['CSS'])
+            scripts.append('require')
+            scripts.require('jquery')
+            scripts.require('lux')
+            scripts.require('json')
+            #
+            meta = config['HTML_META']
+            if meta:
+                for entry in meta:
+                    head.add_meta(**entry)
 
     def etag(self, environ, response):
         if response.has_header('ETag'):

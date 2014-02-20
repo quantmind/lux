@@ -134,9 +134,8 @@ class ExtensionType(type):
 
 
 class Extension(ExtensionType('ExtBase', (object,), {'abstract': True})):
-    '''Base class for :ref:`lux extensions <extensions>`.
-
-    It is also the base class of lux :class:`App`.
+    '''Base class for :ref:`lux extensions <extensions>`
+    including :class:`.App`.
 
     .. attribute:: meta
 
