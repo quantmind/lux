@@ -49,6 +49,12 @@ import lux
 from lux import Html, Template, Context
 
 
+# content_type which displays html from urls from the lux application
+# `this` is special see below
+CONTENT_URL = 'content_url'
+THIS = 'this'
+
+
 def int_or_string(value):
     try:
         return int(value)
@@ -216,6 +222,11 @@ class CmsContext(Context):
                         content = data.pop('content', None)
                         if isinstance(content, dict):
                             elem = Html('div', data=content)
+                            if content.get(CONTENT_URL) == THIS:
+                                value = context.get(THIS)
+                                if isinstance(value, Html):
+                                    value.data('field', THIS)
+                                elem.append(context.get(THIS))
                         else:
                             # id, we need to retrieve the content
                             content = int_or_string(content)

@@ -21,7 +21,9 @@
         render: function (container, skin) {
             var url = this.get('content_url');
             if (url === 'this') {
-                url = window.location.href;
+                container.html(this.get('this'));
+                return;
+                //url = window.location.href;
             }
             if (url) {
                 container.html('&nbsp;');

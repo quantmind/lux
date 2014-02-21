@@ -100,8 +100,7 @@ from lux.extensions import api
 from .ui import add_css
 from .forms import ContentForm
 from .views import (EditPage, CmsRouter, PageUpdates, PageForm,
-                    PageContentManager, CmsResponse, CmsContent,
-                    CONTENT_API_URL)
+                    PageContentManager, CmsResponse, CONTENT_API_URL)
 from . import templates
 
 

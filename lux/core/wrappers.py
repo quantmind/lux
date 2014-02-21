@@ -160,7 +160,6 @@ class Html(wsgi.Html):
             # if the content type is text/html fire the on_html_response event
             html = {'body': self}
             request.app.fire('on_html_response', request, html)
-            inner = html['body']
             doc.body.append(html['body'])
         return doc.http_response(request)
 

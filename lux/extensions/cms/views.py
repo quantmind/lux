@@ -69,7 +69,7 @@ from lux.extensions import api
 from lux.forms import smart_redirect
 
 from .templates import Dialog
-from .grid import CmsContext
+from .grid import CmsContext, THIS
 from .forms import PageForm
 from .models import create_content
 
@@ -156,7 +156,7 @@ class PageMixin(object):
     def create_page_doc(self, request, path):
         dialog = yield self.create_page_form(request, path)
         template = request.app.config['CREATE_PAGE_TEMPLATE']
-        html = yield template(request, {'this': dialog})
+        html = yield template(request, {THIS: dialog})
         coroutine_return(html)
 
     def page_template(self, request, page):
@@ -200,13 +200,13 @@ class CmsResponse(PageMixin):
             if request.has_permission('create', request.models.page):
                 path = request.app_handler.rule
                 body = yield self.create_page_form(request, path)
-        html = yield template(request, {'this': body})
+        html = yield template(request, {THIS: body})
         content = yield html.render(request)
         coroutine_return(content)
 
 
 class CmsRouter(Router, PageMixin):
-    '''A :ref:`router <router>` for rendering a page on the web.
+    '''A :ref:`router <router>` for rendering a CMS page on the web.
 
     This should be the last Router in the list of middleware of your
     application.
@@ -233,51 +233,6 @@ class CmsRouter(Router, PageMixin):
             raise PermissionDenied
         response = yield doc.http_response(request)
         coroutine_return(response)
-
-
-class CmsContent(object):
-    '''A mixin for :ref:`Router <htmlrouter>` which implements the
-    :meth:`get` method for rendering client request as ``text/html`` or
-    ``json`` object which contains ``html`` as the only field.
-
-    It can be used with or without the ``cms`` extensions in your site.
-    '''
-    def get(self, request):
-        try:
-            html = self.render(request)
-        except HttpRedirect as e:
-            return smart_redirect(request, e.headers['location'], e.status)
-        if request.response.content_type == 'text/html':
-            return self.html_response(request, html)
-        elif request.response.content_type:
-            return self.json_response(request, html)
-        else:
-            raise ContentNotAccepted
-
-    def requires(self, request):
-        '''List of scripts required by this content.
-
-        Override if you application requires script to be loaded
-        '''
-        pass
-
-    def render(self, request):
-        '''Render the :meth:`get` method has html
-
-        **Must be implemented by subclasses**'''
-        raise NotImplementedError
-
-    def html_response(self, request, html):
-        for require in self.requires(request) or ():
-            request.html_document.head.scripts.require(require)
-        return html.http_response(request)
-
-    def json_response(self, request, html):
-        scripts = request.html_document.scripts
-        for script in self.requires(request) or ():
-            scripts.require(script)
-        return Json({'html': html,
-                     'requires': scripts.required}).http_response(request)
 
 
 class EditPage(PageMixin, api.Crud):
