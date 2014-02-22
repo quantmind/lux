@@ -36,7 +36,7 @@ def as_tuple(value):
 STATES = frozenset(('default', 'hover', 'active'))
 
 
-def createskin(cssv, name, default, hover=None, active=None, class_name=True):
+def createskin(cssv, name, default, hover=None, active=None):
     '''Create a new :class:`Variables` container with :attr:`Variables`.name``
     attribute set to ``name`` and containing variables which define a
     css skin.
@@ -59,8 +59,6 @@ def createskin(cssv, name, default, hover=None, active=None, class_name=True):
     assert default, 'Default skin data must be defined'
     skins = cssv.skins
     s = getattr(skins, name)
-    if class_name:
-        s.class_name = name
     s.is_skin = True
     #
     _set(s.default, default)
@@ -74,37 +72,46 @@ def _set(vars, data):
         setattr(vars, name, value)
 
 
-def darkenskin(cssv, name, default, **params):
-    return transform_skin(cssv, name, default, darken, **params)
+def darkenskin(cssv, name, **params):
+    return transform_skin(cssv, name, darken, **params)
 
 
-def lightenskin(cssv, name, default, **params):
-    return transform_skin(cssv, name, default, lighten, **params)
+def lightenskin(cssv, name, **params):
+    return transform_skin(cssv, name, lighten, **params)
 
 
-def transform_skin(cssv, name, default, transform, size=10, background=None,
-                   color=None, **params):
+def transform_skin(cssv, name, transform, size=10, background=None,
+                   color=None, border=None, default=None, hover=None,
+                   hover_size=10, **params):
     '''Transform a skin'''
-    assert default, 'Default skin data must be defined'
-    border_color = None
-    if not background:
-        background = as_value(default.get('background'))
-        border = default.get('border')
-        if border:
-            border_color = as_value(border.get('color'))
+    default = default or {}
+    background = background or as_value(default.get('background'))
+    color = color or as_value(default.get('color'))
+    assert background, "No background information"
+    assert color, "No color information"
+
+    if not border:
+        border = as_value(default.get('border'))
+        if not border:
+            border = transform(background, int(1.5*size))
+        else:
+            border = transform(border, size)
     b2 = transform(background, size)
-    if not border_color:
-        border_color = transform(background, int(1.5*size))
-    else:
-        border_color = transform(border_color, size)
     #
-    border = {'color': border_color}
     new_default = {'background': gradient('v', background, b2),
                    'color': color or default.get('color'),
                    'border': border}
-    hover = {'background': gradient('v', b2, background),
-             'border': border}
-    active = {'background': b2, 'border': border}
+    if not hover:
+        hover = {'background': gradient('v', b2, background),
+                 'border': border}
+    else:
+        background = as_value(hover.get('background'))
+        b2 = transform(background, hover_size)
+        hover['background'] = gradient('v', b2, background)
+        border = as_value(hover.get('border')) or border
+
+    active = {'background': gradient('v', b2, b2),
+              'border': border}
     return createskin(cssv, name, new_default, hover, active, **params)
 
 
@@ -171,7 +178,7 @@ class Skin(Mixin):
     '''
     def __init__(self, child=None, clickable=False, only=None, exclude=None,
                  gradient=None, cursor=None, applyto=None, border_width=None,
-                 border_style=None, **params):
+                 border_style=None, prefix=None, **params):
         self.child = child or ''
         self.clickable = clickable
         self.states = {}
@@ -186,26 +193,38 @@ class Skin(Mixin):
         self.only = as_tuple(only)
         self.exclude = as_tuple(exclude)
         self.gradient = gradient
+        self.prefix = prefix
         self.params = params
 
     def __call__(self, elem):
         skins = elem.root.variables.skins
         classes = set()
+        css = elem.css
+        #
+        # Apply border information
+        if self.border_width or self.border_style:
+            border = Border(width=self.border_width, style=self.border_style)
+            if self.child:
+                css(self.child, border)
+            else:
+                border(elem)
+
         # loop over possible skins
         for skin in skins:
+            class_name = skin.name
             # Not a skin created by createskin
             if as_value(skin.is_skin) is not True:
                 continue
-            class_name = as_value(skin.class_name)
             if class_name in classes:
-                class_name = skin.name
-                if class_name in classes:
-                    continue
+                continue
             if self.only and skin.name not in self.only:
                 continue
             if self.exclude and skin.name in self.exclude:
                 continue
             classes.add(class_name)
+            if self.prefix:
+                class_name = '%s-%s' % (self.prefix, class_name)
+
             if self.clickable:
                 params = {}
                 if self.cursor:
@@ -213,16 +232,15 @@ class Skin(Mixin):
                 if self.clickable is True:
                     # Loop through skin variables and pick states
                     for state in skin:
-                        params = self.state(skin, state)
-                        if params is not None:
-                            params[state.name] = self.bcd(params)
+                        state_params = self.state(skin, state)
+                        if state_params is not None:
+                            params[state.name] = self.bcd(state_params)
                 elif self.clickable in STATES:
                     # the parameters for the clickable state
-                    params = self.state(skin, skin[self.clickable], True)
-                    override = self.bcd(params)
+                    state_params = self.state(skin, skin[self.clickable], True)
+                    override = self.bcd(state_params)
                     for state in skin:
-                        params = self.state(skin, state)
-                        if params is not None:
+                        if self.state(skin, state) is not None:
                             params[state.name] = override
                 if params:
                     mixin = Clickable(**params)
@@ -231,23 +249,11 @@ class Skin(Mixin):
             else:
                 params = self.state(skin, skin['default'], True)
                 mixin = self.bcd(params)
-            css = elem.css
-            if not class_name:
-                if self.child:
-                    css(self.child, mixin, **self.params)
-                else:
-                    if mixin is not None:
-                        mixin(elem)
-                    elem.update(self.params)
+            if self.child:
+                css('.%s' % class_name,
+                    css(self.child, mixin, **self.params))
             else:
-                if self.child:
-                    css('.%s' % class_name,
-                        css(self.child, mixin, **self.params))
-                else:
-                    try:
-                        css('.%s' % class_name, mixin, **self.params)
-                    except:
-                        raise
+                css('.%s' % class_name, mixin, **self.params)
 
     def state(self, skin, state, force=False):
         if isinstance(state, Variables):
@@ -285,14 +291,4 @@ class Skin(Mixin):
                 params['background'] = as_value(bg)
         #
         # get border information
-        bd = params.get('border')
-        if bd and self.border_width or self.border_style:
-            if bd:
-                bd = as_params(bd, 'style')
-                # copy parameters
-                if self.border_width:
-                    bd['width'] = as_value(self.border_width)
-                if self.border_style:
-                    bd['style'] = as_value(self.border_style)
-                params['border'] = bd
-        return bcd(params)
+        return Bcd(**params)

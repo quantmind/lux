@@ -1,17 +1,23 @@
 from lux.utils import test
+from lux.extensions.ui.style.all import add_css
+from lux.extensions.ui.style.base import add_skins
 from lux.extensions.ui.lib import *
 
 
 class TestCase(test.TestCase):
 
-    def all(self):
-        from lux.extensions import ui
-        from lux.extensions import cms
+    def root(self, skins=False):
         all = Css()
         self.assertEqual(all.tag, None)
         self.assertEqual(all.code, 'ROOT')
         self.assertEqual(list(all.variables), [])
-        ui.add_css(all)
+        if skins:
+            add_skins(all)
+        return all
+
+    def all(self):
+        all = self.root()
+        add_css(all)
         return all
 
 

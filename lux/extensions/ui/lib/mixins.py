@@ -495,7 +495,7 @@ class Bcd(Mixin):
         self.text_shadow = text_shadow
         self.text_decoration = text_decoration
         if not isinstance(border, Border) and border:
-            border = Border(**as_params(border, 'style'))
+            border = Border(**as_params(border, 'color'))
         self.border = border
 
     def __call__(self, elem):

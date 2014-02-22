@@ -5,18 +5,26 @@ from lux.extensions.ui.lib import *
 UI_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-def skins(all):
-    darkenskin('default', '#333', '#e5e5e5',
-               description='default skin',
-               lighten=5)
-    darkenskin('primary', '#fff', '#0088CC',
-               description='Extra visual weight',
-               lighten=15)
-    darkenskin('error', '#fff', '#DA4F49',
-               description=('Indicates a dangerous or potentially'
-                            ' negative action'))
-    darkenskin('success', '#fff', '#51A351',
-               description='Indicates a success')
+def add_skins(all):
+    cssv = all.variables
+    classes = all.classes
+    css = all.css
+    #
+    # Define the skins
+    default = darkenskin(cssv, 'default',
+                         default={'background': '#fff',
+                                  'color': '#333',
+                                  'border': '#ccc'},
+                         hover={'background': '#F7F7F9',
+                                'color': '#333',
+                                'border': '#ccc'},
+                         size=0)
+    primary = darkenskin(cssv, 'primary', background='#0088CC', color='#fff')
+    success = darkenskin(cssv, 'success', background='1DD300', color='#fff')
+    error = darkenskin(cssv, 'error', background='fd0006', color='#fff')
+    inverse = lightenskin(cssv, 'inverse', background='#222', color='#fff')
+
+    return cssv.skins
 
 
 def add_css(all):
@@ -24,39 +32,7 @@ def add_css(all):
     classes = all.classes
     css = all.css
     classes.dl_horizontal = 'dl-horizontal'
-    #
-    # Define the skins
-    base = createskin(cssv, 'base',
-                      default={'background': '#fff',
-                               'color': '#333',
-                               'border': {'color': '#e5e5e5'}},
-                      class_name=None)
-    default = darkenskin(cssv, 'default', base.default, class_name=None)
-    primary = darkenskin(cssv, 'primary', base.default,
-                         background='#0088CC', color='#fff')
-    success = darkenskin(cssv, 'success', base.default,
-                         background='1DD300', color='#fff')
-    error = darkenskin(cssv, 'error', base.default,
-                       background='fd0006', color='#fff')
-    inverse = lightenskin(cssv, 'inverse', base.default,
-                          background='#222', color='#fff')
-    createskin(cssv, 'zen',
-               default={'background': '#fff',
-                        'color': '#999',
-                        'border': 'none'},
-               hover={'color': '#333'},
-               active={'color': '#333'})
-    createskin(cssv, 'zendark',
-               default={'background': '#1D1F21',
-                        'color': '#A4B1B1',
-                        'border': 'none'},
-               hover={'color': '#DBE0E0'},
-               active={'color': '#DBE0E0'})
-    #
-    #color = '#08c'
-    #simpleskin(cssv, 'link', color=color, text_decoration='none',
-    #           hover_color=darken(color, 15),
-    #           hover_text_decoration='underline', class_name=None)
+    skins = add_skins(all)
     #
     # Set defaults on body
     cssv.body.font_family = ("Helvetica,Arial,'Liberation Sans',FreeSans,"
@@ -65,6 +41,8 @@ def add_css(all):
     cssv.body.line_height = px(20)
     cssv.body.text_align = 'left'
     cssv.body.radius = px(5)
+    cssv.body.background = '#fff'
+    cssv.body.color = '#333'
     # Links
     cssv.link.font_weight = 'normal'
     #
@@ -90,9 +68,9 @@ def add_css(all):
                        location='ui', replace='../font'))
 
     css('body',
-        gradient(base.default.background),
+        gradient(cssv.body.background),
         CssInclude(all.get_media_url('normalize')),
-        color=base.default.color,
+        color=cssv.body.color,
         font_family=cssv.body.font_family,
         font_size=cssv.body.font_size,
         min_width=cssv.body.min_width,
@@ -108,7 +86,7 @@ def add_css(all):
     css('.clearfix', Clearfix())
     css('markdown', display='none')
     css('.separator',
-        Border(cssv.skins.default.default.border.color,
+        Border(color=cssv.skins.default.default.border,
                width=spacing(1, 0, 0)),
         margin=spacing(40, 0, 39))
     css('.vpadding-small',
@@ -131,11 +109,6 @@ def add_css(all):
         css(':before,:after',
             BoxSizing('border-box')))
 
-    ##################################################### Anchor
-    #css('a',
-    #    Skin(only='link', clickable=True),
-    #    font_weight=cssv.link.font_weight
-    #)
 
     ##################################################### Description
     css('dt',

@@ -19,10 +19,9 @@ def add_css(all):
         css('.well-lg',
             Radius(1.2*cssv.well.radius),
             padding=px(24)),
-        Skin(exclude=('base', 'zen', 'zen-dark'),
-             gradient=False),
         Shadow(0, px(1), px(1), color=RGBA(0,0,0,0.05), inset=True),
         Radius(cssv.well.radius),
+        background=as_value(cssv.skins.default.active.background).start,
         min_height=px(20),
         padding=px(19))
 

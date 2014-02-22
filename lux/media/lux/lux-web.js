@@ -152,17 +152,15 @@ define(['jquery', 'lux', 'bootstrap'], function ($, lux) {
     lux.web.create_button = function (options) {
         options = options ? options : {};
         var tag = (options.tag || 'a').toLowerCase(),
-            btn = $(document.createElement(tag));
+            btn = $(document.createElement(tag)),
+            skin = options.skin || 'default';
         btn.addClass('btn');
         btn.attr('type', options.type);
         btn.attr('title', options.title);
-        btn.addClass(options.classes);
+        btn.addClass(options.classes).addClass('btn-' + skin);
         btn.attr('href', options.href);
         if (options.size) {
             btn.addClass('btn-' + options.size);
-        }
-        if (options.skin && options.skin !== 'default') {
-            btn.addClass(options.skin);
         }
         if (options.icon) {
             web.icon(btn, options.icon, options);
@@ -598,7 +596,7 @@ define(['jquery', 'lux', 'bootstrap'], function ($, lux) {
             width: null,
             height: null,
             top: null,
-            skin: null,
+            skin: 'default',
             icons: {
                 open: 'plus-sign',
                 close: 'minus-sign',

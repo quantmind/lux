@@ -77,8 +77,7 @@ def add_css(all):
                  cursor=cssv.button.disabled.cursor,
                  box_shadow='none'),
             ),
-        Skin(clickable=True, exclude=('base', 'zen', 'zen-dark')),
-        Border(width=px(1)),
+        Skin(clickable=True, prefix='btn', border_width=px(1)),
         Radius(cssv.body.radius),
         padding=cssv.button.padding,
         display='inline-block',
@@ -125,7 +124,7 @@ def add_css(all):
 
     ########################################################## INPUTS
     css(input_types(input_defaults, 'textarea', 'select'),
-        Skin(only=('base', 'inverse')),
+        Skin(only=('default', 'inverse')),
         Radius(cssv.body.radius),
         font_size=cssv.button.font_size,
         display='inline-block',

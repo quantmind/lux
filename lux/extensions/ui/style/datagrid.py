@@ -65,8 +65,8 @@ def add_css(all):
 
     # TABLE LAYOUT
     dg.css('.table',
-                 Skin(' td', applyto=['border'],
-                      border_width=spacing(1, 0, 0)))
+            Skin(' td', applyto=['border']),
+            css(' td', border_width=spacing(1, 0, 0)))
 
     # GRID LAYOUT
     dg.css('.grid',

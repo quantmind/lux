@@ -232,7 +232,7 @@ class CmsContext(Context):
                             content = int_or_string(content)
                             elem = Html('div')
                             if content in ids:
-                                ids[content].append(html)
+                                ids[content].append(elem)
                             else:
                                 ids[content] = [elem]
                         elem.data(data)

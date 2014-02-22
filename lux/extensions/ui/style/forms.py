@@ -12,7 +12,7 @@ def add_css(all):
     cssv.input.small_width = px(90)
     cssv.form.input.margin = px(10)
     cssv.form.horizontal.label_width = px(160)
-    cssv.form.border.color = cssv.skins.default.default.border.color
+    cssv.form.border.color = cssv.skins.default.default.border
 
     #
     css('legend',

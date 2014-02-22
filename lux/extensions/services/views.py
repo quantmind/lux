@@ -1,3 +1,5 @@
+from pulsar import coroutine_return
+
 from lux import Html, route
 from lux.extensions.sessions.views import LoginUser
 
@@ -18,7 +20,8 @@ class ServiceLogin(LoginUser):
         for api in apis.available(request.app.config):
             a = api.html_login_link(request)
             html.append(a)
-        yield html.http_response(request)
+        response = yield html.http_response(request)
+        coroutine_return(response)
 
     @route('<service>/callback')
     def service_callback(self, request):

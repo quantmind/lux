@@ -39,7 +39,7 @@ def add_css(all):
 
     dialog = css('.dialog',
                  #Opacity(0),
-                 Skin(applyto=['border']),
+                 Skin(applyto=['border'], border_width=px(1)),
                  Skin(' > .header', border_width=spacing(0, 0, px(1))),
                  Radius(cssv.dialog.radius),
                  Transition('opacity', '0.2s', 'ease'),
@@ -50,7 +50,8 @@ def add_css(all):
                          # Remove border from header
                          Skin(' .header',
                               applyto=['border'],
-                              border_style='none'))))
+                              border_style='none'))),
+                 background=cssv.body.background)
 
     # control variant
     dialog.css('.ready',

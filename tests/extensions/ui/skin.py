@@ -6,8 +6,8 @@ from . import vars
 
 class TestSkins(vars.TestCase):
 
-    def test_border_width(self):
-        all = self.all()
+    def __test_border_width(self):
+        all = self.root()
         css = all.css
         b = spacing(0, 0, 0, px(1))
         bla = css('.bla', Skin(border_width=b))
@@ -18,13 +18,13 @@ class TestSkins(vars.TestCase):
         self.assertEqual(skin.border_width, b)
 
     def test_default_skin(self):
-        all = self.all()
-        bla = all.css('.bla', Skin(clickable=True, exclude='base'))
-        txt = bla.render()
+        r = self.root(skins=True)
+        bla = r.css('.bla', Skin(clickable=True))
+        txt = r.render()
         self.assertTrue('.bla {' in txt)
         self.assertTrue('.bla.primary {' in txt)
 
-    def test_zen_skin(self):
+    def __test_zen_skin(self):
         all = self.all()
         bla = all.css('.bla', Skin(clickable=True))
         txt = bla.render()

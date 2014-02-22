@@ -25,7 +25,7 @@
             width: null,
             height: null,
             top: null,
-            skin: null,
+            skin: 'default',
             icons: {
                 open: 'plus-sign',
                 close: 'minus-sign',

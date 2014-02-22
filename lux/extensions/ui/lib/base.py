@@ -53,6 +53,7 @@ from pulsar.utils.html import UnicodeMixin
 from pulsar.apps.http import HttpClient
 from pulsar.apps import wsgi
 
+import lux
 
 __all__ = ['Css', 'Variable', 'Symbol', 'Mixin',
            'px', 'em', 'pc', 'size', 'as_value', 'Lazy',
@@ -95,18 +96,19 @@ def as_value(v):
         return v
 
 
-def as_params(v, default_name=None):
-    '''Convert ``v`` into a dictionary.'''
-    if isinstance(v, Variables):
-        return v.params()
-    elif v is None:
+def as_params(value, default_name=None):
+    '''Convert ``value`` into a dictionary.
+    '''
+    if isinstance(value, Variables):
+        return value.params()
+    elif value is None:
         return {}
-    elif isinstance(v, dict):
-        return v
+    elif isinstance(value, dict):
+        return value
     elif default_name:
-        return {default_name: v}
+        return {default_name: value}
     else:
-        raise TypeError('"%s" is not a mapping' % v)
+        raise TypeError('"%s" is not a mapping' % value)
 
 
 class Symbolic(UnicodeMixin):
@@ -465,9 +467,10 @@ class Css(CssBase):
         if app:
             assert tag is None, 'app should be passed to the root element only'
             self._app = app
-            self._css_libs = wsgi.Css(self.config('MEDIA_URL'),
-                                      known_libraries=known_libraries)
         if self._tag is None:
+            known_libraries = known_libraries or lux.media_libraries
+            self._css_libs = wsgi.Css(self.config('MEDIA_URL', '/media/'),
+                                      known_libraries=known_libraries)
             self.variables = Variables() if vars is None else vars
             self.classes = Variables()
             self.classes.hover = 'hover'
@@ -534,10 +537,8 @@ class Css(CssBase):
     def __getitem__(self, name):
         raise NotImplementedError('cannot get item')
 
-    def config(self, name):
-        app = self.app
-        if app:
-            return app.config.get(name)
+    def config(self, name, default=None):
+        return self.app.config.get(name, default) if self.app else default
 
     def css(self, tag, *components, **attributes):
         '''A child :class:`Css` elements.'''

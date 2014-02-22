@@ -30,13 +30,6 @@ Edit Pages Router
    :members:
    :member-order: bysource
 
-Cms Content
-===============
-
-.. autoclass:: CmsContent
-   :members:
-   :member-order: bysource
-
 Cms Response Hook
 ==========================
 
