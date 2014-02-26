@@ -107,6 +107,7 @@ from . import templates
 class Extension(lux.Extension):
     _config = [
         Parameter('PAGE_TEMPLATES', [templates.nav_page,
+                                     templates.nav_page_fixed,
                                      templates.center_page],
                   'A list of Templates which can be used to render a page.'),
         Parameter('SITE_ID', 1, 'The database id of the site'),

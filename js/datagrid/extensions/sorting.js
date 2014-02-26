@@ -2,7 +2,7 @@
     // Perform client side column sorting
     DataGrid.Extension('sorting', {
         //
-        options: {
+        defaults: {
             sortable: false,
             sorting_icon: 'sort',
             sorting_asc_icon: 'sort-down',
@@ -117,10 +117,12 @@
                     data.push(g.data[value[0]]);
                 });
                 g.data = data;
-                _(g.columns).forEach(function (c) {
-                    self.set_icon(c, g.options.sorting_icon);
+                _(g.columns).forEach(function (column) {
+                    if (column !== col) {
+                        self.set_icon(column, g.options.sorting_icon);
+                    }
                 });
-                this.set_icon(col, g.options['sorting_' + g.sortOrder + '_icon']);
+                self.set_icon(column, g.options['sorting_' + g.sortOrder + '_icon']);
                 g.render();
             }
         },
@@ -131,10 +133,10 @@
                 self = this;
             _(g.columns).forEach(function (col) {
                 if (col.sortable === false) {
-                    col.th.removeClass(classes.enabled);
+                    col.elem.removeClass(classes.enabled);
                 } else {
+                    col.elem.addClass(classes.enabled);
                     self.set_icon(col, g.options.sorting_icon);
-                    col.th.addClass(classes.enabled);
                 }
             });
         },
@@ -149,11 +151,10 @@
         //
         set_icon: function (col, icon) {
             if (icon) {
-                var a = col.th.find('a.sortable-toggle');
-                if (!a.length) {
-                    a = $(document.createElement('a')).addClass('sortable-toggle').appendTo(col.th);
-                }
-                a.html('<i class="icon-' + icon + '"></i>');
+                var a = col.elem.find('.sortable-toggle');
+                if (!a.length) a = ($(document.createElement('a'))
+                    ).addClass('sortable-toggle').appendTo(col.elem);
+                lux.icon(a, {'icon': icon});
             }
         }
     });

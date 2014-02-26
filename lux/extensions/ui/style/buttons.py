@@ -23,10 +23,6 @@ def add_css(all):
     css = all.css
     #
     cssv.button.margin = px(5)
-    cssv.input.margin = px(10)
-    cssv.input.padding = spacing(4, 5)
-    cssv.input.focus.border_color = RGBA(82, 168, 236, 0.8)
-    cssv.input.focus.border_color_blur = RGBA(82, 168, 236, 0.6)
     #
     cssv.button.font_weight = 'normal'
     cssv.button.font_size = cssv.body.font_size
@@ -99,8 +95,15 @@ def add_css(all):
         margin=0,
         font_size=0)
 
-    css('.btn-group',
+    css('.btn-group,.btn-group-vertical',
         css(' > .btn', Radius(0)),  # Force radius to 0
+        display='inline-block',
+        font_size=0,
+        position='relative',
+        vertical_align='middle',
+        white_space='nowrap')
+
+    css('.btn-group',
         css(' > *',
             Radius(0),
             css(':first-child',
@@ -112,75 +115,25 @@ def add_css(all):
                 border_top_right_radius=cssv.body.radius),
             float='left',
             position='relative'),
-        css(' > * + *', margin_left='-1px'),
-        display='inline-block',
-        font_size=0,
-        position='relative',
-        vertical_align='middle',
-        white_space='nowrap')
+        css(' > * + *', margin_left='-1px'))
+
+    css('.btn-group-vertical',
+        css(' > *',
+            Radius(0),
+            css(':first-child',
+                Radius(cssv.body.radius, 'top'),
+                margin_top=0),
+            css(':last-child',
+                Radius(cssv.body.radius, 'bottom')),
+            width=pc(100),
+            min_width=pc(100),
+            display='block',
+            float='none',
+            position='relative'),
+        css(' > * + *', margin_top='-1px'))
 
     css('.btn-group + .btn-group',
         margin_left=px(5))
-
-    ########################################################## INPUTS
-    css(input_types(input_defaults, 'textarea', 'select'),
-        Skin(only=('default', 'inverse')),
-        Radius(cssv.body.radius),
-        font_size=cssv.button.font_size,
-        display='inline-block',
-        vertical_align='middle',
-        padding=cssv.input.padding)
-
-    css(input_types(input_defaults),
-        line_height=cssv.body.line_height,
-        height=cssv.body.line_height)
-
-    # Border transition for inputs
-    css(input_types(input_defaults, 'textarea'),
-        Shadow(0, 1, 1, color=RGBA(0, 0, 0, 0.075), inset=True),
-        Transition('border, box-shadow', '0.2s', 'linear'))
-
-    css(input_types(input_defaults, 'textarea', attr='focus'),
-        Stack(Shadow(0, 1, 1, color=RGBA(0, 0, 0, 0.075), inset=True),
-              Shadow(blur=8, color=cssv.input.focus.border_color_blur)),
-        border_color=cssv.input.focus.border_color)
-
-    css('fieldset',
-        Border(width=0, style='none'),
-        margin=0,
-        padding=0)
-
-    css('label',
-        display='block',
-        cursor='pointer',
-        font_weight='normal',
-        font_size=cssv.body.font_size,
-        line_height=cssv.body.line_height,
-        height=cssv.body.line_height)
-
-    css(input_types(input_specials),
-        width='auto')
-
-    css('.radio, .checkbox',
-        css('input[type="radio"], input[type="checkbox"]',
-            float='left',
-            margin_left=px(-20)),
-        min_height=px(20),
-        padding_left=px(20))
-
-    ########################################################## ZEN
-
-    css('div',
-        Skin(' textarea, input',
-             only=('zen', 'zen-dark'), clickable=True, cursor='text'),
-        Skin(' select, .btn',
-             only=('zen', 'zen-dark'), clickable=True),
-        Skin(only=('zen', 'zen-dark')),
-        css('.zen textarea, .zendark textarea',
-            BoxSizing('border-box'),
-            resize='vertical',
-            font_size=1.5*cssv.body.font_size,
-            width=pc(100)))
 
     ########################################################## TOOLBAR
 

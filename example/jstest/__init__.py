@@ -4,6 +4,9 @@ import lux
 from lux import route, Html
 from lux.extensions import api
 
+from .ui import add_css
+
+
 template = '''
 <h1 id="qunit-header">Lux Test Suite</h1>
  <h2 id="qunit-banner"></h2>

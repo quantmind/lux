@@ -6,15 +6,7 @@
     var web = lux.web,
         TH = document.createElement('th'),
         TR = document.createElement('tr'),
-        TD = document.createElement('td'),
-        DATAGRID = 'DATAGRID',
-        exports = lux,
-        columnDefaults = {
-            resizable: true,
-            sortable: false,
-            focusable: true,
-            selectable: true
-        };
+        TD = document.createElement('td');
     //
     TR.className = 'row';
 
@@ -41,62 +33,6 @@
             return e;
         }
     });
-    //  DataGridColumn
-    //  ----------------
-    //
-    //  A column in a ``DataGrid``. It contains the ``th`` element and several
-    //  important information about the column.
-    var DataGridColumn = exports.DataGridColumn = lux.Class.extend({
-
-        init: function (options) {
-            var self = this;
-            //
-            options = _.extend({}, columnDefaults, options);
-            this.th = $(TH.cloneNode(false)).data('column', this);
-            if (!options.code) {
-                options.code = options.name;
-            }
-            //
-            _.extend(this, {
-                //
-                getOptions: function () {
-                    return options;
-                },
-                //
-                id: function () {
-                    return options.id || self.index();
-                },
-                //
-                label: function () {
-                    return options.name || self.letter();
-                }
-            });
-        },
-        // Retrieve the ``DataGrid`` instance for this ``DataGridColumn``.
-        datagrid: function () {
-            var elem = this.th.closest('.datagrid');
-            return elem.datagrid('instance');
-        },
-        //
-        index: function () {
-            return this.th.index();
-        },
-        //
-        letter: function () {
-            return lux.num_to_letter(this.th.index());
-        },
-        //
-        render: function () {
-            var name = this.name || this.letter(),
-                opts = this.getOptions(),
-                th = this.th;
-            this.th.html(name);
-        },
-        //
-        // Data from input elements within this column
-        inputData: function () {
-        }
-    });
     //  DataGrid
     //  ----------------
     //
@@ -113,14 +49,20 @@
     // * ``elem``, The outer ``div`` jQuery element containing the table.
     // * ``columns``, list of ``DataGridColumn``
     // * ``view``, the ``DataGridView`` instance for rending the grid on a page.
-    var DataGrid = exports.DataGrid = lux.Class.extend({
+    var DataGrid = exports.DataGrid = lux.createView('datagrid', {
+        //
+        // Specify the selector for outloading
+        selector: '.datagrid',
+        //
+        // Create a jQuery plugin with this view
+        jQuery: true,
         //
         // DataGrid extensions
         extensions: [],
         // **AVAILABLE OPTIONS**
         //
         // default options which can be overwritten duting initialisation
-        options: {
+        defaults: {
             // Auto load the grid as soon as it is ready
             autoload: true,
             // Optional model
@@ -160,24 +102,21 @@
         },
         //
         // Initialise DataGrid
-        init: function (elem, options) {
-            var container = $(elem),
+        initialise: function (options) {
+            var container = this.elem,
                 classes = this.classes;
-            this.options = options = _.merge({}, this.options, options);
-            if (container.length === 0) {
+            this.options = options;
+            if(container.is('table')) {
                 container = $(document.createElement('div'));
-            } else if(elem.is('table')) {
-                container = $(document.createElement('div'));
-                elem.before(container);
+                this.elem.before(container);
                 container.append(elem);
+                this.setElement(container);
             }
             container.addClass(classes.container);
             // create an id if one is not available
             if (!container.attr('id')) {
-                container.attr('id', 'dg-' + lux.s4());
+                container.attr('id', this.cid);
             }
-            this.elem = container;
-            container.data(DATAGRID, this);
             var table = this.table();
             if(table.length === 0) {
                 table = $(document.createElement('table')).appendTo(container);
@@ -194,8 +133,8 @@
             table.prepend(this._addtag('div.' + classes.top).addClass(classes.top).hide());
             //
             // Create the data from Html if not provided
-            if (!this.options.data) {
-                this.options.data = _getHTML(this);
+            if (!options.data) {
+                options.data = _getHTML(this);
             }
             //
             // Initialise headers
@@ -216,8 +155,9 @@
             //
             _register_events(this);
             _add_extensions(this);
-            this.setData(this.options.data);
-            delete this.options.data;
+            //
+            this.setData(options.data);
+            delete options.data;
             //
             if (!this.onReady.fire().isDefaultPrevented()) {
                 if (options.autoload) {
@@ -295,6 +235,7 @@
             }
             return heads.addClass('headers');
         },
+        //
         // Retrieve a column of this datagrid.
         // ``elem`` can be either an HTML element or an id (string).
         column: function (elem) {
@@ -303,10 +244,10 @@
             } else {
                 elem = $(elem);
             }
-            return elem.data('column');
+            return elem.closest('th').datagridcolumn('instance');
         },
         //
-        insert_column: function (col, position) {
+        insertColumn: function (col, position) {
             var tr = this.head().find('tr.headers');
             if (position === undefined && position >= tr[0].children.length) {
                 this.head().append(col);
@@ -398,14 +339,13 @@
         },
         //
         // Rendering
-        //
-        // Render Rows in the dom
         render: function () {
             var body = this.tbody()[0],
                 maxRows = this.options.maxRows,
                 minRows = this.options.minRows,
                 columns = this.columns,
-                data = this.data;
+                data = this.data,
+                self = this;
             //
             _(this.columns).forEach(function (col) {
                 col.render();
@@ -420,18 +360,13 @@
                 data.add(extra);
             }
             //
-            data.forEach(function (item, row) {
-                if (row >= maxRows) return false;
-                var tr = TR.cloneNode(false);
-                //
-                for (var j=0; j<columns.length; j++) {
-                    var col = columns[j],
-                        value = item[col.id()],
-                        td = TD.cloneNode(false);
-                    tr.appendChild(td);
-                }
-                //
-                body.appendChild(tr);
+            data.forEach(function (model, r) {
+                if (r >= maxRows) return false;
+                var row = new DataGridRow({
+                    'model': model,
+                    datagrid: self
+                });
+                body.appendChild(row.elem[0]);
             });
         },
         //
@@ -443,6 +378,7 @@
 
     // Base class for Datagrid Extension classes
     var DataGridExtension = lux.Class.extend({
+        //
         inputData: function (g, data) {}
     });
 

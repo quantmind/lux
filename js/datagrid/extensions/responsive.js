@@ -4,6 +4,7 @@
     //  Tables that work responsively on small devices. To enable it set
     //  the ``responsive`` options value to ``true``.
     DataGrid.Extension('responsive', {
+        //
         init: function (g) {
             if (g.options.responsive) {
                 var self = this;

@@ -1,8 +1,46 @@
-
-
-    // Cached regex to split keys for `delegate`.
+    //  View
+    //  ----------
+    //
+    //  A ``View`` is a way of to organize your interface into logical views,
+    //  backed by models, each of which can be updated independently when
+    //  the model changes, without having to redraw the page.
+    //  Instead of digging into a JSON object, looking up an element in
+    //  the DOM, and updating the HTML by hand, you can bind your view's
+    //  render function to the model's "change" event — and now everywhere
+    //  that model data is displayed in the UI, it is always
+    //  immediately up to date
     var
     //
+    autoViews = lux.autoViews = [],
+    //
+    SKIN_NAMES = lux.SKIN_NAMES = ['default', 'primary', 'success', 'inverse', 'error'],
+    //
+    // Extract a skin information from ``elem``
+    getSkin = lux.getSkin = function (elem, prefix) {
+        if (elem) {
+            prefix = prefix ? prefix + '-' : '';
+            for (var i=0; i < SKIN_NAMES.length; i++) {
+                var name = SKIN_NAMES[i];
+                if (elem.hasClass(prefix+name)) {
+                    return name;
+                }
+            }
+        }
+    },
+    //
+    // Set the skin on an element
+    setSkin = lux.setSkin = function(elem, skin, prefix) {
+        if (SKIN_NAMES.indexOf(skin) > -1) {
+            prefix = prefix ? prefix + '-' : '';
+            //
+            _(SKIN_NAMES).forEach(function (name) {
+                elem.removeClass(prefix+name);
+            });
+            elem.addClass(prefix+skin);
+        }
+    },
+    //
+    // Cached regex to split keys for `delegate`.
     delegateEventSplitter = /^(\S+)\s*(.*)$/,
     //
     viewOptions = ['model', 'collection', 'elem', 'id', 'attributes',
@@ -11,10 +49,15 @@
     // A view class
     View = lux.View = Class.extend({
         tagName: 'div',
-
+        //
+        defaults: null,
+        //
         init: function (options) {
             this.cid = _.uniqueId('view');
             options || (options = {});
+            if (this.defaults) {
+                options = _.extend({}, this.defaults, options);
+            }
             _.extend(this, _.pick(options, viewOptions));
             if (!this.elem) {
                 this.setElement($(document.createElement(this.tagName)), false);
@@ -22,7 +65,7 @@
                 this.elem = $(_.result(this, 'elem'));
                 this.setElement(this.elem, false);
             }
-            if (this.name) this.elem.data(this.name + 'view', this);
+            if (this.instance_key) this.elem.data(this.instance_key, this);
             this.initialise(options);
         },
 
@@ -73,39 +116,105 @@
             return this;
         },
         //
-        jQuery: function () {
-            var self = this,
-                key = this.name + 'view';
-            self.elem.data(key, self);
-            //
-            $.fn[self.name] = function (options) {
-                var view = this.data(key);
-                if (!view) {
-                    ViewClass = self.prototype.constructor;
-                    options.elem = this;
-                    view = new ViewClass(options);
+        // Immediately show the ``elem`` and fire 'show' event
+        show: function () {
+            this.elem.show();
+            this.elem.trigger('show', this);
+        },
+        //
+        // Immediately hide the ``elem`` and fire 'hide' event
+        hide: function () {
+            this.elem.hide();
+            this.elem.trigger('hide', this);
+        },
+        //
+        // fadeIn the jQuery element.
+        // Once the fadeIn action is finished a trigger the ``show``
+        // event and invoke the optional ``callback``.
+        fadeIn: function (options) {
+            options || (options = {});
+            if (!options.complete) {
+                var self = this;
+                options.complete = function () {
+                    self.show();
+                };
+            }
+            this.elem.fadeIn(options);
+        },
+        //
+        // fadeOut the jQuery element conteining the extension.
+        // Once the fadeOut action is finished a trigger the ``hide``
+        // event and invoke the optional ``callback``.
+        fadeOut: function (options) {
+            options || (options = {});
+            if (!options.complete) {
+                var self = this;
+                options.complete = function () {
+                    self.hide();
+                };
+            }
+            this.elem.fadeOut(options);
+        },
+        //
+        // Get the skin name for this view
+        getSkin: function (prefix) {
+            return lux.getSkin(this.elem, prefix || this.className);
+        },
+        //
+        // Set the skin for this view
+        setSkin: function (skin, prefix) {
+            lux.setSkin(this.elem, skin, prefix || this.className);
+        },
+        //
+        // Add a stylesheet to the head tag.
+        //
+        //  ``rules`` is an array of string with css rules
+        //  ``id`` optional id to set in the style tag.
+        addStyle: function (rules, id) {
+            if (rules.length) {
+                var head = $("head"),
+                    style;
+                if (id) {
+                    style = head.find('#' + id);
+                    if (!style.length) style = null;
                 }
-                return view.elem;
-            };
-        }
+                if (!style) {
+                    style = $("<style type='text/css' rel='stylesheet' />"
+                        ).appendTo(head).attr('id', id);
+                    if (style[0].styleSheet) { // IE
+                        style[0].styleSheet.cssText = rules.join(" ");
+                    } else {
+                        style[0].appendChild(document.createTextNode(rules.join(" ")));
+                    }
+                }
+            }
+        },
     });
-
     //
-    // Create a new view and build a jQuery plugin
+    //  Create a new View and perform additional action such as:
+    //
+    //  * Create a jQuery plugin if the ``obj`` has the ``jQuery`` attribute
+    //    set to ``true``.
+    //  * Register the view for autoloading if the ``selector`` attribute is
+    //    available.
     lux.createView = function (name, obj, BaseView) {
-        var jQuery = obj.jQuery;
+        var jQuery = obj.jQuery,
+            key = name + '-view';
         delete obj.jQuery;
         //
         obj.name = name;
+        obj.instance_key = key;
         BaseView = BaseView || View;
         //
         // Build the new View
         var NewView = BaseView.extend(obj),
             proto = NewView.prototype,
-            key = name + 'view',
+            //
+            // view's factory
             create = function (elem, options, render) {
                 var view = elem.data(key);
                 if (!view) {
+                    options || (options = {});
                     if (lux.data_api)
                         options = _.extend({}, elem.data(), options);
                     options.elem = elem;
@@ -117,17 +226,58 @@
 
         if (jQuery) {
             $.fn[name] = function (options) {
-                return create(this, options).elem;
+                if (options === 'instance') {
+                    return this.data(key);
+                } else {
+                    return create(this, options).elem;
+                }
             };
         }
 
         if (proto.selector) {
-            $(document).ready(function () {
-                var opts = {};
-                $(proto.selector, this).each(function () {
-                    create($(this), opts, true);
-                });
+            autoViews.push({
+                selector: proto.selector,
+                load: function (elem) {
+                    create($(elem), null, true);
+                }
             });
         }
         return NewView;
+    };
+    //
+    //  Load all registered views into ``elem``
+    //
+    //  If ``elem`` is not provided load registered views into the
+    //  whole document.
+    lux.loadViews = function (elem) {
+        elem = $(elem || document);
+        _(autoViews).forEach(function (view) {
+            $(view.selector, elem).each(function () {
+                view.load(this);
+            });
+        });
+    };
+
+    //
+    // Callback for requires
+    lux.initWeb = function () {
+        $(document).ready(function () {
+            var doc = $(this),
+                data = doc.find('html').data() || {},
+                body = doc.find('body');
+            _.extend(lux, data);
+            if (lux.debug) {
+                logger.config({level: 'debug'});
+                if (!logger.handlers.length) {
+                    logger.addHandler();
+                }
+            }
+            body.css({opacity: 0});
+            try {
+                lux.loadViews(doc);
+                body.fadeIn(100);
+            } finally {
+                body.css({opacity: 1});
+            }
+        });
     };

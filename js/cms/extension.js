@@ -4,10 +4,12 @@
     //
     //  This is the javascript handler of ``lux.extensions.cms``.
     //  Updates to the backend are either via a websocket or ajax requests.
-    lux.web.extension('cms', {
-        selector: 'div.cms-page',
+    var CmsView = lux.CmsView = lux.createView('cms', {
         //
-        options: {
+        selector: '.cms-page',
+        //
+        defaults: {
+            //
             editing: false,
             // backend url used to communicate with backend server
             // when updating & creating content as well as when
@@ -81,26 +83,24 @@
         },
         //
         // The decorator called by ``lux.web``
-        decorate: function () {
+        initialise: function (options) {
             var self = this,
-                options = self.options,
                 elem = self._element;
             // In editing mode, set-up grids
             if (options.editing) {
                 //self._handle_close();
-                elem.addClass('editing');
+                this.elem.addClass('editing');
                 //
                 options.store = new lux.create_store(
                     options.backend_url, {
                         hartbeat: options.hartbeat
                     });
-                if (options.store.type === 'websocket') {
-                    self.backend = web.backend({store: options.store});
-                }
+                //if (options.store.type === 'websocket') {
+                //   this.backend = web.backend({store: options.store});
+                //}
             }
-            self._setup_api();
-            self.view = new PageView(elem, options);
-            self.view.render();
+            this._setup_api();
+            this._super(options);
         },
         //
         _setup_api: function () {
@@ -139,39 +139,4 @@
                 return false;
             });
         }
-    });
-
-    //  lux web grid CMS decorator
-    //  -----------------------------------------
-    //
-    lux.web.extension('grid', {
-        defaultElement: 'div',
-        //
-        options: {
-            template: 'Half-Half',
-            columns: 24
-        },
-        //
-        decorate: function () {
-            var template = ROW_TEMPLATES.get(this.options.template),
-                options = this.options,
-                elem = this.element();
-            if (!template) {
-                this.options.template = 'Half-Half';
-                template = ROW_TEMPLATES.get(this.options.template);
-            }
-            this.template = template;
-            elem.addClass('row grid'+this.options.columns);
-            _(this.template).forEach(function (width) {
-                var span = width*options.columns,
-                    col = $(document.createElement('div')).addClass('column span'+span);
-                elem.append(col);
-            });
-        },
-        //
-        // Retrieve the jQuery element correspondint to the column at ``index``
-        column: function (index) {
-            var children = this._element[0].childNodes;
-            return $(children[index]);
-        }
-    });
+    }, PageView);

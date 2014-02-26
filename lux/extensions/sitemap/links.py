@@ -9,7 +9,8 @@ __all__ = ['ImageProvider', 'Link']
 Link = Template(tag='a')
 
 
-class A(HtmlVisitor):
+#class A(HtmlVisitor):
+class A:
 
     def add_data(self, html, key, value):
         if key == 'icon':

@@ -10,7 +10,6 @@ EXTENSIONS = ['lux.extensions.base',
               'lux.extensions.api',
               'lux.extensions.cms',
               'lux.extensions.services',
-              'csstest',
               'jstest',
               'bitcoin']
 

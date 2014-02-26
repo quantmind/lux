@@ -62,11 +62,6 @@ def add_css(all):
     cssv.fullscreen.max_width = px(800)
 
     ##################################################### BODY AND RESETS
-    if all.config('ICON_PROVIDER') == 'fontawesome':
-        css('body',
-            CssInclude(os.path.join(UI_DIR, 'media', 'font-awesome.css'),
-                       location='ui', replace='../font'))
-
     css('body',
         gradient(cssv.body.background),
         CssInclude(all.get_media_url('normalize')),
@@ -95,9 +90,6 @@ def add_css(all):
     css('.vpadding',
         padding=spacing(20, 0),
         overflow='hidden')
-    css('.fullscreen',
-        bottom=0, left=0, right=0, top=0,
-        position='fixed')
 
     size = lambda n: 30*n
     for n in range(1, 21):
@@ -149,6 +141,11 @@ def add_css(all):
         white_space='nowrap')
 
     ##################################################### Fullscreen extension
+    css('.fullscreen',
+        Skin(only=('default', 'inverse')),
+        bottom=0, left=0, right=0, top=0,
+        position='fixed')
+
     css('.fullscreen-container',
         height=pc(100),
         margin='0 auto',

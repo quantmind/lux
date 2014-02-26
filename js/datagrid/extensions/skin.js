@@ -1,7 +1,7 @@
     // Perform client side column sorting
     DataGrid.Extension('skin', {
         //
-        options: {
+        defaults: {
             styles: {
                 'plain': '',
                 'table': 'table',
@@ -19,15 +19,12 @@
         //
         init: function (g) {
             var self = this;
-            g.skin = function (name) {
-                self.skin(g, name);
-            };
             //
             g.style = function (name) {
                 self.style(g, name);
             };
             //
-            g.skin(g.options.skin);
+            g.setSkin(g.options.skin);
             //
             g.style(g.options.style);
             //
@@ -35,15 +32,6 @@
                 this._createCssRules(g);
         },
         //
-        skin: function (g, name) {
-            var web = lux.web;
-            if (web) {
-                var skin = web.get_skin(g.elem);
-                if (skin !== name) {
-                    g.elem.removeClass(skin).addClass(name);
-                }
-            }
-        },
         // Set the style of the table
         style: function (g, name) {
             if (g.options.styles[name] !== undefined) {
@@ -57,8 +45,6 @@
         _createCssRules: function (g) {
             var cellHeightDiff = 0,
                 uid = g.elem[0].id,
-                style = $("<style type='text/css' rel='stylesheet' />"
-                    ).appendTo($("head")),
                 rowHeight = (g.options.rowHeight - cellHeightDiff),
                 rules = [
                     "#" + uid + " .row { height:" + g.options.rowHeight + "px; }",
@@ -67,11 +53,6 @@
                 if (g.options.minWidth) {
                     rules.push('#' + uid + " .row > th { min-width:" + g.options.minWidth + "px; }");
                 }
-
-            if (style[0].styleSheet) { // IE
-                style[0].styleSheet.cssText = rules.join(" ");
-            } else {
-                style[0].appendChild(document.createTextNode(rules.join(" ")));
-            }
+            g.addStyle(rules);
         }
     });

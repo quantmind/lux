@@ -37,6 +37,13 @@ def add_css(all):
                  border_collapse='separate',
                  border_spacing=0))
 
+    dg.css('th.sortable',
+           cursor='pointer',
+           vertical_align='bottom')
+    dg.css(' a.sortable-toggle',
+           float='right',
+           margin_left=px(3))
+
     if False:
         dg.css(
                    css('th',

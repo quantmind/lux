@@ -21,18 +21,19 @@
         render: function (container, skin) {
             var url = this.get('content_url');
             if (url === 'this') {
-                container.html(this.get('this'));
-                return;
-                //url = window.location.href;
-            }
-            if (url) {
+                // defer to later
+                var html = this.get('this');
+                _.defer(function () {
+                    lux.loadViews(container.html(html));
+                });
+            } else if (url) {
                 container.html('&nbsp;');
                 $.ajax(url, {
                     dataType: 'json',
                     success: function (data, status, xhr) {
                         if (data.html) {
                             require(data.requires || [], function () {
-                                web.refresh(container.html(data.html));
+                                lux.loadViews(container.html(data.html));
                             });
                         }
                     }
@@ -73,16 +74,16 @@
         meta: {
             title: 'Text using markdown',
             persistent: true,
-            fields: {
-                raw: new lux.TextArea({
+            fields: [
+                new lux.TextArea('raw', {
                     rows: 10,
                     placeholder: 'Write markdown'
                 }),
-                javascript: new lux.TextArea({
+                new lux.TextArea('javascript', {
                     rows: 7,
                     placeholder: 'javascript'
                 })
-            }
+            ]
         },
         //
         render: function (container) {
@@ -92,7 +93,7 @@
                     js = self.get('javascript') || '',
                     converter = new Showdown.converter(),
                     html = converter.makeHtml(raw);
-                web.refresh(container.html(html));
+                lux.loadViews(container.html(html));
                 if (js) {
                     var b = $('body'),
                         script = $("<script type='application/javascript'>" + js + "</script>"),
@@ -144,7 +145,7 @@
         //
         render: function (container) {
             var ul = $(document.createElement('ul')).appendTo(container);
-            _(web.libraries).forEach(function (lib) {
+            _(lux.libraries).forEach(function (lib) {
                 ul.append($('<li><a href="' + lib.web + '">' + lib.name +
                             '</a> ' + lib.version + '</li>'));
             });
@@ -177,16 +178,22 @@
                 });
             },
             //
-            fields: {
-                sortable: new lux.BooleanField({label: 'Sortable'}),
-                editable: new lux.BooleanField({label: 'Editable'}),
-                footer: new lux.BooleanField({label: 'Display Footer'}),
-                row_actions: new lux.MultiField({
+            fields: [
+                new lux.BooleanField('sortable'),
+                new lux.BooleanField('editable'),
+                new lux.BooleanField('collapsable'),
+                new lux.BooleanField('fullscreen'),
+                new lux.ChoiceField('style', {
+                    tag: 'input',
+                    choices: ['table', 'grid']
+                }),
+                new lux.BooleanField('footer', {label: 'Display Footer'}),
+                new lux.MultiField('row_actions', {
                     label: 'Row actions',
                     placeholder: 'Action on rows',
-                    options: [{value: 'delete'}]
+                    choices: [{value: 'delete'}]
                 })
-            }
+            ]
         },
         //
         render: function (container, skin) {
@@ -240,9 +247,9 @@
                 } else {
                     options.columns = model.fields;
                 }
-                options.ajaxUrl = options.url;
+                options.store = options.url;
                 options.skin = skin;
-                web.datagrid(elem, options);
+                elem.datagrid(options);
             }
         },
         //
@@ -295,7 +302,7 @@
                 multiple: 'multiple',
                 name: 'fields',
                 placeholder: 'Select fields to display'
-            }).select();
+            }).Select();
             //
             fields.sortable.add_to_form(form, this);
             fields.editable.add_to_form(form, this);

@@ -1,12 +1,17 @@
 
-    var Cell = exports.Cell = lux.View.extend({
+    var Cell = exports.Cell = lux.createView('datagridcell', {
         tagName: "td",
 
-        init: function (elem, options) {
-            this._super(elem);
+        initialise: function (options) {
+            var model = this.model;
             this.column = options.column;
             if (!(this.column instanceof DataGridColumn)) {
                 this.column = new DataGridColumn(this.column);
+            }
+            if (model) {
+                var value = model.get(this.column.id());
+                if (value)
+                    this.elem.html(value);
             }
         },
 

@@ -1,5 +1,6 @@
     //
     var
+    //
     views = cms.views = {},
     //
     //  ContentView
@@ -12,13 +13,11 @@
     BaseContentView = views.base = lux.View.extend({
         // The constructor takes an HTML or jQuery element, an ``options`` object
         // and a ``parent`` ContentView.
-        init: function (elem, options, parent) {
-            options = Object(options);
-            options.elem = elem;
-            this._super(options);
+        initialise: function (options) {
+            this.parentType = options.parent ? options.parent.type : null;
+            delete options.parent;
             this.options = options;
             this.store = this.options.store;
-            this.parentType = parent ? parent.type : null;
             this.name = this.elem.data('context');
             this.elem.addClass('cms-' + this.type).data('cmsview', this);
         },
@@ -113,14 +112,16 @@
         // Create child element and append it to this view
         create_child: function (elem, content) {
             if (this.childType) {
-                var View = views[this.childType];
+                var View = views[this.childType],
+                    options = this.options;
                 if (!View) {
                     throw new lux.NotImplementedError(this + ' has no create_child method.');
                 }
-                if (!elem) elem = $(document.createElement('div'));
-                var child = new View(elem, this.options, this);
+                options.elem = elem;
+                options.parent = this;
+                var child = new View(options);
                 if (content === Object(content)) {
-                    elem.data(content);
+                    child.elem.data(content);
                 }
                 child.render(this);
                 return child;

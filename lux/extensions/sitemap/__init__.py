@@ -78,10 +78,8 @@ Navigation
 import logging
 from collections import namedtuple
 
-from pulsar.apps.wsgi import Html
-
 import lux
-from lux import Router, Parameter
+from lux import Router, Parameter, Html
 
 from .links import *
 from .ui import add_css
@@ -155,8 +153,10 @@ class NavigationInfo(object):
         '''Create a :class:`.Link` object
         '''
         title = title or text
+        return Html('a', text, href=url, icon=icon, title=title, **kw)
         if text and icon:
             text = ' %s' % text
+
         return Link(href=url, icon=icon, children=(text,), title=title, **kw)
 
     def load(self, request):

@@ -1,12 +1,6 @@
 
     var
     //
-    CID_PREFIX = 'cid',
-    //
-    CID_FIELD = '_cid_',
-    // Custom event fired by models when their custom id change
-    CID_CHANGE = 'cidchange',
-    //
     // Test for ``_super`` method in a ``Class``.
     //
     // Check http://ejohn.org/blog/simple-javascript-inheritance/
@@ -38,7 +32,7 @@
 
     //  A Type is a factory of Classes. This is the correspondent of
     //  python metaclasses.
-    Type = (function (t) {
+    Type = lux.Type = (function (t) {
 
         t.new_class = function (Caller, attrs) {
             var type = this,
@@ -100,7 +94,7 @@
 
     //  Lux base class.
     //  The `extend` method is the most important function of this object.
-    Class = (function (c) {
+    Class = lux.Class = (function (c) {
         c.__class__ = Type;
         //
         c.extend = function (attrs) {
@@ -174,7 +168,7 @@
     // servers. A ``Meta`` must be registered with a backend before it can
     // use the ``sync`` method. Registration is achieved via the
     // ``set_transport`` method.
-    Meta = Class.extend({
+    Meta = lux.Meta = Class.extend({
         //
         // Initialisation, set the ``model`` attribute and the attributes
         // for this Meta. The available attributes are the same as
@@ -189,13 +183,11 @@
         init_instance: function (o, fields) {
             o._fields = {};
             o._changed = {};
+            o.cid = _.uniqueId('model');
             if (fields === Object(fields)) {
                 _(fields).forEach(function (field, name) {
                     this.set_field(o, name, field, true);
                 }, this);
-            }
-            if (!o.pk()) {
-                o._id = CID_PREFIX + lux.s4();
             }
         },
         //
@@ -258,20 +250,7 @@
             } else {
                 var prev = instance.get(field);
                 if (_.isEqual(value, prev)) return;
-                if (field === this.pkname) {
-                    if (value) {
-                        var cid = instance.cid();
-                        instance._fields[field] = value;
-                        delete instance._id;
-                        if (cid !== instance.cid()) {
-                            instance.trigger(CID_CHANGE, [instance, cid]);
-                        }
-                    } else {
-                        return;
-                    }
-                } else {
-                    instance._fields[field] = value;
-                }
+                instance._fields[field] = value;
                 return prev === undefined ? null : prev;
             }
         },
@@ -286,23 +265,39 @@
 
     // Override the standard ``Type`` so that the new model class
     // contains the ``_meta`` attribute, and instance of ``Meta``.
-    ModelType = Type.extend({
+    ModelType = lux.ModelType = Type.extend({
         //
         new_class: function (Prototype, attrs) {
-            var mattr = {},
-                meta = Prototype._meta;
+            attrs || (attrs = {});
+            var meta = Prototype._meta,
+                mattrs = _.merge({}, default_meta_attributes, attrs.meta);
             // Make sure we inherit fields for parent models
             if (meta && meta.fields) {
-                mattr.fields = _.extend({}, meta.fields);
+                mattrs.fields = this.mergeFields([meta.fields, mattrs.fields]);
             }
-            meta = _.merge(mattr, default_meta_attributes, attrs.meta);
-            delete attrs.meta;
-            _(meta.fields).forEach(function (field, name) {
-                if (field) field.name = name;
-            });
             var cls = this._super(Prototype, attrs);
-            cls._meta = cls.prototype._meta = new Meta(cls, meta);
+            cls._meta = cls.prototype._meta = new Meta(cls, mattrs);
             return cls;
+        },
+        //
+        mergeFields: function (groups) {
+            var map = {},
+                list = [],
+                merged = [];
+            _(groups).forEach(function (fields) {
+                _(fields).forEach(function (field) {
+                    if (map[field.name]) {
+                        map[field.name] = field;
+                    } else {
+                        map[field.name] = field;
+                        list.push(field.name);
+                    }
+                });
+            });
+            _(list).forEach(function (name) {
+                merged.push(map[name]);
+            });
+            return merged;
         }
     }),
     //
@@ -312,7 +307,7 @@
     // The base class for a model. A model is a single, definitive source
     // of data about your data. A Model consists of ``fields`` and behaviours
     // of the data you are storing.
-    Model = EventClass.extend({
+    Model = lux.Model = EventClass.extend({
         // Model uses a specialised metaclass
         Metaclass: ModelType,
         //
@@ -324,13 +319,6 @@
         // the backend) it can be undefined.
         pk: function () {
             return this.get(this._meta.pkname);
-        },
-        //
-        // Custom Identifier
-        //
-        // Uniquely identify this model and it is **always available**.
-        cid: function () {
-            return this._meta.name + '-' + (this.pk() || this._id);
         },
         // Has this model been saved to the server yet? If the model does
         // not yet have a pk value, it is considered to be new.
@@ -415,16 +403,16 @@
             this._deleted = true;
         },
         //
-        // Sync a single model
+        // Sync a model
         sync: function (store, options) {
-            options = Object(options);
+            options || (options = {});
             var callback = options.success,
                 info = this._sync_data(options),
                 self = this;
             if (info) {
                 info.model = this._meta.name;
-                info.success = function (data) {
-                    self._changed = {};
+                info.success = function (data, status, response) {
+                    self.sync_callback(data, status, response);
                     if (callback) callback(self);
                 };
                 return store.execute(info);
@@ -433,8 +421,21 @@
             }
         },
         //
+        // Calledback after a ``sync`` has terminated with success
+        // Override  if you need to
+        sync_callback: function (data, status, response) {
+            if (response.status === 200 || response.status === 201) {
+                this._changed = {};
+                this.update(data);
+            } else if (response.crud === Crud.delete) {
+                this.trigger('deleted');
+            } else {
+                logger.warning('Could not understand response');
+            }
+        },
+        //
         toString: function () {
-            return this.cid();
+            return this._meta.name + '-' + this.cid;
         },
         //
         // Get a jQuery form element for this model.
@@ -476,32 +477,27 @@
         //    * ``fields`` - object with model fields (not available for ``delete`` action)
         //    * ``cid`` - custom identifier
         _sync_data: function (options) {
-            options = Object(options);
+            options || (options = {});
             var pkvalue = this.pk();
             if (this.isDeleted() && pkvalue) {
                 // DELETE THE MODEL
                 options.crud = Crud.delete;
                 options.item = {
-                    pk: pkvalue,
-                    cid: this.cid()
+                    pk: pkvalue
                 };
             } else if (pkvalue && this.hasChanged()) {
                 // UPDATE THE MODEL
                 options.crud = Crud.update;
                 options.item = {
-                    fields: this.toJSON(true),
                     pk: pkvalue,
-                    cid: this.cid()
+                    data: this.toJSON()
                 };
             } else if (!pkvalue) {
                 // CREATE A NEW MODEL
-                data = this.toJSON();
-                if (data) {
+                var o = this.toJSON();
+                if (_.size(o)) {
                     options.crud = Crud.create;
-                    options.item = {
-                        fields: data,
-                        cid: this.cid()
-                    };
+                    options.item = {data: o};
                 } else {
                     return;
                 }
@@ -560,19 +556,18 @@
                 //   appropriate "change" events.
                 add: function (data, options) {
                     var models = [],
-                        existing, cid;
+                        existing;
                     //
-                    options = Object(options);
+                    options || (options = {});
                     if (!_.isArray(data)) {
                         data = [data];
                     }
                     //
                     _(data).forEach(function (o) {
-                        if (!(o instanceof self.model)) {
+                        if (!(o instanceof NewModel)) {
                             o = new NewModel(o);
                         }
-                        cid = o.cid();
-                        existing = _map[cid];
+                        existing = _map[o.cid];
                         if (existing) {
                             if (options.merge) {
                                 existing.update(o.fields());
@@ -581,8 +576,8 @@
                                 }
                             }
                         } else {
-                            _map[cid] = o;
-                            _data.push(cid);
+                            _map[o.cid] = o;
+                            _data.push(o.cid);
                             models.push(o);
                         }
                     });
@@ -631,7 +626,7 @@
         //
         // Fetch a new Collection of models from the store
         fetch: function (options) {
-            options = Object(options);
+            options || (options = {});
             var self = this;
             if (!options.success) {
                 options.success || function (data) {
@@ -645,57 +640,16 @@
         //
         //  Commit changes to backend store
         sync: function (options) {
-            options = Object(options);
+            options || (options = {});
             var self = this,
+                store = this.store,
                 groups = {},
                 callback = options.success,
                 errback = options.error,
                 group, item;
 
             this.forEach(function (model) {
-                var info = model._sync_data();
-                if (info) {
-                    group = groups[item.crud];
-                    if (!group) {
-                        group = groups[item.crud] = [];
-                    }
-                    group.push(info.item);
-                }
-            });
-            //
-            var done = [],
-                fail = [];
-                fire = function () {
-                    if (done.length === groups.length) {
-                        if (fail.length) {
-                            if (errback) {
-                                errback(self, done, fail);
-                            }
-                        } else if (callback) {
-                            callback(self);
-                        }
-                    }
-                };
-
-            _(groups).forEach(function (group, op) {
-                self.store.execute({
-                    meta: self.model._meta,
-                    type: op,
-                    data: group,
-                    success: function (data) {
-                        done.push(op);
-                        try {
-                            self.afterSync(op, data);
-                        } finally {
-                            fire();
-                        }
-                    },
-                    error: function (exc) {
-                        done.push(op);
-                        fail.push(op);
-                        fire();
-                    }
-                });
+                model.sync(store, options);
             });
         },
         //
@@ -718,11 +672,8 @@
     });
 
 
-    lux.Type = Type;
-    lux.Class = Class;
+
     lux.EventClass = EventClass;
-    lux.Model = Model;
-    lux.ModelType = ModelType;
     lux.Exception = Exception;
     lux.ModelException = ModelException;
     lux.NotImplementedError = NotImplementedError;

@@ -110,7 +110,7 @@ class App(ConsoleParser, LocalMixin, Extension):
                   'Dictionary of css locations.'),
         Parameter('JSREQUIRED', ('jquery', 'lodash', 'json', 'lux'),
                   'Default Required javascript. Loaded via requirejs.'),
-        Parameter('JSREQUIRE_CALLBACK', 'lux.init_web',
+        Parameter('JSREQUIRE_CALLBACK', 'lux.initWeb',
                   'Callback used by requirejs.'),
         Parameter('HTML_META',
                   [{'http-equiv': 'X-UA-Compatible',

@@ -12,12 +12,13 @@ from stdnet import odm
 
 from pulsar.utils.html import escape
 from pulsar.apps.wsgi import Route
-from pulsar.utils.structures import AttributeDictionary
 
 from .interfaces import PageModel, MarkupMixin
 
 additional_where = ((1, 'head'),
                     (2, 'body javascript'))
+
+skip_fields = set(('created', 'timestamp'))
 
 
 class KeywordsField(odm.CharField):
@@ -30,7 +31,7 @@ class KeywordsField(odm.CharField):
 
 class ModelBase(odm.StdModel):
     created = odm.DateTimeField(default=datetime.now)
-    timestamp = odm.DateTimeField(default=datetime.now)
+    timestamp = odm.DateTimeField(auto_now=True)
     keywords = KeywordsField()
     history = odm.ListField()
 
@@ -91,6 +92,15 @@ in the sitemap.'''
         return Route(self.url).url(**urlargs)
 
 
+class ContentManager(odm.Manager):
+
+    def __call__(self, id=None, title=None, keywords=None, content_type=None,
+                 timestamp=None, created=None, **data):
+        return self.model(id=id, title=title, keywords=keywords,
+                          content_type=content_type, data=data)
+
+
+
 class Content(ModelBase):
     '''Model for the content displayed on a page ``position`` element.
 
@@ -110,12 +120,14 @@ class Content(ModelBase):
         * ``contenturl`` for :ref:`content from a url <cms-contenturl>`
         * ``blank`` an empty block
     '''
-    title = odm.CharField()
+    title = odm.CharField(required=True)
     content_type = odm.SymbolField()
     data = odm.JSONField()
 
     class Meta:
         search = ('title', 'keywords')
+
+    manager_class = ContentManager
 
     def __unicode__(self):
         try:
@@ -134,35 +146,7 @@ class Content(ModelBase):
     def set_fields(self, data):
         for name in self._meta.dfields:
             if name in data:
-                self.set(name, data.pop(name))
+                value = data.pop(name)
+                if name not in skip_fields:
+                    self.set(name, value)
         self.data.update(data)
-
-
-class ContentDictionary(AttributeDictionary):
-
-    def fields(self):
-        fields = dict(self)
-        fields.pop('timestamp', None)
-        fields.pop('_cid', None)
-        data = fields.pop('data', None)
-        if data:
-            fields.update(data)
-        return fields
-
-    def pkvalue(self):
-        pass
-
-
-def create_content(manager, content_type, data):
-    '''Create a new content from ``content_type`` and a dictionary of ``data``
-
-    If the ``data`` dictionary contains a ``title`` field, a new model is
-    created, otherwise a simple dictionary is returned.
-    '''
-    title = data.pop('title', None)
-    keywords = data.pop('keywords', None)
-    if title:
-        return manager.new(title=title, keywords=keywords, data=data,
-                           content_type=content_type)
-    else:
-        return ContentDictionary(content_type=content_type, data=data)

@@ -1,4 +1,4 @@
-define(['lux', 'lux-web'], function (lux) {
+define(['lux'], function (lux) {
     "use strict";
 
     var
@@ -98,8 +98,7 @@ define(['lux', 'lux-web'], function (lux) {
     var ROW_TEMPLATES = new lux.Ordered(),
         BLOCK_TEMPLATES = new lux.Ordered(),
         content_type = 'content_type',
-        dbfields = 'dbfields',
-        web = lux.web;
+        dbfields = 'dbfields';
     //
     // Content Model
     // ----------------
@@ -118,25 +117,41 @@ define(['lux', 'lux-web'], function (lux) {
         meta: {
             name: 'content',
             //
-            fields: {
-                created: null,
+            fields: [
+                new lux.ChoiceField('wrapper', {
+                    choices: function () {
+                        return cms.wrapper_types();
+                    },
+                    fieldset: content_type
+                }),
                 //
-                timestamp: null,
+                new lux.ChoiceField('skin', {
+                    choices: lux.SKIN_NAMES,
+                    fieldset: content_type
+                }),
                 //
-                id: new lux.Field({
+                new lux.ChoiceField('content_type', {
+                    required: true,
+                    choices: function () {
+                        cms.content_types();
+                    },
+                    fieldset: content_type
+                }),
+                //
+                new lux.Field('id', {
                     type: 'hidden',
-                    fieldset: {Class: dbfields}
+                    fieldset: dbfields
                 }),
-                title: new lux.Field({
-                    required: 'required',
-                    placeholder: 'title',
-                    fieldset: {Class: dbfields}
+                //
+                new lux.Field('title', {
+                    required: true,
+                    fieldset: dbfields
                 }),
-                keywords: new lux.KeywordsField({
-                    placeholder: 'keywords',
-                    fieldset: {Class: dbfields}
+                //
+                new lux.KeywordsField('keywords', {
+                    fieldset: dbfields
                 })
-            }
+            ]
         },
         //
         // Create a jQuery Form element and passit to the ``callback``.
@@ -212,7 +227,7 @@ define(['lux', 'lux-web'], function (lux) {
                     return meta.update(id, data);
                 }
             }
-            web.logger.error('Could not understand content');
+            logger.error('Could not understand content');
         }
     });
 
@@ -241,7 +256,7 @@ define(['lux', 'lux-web'], function (lux) {
             db = Content._meta.fields,
             //
             // Build the form container
-            form = web.form(),
+            form = new lux.Form(),
             //
             // Create the select element for HTML wrappers
             wrapper_select = web.create_select(cms.wrapper_types()).attr(
@@ -457,6 +472,7 @@ define(['lux', 'lux-web'], function (lux) {
 
     //
     var
+    //
     views = cms.views = {},
     //
     //  ContentView
@@ -469,13 +485,11 @@ define(['lux', 'lux-web'], function (lux) {
     BaseContentView = views.base = lux.View.extend({
         // The constructor takes an HTML or jQuery element, an ``options`` object
         // and a ``parent`` ContentView.
-        init: function (elem, options, parent) {
-            options = Object(options);
-            options.elem = elem;
-            this._super(options);
+        initialise: function (options) {
+            this.parentType = options.parent ? options.parent.type : null;
+            delete options.parent;
             this.options = options;
             this.store = this.options.store;
-            this.parentType = parent ? parent.type : null;
             this.name = this.elem.data('context');
             this.elem.addClass('cms-' + this.type).data('cmsview', this);
         },
@@ -570,14 +584,16 @@ define(['lux', 'lux-web'], function (lux) {
         // Create child element and append it to this view
         create_child: function (elem, content) {
             if (this.childType) {
-                var View = views[this.childType];
+                var View = views[this.childType],
+                    options = this.options;
                 if (!View) {
                     throw new lux.NotImplementedError(this + ' has no create_child method.');
                 }
-                if (!elem) elem = $(document.createElement('div'));
-                var child = new View(elem, this.options, this);
+                options.elem = elem;
+                options.parent = this;
+                var child = new View(options);
                 if (content === Object(content)) {
-                    elem.data(content);
+                    child.elem.data(content);
                 }
                 child.render(this);
                 return child;
@@ -1321,18 +1337,19 @@ define(['lux', 'lux-web'], function (lux) {
         render: function (container, skin) {
             var url = this.get('content_url');
             if (url === 'this') {
-                container.html(this.get('this'));
-                return;
-                //url = window.location.href;
-            }
-            if (url) {
+                // defer to later
+                var html = this.get('this');
+                _.defer(function () {
+                    lux.loadViews(container.html(html));
+                });
+            } else if (url) {
                 container.html('&nbsp;');
                 $.ajax(url, {
                     dataType: 'json',
                     success: function (data, status, xhr) {
                         if (data.html) {
                             require(data.requires || [], function () {
-                                web.refresh(container.html(data.html));
+                                lux.loadViews(container.html(data.html));
                             });
                         }
                     }
@@ -1373,16 +1390,16 @@ define(['lux', 'lux-web'], function (lux) {
         meta: {
             title: 'Text using markdown',
             persistent: true,
-            fields: {
-                raw: new lux.TextArea({
+            fields: [
+                new lux.TextArea('raw', {
                     rows: 10,
                     placeholder: 'Write markdown'
                 }),
-                javascript: new lux.TextArea({
+                new lux.TextArea('javascript', {
                     rows: 7,
                     placeholder: 'javascript'
                 })
-            }
+            ]
         },
         //
         render: function (container) {
@@ -1392,7 +1409,7 @@ define(['lux', 'lux-web'], function (lux) {
                     js = self.get('javascript') || '',
                     converter = new Showdown.converter(),
                     html = converter.makeHtml(raw);
-                web.refresh(container.html(html));
+                lux.loadViews(container.html(html));
                 if (js) {
                     var b = $('body'),
                         script = $("<script type='application/javascript'>" + js + "</script>"),
@@ -1444,7 +1461,7 @@ define(['lux', 'lux-web'], function (lux) {
         //
         render: function (container) {
             var ul = $(document.createElement('ul')).appendTo(container);
-            _(web.libraries).forEach(function (lib) {
+            _(lux.libraries).forEach(function (lib) {
                 ul.append($('<li><a href="' + lib.web + '">' + lib.name +
                             '</a> ' + lib.version + '</li>'));
             });
@@ -1477,16 +1494,22 @@ define(['lux', 'lux-web'], function (lux) {
                 });
             },
             //
-            fields: {
-                sortable: new lux.BooleanField({label: 'Sortable'}),
-                editable: new lux.BooleanField({label: 'Editable'}),
-                footer: new lux.BooleanField({label: 'Display Footer'}),
-                row_actions: new lux.MultiField({
+            fields: [
+                new lux.BooleanField('sortable'),
+                new lux.BooleanField('editable'),
+                new lux.BooleanField('collapsable'),
+                new lux.BooleanField('fullscreen'),
+                new lux.ChoiceField('style', {
+                    tag: 'input',
+                    choices: ['table', 'grid']
+                }),
+                new lux.BooleanField('footer', {label: 'Display Footer'}),
+                new lux.MultiField('row_actions', {
                     label: 'Row actions',
                     placeholder: 'Action on rows',
-                    options: [{value: 'delete'}]
+                    choices: [{value: 'delete'}]
                 })
-            }
+            ]
         },
         //
         render: function (container, skin) {
@@ -1540,9 +1563,9 @@ define(['lux', 'lux-web'], function (lux) {
                 } else {
                     options.columns = model.fields;
                 }
-                options.ajaxUrl = options.url;
+                options.store = options.url;
                 options.skin = skin;
-                web.datagrid(elem, options);
+                elem.datagrid(options);
             }
         },
         //
@@ -1595,7 +1618,7 @@ define(['lux', 'lux-web'], function (lux) {
                 multiple: 'multiple',
                 name: 'fields',
                 placeholder: 'Select fields to display'
-            }).select();
+            }).Select();
             //
             fields.sortable.add_to_form(form, this);
             fields.editable.add_to_form(form, this);
@@ -1651,10 +1674,12 @@ define(['lux', 'lux-web'], function (lux) {
     //
     //  This is the javascript handler of ``lux.extensions.cms``.
     //  Updates to the backend are either via a websocket or ajax requests.
-    lux.web.extension('cms', {
-        selector: 'div.cms-page',
+    var CmsView = lux.CmsView = lux.createView('cms', {
         //
-        options: {
+        selector: '.cms-page',
+        //
+        defaults: {
+            //
             editing: false,
             // backend url used to communicate with backend server
             // when updating & creating content as well as when
@@ -1728,26 +1753,24 @@ define(['lux', 'lux-web'], function (lux) {
         },
         //
         // The decorator called by ``lux.web``
-        decorate: function () {
+        initialise: function (options) {
             var self = this,
-                options = self.options,
                 elem = self._element;
             // In editing mode, set-up grids
             if (options.editing) {
                 //self._handle_close();
-                elem.addClass('editing');
+                this.elem.addClass('editing');
                 //
                 options.store = new lux.create_store(
                     options.backend_url, {
                         hartbeat: options.hartbeat
                     });
-                if (options.store.type === 'websocket') {
-                    self.backend = web.backend({store: options.store});
-                }
+                //if (options.store.type === 'websocket') {
+                //   this.backend = web.backend({store: options.store});
+                //}
             }
-            self._setup_api();
-            self.view = new PageView(elem, options);
-            self.view.render();
+            this._setup_api();
+            this._super(options);
         },
         //
         _setup_api: function () {
@@ -1786,42 +1809,7 @@ define(['lux', 'lux-web'], function (lux) {
                 return false;
             });
         }
-    });
-
-    //  lux web grid CMS decorator
-    //  -----------------------------------------
-    //
-    lux.web.extension('grid', {
-        defaultElement: 'div',
-        //
-        options: {
-            template: 'Half-Half',
-            columns: 24
-        },
-        //
-        decorate: function () {
-            var template = ROW_TEMPLATES.get(this.options.template),
-                options = this.options,
-                elem = this.element();
-            if (!template) {
-                this.options.template = 'Half-Half';
-                template = ROW_TEMPLATES.get(this.options.template);
-            }
-            this.template = template;
-            elem.addClass('row grid'+this.options.columns);
-            _(this.template).forEach(function (width) {
-                var span = width*options.columns,
-                    col = $(document.createElement('div')).addClass('column span'+span);
-                elem.append(col);
-            });
-        },
-        //
-        // Retrieve the jQuery element correspondint to the column at ``index``
-        column: function (index) {
-            var children = this._element[0].childNodes;
-            return $(children[index]);
-        }
-    });
+    }, PageView);
 
 	//
 	return cms;

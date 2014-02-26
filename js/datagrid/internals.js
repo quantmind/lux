@@ -34,7 +34,8 @@
     _initHeaders = function (self) {
         var columns = [],
             tr = TR.cloneNode(false),
-            cols = self.options.columns;
+            options = self.options,
+            cols = options.columns;
         //
         self.columns = columns;
         if (_.isNumber(cols)) {
@@ -51,7 +52,7 @@
                 }
                 column = new DataGridColumn(column);
             }
-            tr.appendChild(column.th[0]);
+            tr.appendChild(column.elem[0]);
             columns.push(column);
         });
         self.thead().append($(tr));
@@ -62,7 +63,7 @@
             options = self.options;
         self.extensions = {};
         _(extensions).forEach(function (Extension) {
-            _(Extension.prototype.options).forEach(function (value, name) {
+            _(Extension.prototype.defaults).forEach(function (value, name) {
                 if (!(name in options)) {
                     options[name] = value;
                 }

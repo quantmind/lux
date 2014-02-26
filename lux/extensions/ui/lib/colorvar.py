@@ -146,8 +146,11 @@ new :class:`RGBA` color with lightness increased by that amount.'''
 #############################################################################
 ##    color factory
 def color(col, *cols, **kwargs):
-    '''Safely build a :class:`RGBA` from several type of inputs.
+    '''Build a :class:`RGBA` or a :class:`lazy` variable
+    from several type of inputs.
     '''
+    if isinstance(col, Variable):
+        return Lazy(lambda: color(as_value(col), *cols, **kwargs))
     alpha = kwargs.pop('alpha', None)
     if isinstance(col, RGBA):
         if cols:

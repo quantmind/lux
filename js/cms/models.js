@@ -12,8 +12,7 @@
     var ROW_TEMPLATES = new lux.Ordered(),
         BLOCK_TEMPLATES = new lux.Ordered(),
         content_type = 'content_type',
-        dbfields = 'dbfields',
-        web = lux.web;
+        dbfields = 'dbfields';
     //
     // Content Model
     // ----------------
@@ -32,25 +31,41 @@
         meta: {
             name: 'content',
             //
-            fields: {
-                created: null,
+            fields: [
+                new lux.ChoiceField('wrapper', {
+                    choices: function () {
+                        return cms.wrapper_types();
+                    },
+                    fieldset: content_type
+                }),
                 //
-                timestamp: null,
+                new lux.ChoiceField('skin', {
+                    choices: lux.SKIN_NAMES,
+                    fieldset: content_type
+                }),
                 //
-                id: new lux.Field({
+                new lux.ChoiceField('content_type', {
+                    required: true,
+                    choices: function () {
+                        cms.content_types();
+                    },
+                    fieldset: content_type
+                }),
+                //
+                new lux.Field('id', {
                     type: 'hidden',
-                    fieldset: {Class: dbfields}
+                    fieldset: dbfields
                 }),
-                title: new lux.Field({
-                    required: 'required',
-                    placeholder: 'title',
-                    fieldset: {Class: dbfields}
+                //
+                new lux.Field('title', {
+                    required: true,
+                    fieldset: dbfields
                 }),
-                keywords: new lux.KeywordsField({
-                    placeholder: 'keywords',
-                    fieldset: {Class: dbfields}
+                //
+                new lux.KeywordsField('keywords', {
+                    fieldset: dbfields
                 })
-            }
+            ]
         },
         //
         // Create a jQuery Form element and passit to the ``callback``.
@@ -126,6 +141,6 @@
                     return meta.update(id, data);
                 }
             }
-            web.logger.error('Could not understand content');
+            logger.error('Could not understand content');
         }
     });

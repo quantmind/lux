@@ -64,7 +64,6 @@ from lux.forms import smart_redirect
 from .templates import Dialog
 from .grid import CmsContext, THIS
 from .forms import PageForm
-from .models import create_content
 
 
 CONTENT_API_URL = 'content'
@@ -367,14 +366,13 @@ class PageUpdates(api.CrudWebSocket, PageMixin):
         '''Override :meth:`.CrudWebSocket.update_create` method to handle
         Content and Page models.'''
         content_type = getattr(manager, 'content_type', None)
-        fields.pop('timestamp', None)
-        fields.pop('created', None)
         if content_type:
+            fields['content_type'] = content_type
             if instance is None:
-                return create_content(manager, content_type, fields)
+                instance = manager(**fields)
             else:
                 instance.set_fields(fields)
-                return manager.save(instance)
+            return manager.save(instance)
         else:  # this is a page
             if instance:
                 request = websocket.handshake

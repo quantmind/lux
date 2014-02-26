@@ -5,7 +5,8 @@
 
     // Add a checkbox column as the first column in the datagrid
     DataGrid.Extension('checkboxSelector', {
-        options: {
+        //
+        defaults: {
             checkbox_selector: false
         },
 
@@ -20,7 +21,7 @@
     // Add a checkbox column as the first column in the datagrid
     DataGrid.Extension('RowActions', {
         //
-        options: {
+        defaults: {
             row_actions: []
         },
         //

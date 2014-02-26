@@ -4,7 +4,8 @@ import lux
 
 from .base import *
 
-requires = ['inputs']
+requires = ['forms']
+
 
 def add_css(all):
     cssv = all.variables

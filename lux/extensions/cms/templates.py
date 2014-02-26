@@ -28,6 +28,13 @@ nav_page = PageTemplate(
     key='Navigation-Content-Footer-Fluid')
 
 
+nav_page_fixed = PageTemplate(
+    fixed_navigation,
+    Grid(CmsContext('content'), fixed=True),
+    fixed_footer,
+    key='Navigation-Content-Footer-Fixed')
+
+
 center_page = PageTemplate(
     Grid(Navigation(), cn='navbar inverse'),
     Context('this', tag='div', cn='center-page'),

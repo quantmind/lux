@@ -1,13 +1,16 @@
     //
     // Fields for Forms and Models
 
-    var c = lux;
+    var c = lux,
+        fieldOptions = ['tag', 'type'];
+
 
     c.Field = lux.Class.extend({
         tag: 'input',
         type: 'text',
         //
         init: function (options) {
+            _.extend(this, _.pick(options, fieldOptions));
             this.options = Object(options);
         },
         //

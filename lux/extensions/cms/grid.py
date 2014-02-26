@@ -220,13 +220,16 @@ class CmsContext(Context):
                         if not data:
                             continue
                         content = data.pop('content', None)
+                        if content is None:
+                            continue
                         if isinstance(content, dict):
                             elem = Html('div', data=content)
+                            # This is THE very special case where the
+                            # content in this element is the content
+                            # served by the url if there was no cms extension
                             if content.get(CONTENT_URL) == THIS:
                                 value = context.get(THIS)
-                                if isinstance(value, Html):
-                                    value.data('field', THIS)
-                                elem.append(context.get(THIS))
+                                elem.append(Html('div', value, field=THIS))
                         else:
                             # id, we need to retrieve the content
                             content = int_or_string(content)

@@ -38,13 +38,11 @@ def add_css(all):
         overflow_y='auto')
 
     dialog = css('.dialog',
-                 #Opacity(0),
                  Skin(applyto=['border'], border_width=px(1)),
                  Skin(' > .header', border_width=spacing(0, 0, px(1))),
                  Radius(cssv.dialog.radius),
                  Transition('opacity', '0.2s', 'ease'),
                  css('.ready',
-                     #Opacity(1),
                      css('.collapsed',
                          css(' .header', Radius(cssv.dialog.radius)),
                          # Remove border from header
@@ -54,16 +52,15 @@ def add_css(all):
                  background=cssv.body.background)
 
     # control variant
-    dialog.css('.ready',
-               Skin('.control', applyto=['border'], border_style='none'),
-               Skin('.control > .header',
-                    applyto=['border'],
-                    border_style='none'),
-               css('.control',
+    dialog.css('.ready.control',
+               Radius(0),
+               Border(style='none'),
+               css(' > .header',
                    Radius(0),
-                   css(' > .header',
-                       Radius(0),
-                       padding=0)))
+                   Border(style='none'),
+                   padding=0),
+               css(' > .body-wrap > .body',
+                   padding=0))
 
     css('.modal-backdrop',
         Opacity(cssv.dialog.backdrop.opacity),

@@ -5,11 +5,17 @@
             "js/lux/logger.js",
             "js/lux/backend.js",
             "js/lux/utils.js",
-            "js/lux/web.js",
+            "js/lux/views/icons.js",
+            "js/lux/views/button.js",
+            "js/lux/views/form.js",
+            "js/lux/views/grid.js",
+            "js/lux/views/fullscreen.js",
+            "js/lux/views/dialog.js",
             "js/lux/loop.js",
             "js/utils/utils.js",
             "js/utils/math.js",
             "js/utils/stats.js",
             "js/lux/close.js"],
-    "dest": "lux/media/lux/lux.js"
+    "dest": "lux/media/lux/lux.js",
+    "banner": "js/lux/start.js"
 }

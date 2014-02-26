@@ -56,19 +56,16 @@ from lux import Parameter
 
 
 class Extension(lux.Extension):
-    attributions = ['Font Awesome by Dave Gandy - '
-                    'http://fortawesome.github.com/Font-Awesome']
 
     _config = [
         Parameter('THEME', None, ''),
-        Parameter('ICON_PROVIDER', 'fontawesome', 'Icons used')]
+        Parameter('ICON_PROVIDER', 'fontawesome', 'Icons provider to use')]
 
     def on_html_document(self, app, request, doc):
         if doc.has_default_content_type:
             icon = app.config['ICON_PROVIDER']
             if icon == 'fontawesome':
-                doc.head.links.append(
-                    {'all': [('ui/font-awesome-ie7.min.css', 'IE 7')]})
+                doc.head.links.append('fontawesome')
             doc.data('icon', icon)
 
 

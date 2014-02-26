@@ -1,4 +1,4 @@
-define(['lux', 'lux-web'], function (lux) {
+define(['lux'], function (lux) {
     "use strict";
 
     var

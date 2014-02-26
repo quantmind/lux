@@ -101,33 +101,6 @@ class Crud(Router):
         else:
             raise Http404
 
-    def put(self, request):
-        '''Update a bunch of instances in one go.'''
-        manager = self.manager
-        pkname = manager._meta.pkname()
-        data = self.instances_data(request)
-        pks = [v[pkname] for v in data if pkname in v]
-        if pks:
-            instances = yield manager.query(**{pkname, pks})
-
-    def delete(self, request):
-        '''Delete a bunch of instances in one go.
-
-        The instances primary keys must be passed in the ``QUERY_STRING``.'''
-        manager = self.manager
-        pkname = manager._meta.pkname()
-        urldata = request.url_data()
-        pks = urldata.get(pkname)
-        if pks:
-            instances = yield manager.query(**{pkname, pks}).all()
-            todelete = []
-            skip = []
-            for instance in instances:
-                if request.has_permission('delete', instance):
-                    todelete.append(instance.pk())
-                else:
-                    skip.append(instance)
-
     def post(self, request):
         '''The ``C`` in CRUD.
 
@@ -171,8 +144,9 @@ class Crud(Router):
             instance = yield self.manager.get(**request.urlargs)
         except Exception:
             raise Http404
-        result = yield instance.delete()
-        coroutine_return(result)
+        yield instance.delete()
+        request.response.status_code = 204
+        coroutine_return(request.response)
 
     def handle_html_edit_instance(self, request):
         '''Handler for Html edit requests of an ``instance``.
@@ -230,15 +204,17 @@ class Crud(Router):
             valid = yield form.is_valid()
             cm = self.content_manager
             if valid:
+                response = request.response
                 kw = form.cleaned_data.copy()
                 if instance is None:
-                    action = 'Created'
                     instance = yield self.create_instance(request, kw)
+                    response.status_code = 201
+                    #TODO set the location
+                    #response.headers['location'] = 
                 else:
-                    action = 'Updated'
                     instance = yield self.update_instance(request,
                                                           instance, kw)
-                response = yield cm.form_response(form, instance, action)
+                response = yield cm.form_response(form, instance)
             else:
                 response = yield cm.form_response(form)
             coroutine_return(response)

@@ -21,7 +21,8 @@ class LoginUser(lux.Router):
 
 '''
     LoginForm = forms.LoginForm
-    icon = 'signin'
+    icon = 'sign-in'
+    text = 'login'
 
     def post(self, request):
         app = request.app
@@ -51,12 +52,12 @@ class LoginUser(lux.Router):
             url = request.full_path(self.path(), redirect=request.full_path())
             navigation.user.append(navigation.item(url=url,
                                                    icon=self.icon,
-                                                   text='login'))
+                                                   text=self.text))
 
 
 class LogoutUser(lux.Router):
     '''Default User CRUD views'''
-    icon = 'signout'
+    icon = 'sign-out'
 
     def post(self, request):
         yield request.app.permissions.logout(request)

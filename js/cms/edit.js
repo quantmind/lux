@@ -23,7 +23,7 @@
             db = Content._meta.fields,
             //
             // Build the form container
-            form = web.form(),
+            form = new lux.Form(),
             //
             // Create the select element for HTML wrappers
             wrapper_select = web.create_select(cms.wrapper_types()).attr(

@@ -3,7 +3,6 @@
 
     // A class for managing HTML5 drag and drop functionality for several
     // configurations.
-
     web.DragDrop = lux.Class.extend({
         // Default options, overwritten during initialisation.
         defaults: {
@@ -133,13 +132,13 @@
             element.on('dragstart', selector, function(e) {
                 if (self.candrag) {
                     if (self.options.onStart.call(this, e, self) !== false) {
-                        web.logger.debug('Start dragging ' + this.id);
+                        logger.debug('Start dragging ' + this.id);
                         return self.e_dragstart(this, e);
                     }
                 }
                 e.preventDefault();
             }).on('dragend', selector, function (e) {
-                web.logger.debug('Ended dragging ' + this.id);
+                logger.debug('Ended dragging ' + this.id);
                 self.candrag = false;
                 return self.e_dragend(this, e);
             }).on('drag', selector, function (e) {
@@ -250,7 +249,7 @@
                 id = dataTransfer.getData('text/plain').split(',')[0];
             target = $(target).addClass(options.over_class);
             if (target[0].id !== id) {
-                web.logger.debug('Draggable ' + id + ' entering dropzone');
+                logger.debug('Draggable ' + id + ' entering dropzone');
                 if (this._placeholder) {
                     var elem = $('#' + id);
                     this.move(elem, target, elem.parent(), target.parent(), this._placeholder);
@@ -274,7 +273,7 @@
                     top: parseInt(idxy[2], 10)
                 };
             if (elem.length) {
-                web.logger.info('Dropping ' + elem.attr('id'));
+                logger.info('Dropping ' + elem.attr('id'));
                 this.options.onDrop.call(target, elem, e, xy, this);
             }
         }

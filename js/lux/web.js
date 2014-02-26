@@ -1,7 +1,6 @@
     //
     // Web Interface entry points
-    var web_extensions_to_load = [],
-        scripts_to_execute = [],
+    var scripts_to_execute = [],
         web = lux.web = {
             options: {
                 debug: false,
@@ -46,7 +45,6 @@
     //
     // Initialise lux web components once jQuery is loaded
     lux.init_web = function () {
-        lux.$ = $;
         $(document).ready(function () {
             var doc = $(this),
                 data = doc.find('html').data() || {};
@@ -58,11 +56,6 @@
                 }
             }
             web.element = doc;
-            var to_load = web_extensions_to_load;
-            web_extensions_to_load = [];
-            _(to_load).forEach(function(o) {
-                web.extension(o.name, o.ext);
-            });
             web.refresh(doc);
         });
     };

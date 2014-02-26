@@ -26,14 +26,11 @@
         if (store instanceof Backend) {
             return store;
         } else if (_.isString(store)) {
-            var idx = store.search('://');
-            if (idx > -1) {
-                var scheme = store.substr(0, idx),
-                    Store = stores[scheme];
-                if (Store) {
-                    return new Store(store, options, scheme);
-                }
-            }
+            var idx = store.search('://'),
+                scheme = idx === -1 ? 'http' : store.substr(0, idx),
+                Store = stores[scheme];
+            if (Store && store)
+                return new Store(store, options, scheme);
         }
         // A dummy backend
         return new Backend(store, options, 'dummy');
@@ -104,7 +101,7 @@
                 delete options.item;
                 // primary key given, change url
                 if (item.pk) url = lux.utils.urljoin(url, item.pk);
-                options.data = item.fields;
+                options.data = item.data;
             }
             $.ajax(url, options);
         }
@@ -223,18 +220,19 @@
                 return;
             }
             //
-            // This is an execution for a single item
-            if (options.item) {
-                options.data = [options.item];
-            }
-            //
             var obj = {
                 // new message id
                 mid: this.new_mid(options),
                 action: options.action || lux.CrudMethod[options.crud] || options.crud,
-                model: options.model,
-                data: options.data
+                model: options.model
             };
+            //
+            // This is an execution for a single item
+            if (options.item) {
+                _.extend(obj, options.item);
+            } else {
+                obj.data = options.data;
+            }
             obj = JSON.stringify(obj);
             if (this._opened) {
                 this._transport.send(obj);
@@ -249,21 +247,20 @@
                 mid = obj.mid,
                 options = mid ? this._pending_messages[mid] : undefined,
                 data = obj.data;
+            obj.response = e;
+            obj.backend = this;
             if (options) {
                 delete this._pending_messages[mid];
-                if (options.item) {
-                    data = data[0];
-                }
             }
             if (obj.error) {
                 if (options && options.error) {
-                    options.error(obj.error, this, obj);
+                    options.error(obj, 'error', obj.error);
                 } else {
                     logger.error(this.toString() + ' - ' + obj.error);
                 }
             } else {
                 if (options && options.success) {
-                    options.success(data, this, obj);
+                    options.success(data, 'success', obj);
                 } else {
                     logger.warning(
                         this.toString() + ' - Got message with no callback registered');
@@ -283,10 +280,7 @@
         // pending messages object
         new_mid: function (options) {
             if (options.success || options.error) {
-                var mid = lux.s4();
-                while (this._pending_messages[mid]) {
-                    mid = lux.s4();
-                }
+                var mid = _.uniqueId('ws-message');
                 this._pending_messages[mid] = options;
                 return mid;
             }

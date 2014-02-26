@@ -1,55 +1,85 @@
 define(['lodash', 'jquery'], function (_, $) {
     "use strict";
 
-    var root = window,
-        lux = {
-            data_api: true,
-            // Showdown extensions
-            showdown: {}
-            //version: "<%= pkg.version %>"
+    var
+
+    root = window,
+    //
+    prev_lux = root.lux,
+    //
+    slice = Array.prototype.slice;
+    //
+    lux = root.lux = {
+        //
+        debug: false,
+        //
+        skins: [],
+        //
+        // Container of libraries used by lux
+        libraries: [],
+        //
+        media_url: '/media/',
+        //
+        icon: 'fontawesome',
+        //
+        data_api: true,
+        //
+        set_value_hooks: [],
+        //
+        setValue: function (elem, value) {
+            var hook;
+            for (var i=0; i<lux.set_value_hooks.length; i++) {
+                if (lux.set_value_hooks[i](elem, value)) {
+                    return;
+                }
+            }
+            elem.val(value);
         },
-        slice = Array.prototype.slice;
-    //
-    root.lux = lux;
-    //
-    // Create a random s4 string
-    lux.s4 = function () {
-        return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
-    };
-    //
-    // Create a UUID4 string
-    lux.guid = function () {
-        var S4 = lux.s4;
-        return (S4()+S4()+"-"+S4()+"-"+S4()+"-"+S4()+"-"+S4()+S4()+S4());
-    };
-    //
-    lux.isnothing = function (el) {
-        return el === undefined || el === null;
-    };
-    //
-    lux.sorted = function (obj, callback) {
-        var sortable = [];
-        _(obj).forEch(function (elem, name) {
-            sortable.push(name);
-        });
-        sortable.sort();
-        _(sortable).forEach(function (name) {
-            callback(obj[name], name);
-        });
-    };
-    //
-    // Create a lux event handler (proxy for a jQuery event)
-    lux.event = function () {
-        return $.Event();
+        //
+        addLib: function (info) {
+            if (!_.contains(lux.libraries, info.name)) {
+                lux.libraries.push(info);
+            }
+        },
+        //
+        // Create a random s4 string
+        s4: function () {
+            return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
+        },
+        //
+        // Create a UUID4 string
+        guid: function () {
+            var S4 = lux.s4;
+            return (S4()+S4()+"-"+S4()+"-"+S4()+"-"+S4()+"-"+S4()+S4()+S4());
+        },
+        //
+        isnothing: function (el) {
+            return el === undefined || el === null;
+        },
+        //
+        sorted: function (obj, callback) {
+            var sortable = [];
+            _(obj).forEch(function (elem, name) {
+                sortable.push(name);
+            });
+            sortable.sort();
+            _(sortable).forEach(function (name) {
+                callback(obj[name], name);
+            });
+        }
     };
 
+    String.prototype.capitalize = function() {
+        return this.charAt(0).toUpperCase() + this.slice(1);
+    };
+
+    lux.addLib({name: 'RequireJs', web: 'http://requirejs.org/', version: require.version});
+    lux.addLib({name: 'Lo-Dash', web: 'http://lodash.com/', version: _.VERSION});
+    lux.addLib({name: 'jQuery', web: 'http://jquery.com/', version: $.fn.jquery});
+
+
+
     var
-    //
-    CID_PREFIX = 'cid',
-    //
-    CID_FIELD = '_cid_',
-    // Custom event fired by models when their custom id change
-    CID_CHANGE = 'cidchange',
     //
     // Test for ``_super`` method in a ``Class``.
     //
@@ -82,7 +112,7 @@ define(['lodash', 'jquery'], function (_, $) {
 
     //  A Type is a factory of Classes. This is the correspondent of
     //  python metaclasses.
-    Type = (function (t) {
+    Type = lux.Type = (function (t) {
 
         t.new_class = function (Caller, attrs) {
             var type = this,
@@ -144,7 +174,7 @@ define(['lodash', 'jquery'], function (_, $) {
 
     //  Lux base class.
     //  The `extend` method is the most important function of this object.
-    Class = (function (c) {
+    Class = lux.Class = (function (c) {
         c.__class__ = Type;
         //
         c.extend = function (attrs) {
@@ -218,7 +248,7 @@ define(['lodash', 'jquery'], function (_, $) {
     // servers. A ``Meta`` must be registered with a backend before it can
     // use the ``sync`` method. Registration is achieved via the
     // ``set_transport`` method.
-    Meta = Class.extend({
+    Meta = lux.Meta = Class.extend({
         //
         // Initialisation, set the ``model`` attribute and the attributes
         // for this Meta. The available attributes are the same as
@@ -233,13 +263,11 @@ define(['lodash', 'jquery'], function (_, $) {
         init_instance: function (o, fields) {
             o._fields = {};
             o._changed = {};
+            o.cid = _.uniqueId('model');
             if (fields === Object(fields)) {
                 _(fields).forEach(function (field, name) {
                     this.set_field(o, name, field, true);
                 }, this);
-            }
-            if (!o.pk()) {
-                o._id = CID_PREFIX + lux.s4();
             }
         },
         //
@@ -302,20 +330,7 @@ define(['lodash', 'jquery'], function (_, $) {
             } else {
                 var prev = instance.get(field);
                 if (_.isEqual(value, prev)) return;
-                if (field === this.pkname) {
-                    if (value) {
-                        var cid = instance.cid();
-                        instance._fields[field] = value;
-                        delete instance._id;
-                        if (cid !== instance.cid()) {
-                            instance.trigger(CID_CHANGE, [instance, cid]);
-                        }
-                    } else {
-                        return;
-                    }
-                } else {
-                    instance._fields[field] = value;
-                }
+                instance._fields[field] = value;
                 return prev === undefined ? null : prev;
             }
         },
@@ -330,23 +345,39 @@ define(['lodash', 'jquery'], function (_, $) {
 
     // Override the standard ``Type`` so that the new model class
     // contains the ``_meta`` attribute, and instance of ``Meta``.
-    ModelType = Type.extend({
+    ModelType = lux.ModelType = Type.extend({
         //
         new_class: function (Prototype, attrs) {
-            var mattr = {},
-                meta = Prototype._meta;
+            attrs || (attrs = {});
+            var meta = Prototype._meta,
+                mattrs = _.merge({}, default_meta_attributes, attrs.meta);
             // Make sure we inherit fields for parent models
             if (meta && meta.fields) {
-                mattr.fields = _.extend({}, meta.fields);
+                mattrs.fields = this.mergeFields([meta.fields, mattrs.fields]);
             }
-            meta = _.merge(mattr, default_meta_attributes, attrs.meta);
-            delete attrs.meta;
-            _(meta.fields).forEach(function (field, name) {
-                if (field) field.name = name;
-            });
             var cls = this._super(Prototype, attrs);
-            cls._meta = cls.prototype._meta = new Meta(cls, meta);
+            cls._meta = cls.prototype._meta = new Meta(cls, mattrs);
             return cls;
+        },
+        //
+        mergeFields: function (groups) {
+            var map = {},
+                list = [],
+                merged = [];
+            _(groups).forEach(function (fields) {
+                _(fields).forEach(function (field) {
+                    if (map[field.name]) {
+                        map[field.name] = field;
+                    } else {
+                        map[field.name] = field;
+                        list.push(field.name);
+                    }
+                });
+            });
+            _(list).forEach(function (name) {
+                merged.push(map[name]);
+            });
+            return merged;
         }
     }),
     //
@@ -356,7 +387,7 @@ define(['lodash', 'jquery'], function (_, $) {
     // The base class for a model. A model is a single, definitive source
     // of data about your data. A Model consists of ``fields`` and behaviours
     // of the data you are storing.
-    Model = EventClass.extend({
+    Model = lux.Model = EventClass.extend({
         // Model uses a specialised metaclass
         Metaclass: ModelType,
         //
@@ -368,13 +399,6 @@ define(['lodash', 'jquery'], function (_, $) {
         // the backend) it can be undefined.
         pk: function () {
             return this.get(this._meta.pkname);
-        },
-        //
-        // Custom Identifier
-        //
-        // Uniquely identify this model and it is **always available**.
-        cid: function () {
-            return this._meta.name + '-' + (this.pk() || this._id);
         },
         // Has this model been saved to the server yet? If the model does
         // not yet have a pk value, it is considered to be new.
@@ -459,16 +483,16 @@ define(['lodash', 'jquery'], function (_, $) {
             this._deleted = true;
         },
         //
-        // Sync a single model
+        // Sync a model
         sync: function (store, options) {
-            options = Object(options);
+            options || (options = {});
             var callback = options.success,
                 info = this._sync_data(options),
                 self = this;
             if (info) {
                 info.model = this._meta.name;
-                info.success = function (data) {
-                    self._changed = {};
+                info.success = function (data, status, response) {
+                    self.sync_callback(data, status, response);
                     if (callback) callback(self);
                 };
                 return store.execute(info);
@@ -477,8 +501,21 @@ define(['lodash', 'jquery'], function (_, $) {
             }
         },
         //
+        // Calledback after a ``sync`` has terminated with success
+        // Override  if you need to
+        sync_callback: function (data, status, response) {
+            if (response.status === 200 || response.status === 201) {
+                this._changed = {};
+                this.update(data);
+            } else if (response.crud === Crud.delete) {
+                this.trigger('deleted');
+            } else {
+                logger.warning('Could not understand response');
+            }
+        },
+        //
         toString: function () {
-            return this.cid();
+            return this._meta.name + '-' + this.cid;
         },
         //
         // Get a jQuery form element for this model.
@@ -520,32 +557,27 @@ define(['lodash', 'jquery'], function (_, $) {
         //    * ``fields`` - object with model fields (not available for ``delete`` action)
         //    * ``cid`` - custom identifier
         _sync_data: function (options) {
-            options = Object(options);
+            options || (options = {});
             var pkvalue = this.pk();
             if (this.isDeleted() && pkvalue) {
                 // DELETE THE MODEL
                 options.crud = Crud.delete;
                 options.item = {
-                    pk: pkvalue,
-                    cid: this.cid()
+                    pk: pkvalue
                 };
             } else if (pkvalue && this.hasChanged()) {
                 // UPDATE THE MODEL
                 options.crud = Crud.update;
                 options.item = {
-                    fields: this.toJSON(true),
                     pk: pkvalue,
-                    cid: this.cid()
+                    data: this.toJSON()
                 };
             } else if (!pkvalue) {
                 // CREATE A NEW MODEL
-                data = this.toJSON();
-                if (data) {
+                var o = this.toJSON();
+                if (_.size(o)) {
                     options.crud = Crud.create;
-                    options.item = {
-                        fields: data,
-                        cid: this.cid()
-                    };
+                    options.item = {data: o};
                 } else {
                     return;
                 }
@@ -604,19 +636,18 @@ define(['lodash', 'jquery'], function (_, $) {
                 //   appropriate "change" events.
                 add: function (data, options) {
                     var models = [],
-                        existing, cid;
+                        existing;
                     //
-                    options = Object(options);
+                    options || (options = {});
                     if (!_.isArray(data)) {
                         data = [data];
                     }
                     //
                     _(data).forEach(function (o) {
-                        if (!(o instanceof self.model)) {
+                        if (!(o instanceof NewModel)) {
                             o = new NewModel(o);
                         }
-                        cid = o.cid();
-                        existing = _map[cid];
+                        existing = _map[o.cid];
                         if (existing) {
                             if (options.merge) {
                                 existing.update(o.fields());
@@ -625,8 +656,8 @@ define(['lodash', 'jquery'], function (_, $) {
                                 }
                             }
                         } else {
-                            _map[cid] = o;
-                            _data.push(cid);
+                            _map[o.cid] = o;
+                            _data.push(o.cid);
                             models.push(o);
                         }
                     });
@@ -675,7 +706,7 @@ define(['lodash', 'jquery'], function (_, $) {
         //
         // Fetch a new Collection of models from the store
         fetch: function (options) {
-            options = Object(options);
+            options || (options = {});
             var self = this;
             if (!options.success) {
                 options.success || function (data) {
@@ -689,57 +720,16 @@ define(['lodash', 'jquery'], function (_, $) {
         //
         //  Commit changes to backend store
         sync: function (options) {
-            options = Object(options);
+            options || (options = {});
             var self = this,
+                store = this.store,
                 groups = {},
                 callback = options.success,
                 errback = options.error,
                 group, item;
 
             this.forEach(function (model) {
-                var info = model._sync_data();
-                if (info) {
-                    group = groups[item.crud];
-                    if (!group) {
-                        group = groups[item.crud] = [];
-                    }
-                    group.push(info.item);
-                }
-            });
-            //
-            var done = [],
-                fail = [];
-                fire = function () {
-                    if (done.length === groups.length) {
-                        if (fail.length) {
-                            if (errback) {
-                                errback(self, done, fail);
-                            }
-                        } else if (callback) {
-                            callback(self);
-                        }
-                    }
-                };
-
-            _(groups).forEach(function (group, op) {
-                self.store.execute({
-                    meta: self.model._meta,
-                    type: op,
-                    data: group,
-                    success: function (data) {
-                        done.push(op);
-                        try {
-                            self.afterSync(op, data);
-                        } finally {
-                            fire();
-                        }
-                    },
-                    error: function (exc) {
-                        done.push(op);
-                        fail.push(op);
-                        fire();
-                    }
-                });
+                model.sync(store, options);
             });
         },
         //
@@ -762,20 +752,55 @@ define(['lodash', 'jquery'], function (_, $) {
     });
 
 
-    lux.Type = Type;
-    lux.Class = Class;
+
     lux.EventClass = EventClass;
-    lux.Model = Model;
-    lux.ModelType = ModelType;
     lux.Exception = Exception;
     lux.ModelException = ModelException;
     lux.NotImplementedError = NotImplementedError;
 
-
-
-    // Cached regex to split keys for `delegate`.
+    //  View
+    //  ----------
+    //
+    //  A ``View`` is a way of to organize your interface into logical views,
+    //  backed by models, each of which can be updated independently when
+    //  the model changes, without having to redraw the page.
+    //  Instead of digging into a JSON object, looking up an element in
+    //  the DOM, and updating the HTML by hand, you can bind your view's
+    //  render function to the model's "change" event — and now everywhere
+    //  that model data is displayed in the UI, it is always
+    //  immediately up to date
     var
     //
+    autoViews = lux.autoViews = [],
+    //
+    SKIN_NAMES = lux.SKIN_NAMES = ['default', 'primary', 'success', 'inverse', 'error'],
+    //
+    // Extract a skin information from ``elem``
+    getSkin = lux.getSkin = function (elem, prefix) {
+        if (elem) {
+            prefix = prefix ? prefix + '-' : '';
+            for (var i=0; i < SKIN_NAMES.length; i++) {
+                var name = SKIN_NAMES[i];
+                if (elem.hasClass(prefix+name)) {
+                    return name;
+                }
+            }
+        }
+    },
+    //
+    // Set the skin on an element
+    setSkin = lux.setSkin = function(elem, skin, prefix) {
+        if (SKIN_NAMES.indexOf(skin) > -1) {
+            prefix = prefix ? prefix + '-' : '';
+            //
+            _(SKIN_NAMES).forEach(function (name) {
+                elem.removeClass(prefix+name);
+            });
+            elem.addClass(prefix+skin);
+        }
+    },
+    //
+    // Cached regex to split keys for `delegate`.
     delegateEventSplitter = /^(\S+)\s*(.*)$/,
     //
     viewOptions = ['model', 'collection', 'elem', 'id', 'attributes',
@@ -784,10 +809,15 @@ define(['lodash', 'jquery'], function (_, $) {
     // A view class
     View = lux.View = Class.extend({
         tagName: 'div',
-
+        //
+        defaults: null,
+        //
         init: function (options) {
             this.cid = _.uniqueId('view');
             options || (options = {});
+            if (this.defaults) {
+                options = _.extend({}, this.defaults, options);
+            }
             _.extend(this, _.pick(options, viewOptions));
             if (!this.elem) {
                 this.setElement($(document.createElement(this.tagName)), false);
@@ -795,7 +825,7 @@ define(['lodash', 'jquery'], function (_, $) {
                 this.elem = $(_.result(this, 'elem'));
                 this.setElement(this.elem, false);
             }
-            if (this.name) this.elem.data(this.name + 'view', this);
+            if (this.instance_key) this.elem.data(this.instance_key, this);
             this.initialise(options);
         },
 
@@ -846,39 +876,105 @@ define(['lodash', 'jquery'], function (_, $) {
             return this;
         },
         //
-        jQuery: function () {
-            var self = this,
-                key = this.name + 'view';
-            self.elem.data(key, self);
-            //
-            $.fn[self.name] = function (options) {
-                var view = this.data(key);
-                if (!view) {
-                    ViewClass = self.prototype.constructor;
-                    options.elem = this;
-                    view = new ViewClass(options);
+        // Immediately show the ``elem`` and fire 'show' event
+        show: function () {
+            this.elem.show();
+            this.elem.trigger('show', this);
+        },
+        //
+        // Immediately hide the ``elem`` and fire 'hide' event
+        hide: function () {
+            this.elem.hide();
+            this.elem.trigger('hide', this);
+        },
+        //
+        // fadeIn the jQuery element.
+        // Once the fadeIn action is finished a trigger the ``show``
+        // event and invoke the optional ``callback``.
+        fadeIn: function (options) {
+            options || (options = {});
+            if (!options.complete) {
+                var self = this;
+                options.complete = function () {
+                    self.show();
+                };
+            }
+            this.elem.fadeIn(options);
+        },
+        //
+        // fadeOut the jQuery element conteining the extension.
+        // Once the fadeOut action is finished a trigger the ``hide``
+        // event and invoke the optional ``callback``.
+        fadeOut: function (options) {
+            options || (options = {});
+            if (!options.complete) {
+                var self = this;
+                options.complete = function () {
+                    self.hide();
+                };
+            }
+            this.elem.fadeOut(options);
+        },
+        //
+        // Get the skin name for this view
+        getSkin: function (prefix) {
+            return lux.getSkin(this.elem, prefix || this.className);
+        },
+        //
+        // Set the skin for this view
+        setSkin: function (skin, prefix) {
+            lux.setSkin(this.elem, skin, prefix || this.className);
+        },
+        //
+        // Add a stylesheet to the head tag.
+        //
+        //  ``rules`` is an array of string with css rules
+        //  ``id`` optional id to set in the style tag.
+        addStyle: function (rules, id) {
+            if (rules.length) {
+                var head = $("head"),
+                    style;
+                if (id) {
+                    style = head.find('#' + id);
+                    if (!style.length) style = null;
                 }
-                return view.elem;
-            };
-        }
+                if (!style) {
+                    style = $("<style type='text/css' rel='stylesheet' />"
+                        ).appendTo(head).attr('id', id);
+                    if (style[0].styleSheet) { // IE
+                        style[0].styleSheet.cssText = rules.join(" ");
+                    } else {
+                        style[0].appendChild(document.createTextNode(rules.join(" ")));
+                    }
+                }
+            }
+        },
     });
-
     //
-    // Create a new view and build a jQuery plugin
+    //  Create a new View and perform additional action such as:
+    //
+    //  * Create a jQuery plugin if the ``obj`` has the ``jQuery`` attribute
+    //    set to ``true``.
+    //  * Register the view for autoloading if the ``selector`` attribute is
+    //    available.
     lux.createView = function (name, obj, BaseView) {
-        var jQuery = obj.jQuery;
+        var jQuery = obj.jQuery,
+            key = name + '-view';
         delete obj.jQuery;
         //
         obj.name = name;
+        obj.instance_key = key;
         BaseView = BaseView || View;
         //
         // Build the new View
         var NewView = BaseView.extend(obj),
             proto = NewView.prototype,
-            key = name + 'view',
+            //
+            // view's factory
             create = function (elem, options, render) {
                 var view = elem.data(key);
                 if (!view) {
+                    options || (options = {});
                     if (lux.data_api)
                         options = _.extend({}, elem.data(), options);
                     options.elem = elem;
@@ -890,20 +986,62 @@ define(['lodash', 'jquery'], function (_, $) {
 
         if (jQuery) {
             $.fn[name] = function (options) {
-                return create(this, options).elem;
+                if (options === 'instance') {
+                    return this.data(key);
+                } else {
+                    return create(this, options).elem;
+                }
             };
         }
 
         if (proto.selector) {
-            $(document).ready(function () {
-                var opts = {};
-                $(proto.selector, this).each(function () {
-                    create($(this), opts, true);
-                });
+            autoViews.push({
+                selector: proto.selector,
+                load: function (elem) {
+                    create($(elem), null, true);
+                }
             });
         }
         return NewView;
     };
+    //
+    //  Load all registered views into ``elem``
+    //
+    //  If ``elem`` is not provided load registered views into the
+    //  whole document.
+    lux.loadViews = function (elem) {
+        elem = $(elem || document);
+        _(autoViews).forEach(function (view) {
+            $(view.selector, elem).each(function () {
+                view.load(this);
+            });
+        });
+    };
+
+    //
+    // Callback for requires
+    lux.initWeb = function () {
+        $(document).ready(function () {
+            var doc = $(this),
+                data = doc.find('html').data() || {},
+                body = doc.find('body');
+            _.extend(lux, data);
+            if (lux.debug) {
+                logger.config({level: 'debug'});
+                if (!logger.handlers.length) {
+                    logger.addHandler();
+                }
+            }
+            body.css({opacity: 0});
+            try {
+                lux.loadViews(doc);
+                body.fadeIn(100);
+            } finally {
+                body.css({opacity: 1});
+            }
+        });
+    };
+
     //
     //  Lux Logger
     //  --------------------
@@ -1081,14 +1219,11 @@ define(['lodash', 'jquery'], function (_, $) {
         if (store instanceof Backend) {
             return store;
         } else if (_.isString(store)) {
-            var idx = store.search('://');
-            if (idx > -1) {
-                var scheme = store.substr(0, idx),
-                    Store = stores[scheme];
-                if (Store) {
-                    return new Store(store, options, scheme);
-                }
-            }
+            var idx = store.search('://'),
+                scheme = idx === -1 ? 'http' : store.substr(0, idx),
+                Store = stores[scheme];
+            if (Store && store)
+                return new Store(store, options, scheme);
         }
         // A dummy backend
         return new Backend(store, options, 'dummy');
@@ -1159,7 +1294,7 @@ define(['lodash', 'jquery'], function (_, $) {
                 delete options.item;
                 // primary key given, change url
                 if (item.pk) url = lux.utils.urljoin(url, item.pk);
-                options.data = item.fields;
+                options.data = item.data;
             }
             $.ajax(url, options);
         }
@@ -1278,18 +1413,19 @@ define(['lodash', 'jquery'], function (_, $) {
                 return;
             }
             //
-            // This is an execution for a single item
-            if (options.item) {
-                options.data = [options.item];
-            }
-            //
             var obj = {
                 // new message id
                 mid: this.new_mid(options),
                 action: options.action || lux.CrudMethod[options.crud] || options.crud,
-                model: options.model,
-                data: options.data
+                model: options.model
             };
+            //
+            // This is an execution for a single item
+            if (options.item) {
+                _.extend(obj, options.item);
+            } else {
+                obj.data = options.data;
+            }
             obj = JSON.stringify(obj);
             if (this._opened) {
                 this._transport.send(obj);
@@ -1304,21 +1440,20 @@ define(['lodash', 'jquery'], function (_, $) {
                 mid = obj.mid,
                 options = mid ? this._pending_messages[mid] : undefined,
                 data = obj.data;
+            obj.response = e;
+            obj.backend = this;
             if (options) {
                 delete this._pending_messages[mid];
-                if (options.item) {
-                    data = data[0];
-                }
             }
             if (obj.error) {
                 if (options && options.error) {
-                    options.error(obj.error, this, obj);
+                    options.error(obj, 'error', obj.error);
                 } else {
                     logger.error(this.toString() + ' - ' + obj.error);
                 }
             } else {
                 if (options && options.success) {
-                    options.success(data, this, obj);
+                    options.success(data, 'success', obj);
                 } else {
                     logger.warning(
                         this.toString() + ' - Got message with no callback registered');
@@ -1338,10 +1473,7 @@ define(['lodash', 'jquery'], function (_, $) {
         // pending messages object
         new_mid: function (options) {
             if (options.success || options.error) {
-                var mid = lux.s4();
-                while (this._pending_messages[mid]) {
-                    mid = lux.s4();
-                }
+                var mid = _.uniqueId('ws-message');
                 this._pending_messages[mid] = options;
                 return mid;
             }
@@ -1566,316 +1698,791 @@ define(['lodash', 'jquery'], function (_, $) {
 
 
 
-    //
-    // Web Interface entry points
-    var web_extensions_to_load = [],
-        scripts_to_execute = [],
-        web = lux.web = {
-            options: {
-                debug: false,
-                skins: [],
-                media_url: '/media/',
-                icon: 'fontawesome'
-            },
-            extension_list: [],
-            extensions: {},
-            libraries: [],
-            extension: function (name, ext) {
-                ext = this.create_extension(name, ext);
-                this.extension_list.push(ext);
-                this.extensions[name] = ext;
-                return ext;
-            },
-            // Execute a callback when lux.web is ready.
-            ready: function (requires, callback) {
-                if (lux.$) {
-                    if (callback === undefined) {
-                        requires();
-                    } else {
-                        require(requires, callback);
-                    }
-                }
-            },
-            //
-            // Apply all extensions to elem
-            refresh: function (elem) {
-                _(this.extension_list).forEach(function (ext) {
-                    ext.refresh(elem);
-                });
-                return elem;
-            },
-            //
-            add_lib: function (info) {
-                if (!_.contains(this.libraries, info.name)) {
-                    this.libraries.push(info);
-                }
+
+    var icons = lux.icons = {
+        //
+        fontawesome: function (elem, options) {
+            var i = $('i', elem).remove(),
+                ni = '<i class="fa fa-' + options.icon + '"></i>';
+            if (elem[0].text) {
+                elem[0].text = ' ' + elem[0].text;
             }
-        };
-    //
-    // Initialise lux web components once jQuery is loaded
-    lux.init_web = function () {
-        lux.$ = $;
-        $(document).ready(function () {
-            var doc = $(this),
-                data = doc.find('html').data() || {};
-            web.options = _.extend(web.options, data);
-            if (web.options.debug) {
-                logger.config({level: 'debug'});
-                if (!logger.handlers.length) {
-                    logger.addHandler();
-                }
-            }
-            web.element = doc;
-            var to_load = web_extensions_to_load;
-            web_extensions_to_load = [];
-            _(to_load).forEach(function(o) {
-                web.extension(o.name, o.ext);
-            });
-            web.refresh(doc);
-        });
+            elem.prepend(ni);
+        }
     };
 
-    // Generalised value setter for jQuery elements
-    lux.set_value_hooks = [];
-    lux.set_value = function (element, value) {
-        var hook;
-        for (var i=0; i<lux.set_value_hooks.length; i++) {
-            if (lux.set_value_hooks[i](element, value)) {
-                return;
+    lux.addIcon = function (elem, options) {
+        var p = lux.icons[lux.icon];
+        if (p && !elem.is('html')) {
+            if (!options) options = elem.data();
+            if (options.icon) p(elem, options);
+        }
+    };
+
+    lux.autoViews.push({
+        selector: '[data-icon]',
+        load: function(elem) {
+            lux.addIcon($(elem));
+        }
+    });
+
+    var
+    //
+    BUTTON_SIZES = ['large', 'normal', 'small', 'mini'],
+    //
+    buttonGroup = lux.buttonGroup = function (options) {
+        options || (options = {});
+        var elem = $(document.createElement('div'));
+        if (options.vertical) elem.addClass('btn-group-vertical');
+        else elem.addClass('btn-group');
+        if (options.radio) {
+            elem.data('toggle', 'buttons-radio');
+        }
+        return elem;
+    },
+    //
+    Button = lux.Button = lux.createView('button', {
+        //
+        tagName: 'button',
+        //
+        selector: '.btn',
+        //
+        defaults: {
+            skin: 'default'
+        },
+        //
+        className: 'btn',
+        //
+        initialise: function (options) {
+            var btn = this.elem;
+            btn.addClass(this.className).attr({
+                type: options.type,
+                title: options.title,
+                href: options.href,
+            }).addClass(options.classes);
+            //
+            this.setSkin(options.skin);
+            this.setSize(options.size);
+            if (options.text) btn.html(options.text);
+            if (options.icon) lux.addIcon(btn, options);
+            if (options.block) btn.addClass('btn-block');
+        },
+        //
+        setSize: function (size) {
+            if(BUTTON_SIZES.indexOf(size) > -1) {
+                var elem = this.elem,
+                    prefix = this.className + '-';
+                _(BUTTON_SIZES).forEach(function (size) {
+                    elem.removeClass(prefix + size);
+                });
+                elem.addClass(prefix + size);
             }
         }
-        element.val(value);
-    };
+    });
 
-    //  Web Extensions
-    //  ------------------------
-
-    //  Base class for web extensions. Web extensions sre used to create
-    //  widgets and other Html components for user interaction.
-
-    web.ExtInstance = lux.Class.extend({
+    var
+    //
+    // Form view
+    Form = lux.Form = lux.createView('form', {
         //
-        // The selector for the extension. If a selector is provided, the
-        // extension automatically creates extension instances on Html elements
-        // matching the selector.
-        selector: null,
+        tagName: 'form',
         //
-        // If a default Element is given , this extension installed a function
-        // in the lux.web object which can be used to create instances of this
-        // extension.
-        defaultElement: null,
-        //
-        options: {
-            fade: {duration: 200}
+        defaults: {
+            dataType: "json",
+            layout: null,
+            groupClass: 'form-group',
+            controlClass: 'form-control',
+            skin: 'default',
+            ajax: false,
+            complete: null,
+            error: null,
+            success: null
         },
         //
-        // Constructor of a web extension instance
-        init: function (id, html, options) {
-            this._id = id;
-            this._element = html;
-            this.options = _.merge({}, this.options, options);
-        },
-        // String representation of this extension
-        toString: function () {
-            return this._id;
-        },
-        //
-        element: function () {
-            return this._element;
+        initialise: function (options) {
+            this.options = options;
+            if (this.elem.hasClass('horizontal')) {
+                options.layout = 'horizontal';
+            } else if (this.elem.hasClass('inline')) {
+                options.layout = 'inline';
+            }
+            if (options.layout)
+                this.elem.addClass('form-' + options.layout);
+            lux.setSkin(this.elem, options.skin);
         },
         //
-        container: function () {
-            return this._element;
+        // Add a list of ``Fields`` to this form.
+        addFields: function (fields) {
+            var processed = [],
+                self = this,
+                elem,
+                fieldset;
+            //
+            _(fields).forEach(function (field) {
+                if (field && field.name && processed.indexOf(field.name) === -1) {
+                    processed.push(field.name);
+                    field.render(self);
+                }
+            });
+            return this;
         },
         //
-        id: function () {
-            return this._id;
+        // Add a submit button
+        addSubmit: function (options) {
+            options || (options = {});
+            if (!options.skin) options.skin = this.options.skin;
+            if (!options.tagName) {
+                options.tagName = 'button';
+                if (!options.text) options.text = 'Submit';
+            }
+            var btn = new Button(options);
+            this.elem.append(btn.elem);
         },
         //
-        lux_id: function () {
-            return this._id;
-        },
-        //
-        extension: function () {
-            return this.constructor;
-        },
-        //
-        // Destroy the instance
-        destroy: function () {
-            return this.constructor.destroy(this);
-        },
-        //
-        decorate: function () {},
-        //
-        // fadeIn the jQuery element conteining the extension.
-        // Once the fadeIn action is finished a trigger the ``show``
-        // event and invoke the optional ``callback``.
-        fadeIn: function (callback) {
-            var self = this;
-            self._element.fadeIn({
-                duration: this.options.fade.duration,
-                complete: function () {
-                    if (callback) {
-                        callback(self);
+        render: function () {
+            if (this.options.layout) {
+                var layout = this['render_' + this.options.layout];
+                layout.call(this);
+            } else {
+                var self = this;
+                $('input,select,textarea', this.elem).each(function () {
+                    var elem = $(this);
+                    if (elem.attr('type') !== 'checkbox') {
+                        elem.addClass(self.options.controlClass);
                     }
-                    self._element.trigger('show', self);
+                });
+            }
+            return this;
+        },
+        //
+        //
+        render_horizontal: function () {
+            var self = this,
+                elem, label, parent, wrap, group;
+            $('input,select,textarea', this.elem).each(function () {
+                elem = $(this).addClass(self.options.controlClass);
+                wrap = elem.closest(self.options.groupClass);
+                if (wrap.length) {
+                    parent = elem.parent();
+                    if (!parent.is('label')) parent = elem;
+                    wrap = $(document.createElement('div')).addClass('controls');
+                    parent.before(wrap).appendTo(wrap);
+                    group = wrap.parent();
+                    if (!wrap.hasClass('control-group')) {
+                        label = wrap.prev();
+                        group = $(document.createElement('div')).addClass('control-group');
+                        wrap.before(group).appendTo(group);
+                        if (label.is('label')) {
+                            group.prepend(label.addClass('control-label'));
+                        }
+                    }
                 }
             });
         },
         //
-        // fadeOut the jQuery element conteining the extension.
-        // Once the fadeOut action is finished a trigger the ``hide``
-        // event and invoke the optional ``callback``.
-        fadeOut: function (callback) {
-            var self = this;
-            self._element.fadeOut({
-                duration: this.options.fade.duration,
-                complete: function () {
-                    if (callback) {
-                        callback(self);
-                    }
-                    self._element.trigger('hide', self);
+        fieldset: function (fieldset_selector) {
+            var fieldsets = this.elem.children('fieldset'),
+                fieldset;
+            //
+            // Find the appropiate fieldset
+            if (fieldset_selector) {
+                if (fieldset_selector instanceof jQuery) {
+                    fs = fieldset_selector;
+                } else if (fieldset_selector instanceof HTMLElement) {
+                    fs = $(fieldset_selector);
+                } else if (fieldset_selector.id) {
+                    fs = this.elem.find('#' + fieldset_selector.id);
+                } else if (fieldset_selector.Class) {
+                    fs = this.elem.find('.' + fieldset_selector.Class);
+                } else {
+                    fs = fieldsets.last();
                 }
-            });
+                if (fs.length) {
+                    fieldset = fs;
+                } else {
+                    fieldset = $(document.createElement('fieldset')).appendTo(this.elem);
+                    if (fieldset_selector.id) {
+                        fieldset.attr(id, fieldset_selector.id);
+                    } else if (fieldset_selector.Class) {
+                        fieldset.addClass(fieldset_selector.Class);
+                    }
+                }
+            } else if (!fieldsets.length) {
+                fieldset = $(document.createElement('fieldset')).appendTo(this.elem);
+            } else {
+                fieldset = fieldsets.first();
+            }
+            return fieldset;
+        }
+    }),
+    //
+    //  Base class for ``Form`` fields
+    Field = lux.Field = lux.Class.extend({
+        fieldOptions: [
+            'tagName', 'type', 'label', 'placeholder', 'autocomplete',
+            'required', 'fieldset'],
+        //
+        tagName: 'input',
+        //
+        type: 'text',
+        //
+        init: function (name, options) {
+            options || (options = {});
+            this.name = name;
+            _.extend(this, _.pick(options, this.fieldOptions));
+            this.label = this.label || this.name.capitalize();
+            if (this.required) this.required = 'required';
         },
         //
-        // extract skin information from element
-        get_skin: function (elem) {
-            return web.get_skin(elem ? elem : this.element());
+        validate: function (model, value) {
+            if (value || value === 0) return value + '';
+        },
+        //
+        setValue: function (model, elem) {
+            if (model) elem.val(model.get(this.name));
+        },
+        //
+        // Render this field for the ``form``.
+        // Return a jQuery element which can be included in the ``form``.
+        render: function (form) {
+            var
+            elem = $(document.createElement(this.tagName)).attr({
+                name: this.name,
+                type: this.type,
+                title: this.title || this.name,
+                autocomplete: this.autocomplete,
+                placeholder: this.getPlaceholder()
+            });
+            this.setValue(form.model, elem);
+            form.elem.append(this.outerContainer(elem, form));
+        },
+        //
+        getPlaceholder: function () {
+            if (this.placeholder !== false)
+                return this.placeholder ? this.placeholder : this.label;
+        },
+        //
+        // Wrap field and label with an outer container ``div.groupClass``.
+        outerContainer: function (elem, form) {
+            if (form.layout !== 'inline') {
+                var id = elem.attr('id');
+                if (!id) {
+                    id = _.uniqueId('field');
+                    elem.attr('id', id);
+                }
+                //
+                var label = $(document.createElement('label')).html(this.label
+                        ).attr('for', id),
+                    outer = $(document.createElement('div')).addClass(
+                        form.options.groupClass);
+                return outer.append(label).append(elem);
+            } else {
+                return elem;
+            }
+        }
+    }),
+    //
+    IntegerField = lux.Field = Field.extend({
+        type: 'number',
+        //
+        validate: function (model, value) {
+            return parseInt(value, 10);
+        }
+    }),
+    //
+    FloatField = lux.FloatField = Field.extend({
+        type: 'number',
+        //
+        validate: function (model, value) {
+            return parseFloat(value);
+        }
+    }),
+    //
+    BooleanField = lux.BooleanField = Field.extend({
+        type: 'checkbox',
+        //
+        setValue: function (model, elem) {
+            if (model) {
+                var val = model.get(this.name) ? true : false;
+                elem.prop('checked', val);
+            }
+        },
+        //
+        validate: function (model, value) {
+            if (value !== undefined)
+                return value === true || value === 'on';
+        },
+        //
+        //
+        render: function (form) {
+            var elem = $(document.createElement(this.tagName)).attr({
+                name: this.name,
+                type: this.type,
+                title: this.title
+            });
+            this.setValue(form.model, elem);
+            var label = $(document.createElement('label')),
+                outer = $(document.createElement('div')).addClass('checkbox');
+            elem = outer.append(label.append(elem).append(this.label));
+            form.elem.append(elem);
+        },
+    }),
+    //
+    // A ``ChoiceField`` is by default rendered as a ``select`` element.
+    ChoiceField = lux.ChoiceField = Field.extend({
+        //
+        // If the ``select`` dictionary is passed and the ``tagName`` is ``select``
+        // the jQuery select plugin is applied.
+        fieldOptions: _.union(
+            Field.prototype.fieldOptions,
+            ['choices', 'select2']),
+        //
+        tagName: 'select',
+        //
+        type: null,
+        //
+        setValue: function (model, elem) {
+            if (model) {
+                var val = model.get(this.name);
+                if (elem.is('select')) {
+                } else if (elem.val() === val) {
+                    elem.prop('checked', true);
+                }
+            }
+        },
+        //
+        render: function (form) {
+            var self = this,
+                choices= this.choices,
+                elem, text;
+            if (_.isFunction(choices)) choices=  choices();
+            //
+            // Select element
+            if (this.tagName === 'select') {
+                elem = $(document.createElement(this.tagName)).attr({
+                    name: this.name
+                }).append($("<option></option>"));
+                //
+                _(choices).forEach(function (val) {
+                    if (_.isString(val)) text = val;
+                    else {
+                        text = val.text || val.value;
+                        val = val.value;
+                    }
+                    elem.append($("<option></option>").val(val).text(text));
+                });
+                self.setValue(form.model, elem);
+                form.elem.append(self.outerContainer(elem, form));
+                if (this.select2) {
+                    var opts = this.select2;
+                    if (!opts.placeholder) opts.placeholder = this.getPlaceholder();
+                    elem.Select(opts);
+                }
+            //
+            // Radio element
+            } else if (this.tagName === 'input' && this.type === 'radio') {
+                _(choices).forEach(function (val) {
+                    if (val instanceof string) text = val;
+                    else {
+                        text = val.text || val.value;
+                        val = val.value;
+                    }
+                    elem = $(document.createElement(this.tagName)).attr({
+                        type: 'radio',
+                        name: self.name,
+                        value: val
+                    }).html(text);
+                    self.setValue(form.model, elem);
+                });
+                form.elem.append(elem);
+            }
+        }
+    }),
+    //
+    MultiField = lux.MultiField = ChoiceField.extend({
+        //
+        init: function (options) {
+            this.options = Object(options);
+            this.options.multiple = 'multiple';
+        }
+    }),
+    //
+    TextArea = lux.TextArea = Field.extend({
+        tagName: 'textarea'
+    }),
+    //
+    KeywordsField = lux.KeywordsField = Field.extend({
+
+        validate: function (instance, value) {
+            if (_.isString(value)) {
+                var result = [];
+                _(value.split(',')).forEach(function (el) {
+                    el = el.trim();
+                    if (el) {
+                        result.push(el);
+                    }
+                });
+                return result;
+            } else if (!_.isArray(value)) {
+                var val = [];
+                _(value).forEach(function (v) {
+                    val.push(v);
+                });
+                return val;
+            } else {
+                return value;
+            }
         }
     });
     //
-    //  Create a new Web extension
-    //  -------------------------------
-    //
+    // A proxy for select2
+    $.fn.Select = function (options) {
+        options || (options = {});
+        var self = this;
+        require(['select'], function () {
+            if (_.isObject(options)) options.width = 'element';
+            self.select2(options);
+        });
+        return this;
+    };
 
-    //  A web extension is a way to apply javascript to the DOM via
-    //  selectors.
     //
-    //  * ``name`` extension name, if the extension has a valid ``defaultElement``
-    //    attribute, it can be accessed on ``lux.web`` at the ``name`` attribute.
-    //  * ``ext`` object which overrides the ``superClass``.
-    //  * ``superClass`` the base class to override. If not provided the
-    //    ``lux.web.ExtInstance`` is used.
-    web.create_extension = function (name, ext, superClass) {
-        var instances = [],
-            // prefix for the data key storing an extension instance
-            prefix = name + '-',
-            lux_idkey = 'lux-' + name + '-id',
-            creation_count = 0,
-            makeid = function () {
-                creation_count += 1;
-                return prefix + creation_count;
-            };
-        superClass = superClass ? superClass : web.ExtInstance;
-        ext.options = _.merge({}, superClass.prototype.options, ext.options);
-        ext.name = name;
-        // Extension class
-        var Extension = superClass.extend(ext);
-        //
-        // Class methods
-        //
-        // Retrieve an instance of a model created by this extension
-        Extension.instance = function (elem) {
-            if (elem) {
-                elem = elem.lux_id ? elem.lux_id() : elem;
-                var i = instances[elem],
-                    o;
-                // get by instance id
-                if (!i) {
-                    o = $(elem);
-                    if (!o.length && typeof elem === "string") {
-                        o = $("#" + elem);
-                    }
-                    if (!o.length) {
-                        i = null;
-                    } else {
-                        i = instances[o.closest("." + name).data(lux_idkey)] || null;
-                    }
-                }
-                return i;
-            } else {
-                return null;
-            }
-        };
-        //
-        // Create an Instance for this Extension.
-        // An instance is a lux.Class
-        Extension.create = function (html, options) {
-            var o = this.instance(html);
-            if (o !== null) {
-                return o;
-            }
-            html = $(html);
-            if (html.length === 0) {
-                html = $(document.createElement(ext.defaultElement));
-            } else {
-                var opts = html.data(name) || html.data();
-                if (options) {
-                    options = _.extend(options, opts);
-                } else {
-                    options = opts;
-                }
-            }
-            var _id = makeid();
-            //
-            o = new Extension(makeid(), html, options);
-            instances[o.id()] = o;
-            o.decorate();
-            return o;
-        };
-        //
-        Extension.destroy = function (instance) {
-            instance = this.instance(instance);
-            if (instance) {
-                delete instances[instance.id()];
-                var elem = instance.container();
-                if (elem) {
-                    elem.trigger('remove', instance);
-                    elem.detach().trigger('removed', instance);
-                    elem.remove();
-                }
+    // Select2 hook for lux set_value_hooks
+    var get_select2_value = function (element, value) {
+        if (element.hasClass('select2-offscreen')) {
+            element.select2('val', value);
+            return true;
+        }
+    };
+    //
+    lux.set_value_hooks.push(get_select2_value);
+
+
+    var Grid = lux.Grid = lux.createView('grid', {
+
+        initialise: function (options) {
+            var self = this;
+            this.elem.addClass('grid').addClass('fluid');
+
+            if (options.rows) {
+                _(options.rows).forEach(function (row) {
+                    self.addRow(row);
+                });
             }
         },
         //
-        Extension.toString = function (instance) {
-            return name;
-        };
-        //
-        // Refresh an extension by running the decorate methods on all matched elements
-        Extension.refresh = function (html) {
-            var instances = [];
-            if (Extension.prototype.selector) {
-                var elements = $(Extension.prototype.selector, html);
-                if (elements.length) {
-                    logger.info('Apply extension ' + name + ' to ' +
-                                elements.length + ' elements');
-                    elements.each(function () {
-                        instances.push(Extension.create(this));
-                    });
-                }
-            }
-            return instances;
-        };
-        //
-        if (Extension.prototype.defaultElement) {
-            web[Extension.prototype.name] = function(options_or_element, options) {
-                var elem = options_or_element;
-                if(!options_or_element || $.isPlainObject(options_or_element)) {
-                    elem = null;
-                    options = options_or_element;
-                }
-                return Extension.create(elem, options);
-            };
+        addRow: function (row) {
+            var elem = $(document.createElement('div')).addClass(
+                'row').addClass('grid24').appendTo(this.elem);
+            //
+            _(row).forEach(function (col) {
+                var size = 'span' + col;
+                elem.append($(document.createElement('div')).addClass(
+                    'column').addClass(size));
+            });
+            return elem;
         }
+    });
+    //
+    // Add full-screen
+    var Fullscreen = lux.Fullscreen = lux.createView('fullscreen', {
         //
-        return Extension;
-    };
+        defaults: {
+            zindex: 2010,
+            icon: 'times-circle',
+            themes: ['default', 'inverse']
+        },
+        //
+        initialise: function (options) {
+            var container = $(document.createElement('div')).addClass(
+                    'fullscreen').css({'z-index': options.zindex});
 
-    // Add default libraries
-    web.add_lib({name: 'RequireJs', web: 'http://requirejs.org/', version: require.version});
-    web.add_lib({name: 'Lo-Dash', web: 'http://lodash.com/', version: _.VERSION});
-    web.add_lib({name: 'jQuery', web: 'http://jquery.com/', version: $.fn.jquery});
+            this.wrap = $(document.createElement('div')).addClass(
+                'fullscreen-container').appendTo(container);
+            this.side = $(document.createElement('div')).addClass(
+                'fullscreen-sidebar').appendTo(container);
+            this.sidebar = buttonGroup({vertical: true}).appendTo(this.side);
+            //
+            this.themes = options.themes;
+            this.theme = 1;
+            this.exit = new Button({
+                icon: options.icon,
+                title: 'Exit full screen'
+            });
+            this.exit.elem.appendTo(this.sidebar);
+            this.theme_button = new Button({
+                icon: 'laptop',
+                title: 'theme'
+            });
+            this.theme_button.elem.appendTo(this.sidebar);
+            //
+            this._wrapped = {
+                elem: this.elem,
+                previous: this.elem.prev(),
+                parent: this.elem.parent()
+            };
+            //
+            this.setElement(container);
+            this.toggle_skin();
+        },
+        //
+        render: function () {
+            var self = this;
+            if (!self.elem.parent().length) {
+                //
+                self.exit.elem.click(function () {
+                    self.remove();
+                });
+                //
+                self.theme_button.elem.click(function () {
+                    self.toggle_skin();
+                });
+                self.wrap.append(this._wrapped.elem);
+                self.elem.appendTo(document.body);
+            }
+        },
+        //
+        remove: function () {
+            var w = this._wrapped;
+            if(w.previous.length) {
+                w.previous.after(w.elem);
+            } else {
+                w.parent.prepend(w.elem);
+            }
+            return this._super();
+        },
+        //
+        toggle_skin: function () {
+            var themes = this.themes,
+                old_theme = this.theme;
+            this.theme = old_theme ? 0 : 1;
+            this.theme_button.setSkin(themes[old_theme]);
+            this.setSkin(themes[this.theme]);
+        }
+    });
+
+    //  Dialog
+    //  -----------------------
+    var Dialog = lux.Dialog = lux.createView('dialog', {
+        //
+        jQuery: true,
+        //
+        selector: '.dialog',
+        //
+        defaultElement: 'div',
+        //
+        defaults: {
+            className: null,
+            show: true,
+            keyboard: true,
+            // Can the dialog be closed
+            closable: null,
+            // Can the dialog be collapsable
+            collapsable: false,
+            // If ``collapsable`` is ``true``, this parameter controls how the
+            // dialog is rendered the first time.
+            collapsed: false,
+            dragdrop: false,
+            fullscreen: false,
+            title: null,
+            body: null,
+            footer: null,
+            modal: false,
+            modal_zindex: 1040,
+            autoOpen: true,
+            width: null,
+            height: null,
+            top: null,
+            skin: 'default',
+            icons: {
+                open: 'plus-circle',
+                close: 'minus-circle',
+                remove: 'times',
+                fullscreen: 'arrows-alt'
+            },
+            buttons: {
+                size: 'mini'
+            }
+        },
+        // Create the dialog
+        initialise: function (options) {
+            var self = this,
+                elem = this.elem.addClass('dialog').addClass(
+                    options.className).hide(),
+                closable = options.closable,
+                title = elem.attr('title') || options.title,
+                header = $(document.createElement('div')).addClass('header'),
+                wrap = $(document.createElement('div')).addClass('body-wrap'),
+                h3 = $(document.createElement('h3')),
+                toggle;
+            //
+            if (!elem.attr('id')) elem.attr('id', this.cid);
+            this.setSkin(options.skin);
+            //
+            this._body = $(document.createElement('div')).addClass(
+                'body').append(elem.contents());
+            this._foot = null;
+            self.buttons = $(document.createElement('div')).addClass(
+                'btn-group').addClass('pull-right');
+            header.append(self.buttons).append(h3);
+            if (title) {
+                h3.append(title);
+            }
+            elem.empty().append(header).append(wrap.append(this._body));
+            if (options.body) {
+                this._body.append(options.body);
+            }
+            //
+            this.createButton = function (opts) {
+                opts = _.extend(opts || {}, options.buttons);
+                if (!opts.skin) opts.skin = this.getSkin();
+                return new Button(opts);
+            };
+            //
+            // Modal option
+            var width = options.width;
+            if(options.modal) {
+                width = this._modalCss(options);
+                elem.appendTo(document.body);
+                closable = closable === null ? true : closable;
+                var backdrop = $(document.createElement('div'))
+                                    .addClass('modal-backdrop fullscreen')
+                                    .css('z-index', options.modal_zindex);
+                elem.on('remove', function () {
+                    backdrop.remove();
+                }).on('show', function () {
+                    backdrop.appendTo(document.body);
+                }).on('hide', function () {
+                    backdrop.detach();
+                });
+            }
+            // set width
+            if (width) elem.width(width);
+            // set height
+            if (options.height) this._body.height(options.height);
+            if (options.collapsable) self._addCollapsable(options);
+            if (closable) this._addClosable(options);
+            if (options.fullscreen) this._addFullscreen(options);
+            if (options.movable) this._addMovable(options);
+            if (options.autoOpen) self.show();
+        },
+        //
+        body: function () {
+            return this._body;
+        },
+        //
+        foot: function () {
+            return this._foot;
+        },
+        //
+        header: function () {
+            return this.element().children('.header');
+        },
+        //
+        title: function (value) {
+            return this.header().children('h3').html(value);
+        },
+        //
+        // make the dialog closable, unless it is already closable.
+        // The optional ``options``  can specify:
+
+        //  * ``destroy``, if true the dialog is removed when
+        //    closed otherwise it is just fadeOut. Default ``True``.
+        _addClosable: function (options) {
+            var
+            destroy = options.destroy,
+            self = this,
+            close = this.createButton({
+                icon: options.icons.remove
+            });
+            close.elem.appendTo(this.buttons).click(function() {
+                self.fadeOut({
+                    complete: function () {
+                        destroy ? self.destroy() : self.hide();
+                    }
+                });
+            });
+        },
+        // Make this dialog collapsable
+        _addCollapsable: function (options) {
+            var self = this,
+                body = this.elem.children('.body-wrap'),
+                button = self.createButton(),
+                hidden = false;
+            // If the dialog starts life as already collapsed, avoid to show
+            // the transaction by hiding the body. This requires a little trick
+            // which involve removing the `collapse` class when the `hide` event
+            // is triggered.
+            if (options.collapsed) {
+                hidden = true;
+                body.hide().addClass('in').one('hide', function () {
+                    body.removeClass('collapse');
+                });
+            }
+            body.on('show', function () {
+                if (hidden) {
+                    hidden = false;
+                    body.addClass('collapse').show();
+                }
+                self.elem.removeClass('collapsed');
+                lux.addIcon(button.elem, {icon: options.icons.close});
+            }).on('hidden', function () {
+                self.element().addClass('collapsed');
+                lux.addIcon(button.elem, {icon: options.icons.open});
+            });
+            // make sure height is auto when the dialog is not collapsed at startupSSSSS
+            if (!options.collapsed) {
+                body.height('auto');
+            }
+            button.elem.appendTo(this.buttons).mousedown(function (e) {
+                e.stopPropagation();
+            }).click(function () {
+                body.collapse('toggle');
+                return false;
+            });
+            require(['bootstrap'], function () {
+                self.elem.children('.body-wrap').collapse();
+            });
+        },
+        //
+        // Add full screen button and action
+        _addFullscreen: function (options) {
+            var
+            fullscreen = options.fullscreen,
+            button = this.createButton({
+                icon: options.icons.fullscreen,
+                title: 'Full screen mode'
+            });
+            if (!fullscreen.render) {
+                // default full screen
+                fullscreen = new Fullscreen({elem: this.body()});
+            }
+            button.elem.prependTo(this.buttons).on('click', function () {
+                fullscreen.render();
+            });
+        },
+        //
+        _addMovable: function (options) {
+            //var dragdrop = this.options.dragdrop;
+            //if (dragdrop) {
+            //    dragdrop.add(this.element(), this.header());
+            //}
+        },
+        //
+        _modalCss: function (options) {
+            var width = options.width || 500;
+            rules = ['#' + this.attr('id') + '{',
+                     '    margin-left: -' + width/2 + 'px,',
+                     '    left: 50%,',
+                     '    position: absolute,',
+                     'z-index: ' + (options.modal_zindex + 10) + ',',
+                     'top: ' + (options.top || '25%'),
+                     '}'];
+            this.addStyle(rules);
+            return width;
+        }
+    });
+
     //
     // Event Loop
     // --------------------------
@@ -2232,5 +2839,5 @@ $.extend(math, {
     }
 });
 
-	return lux;
+	return _.extend(lux, prev_lux);
 });

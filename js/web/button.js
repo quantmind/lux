@@ -1,31 +1,5 @@
 
-    // Object containing Icon providers
-    web.iconProviders = {
-        fontawesome: {
-            icon: function (elem, name) {
-                elem.data('iconProvider', 'fontawesome');
-                var i = $('i', elem),
-                    ni = '<i class="icon-' + name + '"></i>';
-                if (i.length) {
-                    i.replaceWith(ni);
-                } else {
-                    elem.prepend(ni);
-                }
-            }
-        }
-    };
     web.BUTTON_SIZES = ['large', 'normal', 'small', 'mini'];
-
-    // Icon manager. Uses lux.web.options.icon for the provider
-    web.icon = function (elem, name, options) {
-        var pname;
-        if (options) {
-            pname = options.iconProvider || elem.data('iconProvider') || web.options.icon;
-        } else {
-            pname = elem.data('iconProvider') || web.options.icon;
-        }
-        web.iconProviders[pname].icon(elem, name);
-    };
 
     //  Create a button
     //  ---------------------
@@ -59,7 +33,7 @@
             btn.addClass('btn-' + options.size);
         }
         if (options.icon) {
-            web.icon(btn, options.icon, options);
+            web.icon(btn, options);
         }
         if (options.text) {
             btn.append(' ' + options.text);
@@ -74,7 +48,10 @@
     };
 
     lux.web.button_group = function (options) {
-        var elem = $(document.createElement('div')).addClass('btn-group');
+        options || (options = {});
+        var elem = $(document.createElement('div'));
+        if (options.vertical) elem.addClass('btn-group-vertical');
+        else elem.addClass('btn-group');
         if (options.radio) {
             elem.data('toggle', 'buttons-radio');
         }

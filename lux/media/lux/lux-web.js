@@ -11,14 +11,27 @@ define(['jquery', 'lux', 'bootstrap'], function ($, lux) {
     web.SKIN_NAMES = SKIN_NAMES;
 
     // Extract a skin information from ``elem``
-    web.get_skin = function (elem) {
+    web.get_skin = function (elem, prefix) {
         if (elem) {
+            prefix = prefix ? prefix + '-' : '';
             for (var i=0; i < SKIN_NAMES.length; i++) {
                 var name = SKIN_NAMES[i];
-                if (elem.hasClass(name)) {
+                if (elem.hasClass(prefix+name)) {
                     return name;
                 }
             }
+        }
+    };
+
+    // Set the skin on an element
+    var setSkin = lux.setSkin = function(elem, skin, prefix) {
+        if (SKIN_NAMES.indexOf(skin) > -1) {
+            prefix = prefix ? prefix + '-' : '';
+            //
+            _(SKIN_NAMES).forEach(function (name) {
+                elem.removeClass(prefix+name);
+            });
+            elem.addClass(prefix+skin);
         }
     };
 
@@ -63,6 +76,32 @@ define(['jquery', 'lux', 'bootstrap'], function ($, lux) {
             });
         }
     });
+
+    var icons = lux.icons = {
+        //
+        fontawesome: function (elem, options) {
+            var i = $('i', elem).remove(),
+                ni = '<i class="fa fa-' + options.icon + '"></i>';
+            if (elem[0].text) {
+                elem[0].text = ' ' + elem[0].text;
+            }
+            elem.prepend(ni);
+        }
+    };
+
+    lux.icon = web.icon = function (elem, options) {
+        var p = lux.icons[web.options.icon];
+        if (p && !elem.is('html')) {
+            if (!options) options = elem.data();
+            if (options.icon) p(elem, options);
+        }
+    };
+
+    $(document).ready(function () {
+        $('[data-icon]').each(function () {
+            web.icon($(this));
+        });
+    });
     //
     //  Ajax Links & buttons
     //  ------------------------
@@ -103,33 +142,7 @@ define(['jquery', 'lux', 'bootstrap'], function ($, lux) {
         }
     });
 
-    // Object containing Icon providers
-    web.iconProviders = {
-        fontawesome: {
-            icon: function (elem, name) {
-                elem.data('iconProvider', 'fontawesome');
-                var i = $('i', elem),
-                    ni = '<i class="icon-' + name + '"></i>';
-                if (i.length) {
-                    i.replaceWith(ni);
-                } else {
-                    elem.prepend(ni);
-                }
-            }
-        }
-    };
     web.BUTTON_SIZES = ['large', 'normal', 'small', 'mini'];
-
-    // Icon manager. Uses lux.web.options.icon for the provider
-    web.icon = function (elem, name, options) {
-        var pname;
-        if (options) {
-            pname = options.iconProvider || elem.data('iconProvider') || web.options.icon;
-        } else {
-            pname = elem.data('iconProvider') || web.options.icon;
-        }
-        web.iconProviders[pname].icon(elem, name);
-    };
 
     //  Create a button
     //  ---------------------
@@ -163,7 +176,7 @@ define(['jquery', 'lux', 'bootstrap'], function ($, lux) {
             btn.addClass('btn-' + options.size);
         }
         if (options.icon) {
-            web.icon(btn, options.icon, options);
+            web.icon(btn, options);
         }
         if (options.text) {
             btn.append(' ' + options.text);
@@ -178,7 +191,10 @@ define(['jquery', 'lux', 'bootstrap'], function ($, lux) {
     };
 
     lux.web.button_group = function (options) {
-        var elem = $(document.createElement('div')).addClass('btn-group');
+        options || (options = {});
+        var elem = $(document.createElement('div'));
+        if (options.vertical) elem.addClass('btn-group-vertical');
+        else elem.addClass('btn-group');
         if (options.radio) {
             elem.data('toggle', 'buttons-radio');
         }
@@ -230,7 +246,6 @@ define(['jquery', 'lux', 'bootstrap'], function ($, lux) {
 
     // A class for managing HTML5 drag and drop functionality for several
     // configurations.
-
     web.DragDrop = lux.Class.extend({
         // Default options, overwritten during initialisation.
         defaults: {
@@ -360,13 +375,13 @@ define(['jquery', 'lux', 'bootstrap'], function ($, lux) {
             element.on('dragstart', selector, function(e) {
                 if (self.candrag) {
                     if (self.options.onStart.call(this, e, self) !== false) {
-                        web.logger.debug('Start dragging ' + this.id);
+                        logger.debug('Start dragging ' + this.id);
                         return self.e_dragstart(this, e);
                     }
                 }
                 e.preventDefault();
             }).on('dragend', selector, function (e) {
-                web.logger.debug('Ended dragging ' + this.id);
+                logger.debug('Ended dragging ' + this.id);
                 self.candrag = false;
                 return self.e_dragend(this, e);
             }).on('drag', selector, function (e) {
@@ -477,7 +492,7 @@ define(['jquery', 'lux', 'bootstrap'], function ($, lux) {
                 id = dataTransfer.getData('text/plain').split(',')[0];
             target = $(target).addClass(options.over_class);
             if (target[0].id !== id) {
-                web.logger.debug('Draggable ' + id + ' entering dropzone');
+                logger.debug('Draggable ' + id + ' entering dropzone');
                 if (this._placeholder) {
                     var elem = $('#' + id);
                     this.move(elem, target, elem.parent(), target.parent(), this._placeholder);
@@ -501,7 +516,7 @@ define(['jquery', 'lux', 'bootstrap'], function ($, lux) {
                     top: parseInt(idxy[2], 10)
                 };
             if (elem.length) {
-                web.logger.info('Dropping ' + elem.attr('id'));
+                logger.info('Dropping ' + elem.attr('id'));
                 this.options.onDrop.call(target, elem, e, xy, this);
             }
         }
@@ -545,29 +560,7 @@ define(['jquery', 'lux', 'bootstrap'], function ($, lux) {
         });
         return elem;
     };
-    //
-    // Select2 hook for lux set_value_hooks
-    var get_select2_value = function (element, value) {
-        if (element.hasClass('select2-offscreen')) {
-            element.select2('val', value);
-            return true;
-        }
-    };
-    //
-    lux.set_value_hooks.push(get_select2_value);
 
-    // A proxy for select2
-    $.fn.select = function (options) {
-        var self = this;
-        require(['select'], function () {
-            options = options || {};
-            if (options === Object(options) && !options.width) {
-                options.width = 'element';
-            }
-            self.select2(options);
-        });
-        return this;
-    };
 
     //  Dialog
     //  -----------------------
@@ -598,10 +591,10 @@ define(['jquery', 'lux', 'bootstrap'], function ($, lux) {
             top: null,
             skin: 'default',
             icons: {
-                open: 'plus-sign',
-                close: 'minus-sign',
-                remove: 'remove',
-                fullscreen: 'fullscreen'
+                open: 'plus-circle',
+                close: 'minus-circle',
+                remove: 'times',
+                fullscreen: 'arrows-alt'
             },
             buttons: {
                 size: 'mini'
@@ -764,10 +757,10 @@ define(['jquery', 'lux', 'bootstrap'], function ($, lux) {
                     body.addClass('collapse').show();
                 }
                 self.element().removeClass('collapsed');
-                web.icon(button, self.options.icons.close);
+                web.icon(button, {icon: self.options.icons.close});
             }).on('hidden', function () {
                 self.element().addClass('collapsed');
-                web.icon(button, self.options.icons.open);
+                web.icon(button, {icon: self.options.icons.open});
             }).collapse();
             // make sure height is auto when the dialog is not collapsed at startupSSSSS
             if (!this.options.collapsed) {
@@ -791,15 +784,13 @@ define(['jquery', 'lux', 'bootstrap'], function ($, lux) {
                     icon: self.options.icons.fullscreen,
                     title: 'Full screen mode'
                 });
-                if (!$.isFunction(fullscreen)) {
+                if (!fullscreen.render) {
                     // default full screen
-                    fullscreen = function () {
-                        web.fullscreen(this.body());
-                    };
+                    fullscreen = new lux.Fullscreen({elem: this.body()});
                 }
                 self.buttons.prepend(button);
                 button.click(function () {
-                    fullscreen.call(self);
+                    fullscreen.render();
                 });
             }
         },
@@ -818,397 +809,81 @@ define(['jquery', 'lux', 'bootstrap'], function ($, lux) {
         });
     };
     //
-    // jQuery Form
-    var SELECT = document.createElement('select'),
-        OPTION = document.createElement('option'),
-        special_inputs = ['checkbox', 'radio'],
-        jquery_form_info = function () {
-            return {name: 'jquery-form',
-                    version: '3.48',
-                    web: 'http://malsup.com/jquery/form/'};
-        };
-    //
-    // Form with ajax features and styling options
-    web.extension('form', {
-        selector: 'form',
-        defaultElement: 'form',
+    // Add full-screen
+    var Fullscreen = lux.Fullscreen = lux.createView('fullscreen', {
         //
-        options: {
-            dataType: "json",
-            layout: 'default',
-            ajax: false,
-            complete: null,
-            error: null,
-            success: null
-        },
-        //
-        decorate: function () {
-            var form = this,
-                element = form.element();
-            if (element.hasClass('ajax')) {
-                form.options.ajax = true;
-            }
-            if (element.hasClass('horizontal')) {
-                this.options.layout = 'horizontal';
-            } else if (element.hasClass('inline')) {
-                this.options.layout = 'inline';
-            }
-            var layout = this['render_' + this.options.layout];
-            if (layout) layout.call(this);
-            if (form.options.ajax) {
-                form.options.ajax = false;
-                form.ajax();
-            }
-        },
-        //
-        render_horizontal: function () {
-            var elem, label, parent, wrap, group;
-            $('input,select,textarea,button', this.element().addClass('horizontal')).each(function () {
-                elem = $(this);
-                wrap = elem.parent();
-                if (!wrap.hasClass('controls')) {
-                    parent = elem.parent();
-                    if (!parent.is('label')) parent = elem;
-                    wrap = $(document.createElement('div')).addClass('controls');
-                    parent.before(wrap).appendTo(wrap);
-                }
-                group = wrap.parent();
-                if (!wrap.hasClass('control-group')) {
-                    label = wrap.prev();
-                    group = $(document.createElement('div')).addClass('control-group');
-                    wrap.before(group).appendTo(group);
-                    if (label.is('label')) {
-                        group.prepend(label.addClass('control-label'));
-                    }
-                }
-            });
-        },
-        //
-        render_inline: function () {
-            var elem;
-            $('input,select,button', this.element().addClass('inline')).each(function () {
-                elem = $(this);
-                if (special_inputs.indexOf(elem.attr('type')) === -1) {
-                    elem.addClass('input-small');
-                }
-            });
-        },
-        //
-        ajax: function (options) {
-            if (!this.options.ajax) {
-                if (options) {
-                    $.extend(this.options, options);
-                }
-                var self = this;
-                web.add_lib(jquery_form_info());
-                options = self.options;
-                options.ajax = true;
-                options.error = options.error || self.on_error,
-                options.success = options.success || self.on_success;
-                this.element().ajaxForm(options);
-            }
-        },
-        //
-        // Add a new input/select/textarea to the form
-        // ``type`` is the type of input,valid values are ``input``,
-        // ``select``, ``textarea``.
-        add_input: function (type, input) {
-            input = input || {};
-            var elem,
-                label = input.label,
-                element = this._element,
-                fieldsets = element.children('fieldset'),
-                fieldset_selector = input.fieldset,
-                // textarea and button don't have value attribute,
-                // therefore the value is used as text
-                value = input.value,
-                fieldset, fs;
-            delete input.fieldset;
-            delete input.label;
-
-            // Find the appropiate fieldset
-            if (fieldset_selector) {
-                if (fieldset_selector instanceof jQuery) {
-                    fs = fieldset_selector;
-                } else if (fieldset_selector instanceof HTMLElement) {
-                    fs = $(fieldset_selector);
-                } else if (fieldset_selector.id) {
-                    fs = element.find('#' + fieldset_selector.id);
-                } else if (fieldset_selector.Class) {
-                    fs = element.find('.' + fieldset_selector.Class);
-                } else {
-                    fs = fieldsets.last();
-                }
-                if (fs.length) {
-                    fieldset = fs;
-                } else {
-                    fieldset = $(document.createElement('fieldset')).appendTo(element);
-                    if (fieldset_selector.id) {
-                        fieldset.attr(id, fieldset_selector.id);
-                    } else if (fieldset_selector.Class) {
-                        fieldset.addClass(fieldset_selector.Class);
-                    }
-                }
-            } else if (!fieldsets.length) {
-                if (!element.children().length) {
-                    fieldset = $(document.createElement('fieldset')).appendTo(element);
-                } else {
-                    fieldset = element;
-                }
-            } else {
-                fieldset = fieldsets.first();
-            }
-            if (type === 'textarea') {
-                elem = $(document.createElement('textarea')).attr(input).html(value);
-            } else if (type === 'submit') {
-                elem = this.submit(input);
-            } else if (type === 'select') {
-                elem = this.select(input);
-            } else if (_.isString(type)) {
-                elem = this.input(input);
-            } else {
-                elem = type;
-            }
-            //
-            if (label) {
-                label = $(document.createElement('label')).html(label);
-            }
-            if (special_inputs.indexOf(elem.attr('type')) > -1) {
-                if (!label) {
-                    label = $(document.createElement('label'));
-                }
-                fieldset.append(label.addClass('checkbox').append(elem));
-            } else {
-                fieldset.append(label);
-                fieldset.append(elem);
-            }
-            return elem;
-        },
-        //
-        input: function (options) {
-            if (!options) options = {};
-            if(!options.type) options.type='text';
-            return $(document.createElement('input')).attr(options);
-        },
-        //
-        submit: function (options) {
-            if (!options) options = {};
-            if (!options.tag) {
-                options.tag = 'button';
-                options.text = options.value;
-            }
-            return web.create_button(options);
-        },
-        //
-        // A special case of ``add_input``, add a select element
-        select: function (opts) {
-            var value, elem, options, opt;
-            if (opts) {
-                delete opts.type;
-                value = opts.value;
-                delete opts.value;
-                options = opts.options;
-                delete opts.options;
-            }
-            elem = SELECT.cloneNode(false);
-            _(options).forEach(function (o) {
-                opt = OPTION.cloneNode(false);
-                opt.value = o.value;
-                opt.text = o.text || o.value;
-                elem.appendChild(opt);
-            });
-            return $(elem).attr(opts);
-        },
-        //
-        on_error: function (o, s, xhr, form) {
-            // Got a 400 Bad Request, the form did not validate
-            if (o.status === 400) {
-
-            }
-        },
-        //
-        on_success: function (o, s, xhr, form) {
-            // Got a 200 response
-            if (o.redirect) {
-                window.location = o.redirect;
-            } else {
-                _(o).forEach(function (messages, name) {
-                    _(messages).forEach(function (message) {
-                        if (message.error) {
-                            message.skin = 'error';
-                        } else {
-                            message.skin = 'success';
-                        }
-                        var alert = web.alert(message),
-                            field;
-                        if (name) {
-                            field = form.find('input[name='+name+']');
-                        }
-                        if (field.length) {
-                            field.before(alert.element());
-                        } else if (name === 'form') {
-                            form.prepend(alert.element());
-                        } else {
-                            var container = $('.messages');
-                            if (!container.length) {
-                                form.prepend(alert.element());
-                            } else {
-                                container.append(alert.element());
-                            }
-                        }
-                    });
-                });
-            }
-        }
-    });
-
-    //
-    // Fields for Forms and Models
-
-    var c = lux;
-
-    c.Field = lux.Class.extend({
-        tag: 'input',
-        type: 'text',
-        //
-        init: function (options) {
-            this.options = Object(options);
-        },
-        //
-        validate: function (model, value) {
-            if (value || value === 0) return value + '';
-        },
-        //
-        set_value: function (model, elem) {
-            elem.val(model.get(this.name));
-        },
-        //
-        add_to_form: function (form, model) {
-            var opts = _.extend({
-                name: this.name,
-                type: this.type,
-                title: this.name
-            }, this.options);
-            var elem = form.add_input(this.tag, opts);
-            if (model) {
-                this.set_value(model, elem);
-            }
-            return elem;
-        }
-    });
-
-    c.IntegerField = c.Field.extend({
-        type: 'number',
-        //
-        validate: function (model, value) {
-            return parseInt(value, 10);
-        }
-    });
-
-    c.FloatField = c.Field.extend({
-        type: 'number',
-        //
-        validate: function (model, value) {
-            return parseFloat(value);
-        }
-    });
-
-    c.BooleanField = c.Field.extend({
-        type: 'checkbox',
-        //
-        set_value: function (model, elem) {
-            if (model.get(this.name)) {
-                elem.prop('checked', true);
-            }
-        },
-        //
-        validate: function (model, value) {
-            if (value !== undefined)
-                return value === true || value === 'on';
-        }
-    });
-
-    c.MultiField = c.Field.extend({
-        tag: 'select',
-        //
-        init: function (options) {
-            this.options = Object(options);
-            this.options.multiple = 'multiple';
-        }
-    });
-
-    c.TextArea = c.Field.extend({
-        tag: 'textarea'
-    });
-
-    c.KeywordsField = c.Field.extend({
-
-        validate: function (instance, value) {
-            if (_.isString(value)) {
-                var result = [];
-                _(value.split(',')).forEach(function (el) {
-                    el = el.trim();
-                    if (el) {
-                        result.push(el);
-                    }
-                });
-                return result;
-            } else if (!_.isArray(value)) {
-                var val = [];
-                _(value).forEach(function (v) {
-                    val.push(v);
-                });
-                return val;
-            } else {
-                return value;
-            }
-        }
-    });
-
-    //
-    // Add full-screen 
-    web.extension('fullscreen', {
-        defaultElement: 'div',
-        //
-        options: {
+        defaults: {
             zindex: 2010,
-            icon: 'remove'
+            icon: 'times-circle',
+            themes: ['default', 'inverse']
         },
         //
-        decorate: function () {
-            var fullscreen = this,
-                options = this.options,
-                container = $(document.createElement('div')).addClass('fullscreen zen')
-                                                            .css({'z-index': options.zindex}),
-                element = this.element(),
-                wrap = $(document.createElement('div')).addClass('fullscreen-container').appendTo(container),
-                previous = element.prev(),
-                parent = element.parent(),
-                sidebar = $(document.createElement('div')).addClass('fullscreen-sidebar').appendTo(container),
-                exit = web.create_button({
-                    icon: options.icon,
-                    title: 'Exit full screen'
-                }).appendTo(sidebar);
-            this._container = container;
+        initialise: function (options) {
+            var container = $(document.createElement('div')).addClass(
+                    'fullscreen').css({'z-index': options.zindex});
+
+            this.wrap = $(document.createElement('div')).addClass(
+                'fullscreen-container').appendTo(container);
+            this.side = $(document.createElement('div')).addClass(
+                'fullscreen-sidebar').appendTo(container);
+            this.sidebar = web.button_group({vertical: true}).appendTo(this.side);
             //
-            exit.click(function () {
-                if(previous.length) {
-                    previous.after(element);
-                } else {
-                    parent.prepend(element);
-                }
-                fullscreen.destroy();
-            });
+            this.themes = options.themes;
+            this.theme = 1;
+            this.exit = web.create_button({
+                icon: options.icon,
+                title: 'Exit full screen'
+            }).appendTo(this.sidebar);
+            this.theme_button = web.create_button({
+                icon: 'laptop',
+                title: 'theme'
+            }).appendTo(this.sidebar);
             //
-            wrap.append(element);
-            container.appendTo(document.body);
+            this._wrapped = {
+                elem: this.elem,
+                previous: this.elem.prev(),
+                parent: this.elem.parent()
+            };
+            //
+            this.setElement(container);
+            this.toggle_skin();
         },
         //
-        container: function () {
-            return this._container;
+        render: function () {
+            var self = this;
+            if (!self.elem.parent().length) {
+                //
+                self.exit.click(function () {
+                    self.remove();
+                });
+                //
+                self.theme_button.click(function () {
+                    self.toggle_skin();
+                });
+                self.wrap.append(this._wrapped.elem);
+                self.elem.appendTo(document.body);
+            }
+        },
+        //
+        remove: function () {
+            var w = this._wrapped;
+            if(w.previous.length) {
+                w.previous.after(w.elem);
+            } else {
+                w.parent.prepend(w.elem);
+            }
+            return this._super();
+        },
+        //
+        toggle_skin: function () {
+            var themes = this.themes,
+                old_theme = this.theme;
+            this.theme = old_theme ? 0 : 1;
+            lux.setSkin(this.theme_button, themes[old_theme], 'btn');
+            lux.setSkin(this.elem, themes[this.theme]);
         }
     });
-        
+
     //
     // Web Broweser Local Storage backend
     var Storage = lux.Backend.extend({

@@ -37,26 +37,4 @@
         });
         return elem;
     };
-    //
-    // Select2 hook for lux set_value_hooks
-    var get_select2_value = function (element, value) {
-        if (element.hasClass('select2-offscreen')) {
-            element.select2('val', value);
-            return true;
-        }
-    };
-    //
-    lux.set_value_hooks.push(get_select2_value);
 
-    // A proxy for select2
-    $.fn.select = function (options) {
-        var self = this;
-        require(['select'], function () {
-            options = options || {};
-            if (options === Object(options) && !options.width) {
-                options.width = 'element';
-            }
-            self.select2(options);
-        });
-        return this;
-    };
