@@ -19,7 +19,8 @@
             }),
             new lux.ChoiceField('choices', {
                 choices: ['blue', 'black', 'red'],
-                select2: {minimumResultsForSearch: -1}
+                select2: {minimumResultsForSearch: -1},
+                label: false
             })
         ];
 
@@ -31,6 +32,7 @@
         form.addFields(fields);
         form.addSubmit();
         form.render();
+
         //self.example(form.elem.addClass('span12'));
         //
         //form = new lux.Form({skin: 'inverse'});
@@ -38,4 +40,14 @@
         //form.addSubmit();
         //form.render();
         //self.example(form.elem);
+        var inlineFields = _.filter(fields, function (field) {
+            return field.name !== 'choices';
+        });
+        self.text('h3', 'Inline forms');
+        form = new lux.Form({layout: 'inline'});
+        self.example(form.elem);
+        form.addFields(inlineFields);
+        form.addSubmit();
+        form.render();
+
     });

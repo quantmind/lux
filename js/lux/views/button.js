@@ -1,4 +1,12 @@
 
+    //  Buttons
+    //  -------------
+    //
+    //  A view for diplaying buttons
+    //  Usage:
+    //
+    //      var btn1 = new Button({text: 'Hi!'});
+    //      var btn2 = new Button({text: 'submit', icon: 'fire'});
     var
     //
     BUTTON_SIZES = ['large', 'normal', 'small', 'mini'],

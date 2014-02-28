@@ -1,18 +1,12 @@
-    //
-    //  LUX CMS
-    //  ---------------------------------
 
-    //  Inline editing and drag & drop for blocks within a page. The layout
-    //  starts with a Page which contains a given set of ``Grid`` components
-    //  which are managed the ``GridView`` model.
-    //
-    //  Each ``Grid`` contains one or more ``Row`` components which can be added
-    //  interactively. A row has several templates with a predefined set of
-    //  ``Columns``.
     var ROW_TEMPLATES = new lux.Ordered(),
         BLOCK_TEMPLATES = new lux.Ordered(),
         content_type = 'content_type',
-        dbfields = 'dbfields';
+        dbfields = 'dbfields',
+        skin_color_element = function (state) {
+            if (!state.id) return state.text; // optgroup
+            return "<div class='colored " + state.id + "'>" + state.text + "</div>";
+        };
     //
     // Content Model
     // ----------------
@@ -32,24 +26,33 @@
             name: 'content',
             //
             fields: [
+                new lux.ChoiceField('content_type', {
+                    required: true,
+                    choices: function () {
+                        return cms.content_types();
+                    },
+                    fieldset: content_type,
+                    select2: {placeholder: 'Choose a content'}
+                }),
+                //
                 new lux.ChoiceField('wrapper', {
                     choices: function () {
                         return cms.wrapper_types();
                     },
-                    fieldset: content_type
+                    fieldset: content_type,
+                    select2: {minimumResultsForSearch: -1}
                 }),
                 //
                 new lux.ChoiceField('skin', {
                     choices: lux.SKIN_NAMES,
-                    fieldset: content_type
-                }),
-                //
-                new lux.ChoiceField('content_type', {
-                    required: true,
-                    choices: function () {
-                        cms.content_types();
-                    },
-                    fieldset: content_type
+                    fieldset: content_type,
+                    select2: {
+                        placeholder: 'Choose a skin',
+                        formatResult: skin_color_element,
+                        formatSelection: skin_color_element,
+                        minimumResultsForSearch: -1,
+                        escapeMarkup: function(m) { return m; }
+                    }
                 }),
                 //
                 new lux.Field('id', {
@@ -63,15 +66,31 @@
                 }),
                 //
                 new lux.KeywordsField('keywords', {
-                    fieldset: dbfields
+                    fieldset: dbfields,
+                    select2: {
+                        tags: [],
+                        initSelection : function (element, callback) {
+                            var data = [];
+                            _(element.val().split(",")).forEach(function (val) {
+                                if (val) data.push({id: val, text: val});
+                            });
+                            callback(data);
+                        }
+                    }
                 })
             ]
         },
         //
-        // Create a jQuery Form element and passit to the ``callback``.
-        // Each subclass of Content can implement this method which by default
-        // does nothing.
-        get_form: function (callback) {},
+        // Override the ``getForm`` method
+        getForm: function (options) {
+            options || (options = {});
+            options.model = this;
+            var form = new lux.Form(options);
+            form.addFields(_.filter(this._meta.fields, function (field) {
+                return !field.fieldset;
+            }));
+            return form;
+        },
         //
         // Render this Content into a `container`. Must be implemented
         // by subclasses

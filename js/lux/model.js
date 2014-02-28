@@ -438,16 +438,26 @@
             return this._meta.name + '-' + this.cid;
         },
         //
-        // Get a jQuery form element for this model.
-        get_form: function () {},
+        //  Get a ``Form`` view for this model.
+        //
+        //  By default all fields defined in the metaclass are added
+        //  to the form. Override if you need to
+        getForm: function (options) {
+            options || (options = {});
+            options.model = this;
+            var form = new Form(options);
+            form.setFields(this._meta.fields);
+            if (options.callback) options.callback(form);
+            return form;
+        },
         //
         // Update the input/select elements in a jQuery form element with data
         // from the model
-        update_form: function (form) {
+        updateForm: function (form) {
             _(this.fields()).forEach(function (val, name) {
                 var elem = form.find("[name=" + name + "]");
                 if (elem.length) {
-                    lux.set_value(elem, val);
+                    lux.setValue(elem, val);
                 }
             });
         },

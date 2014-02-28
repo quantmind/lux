@@ -16,6 +16,18 @@
     cms.create_content_type('contenturl', {
         meta: {
             title: 'Site Content',
+            fields: [
+                new lux.ChoiceField('content_url', {
+                    label: 'Choose a content',
+                    choices: function () {
+                        var vals = [];
+                        _(lux.content_urls).forEach(function (value) {
+                            vals.push(value);
+                        });
+                        return vals;
+                    }
+                })
+            ]
         },
         //
         render: function (container, skin) {
@@ -41,16 +53,6 @@
             } else {
                 logger.warning('Missing underlying page url and html');
             }
-        },
-        //
-        get_form: function (callback) {
-            var form = lux.web.form(),
-                select = form.add_input('select', {name: 'content_url'});
-            $(document.createElement('option')).val('this').html('this').appendTo(select);
-            _(lux.web.options.content_urls).forEach(function (value) {
-                $(document.createElement('option')).val(value[1]).html(value[0]).appendTo(select);
-            });
-            callback(form);
         }
     });
     //
@@ -125,14 +127,6 @@
                 CodeMirror.fromTextArea(js[0]);
                 callback(form);
             });
-        },
-        //
-        get_form: function (callback) {
-            var f = this._meta.fields,
-                form = lux.web.form(),
-                raw = f.raw.add_to_form(form, this),
-                js = f.javascript.add_to_form(form, this);
-            callback(form);
         }
     });
     //
@@ -179,19 +173,36 @@
             },
             //
             fields: [
-                new lux.BooleanField('sortable'),
-                new lux.BooleanField('editable'),
-                new lux.BooleanField('collapsable'),
-                new lux.BooleanField('fullscreen'),
+                new lux.ChoiceField('url', {
+                    label: 'Choose a model',
+                    choices: function (form) {
+                        var api = form.model.api();
+                        return api.groups;
+                    },
+                    select2: {}
+                }),
+                new lux.MultiField('fields', {
+                    placeholder: 'Select fields to display',
+                    select2: {}
+                }),
+                new lux.MultiField('row_actions', {
+                    label: 'Row actions',
+                    placeholder: 'Action on rows',
+                    choices: [{value: 'delete'}],
+                    select2: {
+                        minimumResultsForSearch: -1
+                    }
+                }),
                 new lux.ChoiceField('style', {
                     tag: 'input',
                     choices: ['table', 'grid']
                 }),
-                new lux.BooleanField('footer', {label: 'Display Footer'}),
-                new lux.MultiField('row_actions', {
-                    label: 'Row actions',
-                    placeholder: 'Action on rows',
-                    choices: [{value: 'delete'}]
+                new lux.BooleanField('sortable'),
+                new lux.BooleanField('editable'),
+                new lux.BooleanField('collapsable'),
+                new lux.BooleanField('fullscreen'),
+                new lux.BooleanField('footer', {
+                    label: 'Display Footer'
                 })
             ]
         },
@@ -211,12 +222,10 @@
             });
         },
         //
-        get_form: function (callback) {
-            // The select model is not yet available, create it.
-            var api = this._api();
-            if (api.groups) {
-                callback(this._get_form(api));
-            }
+        getForm: function () {
+            var form = this._super();
+            this._formActions(form);
+            return form;
         },
         //
         // Internal methods
@@ -253,7 +262,7 @@
             }
         },
         //
-        _api: function () {
+        api: function () {
             var api = this._meta.api;
             if (api) {
                 if (!api.groups && api.sitemap) {
@@ -272,11 +281,12 @@
             //
             // Add options to the model select widgets
             _(api.sitemap).forEach(function (section) {
-                var group = $(document.createElement('optgroup')).attr('label', section.name);
+                var group = $(document.createElement('optgroup')).attr(
+                    'label', section.name);
                 groups.push(group);
                 _(section.routes).forEach(function (route) {
                     $(document.createElement('option'))
-                             .val(route.api_url).html(route.model).appendTo(group);
+                        .val(route.api_url).html(route.model).appendTo(group);
                     // Add the route to the models object
                     models[route.api_url] = route;
                 });
@@ -285,32 +295,15 @@
             api.models = models;
         },
         //
-        // Create the form for adding a data grid
-        _get_form: function (api) {
+        // Add action to the datagrid form
+        _formActions: function (form) {
             var self = this,
-                form = lux.web.form(),
-                select_model = form.add_input('select', {name: 'url'}),
+                api = this.api(),
                 models = api.models,
-                fields = this._meta.fields;
-
-            select_model.append($(document.createElement('option')).html('Choose a model'));
-            _(api.groups).forEach(function (group) {
-                select_model.append(group);
-            });
-            // Create the fields multiple select
-            var fields_select = form.add_input('select', {
-                multiple: 'multiple',
-                name: 'fields',
-                placeholder: 'Select fields to display'
-            }).Select();
-            //
-            fields.sortable.add_to_form(form, this);
-            fields.editable.add_to_form(form, this);
-            fields.footer.add_to_form(form, this);
-            fields.row_actions.add_to_form(form, this).select();
+                fields_select = form.elem.find('[name="fields"]');
             //
             // When a model change, change the selction as well.
-            select_model.select().change(function (e) {
+            form.elem.find('[name="url"]').change(function (e) {
                 var url = $(this).val(),
                     model = models[url];
                 // there is a model
@@ -343,11 +336,6 @@
                         });
                     }
                 }
-            });
-            //
-            // If the model url is available trigger the changes in the select
-            // element
-            select_model.val(this.get('url')).trigger('change');
-            return form;
+            }).val(this.get('url')).trigger('change');
         },
     });

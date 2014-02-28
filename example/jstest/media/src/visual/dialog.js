@@ -25,4 +25,20 @@
             collapsable: true,
             fullscreen: true
         });
+
+        //
+        self.text('h3', 'Modal dialog');
+        var
+        open = new lux.Button({
+            text: 'Click to pen model dialog',
+        }),
+        modal = new lux.Dialog({
+            modal: true,
+            title: 'A modal dialog',
+            body: lorem({words: 20}),
+            autoOpen: false
+        });
+        self.example(open.elem.click(function () {
+            modal.render();
+        }));
     });

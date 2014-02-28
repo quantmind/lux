@@ -37,7 +37,7 @@
             page: {
                 collapsable: true,
                 collapsed: true,
-                class_name: 'control',
+                className: 'control',
                 skin: 'inverse',
                 buttons: {
                     size: 'default'
@@ -46,8 +46,7 @@
             // Options for the dialog controlling one grid
             grid: {
                 collapsable: true,
-                skin: null,
-                class_name: 'control',
+                className: 'control',
                 buttons: {
                     size: 'default'
                 }
@@ -76,6 +75,7 @@
                 movable: true,
                 fullscreen: true,
                 autoOpen: false,
+                width: 600,
                 title: 'Edit Content',
                 fade: {duration: 20},
                 closable: {destroy: false}

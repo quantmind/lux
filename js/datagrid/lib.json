@@ -9,6 +9,6 @@
             "js/datagrid/extensions/skin.js",
             "js/datagrid/extensions/responsive.js",
             "js/datagrid/internals.js",
-            "js/close.js"],
+            "js/datagrid/close.js"],
     "dest": "lux/media/lux/datagrid.js"
 }

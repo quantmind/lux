@@ -8,7 +8,14 @@
         //
         defaultElement: 'div',
         //
+        default_modals: {
+            backdrop: true,
+            keyboard: true,
+            width: 400
+        },
+        //
         defaults: {
+            // Specialised class name for this dialog
             className: null,
             show: true,
             keyboard: true,
@@ -24,9 +31,10 @@
             title: null,
             body: null,
             footer: null,
+            // To create a modal dialog
             modal: false,
-            modal_zindex: 1040,
             autoOpen: true,
+            // Default width
             width: null,
             height: null,
             top: null,
@@ -53,7 +61,6 @@
                 h3 = $(document.createElement('h3')),
                 toggle;
             //
-            if (!elem.attr('id')) elem.attr('id', this.cid);
             this.setSkin(options.skin);
             //
             this._body = $(document.createElement('div')).addClass(
@@ -76,32 +83,15 @@
                 return new Button(opts);
             };
             //
-            // Modal option
-            var width = options.width;
-            if(options.modal) {
-                width = this._modalCss(options);
-                elem.appendTo(document.body);
-                closable = closable === null ? true : closable;
-                var backdrop = $(document.createElement('div'))
-                                    .addClass('modal-backdrop fullscreen')
-                                    .css('z-index', options.modal_zindex);
-                elem.on('remove', function () {
-                    backdrop.remove();
-                }).on('show', function () {
-                    backdrop.appendTo(document.body);
-                }).on('hide', function () {
-                    backdrop.detach();
-                });
-            }
-            // set width
-            if (width) elem.width(width);
-            // set height
+            // Add additional options
+            if (options.modal) self._addModal(options);
+            if (options.width) elem.width(options.width);
             if (options.height) this._body.height(options.height);
             if (options.collapsable) self._addCollapsable(options);
-            if (closable) this._addClosable(options);
+            if (options.closable) this._addClosable(options);
             if (options.fullscreen) this._addFullscreen(options);
             if (options.movable) this._addMovable(options);
-            if (options.autoOpen) self.show();
+            if (options.autoOpen) self.render();
         },
         //
         body: function () {
@@ -113,11 +103,64 @@
         },
         //
         header: function () {
-            return this.element().children('.header');
+            return this.elem.children('.header');
         },
         //
         title: function (value) {
             return this.header().children('h3').html(value);
+        },
+        //
+        render: function () {
+            this.fadeIn();
+        },
+        //
+        //  INTERNALS
+        //
+        //
+        _addModal: function (options) {
+            var
+            self = this,
+            opts = _.extend({}, self.default_modals,
+                _.isObject(options.modal) ? options.modal : null),
+            modal = $(document.createElement('div')).attr({
+                tabindex: -1,
+                role: 'dialog'
+            }).addClass('modal fullscreen').hide().appendTo(document.body),
+            backdrop = $(document.createElement('div')).addClass(
+                'modal-backdrop fullscreen'),
+            ename = this.eventName('click');
+            //
+            modal.on(ename, function (e) {
+                self.fadeOut();
+            });
+            this.elem.off(ename).on(ename, function (e) {
+                e.stopPropagation();
+            });
+            if (opts.keyboard) {
+                ename = this.eventName('keyup');
+                modal.off(ename).on(ename, function (e) {
+                    e.which === 27 && self.fadeOut();
+                });
+            }
+            //
+            this.enforceFocus();
+            options.collapsable = false;
+            options.width = options.width || opts.width;
+            options.closable = options.closable === null ? true : options.closable;
+            this.elem.appendTo(modal).addClass('dialog-modal')
+            .on('remove', function () {
+                backdrop.remove();
+                modal.remove();
+            }).on('show', function () {
+                if (opts.backdrop)
+                    backdrop.appendTo(document.body);
+                modal.show();
+                $(document.body).addClass('modal-open');
+            }).on('hide', function () {
+                modal.hide();
+                backdrop.detach();
+                $(document.body).removeClass('modal-open');
+            });
         },
         //
         // make the dialog closable, unless it is already closable.
@@ -164,7 +207,7 @@
                 self.elem.removeClass('collapsed');
                 lux.addIcon(button.elem, {icon: options.icons.close});
             }).on('hidden', function () {
-                self.element().addClass('collapsed');
+                self.elem.addClass('collapsed');
                 lux.addIcon(button.elem, {icon: options.icons.open});
             });
             // make sure height is auto when the dialog is not collapsed at startupSSSSS
@@ -202,20 +245,7 @@
         _addMovable: function (options) {
             //var dragdrop = this.options.dragdrop;
             //if (dragdrop) {
-            //    dragdrop.add(this.element(), this.header());
+            //    dragdrop.add(this.elem, this.header());
             //}
-        },
-        //
-        _modalCss: function (options) {
-            var width = options.width || 500;
-            rules = ['#' + this.attr('id') + '{',
-                     '    margin-left: -' + width/2 + 'px,',
-                     '    left: 50%,',
-                     '    position: absolute,',
-                     'z-index: ' + (options.modal_zindex + 10) + ',',
-                     'top: ' + (options.top || '25%'),
-                     '}'];
-            this.addStyle(rules);
-            return width;
         }
     });

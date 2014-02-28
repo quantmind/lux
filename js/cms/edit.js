@@ -6,71 +6,39 @@
     // Pop up dialog for editing content within a block element.
     // ``self`` is a positionview object.
     var edit_content_dialog = function (options) {
-        var dialog = web.dialog(options.contentedit),
+        var dialog = new lux.Dialog(options.contentedit),
             page_limit = options.page_limit || 10,
             // The grid containing the form
             grid = $(document.createElement('div')).addClass('columns'),
-            content_fields = $(document.createElement('div')).addClass('content-fields column pull-left span8'),
+            content_fields = $(document.createElement('div')).addClass(
+                'content-fields column pull-left span8'),
             content_data = $(document.createElement('div')).addClass(
-                'content-data column').css('padding-left', content_fields.width()),
+                'content-data column').css('padding-left', content_fields.width()+20),
             //
-            fieldset_selection = $(document.createElement('fieldset')).addClass(
-                'content-selection').appendTo(content_fields),
+            fieldset_content = $(document.createElement('fieldset')).addClass(
+                content_type).appendTo(content_fields),
             fieldset_dbfields= $(document.createElement('fieldset')).addClass(
                 dbfields).appendTo(content_fields),
             fieldset_submit= $(document.createElement('fieldset')).addClass(
                 'submit').appendTo(content_fields),
-            db = Content._meta.fields,
             //
             // Build the form container
             form = new lux.Form(),
             //
             // Create the select element for HTML wrappers
-            wrapper_select = web.create_select(cms.wrapper_types()).attr(
-                'name', 'wrapper'),
-            color_select = web.create_select(lux.web.SKIN_NAMES).attr(
-                'name', 'style'),
-            //
-            // create the select element for content types
-            content_select = web.create_select(cms.content_types()).attr(
-                'name', 'content_type'),
-            //
-            content_title,
-            //
+            wrapper_select,
+            content_select,
             content_id,
             //
             block;
             //
-        form._element.append(content_fields).append(content_data).appendTo(grid);
-        form.add_input(wrapper_select, {
-            fieldset: fieldset_selection
-        });
-        form.add_input(color_select, {
-            fieldset: fieldset_selection
-        });
-        form.add_input(content_select, {
-            fieldset: fieldset_selection
-        });
-        form.add_input('submit', {
-            value: 'Done',
+        form.elem.append(content_fields).append(content_data).appendTo(grid);
+        form.addFields(Content._meta.fields);
+        form.addSubmit({
+            text: 'Done',
             fieldset: fieldset_submit
         });
-        //
-        // database fields
-        content_id = db.id.add_to_form(form);
-        content_title = db.title.add_to_form(form);
-        db.keywords.add_to_form(form).select({
-            tags: [],
-            initSelection : function (element, callback) {
-                var data = [];
-                _(element.val().split(",")).forEach(function (val) {
-                    if (val) {
-                        data.push({id: val, text: val});
-                    }
-                });
-                callback(data);
-            }
-        });
+        form.render();
         // Detach data fields
         fieldset_dbfields.detach();
         //
@@ -81,21 +49,20 @@
                 dialog.destroy();
             });
         //
-        // Apply select
-        web.select(wrapper_select, {'placeholder': 'Choose a container'});
-        web.select(content_select, {'placeholder': 'Choose a content'});
-        color_select.select({
-            placeholder: 'Choose a skin',
-            formatResult: skin_color_element,
-            formatSelection: skin_color_element,
-            escapeMarkup: function(m) { return m; }
-        }).change(function () {
+        // Change skin event
+        form.elem.find('[name="skin"]').change(function () {
             block.skin = this.value;
+        });
+        //
+        content_id = fieldset_dbfields.find('[name="id"]');
+        content_select = fieldset_content.find('[name="content_type"]');
+        wrapper_select = fieldset_content.find('[name="wrapper"]').change(function () {
+            block.wrapper = this.value;
         });
         //
         // AJAX Content Loading
         if (options.content_url) {
-            content_title.select({
+            fieldset_dbfields.find('[name="title"]').Select({
                 placeholder: 'Search content',
                 minimumInputLength: 2,
                 id: function (data) {
@@ -127,7 +94,7 @@
                                     _.extend(data, model_data);
                                 }
                                 block.content = new Content(data);
-                                block.content.update_form(form._element);
+                                block.content.updateForm(form.elem);
                             }
                         });
                     }
@@ -192,16 +159,15 @@
                 block.log(block + ' changed content type to ' + block.content);
                 block.content_history[block.content._meta.name] = block.content;
                 if (block.content._meta.persistent) {
-                    fieldset_selection.after(fieldset_dbfields);
-                    block.content.update_form(form._element);
+                    fieldset_content.after(fieldset_dbfields);
+                    block.content.updateForm(form.elem);
                 } else {
                     fieldset_dbfields.detach();
                 }
                 // Get the form for content editing
                 content_data.html('');
-                block.content.get_form(function (cform) {
-                    content_data.append(cform._element.children());
-                });
+                var cform = block.content.getForm();
+                content_data.append(cform.render().elem.children());
             } else if (name) {
                 web.logger.error('Unknown content type ' + name);
             } else {
@@ -211,11 +177,6 @@
             if (block.wrapper !== wrapper_select.val()) {
                 wrapper_select.val(block.wrapper).trigger('change');
             }
-        });
-        //
-        // Change container
-        wrapper_select.change(function () {
-            block.wrapper = this.value;
         });
         //
         // Inject change content
@@ -230,9 +191,4 @@
         };
         //
         return dialog;
-    };
-
-    var skin_color_element = function (state) {
-        if (!state.id) return state.text; // optgroup
-        return "<div class='colored " + state.id + "'>" + state.text + "</div>";
     };

@@ -9,11 +9,13 @@ def add_css(all):
     css = all.css
     #
     cssv.dialog.background = cssv.skins.base.default.background
-    cssv.dialog.backdrop.background = '#000'
-    cssv.dialog.backdrop.opacity = 0.5
     cssv.dialog.radius = cssv.body.radius
     cssv.dialog.line_height = px(24)
     cssv.dialog.padding = px(10)
+    #
+    cssv.modal.zindex = 1050
+    cssv.modal.background = '#000'
+    cssv.modal.opacity = 0.5
 
     # collapse
     css('.collapse',
@@ -52,7 +54,7 @@ def add_css(all):
                  background=cssv.body.background)
 
     # control variant
-    dialog.css('.ready.control',
+    dialog.css('.control',
                Radius(0),
                Border(style='none'),
                css(' > .header',
@@ -62,9 +64,24 @@ def add_css(all):
                css(' > .body-wrap > .body',
                    padding=0))
 
+    # modal variant
+    css('.modal-open',
+        overflow='hidden')
+
+    css('.dialog-modal',
+        margin=spacing(px(30), 'auto'),
+        position='relative')
+
+    css('.modal',
+        z_index=cssv.modal.zindex,
+        overflow_x='auto',
+        overflow_y='scroll',
+        outline='none')
+
     css('.modal-backdrop',
-        Opacity(cssv.dialog.backdrop.opacity),
-        background=cssv.dialog.backdrop.background)
+        Opacity(cssv.modal.opacity),
+        background=cssv.modal.background,
+        z_index=cssv.modal.zindex-10)
 
     ##    DIALOG
     dialog.css(' .header',

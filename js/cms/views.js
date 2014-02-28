@@ -3,6 +3,20 @@
     //
     views = cms.views = {},
     //
+    selectRowTemplate = new lux.ChoiceField('rowtemplate', {
+        label: 'Select a row template',
+        choices: function () {
+            var names = [];
+            ROW_TEMPLATES.each(function (_, name) {
+                names.push(name);
+            });
+            return names;
+        },
+        select2: {
+            minimumResultsForSearch: -1
+        }
+    }),
+    //
     //  ContentView
     //  ------------------------
 
@@ -132,7 +146,7 @@
         //
         // It can be different form the view jQuery ``elem``.
         container: function () {
-            return this.dialog ? this.dialog.element() : this.elem;
+            return this.dialog ? this.dialog.elem : this.elem;
         },
         //
         // Retrieve a column from the child at ``index``. If index is not provided
@@ -161,8 +175,8 @@
         // Create dialog
         _create_edit_dialog: function (opts) {
             if (!this.dialog) {
-                this.dialog = web.dialog(opts);
-                this.elem.before(this.dialog.element());
+                this.dialog = new lux.Dialog(opts);
+                this.elem.before(this.dialog.elem);
                 this.dialog.body().append(this.elem);
             }
             return this.dialog;
@@ -221,7 +235,8 @@
                     control = $(document.createElement('div'))
                         .addClass('cms-control').prependTo(document.body);
                 }
-                this.control = web.dialog(control, this.options.page);
+                this.control = new lux.Dialog(_.extend({
+                    elem: control}, this.options.page));
                 this.control.header().prepend(this.logger);
                 control.show();
                 this._add_block_control();
@@ -291,13 +306,13 @@
             var self = this,
                 options = self.options,
                 control = this.control,
-                button = control.create_button({
+                button = control.createButton({
                     icon: options.add_block_icon,
                     title: 'Add new block'
                 }),
                 select = self.select_layouts().addClass(options.skin);
-            self.control.buttons.prepend(select).prepend(button);
-            button.click(function () {
+            self.control.buttons.prepend(select).prepend(button.elem);
+            button.elem.click(function () {
                 var templateName = select.val(),
                     column = self.get_current_column();
                 //
@@ -325,7 +340,7 @@
         // Enable drag and drop
         _create_drag_drop: function (opts) {
             var self = this,
-                dd = new web.DragDrop({
+                dd = new lux.DragDrop({
                     dropzone: '.' + opts.dropzone,
                     placeholder: $(document.createElement('div')).addClass(opts.dropzone),
                     onDrop: function (elem, e) {
@@ -353,19 +368,18 @@
             if (!this.editing) {
                 var self = this,
                     dialog = this._create_edit_dialog(this.options.grid),
-                    add_row = dialog.create_button({
+                    add_row = dialog.createButton({
                         icon: this.options.add_row_icon,
                         title: 'Add new row'
                     }),
-                    select = $(document.createElement('select')).addClass(dialog.options.skin);
+                    select = selectRowTemplate.render(function (elem) {
+                        dialog.buttons.prepend(elem);
+                    });
                 //
                 dialog.title(this.name);
-                ROW_TEMPLATES.each(function (_, name) {
-                    select.append($("<option></option>").attr("value", name).text(name));
-                });
-                dialog.buttons.prepend(select).prepend(add_row);
+                dialog.buttons.prepend(add_row.elem);
                 // Adds a bright new row
-                add_row.click(function () {
+                add_row.elem.click(function () {
                     var row = self.create_child(null, {template: select.val()});
                     self.elem.append(row.container());
                     row.setupEdit();
@@ -460,8 +474,7 @@
             if (!this.dialog) {
                 var dialog = this._super(opts),
                     page = this.page();
-                dialog.container().addClass(opts.dropzone);
-                dialog.element().bind('removed', function () {
+                dialog.elem.addClass(opts.dropzone).bind('removed', function () {
                     if (page) {
                         page.sync();
                     }
@@ -576,10 +589,10 @@
                     group = $(document.createElement('div'))
                                 .addClass('btn-group pull-right').appendTo(toolbar),
                     parent = this.parent(),
-                    button = parent.dialog.create_button({icon: 'edit', size: 'mini'})
-                                .click(function () {
-                                    self.edit_content();
-                                }).appendTo(group);
+                    button = parent.dialog.createButton({icon: 'edit', size: 'mini'});
+                button.elem.click(function () {
+                    self.edit_content();
+                }).appendTo(group);
                 this.button_group = group;
                 this.title = $(document.createElement('span')).prependTo(toolbar);
                 container.appendTo(this.elem.parent());

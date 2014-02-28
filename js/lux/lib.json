@@ -5,6 +5,7 @@
             "js/lux/logger.js",
             "js/lux/backend.js",
             "js/lux/utils.js",
+            "js/lux/dd.js",
             "js/lux/views/icons.js",
             "js/lux/views/button.js",
             "js/lux/views/form.js",

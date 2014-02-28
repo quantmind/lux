@@ -1,7 +1,13 @@
-
+    //  Form view
+    //  -----------------
+    //
+    //  Javascript view for forms and form fields
     var
     //
-    // Form view
+    controlClass = 'form-control',
+    //
+    globalAttributes = ['title'],
+    //
     Form = lux.Form = lux.createView('form', {
         //
         tagName: 'form',
@@ -9,9 +15,6 @@
         defaults: {
             dataType: "json",
             layout: null,
-            groupClass: 'form-group',
-            controlClass: 'form-control',
-            skin: 'default',
             ajax: false,
             complete: null,
             error: null,
@@ -19,19 +22,27 @@
         },
         //
         initialise: function (options) {
-            this.options = options;
             if (this.elem.hasClass('horizontal')) {
                 options.layout = 'horizontal';
             } else if (this.elem.hasClass('inline')) {
                 options.layout = 'inline';
             }
-            if (options.layout)
-                this.elem.addClass('form-' + options.layout);
-            lux.setSkin(this.elem, options.skin);
+            if (options.layout) {
+                this.layout = options.layout;
+                this.elem.addClass('form-' + this.layout);
+            }
+        },
+        //
+        // Apply the ``jquery-form`` ajax plugin to this form
+        ajax: function (options) {
+            var elem = this.elem;
+            require(['jquery-form'], function () {
+                elem.ajaxForm(options);
+            });
         },
         //
         // Add a list of ``Fields`` to this form.
-        addFields: function (fields) {
+        addFields: function (fields, options) {
             var processed = [],
                 self = this,
                 elem,
@@ -40,7 +51,7 @@
             _(fields).forEach(function (field) {
                 if (field && field.name && processed.indexOf(field.name) === -1) {
                     processed.push(field.name);
-                    field.render(self);
+                    field.render(self, options);
                 }
             });
             return this;
@@ -49,38 +60,48 @@
         // Add a submit button
         addSubmit: function (options) {
             options || (options = {});
-            if (!options.skin) options.skin = this.options.skin;
             if (!options.tagName) {
                 options.tagName = 'button';
                 if (!options.text) options.text = 'Submit';
             }
             var btn = new Button(options);
-            this.elem.append(btn.elem);
+            this.fieldset(options.fieldset).append(btn.elem);
+            return btn;
         },
         //
         render: function () {
-            if (this.options.layout) {
-                var layout = this['render_' + this.options.layout];
+            if (this.layout) {
+                var layout = this['render_' + this.layout];
                 layout.call(this);
             } else {
                 var self = this;
                 $('input,select,textarea', this.elem).each(function () {
                     var elem = $(this);
                     if (elem.attr('type') !== 'checkbox') {
-                        elem.addClass(self.options.controlClass);
+                        elem.addClass(controlClass);
                     }
                 });
             }
             return this;
         },
         //
+        render_inline: function () {
+            var self = this;
+            $('input,select', this.elem).each(function () {
+                var elem = $(this);
+                if (elem.attr('type') !== 'checkbox') {
+                    elem.parent().find('label').addClass('sr-only');
+                    elem.addClass(controlClass);
+                }
+            });
+        },
         //
         render_horizontal: function () {
             var self = this,
                 elem, label, parent, wrap, group;
-            $('input,select,textarea', this.elem).each(function () {
-                elem = $(this).addClass(self.options.controlClass);
-                wrap = elem.closest(self.options.groupClass);
+            $('input,select', this.elem).each(function () {
+                elem = $(this).addClass(controlClass);
+                wrap = elem.closest(self.groupClass);
                 if (wrap.length) {
                     parent = elem.parent();
                     if (!parent.is('label')) parent = elem;
@@ -99,47 +120,37 @@
             });
         },
         //
+        //  Get a fieldset from the form if possible
+        //
+        //  If ``fieldset_selector`` is not specified or a fieldset is not found
+        //  return the form element.
         fieldset: function (fieldset_selector) {
-            var fieldsets = this.elem.children('fieldset'),
-                fieldset;
-            //
-            // Find the appropiate fieldset
-            if (fieldset_selector) {
-                if (fieldset_selector instanceof jQuery) {
-                    fs = fieldset_selector;
-                } else if (fieldset_selector instanceof HTMLElement) {
-                    fs = $(fieldset_selector);
-                } else if (fieldset_selector.id) {
-                    fs = this.elem.find('#' + fieldset_selector.id);
-                } else if (fieldset_selector.Class) {
-                    fs = this.elem.find('.' + fieldset_selector.Class);
-                } else {
-                    fs = fieldsets.last();
-                }
-                if (fs.length) {
-                    fieldset = fs;
-                } else {
-                    fieldset = $(document.createElement('fieldset')).appendTo(this.elem);
-                    if (fieldset_selector.id) {
-                        fieldset.attr(id, fieldset_selector.id);
-                    } else if (fieldset_selector.Class) {
-                        fieldset.addClass(fieldset_selector.Class);
-                    }
-                }
-            } else if (!fieldsets.length) {
-                fieldset = $(document.createElement('fieldset')).appendTo(this.elem);
+            if (!fieldset_selector) {
+                return this.elem;
+            } else if (fieldset_selector instanceof jQuery) {
+                return fieldset_selector;
+            } else if (fieldset_selector instanceof HTMLElement) {
+                return $(fieldset_selector);
             } else {
-                fieldset = fieldsets.first();
+                var elem = this.elem.find(fieldset_selector);
+                if (!elem.length) elem = this.elem.find('.'+fieldset_selector);
+                return elem.length ? elem : this.elem;
             }
-            return fieldset;
         }
     }),
     //
     //  Base class for ``Form`` fields
+    //
+    //  * ``label``, if set to ``false`` no label is displaied
     Field = lux.Field = lux.Class.extend({
         fieldOptions: [
-            'tagName', 'type', 'label', 'placeholder', 'autocomplete',
-            'required', 'fieldset'],
+            'tagName', 'type', 'label', 'placeholder', 'fieldset'],
+        //
+        attributes: _.union([
+            'accept', 'alt', 'autocomplete', 'autofocus', 'disabled',
+            'form', 'formaction', 'readonly', 'required'], globalAttributes),
+        //
+        formGroup: 'form-group',
         //
         tagName: 'input',
         //
@@ -149,7 +160,10 @@
             options || (options = {});
             this.name = name;
             _.extend(this, _.pick(options, this.fieldOptions));
-            this.label = this.label || this.name.capitalize();
+            this.attributes = _.pick(options, this.attributes);
+            if (!this.attributes.title) this.attributes.title = this.name;
+            if (this.label !== false)
+                this.label = this.getLabel();
             if (this.required) this.required = 'required';
         },
         //
@@ -163,41 +177,47 @@
         //
         // Render this field for the ``form``.
         // Return a jQuery element which can be included in the ``form``.
-        render: function (form) {
+        render: function (form, options) {
             var
-            elem = $(document.createElement(this.tagName)).attr({
-                name: this.name,
-                type: this.type,
-                title: this.title || this.name,
-                autocomplete: this.autocomplete,
-                placeholder: this.getPlaceholder()
-            });
-            this.setValue(form.model, elem);
-            form.elem.append(this.outerContainer(elem, form));
+            elem = $(document.createElement(this.tagName)).attr(this.attributes),
+            placeholder = this.getPlaceholder();
+            elem.attr('name', this.name);
+            if (this.tagName === 'input')
+                elem.attr('type', this.type);
+            if (placeholder)
+                elem.attr('placeholder', placeholder);
+            if (_.isFunction(form)) form(elem);
+            else {
+                this.setValue(form.model, elem);
+                if (elem.attr('type') !== 'hidden')
+                    elem = this.outerContainer(elem, form);
+                form.fieldset(this.fieldset).append(elem);
+            }
         },
         //
         getPlaceholder: function () {
             if (this.placeholder !== false)
-                return this.placeholder ? this.placeholder : this.label;
+                return this.placeholder ? this.placeholder : this.getLabel();
         },
         //
-        // Wrap field and label with an outer container ``div.groupClass``.
+        getLabel: function () {
+            return this.label || lux.niceStr(this.name);
+        },
+        //
+        // Wrap field and label with an outer container
         outerContainer: function (elem, form) {
-            if (form.layout !== 'inline') {
+            var outer = $(document.createElement('div')).addClass(this.formGroup);
+            if (this.label) {
                 var id = elem.attr('id');
                 if (!id) {
                     id = _.uniqueId('field');
                     elem.attr('id', id);
                 }
                 //
-                var label = $(document.createElement('label')).html(this.label
-                        ).attr('for', id),
-                    outer = $(document.createElement('div')).addClass(
-                        form.options.groupClass);
-                return outer.append(label).append(elem);
-            } else {
-                return elem;
+                $(document.createElement('label')).html(this.label
+                    ).attr('for', id).appendTo(outer);
             }
+            return outer.append(elem);
         }
     }),
     //
@@ -232,22 +252,19 @@
                 return value === true || value === 'on';
         },
         //
-        //
-        render: function (form) {
-            var elem = $(document.createElement(this.tagName)).attr({
-                name: this.name,
-                type: this.type,
-                title: this.title
-            });
-            this.setValue(form.model, elem);
+        outerContainer: function (elem, form) {
             var label = $(document.createElement('label')),
                 outer = $(document.createElement('div')).addClass('checkbox');
             elem = outer.append(label.append(elem).append(this.label));
-            form.elem.append(elem);
+            form.fieldset(this.fieldset).append(elem);
+            return elem;
         },
     }),
     //
     // A ``ChoiceField`` is by default rendered as a ``select`` element.
+    //
+    //  A ``select2`` object or function can be passed during construction.
+    //  In this case the ``select2`` jQuery plugin is applied.
     ChoiceField = lux.ChoiceField = Field.extend({
         //
         // If the ``select`` dictionary is passed and the ``tagName`` is ``select``
@@ -270,11 +287,15 @@
             }
         },
         //
+        //  Render this ``ChoiceField`` into ``form``
+        //
+        //  ``form`` can be a ``Form`` instance or a function accepting the
+        //  new jQuery element created
         render: function (form) {
             var self = this,
                 choices= this.choices,
                 elem, text;
-            if (_.isFunction(choices)) choices=  choices();
+            if (_.isFunction(choices)) choices = choices(form);
             //
             // Select element
             if (this.tagName === 'select') {
@@ -283,17 +304,25 @@
                 }).append($("<option></option>"));
                 //
                 _(choices).forEach(function (val) {
-                    if (_.isString(val)) text = val;
-                    else {
-                        text = val.text || val.value;
-                        val = val.value;
+                    if (!(val instanceof jQuery)) {
+                        if (_.isString(val)) text = val;
+                        else {
+                            text = val.text || val.value;
+                            val = val.value;
+                        }
+                        val = $("<option></option>").val(val).text(text);
                     }
-                    elem.append($("<option></option>").val(val).text(text));
+                    elem.append(val);
                 });
-                self.setValue(form.model, elem);
-                form.elem.append(self.outerContainer(elem, form));
-                if (this.select2) {
-                    var opts = this.select2;
+                if (_.isFunction(form)) form(elem);
+                else {
+                    self.setValue(form.model, elem);
+                    form.fieldset(this.fieldset).append(
+                        self.outerContainer(elem, form));
+                }
+                var opts = this.select2;
+                if (_.isFunction(opts)) opts = opts(form);
+                if (opts) {
                     if (!opts.placeholder) opts.placeholder = this.getPlaceholder();
                     elem.Select(opts);
                 }
@@ -315,23 +344,32 @@
                 });
                 form.elem.append(elem);
             }
+            return elem;
         }
     }),
     //
     MultiField = lux.MultiField = ChoiceField.extend({
-        //
-        init: function (options) {
-            this.options = Object(options);
-            this.options.multiple = 'multiple';
+
+        render: function (form) {
+            if (this.tagName === 'select') {
+                var elem = this._super(form);
+                return elem;
+            }
         }
     }),
     //
     TextArea = lux.TextArea = Field.extend({
-        tagName: 'textarea'
+        tagName: 'textarea',
+        //
+        formGroup: 'textarea',
+        //
+        attributes: _.union(
+            Field.prototype.attributes,
+            ['rows', 'cols'])
     }),
     //
     KeywordsField = lux.KeywordsField = Field.extend({
-
+        //
         validate: function (instance, value) {
             if (_.isString(value)) {
                 var result = [];
@@ -354,12 +392,15 @@
         }
     });
     //
-    // A proxy for select2
+    //  Select2 utilities
+    //  ------------------------
+    //
+    //  A proxy for select2
     $.fn.Select = function (options) {
         options || (options = {});
         var self = this;
         require(['select'], function () {
-            if (_.isObject(options)) options.width = 'element';
+            //if (_.isObject(options)) options.width = 'element';
             self.select2(options);
         });
         return this;
@@ -375,3 +416,4 @@
     };
     //
     lux.set_value_hooks.push(get_select2_value);
+

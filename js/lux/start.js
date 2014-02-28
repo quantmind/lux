@@ -26,6 +26,11 @@ define(['lodash', 'jquery'], function (_, $) {
         //
         set_value_hooks: [],
         //
+        // Set the ``value`` for ``elem``
+        //
+        //  This is generalised value setting method which tries
+        //  the ``set_value_hooks`` functions first, and if none of them
+        //  return ``true`` it reverts to the standard ``elem.val`` method.
         setValue: function (elem, value) {
             var hook;
             for (var i=0; i<lux.set_value_hooks.length; i++) {
@@ -66,6 +71,10 @@ define(['lodash', 'jquery'], function (_, $) {
             _(sortable).forEach(function (name) {
                 callback(obj[name], name);
             });
+        },
+        //
+        niceStr: function (s) {
+            return s.capitalize().replace('_', ' ');
         }
     };
 

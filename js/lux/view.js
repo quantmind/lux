@@ -52,6 +52,8 @@
         //
         defaults: null,
         //
+        // This method should not be overwritten, use the ``initialise``
+        // method instead.
         init: function (options) {
             this.cid = _.uniqueId('view');
             options || (options = {});
@@ -166,6 +168,20 @@
             lux.setSkin(this.elem, skin, prefix || this.className);
         },
         //
+        eventName: function (event) {
+            var namespace = this.instance_key ? this.instance_key : 'view';
+            return event + '.lux.' + namespace;
+        },
+        //
+        enforceFocus: function () {
+            var name = this.eventName('focusin'),
+                self = this;
+            $(document).off(name).on(name, function (e) {
+                if (self.elem[0] !== e.target && !self.elem.has(e.target).length)
+                    self.elem.trigger('focus');
+            });
+        },
+        //
         // Add a stylesheet to the head tag.
         //
         //  ``rules`` is an array of string with css rules
@@ -182,9 +198,9 @@
                     style = $("<style type='text/css' rel='stylesheet' />"
                         ).appendTo(head).attr('id', id);
                     if (style[0].styleSheet) { // IE
-                        style[0].styleSheet.cssText = rules.join(" ");
+                        style[0].styleSheet.cssText = rules.join("\n");
                     } else {
-                        style[0].appendChild(document.createTextNode(rules.join(" ")));
+                        style[0].appendChild(document.createTextNode(rules.join("\n")));
                     }
                 }
             }

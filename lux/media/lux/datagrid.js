@@ -1,4 +1,4 @@
-define(['lux-web'], function () {
+define(['lux'], function () {
     "use strict";
 
     var exports = lux;
@@ -880,5 +880,6 @@ define(['lux-web'], function () {
         });
     };
 
-//
+
+    return DataGrid;
 });

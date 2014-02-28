@@ -1,3 +1,21 @@
+//
+//  LUX CMS
+//  ---------------------------------
+
+//  This is a the fornt-end implementation of lux content management system
+//  extension. It provides an easy and elegant way to add content to
+//  pages. It includes:
+
+//  * Inline editing
+//  * drag & drop for content blocks within a page
+//  * Extendibility using javascript alone
+
+//  The layout starts with a Page which contains a given set of ``Grid``
+//  components which are managed the ``GridView`` model.
+//
+//  Each ``Grid`` contains one or more ``Row`` components which can be added
+//  interactively. A row has several templates with a predefined set of
+//  ``Columns``.
 define(['lux'], function (lux) {
     "use strict";
 
@@ -84,21 +102,15 @@ define(['lux'], function (lux) {
         }
     };
 
-    //
-    //  LUX CMS
-    //  ---------------------------------
 
-    //  Inline editing and drag & drop for blocks within a page. The layout
-    //  starts with a Page which contains a given set of ``Grid`` components
-    //  which are managed the ``GridView`` model.
-    //
-    //  Each ``Grid`` contains one or more ``Row`` components which can be added
-    //  interactively. A row has several templates with a predefined set of
-    //  ``Columns``.
     var ROW_TEMPLATES = new lux.Ordered(),
         BLOCK_TEMPLATES = new lux.Ordered(),
         content_type = 'content_type',
-        dbfields = 'dbfields';
+        dbfields = 'dbfields',
+        skin_color_element = function (state) {
+            if (!state.id) return state.text; // optgroup
+            return "<div class='colored " + state.id + "'>" + state.text + "</div>";
+        };
     //
     // Content Model
     // ----------------
@@ -118,24 +130,33 @@ define(['lux'], function (lux) {
             name: 'content',
             //
             fields: [
+                new lux.ChoiceField('content_type', {
+                    required: true,
+                    choices: function () {
+                        return cms.content_types();
+                    },
+                    fieldset: content_type,
+                    select2: {placeholder: 'Choose a content'}
+                }),
+                //
                 new lux.ChoiceField('wrapper', {
                     choices: function () {
                         return cms.wrapper_types();
                     },
-                    fieldset: content_type
+                    fieldset: content_type,
+                    select2: {minimumResultsForSearch: -1}
                 }),
                 //
                 new lux.ChoiceField('skin', {
                     choices: lux.SKIN_NAMES,
-                    fieldset: content_type
-                }),
-                //
-                new lux.ChoiceField('content_type', {
-                    required: true,
-                    choices: function () {
-                        cms.content_types();
-                    },
-                    fieldset: content_type
+                    fieldset: content_type,
+                    select2: {
+                        placeholder: 'Choose a skin',
+                        formatResult: skin_color_element,
+                        formatSelection: skin_color_element,
+                        minimumResultsForSearch: -1,
+                        escapeMarkup: function(m) { return m; }
+                    }
                 }),
                 //
                 new lux.Field('id', {
@@ -149,15 +170,31 @@ define(['lux'], function (lux) {
                 }),
                 //
                 new lux.KeywordsField('keywords', {
-                    fieldset: dbfields
+                    fieldset: dbfields,
+                    select2: {
+                        tags: [],
+                        initSelection : function (element, callback) {
+                            var data = [];
+                            _(element.val().split(",")).forEach(function (val) {
+                                if (val) data.push({id: val, text: val});
+                            });
+                            callback(data);
+                        }
+                    }
                 })
             ]
         },
         //
-        // Create a jQuery Form element and passit to the ``callback``.
-        // Each subclass of Content can implement this method which by default
-        // does nothing.
-        get_form: function (callback) {},
+        // Override the ``getForm`` method
+        getForm: function (options) {
+            options || (options = {});
+            options.model = this;
+            var form = new lux.Form(options);
+            form.addFields(_.filter(this._meta.fields, function (field) {
+                return !field.fieldset;
+            }));
+            return form;
+        },
         //
         // Render this Content into a `container`. Must be implemented
         // by subclasses
@@ -239,71 +276,39 @@ define(['lux'], function (lux) {
     // Pop up dialog for editing content within a block element.
     // ``self`` is a positionview object.
     var edit_content_dialog = function (options) {
-        var dialog = web.dialog(options.contentedit),
+        var dialog = new lux.Dialog(options.contentedit),
             page_limit = options.page_limit || 10,
             // The grid containing the form
             grid = $(document.createElement('div')).addClass('columns'),
-            content_fields = $(document.createElement('div')).addClass('content-fields column pull-left span8'),
+            content_fields = $(document.createElement('div')).addClass(
+                'content-fields column pull-left span8'),
             content_data = $(document.createElement('div')).addClass(
-                'content-data column').css('padding-left', content_fields.width()),
+                'content-data column').css('padding-left', content_fields.width()+20),
             //
-            fieldset_selection = $(document.createElement('fieldset')).addClass(
-                'content-selection').appendTo(content_fields),
+            fieldset_content = $(document.createElement('fieldset')).addClass(
+                content_type).appendTo(content_fields),
             fieldset_dbfields= $(document.createElement('fieldset')).addClass(
                 dbfields).appendTo(content_fields),
             fieldset_submit= $(document.createElement('fieldset')).addClass(
                 'submit').appendTo(content_fields),
-            db = Content._meta.fields,
             //
             // Build the form container
             form = new lux.Form(),
             //
             // Create the select element for HTML wrappers
-            wrapper_select = web.create_select(cms.wrapper_types()).attr(
-                'name', 'wrapper'),
-            color_select = web.create_select(lux.web.SKIN_NAMES).attr(
-                'name', 'style'),
-            //
-            // create the select element for content types
-            content_select = web.create_select(cms.content_types()).attr(
-                'name', 'content_type'),
-            //
-            content_title,
-            //
+            wrapper_select,
+            content_select,
             content_id,
             //
             block;
             //
-        form._element.append(content_fields).append(content_data).appendTo(grid);
-        form.add_input(wrapper_select, {
-            fieldset: fieldset_selection
-        });
-        form.add_input(color_select, {
-            fieldset: fieldset_selection
-        });
-        form.add_input(content_select, {
-            fieldset: fieldset_selection
-        });
-        form.add_input('submit', {
-            value: 'Done',
+        form.elem.append(content_fields).append(content_data).appendTo(grid);
+        form.addFields(Content._meta.fields);
+        form.addSubmit({
+            text: 'Done',
             fieldset: fieldset_submit
         });
-        //
-        // database fields
-        content_id = db.id.add_to_form(form);
-        content_title = db.title.add_to_form(form);
-        db.keywords.add_to_form(form).select({
-            tags: [],
-            initSelection : function (element, callback) {
-                var data = [];
-                _(element.val().split(",")).forEach(function (val) {
-                    if (val) {
-                        data.push({id: val, text: val});
-                    }
-                });
-                callback(data);
-            }
-        });
+        form.render();
         // Detach data fields
         fieldset_dbfields.detach();
         //
@@ -314,21 +319,20 @@ define(['lux'], function (lux) {
                 dialog.destroy();
             });
         //
-        // Apply select
-        web.select(wrapper_select, {'placeholder': 'Choose a container'});
-        web.select(content_select, {'placeholder': 'Choose a content'});
-        color_select.select({
-            placeholder: 'Choose a skin',
-            formatResult: skin_color_element,
-            formatSelection: skin_color_element,
-            escapeMarkup: function(m) { return m; }
-        }).change(function () {
+        // Change skin event
+        form.elem.find('[name="skin"]').change(function () {
             block.skin = this.value;
+        });
+        //
+        content_id = fieldset_dbfields.find('[name="id"]');
+        content_select = fieldset_content.find('[name="content_type"]');
+        wrapper_select = fieldset_content.find('[name="wrapper"]').change(function () {
+            block.wrapper = this.value;
         });
         //
         // AJAX Content Loading
         if (options.content_url) {
-            content_title.select({
+            fieldset_dbfields.find('[name="title"]').Select({
                 placeholder: 'Search content',
                 minimumInputLength: 2,
                 id: function (data) {
@@ -360,7 +364,7 @@ define(['lux'], function (lux) {
                                     _.extend(data, model_data);
                                 }
                                 block.content = new Content(data);
-                                block.content.update_form(form._element);
+                                block.content.updateForm(form.elem);
                             }
                         });
                     }
@@ -425,16 +429,15 @@ define(['lux'], function (lux) {
                 block.log(block + ' changed content type to ' + block.content);
                 block.content_history[block.content._meta.name] = block.content;
                 if (block.content._meta.persistent) {
-                    fieldset_selection.after(fieldset_dbfields);
-                    block.content.update_form(form._element);
+                    fieldset_content.after(fieldset_dbfields);
+                    block.content.updateForm(form.elem);
                 } else {
                     fieldset_dbfields.detach();
                 }
                 // Get the form for content editing
                 content_data.html('');
-                block.content.get_form(function (cform) {
-                    content_data.append(cform._element.children());
-                });
+                var cform = block.content.getForm();
+                content_data.append(cform.render().elem.children());
             } else if (name) {
                 web.logger.error('Unknown content type ' + name);
             } else {
@@ -444,11 +447,6 @@ define(['lux'], function (lux) {
             if (block.wrapper !== wrapper_select.val()) {
                 wrapper_select.val(block.wrapper).trigger('change');
             }
-        });
-        //
-        // Change container
-        wrapper_select.change(function () {
-            block.wrapper = this.value;
         });
         //
         // Inject change content
@@ -465,15 +463,24 @@ define(['lux'], function (lux) {
         return dialog;
     };
 
-    var skin_color_element = function (state) {
-        if (!state.id) return state.text; // optgroup
-        return "<div class='colored " + state.id + "'>" + state.text + "</div>";
-    };
-
     //
     var
     //
     views = cms.views = {},
+    //
+    selectRowTemplate = new lux.ChoiceField('rowtemplate', {
+        label: 'Select a row template',
+        choices: function () {
+            var names = [];
+            ROW_TEMPLATES.each(function (_, name) {
+                names.push(name);
+            });
+            return names;
+        },
+        select2: {
+            minimumResultsForSearch: -1
+        }
+    }),
     //
     //  ContentView
     //  ------------------------
@@ -604,7 +611,7 @@ define(['lux'], function (lux) {
         //
         // It can be different form the view jQuery ``elem``.
         container: function () {
-            return this.dialog ? this.dialog.element() : this.elem;
+            return this.dialog ? this.dialog.elem : this.elem;
         },
         //
         // Retrieve a column from the child at ``index``. If index is not provided
@@ -633,8 +640,8 @@ define(['lux'], function (lux) {
         // Create dialog
         _create_edit_dialog: function (opts) {
             if (!this.dialog) {
-                this.dialog = web.dialog(opts);
-                this.elem.before(this.dialog.element());
+                this.dialog = new lux.Dialog(opts);
+                this.elem.before(this.dialog.elem);
                 this.dialog.body().append(this.elem);
             }
             return this.dialog;
@@ -693,7 +700,8 @@ define(['lux'], function (lux) {
                     control = $(document.createElement('div'))
                         .addClass('cms-control').prependTo(document.body);
                 }
-                this.control = web.dialog(control, this.options.page);
+                this.control = new lux.Dialog(_.extend({
+                    elem: control}, this.options.page));
                 this.control.header().prepend(this.logger);
                 control.show();
                 this._add_block_control();
@@ -763,13 +771,13 @@ define(['lux'], function (lux) {
             var self = this,
                 options = self.options,
                 control = this.control,
-                button = control.create_button({
+                button = control.createButton({
                     icon: options.add_block_icon,
                     title: 'Add new block'
                 }),
                 select = self.select_layouts().addClass(options.skin);
-            self.control.buttons.prepend(select).prepend(button);
-            button.click(function () {
+            self.control.buttons.prepend(select).prepend(button.elem);
+            button.elem.click(function () {
                 var templateName = select.val(),
                     column = self.get_current_column();
                 //
@@ -797,7 +805,7 @@ define(['lux'], function (lux) {
         // Enable drag and drop
         _create_drag_drop: function (opts) {
             var self = this,
-                dd = new web.DragDrop({
+                dd = new lux.DragDrop({
                     dropzone: '.' + opts.dropzone,
                     placeholder: $(document.createElement('div')).addClass(opts.dropzone),
                     onDrop: function (elem, e) {
@@ -825,19 +833,18 @@ define(['lux'], function (lux) {
             if (!this.editing) {
                 var self = this,
                     dialog = this._create_edit_dialog(this.options.grid),
-                    add_row = dialog.create_button({
+                    add_row = dialog.createButton({
                         icon: this.options.add_row_icon,
                         title: 'Add new row'
                     }),
-                    select = $(document.createElement('select')).addClass(dialog.options.skin);
+                    select = selectRowTemplate.render(function (elem) {
+                        dialog.buttons.prepend(elem);
+                    });
                 //
                 dialog.title(this.name);
-                ROW_TEMPLATES.each(function (_, name) {
-                    select.append($("<option></option>").attr("value", name).text(name));
-                });
-                dialog.buttons.prepend(select).prepend(add_row);
+                dialog.buttons.prepend(add_row.elem);
                 // Adds a bright new row
-                add_row.click(function () {
+                add_row.elem.click(function () {
                     var row = self.create_child(null, {template: select.val()});
                     self.elem.append(row.container());
                     row.setupEdit();
@@ -932,8 +939,7 @@ define(['lux'], function (lux) {
             if (!this.dialog) {
                 var dialog = this._super(opts),
                     page = this.page();
-                dialog.container().addClass(opts.dropzone);
-                dialog.element().bind('removed', function () {
+                dialog.elem.addClass(opts.dropzone).bind('removed', function () {
                     if (page) {
                         page.sync();
                     }
@@ -1048,10 +1054,10 @@ define(['lux'], function (lux) {
                     group = $(document.createElement('div'))
                                 .addClass('btn-group pull-right').appendTo(toolbar),
                     parent = this.parent(),
-                    button = parent.dialog.create_button({icon: 'edit', size: 'mini'})
-                                .click(function () {
-                                    self.edit_content();
-                                }).appendTo(group);
+                    button = parent.dialog.createButton({icon: 'edit', size: 'mini'});
+                button.elem.click(function () {
+                    self.edit_content();
+                }).appendTo(group);
                 this.button_group = group;
                 this.title = $(document.createElement('span')).prependTo(toolbar);
                 container.appendTo(this.elem.parent());
@@ -1332,6 +1338,18 @@ define(['lux'], function (lux) {
     cms.create_content_type('contenturl', {
         meta: {
             title: 'Site Content',
+            fields: [
+                new lux.ChoiceField('content_url', {
+                    label: 'Choose a content',
+                    choices: function () {
+                        var vals = [];
+                        _(lux.content_urls).forEach(function (value) {
+                            vals.push(value);
+                        });
+                        return vals;
+                    }
+                })
+            ]
         },
         //
         render: function (container, skin) {
@@ -1357,16 +1375,6 @@ define(['lux'], function (lux) {
             } else {
                 logger.warning('Missing underlying page url and html');
             }
-        },
-        //
-        get_form: function (callback) {
-            var form = lux.web.form(),
-                select = form.add_input('select', {name: 'content_url'});
-            $(document.createElement('option')).val('this').html('this').appendTo(select);
-            _(lux.web.options.content_urls).forEach(function (value) {
-                $(document.createElement('option')).val(value[1]).html(value[0]).appendTo(select);
-            });
-            callback(form);
         }
     });
     //
@@ -1441,14 +1449,6 @@ define(['lux'], function (lux) {
                 CodeMirror.fromTextArea(js[0]);
                 callback(form);
             });
-        },
-        //
-        get_form: function (callback) {
-            var f = this._meta.fields,
-                form = lux.web.form(),
-                raw = f.raw.add_to_form(form, this),
-                js = f.javascript.add_to_form(form, this);
-            callback(form);
         }
     });
     //
@@ -1495,19 +1495,36 @@ define(['lux'], function (lux) {
             },
             //
             fields: [
-                new lux.BooleanField('sortable'),
-                new lux.BooleanField('editable'),
-                new lux.BooleanField('collapsable'),
-                new lux.BooleanField('fullscreen'),
+                new lux.ChoiceField('url', {
+                    label: 'Choose a model',
+                    choices: function (form) {
+                        var api = form.model.api();
+                        return api.groups;
+                    },
+                    select2: {}
+                }),
+                new lux.MultiField('fields', {
+                    placeholder: 'Select fields to display',
+                    select2: {}
+                }),
+                new lux.MultiField('row_actions', {
+                    label: 'Row actions',
+                    placeholder: 'Action on rows',
+                    choices: [{value: 'delete'}],
+                    select2: {
+                        minimumResultsForSearch: -1
+                    }
+                }),
                 new lux.ChoiceField('style', {
                     tag: 'input',
                     choices: ['table', 'grid']
                 }),
-                new lux.BooleanField('footer', {label: 'Display Footer'}),
-                new lux.MultiField('row_actions', {
-                    label: 'Row actions',
-                    placeholder: 'Action on rows',
-                    choices: [{value: 'delete'}]
+                new lux.BooleanField('sortable'),
+                new lux.BooleanField('editable'),
+                new lux.BooleanField('collapsable'),
+                new lux.BooleanField('fullscreen'),
+                new lux.BooleanField('footer', {
+                    label: 'Display Footer'
                 })
             ]
         },
@@ -1527,12 +1544,10 @@ define(['lux'], function (lux) {
             });
         },
         //
-        get_form: function (callback) {
-            // The select model is not yet available, create it.
-            var api = this._api();
-            if (api.groups) {
-                callback(this._get_form(api));
-            }
+        getForm: function () {
+            var form = this._super();
+            this._formActions(form);
+            return form;
         },
         //
         // Internal methods
@@ -1569,7 +1584,7 @@ define(['lux'], function (lux) {
             }
         },
         //
-        _api: function () {
+        api: function () {
             var api = this._meta.api;
             if (api) {
                 if (!api.groups && api.sitemap) {
@@ -1588,11 +1603,12 @@ define(['lux'], function (lux) {
             //
             // Add options to the model select widgets
             _(api.sitemap).forEach(function (section) {
-                var group = $(document.createElement('optgroup')).attr('label', section.name);
+                var group = $(document.createElement('optgroup')).attr(
+                    'label', section.name);
                 groups.push(group);
                 _(section.routes).forEach(function (route) {
                     $(document.createElement('option'))
-                             .val(route.api_url).html(route.model).appendTo(group);
+                        .val(route.api_url).html(route.model).appendTo(group);
                     // Add the route to the models object
                     models[route.api_url] = route;
                 });
@@ -1601,32 +1617,15 @@ define(['lux'], function (lux) {
             api.models = models;
         },
         //
-        // Create the form for adding a data grid
-        _get_form: function (api) {
+        // Add action to the datagrid form
+        _formActions: function (form) {
             var self = this,
-                form = lux.web.form(),
-                select_model = form.add_input('select', {name: 'url'}),
+                api = this.api(),
                 models = api.models,
-                fields = this._meta.fields;
-
-            select_model.append($(document.createElement('option')).html('Choose a model'));
-            _(api.groups).forEach(function (group) {
-                select_model.append(group);
-            });
-            // Create the fields multiple select
-            var fields_select = form.add_input('select', {
-                multiple: 'multiple',
-                name: 'fields',
-                placeholder: 'Select fields to display'
-            }).Select();
-            //
-            fields.sortable.add_to_form(form, this);
-            fields.editable.add_to_form(form, this);
-            fields.footer.add_to_form(form, this);
-            fields.row_actions.add_to_form(form, this).select();
+                fields_select = form.elem.find('[name="fields"]');
             //
             // When a model change, change the selction as well.
-            select_model.select().change(function (e) {
+            form.elem.find('[name="url"]').change(function (e) {
                 var url = $(this).val(),
                     model = models[url];
                 // there is a model
@@ -1659,12 +1658,7 @@ define(['lux'], function (lux) {
                         });
                     }
                 }
-            });
-            //
-            // If the model url is available trigger the changes in the select
-            // element
-            select_model.val(this.get('url')).trigger('change');
-            return form;
+            }).val(this.get('url')).trigger('change');
         },
     });
 
@@ -1707,7 +1701,7 @@ define(['lux'], function (lux) {
             page: {
                 collapsable: true,
                 collapsed: true,
-                class_name: 'control',
+                className: 'control',
                 skin: 'inverse',
                 buttons: {
                     size: 'default'
@@ -1716,8 +1710,7 @@ define(['lux'], function (lux) {
             // Options for the dialog controlling one grid
             grid: {
                 collapsable: true,
-                skin: null,
-                class_name: 'control',
+                className: 'control',
                 buttons: {
                     size: 'default'
                 }
@@ -1746,6 +1739,7 @@ define(['lux'], function (lux) {
                 movable: true,
                 fullscreen: true,
                 autoOpen: false,
+                width: 600,
                 title: 'Edit Content',
                 fade: {duration: 20},
                 closable: {destroy: false}

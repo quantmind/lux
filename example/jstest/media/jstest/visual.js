@@ -53,7 +53,8 @@ define(['lux', 'lorem'], function (lux, lorem) {
             }),
             new lux.ChoiceField('choices', {
                 choices: ['blue', 'black', 'red'],
-                select2: {minimumResultsForSearch: -1}
+                select2: {minimumResultsForSearch: -1},
+                label: false
             })
         ];
 
@@ -65,6 +66,7 @@ define(['lux', 'lorem'], function (lux, lorem) {
         form.addFields(fields);
         form.addSubmit();
         form.render();
+
         //self.example(form.elem.addClass('span12'));
         //
         //form = new lux.Form({skin: 'inverse'});
@@ -72,6 +74,16 @@ define(['lux', 'lorem'], function (lux, lorem) {
         //form.addSubmit();
         //form.render();
         //self.example(form.elem);
+        var inlineFields = _.filter(fields, function (field) {
+            return field.name !== 'choices';
+        });
+        self.text('h3', 'Inline forms');
+        form = new lux.Form({layout: 'inline'});
+        self.example(form.elem);
+        form.addFields(inlineFields);
+        form.addSubmit();
+        form.render();
+
     });
 
     //
@@ -101,6 +113,22 @@ define(['lux', 'lorem'], function (lux, lorem) {
             collapsable: true,
             fullscreen: true
         });
+
+        //
+        self.text('h3', 'Modal dialog');
+        var
+        open = new lux.Button({
+            text: 'Click to pen model dialog',
+        }),
+        modal = new lux.Dialog({
+            modal: true,
+            title: 'A modal dialog',
+            body: lorem({words: 20}),
+            autoOpen: false
+        });
+        self.example(open.elem.click(function () {
+            modal.render();
+        }));
     });
 
     //

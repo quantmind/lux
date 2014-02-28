@@ -1,4 +1,5 @@
-
+    //
+    //  A view for displaying grids
     var Grid = lux.Grid = lux.createView('grid', {
 
         initialise: function (options) {

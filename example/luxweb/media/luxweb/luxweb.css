@@ -1,7 +1,7 @@
 /*
 ------------------------------------------------------------------
 ------------------------------------------------------------------
-Created by lux 2014-02-25 16:20:45 in 0.15 seconds.
+Created by lux 2014-02-28 21:37:19 in 0.57 seconds.
 ------------------------------------------------------------------
 ------------------------------------------------------------------ */
 
@@ -1045,13 +1045,13 @@ disabled look for disabled choices in the results dropdown
   }
 }
 body {
+    margin: 0;
+    line-height: 20px;
+    font-size: 14px;
     text-align: left;
     font-family: Helvetica,Arial,'Liberation Sans',FreeSans,sans-serif;
-    line-height: 20px;
-    margin: 0;
     color: #333;
     padding: 0;
-    font-size: 14px;
     background: #fff;
 }
 
@@ -1071,22 +1071,20 @@ body {
 
 .clearfix:before,
 .dl-horizontal:before,
-form .form-group:before,
 .nav:before,
 .grid:before,
 .grid24:before {
-    display: table;
     content: " ";
+    display: table;
 }
 
 .clearfix:after,
 .dl-horizontal:after,
-form .form-group:after,
 .nav:after,
 .grid:after,
 .grid24:after {
-    display: table;
     content: " ";
+    display: table;
     clear: both;
 }
 
@@ -1103,13 +1101,13 @@ markdown,
 }
 
 .vpadding-small {
-    padding: 5px 0;
     overflow: hidden;
+    padding: 5px 0;
 }
 
 .vpadding {
-    padding: 20px 0;
     overflow: hidden;
+    padding: 20px 0;
 }
 
 .span1 {
@@ -1200,6 +1198,17 @@ markdown,
             box-sizing: border-box;
 }
 
+.sr-only {
+    margin: -1px;
+    border: 0;
+    clip: rect(0,0,0,0);
+    height: 1px;
+    padding: 0;
+    position: absolute;
+    overflow: hidden;
+    width: 1px;
+}
+
 dt {
     font-weight: bold;
     line-height: 20px;
@@ -1210,18 +1219,18 @@ dd {
 }
 
 .dl-horizontal dt {
-    text-align: left;
-    float: left;
     clear: left;
+    float: left;
+    text-align: left;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
 .alert {
+    margin: 0 0 5px;
     text-align: left;
     padding: 8px 14px;
-    margin: 0 0 5px;
     -webkit-border-radius: 5px;
        -moz-border-radius: 5px;
             border-radius: 5px;
@@ -1237,9 +1246,7 @@ dd {
 .datagrid.grid.default tr.row > th,
 .dialog.default > .header,
 .draggable-placeholder.default,
-form.default .form-control,
 .panel.default .header,
-div.colored.default,
 .navbar.default,
 .cms-control.default > .body,
 .lux-example.default,
@@ -1268,7 +1275,6 @@ div.colored.default,
 .dialog.primary > .header,
 .draggable-placeholder.primary,
 .panel.primary .header,
-div.colored.primary,
 .cms-control.primary > .body {
     background-color: #006699;
     background-image: -moz-linear-gradient(top, #0088cc, #006699);
@@ -1294,7 +1300,6 @@ div.colored.primary,
 .dialog.success > .header,
 .draggable-placeholder.success,
 .panel.success .header,
-div.colored.success,
 .cms-control.success > .body {
     background-color: #16a000;
     background-image: -moz-linear-gradient(top, #1dd300, #16a000);
@@ -1320,7 +1325,6 @@ div.colored.success,
 .dialog.error > .header,
 .draggable-placeholder.error,
 .panel.error .header,
-div.colored.error,
 .cms-control.error > .body {
     background-color: #ca0005;
     background-image: -moz-linear-gradient(top, #fd0006, #ca0005);
@@ -1346,9 +1350,7 @@ div.colored.error,
 .section.inverse,
 .dialog.inverse > .header,
 .draggable-placeholder.inverse,
-form.inverse .form-control,
 .panel.inverse .header,
-div.colored.inverse,
 .navbar.inverse,
 .cms-control.inverse > .body {
     background-color: #3c3c3c;
@@ -1365,43 +1367,43 @@ div.colored.inverse,
 }
 
 .alert .close {
-    right: -21px;
     position: relative;
     top: -2px;
+    right: -21px;
 }
 
 .label {
     font-size: 11px;
-    display: inline-block;
     font-weight: bold;
     padding: 2px 4px;
     white-space: nowrap;
     vertical-align: baseline;
+    display: inline-block;
     -webkit-border-radius: 3px;
        -moz-border-radius: 3px;
             border-radius: 3px;
 }
 
 .fullscreen {
-    top: 0;
     right: 0;
     left: 0;
     bottom: 0;
+    top: 0;
     position: fixed;
 }
 
 .fullscreen-container {
-    padding: 30px 0;
     margin: 0 auto;
-    height: 100%;
     max-width: 800px;
+    height: 100%;
+    padding: 30px 0;
 }
 
 .fullscreen-sidebar {
-    text-align: right;
-    right: 30px;
     position: absolute;
     top: 30px;
+    text-align: right;
+    right: 30px;
 }
 
 input:focus,
@@ -1412,15 +1414,15 @@ button:focus {
 }
 
 .btn {
-    text-align: center;
-    font-size: 14px;
-    display: inline-block;
     line-height: 20px;
+    vertical-align: middle;
     font-weight: normal;
+    text-align: center;
     padding: 4px 12px;
     font-family: inherit;
     text-decoration: none;
-    vertical-align: middle;
+    font-size: 14px;
+    display: inline-block;
     border: 1px solid;
     -webkit-border-radius: 5px;
        -moz-border-radius: 5px;
@@ -1428,27 +1430,27 @@ button:focus {
 }
 
 .btn.btn-mini {
-    padding: 0 5px;
-    font-weight: normal;
     font-size: 11px;
+    font-weight: normal;
+    padding: 0 5px;
     -webkit-border-radius: 2px;
        -moz-border-radius: 2px;
             border-radius: 2px;
 }
 
 .btn.btn-small {
-    padding: 2px 10px;
-    font-weight: normal;
     font-size: 13px;
+    font-weight: normal;
+    padding: 2px 10px;
     -webkit-border-radius: 4px;
        -moz-border-radius: 4px;
             border-radius: 4px;
 }
 
 .btn.btn-large {
-    padding: 8px 24px;
-    font-weight: bold;
     font-size: 18px;
+    font-weight: bold;
+    padding: 8px 24px;
 }
 
 .btn.disabled {
@@ -1753,10 +1755,10 @@ button:focus {
 }
 
 .link {
-    cursor: pointer;
-    background: none;
     border: none;
+    cursor: pointer;
     padding: 0;
+    background: none;
 }
 
 .btn-toolbar {
@@ -1766,30 +1768,30 @@ button:focus {
 
 .btn-group,
 .btn-group-vertical {
-    white-space: nowrap;
-    display: inline-block;
-    vertical-align: middle;
     position: relative;
     font-size: 0;
+    white-space: nowrap;
+    vertical-align: middle;
+    display: inline-block;
 }
 
 .btn-group > * {
-    position: relative;
     float: left;
+    position: relative;
     -webkit-border-radius: 0;
        -moz-border-radius: 0;
             border-radius: 0;
 }
 
 .btn-group > *:first-child {
+    margin-left: 0;
     border-top-left-radius: 5px;
     border-bottom-left-radius: 5px;
-    margin-left: 0;
 }
 
 .btn-group > *:last-child {
-    border-top-right-radius: 5px;
     border-bottom-right-radius: 5px;
+    border-top-right-radius: 5px;
 }
 
 .btn-group > * + * {
@@ -1804,10 +1806,10 @@ button:focus {
 
 .btn-group-vertical > * {
     position: relative;
-    display: block;
-    min-width: 100%;
     float: none;
     width: 100%;
+    min-width: 100%;
+    display: block;
     -webkit-border-radius: 0;
        -moz-border-radius: 0;
             border-radius: 0;
@@ -1848,15 +1850,15 @@ p:last-child {
 
 .toolbar > .group {
     position: relative;
-    display: inline-block;
-    font-size: 0;
     white-space: nowrap;
     vertical-align: middle;
+    font-size: 0;
+    display: inline-block;
 }
 
 .toolbar > .group > * {
-    position: relative;
     border-left-width: 0;
+    position: relative;
     font-size: 14px;
     -webkit-border-radius: 0;
        -moz-border-radius: 0;
@@ -1883,12 +1885,12 @@ p:last-child {
 }
 
 pre {
-    word-wrap: break-word;
-    word-break: break-all;
     line-height: 20px;
+    font-size: 13px;
     padding: 9px;
     white-space: pre-wrap;
-    font-size: 13px;
+    word-wrap: break-word;
+    word-break: break-all;
     -webkit-border-radius: 5px;
        -moz-border-radius: 5px;
             border-radius: 5px;
@@ -1951,7 +1953,7 @@ pre {
 }
 
 .prettyprint ol,
-.dialog.ready.control > .body-wrap > .body {
+.dialog.control > .body-wrap > .body {
     padding: 0;
 }
 
@@ -1960,10 +1962,10 @@ pre {
 }
 
 .prettyprint ol.linenums li {
-    padding-left: 12px;
-    text-shadow: 0 1px 0 #fff;
     line-height: 20px;
     color: #808080;
+    padding-left: 12px;
+    text-shadow: 0 1px 0 #fff;
 }
 
 .columns .column,
@@ -2019,8 +2021,8 @@ pre {
 }
 
 .datagrid th.sortable {
-    cursor: pointer;
     vertical-align: bottom;
+    cursor: pointer;
 }
 
 .datagrid a.sortable-toggle {
@@ -2033,7 +2035,6 @@ pre {
 .datagrid.grid.default tr.row > td,
 .dialog.default,
 .dialog.ready.collapsed.default .header,
-form.bordered,
 .nav-tabs.default,
 .panel.default {
     border-color: #ccc;
@@ -2098,10 +2099,10 @@ form.bordered,
 }
 
 .section {
-    padding: 0 10px;
-    float: left;
     margin: 0;
+    float: left;
     width: 100%;
+    padding: 0 10px;
 }
 
 .section .datatable {
@@ -2142,8 +2143,8 @@ h6:first-child,
 
 .section ul:not(.nav),
 .section ol {
-    padding: 0;
     margin: 0 0 9px 25px;
+    padding: 0;
 }
 
 .section strong {
@@ -2275,8 +2276,8 @@ h6:first-child,
 }
 
 .pagination ul {
-    display: inline-block;
     margin: 0;
+    display: inline-block;
     -webkit-border-radius: 5px;
        -moz-border-radius: 5px;
             border-radius: 5px;
@@ -2288,8 +2289,8 @@ form.content-form .control-group {
 }
 
 .pagination ul > li > a {
-    padding: 4px 12px;
     float: left;
+    padding: 4px 12px;
 }
 
 .pagination ul > li:first-child > a {
@@ -2306,18 +2307,18 @@ form.content-form .control-group {
 }
 
 .pagination.mini ul > li > a {
-    padding: 1px 4px;
     font-size: 11px;
+    padding: 1px 4px;
 }
 
 .pagination.small ul > li > a {
-    padding: 2px 6px;
     font-size: 13px;
+    padding: 2px 6px;
 }
 
 .pagination.large ul > li > a {
-    padding: 8px 24px;
     font-size: 18px;
+    padding: 8px 24px;
 }
 
 @media only screen and (max-width: 767px) {
@@ -2336,25 +2337,25 @@ form.content-form .control-group {
 
     .datagrid td {
         display: block;
-        padding-left: 50%;
         position: relative;
+        padding-left: 50%;
     }
 
     .datagrid td:before {
-        whitespace: nowrap;
         position: absolute;
-        left: 6px;
-        width: 45%;
         content: attr(data-content);
+        width: 45%;
+        whitespace: nowrap;
+        left: 6px;
         opacity: 0.8;
         filter: alpha(opacity=80.0);
     }
 
     .datagrid thead tr,
     .datagrid tfoot tr {
-        top: -9999px;
         position: absolute;
         left: -9999px;
+        top: -9999px;
     }
 
     .datagrid tr:first-child td:first-child {
@@ -2443,8 +2444,8 @@ form.content-form .control-group {
 }
 .collapse {
     position: relative;
-    height: 0;
     overflow: hidden;
+    height: 0;
     -webkit-transition: height 0.35s ease;
        -moz-transition: height 0.35s ease;
          -o-transition: height 0.35s ease;
@@ -2452,20 +2453,22 @@ form.content-form .control-group {
 }
 
 .collapse.in,
+textarea.form-control,
 select[multiple],
 select[size] {
     height: auto;
 }
 
 .header,
+.modal-open,
 .cms-block,
 .cms-content {
     overflow: hidden;
 }
 
 .header h3 {
-    line-height: 24px;
     margin: 0;
+    line-height: 24px;
 }
 
 .body-wrap {
@@ -2474,8 +2477,8 @@ select[size] {
 }
 
 .body {
-    position: relative;
     overflow-y: auto;
+    position: relative;
 }
 
 .dialog {
@@ -2502,14 +2505,14 @@ select[size] {
     border: none;
 }
 
-.dialog.ready.control {
+.dialog.control {
     -webkit-border-radius: 0;
        -moz-border-radius: 0;
             border-radius: 0;
     border: none;
 }
 
-.dialog.ready.control > .header {
+.dialog.control > .header {
     padding: 0;
     -webkit-border-radius: 0;
        -moz-border-radius: 0;
@@ -2531,7 +2534,20 @@ select[size] {
             border-radius: 0 0 5px 5px;
 }
 
+.dialog-modal {
+    margin: 30px auto;
+    position: relative;
+}
+
+.modal {
+    overflow-y: scroll;
+    overflow-x: auto;
+    outline: none;
+    z-index: 1050;
+}
+
 .modal-backdrop {
+    z-index: 1040;
     background: #000;
     opacity: 0.5;
     filter: alpha(opacity=50.0);
@@ -2539,11 +2555,11 @@ select[size] {
 
 [draggable=true] {
     user-select: none;
-    -khtml-user-drag: element;
+    -khtml-user-select: none;
     -webkit-user-drag: element;
     -moz-user-select: none;
     -webkit-user-select: none;
-    -khtml-user-select: none;
+    -khtml-user-drag: element;
 }
 
 .draggable {
@@ -2554,18 +2570,24 @@ select[size] {
     border: 3px dashed;
 }
 
+fieldset {
+    margin: 0;
+    padding: 0;
+    border: none;
+}
+
 label {
-    display: inline-block;
     margin-bottom: 5px;
+    display: inline-block;
 }
 
 legend {
-    display: block;
     line-height: 40px;
-    width: 100%;
-    padding: 0;
-    margin-bottom: 20px;
     font-size: 21px;
+    margin-bottom: 20px;
+    padding: 0;
+    width: 100%;
+    display: block;
     border-width: 0 0 1px;
     border-color: #ccc;
 }
@@ -2577,56 +2599,58 @@ form .form-group {
 form.form-inline select,
 form.form-inline input,
 form.form-inline .input-small,
-form.form-inline .checkbox,
-form.form-inline .select2-container {
-    display: inline-block;
-    margin-bottom: 0;
+form.form-inline .select2-container,
+form.form-inline .form-group {
     vertical-align: middle;
+    margin-bottom: 0;
+    display: inline-block;
+}
+
+form.form-inline .checkbox {
+    vertical-align: middle;
+    margin-bottom: 0;
+    display: inline-block;
+    margin-top: 0;
+    vertical-align: middle;
+    margin-bottom: 0;
+    padding-left: 0;
+    display: inline-block;
+}
+
+form.form-inline .radio {
+    margin-top: 0;
+    vertical-align: middle;
+    margin-bottom: 0;
+    padding-left: 0;
+    display: inline-block;
+}
+
+form.form-inline .checkbox input[type="checkbox"],
+form.form-inline .radio input[type="radio"] {
+    margin-top: 0;
+    float: none;
+    margin-left: 0;
 }
 
 form.form-horizontal .control-label {
-    text-align: right;
-    padding-top: 5px;
     float: left;
     width: 160px;
+    text-align: right;
+    padding-top: 5px;
 }
 
 form.form-horizontal .controls {
     margin-left: 180px;
 }
 
-form.default .form-control {
-    -webkit-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset;
-       -moz-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset;
-            box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset;
-}
-
-form.default .form-control:focus {
-    border-color: #52a8ec;
-    -webkit-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset, 0 0 8px rgba(82, 168, 236, 0.6);
-       -moz-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset, 0 0 8px rgba(82, 168, 236, 0.6);
-            box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset, 0 0 8px rgba(82, 168, 236, 0.6);
-}
-
-form.inverse .form-control {
-    -webkit-box-shadow: 0 1px 1px #555 inset;
-       -moz-box-shadow: 0 1px 1px #555 inset;
-            box-shadow: 0 1px 1px #555 inset;
-}
-
-form.inverse .form-control:focus {
-    border-color: #52a8ec;
-    -webkit-box-shadow: 0 1px 1px #555 inset, 0 0 8px rgba(82, 168, 236, 0.6);
-       -moz-box-shadow: 0 1px 1px #555 inset, 0 0 8px rgba(82, 168, 236, 0.6);
-            box-shadow: 0 1px 1px #555 inset, 0 0 8px rgba(82, 168, 236, 0.6);
-}
-
 .form-control {
-    display: block;
-    padding: 4px 12px;
     line-height: 20px;
-    width: 100%;
     height: 34px;
+    width: 100%;
+    padding: 4px 12px;
+    display: block;
+    color: #333;
+    background: inherit;
     -webkit-border-radius: 5px;
        -moz-border-radius: 5px;
             border-radius: 5px;
@@ -2635,22 +2659,32 @@ form.inverse .form-control:focus {
        -moz-transition: border 0.2s linear, box-shadow 0.2s linear;
          -o-transition: border 0.2s linear, box-shadow 0.2s linear;
             transition: border 0.2s linear, box-shadow 0.2s linear;
+    -webkit-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset;
+       -moz-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset;
+            box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset;
+    border: 1px solid #ccc;
+}
+
+.form-control:focus {
+    border-color: #52a8ec;
+    -webkit-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset, 0 0 8px rgba(82, 168, 236, 0.6);
+       -moz-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset, 0 0 8px rgba(82, 168, 236, 0.6);
+            box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset, 0 0 8px rgba(82, 168, 236, 0.6);
 }
 
 .checkbox input[type="checkbox"],
 .radio input[type="radio"] {
-    float: left;
     margin-top: 2px;
+    float: left;
     margin-left: -20px;
 }
 
 .checkbox,
 .radio {
-    padding-left: 20px;
-    min-height: 20px;
-    display: block;
-    margin-top: 10px;
     margin-bottom: 10px;
+    min-height: 20px;
+    padding-left: 20px;
+    display: block;
 }
 
 .checkbox label,
@@ -2659,11 +2693,78 @@ form.inverse .form-control:focus {
     display: inline;
 }
 
+.textarea {
+    margin-bottom: 10px;
+    display: block;
+}
+
+.form-control.select2-container {
+    border: none;
+    height: auto;
+    width: 100%;
+    padding: 0;
+}
+
+.form-control.select2-container .select2-choice,
+.form-control.select2-container .select2-choice > .select2-chosen {
+    line-height: 34px;
+    height: 34px;
+}
+
+.primary .form-control {
+    border: 1px solid #005580;
+}
+
+.primary .form-control:focus {
+    border-color: #005580;
+    -webkit-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset, 0 0 8px rgba(0, 85, 128, 0.6);
+       -moz-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset, 0 0 8px rgba(0, 85, 128, 0.6);
+            box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset, 0 0 8px rgba(0, 85, 128, 0.6);
+}
+
+.success .form-control {
+    border: 1px solid #128600;
+}
+
+.success .form-control:focus {
+    border-color: #128600;
+    -webkit-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset, 0 0 8px rgba(18, 134, 0, 0.6);
+       -moz-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset, 0 0 8px rgba(18, 134, 0, 0.6);
+            box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset, 0 0 8px rgba(18, 134, 0, 0.6);
+}
+
+.error .form-control {
+    border: 1px solid #b00004;
+}
+
+.error .form-control:focus {
+    border-color: #b00004;
+    -webkit-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset, 0 0 8px rgba(176, 0, 4, 0.6);
+       -moz-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset, 0 0 8px rgba(176, 0, 4, 0.6);
+            box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset, 0 0 8px rgba(176, 0, 4, 0.6);
+}
+
+.inverse .form-control {
+    color: #fff;
+    background: inherit;
+    -webkit-box-shadow: 0 1px 1px #555 inset;
+       -moz-box-shadow: 0 1px 1px #555 inset;
+            box-shadow: 0 1px 1px #555 inset;
+    border: 1px solid #484848;
+}
+
+.inverse .form-control:focus {
+    border-color: #484848;
+    -webkit-box-shadow: 0 1px 1px #555 inset, 0 0 8px rgba(72, 72, 72, 0.6);
+       -moz-box-shadow: 0 1px 1px #555 inset, 0 0 8px rgba(72, 72, 72, 0.6);
+            box-shadow: 0 1px 1px #555 inset, 0 0 8px rgba(72, 72, 72, 0.6);
+}
+
 .lux-logger {
-    font-size: 12px;
     line-height: 14px;
-    background: #ededed;
     overflow: scroll;
+    font-size: 12px;
+    background: #ededed;
 }
 
 .lux-logger pre.debug {
@@ -2684,21 +2785,21 @@ form.inverse .form-control:focus {
 }
 
 .nav {
-    padding-left: 0;
     list-style: none;
     margin-bottom: 0;
+    padding-left: 0;
 }
 
 .nav > li {
-    display: block;
     position: relative;
+    display: block;
 }
 
 .nav > li > a {
-    display: block;
-    padding: 10px 15px;
     position: relative;
     text-decoration: none;
+    padding: 10px 15px;
+    display: block;
 }
 
 .nav-tabs > li {
@@ -2707,8 +2808,8 @@ form.inverse .form-control:focus {
 }
 
 .nav-tabs > li > a {
-    margin-right: 2px;
     line-height: 20px;
+    margin-right: 2px;
     border-color: transparent;
     -webkit-border-top-left-radius: 5px;
        -moz-border-top-left-radius: 5px;
@@ -2736,8 +2837,8 @@ form.inverse .form-control:focus {
 }
 
 .nav-stacked > li > a {
-    text-align: center;
     margin-bottom: 5px;
+    text-align: center;
     -webkit-border-radius: 5px;
        -moz-border-radius: 5px;
             border-radius: 5px;
@@ -2745,8 +2846,8 @@ form.inverse .form-control:focus {
 
 .well {
     min-height: 20px;
-    background: #dadae3;
     padding: 19px;
+    background: #dadae3;
     -webkit-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05) inset;
        -moz-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05) inset;
             box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05) inset;
@@ -2790,64 +2891,53 @@ form.inverse .form-control:focus {
     padding: 9px;
 }
 
-select {
-    line-height: 30px;
-    width: 226px;
-    height: 30px;
-}
-
-div.colored {
-    padding-left: 5px;
-    min-height: 20px;
-}
-
 h1 {
     margin: 10px 0;
-    font-weight: bold;
     text-rendering: optimizelegibility;
+    font-weight: bold;
     line-height: 40px;
     font-size: 28px;
 }
 
 h2 {
     margin: 10px 0;
-    font-weight: bold;
     text-rendering: optimizelegibility;
+    font-weight: bold;
     line-height: 32px;
     font-size: 22px;
 }
 
 h3 {
     margin: 10px 0;
-    font-weight: bold;
     text-rendering: optimizelegibility;
+    font-weight: bold;
     line-height: 26px;
     font-size: 18px;
 }
 
 h4 {
     margin: 10px 0;
-    font-weight: bold;
     text-rendering: optimizelegibility;
+    font-weight: bold;
     line-height: 24px;
     font-size: 17px;
 }
 
 h5 {
     margin: 10px 0;
-    font-weight: bold;
     text-rendering: optimizelegibility;
+    font-weight: bold;
     line-height: 22px;
     font-size: 15px;
 }
 
 h6 {
     margin: 10px 0;
-    font-weight: bold;
     text-rendering: optimizelegibility;
-    text-transform: uppercase;
+    font-weight: bold;
     line-height: 18px;
     font-size: 13px;
+    text-transform: uppercase;
 }
 
 p {
@@ -2955,10 +3045,10 @@ ul.icons-ul,
 }
 
 .navbar .nav {
+    margin: 0 10px 0 0;
+    float: left;
     position: relative;
     display: block;
-    float: left;
-    margin: 0 10px 0 0;
 }
 
 .navbar .nav > li {
@@ -2966,29 +3056,29 @@ ul.icons-ul,
 }
 
 .navbar .nav > li > a {
-    padding: 6px 15px;
     float: none;
+    padding: 6px 15px;
 }
 
 .navbar .brand {
-    display: block;
-    line-height: 20px;
     max-width: none;
+    line-height: 20px;
+    font-size: 18px;
     padding: 6px 15px;
     float: left;
     text-decoration: none;
-    font-size: 18px;
+    display: block;
 }
 
 form.content-form fieldset {
-    padding: 10px;
     position: relative;
+    padding: 10px;
 }
 
 form.content-form fieldset input {
-    display: block;
-    min-width: 100%;
     max-width: 100%;
+    min-width: 100%;
+    display: block;
     min-height: 35px;
     -webkit-box-sizing: border-box;
        -moz-box-sizing: border-box;
@@ -2996,12 +3086,12 @@ form.content-form fieldset input {
 }
 
 form.content-form fieldset textarea {
-    display: block;
-    min-width: 100%;
     max-width: 100%;
+    min-width: 100%;
+    display: block;
     min-height: 200px;
-    resize: vertical;
     max-height: 500px;
+    resize: vertical;
     -webkit-box-sizing: border-box;
        -moz-box-sizing: border-box;
             box-sizing: border-box;
@@ -3080,8 +3170,8 @@ form.content-form fieldset textarea {
 }
 
 .grid.fluid {
-    padding-left: 20px;
     padding-right: 20px;
+    padding-left: 20px;
 }
 
 .grid.fixed {
@@ -3095,9 +3185,9 @@ form.content-form fieldset textarea {
 }
 
 .cms-content-toolbar {
+    font-size: 11px;
     overflow: hidden;
     padding: 5px 0;
-    font-size: 11px;
 }
 
 .editing .cms-grid .cms-column {
@@ -3122,11 +3212,11 @@ form.content-form fieldset textarea {
 }
 
 .cms-info {
-    line-height: 30px;
-    display: inline-block;
-    padding: 0 10px;
     position: relative;
     vertical-align: middle;
+    padding: 0 10px;
+    line-height: 30px;
+    display: inline-block;
 }
 
 .grid24 > .span1 {
@@ -3227,9 +3317,9 @@ form.content-form fieldset textarea {
 }
 
 .lux-example {
-    padding: 45px 15px 15px;
     position: relative;
     margin-bottom: 15px;
+    padding: 45px 15px 15px;
     -webkit-border-top-left-radius: 5px;
        -moz-border-top-left-radius: 5px;
             border-top-left-radius: 5px;
@@ -3241,14 +3331,14 @@ form.content-form fieldset textarea {
 
 .lux-example:after {
     text-transform: uppercase;
+    font-size: 12px;
     font-weight: 700;
+    left: 15px;
+    position: absolute;
     color: rgba(51, 51, 51, 0.3);
     letter-spacing: 1px;
-    top: 15px;
     content: "Example";
-    position: absolute;
-    left: 15px;
-    font-size: 12px;
+    top: 15px;
 }
 
 .lux-example + .highlight {

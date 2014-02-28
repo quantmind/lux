@@ -26,6 +26,11 @@ define(['lodash', 'jquery'], function (_, $) {
         //
         set_value_hooks: [],
         //
+        // Set the ``value`` for ``elem``
+        //
+        //  This is generalised value setting method which tries
+        //  the ``set_value_hooks`` functions first, and if none of them
+        //  return ``true`` it reverts to the standard ``elem.val`` method.
         setValue: function (elem, value) {
             var hook;
             for (var i=0; i<lux.set_value_hooks.length; i++) {
@@ -66,6 +71,10 @@ define(['lodash', 'jquery'], function (_, $) {
             _(sortable).forEach(function (name) {
                 callback(obj[name], name);
             });
+        },
+        //
+        niceStr: function (s) {
+            return s.capitalize().replace('_', ' ');
         }
     };
 
@@ -518,16 +527,26 @@ define(['lodash', 'jquery'], function (_, $) {
             return this._meta.name + '-' + this.cid;
         },
         //
-        // Get a jQuery form element for this model.
-        get_form: function () {},
+        //  Get a ``Form`` view for this model.
+        //
+        //  By default all fields defined in the metaclass are added
+        //  to the form. Override if you need to
+        getForm: function (options) {
+            options || (options = {});
+            options.model = this;
+            var form = new Form(options);
+            form.setFields(this._meta.fields);
+            if (options.callback) options.callback(form);
+            return form;
+        },
         //
         // Update the input/select elements in a jQuery form element with data
         // from the model
-        update_form: function (form) {
+        updateForm: function (form) {
             _(this.fields()).forEach(function (val, name) {
                 var elem = form.find("[name=" + name + "]");
                 if (elem.length) {
-                    lux.set_value(elem, val);
+                    lux.setValue(elem, val);
                 }
             });
         },
@@ -812,6 +831,8 @@ define(['lodash', 'jquery'], function (_, $) {
         //
         defaults: null,
         //
+        // This method should not be overwritten, use the ``initialise``
+        // method instead.
         init: function (options) {
             this.cid = _.uniqueId('view');
             options || (options = {});
@@ -926,6 +947,20 @@ define(['lodash', 'jquery'], function (_, $) {
             lux.setSkin(this.elem, skin, prefix || this.className);
         },
         //
+        eventName: function (event) {
+            var namespace = this.instance_key ? this.instance_key : 'view';
+            return event + '.lux.' + namespace;
+        },
+        //
+        enforceFocus: function () {
+            var name = this.eventName('focusin'),
+                self = this;
+            $(document).off(name).on(name, function (e) {
+                if (self.elem[0] !== e.target && !self.elem.has(e.target).length)
+                    self.elem.trigger('focus');
+            });
+        },
+        //
         // Add a stylesheet to the head tag.
         //
         //  ``rules`` is an array of string with css rules
@@ -942,9 +977,9 @@ define(['lodash', 'jquery'], function (_, $) {
                     style = $("<style type='text/css' rel='stylesheet' />"
                         ).appendTo(head).attr('id', id);
                     if (style[0].styleSheet) { // IE
-                        style[0].styleSheet.cssText = rules.join(" ");
+                        style[0].styleSheet.cssText = rules.join("\n");
                     } else {
-                        style[0].appendChild(document.createTextNode(rules.join(" ")));
+                        style[0].appendChild(document.createTextNode(rules.join("\n")));
                     }
                 }
             }
@@ -1699,6 +1734,288 @@ define(['lodash', 'jquery'], function (_, $) {
 
 
 
+    //  DragDrop
+    //  ----------------------------------
+
+    // A class for managing HTML5 drag and drop functionality for several
+    // configurations.
+    var
+    DragDrop = lux.DragDrop = lux.Class.extend({
+        // Default options, overwritten during initialisation.
+        defaults: {
+            // The css opacity of the dragged element.
+            opacity: 0.6,
+            //
+            over_class: 'over',
+            //
+            // This is the ``drop zone``, where dragged elements can be dropped.
+            // It can be a ``selector`` string, and ``HTML Element``
+            // or a ``jQuery`` element. If not supplied, the whole document is
+            // considered a drop-zone. The dropzone listen for ``dragenter``,
+            // ``dragover``, ``drop`` and ``dragleave`` events.
+            dropzone: null,
+            //
+            // When supplied, the placeholder is added to the DOM when the
+            // drag-enter event is triggered on a dropzone element.
+            // It can be set to true, an Html element or a jQuery element.
+            placeholder: null,
+            //
+            // When true a dummy element is added to the dropzone if no
+            // other elements are available.
+            // It can also be a function which return the element to add.
+            dummy: 'droppable-dummy',
+            dummy_heigh: 30,
+            //
+            // Called on the element being dragged
+            onStart: function (e, dd) {},
+            //
+            // Called on the element being dragged
+            onDrag: function (e, dd) {},
+            //
+            // Called on the target element
+            onDrop: function (elem, e, offset, dd) {}
+        },
+        // The constructor, ``options`` is an optional object which overwrites
+        // the ``defaults`` parameters.
+        init: function (options) {
+            this.options = options = _.extend({}, this.defaults, options);
+            this.candrag = false;
+            var self = this,
+                dropzone = options.dropzone,
+                dummy = options.dummy;
+            //
+            this.placeholder(this.options.placeholder);
+            //
+            var element = $(document),
+                zone = options.dropzone;
+            // A Html element
+            if (typeof(zone) !== 'string') {
+                element = $(options.dropzone);
+                zone = null;
+            } else if (dummy) {
+                zone += ', .' + dummy;
+                this.dummy = $(document.createElement('div'))
+                                .addClass(dummy).css('height', options.dummy_heigh);
+            }
+            //
+            // Drop-zone events
+            element.on('dragenter', zone, function (e) {
+                self.e_dragenter(this, e);
+            }).on('dragover', zone, function (e) {
+                e.preventDefault(); // Necessary. Allows us to drop.
+                self.e_dragover(this, e);
+                return false;
+            }).on('dragleave', zone, function (e) {
+                self.e_dragleave(this, e);
+            }).on('drop', zone, function (e) {
+                self.e_drop(this, e);
+                return false;
+            });
+        },
+        // set or remove the placeholder
+        placeholder: function (value) {
+            if (value) {
+                if (value === true) {
+                    this._placeholder = $(document.createElement('div'));
+                } else {
+                    this._placeholder = $(value);
+                }
+                var self = this;
+                this._placeholder.addClass('draggable-placeholder').unbind('dragover').unbind('drop')
+                                 .bind('dragover', function (e) {
+                                     e.preventDefault();
+                                     return false;
+                                 }).bind('drop', function (e) {
+                                     self.e_drop(this, e);
+                                     return false;
+                                 });
+            } else {
+                this._placeholder = null;
+            }
+        },
+        //
+        // Enable ``elem`` to be dragged and dropped.
+        // ``handler`` is an optional handler for dragging.
+        // Both ``elem`` and ``handler`` can be ``selector`` string, in which
+        // case selector-based events are added.
+        add: function (elem, handle) {
+            var self = this,
+                element = $(document),
+                selector = elem,
+                handle_selector = handle,
+                dynamic = true;
+            if (typeof(elem) !== 'string') {
+                element = $(elem).attr('draggable', true);
+                handle = handle ? $(handle) : element;
+                selector = handle_selector = null;
+                dynamic = false;
+            } else {
+                handle = element;
+            }
+            //
+            handle.on('mouseenter', handle_selector, function (e) {
+                $(this).addClass('draggable');
+            }).on('mouseleave', handle_selector, function (e) {
+                $(this).removeClass('draggable');
+            }).on('mousedown', handle_selector, function (e) {
+                self.candrag = true;
+                if (dynamic) elem = $(this).closest(selector).attr('draggable', true);
+                else elem = element;
+                if (!elem.attr('id')) {
+                    elem.attr('id', lux.s4());
+                }
+            });
+            //
+            element.on('dragstart', selector, function(e) {
+                if (self.candrag) {
+                    if (self.options.onStart.call(this, e, self) !== false) {
+                        logger.debug('Start dragging ' + this.id);
+                        return self.e_dragstart(this, e);
+                    }
+                }
+                e.preventDefault();
+            }).on('dragend', selector, function (e) {
+                logger.debug('Ended dragging ' + this.id);
+                self.candrag = false;
+                return self.e_dragend(this, e);
+            }).on('drag', selector, function (e) {
+                self.options.onDrag.call(this, e, self);
+            });
+        },
+        //
+        reposition: function (elem, e, offset) {
+            var x = e.originalEvent.clientX - offset.left,
+                y = e.originalEvent.clientY - offset.top;
+            elem.css({'top': y, 'left': x});
+        },
+        //
+        // Utility function for moving an element where another target element is.
+        moveElement: function (elem, target) {
+            elem = $(elem);
+            target = $(target);
+            // the element is the same, bail out
+            if (elem[0] === target[0]) return;
+            var parent = elem.parent(),
+                target_parent = target.parent();
+            // If a placeholder is used, simple replace the placeholder with the element
+            if (this._placeholder) {
+                this._placeholder.after(elem).detach();
+            } else {
+                this.move(elem, target, parent, target_parent);
+            }
+            if (this.dummy && parent[0] !== target_parent[0]) {
+                if (!parent.children().length) {
+                    parent.append(this.dummy);
+                }
+                if (target_parent.children('.' + this.options.dummy).length) {
+                    this.dummy.detach();
+                }
+            }
+        },
+        //
+        // Move element to target. If a placeholder is given, the placeholder is moved instead
+        move: function (elem, target, parent, target_parent, placeholder) {
+            if (!placeholder) placeholder = elem;
+            if (target.prev().length) {
+                // the target has a previous element
+                // check if the parent are the same
+                if (parent[0] === target_parent[0]) {
+                    var all = target.nextAll();
+                    for (var i=0;i<all.length;i++) {
+                        if (all[i] === elem[0]) {
+                            target.before(placeholder);
+                            return;
+                        }
+                    }
+                }
+                target.after(placeholder);
+            } else {
+                target.before(placeholder);
+            }
+        },
+        //
+        swapElements: function (elem1, elem2) {
+            elem1 = $(elem1);
+            elem2 = $(elem2);
+            if (elem1[0] === elem2[0]) return;
+            var next1 = elem1.next(),
+                parent1 = elem1.parent(),
+                next2 = elem2.next(),
+                parent2 = elem2.parent(),
+                swap = function (elem, next, parent) {
+                    if (next.length) {
+                        next.before(elem);
+                    } else {
+                        parent.append(elem);
+                    }
+                };
+            swap(elem2, next1, parent1);
+            swap(elem1, next2, parent2);
+        },
+        //
+        // Start dragging a draggable element
+        // Store the offset between the mouse position and the top,left cornet
+        // of the dragged item.
+        e_dragstart: function (dragged, e) {
+            dragged = $(dragged);
+            var dataTransfer = e.originalEvent.dataTransfer,
+                position = dragged.position(),
+                x = e.originalEvent.clientX - position.left,
+                y = e.originalEvent.clientY - position.top;
+            dataTransfer.effectAllowed = 'move';
+            dataTransfer.setData('text/plain', dragged[0].id + ',' + x + ',' + y);
+            dragged.fadeTo(10, this.options.opacity);
+            if (this._placeholder) {
+                var height = Math.min(dragged.height(), 400);
+                this._placeholder.height(height);
+            }
+        },
+        //
+        // End dragging a draggable element
+        e_dragend: function (dragged, e) {
+            if (this._placeholder) {
+                this._placeholder.detach();
+            }
+            $(dragged).fadeTo(10, 1);
+        },
+        //
+        // Enter drop zone
+        e_dragenter: function (target, e) {
+            var dataTransfer = e.originalEvent.dataTransfer,
+                options = this.options,
+                id = dataTransfer.getData('text/plain').split(',')[0];
+            target = $(target).addClass(options.over_class);
+            if (target[0].id !== id) {
+                logger.debug('Draggable ' + id + ' entering dropzone');
+                if (this._placeholder) {
+                    var elem = $('#' + id);
+                    this.move(elem, target, elem.parent(), target.parent(), this._placeholder);
+                }
+            } else if (this._placeholder) {
+                this._placeholder.detach();
+            }
+        },
+        e_dragover: function (target, e) {},
+        e_dragleave: function (target, e) {
+            $(target).removeClass(this.options.over_class);
+        },
+        e_drop: function (target, e) {
+            e.preventDefault();
+            $(target).removeClass(this.options.over_class);
+            var dataTransfer = e.originalEvent.dataTransfer,
+                idxy = dataTransfer.getData('text/plain').split(','),
+                elem = $('#'+idxy[0]),
+                xy = {
+                    left: parseInt(idxy[1], 10),
+                    top: parseInt(idxy[2], 10)
+                };
+            if (elem.length) {
+                logger.info('Dropping ' + elem.attr('id'));
+                this.options.onDrop.call(target, elem, e, xy, this);
+            }
+        }
+    });
+
     var icons = lux.icons = {
         //
         fontawesome: function (elem, options) {
@@ -1726,6 +2043,14 @@ define(['lodash', 'jquery'], function (_, $) {
         }
     });
 
+    //  Buttons
+    //  -------------
+    //
+    //  A view for diplaying buttons
+    //  Usage:
+    //
+    //      var btn1 = new Button({text: 'Hi!'});
+    //      var btn2 = new Button({text: 'submit', icon: 'fire'});
     var
     //
     BUTTON_SIZES = ['large', 'normal', 'small', 'mini'],
@@ -1779,10 +2104,16 @@ define(['lodash', 'jquery'], function (_, $) {
             }
         }
     });
-
+    //  Form view
+    //  -----------------
+    //
+    //  Javascript view for forms and form fields
     var
     //
-    // Form view
+    controlClass = 'form-control',
+    //
+    globalAttributes = ['title'],
+    //
     Form = lux.Form = lux.createView('form', {
         //
         tagName: 'form',
@@ -1790,9 +2121,6 @@ define(['lodash', 'jquery'], function (_, $) {
         defaults: {
             dataType: "json",
             layout: null,
-            groupClass: 'form-group',
-            controlClass: 'form-control',
-            skin: 'default',
             ajax: false,
             complete: null,
             error: null,
@@ -1800,19 +2128,27 @@ define(['lodash', 'jquery'], function (_, $) {
         },
         //
         initialise: function (options) {
-            this.options = options;
             if (this.elem.hasClass('horizontal')) {
                 options.layout = 'horizontal';
             } else if (this.elem.hasClass('inline')) {
                 options.layout = 'inline';
             }
-            if (options.layout)
-                this.elem.addClass('form-' + options.layout);
-            lux.setSkin(this.elem, options.skin);
+            if (options.layout) {
+                this.layout = options.layout;
+                this.elem.addClass('form-' + this.layout);
+            }
+        },
+        //
+        // Apply the ``jquery-form`` ajax plugin to this form
+        ajax: function (options) {
+            var elem = this.elem;
+            require(['jquery-form'], function () {
+                elem.ajaxForm(options);
+            });
         },
         //
         // Add a list of ``Fields`` to this form.
-        addFields: function (fields) {
+        addFields: function (fields, options) {
             var processed = [],
                 self = this,
                 elem,
@@ -1821,7 +2157,7 @@ define(['lodash', 'jquery'], function (_, $) {
             _(fields).forEach(function (field) {
                 if (field && field.name && processed.indexOf(field.name) === -1) {
                     processed.push(field.name);
-                    field.render(self);
+                    field.render(self, options);
                 }
             });
             return this;
@@ -1830,38 +2166,48 @@ define(['lodash', 'jquery'], function (_, $) {
         // Add a submit button
         addSubmit: function (options) {
             options || (options = {});
-            if (!options.skin) options.skin = this.options.skin;
             if (!options.tagName) {
                 options.tagName = 'button';
                 if (!options.text) options.text = 'Submit';
             }
             var btn = new Button(options);
-            this.elem.append(btn.elem);
+            this.fieldset(options.fieldset).append(btn.elem);
+            return btn;
         },
         //
         render: function () {
-            if (this.options.layout) {
-                var layout = this['render_' + this.options.layout];
+            if (this.layout) {
+                var layout = this['render_' + this.layout];
                 layout.call(this);
             } else {
                 var self = this;
                 $('input,select,textarea', this.elem).each(function () {
                     var elem = $(this);
                     if (elem.attr('type') !== 'checkbox') {
-                        elem.addClass(self.options.controlClass);
+                        elem.addClass(controlClass);
                     }
                 });
             }
             return this;
         },
         //
+        render_inline: function () {
+            var self = this;
+            $('input,select', this.elem).each(function () {
+                var elem = $(this);
+                if (elem.attr('type') !== 'checkbox') {
+                    elem.parent().find('label').addClass('sr-only');
+                    elem.addClass(controlClass);
+                }
+            });
+        },
         //
         render_horizontal: function () {
             var self = this,
                 elem, label, parent, wrap, group;
-            $('input,select,textarea', this.elem).each(function () {
-                elem = $(this).addClass(self.options.controlClass);
-                wrap = elem.closest(self.options.groupClass);
+            $('input,select', this.elem).each(function () {
+                elem = $(this).addClass(controlClass);
+                wrap = elem.closest(self.groupClass);
                 if (wrap.length) {
                     parent = elem.parent();
                     if (!parent.is('label')) parent = elem;
@@ -1880,47 +2226,37 @@ define(['lodash', 'jquery'], function (_, $) {
             });
         },
         //
+        //  Get a fieldset from the form if possible
+        //
+        //  If ``fieldset_selector`` is not specified or a fieldset is not found
+        //  return the form element.
         fieldset: function (fieldset_selector) {
-            var fieldsets = this.elem.children('fieldset'),
-                fieldset;
-            //
-            // Find the appropiate fieldset
-            if (fieldset_selector) {
-                if (fieldset_selector instanceof jQuery) {
-                    fs = fieldset_selector;
-                } else if (fieldset_selector instanceof HTMLElement) {
-                    fs = $(fieldset_selector);
-                } else if (fieldset_selector.id) {
-                    fs = this.elem.find('#' + fieldset_selector.id);
-                } else if (fieldset_selector.Class) {
-                    fs = this.elem.find('.' + fieldset_selector.Class);
-                } else {
-                    fs = fieldsets.last();
-                }
-                if (fs.length) {
-                    fieldset = fs;
-                } else {
-                    fieldset = $(document.createElement('fieldset')).appendTo(this.elem);
-                    if (fieldset_selector.id) {
-                        fieldset.attr(id, fieldset_selector.id);
-                    } else if (fieldset_selector.Class) {
-                        fieldset.addClass(fieldset_selector.Class);
-                    }
-                }
-            } else if (!fieldsets.length) {
-                fieldset = $(document.createElement('fieldset')).appendTo(this.elem);
+            if (!fieldset_selector) {
+                return this.elem;
+            } else if (fieldset_selector instanceof jQuery) {
+                return fieldset_selector;
+            } else if (fieldset_selector instanceof HTMLElement) {
+                return $(fieldset_selector);
             } else {
-                fieldset = fieldsets.first();
+                var elem = this.elem.find(fieldset_selector);
+                if (!elem.length) elem = this.elem.find('.'+fieldset_selector);
+                return elem.length ? elem : this.elem;
             }
-            return fieldset;
         }
     }),
     //
     //  Base class for ``Form`` fields
+    //
+    //  * ``label``, if set to ``false`` no label is displaied
     Field = lux.Field = lux.Class.extend({
         fieldOptions: [
-            'tagName', 'type', 'label', 'placeholder', 'autocomplete',
-            'required', 'fieldset'],
+            'tagName', 'type', 'label', 'placeholder', 'fieldset'],
+        //
+        attributes: _.union([
+            'accept', 'alt', 'autocomplete', 'autofocus', 'disabled',
+            'form', 'formaction', 'readonly', 'required'], globalAttributes),
+        //
+        formGroup: 'form-group',
         //
         tagName: 'input',
         //
@@ -1930,7 +2266,10 @@ define(['lodash', 'jquery'], function (_, $) {
             options || (options = {});
             this.name = name;
             _.extend(this, _.pick(options, this.fieldOptions));
-            this.label = this.label || this.name.capitalize();
+            this.attributes = _.pick(options, this.attributes);
+            if (!this.attributes.title) this.attributes.title = this.name;
+            if (this.label !== false)
+                this.label = this.getLabel();
             if (this.required) this.required = 'required';
         },
         //
@@ -1944,41 +2283,47 @@ define(['lodash', 'jquery'], function (_, $) {
         //
         // Render this field for the ``form``.
         // Return a jQuery element which can be included in the ``form``.
-        render: function (form) {
+        render: function (form, options) {
             var
-            elem = $(document.createElement(this.tagName)).attr({
-                name: this.name,
-                type: this.type,
-                title: this.title || this.name,
-                autocomplete: this.autocomplete,
-                placeholder: this.getPlaceholder()
-            });
-            this.setValue(form.model, elem);
-            form.elem.append(this.outerContainer(elem, form));
+            elem = $(document.createElement(this.tagName)).attr(this.attributes),
+            placeholder = this.getPlaceholder();
+            elem.attr('name', this.name);
+            if (this.tagName === 'input')
+                elem.attr('type', this.type);
+            if (placeholder)
+                elem.attr('placeholder', placeholder);
+            if (_.isFunction(form)) form(elem);
+            else {
+                this.setValue(form.model, elem);
+                if (elem.attr('type') !== 'hidden')
+                    elem = this.outerContainer(elem, form);
+                form.fieldset(this.fieldset).append(elem);
+            }
         },
         //
         getPlaceholder: function () {
             if (this.placeholder !== false)
-                return this.placeholder ? this.placeholder : this.label;
+                return this.placeholder ? this.placeholder : this.getLabel();
         },
         //
-        // Wrap field and label with an outer container ``div.groupClass``.
+        getLabel: function () {
+            return this.label || lux.niceStr(this.name);
+        },
+        //
+        // Wrap field and label with an outer container
         outerContainer: function (elem, form) {
-            if (form.layout !== 'inline') {
+            var outer = $(document.createElement('div')).addClass(this.formGroup);
+            if (this.label) {
                 var id = elem.attr('id');
                 if (!id) {
                     id = _.uniqueId('field');
                     elem.attr('id', id);
                 }
                 //
-                var label = $(document.createElement('label')).html(this.label
-                        ).attr('for', id),
-                    outer = $(document.createElement('div')).addClass(
-                        form.options.groupClass);
-                return outer.append(label).append(elem);
-            } else {
-                return elem;
+                $(document.createElement('label')).html(this.label
+                    ).attr('for', id).appendTo(outer);
             }
+            return outer.append(elem);
         }
     }),
     //
@@ -2013,22 +2358,19 @@ define(['lodash', 'jquery'], function (_, $) {
                 return value === true || value === 'on';
         },
         //
-        //
-        render: function (form) {
-            var elem = $(document.createElement(this.tagName)).attr({
-                name: this.name,
-                type: this.type,
-                title: this.title
-            });
-            this.setValue(form.model, elem);
+        outerContainer: function (elem, form) {
             var label = $(document.createElement('label')),
                 outer = $(document.createElement('div')).addClass('checkbox');
             elem = outer.append(label.append(elem).append(this.label));
-            form.elem.append(elem);
+            form.fieldset(this.fieldset).append(elem);
+            return elem;
         },
     }),
     //
     // A ``ChoiceField`` is by default rendered as a ``select`` element.
+    //
+    //  A ``select2`` object or function can be passed during construction.
+    //  In this case the ``select2`` jQuery plugin is applied.
     ChoiceField = lux.ChoiceField = Field.extend({
         //
         // If the ``select`` dictionary is passed and the ``tagName`` is ``select``
@@ -2051,11 +2393,15 @@ define(['lodash', 'jquery'], function (_, $) {
             }
         },
         //
+        //  Render this ``ChoiceField`` into ``form``
+        //
+        //  ``form`` can be a ``Form`` instance or a function accepting the
+        //  new jQuery element created
         render: function (form) {
             var self = this,
                 choices= this.choices,
                 elem, text;
-            if (_.isFunction(choices)) choices=  choices();
+            if (_.isFunction(choices)) choices = choices(form);
             //
             // Select element
             if (this.tagName === 'select') {
@@ -2064,17 +2410,25 @@ define(['lodash', 'jquery'], function (_, $) {
                 }).append($("<option></option>"));
                 //
                 _(choices).forEach(function (val) {
-                    if (_.isString(val)) text = val;
-                    else {
-                        text = val.text || val.value;
-                        val = val.value;
+                    if (!(val instanceof jQuery)) {
+                        if (_.isString(val)) text = val;
+                        else {
+                            text = val.text || val.value;
+                            val = val.value;
+                        }
+                        val = $("<option></option>").val(val).text(text);
                     }
-                    elem.append($("<option></option>").val(val).text(text));
+                    elem.append(val);
                 });
-                self.setValue(form.model, elem);
-                form.elem.append(self.outerContainer(elem, form));
-                if (this.select2) {
-                    var opts = this.select2;
+                if (_.isFunction(form)) form(elem);
+                else {
+                    self.setValue(form.model, elem);
+                    form.fieldset(this.fieldset).append(
+                        self.outerContainer(elem, form));
+                }
+                var opts = this.select2;
+                if (_.isFunction(opts)) opts = opts(form);
+                if (opts) {
                     if (!opts.placeholder) opts.placeholder = this.getPlaceholder();
                     elem.Select(opts);
                 }
@@ -2096,23 +2450,32 @@ define(['lodash', 'jquery'], function (_, $) {
                 });
                 form.elem.append(elem);
             }
+            return elem;
         }
     }),
     //
     MultiField = lux.MultiField = ChoiceField.extend({
-        //
-        init: function (options) {
-            this.options = Object(options);
-            this.options.multiple = 'multiple';
+
+        render: function (form) {
+            if (this.tagName === 'select') {
+                var elem = this._super(form);
+                return elem;
+            }
         }
     }),
     //
     TextArea = lux.TextArea = Field.extend({
-        tagName: 'textarea'
+        tagName: 'textarea',
+        //
+        formGroup: 'textarea',
+        //
+        attributes: _.union(
+            Field.prototype.attributes,
+            ['rows', 'cols'])
     }),
     //
     KeywordsField = lux.KeywordsField = Field.extend({
-
+        //
         validate: function (instance, value) {
             if (_.isString(value)) {
                 var result = [];
@@ -2135,12 +2498,15 @@ define(['lodash', 'jquery'], function (_, $) {
         }
     });
     //
-    // A proxy for select2
+    //  Select2 utilities
+    //  ------------------------
+    //
+    //  A proxy for select2
     $.fn.Select = function (options) {
         options || (options = {});
         var self = this;
         require(['select'], function () {
-            if (_.isObject(options)) options.width = 'element';
+            //if (_.isObject(options)) options.width = 'element';
             self.select2(options);
         });
         return this;
@@ -2158,6 +2524,8 @@ define(['lodash', 'jquery'], function (_, $) {
     lux.set_value_hooks.push(get_select2_value);
 
 
+    //
+    //  A view for displaying grids
     var Grid = lux.Grid = lux.createView('grid', {
 
         initialise: function (options) {
@@ -2271,7 +2639,14 @@ define(['lodash', 'jquery'], function (_, $) {
         //
         defaultElement: 'div',
         //
+        default_modals: {
+            backdrop: true,
+            keyboard: true,
+            width: 400
+        },
+        //
         defaults: {
+            // Specialised class name for this dialog
             className: null,
             show: true,
             keyboard: true,
@@ -2287,9 +2662,10 @@ define(['lodash', 'jquery'], function (_, $) {
             title: null,
             body: null,
             footer: null,
+            // To create a modal dialog
             modal: false,
-            modal_zindex: 1040,
             autoOpen: true,
+            // Default width
             width: null,
             height: null,
             top: null,
@@ -2316,7 +2692,6 @@ define(['lodash', 'jquery'], function (_, $) {
                 h3 = $(document.createElement('h3')),
                 toggle;
             //
-            if (!elem.attr('id')) elem.attr('id', this.cid);
             this.setSkin(options.skin);
             //
             this._body = $(document.createElement('div')).addClass(
@@ -2339,32 +2714,15 @@ define(['lodash', 'jquery'], function (_, $) {
                 return new Button(opts);
             };
             //
-            // Modal option
-            var width = options.width;
-            if(options.modal) {
-                width = this._modalCss(options);
-                elem.appendTo(document.body);
-                closable = closable === null ? true : closable;
-                var backdrop = $(document.createElement('div'))
-                                    .addClass('modal-backdrop fullscreen')
-                                    .css('z-index', options.modal_zindex);
-                elem.on('remove', function () {
-                    backdrop.remove();
-                }).on('show', function () {
-                    backdrop.appendTo(document.body);
-                }).on('hide', function () {
-                    backdrop.detach();
-                });
-            }
-            // set width
-            if (width) elem.width(width);
-            // set height
+            // Add additional options
+            if (options.modal) self._addModal(options);
+            if (options.width) elem.width(options.width);
             if (options.height) this._body.height(options.height);
             if (options.collapsable) self._addCollapsable(options);
-            if (closable) this._addClosable(options);
+            if (options.closable) this._addClosable(options);
             if (options.fullscreen) this._addFullscreen(options);
             if (options.movable) this._addMovable(options);
-            if (options.autoOpen) self.show();
+            if (options.autoOpen) self.render();
         },
         //
         body: function () {
@@ -2376,11 +2734,64 @@ define(['lodash', 'jquery'], function (_, $) {
         },
         //
         header: function () {
-            return this.element().children('.header');
+            return this.elem.children('.header');
         },
         //
         title: function (value) {
             return this.header().children('h3').html(value);
+        },
+        //
+        render: function () {
+            this.fadeIn();
+        },
+        //
+        //  INTERNALS
+        //
+        //
+        _addModal: function (options) {
+            var
+            self = this,
+            opts = _.extend({}, self.default_modals,
+                _.isObject(options.modal) ? options.modal : null),
+            modal = $(document.createElement('div')).attr({
+                tabindex: -1,
+                role: 'dialog'
+            }).addClass('modal fullscreen').hide().appendTo(document.body),
+            backdrop = $(document.createElement('div')).addClass(
+                'modal-backdrop fullscreen'),
+            ename = this.eventName('click');
+            //
+            modal.on(ename, function (e) {
+                self.fadeOut();
+            });
+            this.elem.off(ename).on(ename, function (e) {
+                e.stopPropagation();
+            });
+            if (opts.keyboard) {
+                ename = this.eventName('keyup');
+                modal.off(ename).on(ename, function (e) {
+                    e.which === 27 && self.fadeOut();
+                });
+            }
+            //
+            this.enforceFocus();
+            options.collapsable = false;
+            options.width = options.width || opts.width;
+            options.closable = options.closable === null ? true : options.closable;
+            this.elem.appendTo(modal).addClass('dialog-modal')
+            .on('remove', function () {
+                backdrop.remove();
+                modal.remove();
+            }).on('show', function () {
+                if (opts.backdrop)
+                    backdrop.appendTo(document.body);
+                modal.show();
+                $(document.body).addClass('modal-open');
+            }).on('hide', function () {
+                modal.hide();
+                backdrop.detach();
+                $(document.body).removeClass('modal-open');
+            });
         },
         //
         // make the dialog closable, unless it is already closable.
@@ -2427,7 +2838,7 @@ define(['lodash', 'jquery'], function (_, $) {
                 self.elem.removeClass('collapsed');
                 lux.addIcon(button.elem, {icon: options.icons.close});
             }).on('hidden', function () {
-                self.element().addClass('collapsed');
+                self.elem.addClass('collapsed');
                 lux.addIcon(button.elem, {icon: options.icons.open});
             });
             // make sure height is auto when the dialog is not collapsed at startupSSSSS
@@ -2465,21 +2876,8 @@ define(['lodash', 'jquery'], function (_, $) {
         _addMovable: function (options) {
             //var dragdrop = this.options.dragdrop;
             //if (dragdrop) {
-            //    dragdrop.add(this.element(), this.header());
+            //    dragdrop.add(this.elem, this.header());
             //}
-        },
-        //
-        _modalCss: function (options) {
-            var width = options.width || 500;
-            rules = ['#' + this.attr('id') + '{',
-                     '    margin-left: -' + width/2 + 'px,',
-                     '    left: 50%,',
-                     '    position: absolute,',
-                     'z-index: ' + (options.modal_zindex + 10) + ',',
-                     'top: ' + (options.top || '25%'),
-                     '}'];
-            this.addStyle(rules);
-            return width;
         }
     });
 
