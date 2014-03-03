@@ -240,19 +240,23 @@
                 self.model = new Page({id: this.options.editing});
                 this.setupEdit();
             }
+            this.elem.fadeTo(100, 1);
         },
         //
         // Setup editing view
         setupEdit: function () {
             if (!this.editing) {
-                var control = $('.cms-control');
+                var control = $('.cms-control'),
+                    grid = new lux.Grid({rows: [[8,8,8]]});
                 this.logger = $('<div class="cms-info"></div>');
                 if (!control.length) {
                     control = $(document.createElement('div'))
-                        .addClass('cms-control').prependTo(document.body);
+                        .addClass('cms-control');
                 }
+                grid.row(0).column(0).append(control);
+                this.elem.prepend(grid.elem);
                 this.control = new lux.Dialog(_.extend({
-                    elem: control}, this.options.page));
+                    elem: grid.elem}, this.options.page));
                 this.control.header().prepend(this.logger);
                 control.show();
                 this._add_block_control();

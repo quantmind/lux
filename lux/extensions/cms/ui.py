@@ -47,6 +47,7 @@ def add_css(all):
 
     css('.cms-page',
         Skin(applyto=['background', 'color']),
+        Opacity(0),
         width='100%')
 
     css('.grid',
@@ -58,8 +59,7 @@ def add_css(all):
             width=cssv.grid.fixed_width,
             margin='auto'),
         css(':first-child',
-            margin_top=0),
-        margin_top=cssv.grid.fluid_padding)
+            margin_top=0))
 
     css(' .column',
         css(' .row',
@@ -76,7 +76,6 @@ def add_css(all):
     css('.cms-grid',
         Opacity(0))
     css('.cms-control',
-        Skin(' > .body'),
         display='none')
     # Position toolbar
     css('.cms-content-toolbar',

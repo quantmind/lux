@@ -4,9 +4,11 @@
     //  Javascript view for forms and form fields
     var
     //
-    controlClass = 'form-control',
-    //
     globalAttributes = ['title'],
+    //
+    noControlClass = ['checkbox', 'radio'],
+    //
+    controlClass = 'form-control',
     //
     Form = lux.Form = lux.createView('form', {
         //
@@ -82,9 +84,8 @@
                 var self = this;
                 $('input,select,textarea', this.elem).each(function () {
                     var elem = $(this);
-                    if (elem.attr('type') !== 'checkbox') {
+                    if (noControlClass.indexOf(elem.attr('type')) === -1)
                         elem.addClass(controlClass);
-                    }
                 });
             }
             return this;
@@ -94,7 +95,7 @@
             var self = this;
             $('input,select', this.elem).each(function () {
                 var elem = $(this);
-                if (elem.attr('type') !== 'checkbox') {
+                if (noControlClass.indexOf(elem.attr('type')) === -1) {
                     elem.parent().find('label').addClass('sr-only');
                     elem.addClass(controlClass);
                 }
@@ -185,17 +186,21 @@
         render: function (form, options) {
             var
             elem = $(document.createElement(this.tagName)).attr(
-                this.attributes).addClass(controlClass),
+                this.attributes),
             placeholder = this.getPlaceholder();
             elem.attr('name', this.name);
             if (this.tagName === 'input')
                 elem.attr('type', this.type);
+            var type = elem.attr('type');
+            if (noControlClass.indexOf(type) === -1)
+                elem.addClass(controlClass);
+            //
             if (placeholder)
                 elem.attr('placeholder', placeholder);
             if (_.isFunction(form)) form(elem);
             else {
                 this.setValue(form.model, elem);
-                if (elem.attr('type') !== 'hidden')
+                if (type !== 'hidden')
                     elem = this.outerContainer(elem, form);
                 form.fieldset(this.fieldset).append(elem);
             }
@@ -245,6 +250,8 @@
     //
     BooleanField = lux.BooleanField = Field.extend({
         type: 'checkbox',
+        //
+        controlClass: null,
         //
         setValue: function (model, elem) {
             if (model) {
@@ -307,7 +314,7 @@
             if (this.tagName === 'select') {
                 elem = $(document.createElement(this.tagName)).attr({
                     name: this.name
-                }).append($("<option></option>"));
+                }).append($("<option></option>")).addClass(controlClass);
                 //
                 _(choices).forEach(function (val) {
                     if (!(val instanceof jQuery)) {
@@ -332,6 +339,7 @@
                     if (!opts.placeholder) opts.placeholder = this.getPlaceholder();
                     elem.Select(opts);
                 }
+                return elem;
             //
             // Radio element
             } else if (this.tagName === 'input' && this.type === 'radio') {
@@ -350,7 +358,6 @@
                 });
                 form.elem.append(elem);
             }
-            return elem.addClass(controlClass);
         }
     }),
     //
@@ -397,6 +404,7 @@
             }
         }
     });
+    //
     //
     //  Select2 utilities
     //  ------------------------

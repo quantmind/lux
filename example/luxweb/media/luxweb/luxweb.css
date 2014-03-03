@@ -1,7 +1,7 @@
 /*
 ------------------------------------------------------------------
 ------------------------------------------------------------------
-Created by lux 2014-03-03 15:18:04 in 1.12 seconds.
+Created by lux 2014-03-03 18:14:34 in 0.55 seconds.
 ------------------------------------------------------------------
 ------------------------------------------------------------------ */
 
@@ -1045,13 +1045,13 @@ disabled look for disabled choices in the results dropdown
   }
 }
 body {
+    font-family: Helvetica,Arial,'Liberation Sans',FreeSans,sans-serif;
+    line-height: 20px;
+    color: #333;
+    text-align: left;
+    font-size: 14px;
     padding: 0;
     margin: 0;
-    font-size: 14px;
-    text-align: left;
-    color: #333;
-    line-height: 20px;
-    font-family: Helvetica,Arial,'Liberation Sans',FreeSans,sans-serif;
     background: #fff;
 }
 
@@ -1074,8 +1074,8 @@ body {
 .nav:before,
 .grid:before,
 .grid24:before {
-    display: table;
     content: " ";
+    display: table;
 }
 
 .clearfix:after,
@@ -1083,8 +1083,8 @@ body {
 .nav:after,
 .grid:after,
 .grid24:after {
-    display: table;
     content: " ";
+    display: table;
     clear: both;
 }
 
@@ -1102,13 +1102,13 @@ markdown,
 }
 
 .vpadding-small {
-    padding: 5px 0;
     overflow: hidden;
+    padding: 5px 0;
 }
 
 .vpadding {
-    padding: 20px 0;
     overflow: hidden;
+    padding: 20px 0;
 }
 
 .square,
@@ -1214,14 +1214,14 @@ markdown,
 }
 
 .sr-only {
-    margin: -1px;
-    clip: rect(0,0,0,0);
-    height: 1px;
-    position: absolute;
-    padding: 0;
-    border: 0;
-    width: 1px;
     overflow: hidden;
+    width: 1px;
+    border: 0;
+    padding: 0;
+    position: absolute;
+    height: 1px;
+    clip: rect(0,0,0,0);
+    margin: -1px;
 }
 
 dt {
@@ -1234,18 +1234,18 @@ dd {
 }
 
 .dl-horizontal dt {
-    text-align: left;
-    float: left;
     clear: left;
+    float: left;
+    text-align: left;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
 .alert {
-    margin: 0 0 5px;
-    padding: 8px 14px;
     text-align: left;
+    padding: 8px 14px;
+    margin: 0 0 5px;
     -webkit-border-radius: 5px;
        -moz-border-radius: 5px;
             border-radius: 5px;
@@ -1263,7 +1263,6 @@ dd {
 .draggable-placeholder.default,
 .panel.default .header,
 .navbar.default,
-.cms-control.default > .body,
 .lux-example.default,
 .highlight.default {
     background-color: #fff;
@@ -1289,8 +1288,7 @@ dd {
 .section.primary,
 .dialog.primary > .header,
 .draggable-placeholder.primary,
-.panel.primary .header,
-.cms-control.primary > .body {
+.panel.primary .header {
     background-color: #006699;
     background-image: -moz-linear-gradient(top, #0088cc, #006699);
     background-image: -ms-linear-gradient(top, #0088cc, #006699);
@@ -1314,8 +1312,7 @@ dd {
 .section.success,
 .dialog.success > .header,
 .draggable-placeholder.success,
-.panel.success .header,
-.cms-control.success > .body {
+.panel.success .header {
     background-color: #16a000;
     background-image: -moz-linear-gradient(top, #1dd300, #16a000);
     background-image: -ms-linear-gradient(top, #1dd300, #16a000);
@@ -1339,8 +1336,7 @@ dd {
 .section.error,
 .dialog.error > .header,
 .draggable-placeholder.error,
-.panel.error .header,
-.cms-control.error > .body {
+.panel.error .header {
     background-color: #ca0005;
     background-image: -moz-linear-gradient(top, #fd0006, #ca0005);
     background-image: -ms-linear-gradient(top, #fd0006, #ca0005);
@@ -1366,8 +1362,7 @@ dd {
 .dialog.inverse > .header,
 .draggable-placeholder.inverse,
 .panel.inverse .header,
-.navbar.inverse,
-.cms-control.inverse > .body {
+.navbar.inverse {
     background-color: #3c3c3c;
     background-image: -moz-linear-gradient(top, #222, #3c3c3c);
     background-image: -ms-linear-gradient(top, #222, #3c3c3c);
@@ -1382,43 +1377,43 @@ dd {
 }
 
 .alert .close {
-    position: relative;
-    top: -2px;
     right: -21px;
+    top: -2px;
+    position: relative;
 }
 
 .label {
-    font-size: 11px;
     vertical-align: baseline;
-    display: inline-block;
-    font-weight: bold;
     white-space: nowrap;
+    font-weight: bold;
+    display: inline-block;
     padding: 2px 4px;
+    font-size: 11px;
     -webkit-border-radius: 3px;
        -moz-border-radius: 3px;
             border-radius: 3px;
 }
 
 .fullscreen {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
     bottom: 0;
+    right: 0;
+    left: 0;
+    top: 0;
+    position: fixed;
 }
 
 .fullscreen-container {
-    margin: 0 auto;
-    padding: 30px 0;
-    max-width: 800px;
     height: 100%;
+    max-width: 800px;
+    padding: 30px 0;
+    margin: 0 auto;
 }
 
 .fullscreen-sidebar {
-    position: absolute;
-    top: 30px;
-    right: 30px;
     text-align: right;
+    right: 30px;
+    top: 30px;
+    position: absolute;
 }
 
 input:focus,
@@ -1429,15 +1424,15 @@ button:focus {
 }
 
 .btn {
+    line-height: 20px;
+    font-family: inherit;
+    text-align: center;
+    vertical-align: middle;
+    text-decoration: none;
+    display: inline-block;
+    padding: 6px 12px;
     font-size: 14px;
     font-weight: normal;
-    padding: 6px 12px;
-    display: inline-block;
-    text-decoration: none;
-    line-height: 20px;
-    vertical-align: middle;
-    text-align: center;
-    font-family: inherit;
     border: 1px solid;
     -webkit-border-radius: 5px;
        -moz-border-radius: 5px;
@@ -1445,27 +1440,27 @@ button:focus {
 }
 
 .btn.btn-mini {
+    font-weight: normal;
     padding: 0 5px;
     font-size: 11px;
-    font-weight: normal;
     -webkit-border-radius: 2px;
        -moz-border-radius: 2px;
             border-radius: 2px;
 }
 
 .btn.btn-small {
+    font-weight: normal;
     padding: 2px 10px;
     font-size: 13px;
-    font-weight: normal;
     -webkit-border-radius: 4px;
        -moz-border-radius: 4px;
             border-radius: 4px;
 }
 
 .btn.btn-large {
+    font-weight: bold;
     padding: 12px 24px;
     font-size: 18px;
-    font-weight: bold;
 }
 
 .btn.disabled {
@@ -1771,41 +1766,41 @@ button:focus {
 
 .link {
     padding: 0;
-    background: none;
     border: none;
+    background: none;
     cursor: pointer;
 }
 
 .btn-toolbar {
-    margin: 0;
     font-size: 0;
+    margin: 0;
 }
 
 .btn-group,
 .btn-group-vertical {
-    position: relative;
+    display: inline-block;
     white-space: nowrap;
     vertical-align: middle;
-    display: inline-block;
+    position: relative;
 }
 
 .btn-group > * {
-    position: relative;
     float: left;
+    position: relative;
     -webkit-border-radius: 0;
        -moz-border-radius: 0;
             border-radius: 0;
 }
 
 .btn-group > *:first-child {
-    margin-left: 0;
-    border-bottom-left-radius: 5px;
     border-top-left-radius: 5px;
+    border-bottom-left-radius: 5px;
+    margin-left: 0;
 }
 
 .btn-group > *:last-child {
-    border-top-right-radius: 5px;
     border-bottom-right-radius: 5px;
+    border-top-right-radius: 5px;
 }
 
 .btn-group > * + * {
@@ -1813,11 +1808,11 @@ button:focus {
 }
 
 .btn-group-vertical > * {
-    position: relative;
-    min-width: 100%;
-    float: none;
-    display: block;
     width: 100%;
+    position: relative;
+    float: none;
+    min-width: 100%;
+    display: block;
     -webkit-border-radius: 0;
        -moz-border-radius: 0;
             border-radius: 0;
@@ -1857,17 +1852,17 @@ p:last-child {
 }
 
 .toolbar > .group {
-    font-size: 0;
+    display: inline-block;
+    position: relative;
     white-space: nowrap;
     vertical-align: middle;
-    position: relative;
-    display: inline-block;
+    font-size: 0;
 }
 
 .toolbar > .group > * {
-    position: relative;
-    font-size: 14px;
     border-left-width: 0;
+    font-size: 14px;
+    position: relative;
     -webkit-border-radius: 0;
        -moz-border-radius: 0;
             border-radius: 0;
@@ -1893,12 +1888,12 @@ p:last-child {
 }
 
 pre {
-    word-wrap: break-word;
-    font-size: 13px;
-    white-space: pre-wrap;
-    padding: 9px;
     line-height: 20px;
+    padding: 9px;
+    white-space: pre-wrap;
+    font-size: 13px;
     word-break: break-all;
+    word-wrap: break-word;
     -webkit-border-radius: 5px;
        -moz-border-radius: 5px;
             border-radius: 5px;
@@ -1972,8 +1967,8 @@ pre {
 
 .prettyprint ol.linenums li {
     line-height: 20px;
-    color: #808080;
     padding-left: 12px;
+    color: #808080;
     text-shadow: 0 1px 0 #fff;
 }
 
@@ -1990,8 +1985,8 @@ pre {
 }
 
 .datagrid > table {
-    border-spacing: 0;
     border-collapse: separate;
+    border-spacing: 0;
     -webkit-border-radius: 5px;
        -moz-border-radius: 5px;
             border-radius: 5px;
@@ -2030,13 +2025,13 @@ pre {
 }
 
 .datagrid th.sortable {
-    vertical-align: bottom;
     cursor: pointer;
+    vertical-align: bottom;
 }
 
 .datagrid a.sortable-toggle {
-    margin-left: 3px;
     float: right;
+    margin-left: 3px;
 }
 
 .datagrid.table.default td,
@@ -2109,10 +2104,10 @@ pre {
 }
 
 .section {
-    margin: 0;
-    padding: 0 10px;
-    float: left;
     width: 100%;
+    float: left;
+    padding: 0 10px;
+    margin: 0;
 }
 
 .section .datatable {
@@ -2161,8 +2156,8 @@ h6:first-child,
 
 .section ul:not(.nav),
 .section ol {
-    margin: 0 0 9px 25px;
     padding: 0;
+    margin: 0 0 9px 25px;
 }
 
 .section strong {
@@ -2295,8 +2290,8 @@ h6:first-child,
 }
 
 .pagination ul {
-    margin: 0;
     display: inline-block;
+    margin: 0;
     -webkit-border-radius: 5px;
        -moz-border-radius: 5px;
             border-radius: 5px;
@@ -2308,8 +2303,8 @@ form.content-form .control-group {
 }
 
 .pagination ul > li > a {
-    padding: 4px 12px;
     float: left;
+    padding: 4px 12px;
 }
 
 .pagination ul > li:first-child > a {
@@ -2356,30 +2351,30 @@ form.content-form .control-group {
 
     .datagrid td {
         display: block;
-        position: relative;
         padding-left: 50%;
+        position: relative;
     }
 
     .datagrid td:before {
-        position: absolute;
-        left: 6px;
-        whitespace: nowrap;
-        width: 45%;
         content: attr(data-content);
+        width: 45%;
+        whitespace: nowrap;
+        left: 6px;
+        position: absolute;
         opacity: 0.8;
         filter: alpha(opacity=80.0);
     }
 
     .datagrid thead tr,
     .datagrid tfoot tr {
-        position: absolute;
-        top: -9999px;
         left: -9999px;
+        top: -9999px;
+        position: absolute;
     }
 
     .datagrid tr:first-child td:first-child {
-        border-top-right-radius: 5px;
         border-top-left-radius: 5px;
+        border-top-right-radius: 5px;
     }
 
     .datagrid tr:last-child td:first-child {
@@ -2464,9 +2459,9 @@ form.content-form .control-group {
 
 }
 .collapse {
-    position: relative;
-    height: 0;
     overflow: hidden;
+    height: 0;
+    position: relative;
     -webkit-transition: height 0.35s ease;
        -moz-transition: height 0.35s ease;
          -o-transition: height 0.35s ease;
@@ -2488,18 +2483,18 @@ select[size] {
 }
 
 .header h3 {
-    margin: 0;
     line-height: 24px;
+    margin: 0;
 }
 
 .body-wrap {
-    position: relative;
     overflow: hidden;
+    position: relative;
 }
 
 .body {
-    position: relative;
     overflow-y: auto;
+    position: relative;
 }
 
 .dialog {
@@ -2580,31 +2575,31 @@ select[size] {
 }
 
 .dialog-modal {
-    position: relative;
     margin: 30px auto;
+    position: relative;
 }
 
 .modal {
-    overflow-x: auto;
-    overflow-y: scroll;
-    outline: none;
     z-index: 1050;
+    outline: none;
+    overflow-y: scroll;
+    overflow-x: auto;
 }
 
 .modal-backdrop {
-    background: #000;
     z-index: 1040;
+    background: #000;
     opacity: 0.5;
     filter: alpha(opacity=50.0);
 }
 
 [draggable=true] {
+    -webkit-user-drag: element;
+    -khtml-user-drag: element;
+    user-select: none;
+    -khtml-user-select: none;
     -moz-user-select: none;
     -webkit-user-select: none;
-    -khtml-user-select: none;
-    user-select: none;
-    -khtml-user-drag: element;
-    -webkit-user-drag: element;
 }
 
 .draggable {
@@ -2616,23 +2611,23 @@ select[size] {
 }
 
 fieldset {
-    margin: 0;
     padding: 0;
+    margin: 0;
     border: none;
 }
 
 label {
-    margin-bottom: 5px;
     display: inline-block;
+    margin-bottom: 5px;
 }
 
 legend {
-    font-size: 21px;
+    margin-bottom: 20px;
+    line-height: 40px;
+    padding: 0;
     width: 100%;
     display: block;
-    padding: 0;
-    line-height: 40px;
-    margin-bottom: 20px;
+    font-size: 21px;
     border-width: 0 0 1px;
     border-style: solid;
     border-color: #ccc;
@@ -2647,42 +2642,42 @@ form.form-inline input,
 form.form-inline .input-small,
 form.form-inline .select2-container,
 form.form-inline .form-group {
+    display: inline-block;
     vertical-align: middle;
     margin-bottom: 0;
-    display: inline-block;
 }
 
 form.form-inline .checkbox {
+    display: inline-block;
     vertical-align: middle;
     margin-bottom: 0;
     display: inline-block;
-    margin-top: 0;
-    vertical-align: middle;
     padding-left: 0;
+    vertical-align: middle;
+    margin-top: 0;
     margin-bottom: 0;
-    display: inline-block;
 }
 
 form.form-inline .radio {
-    margin-top: 0;
-    vertical-align: middle;
-    padding-left: 0;
-    margin-bottom: 0;
     display: inline-block;
+    padding-left: 0;
+    vertical-align: middle;
+    margin-top: 0;
+    margin-bottom: 0;
 }
 
 form.form-inline .checkbox input[type="checkbox"],
 form.form-inline .radio input[type="radio"] {
-    margin-top: 0;
-    margin-left: 0;
     float: none;
+    margin-left: 0;
+    margin-top: 0;
 }
 
 form.form-horizontal .control-label {
-    text-align: right;
-    padding-top: 5px;
-    float: left;
     width: 160px;
+    float: left;
+    padding-top: 5px;
+    text-align: right;
 }
 
 form.form-horizontal .controls {
@@ -2690,11 +2685,11 @@ form.form-horizontal .controls {
 }
 
 .form-control {
-    width: 100%;
-    padding: 6px 12px;
-    line-height: 20px;
-    display: block;
     height: 34px;
+    line-height: 20px;
+    padding: 6px 12px;
+    width: 100%;
+    display: block;
     color: #333;
     background: inherit;
     -webkit-border-radius: 5px;
@@ -2720,41 +2715,41 @@ form.form-horizontal .controls {
 
 .checkbox input[type="checkbox"],
 .radio input[type="radio"] {
-    margin-top: 2px;
-    margin-left: -20px;
     float: left;
+    margin-left: -20px;
+    margin-top: 2px;
 }
 
 .checkbox,
 .radio {
-    padding-left: 20px;
-    margin-bottom: 10px;
     display: block;
     min-height: 20px;
+    padding-left: 20px;
+    margin-bottom: 10px;
 }
 
 .checkbox label,
 .radio label {
-    cursor: pointer;
     display: inline;
+    cursor: pointer;
 }
 
 .textarea {
-    margin-bottom: 10px;
     display: block;
+    margin-bottom: 10px;
 }
 
 .form-control.select2-container {
-    width: 100%;
-    padding: 0;
-    border: none;
     height: auto;
+    border: none;
+    padding: 0;
+    width: 100%;
 }
 
 .form-control.select2-container .select2-choice,
 .form-control.select2-container .select2-choice > .select2-chosen {
-    line-height: 34px;
     height: 34px;
+    line-height: 34px;
 }
 
 .primary .form-control {
@@ -2807,10 +2802,10 @@ form.form-horizontal .controls {
 }
 
 .lux-logger {
-    font-size: 12px;
-    line-height: 14px;
-    background: #ededed;
     overflow: scroll;
+    background: #ededed;
+    line-height: 14px;
+    font-size: 12px;
 }
 
 .lux-logger pre.debug {
@@ -2831,21 +2826,21 @@ form.form-horizontal .controls {
 }
 
 .nav {
-    list-style: none;
-    padding-left: 0;
     margin-bottom: 0;
+    padding-left: 0;
+    list-style: none;
 }
 
 .nav > li {
-    position: relative;
     display: block;
+    position: relative;
 }
 
 .nav > li > a {
-    position: relative;
+    display: block;
     padding: 10px 15px;
     text-decoration: none;
-    display: block;
+    position: relative;
 }
 
 .nav-tabs {
@@ -2853,13 +2848,13 @@ form.form-horizontal .controls {
 }
 
 .nav-tabs > li {
-    float: left;
     margin-bottom: -1px;
+    float: left;
 }
 
 .nav-tabs > li > a {
-    margin-right: 2px;
     line-height: 20px;
+    margin-right: 2px;
     border-color: transparent;
     -webkit-border-top-left-radius: 5px;
        -moz-border-top-left-radius: 5px;
@@ -2876,7 +2871,6 @@ form.form-horizontal .controls {
 }
 
 .nav-stacked,
-.cms-page,
 .grid24,
 .grid24 > .span24 {
     width: 100%;
@@ -2887,8 +2881,8 @@ form.form-horizontal .controls {
 }
 
 .nav-stacked > li > a {
-    text-align: center;
     margin-bottom: 5px;
+    text-align: center;
     -webkit-border-radius: 5px;
        -moz-border-radius: 5px;
             border-radius: 5px;
@@ -2896,8 +2890,8 @@ form.form-horizontal .controls {
 
 .well {
     padding: 19px;
-    background: #dadae3;
     min-height: 20px;
+    background: #dadae3;
     -webkit-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05) inset;
        -moz-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05) inset;
             box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05) inset;
@@ -2943,52 +2937,52 @@ form.form-horizontal .controls {
 }
 
 h1 {
-    margin: 10px 0;
-    text-rendering: optimizelegibility;
     font-weight: bold;
-    font-size: 28px;
+    text-rendering: optimizelegibility;
+    margin: 10px 0;
     line-height: 40px;
+    font-size: 28px;
 }
 
 h2 {
-    margin: 10px 0;
-    text-rendering: optimizelegibility;
     font-weight: bold;
-    font-size: 22px;
+    text-rendering: optimizelegibility;
+    margin: 10px 0;
     line-height: 32px;
+    font-size: 22px;
 }
 
 h3 {
-    margin: 10px 0;
-    text-rendering: optimizelegibility;
     font-weight: bold;
-    font-size: 18px;
+    text-rendering: optimizelegibility;
+    margin: 10px 0;
     line-height: 26px;
+    font-size: 18px;
 }
 
 h4 {
-    margin: 10px 0;
-    text-rendering: optimizelegibility;
     font-weight: bold;
-    font-size: 17px;
+    text-rendering: optimizelegibility;
+    margin: 10px 0;
     line-height: 24px;
+    font-size: 17px;
 }
 
 h5 {
-    margin: 10px 0;
-    text-rendering: optimizelegibility;
     font-weight: bold;
-    font-size: 15px;
+    text-rendering: optimizelegibility;
+    margin: 10px 0;
     line-height: 22px;
+    font-size: 15px;
 }
 
 h6 {
-    margin: 10px 0;
-    text-rendering: optimizelegibility;
     font-weight: bold;
-    font-size: 13px;
-    line-height: 18px;
+    text-rendering: optimizelegibility;
+    margin: 10px 0;
     text-transform: uppercase;
+    line-height: 18px;
+    font-size: 13px;
 }
 
 p {
@@ -3096,10 +3090,10 @@ ul.icons-ul,
 }
 
 .navbar .nav {
-    position: relative;
-    margin: 0 10px 0 0;
-    float: left;
     display: block;
+    float: left;
+    margin: 0 10px 0 0;
+    position: relative;
 }
 
 .navbar .nav > li {
@@ -3107,29 +3101,29 @@ ul.icons-ul,
 }
 
 .navbar .nav > li > a {
-    padding: 6px 15px;
     float: none;
+    padding: 6px 15px;
 }
 
 .navbar .brand {
-    font-size: 18px;
+    line-height: 20px;
     padding: 6px 15px;
-    float: left;
-    max-width: none;
     text-decoration: none;
     display: block;
-    line-height: 20px;
+    max-width: none;
+    float: left;
+    font-size: 18px;
 }
 
 form.content-form fieldset {
-    position: relative;
     padding: 10px;
+    position: relative;
 }
 
 form.content-form fieldset input {
-    min-width: 100%;
-    max-width: 100%;
     display: block;
+    max-width: 100%;
+    min-width: 100%;
     min-height: 35px;
     -webkit-box-sizing: border-box;
        -moz-box-sizing: border-box;
@@ -3137,15 +3131,21 @@ form.content-form fieldset input {
 }
 
 form.content-form fieldset textarea {
-    min-width: 100%;
-    max-width: 100%;
     display: block;
-    resize: vertical;
-    min-height: 200px;
+    max-width: 100%;
+    min-width: 100%;
     max-height: 500px;
+    min-height: 200px;
+    resize: vertical;
     -webkit-box-sizing: border-box;
        -moz-box-sizing: border-box;
             box-sizing: border-box;
+}
+
+.cms-page {
+    width: 100%;
+    opacity: 0;
+    filter: alpha(opacity=0);
 }
 
 .cms-page.default {
@@ -3213,21 +3213,20 @@ form.content-form fieldset textarea {
     color: #fff;
 }
 
-.grid,
+.grid.fluid {
+    padding-right: 20px;
+    padding-left: 20px;
+}
+
+.grid.fixed {
+    width: 940px;
+    margin: auto;
+}
+
 .column .row,
 .cms-block + .cms-block,
 .editing .cms-grid .row-control {
     margin-top: 20px;
-}
-
-.grid.fluid {
-    padding-left: 20px;
-    padding-right: 20px;
-}
-
-.grid.fixed {
-    margin: auto;
-    width: 940px;
 }
 
 .cms-grid {
@@ -3236,9 +3235,9 @@ form.content-form fieldset textarea {
 }
 
 .cms-content-toolbar {
+    overflow: hidden;
     font-size: 11px;
     padding: 5px 0;
-    overflow: hidden;
 }
 
 .editing .cms-grid .cms-column {
@@ -3258,16 +3257,16 @@ form.content-form fieldset textarea {
 }
 
 .center-page {
-    margin: 60px auto;
     width: 400px;
+    margin: 60px auto;
 }
 
 .cms-info {
-    position: relative;
-    vertical-align: middle;
-    line-height: 30px;
     display: inline-block;
+    line-height: 30px;
+    vertical-align: middle;
     padding: 0 10px;
+    position: relative;
 }
 
 .grid24 > .span1 {
@@ -3363,14 +3362,14 @@ form.content-form fieldset textarea {
 }
 
 .grid24 > [class*="span"] {
-    margin-left: 2.5641%;
     float: left;
+    margin-left: 2.5641%;
 }
 
 .lux-example {
-    position: relative;
-    padding: 45px 15px 15px;
     margin-bottom: 15px;
+    padding: 45px 15px 15px;
+    position: relative;
     -webkit-border-top-left-radius: 5px;
        -moz-border-top-left-radius: 5px;
             border-top-left-radius: 5px;
@@ -3381,15 +3380,15 @@ form.content-form fieldset textarea {
 }
 
 .lux-example:after {
-    letter-spacing: 1px;
-    left: 15px;
-    font-size: 12px;
-    font-weight: 700;
-    content: "Example";
-    position: absolute;
+    text-transform: uppercase;
     color: rgba(51, 51, 51, 0.3);
     top: 15px;
-    text-transform: uppercase;
+    position: absolute;
+    content: "Example";
+    font-weight: 700;
+    font-size: 12px;
+    left: 15px;
+    letter-spacing: 1px;
 }
 
 .lux-example + .highlight {

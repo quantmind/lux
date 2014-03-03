@@ -240,6 +240,10 @@
                 return view;
             };
 
+        NewView.getInstance = function(elem) {
+            return elem.data(key);
+        };
+
         if (jQuery) {
             $.fn[name] = function (options) {
                 if (options === 'instance') {

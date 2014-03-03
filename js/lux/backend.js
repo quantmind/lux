@@ -189,12 +189,12 @@
             var o = this.options,
                 self = this;
             if (!this._delay) {
-                web.logger.info('Exiting websocket');
+                logger.info('Exiting websocket');
                 return;
             }
             this._retries += 1;
             if (o.maxRetries !== null && (this._retries > o.maxRetries)) {
-                web.logger.info('Exiting websocket after ' + this.retries + ' retries.');
+                logger.info('Exiting websocket after ' + this.retries + ' retries.');
                 return;
             }
             //
@@ -203,7 +203,7 @@
                 this._delay = lux.math.normalvariate(this._delay, this._delay * o.jitter);
             }
             //
-            web.logger.info('Try to reconnect websocket in ' + this._delay + ' seconds');
+            logger.info('Try to reconnect websocket in ' + this._delay + ' seconds');
             this.trigger('reconnecting', this._delay);
             this._reconnect = lux.eventloop.call_later(this._delay, function () {
                 self._reconnect = null;

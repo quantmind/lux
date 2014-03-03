@@ -25,14 +25,16 @@ float_navigation = Grid(Navigation(), cn='navbar inverse')
 
 nav_page = PageTemplate(
     float_navigation,
-    Grid(CmsContext('content')),
+    Template(Grid(CmsContext('content')),
+             tag='div', id='page-main'),
     float_footer,
     key='Navigation-Content-Footer-Fluid')
 
 
 nav_page_fixed = PageTemplate(
     fixed_navigation,
-    Grid(CmsContext('content'), fixed=True),
+    Template(Grid(CmsContext('content'), fixed=True),
+             tag='div', id='page-main'),
     fixed_footer,
     key='Navigation-Content-Footer-Fixed')
 

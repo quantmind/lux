@@ -29,6 +29,9 @@ __all__ = ['Layout', 'Fieldset', 'register_layout_style', 'LayoutStyle']
 
 
 SUBMITS = 'submits'  # string indicating submits in forms
+special_types = set(('checkbox', 'radio'))
+control_group = 'form-group'
+control_class = 'form-control'
 LAYOUT_HANDLERS = {}
 
 
@@ -213,27 +216,27 @@ def register_layout_style(handler):
 class LayoutStyle(object):
     '''Layout style handler.
 
-.. attribute:: name
+    .. attribute:: name
 
-    The name for this :class:`LayoutStyle. The name is used by the
-    :class:`Layout` to create the form class. For example the ``horizontal``
-    layout has a form class ``form-horizontal``.
-'''
+        The name for this :class:`LayoutStyle. The name is used by the
+        :class:`Layout` to create the form class.
+        For example the ``horizontal``
+        layout has a form class ``form-horizontal``.
+    '''
     name = ''
 
     def default(self, html, bound_field):
         yield html
 
     def fieldset(self, html, bfield, container):
-        if html.attr('type') == 'checkbox':
-            label = bfield.label if container.show_label else ''
-            yield Html('label', html, label, cn='checkbox')
+        type = html.attr('type')
+        if type in special_types:
+            yield Html('div', Html('label', html, bfield.label), cn=type)
         else:
-            if container.show_label:
-                yield '<label>%s</label>' % bfield.label
-            else:
-                html.attr('placeholder', bfield.label)
-            yield html
+            yield Html('div',
+                       '<label>%s</label>' % bfield.label,
+                       html.addClass(control_class),
+                       cn=control_group)
 
 
 class HorizontalLayout(LayoutStyle):

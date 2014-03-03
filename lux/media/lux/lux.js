@@ -1019,6 +1019,10 @@ define(['lodash', 'jquery'], function (_, $) {
                 return view;
             };
 
+        NewView.getInstance = function(elem) {
+            return elem.data(key);
+        };
+
         if (jQuery) {
             $.fn[name] = function (options) {
                 if (options === 'instance') {
@@ -2136,9 +2140,11 @@ define(['lodash', 'jquery'], function (_, $) {
     //  Javascript view for forms and form fields
     var
     //
-    controlClass = 'form-control',
-    //
     globalAttributes = ['title'],
+    //
+    noControlClass = ['checkbox', 'radio'],
+    //
+    controlClass = 'form-control',
     //
     Form = lux.Form = lux.createView('form', {
         //
@@ -2214,9 +2220,8 @@ define(['lodash', 'jquery'], function (_, $) {
                 var self = this;
                 $('input,select,textarea', this.elem).each(function () {
                     var elem = $(this);
-                    if (elem.attr('type') !== 'checkbox') {
+                    if (noControlClass.indexOf(elem.attr('type')) === -1)
                         elem.addClass(controlClass);
-                    }
                 });
             }
             return this;
@@ -2226,7 +2231,7 @@ define(['lodash', 'jquery'], function (_, $) {
             var self = this;
             $('input,select', this.elem).each(function () {
                 var elem = $(this);
-                if (elem.attr('type') !== 'checkbox') {
+                if (noControlClass.indexOf(elem.attr('type')) === -1) {
                     elem.parent().find('label').addClass('sr-only');
                     elem.addClass(controlClass);
                 }
@@ -2317,17 +2322,21 @@ define(['lodash', 'jquery'], function (_, $) {
         render: function (form, options) {
             var
             elem = $(document.createElement(this.tagName)).attr(
-                this.attributes).addClass(controlClass),
+                this.attributes),
             placeholder = this.getPlaceholder();
             elem.attr('name', this.name);
             if (this.tagName === 'input')
                 elem.attr('type', this.type);
+            var type = elem.attr('type');
+            if (noControlClass.indexOf(type) === -1)
+                elem.addClass(controlClass);
+            //
             if (placeholder)
                 elem.attr('placeholder', placeholder);
             if (_.isFunction(form)) form(elem);
             else {
                 this.setValue(form.model, elem);
-                if (elem.attr('type') !== 'hidden')
+                if (type !== 'hidden')
                     elem = this.outerContainer(elem, form);
                 form.fieldset(this.fieldset).append(elem);
             }
@@ -2377,6 +2386,8 @@ define(['lodash', 'jquery'], function (_, $) {
     //
     BooleanField = lux.BooleanField = Field.extend({
         type: 'checkbox',
+        //
+        controlClass: null,
         //
         setValue: function (model, elem) {
             if (model) {
@@ -2439,7 +2450,7 @@ define(['lodash', 'jquery'], function (_, $) {
             if (this.tagName === 'select') {
                 elem = $(document.createElement(this.tagName)).attr({
                     name: this.name
-                }).append($("<option></option>"));
+                }).append($("<option></option>")).addClass(controlClass);
                 //
                 _(choices).forEach(function (val) {
                     if (!(val instanceof jQuery)) {
@@ -2464,6 +2475,7 @@ define(['lodash', 'jquery'], function (_, $) {
                     if (!opts.placeholder) opts.placeholder = this.getPlaceholder();
                     elem.Select(opts);
                 }
+                return elem;
             //
             // Radio element
             } else if (this.tagName === 'input' && this.type === 'radio') {
@@ -2482,7 +2494,6 @@ define(['lodash', 'jquery'], function (_, $) {
                 });
                 form.elem.append(elem);
             }
-            return elem.addClass(controlClass);
         }
     }),
     //
@@ -2530,6 +2541,7 @@ define(['lodash', 'jquery'], function (_, $) {
         }
     });
     //
+    //
     //  Select2 utilities
     //  ------------------------
     //
@@ -2558,11 +2570,36 @@ define(['lodash', 'jquery'], function (_, $) {
 
     //
     //  A view for displaying grids
-    var Grid = lux.Grid = lux.createView('grid', {
-
+    var
+    //
+    GridRow = lux.createView('gridrow', {
+        //
         initialise: function (options) {
             var self = this;
-            this.elem.addClass('grid').addClass('fluid');
+            this.elem.addClass('row').addClass('grid24');
+            //
+            _(options.columns).forEach(function (col) {
+                var size = 'span' + col;
+                self.elem.append($(document.createElement('div')).addClass(
+                    'column').addClass(size));
+            });
+        },
+        //
+        column: function (index) {
+            index = index || 0;
+            return this.elem.children().eq(index);
+        }
+    }),
+    //
+    Grid = lux.Grid = lux.createView('grid', {
+        //
+        defaults: {
+            type: 'fluid'
+        },
+        //
+        initialise: function (options) {
+            var self = this;
+            this.elem.addClass('grid').addClass(options.type);
 
             if (options.rows) {
                 _(options.rows).forEach(function (row) {
@@ -2571,16 +2608,15 @@ define(['lodash', 'jquery'], function (_, $) {
             }
         },
         //
-        addRow: function (row) {
-            var elem = $(document.createElement('div')).addClass(
-                'row').addClass('grid24').appendTo(this.elem);
-            //
-            _(row).forEach(function (col) {
-                var size = 'span' + col;
-                elem.append($(document.createElement('div')).addClass(
-                    'column').addClass(size));
-            });
-            return elem;
+        addRow: function (columns) {
+            var row = new GridRow({'columns': columns});
+            row.elem.appendTo(this.elem);
+            return row;
+        },
+        //
+        row: function (index) {
+            index = index || 0;
+            return GridRow.getInstance(this.elem.children().eq(index));
         }
     });
     //
