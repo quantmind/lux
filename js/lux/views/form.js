@@ -10,6 +10,8 @@
     //
     Form = lux.Form = lux.createView('form', {
         //
+        selector: 'form',
+        //
         tagName: 'form',
         //
         defaults: {
@@ -30,6 +32,9 @@
             if (options.layout) {
                 this.layout = options.layout;
                 this.elem.addClass('form-' + this.layout);
+            }
+            if (options.ajax || this.elem.hasClass('ajax')) {
+                this.ajax(options);
             }
         },
         //
@@ -179,7 +184,8 @@
         // Return a jQuery element which can be included in the ``form``.
         render: function (form, options) {
             var
-            elem = $(document.createElement(this.tagName)).attr(this.attributes),
+            elem = $(document.createElement(this.tagName)).attr(
+                this.attributes).addClass(controlClass),
             placeholder = this.getPlaceholder();
             elem.attr('name', this.name);
             if (this.tagName === 'input')
@@ -344,7 +350,7 @@
                 });
                 form.elem.append(elem);
             }
-            return elem;
+            return elem.addClass(controlClass);
         }
     }),
     //

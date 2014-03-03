@@ -21,7 +21,7 @@ To run tests and the example site add a new ``settings.py`` file in the
     from .config *
 
 
-Meaning
+Lux?
 ===============
 Lux is the latin name for ``light``.
 

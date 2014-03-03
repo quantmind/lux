@@ -30,7 +30,7 @@ def add_css(all):
     cssv.button.disabled.opacity = 0.5
     cssv.button.disabled.cursor = 'default'
     # this is quite important as it controls all inputs paddings
-    cssv.button.padding = spacing(4, 12)
+    cssv.button.padding = spacing(6, 12)
     #
     cssv.button.small.font_size = 0.9*cssv.button.font_size
     cssv.button.small.padding = spacing(2, 10)
@@ -97,6 +97,10 @@ def add_css(all):
 
     css('.btn-group,.btn-group-vertical',
         css(' > .btn', Radius(0)),  # Force radius to 0
+        css(' > .form-control', Radius(0)),  # Force radius to 0
+        css(' > .select2-container .select2-choice',
+            css(' .select2-arrow', Radius(0)),
+            Radius(0)),
         display='inline-block',
         font_size=0,
         position='relative',

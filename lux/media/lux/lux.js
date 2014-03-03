@@ -2042,6 +2042,32 @@ define(['lodash', 'jquery'], function (_, $) {
             lux.addIcon($(elem));
         }
     });
+    //  Ajax Links & buttons
+    //  ------------------------
+    var ajax_on_success = function (o, s, xhr) {
+        if (o.redirect) {
+            window.location = o.redirect;
+        }
+    };
+
+    lux.ajaxElement = function (elem) {
+        var url = elem.is('a') ? elem.attr('href') : elem.data('href'),
+            options = {
+                type: elem.data('action') || 'get',
+                success: ajax_on_success
+            };
+        elem.click(function (e) {
+            e.preventDefault();
+            $.ajax(url, options);
+        });
+    };
+
+    lux.autoViews.push({
+        selector: '[data-ajax="true"]',
+        load: function(elem) {
+            lux.ajaxElement($(elem));
+        }
+    });
 
     //  Buttons
     //  -------------
@@ -2116,6 +2142,8 @@ define(['lodash', 'jquery'], function (_, $) {
     //
     Form = lux.Form = lux.createView('form', {
         //
+        selector: 'form',
+        //
         tagName: 'form',
         //
         defaults: {
@@ -2136,6 +2164,9 @@ define(['lodash', 'jquery'], function (_, $) {
             if (options.layout) {
                 this.layout = options.layout;
                 this.elem.addClass('form-' + this.layout);
+            }
+            if (options.ajax || this.elem.hasClass('ajax')) {
+                this.ajax(options);
             }
         },
         //
@@ -2285,7 +2316,8 @@ define(['lodash', 'jquery'], function (_, $) {
         // Return a jQuery element which can be included in the ``form``.
         render: function (form, options) {
             var
-            elem = $(document.createElement(this.tagName)).attr(this.attributes),
+            elem = $(document.createElement(this.tagName)).attr(
+                this.attributes).addClass(controlClass),
             placeholder = this.getPlaceholder();
             elem.attr('name', this.name);
             if (this.tagName === 'input')
@@ -2450,7 +2482,7 @@ define(['lodash', 'jquery'], function (_, $) {
                 });
                 form.elem.append(elem);
             }
-            return elem;
+            return elem.addClass(controlClass);
         }
     }),
     //

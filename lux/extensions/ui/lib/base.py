@@ -42,6 +42,7 @@ import os
 import json
 import time
 import asyncio
+from copy import copy
 from importlib import import_module
 
 from collections import Mapping
@@ -415,6 +416,9 @@ class CssBase(UnicodeMixin):
     def set_parent(self, parent):
         raise NotImplementedError
 
+    def clone(self):
+        return self
+
 
 class Mixin(CssBase):
     '''A css *Mixin* is a generator of :class:`css` and other
@@ -477,6 +481,15 @@ class Css(CssBase):
             self.classes.active = 'active'
         elif not tag:
             raise ValueError('A tag must be defined')
+
+    def clone(self):
+        c = copy(self)
+        c._parent = None
+        c._children = OrderedDict(((name, [c.clone() for c in children])
+                                   for name, children in
+                                   self._children.items()))
+        c._attributes = copy(self._attributes)
+        return c
 
     @property
     def tag(self):
@@ -546,7 +559,7 @@ class Css(CssBase):
             elems = [Css(t) for t in alltags(tag)]
         else:
             elems = [Css(tag)]
-        for css in elems:
+        for clone, css in enumerate(elems):
             for name, value in iteritems(attributes):
                 css[name] = value
             css.set_parent(self)
@@ -555,7 +568,7 @@ class Css(CssBase):
                 if not isinstance(cl, list):
                     cl = (cl,)
                 for c in cl:
-                    css.add(c)
+                    css.add(c.clone() if clone else c)
         return elems[0] if len(elems) == 1 else elems
 
     def get_media_url(self, path):

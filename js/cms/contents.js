@@ -235,7 +235,7 @@
         _render: function (container, skin) {
             var elem = $(document.createElement('div')).appendTo(container),
                 options = _.extend({}, this.fields()),
-                models = this._api().models,
+                models = this.api().models,
                 model = models ? models[options.url] : null,
                 headers = [];
             if (model) {

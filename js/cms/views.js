@@ -3,6 +3,8 @@
     //
     views = cms.views = {},
     //
+    templateWidth = 150,
+    //
     selectRowTemplate = new lux.ChoiceField('rowtemplate', {
         label: 'Select a row template',
         choices: function () {
@@ -13,6 +15,20 @@
             return names;
         },
         select2: {
+            minimumResultsForSearch: -1
+        }
+    }),
+    //
+    selectBlockTemplate = new lux.ChoiceField('blocktemplate', {
+        label: 'Select a layout for a block',
+        choices: function () {
+            var names = [];
+            BLOCK_TEMPLATES.each(function (_, name) {
+                names.push(name);
+            });
+            return names;
+        },
+        select2_: {
             minimumResultsForSearch: -1
         }
     }),
@@ -309,9 +325,11 @@
                 button = control.createButton({
                     icon: options.add_block_icon,
                     title: 'Add new block'
-                }),
-                select = self.select_layouts().addClass(options.skin);
-            self.control.buttons.prepend(select).prepend(button.elem);
+                });
+            selectBlockTemplate.render(function (elem) {
+                self.control.buttons.prepend(elem);
+            }).width(templateWidth).addClass('square');
+            self.control.buttons.prepend(button.elem);
             button.elem.click(function () {
                 var templateName = select.val(),
                     column = self.get_current_column();
@@ -327,14 +345,6 @@
                     self.log('WARNING: No column available!');
                 }
             });
-        },
-        //
-        select_layouts: function () {
-            var s = $(document.createElement('select'));
-            BLOCK_TEMPLATES.each(function (_, name) {
-                s.append($("<option></option>").attr("value",name).text(name));
-            });
-            return s;
         },
         //
         // Enable drag and drop
@@ -373,8 +383,9 @@
                         title: 'Add new row'
                     }),
                     select = selectRowTemplate.render(function (elem) {
-                        dialog.buttons.prepend(elem);
-                    });
+
+                    }).width(templateWidth).addClass('square');
+                dialog.buttons.prepend(select);
                 //
                 dialog.title(this.name);
                 dialog.buttons.prepend(add_row.elem);

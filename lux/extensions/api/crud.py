@@ -210,7 +210,7 @@ class Crud(Router):
                     instance = yield self.create_instance(request, kw)
                     response.status_code = 201
                     #TODO set the location
-                    #response.headers['location'] = 
+                    #response.headers['location'] =
                 else:
                     instance = yield self.update_instance(request,
                                                           instance, kw)
@@ -236,7 +236,7 @@ class Crud(Router):
         '''**Internal method**. Create an ``instance`` of :attr:`_model`.
 
         :param data: dictionary of fields for model.
-        :return: a new model instance or a Deferred resulting in an instance.
+        :return: a new model instance or a Future resulting in an instance.
         '''
         return self.manager.new(**data)
 
@@ -245,7 +245,7 @@ class Crud(Router):
 
         :param instance: model instance to update.
         :param data: dictionary of fields for model.
-        :return: updated model instance or a Deferred resulting in an instance.
+        :return: updated model instance or a Future resulting in an instance.
         '''
         for name, value in data.items():
             setattr(instance, name, value)

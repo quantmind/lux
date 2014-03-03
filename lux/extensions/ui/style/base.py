@@ -90,6 +90,8 @@ def add_css(all):
     css('.vpadding',
         padding=spacing(20, 0),
         overflow='hidden')
+    css('.square',
+        Radius(0))
 
     size = lambda n: 30*n
     for n in range(1, 21):

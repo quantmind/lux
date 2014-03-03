@@ -1,7 +1,7 @@
 /*
 ------------------------------------------------------------------
 ------------------------------------------------------------------
-Created by lux 2014-02-28 21:37:19 in 0.57 seconds.
+Created by lux 2014-03-03 12:40:42 in 1.0 seconds.
 ------------------------------------------------------------------
 ------------------------------------------------------------------ */
 
@@ -1045,13 +1045,13 @@ disabled look for disabled choices in the results dropdown
   }
 }
 body {
+    font-size: 14px;
+    padding: 0;
+    color: #333;
     margin: 0;
     line-height: 20px;
-    font-size: 14px;
-    text-align: left;
     font-family: Helvetica,Arial,'Liberation Sans',FreeSans,sans-serif;
-    color: #333;
-    padding: 0;
+    text-align: left;
     background: #fff;
 }
 
@@ -1108,6 +1108,20 @@ markdown,
 .vpadding {
     overflow: hidden;
     padding: 20px 0;
+}
+
+.square,
+.btn-group > .btn,
+.btn-group > .form-control,
+.btn-group > .select2-container .select2-choice,
+.btn-group > .select2-container .select2-choice .select2-arrow,
+.btn-group-vertical > .btn,
+.btn-group-vertical > .form-control,
+.btn-group-vertical > .select2-container .select2-choice,
+.btn-group-vertical > .select2-container .select2-choice .select2-arrow {
+    -webkit-border-radius: 0;
+       -moz-border-radius: 0;
+            border-radius: 0;
 }
 
 .span1 {
@@ -1199,14 +1213,14 @@ markdown,
 }
 
 .sr-only {
-    margin: -1px;
-    border: 0;
     clip: rect(0,0,0,0);
-    height: 1px;
-    padding: 0;
     position: absolute;
+    padding: 0;
+    height: 1px;
     overflow: hidden;
     width: 1px;
+    margin: -1px;
+    border: 0;
 }
 
 dt {
@@ -1229,8 +1243,8 @@ dd {
 
 .alert {
     margin: 0 0 5px;
-    text-align: left;
     padding: 8px 14px;
+    text-align: left;
     -webkit-border-radius: 5px;
        -moz-border-radius: 5px;
             border-radius: 5px;
@@ -1367,17 +1381,17 @@ dd {
 }
 
 .alert .close {
+    right: -21px;
     position: relative;
     top: -2px;
-    right: -21px;
 }
 
 .label {
     font-size: 11px;
-    font-weight: bold;
-    padding: 2px 4px;
-    white-space: nowrap;
     vertical-align: baseline;
+    white-space: nowrap;
+    padding: 2px 4px;
+    font-weight: bold;
     display: inline-block;
     -webkit-border-radius: 3px;
        -moz-border-radius: 3px;
@@ -1385,25 +1399,25 @@ dd {
 }
 
 .fullscreen {
-    right: 0;
-    left: 0;
     bottom: 0;
-    top: 0;
+    right: 0;
     position: fixed;
+    top: 0;
+    left: 0;
 }
 
 .fullscreen-container {
-    margin: 0 auto;
-    max-width: 800px;
     height: 100%;
+    margin: 0 auto;
     padding: 30px 0;
+    max-width: 800px;
 }
 
 .fullscreen-sidebar {
+    right: 30px;
     position: absolute;
     top: 30px;
     text-align: right;
-    right: 30px;
 }
 
 input:focus,
@@ -1414,15 +1428,15 @@ button:focus {
 }
 
 .btn {
-    line-height: 20px;
     vertical-align: middle;
-    font-weight: normal;
-    text-align: center;
-    padding: 4px 12px;
-    font-family: inherit;
     text-decoration: none;
+    line-height: 20px;
+    padding: 6px 12px;
     font-size: 14px;
+    font-weight: normal;
+    font-family: inherit;
     display: inline-block;
+    text-align: center;
     border: 1px solid;
     -webkit-border-radius: 5px;
        -moz-border-radius: 5px;
@@ -1450,7 +1464,7 @@ button:focus {
 .btn.btn-large {
     font-size: 18px;
     font-weight: bold;
-    padding: 8px 24px;
+    padding: 12px 24px;
 }
 
 .btn.disabled {
@@ -1755,23 +1769,23 @@ button:focus {
 }
 
 .link {
-    border: none;
-    cursor: pointer;
     padding: 0;
+    border: none;
     background: none;
+    cursor: pointer;
 }
 
 .btn-toolbar {
-    margin: 0;
     font-size: 0;
+    margin: 0;
 }
 
 .btn-group,
 .btn-group-vertical {
-    position: relative;
     font-size: 0;
-    white-space: nowrap;
     vertical-align: middle;
+    position: relative;
+    white-space: nowrap;
     display: inline-block;
 }
 
@@ -1785,8 +1799,8 @@ button:focus {
 
 .btn-group > *:first-child {
     margin-left: 0;
-    border-top-left-radius: 5px;
     border-bottom-left-radius: 5px;
+    border-top-left-radius: 5px;
 }
 
 .btn-group > *:last-child {
@@ -1798,18 +1812,12 @@ button:focus {
     margin-left: -1px;
 }
 
-.btn-group-vertical > .btn {
-    -webkit-border-radius: 0;
-       -moz-border-radius: 0;
-            border-radius: 0;
-}
-
 .btn-group-vertical > * {
-    position: relative;
-    float: none;
     width: 100%;
+    float: none;
     min-width: 100%;
     display: block;
+    position: relative;
     -webkit-border-radius: 0;
        -moz-border-radius: 0;
             border-radius: 0;
@@ -1849,17 +1857,17 @@ p:last-child {
 }
 
 .toolbar > .group {
-    position: relative;
-    white-space: nowrap;
     vertical-align: middle;
     font-size: 0;
+    white-space: nowrap;
     display: inline-block;
+    position: relative;
 }
 
 .toolbar > .group > * {
+    font-size: 14px;
     border-left-width: 0;
     position: relative;
-    font-size: 14px;
     -webkit-border-radius: 0;
        -moz-border-radius: 0;
             border-radius: 0;
@@ -1885,12 +1893,12 @@ p:last-child {
 }
 
 pre {
-    line-height: 20px;
     font-size: 13px;
-    padding: 9px;
     white-space: pre-wrap;
-    word-wrap: break-word;
     word-break: break-all;
+    padding: 9px;
+    line-height: 20px;
+    word-wrap: break-word;
     -webkit-border-radius: 5px;
        -moz-border-radius: 5px;
             border-radius: 5px;
@@ -1962,10 +1970,10 @@ pre {
 }
 
 .prettyprint ol.linenums li {
-    line-height: 20px;
     color: #808080;
-    padding-left: 12px;
+    line-height: 20px;
     text-shadow: 0 1px 0 #fff;
+    padding-left: 12px;
 }
 
 .columns .column,
@@ -1981,8 +1989,8 @@ pre {
 }
 
 .datagrid > table {
-    border-collapse: separate;
     border-spacing: 0;
+    border-collapse: separate;
     -webkit-border-radius: 5px;
        -moz-border-radius: 5px;
             border-radius: 5px;
@@ -2026,8 +2034,8 @@ pre {
 }
 
 .datagrid a.sortable-toggle {
-    float: right;
     margin-left: 3px;
+    float: right;
 }
 
 .datagrid.table.default td,
@@ -2099,9 +2107,9 @@ pre {
 }
 
 .section {
+    width: 100%;
     margin: 0;
     float: left;
-    width: 100%;
     padding: 0 10px;
 }
 
@@ -2115,7 +2123,15 @@ pre {
 
 .section h1:first-child,
 .section h2:first-child,
+.section h3:first-child,
+.section h4:first-child,
+.section h5:first-child,
 .section h6:first-child,
+h1:first-child,
+h2:first-child,
+h3:first-child,
+h4:first-child,
+h5:first-child,
 h6:first-child,
 .grid:first-child,
 .column .row:first-child {
@@ -2342,9 +2358,9 @@ form.content-form .control-group {
     }
 
     .datagrid td:before {
-        position: absolute;
         content: attr(data-content);
         width: 45%;
+        position: absolute;
         whitespace: nowrap;
         left: 6px;
         opacity: 0.8;
@@ -2353,14 +2369,14 @@ form.content-form .control-group {
 
     .datagrid thead tr,
     .datagrid tfoot tr {
-        position: absolute;
         left: -9999px;
+        position: absolute;
         top: -9999px;
     }
 
     .datagrid tr:first-child td:first-child {
-        border-top-left-radius: 5px;
         border-top-right-radius: 5px;
+        border-top-left-radius: 5px;
     }
 
     .datagrid tr:last-child td:first-child {
@@ -2443,9 +2459,9 @@ form.content-form .control-group {
 
 }
 .collapse {
-    position: relative;
     overflow: hidden;
     height: 0;
+    position: relative;
     -webkit-transition: height 0.35s ease;
        -moz-transition: height 0.35s ease;
          -o-transition: height 0.35s ease;
@@ -2472,8 +2488,8 @@ select[size] {
 }
 
 .body-wrap {
-    position: relative;
     overflow: hidden;
+    position: relative;
 }
 
 .body {
@@ -2540,9 +2556,9 @@ select[size] {
 }
 
 .modal {
+    outline: none;
     overflow-y: scroll;
     overflow-x: auto;
-    outline: none;
     z-index: 1050;
 }
 
@@ -2554,9 +2570,9 @@ select[size] {
 }
 
 [draggable=true] {
-    user-select: none;
-    -khtml-user-select: none;
     -webkit-user-drag: element;
+    -khtml-user-select: none;
+    user-select: none;
     -moz-user-select: none;
     -webkit-user-select: none;
     -khtml-user-drag: element;
@@ -2582,11 +2598,11 @@ label {
 }
 
 legend {
-    line-height: 40px;
     font-size: 21px;
     margin-bottom: 20px;
     padding: 0;
     width: 100%;
+    line-height: 40px;
     display: block;
     border-width: 0 0 1px;
     border-color: #ccc;
@@ -2610,33 +2626,33 @@ form.form-inline .checkbox {
     vertical-align: middle;
     margin-bottom: 0;
     display: inline-block;
-    margin-top: 0;
     vertical-align: middle;
     margin-bottom: 0;
-    padding-left: 0;
+    margin-top: 0;
     display: inline-block;
+    padding-left: 0;
 }
 
 form.form-inline .radio {
-    margin-top: 0;
     vertical-align: middle;
     margin-bottom: 0;
-    padding-left: 0;
+    margin-top: 0;
     display: inline-block;
+    padding-left: 0;
 }
 
 form.form-inline .checkbox input[type="checkbox"],
 form.form-inline .radio input[type="radio"] {
+    margin-left: 0;
     margin-top: 0;
     float: none;
-    margin-left: 0;
 }
 
 form.form-horizontal .control-label {
-    float: left;
     width: 160px;
-    text-align: right;
+    float: left;
     padding-top: 5px;
+    text-align: right;
 }
 
 form.form-horizontal .controls {
@@ -2644,11 +2660,11 @@ form.form-horizontal .controls {
 }
 
 .form-control {
-    line-height: 20px;
     height: 34px;
-    width: 100%;
-    padding: 4px 12px;
+    line-height: 20px;
+    padding: 6px 12px;
     display: block;
+    width: 100%;
     color: #333;
     background: inherit;
     -webkit-border-radius: 5px;
@@ -2674,23 +2690,23 @@ form.form-horizontal .controls {
 
 .checkbox input[type="checkbox"],
 .radio input[type="radio"] {
+    margin-left: -20px;
     margin-top: 2px;
     float: left;
-    margin-left: -20px;
 }
 
 .checkbox,
 .radio {
     margin-bottom: 10px;
+    display: block;
     min-height: 20px;
     padding-left: 20px;
-    display: block;
 }
 
 .checkbox label,
 .radio label {
-    cursor: pointer;
     display: inline;
+    cursor: pointer;
 }
 
 .textarea {
@@ -2699,16 +2715,16 @@ form.form-horizontal .controls {
 }
 
 .form-control.select2-container {
-    border: none;
     height: auto;
-    width: 100%;
+    border: none;
     padding: 0;
+    width: 100%;
 }
 
 .form-control.select2-container .select2-choice,
 .form-control.select2-container .select2-choice > .select2-chosen {
-    line-height: 34px;
     height: 34px;
+    line-height: 34px;
 }
 
 .primary .form-control {
@@ -2761,9 +2777,9 @@ form.form-horizontal .controls {
 }
 
 .lux-logger {
-    line-height: 14px;
     overflow: scroll;
     font-size: 12px;
+    line-height: 14px;
     background: #ededed;
 }
 
@@ -2785,8 +2801,8 @@ form.form-horizontal .controls {
 }
 
 .nav {
-    list-style: none;
     margin-bottom: 0;
+    list-style: none;
     padding-left: 0;
 }
 
@@ -2796,15 +2812,15 @@ form.form-horizontal .controls {
 }
 
 .nav > li > a {
-    position: relative;
     text-decoration: none;
+    position: relative;
     padding: 10px 15px;
     display: block;
 }
 
 .nav-tabs > li {
-    float: left;
     margin-bottom: -1px;
+    float: left;
 }
 
 .nav-tabs > li > a {
@@ -2845,9 +2861,9 @@ form.form-horizontal .controls {
 }
 
 .well {
-    min-height: 20px;
     padding: 19px;
     background: #dadae3;
+    min-height: 20px;
     -webkit-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05) inset;
        -moz-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05) inset;
             box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05) inset;
@@ -2892,52 +2908,52 @@ form.form-horizontal .controls {
 }
 
 h1 {
-    margin: 10px 0;
     text-rendering: optimizelegibility;
     font-weight: bold;
-    line-height: 40px;
+    margin: 10px 0;
     font-size: 28px;
+    line-height: 40px;
 }
 
 h2 {
-    margin: 10px 0;
     text-rendering: optimizelegibility;
     font-weight: bold;
-    line-height: 32px;
+    margin: 10px 0;
     font-size: 22px;
+    line-height: 32px;
 }
 
 h3 {
-    margin: 10px 0;
     text-rendering: optimizelegibility;
     font-weight: bold;
-    line-height: 26px;
+    margin: 10px 0;
     font-size: 18px;
+    line-height: 26px;
 }
 
 h4 {
-    margin: 10px 0;
     text-rendering: optimizelegibility;
     font-weight: bold;
-    line-height: 24px;
+    margin: 10px 0;
     font-size: 17px;
+    line-height: 24px;
 }
 
 h5 {
-    margin: 10px 0;
     text-rendering: optimizelegibility;
     font-weight: bold;
-    line-height: 22px;
+    margin: 10px 0;
     font-size: 15px;
+    line-height: 22px;
 }
 
 h6 {
-    margin: 10px 0;
     text-rendering: optimizelegibility;
     font-weight: bold;
-    line-height: 18px;
+    margin: 10px 0;
     font-size: 13px;
     text-transform: uppercase;
+    line-height: 18px;
 }
 
 p {
@@ -3047,8 +3063,8 @@ ul.icons-ul,
 .navbar .nav {
     margin: 0 10px 0 0;
     float: left;
-    position: relative;
     display: block;
+    position: relative;
 }
 
 .navbar .nav > li {
@@ -3061,12 +3077,12 @@ ul.icons-ul,
 }
 
 .navbar .brand {
+    font-size: 18px;
+    text-decoration: none;
+    float: left;
+    padding: 6px 15px;
     max-width: none;
     line-height: 20px;
-    font-size: 18px;
-    padding: 6px 15px;
-    float: left;
-    text-decoration: none;
     display: block;
 }
 
@@ -3089,9 +3105,9 @@ form.content-form fieldset textarea {
     max-width: 100%;
     min-width: 100%;
     display: block;
-    min-height: 200px;
     max-height: 500px;
     resize: vertical;
+    min-height: 200px;
     -webkit-box-sizing: border-box;
        -moz-box-sizing: border-box;
             box-sizing: border-box;
@@ -3175,8 +3191,8 @@ form.content-form fieldset textarea {
 }
 
 .grid.fixed {
-    margin: auto;
     width: 940px;
+    margin: auto;
 }
 
 .cms-grid {
@@ -3207,15 +3223,15 @@ form.content-form fieldset textarea {
 }
 
 .center-page {
-    margin: 60px auto;
     width: 400px;
+    margin: 60px auto;
 }
 
 .cms-info {
-    position: relative;
     vertical-align: middle;
-    padding: 0 10px;
     line-height: 30px;
+    position: relative;
+    padding: 0 10px;
     display: inline-block;
 }
 
@@ -3312,13 +3328,13 @@ form.content-form fieldset textarea {
 }
 
 .grid24 > [class*="span"] {
-    float: left;
     margin-left: 2.5641%;
+    float: left;
 }
 
 .lux-example {
-    position: relative;
     margin-bottom: 15px;
+    position: relative;
     padding: 45px 15px 15px;
     -webkit-border-top-left-radius: 5px;
        -moz-border-top-left-radius: 5px;
@@ -3330,15 +3346,15 @@ form.content-form fieldset textarea {
 }
 
 .lux-example:after {
-    text-transform: uppercase;
-    font-size: 12px;
-    font-weight: 700;
+    content: "Example";
     left: 15px;
     position: absolute;
-    color: rgba(51, 51, 51, 0.3);
-    letter-spacing: 1px;
-    content: "Example";
+    text-transform: uppercase;
     top: 15px;
+    letter-spacing: 1px;
+    font-size: 12px;
+    color: rgba(51, 51, 51, 0.3);
+    font-weight: 700;
 }
 
 .lux-example + .highlight {

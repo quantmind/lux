@@ -1,9 +1,6 @@
 import sys
 from datetime import datetime
 
-from pulsar import Deferred, maybe_async
-from pulsar.utils.pep import get_event_loop, new_event_loop
-
 import lux
 from lux.extensions.sessions.models import Session
 
