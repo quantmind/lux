@@ -7,10 +7,12 @@ from .grid import PageTemplate, Grid, CmsContext, Context, Template
 
 fixed_footer = Template(
     Grid(CmsContext('footer', all_pages=True), fixed=True),
-    tag='div', cn='footer')
+    tag='div', id='page-footer')
 
 
-float_footer = Grid(CmsContext('footer', all_pages=True), cn='footer')
+float_footer = Grid(
+    CmsContext('footer', all_pages=True),
+    id='page-footer')
 
 
 fixed_navigation = Template(

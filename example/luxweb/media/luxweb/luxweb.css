@@ -1,7 +1,7 @@
 /*
 ------------------------------------------------------------------
 ------------------------------------------------------------------
-Created by lux 2014-03-03 12:40:42 in 1.0 seconds.
+Created by lux 2014-03-03 15:18:04 in 1.12 seconds.
 ------------------------------------------------------------------
 ------------------------------------------------------------------ */
 
@@ -1045,13 +1045,13 @@ disabled look for disabled choices in the results dropdown
   }
 }
 body {
-    font-size: 14px;
     padding: 0;
-    color: #333;
     margin: 0;
+    font-size: 14px;
+    text-align: left;
+    color: #333;
     line-height: 20px;
     font-family: Helvetica,Arial,'Liberation Sans',FreeSans,sans-serif;
-    text-align: left;
     background: #fff;
 }
 
@@ -1074,8 +1074,8 @@ body {
 .nav:before,
 .grid:before,
 .grid24:before {
-    content: " ";
     display: table;
+    content: " ";
 }
 
 .clearfix:after,
@@ -1083,8 +1083,8 @@ body {
 .nav:after,
 .grid:after,
 .grid24:after {
-    content: " ";
     display: table;
+    content: " ";
     clear: both;
 }
 
@@ -1097,17 +1097,18 @@ markdown,
 .separator {
     margin: 40px 0 39px;
     border-width: 1px 0 0;
+    border-style: solid;
     border-color: #ccc;
 }
 
 .vpadding-small {
-    overflow: hidden;
     padding: 5px 0;
+    overflow: hidden;
 }
 
 .vpadding {
-    overflow: hidden;
     padding: 20px 0;
+    overflow: hidden;
 }
 
 .square,
@@ -1213,14 +1214,14 @@ markdown,
 }
 
 .sr-only {
+    margin: -1px;
     clip: rect(0,0,0,0);
+    height: 1px;
     position: absolute;
     padding: 0;
-    height: 1px;
-    overflow: hidden;
-    width: 1px;
-    margin: -1px;
     border: 0;
+    width: 1px;
+    overflow: hidden;
 }
 
 dt {
@@ -1233,9 +1234,9 @@ dd {
 }
 
 .dl-horizontal dt {
-    clear: left;
-    float: left;
     text-align: left;
+    float: left;
+    clear: left;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1381,42 +1382,42 @@ dd {
 }
 
 .alert .close {
-    right: -21px;
     position: relative;
     top: -2px;
+    right: -21px;
 }
 
 .label {
     font-size: 11px;
     vertical-align: baseline;
+    display: inline-block;
+    font-weight: bold;
     white-space: nowrap;
     padding: 2px 4px;
-    font-weight: bold;
-    display: inline-block;
     -webkit-border-radius: 3px;
        -moz-border-radius: 3px;
             border-radius: 3px;
 }
 
 .fullscreen {
-    bottom: 0;
-    right: 0;
     position: fixed;
     top: 0;
     left: 0;
+    right: 0;
+    bottom: 0;
 }
 
 .fullscreen-container {
-    height: 100%;
     margin: 0 auto;
     padding: 30px 0;
     max-width: 800px;
+    height: 100%;
 }
 
 .fullscreen-sidebar {
-    right: 30px;
     position: absolute;
     top: 30px;
+    right: 30px;
     text-align: right;
 }
 
@@ -1428,15 +1429,15 @@ button:focus {
 }
 
 .btn {
-    vertical-align: middle;
-    text-decoration: none;
-    line-height: 20px;
-    padding: 6px 12px;
     font-size: 14px;
     font-weight: normal;
-    font-family: inherit;
+    padding: 6px 12px;
     display: inline-block;
+    text-decoration: none;
+    line-height: 20px;
+    vertical-align: middle;
     text-align: center;
+    font-family: inherit;
     border: 1px solid;
     -webkit-border-radius: 5px;
        -moz-border-radius: 5px;
@@ -1444,27 +1445,27 @@ button:focus {
 }
 
 .btn.btn-mini {
+    padding: 0 5px;
     font-size: 11px;
     font-weight: normal;
-    padding: 0 5px;
     -webkit-border-radius: 2px;
        -moz-border-radius: 2px;
             border-radius: 2px;
 }
 
 .btn.btn-small {
+    padding: 2px 10px;
     font-size: 13px;
     font-weight: normal;
-    padding: 2px 10px;
     -webkit-border-radius: 4px;
        -moz-border-radius: 4px;
             border-radius: 4px;
 }
 
 .btn.btn-large {
+    padding: 12px 24px;
     font-size: 18px;
     font-weight: bold;
-    padding: 12px 24px;
 }
 
 .btn.disabled {
@@ -1770,28 +1771,27 @@ button:focus {
 
 .link {
     padding: 0;
-    border: none;
     background: none;
+    border: none;
     cursor: pointer;
 }
 
 .btn-toolbar {
-    font-size: 0;
     margin: 0;
+    font-size: 0;
 }
 
 .btn-group,
 .btn-group-vertical {
-    font-size: 0;
-    vertical-align: middle;
     position: relative;
     white-space: nowrap;
+    vertical-align: middle;
     display: inline-block;
 }
 
 .btn-group > * {
-    float: left;
     position: relative;
+    float: left;
     -webkit-border-radius: 0;
        -moz-border-radius: 0;
             border-radius: 0;
@@ -1804,8 +1804,8 @@ button:focus {
 }
 
 .btn-group > *:last-child {
-    border-bottom-right-radius: 5px;
     border-top-right-radius: 5px;
+    border-bottom-right-radius: 5px;
 }
 
 .btn-group > * + * {
@@ -1813,11 +1813,11 @@ button:focus {
 }
 
 .btn-group-vertical > * {
-    width: 100%;
-    float: none;
-    min-width: 100%;
-    display: block;
     position: relative;
+    min-width: 100%;
+    float: none;
+    display: block;
+    width: 100%;
     -webkit-border-radius: 0;
        -moz-border-radius: 0;
             border-radius: 0;
@@ -1857,17 +1857,17 @@ p:last-child {
 }
 
 .toolbar > .group {
-    vertical-align: middle;
     font-size: 0;
     white-space: nowrap;
-    display: inline-block;
+    vertical-align: middle;
     position: relative;
+    display: inline-block;
 }
 
 .toolbar > .group > * {
+    position: relative;
     font-size: 14px;
     border-left-width: 0;
-    position: relative;
     -webkit-border-radius: 0;
        -moz-border-radius: 0;
             border-radius: 0;
@@ -1893,12 +1893,12 @@ p:last-child {
 }
 
 pre {
+    word-wrap: break-word;
     font-size: 13px;
     white-space: pre-wrap;
-    word-break: break-all;
     padding: 9px;
     line-height: 20px;
-    word-wrap: break-word;
+    word-break: break-all;
     -webkit-border-radius: 5px;
        -moz-border-radius: 5px;
             border-radius: 5px;
@@ -1954,7 +1954,8 @@ pre {
     color: #48484c;
 }
 
-.prettyprint.default {
+.prettyprint.default,
+.dialog.control.control-default {
     background: #fff;
     color: #333;
     border-color: #ccc;
@@ -1970,10 +1971,10 @@ pre {
 }
 
 .prettyprint ol.linenums li {
-    color: #808080;
     line-height: 20px;
-    text-shadow: 0 1px 0 #fff;
+    color: #808080;
     padding-left: 12px;
+    text-shadow: 0 1px 0 #fff;
 }
 
 .columns .column,
@@ -2095,6 +2096,7 @@ pre {
 .datagrid.grid tr.row > th,
 .datagrid.grid tr.row > td {
     border-width: 0 0 1px 1px;
+    border-style: solid;
 }
 
 .datagrid.grid tr.row > th:first-child,
@@ -2107,10 +2109,10 @@ pre {
 }
 
 .section {
-    width: 100%;
     margin: 0;
-    float: left;
     padding: 0 10px;
+    float: left;
+    width: 100%;
 }
 
 .section .datatable {
@@ -2173,6 +2175,7 @@ h6:first-child,
 
 .pagination ul > li > a {
     border-width: 1px 1px 1px 0;
+    border-style: solid;
 }
 
 .pagination.default ul > li > a,
@@ -2305,8 +2308,8 @@ form.content-form .control-group {
 }
 
 .pagination ul > li > a {
-    float: left;
     padding: 4px 12px;
+    float: left;
 }
 
 .pagination ul > li:first-child > a {
@@ -2358,20 +2361,20 @@ form.content-form .control-group {
     }
 
     .datagrid td:before {
-        content: attr(data-content);
-        width: 45%;
         position: absolute;
-        whitespace: nowrap;
         left: 6px;
+        whitespace: nowrap;
+        width: 45%;
+        content: attr(data-content);
         opacity: 0.8;
         filter: alpha(opacity=80.0);
     }
 
     .datagrid thead tr,
     .datagrid tfoot tr {
-        left: -9999px;
         position: absolute;
         top: -9999px;
+        left: -9999px;
     }
 
     .datagrid tr:first-child td:first-child {
@@ -2390,6 +2393,7 @@ form.content-form .control-group {
     .datagrid.table,
     .datagrid .grid {
         border-width: 0 0 1px;
+        border-style: solid;
     }
 
     .datagrid.table.default,
@@ -2430,6 +2434,7 @@ form.content-form .control-group {
     .datagrid.table td,
     .datagrid .grid td {
         border-width: 1px 1px 0;
+        border-style: solid;
     }
 
     .datagrid.default tr:nth-of-type(2n+1) {
@@ -2459,9 +2464,9 @@ form.content-form .control-group {
 
 }
 .collapse {
-    overflow: hidden;
-    height: 0;
     position: relative;
+    height: 0;
+    overflow: hidden;
     -webkit-transition: height 0.35s ease;
        -moz-transition: height 0.35s ease;
          -o-transition: height 0.35s ease;
@@ -2488,13 +2493,13 @@ select[size] {
 }
 
 .body-wrap {
-    overflow: hidden;
     position: relative;
+    overflow: hidden;
 }
 
 .body {
-    overflow-y: auto;
     position: relative;
+    overflow-y: auto;
 }
 
 .dialog {
@@ -2509,9 +2514,9 @@ select[size] {
             transition: opacity 0.2s ease;
 }
 
-.dialog > .header,
-.nav-tabs {
+.dialog > .header {
     border-width: 0 0 1px;
+    border-style: solid;
 }
 
 .dialog.ready.collapsed .header {
@@ -2526,6 +2531,30 @@ select[size] {
        -moz-border-radius: 0;
             border-radius: 0;
     border: none;
+}
+
+.dialog.control.control-primary {
+    background: #006699;
+    color: #fff;
+    border-color: #005580;
+}
+
+.dialog.control.control-success {
+    background: #16a000;
+    color: #fff;
+    border-color: #128600;
+}
+
+.dialog.control.control-error {
+    background: #ca0005;
+    color: #fff;
+    border-color: #b00004;
+}
+
+.dialog.control.control-inverse {
+    background: #3c3c3c;
+    color: #fff;
+    border-color: #484848;
 }
 
 .dialog.control > .header {
@@ -2551,31 +2580,31 @@ select[size] {
 }
 
 .dialog-modal {
-    margin: 30px auto;
     position: relative;
+    margin: 30px auto;
 }
 
 .modal {
-    outline: none;
-    overflow-y: scroll;
     overflow-x: auto;
+    overflow-y: scroll;
+    outline: none;
     z-index: 1050;
 }
 
 .modal-backdrop {
-    z-index: 1040;
     background: #000;
+    z-index: 1040;
     opacity: 0.5;
     filter: alpha(opacity=50.0);
 }
 
 [draggable=true] {
-    -webkit-user-drag: element;
-    -khtml-user-select: none;
-    user-select: none;
     -moz-user-select: none;
     -webkit-user-select: none;
+    -khtml-user-select: none;
+    user-select: none;
     -khtml-user-drag: element;
+    -webkit-user-drag: element;
 }
 
 .draggable {
@@ -2599,12 +2628,13 @@ label {
 
 legend {
     font-size: 21px;
-    margin-bottom: 20px;
-    padding: 0;
     width: 100%;
-    line-height: 40px;
     display: block;
+    padding: 0;
+    line-height: 40px;
+    margin-bottom: 20px;
     border-width: 0 0 1px;
+    border-style: solid;
     border-color: #ccc;
 }
 
@@ -2626,33 +2656,33 @@ form.form-inline .checkbox {
     vertical-align: middle;
     margin-bottom: 0;
     display: inline-block;
-    vertical-align: middle;
-    margin-bottom: 0;
     margin-top: 0;
-    display: inline-block;
+    vertical-align: middle;
     padding-left: 0;
+    margin-bottom: 0;
+    display: inline-block;
 }
 
 form.form-inline .radio {
-    vertical-align: middle;
-    margin-bottom: 0;
     margin-top: 0;
-    display: inline-block;
+    vertical-align: middle;
     padding-left: 0;
+    margin-bottom: 0;
+    display: inline-block;
 }
 
 form.form-inline .checkbox input[type="checkbox"],
 form.form-inline .radio input[type="radio"] {
-    margin-left: 0;
     margin-top: 0;
+    margin-left: 0;
     float: none;
 }
 
 form.form-horizontal .control-label {
-    width: 160px;
-    float: left;
-    padding-top: 5px;
     text-align: right;
+    padding-top: 5px;
+    float: left;
+    width: 160px;
 }
 
 form.form-horizontal .controls {
@@ -2660,11 +2690,11 @@ form.form-horizontal .controls {
 }
 
 .form-control {
-    height: 34px;
-    line-height: 20px;
-    padding: 6px 12px;
-    display: block;
     width: 100%;
+    padding: 6px 12px;
+    line-height: 20px;
+    display: block;
+    height: 34px;
     color: #333;
     background: inherit;
     -webkit-border-radius: 5px;
@@ -2690,23 +2720,23 @@ form.form-horizontal .controls {
 
 .checkbox input[type="checkbox"],
 .radio input[type="radio"] {
-    margin-left: -20px;
     margin-top: 2px;
+    margin-left: -20px;
     float: left;
 }
 
 .checkbox,
 .radio {
+    padding-left: 20px;
     margin-bottom: 10px;
     display: block;
     min-height: 20px;
-    padding-left: 20px;
 }
 
 .checkbox label,
 .radio label {
-    display: inline;
     cursor: pointer;
+    display: inline;
 }
 
 .textarea {
@@ -2715,16 +2745,16 @@ form.form-horizontal .controls {
 }
 
 .form-control.select2-container {
-    height: auto;
-    border: none;
-    padding: 0;
     width: 100%;
+    padding: 0;
+    border: none;
+    height: auto;
 }
 
 .form-control.select2-container .select2-choice,
 .form-control.select2-container .select2-choice > .select2-chosen {
-    height: 34px;
     line-height: 34px;
+    height: 34px;
 }
 
 .primary .form-control {
@@ -2777,10 +2807,10 @@ form.form-horizontal .controls {
 }
 
 .lux-logger {
-    overflow: scroll;
     font-size: 12px;
     line-height: 14px;
     background: #ededed;
+    overflow: scroll;
 }
 
 .lux-logger pre.debug {
@@ -2801,9 +2831,9 @@ form.form-horizontal .controls {
 }
 
 .nav {
-    margin-bottom: 0;
     list-style: none;
     padding-left: 0;
+    margin-bottom: 0;
 }
 
 .nav > li {
@@ -2812,20 +2842,24 @@ form.form-horizontal .controls {
 }
 
 .nav > li > a {
-    text-decoration: none;
     position: relative;
     padding: 10px 15px;
+    text-decoration: none;
     display: block;
 }
 
+.nav-tabs {
+    border-width: 0 0 1px;
+}
+
 .nav-tabs > li {
-    margin-bottom: -1px;
     float: left;
+    margin-bottom: -1px;
 }
 
 .nav-tabs > li > a {
-    line-height: 20px;
     margin-right: 2px;
+    line-height: 20px;
     border-color: transparent;
     -webkit-border-top-left-radius: 5px;
        -moz-border-top-left-radius: 5px;
@@ -2853,8 +2887,8 @@ form.form-horizontal .controls {
 }
 
 .nav-stacked > li > a {
-    margin-bottom: 5px;
     text-align: center;
+    margin-bottom: 5px;
     -webkit-border-radius: 5px;
        -moz-border-radius: 5px;
             border-radius: 5px;
@@ -2898,6 +2932,7 @@ form.form-horizontal .controls {
 .panel .header {
     padding: 9px;
     border-width: 0 0 1px;
+    border-style: solid;
     -webkit-border-radius: 5px 5px 0 0;
        -moz-border-radius: 5px 5px 0 0;
             border-radius: 5px 5px 0 0;
@@ -2908,52 +2943,52 @@ form.form-horizontal .controls {
 }
 
 h1 {
+    margin: 10px 0;
     text-rendering: optimizelegibility;
     font-weight: bold;
-    margin: 10px 0;
     font-size: 28px;
     line-height: 40px;
 }
 
 h2 {
+    margin: 10px 0;
     text-rendering: optimizelegibility;
     font-weight: bold;
-    margin: 10px 0;
     font-size: 22px;
     line-height: 32px;
 }
 
 h3 {
+    margin: 10px 0;
     text-rendering: optimizelegibility;
     font-weight: bold;
-    margin: 10px 0;
     font-size: 18px;
     line-height: 26px;
 }
 
 h4 {
+    margin: 10px 0;
     text-rendering: optimizelegibility;
     font-weight: bold;
-    margin: 10px 0;
     font-size: 17px;
     line-height: 24px;
 }
 
 h5 {
+    margin: 10px 0;
     text-rendering: optimizelegibility;
     font-weight: bold;
-    margin: 10px 0;
     font-size: 15px;
     line-height: 22px;
 }
 
 h6 {
+    margin: 10px 0;
     text-rendering: optimizelegibility;
     font-weight: bold;
-    margin: 10px 0;
     font-size: 13px;
-    text-transform: uppercase;
     line-height: 18px;
+    text-transform: uppercase;
 }
 
 p {
@@ -3061,10 +3096,10 @@ ul.icons-ul,
 }
 
 .navbar .nav {
+    position: relative;
     margin: 0 10px 0 0;
     float: left;
     display: block;
-    position: relative;
 }
 
 .navbar .nav > li {
@@ -3072,18 +3107,18 @@ ul.icons-ul,
 }
 
 .navbar .nav > li > a {
-    float: none;
     padding: 6px 15px;
+    float: none;
 }
 
 .navbar .brand {
     font-size: 18px;
-    text-decoration: none;
-    float: left;
     padding: 6px 15px;
+    float: left;
     max-width: none;
-    line-height: 20px;
+    text-decoration: none;
     display: block;
+    line-height: 20px;
 }
 
 form.content-form fieldset {
@@ -3092,8 +3127,8 @@ form.content-form fieldset {
 }
 
 form.content-form fieldset input {
-    max-width: 100%;
     min-width: 100%;
+    max-width: 100%;
     display: block;
     min-height: 35px;
     -webkit-box-sizing: border-box;
@@ -3102,12 +3137,12 @@ form.content-form fieldset input {
 }
 
 form.content-form fieldset textarea {
-    max-width: 100%;
     min-width: 100%;
+    max-width: 100%;
     display: block;
-    max-height: 500px;
     resize: vertical;
     min-height: 200px;
+    max-height: 500px;
     -webkit-box-sizing: border-box;
        -moz-box-sizing: border-box;
             box-sizing: border-box;
@@ -3186,13 +3221,13 @@ form.content-form fieldset textarea {
 }
 
 .grid.fluid {
-    padding-right: 20px;
     padding-left: 20px;
+    padding-right: 20px;
 }
 
 .grid.fixed {
-    width: 940px;
     margin: auto;
+    width: 940px;
 }
 
 .cms-grid {
@@ -3202,8 +3237,8 @@ form.content-form fieldset textarea {
 
 .cms-content-toolbar {
     font-size: 11px;
-    overflow: hidden;
     padding: 5px 0;
+    overflow: hidden;
 }
 
 .editing .cms-grid .cms-column {
@@ -3223,16 +3258,16 @@ form.content-form fieldset textarea {
 }
 
 .center-page {
-    width: 400px;
     margin: 60px auto;
+    width: 400px;
 }
 
 .cms-info {
+    position: relative;
     vertical-align: middle;
     line-height: 30px;
-    position: relative;
-    padding: 0 10px;
     display: inline-block;
+    padding: 0 10px;
 }
 
 .grid24 > .span1 {
@@ -3333,9 +3368,9 @@ form.content-form fieldset textarea {
 }
 
 .lux-example {
-    margin-bottom: 15px;
     position: relative;
     padding: 45px 15px 15px;
+    margin-bottom: 15px;
     -webkit-border-top-left-radius: 5px;
        -moz-border-top-left-radius: 5px;
             border-top-left-radius: 5px;
@@ -3346,15 +3381,15 @@ form.content-form fieldset textarea {
 }
 
 .lux-example:after {
-    content: "Example";
-    left: 15px;
-    position: absolute;
-    text-transform: uppercase;
-    top: 15px;
     letter-spacing: 1px;
+    left: 15px;
     font-size: 12px;
-    color: rgba(51, 51, 51, 0.3);
     font-weight: 700;
+    content: "Example";
+    position: absolute;
+    color: rgba(51, 51, 51, 0.3);
+    top: 15px;
+    text-transform: uppercase;
 }
 
 .lux-example + .highlight {
@@ -3370,4 +3405,29 @@ form.content-form fieldset textarea {
     -webkit-border-bottom-right-radius: 5px;
        -moz-border-bottom-right-radius: 5px;
             border-bottom-right-radius: 5px;
+}
+
+#page-header {
+    min-height: 60px;
+}
+
+#page-main {
+    min-height: 500px;
+}
+
+#page-footer {
+    min-height: 200px;
+    background-color: #fff;
+    background-image: -moz-linear-gradient(top, #fff, #fff);
+    background-image: -ms-linear-gradient(top, #fff, #fff);
+    background-image: -webkit-gradient(linear, 0 0, 0 100%, from(#fff), to(#fff));
+    background-image: -webkit-linear-gradient(top, #fff, #fff);
+    background-image: -o-linear-gradient(top, #fff, #fff);
+    background-image: linear-gradient(top, #fff, #fff);
+    background-repeat: repeat-x;
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#fff', endColorstr='#fff', GradientType=0);
+    color: #333;
+    border-color: #ccc;
+    border-width: 1px 0 0 0;
+    border-style: solid;
 }

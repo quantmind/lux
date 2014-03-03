@@ -29,6 +29,13 @@ Variables
    :members:
    :member-order: bysource
 
+Spacing
+~~~~~~~~~~~~~
+.. autoclass:: Spacing
+   :members:
+   :member-order: bysource
+
+.. autofunction:: spacing
 
 Mixin
 ~~~~~~~~~~~~~

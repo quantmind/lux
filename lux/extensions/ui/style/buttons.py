@@ -102,7 +102,6 @@ def add_css(all):
             css(' .select2-arrow', Radius(0)),
             Radius(0)),
         display='inline-block',
-        font_size=0,
         position='relative',
         vertical_align='middle',
         white_space='nowrap')

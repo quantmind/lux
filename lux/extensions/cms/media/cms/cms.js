@@ -471,7 +471,6 @@ define(['lux'], function (lux) {
     templateWidth = 150,
     //
     selectRowTemplate = new lux.ChoiceField('rowtemplate', {
-        label: 'Select a row template',
         choices: function () {
             var names = [];
             ROW_TEMPLATES.each(function (_, name) {
@@ -480,12 +479,12 @@ define(['lux'], function (lux) {
             return names;
         },
         select2: {
+            placeholder: 'Select a row layout',
             minimumResultsForSearch: -1
         }
     }),
     //
     selectBlockTemplate = new lux.ChoiceField('blocktemplate', {
-        label: 'Select a layout for a block',
         choices: function () {
             var names = [];
             BLOCK_TEMPLATES.each(function (_, name) {
@@ -493,7 +492,8 @@ define(['lux'], function (lux) {
             });
             return names;
         },
-        select2_: {
+        select2: {
+            placeholder: 'Select a block layout',
             minimumResultsForSearch: -1
         }
     }),
@@ -521,7 +521,7 @@ define(['lux'], function (lux) {
         render: function () {
             var self = this;
             this.elem.children().each(function () {
-                self.create_child(this);
+                self.createChild(this);
             });
             this.elem.fadeTo('fast', 1);
         },
@@ -605,12 +605,12 @@ define(['lux'], function (lux) {
         },
         //
         // Create child element and append it to this view
-        create_child: function (elem, content) {
+        createChild: function (elem, content) {
             if (this.childType) {
                 var View = views[this.childType],
                     options = this.options;
                 if (!View) {
-                    throw new lux.NotImplementedError(this + ' has no create_child method.');
+                    throw new lux.NotImplementedError(this + ' has no createChild method.');
                 }
                 options.elem = elem;
                 options.parent = this;
@@ -698,7 +698,7 @@ define(['lux'], function (lux) {
         render: function () {
             var self = this;
             this.childrenElem().each(function () {
-                self.create_child(this);
+                self.createChild(this);
             });
             // setup editing first
             if (this.options.editing) {
@@ -790,10 +790,10 @@ define(['lux'], function (lux) {
                 button = control.createButton({
                     icon: options.add_block_icon,
                     title: 'Add new block'
-                });
-            selectBlockTemplate.render(function (elem) {
-                self.control.buttons.prepend(elem);
-            }).width(templateWidth).addClass('square');
+                }),
+                select = selectBlockTemplate.render(function (elem) {
+                    self.control.buttons.prepend(elem);
+                }).width(templateWidth);
             self.control.buttons.prepend(button.elem);
             button.elem.click(function () {
                 var templateName = select.val(),
@@ -848,15 +848,15 @@ define(['lux'], function (lux) {
                         title: 'Add new row'
                     }),
                     select = selectRowTemplate.render(function (elem) {
-
-                    }).width(templateWidth).addClass('square');
-                dialog.buttons.prepend(select);
+                        dialog.buttons.prepend(elem);
+                    }).width(templateWidth);
                 //
+                dialog.elem.css('margin-top', '5px');
                 dialog.title(this.name);
                 dialog.buttons.prepend(add_row.elem);
                 // Adds a bright new row
                 add_row.elem.click(function () {
-                    var row = self.create_child(null, {template: select.val()});
+                    var row = self.createChild(null, {template: select.val()});
                     self.elem.append(row.container());
                     row.setupEdit();
                 });
@@ -909,13 +909,13 @@ define(['lux'], function (lux) {
 
             this.elem.children().detach().each(function () {
                 if (index < num) {
-                    self.template.append(self.create_child(this), self, index);
+                    self.template.append(self.createChild(this), self, index);
                     index += 1;
                 }
             });
             // Need more children for the template
             for (; index<num; index++) {
-                self.template.append(self.create_child(), self, index);
+                self.template.append(self.createChild(), self, index);
             }
 
         },
@@ -987,7 +987,7 @@ define(['lux'], function (lux) {
         //
         // Add a new block to the column
         add_block: function (templateName) {
-            var child = this.create_child(null, {template: templateName});
+            var child = this.createChild(null, {template: templateName});
             this.elem.append(child.container());
             this.log('Added new ' + child);
             if (this.editing) {
@@ -1091,7 +1091,7 @@ define(['lux'], function (lux) {
         },
         //
         // Retrieve content from backend when in editing mode, otherwise
-        // set the fields obtained from subelements in the ``create_child`` method.
+        // set the fields obtained from subelements in the ``createChild`` method.
         get_content: function (ct) {
             var ContentType = lux.cms.content_type(ct.content_type),
                 self = this;

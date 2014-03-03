@@ -1,6 +1,8 @@
 import lux
 from lux.extensions import api, sessions
 
+from .css import add_css
+
 
 class Extension(lux.Extension):
 
@@ -13,17 +15,3 @@ class Extension(lux.Extension):
         worditem = app.models.worditem
         if worditem:
             yield 'Indexes', [api.Crud('indexes', worditem)]
-
-
-def add_css(all):
-    return
-    css = all.css
-
-    css('#page-header',
-        min_height=px(60))
-
-    css('#page-main',
-        min_height=px(500))
-
-    css('#page-footer',
-        min_height=px(200))

@@ -184,9 +184,16 @@ class Border(Mixin):
         one of: ``solid``, ``dotted``, ``none``.
     :param width: border width. If not set ``1px`` is used.
     '''
-    def __init__(self, color=None, style=None, width=None):
+    def __init__(self, color=None, style=None, width=None, top=0,
+                 right=0, bottom=0, left=0):
         self.color = color
         self.style = style
+        has_spacing = (top or bottom or right or left)
+        if not width:
+            if has_spacing:
+                width = spacing(top, right, bottom, left)
+        else:
+            assert not has_spacing, 'bad inputs in Border mixin'
         self.width = width
 
     def __call__(self, elem):
@@ -203,13 +210,12 @@ class Border(Mixin):
                     elem['border-width'] = w
                 else:
                     bits.append(w)
-            if s:
+            if s or w:
+                s = s or 'solid'
                 if bits:
                     bits.append(s)
                 else:
                     elem['border-style'] = s
-            elif bits:
-                bits.append('solid')
             if c:
                 c = str(color(c))
                 if bits:

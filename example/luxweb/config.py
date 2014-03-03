@@ -10,8 +10,7 @@ EXTENSIONS = ['lux.extensions.base',
               'lux.extensions.api',
               'lux.extensions.cms',
               'lux.extensions.services',
-              'jstest',
-              'bitcoin']
+              'jstest']
 
 CLEAN_URL = False
 SERVE_STATIC_FILES = True

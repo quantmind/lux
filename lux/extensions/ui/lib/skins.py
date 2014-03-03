@@ -175,10 +175,15 @@ class Skin(Mixin):
         overrides the default value in all the applied skins.
     :parameter border_style: optional border style which overrides
         the default value in all the applied skins.
+    :parameter prefix: Optional prefix to add to the skin classes. For example
+        ``prefix="btn"`` create css rules for ``btn-<skinname>``.
+    :parameter noclass: Optional skin name applied to the element without
+        adding the skin class name.
     '''
     def __init__(self, child=None, clickable=False, only=None, exclude=None,
                  gradient=None, cursor=None, applyto=None, border_width=None,
-                 border_style=None, prefix=None, **params):
+                 border_style=None, prefix=None, noclass=None,
+                 **params):
         self.child = child or ''
         self.clickable = clickable
         self.states = {}
@@ -194,11 +199,11 @@ class Skin(Mixin):
         self.exclude = as_tuple(exclude)
         self.gradient = gradient
         self.prefix = prefix
+        self.noclass = noclass
         self.params = params
 
     def __call__(self, elem):
         skins = elem.root.variables.skins
-        classes = set()
         css = elem.css
         #
         # Apply border information
@@ -212,17 +217,16 @@ class Skin(Mixin):
         # loop over possible skins
         for skin in skins:
             class_name = skin.name
+            if class_name == self.noclass:
+                class_name = None
             # Not a skin created by createskin
             if as_value(skin.is_skin) is not True:
-                continue
-            if class_name in classes:
                 continue
             if self.only and skin.name not in self.only:
                 continue
             if self.exclude and skin.name in self.exclude:
                 continue
-            classes.add(class_name)
-            if self.prefix:
+            if class_name and self.prefix:
                 class_name = '%s-%s' % (self.prefix, class_name)
 
             if self.clickable:
@@ -250,10 +254,16 @@ class Skin(Mixin):
                 params = self.state(skin, skin['default'], True)
                 mixin = self.bcd(params)
             if self.child:
-                css('.%s' % class_name,
-                    css(self.child, mixin, **self.params))
+                if class_name:
+                    css('.%s' % class_name,
+                        css(self.child, mixin, **self.params))
+                else:
+                    css(self.child, mixin, **self.params)
             else:
-                css('.%s' % class_name, mixin, **self.params)
+                if class_name:
+                    css('.%s' % class_name, mixin, **self.params)
+                else:
+                    mixin(elem)
 
     def state(self, skin, state, force=False):
         if isinstance(state, Variables):

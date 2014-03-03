@@ -57,6 +57,7 @@ def add_css(all):
     dialog.css('.control',
                Radius(0),
                Border(style='none'),
+               Skin(gradient=False, prefix='control'),
                css(' > .header',
                    Radius(0),
                    Border(style='none'),
