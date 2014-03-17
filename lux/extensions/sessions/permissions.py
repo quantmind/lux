@@ -139,10 +139,10 @@ class AuthBackend(lux.AuthBackend):
 
     def set_password(self, request, user, raw_password=None):
         if raw_password:
-            user.password = self._encript(raw_password)
+            user['password'] = self._encript(raw_password)
         else:
-            user.password = UNUSABLE_PASSWORD
-        return request.models.user.session().add(user)
+            user['password'] = UNUSABLE_PASSWORD
+        return request.models.user.save(user)
 
     def has_permission(self, request, action, model):
         if request.cache.session.user.is_superuser:
@@ -239,8 +239,8 @@ class AuthBackend(lux.AuthBackend):
         val = to_bytes("%s%s" % (pid, time.time())) + sa + self.secret_key
         id = sha1(val).hexdigest()
         #session is a reserved attribute in router, use dict access
-        session = yield request.models[Session].new(id=id, expiry=expiry,
-                                                    user=user)
+        session = yield request.models.session.create(id=id, expiry=expiry,
+                                                      user=user)
         request.cache.user = session.user
         coroutine_return(session)
 

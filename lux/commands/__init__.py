@@ -20,8 +20,10 @@ Command
 import sys
 import argparse
 import logging
+from asyncio import set_event_loop
 
-from pulsar import Setting, get_event_loop, new_event_loop, async, Application
+from pulsar import (Setting, get_event_loop, arbiter, task, Application,
+                    maybe_async, Future)
 from pulsar.utils.pep import native_str
 
 from lux import __version__
@@ -88,8 +90,8 @@ class DummyApp(Application):
 
 
 class Command(ConsoleParser):
-    '''Signature class for lux commands. A :class:`Command` is never
-    created directly, instead, the :meth:`App.get_command` method is used.
+    '''Signature class for lux commands. A :class:`.Command` is never
+    created directly, instead, the :meth:`.App.get_command` method is used.
 
     .. attribute:: name
 
@@ -97,7 +99,7 @@ class Command(ConsoleParser):
 
     .. attribute:: app
 
-        The :class:`App` running this :class:`Command`.
+        The :class:`.App` running this :class:`.Command`.
 
     .. attribute:: stdout
 
@@ -121,7 +123,7 @@ class Command(ConsoleParser):
         return self.run(argv, **params)
 
     def get_version(self):
-        """Return the :class:`Command` version.
+        """Return the :class:`.Command` version.
 
         By default it is the same version as lux.
         """
@@ -132,7 +134,7 @@ class Command(ConsoleParser):
         return self.app.config_module
 
     def options(self, argv):
-        '''parse the *argv* list and set up logger.
+        '''parse the *argv* list
 
         Return the options namespace
         '''
@@ -152,18 +154,15 @@ class Command(ConsoleParser):
         '''
         raise NotImplementedError
 
-    def run_async(self, argv, **params):
+    def run_until_complete(self, argv, **params):
         '''Run a command using pulsar asynchronous engine.'''
         loop = get_event_loop()
-        run_until_complete = False
-        if loop is None:
-            run_until_complete = True
-            loop = new_event_loop()
-        future = async(self.run(argv, **params), loop)
-        if run_until_complete:
-            return loop.run_until_complete(future)
+        result = maybe_async(self.run(argv, **params), loop=loop)
+        if isinstance(result, Future):
+            assert not loop.is_running(), 'Loop already running'
+            return loop.run_until_complete(result)
         else:
-            return future
+            return result
 
     @property
     def logger(self):
@@ -205,6 +204,8 @@ class Command(ConsoleParser):
 def execute_app(app, argv=None, **params):
     '''Execute a command for a given ``app``.
     '''
+    # Make sure the loop exists
+    set_event_loop(arbiter()._loop)
     if argv is None:
         argv = sys.argv
     app.meta.argv = argv = list(argv)

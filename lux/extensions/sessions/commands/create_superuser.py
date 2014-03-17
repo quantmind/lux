@@ -38,7 +38,7 @@ class Command(lux.Command):
     help = 'Create a superuser.'
 
     def __call__(self, argv, **params):
-        return self.run_async(argv, **params)
+        return self.run_until_complete(argv, **params)
 
     def run(self, argv, interactive=True, **params):
         request = self.app.wsgi_request()
@@ -91,6 +91,6 @@ class Command(lux.Command):
                                                   username=username,
                                                   password=password)
         if user:
-            self.logger.info("Superuser %s created successfully.\n" % user)
+            self.write("Superuser %s created successfully.\n" % user)
         else:
-            self.logger.info("Could not create superuser")
+            self.write_err("ERROR: could not create superuser")

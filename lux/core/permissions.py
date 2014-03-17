@@ -236,7 +236,7 @@ an :class:`AuthenticationError` if the ``user`` could not be authenticated.'''
                 user = yield b.create_superuser(request, *args, **kwargs)
                 if user is not None:
                     coroutine_return(user)
-            except Exception:
+            except Exception as exc:
                 continue
 
     def set_password(self, user, password):

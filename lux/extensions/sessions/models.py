@@ -99,12 +99,10 @@ from datetime import datetime
 
 from pulsar.utils.log import lazymethod
 from pulsar.utils.pep import to_bytes, to_string
-
-from stdnet import odm
-from stdnet.odm import Manager, StdModel as Model
+from pulsar.apps.data import odm
 
 
-class PermissionManager(Manager):
+class PermissionManager(odm.Manager):
 
     def for_object(self, object, **params):
         if isclass(object):
@@ -117,7 +115,7 @@ class PermissionManager(Manager):
         return qs
 
 
-class UserManager(Manager):
+class UserManager(odm.Manager):
 
     def check_user(self, username, email):
         '''username and email (if provided) must be unique.'''
@@ -172,7 +170,7 @@ class UserManager(Manager):
 
 
 class Subject(object):
-    roles = odm.ManyToManyField('Role', related_name='subjects')
+    #roles = odm.ManyToManyField('Role', related_name='subjects')
 
     def create_role(self, name):
         '''Create a new :class:`Role` owned by this :class:`Subject`'''
@@ -199,21 +197,21 @@ on an ``object``. It returns the number of valid permissions.'''
                                   permission=query).count()
 
 
-class User(Model, Subject):
+class User(odm.Model, Subject):
     '''The user of a system.
 
     The only field required is the :attr:`username`.
     which is also unique across all users.
     '''
-    username = odm.SymbolField(unique=True)
+    username = odm.CharField(unique=True)
     password = odm.CharField(required=False, hidden=True)
-    first_name = odm.CharField()
-    last_name = odm.CharField()
-    email = odm.SymbolField(required=False)
+    first_name = odm.CharField(required=False)
+    last_name = odm.CharField(required=False)
+    email = odm.CharField(unique=True, required=False)
     is_active = odm.BooleanField(default=True)
     can_login = odm.BooleanField(default=True)
-    is_superuser = odm.BooleanField(default=False)
-    data = odm.JSONField()
+    is_superuser = odm.BooleanField(index=True, default=False)
+    data = odm.JSONField(required=False)
 
     manager_class = UserManager
 
@@ -231,7 +229,7 @@ class User(Model, Subject):
         return self.can_login
 
 
-class Role(Model):
+class Role(odm.Model):
     '''A :class:`Role` is uniquely identified by its :attr:`name` and
 :attr:`owner`.'''
     id = odm.CompositeIdField('name', 'owner')
@@ -241,7 +239,7 @@ class Role(Model):
     '''The owner of this role.'''
     permissions = odm.JSONField(default=list)
     '''the set of all :class:`Permission` assigned to this :class:`Role`.'''
-    users = odm.ManyToManyField(User, related_name='roles')
+    #users = odm.ManyToManyField(User, related_name='roles')
 
     def __unicode__(self):
         return self.name
@@ -265,10 +263,10 @@ class Role(Model):
         return subject.assign(self)
 
 
-class Group(Model):
+class Group(odm.Model):
     '''A group of users.'''
     name = odm.CharField(unique=True)
-    users = odm.ManyToManyField(User, related_name='groups')
+    #users = odm.ManyToManyField(User, related_name='groups')
     description = odm.CharField()
 
     def permission_for_model(self, model):
@@ -281,12 +279,12 @@ class Group(Model):
         return self.name
 
 
-class Session(Model):
+class Session(odm.Model):
     '''A session model with a hash table as data store.'''
     serializable = False
     TEST_COOKIE_NAME = 'testcookie'
     TEST_COOKIE_VALUE = 'worked'
-    id = odm.SymbolField(primary_key=True)
+    id = odm.CharField(primary_key=True)
     data = odm.JSONField()
     expiry = odm.DateTimeField()
     user = odm.ForeignKey(User)

@@ -31,7 +31,7 @@ class Command(lux.Command):
             "registered models.")
 
     def __call__(self, argv, **params):
-        return self.run_async(argv, **params)
+        return self.run_until_complete(argv, **params)
 
     def run(self, argv, dump=True):
         options = self.options(argv)

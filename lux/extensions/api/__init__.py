@@ -129,7 +129,7 @@ from pulsar.utils.pep import itervalues
 from pulsar.utils.html import slugify
 from pulsar.apps.wsgi import Json
 from pulsar.utils.httpurl import JSON_CONTENT_TYPES, remove_double_slash
-from pulsar.apps.data import DEFAULT_PULSAR_STORE_ADDRESS
+from pulsar.apps.ds import DEFAULT_PULSAR_STORE_ADDRESS
 
 import lux
 from lux import Router, Parameter

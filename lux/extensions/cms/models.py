@@ -8,10 +8,9 @@ Content
 '''
 from datetime import datetime
 
-from stdnet import odm
-
 from pulsar.utils.html import escape
 from pulsar.apps.wsgi import Route
+from pulsar.apps.data import odm
 
 from .interfaces import PageModel, MarkupMixin
 
@@ -29,11 +28,11 @@ class KeywordsField(odm.CharField):
         return super(KeywordsField, self).to_python(value, backend=backend)
 
 
-class ModelBase(odm.StdModel):
+class ModelBase(odm.Model):
     created = odm.DateTimeField(default=datetime.now)
     timestamp = odm.DateTimeField(auto_now=True)
     keywords = KeywordsField()
-    history = odm.ListField()
+    #history = odm.ListField()
 
     class Meta:
         abstract = True
@@ -69,7 +68,7 @@ in the sitemap.'''
     site = odm.ForeignKey(Site)
     title = odm.CharField()
     link = odm.CharField()
-    url = odm.SymbolField()
+    url = odm.CharField()
     in_navigation = odm.IntegerField(default=1)
     body_class = odm.CharField()
     #
@@ -121,7 +120,7 @@ class Content(ModelBase):
         * ``blank`` an empty block
     '''
     title = odm.CharField(required=True)
-    content_type = odm.SymbolField()
+    content_type = odm.CharField()
     data = odm.JSONField()
 
     class Meta:
