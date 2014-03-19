@@ -5,6 +5,10 @@ import lux
 
 class Command(lux.Command):
     option_list = (
+        Setting('force', ('--force',),
+                action='store_true',
+                default=False,
+                desc='remove pre-existing tables if required'),
         Setting('apps', nargs='*',
                 desc='appname appname.ModelName ...'),
     )
@@ -20,5 +24,6 @@ class Command(lux.Command):
         models = self.app.models
         for model in models:
             manager = models[model]
-            yield manager.create_table()
+            result = yield from manager.create_table(
+                                    remove_existing=options.force)
             self.write('Created table for %s' % manager)

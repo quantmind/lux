@@ -224,18 +224,18 @@ an :class:`AuthenticationError` if the ``user`` could not be authenticated.'''
     def create_user(self, request, *args, **kwargs):
         for b in self.auth_backends:
             try:
-                user = yield b.create_user(request, *args, **kwargs)
+                user = yield from b.create_user(request, *args, **kwargs)
                 if user is not None:
-                    coroutine_return(user)
+                    return user
             except Exception:
                 continue
 
     def create_superuser(self, request, *args, **kwargs):
         for b in self.auth_backends:
             try:
-                user = yield b.create_superuser(request, *args, **kwargs)
+                user = yield from b.create_superuser(request, *args, **kwargs)
                 if user is not None:
-                    coroutine_return(user)
+                    return user
             except Exception as exc:
                 continue
 

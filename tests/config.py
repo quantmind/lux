@@ -9,8 +9,8 @@ except ImportError:
 
 EXTENSIONS = ['lux.extensions.base']
 
-from stdnet import getdb
+from pulsar.apps.data import create_store
 from pulsar.utils.security import gen_unique_id
 
-c = getdb(DATASTORE[''], db=7, namespace='luxtest:%s:' % gen_unique_id()[:8])
-DATASTORE = {'': c.connection_string}
+store = create_store(DATASTORE[''], namespace='test%s' % gen_unique_id()[:8])
+DATASTORE = {'': store.dns}

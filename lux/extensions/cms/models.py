@@ -31,7 +31,7 @@ class KeywordsField(odm.CharField):
 class ModelBase(odm.Model):
     created = odm.DateTimeField(default=datetime.now)
     timestamp = odm.DateTimeField(auto_now=True)
-    keywords = KeywordsField()
+    keywords = KeywordsField(required=False)
     #history = odm.ListField()
 
     class Meta:
@@ -55,10 +55,7 @@ class PageManger(odm.Manager):
 
 
 class Site(ModelBase):
-    id = odm.IntegerField(primary_key=True)
-    head = odm.JSONField()
-    content = odm.JSONField()
-    body = odm.JSONField()
+    '''The site'''
 
 
 class Page(PageModel, ModelBase):

@@ -20,4 +20,3 @@ class TestCase(test.TestCase):
                                                   password='plain')
         self.assertEqual(user.username, 'luxtest')
         self.assertTrue(user.is_superuser)
-

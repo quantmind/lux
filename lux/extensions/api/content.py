@@ -69,7 +69,7 @@ class ContentManager(lux.ContentManager):
         return columns
 
     def column(self, field):
-        return Column.get(field.attname, type=get_field_type(field))
+        return Column.get(field.store_name, type=get_field_type(field))
 
     def paginate(self, request, query, parameters):
         '''Refine ``query`` from input ``parameters`` and perform
@@ -78,7 +78,7 @@ class ContentManager(lux.ContentManager):
         Return a pagination info object
         '''
         config = request.app.config
-        columns = self.columns(request, query.model)
+        columns = self.columns(request, query._manager)
         #
         search = parameters.pop(config['QUERY_SEARCH_KEY'], None)
         pretty = parameters.pop('pretty', False)
@@ -140,7 +140,7 @@ class ContentManager(lux.ContentManager):
         raise Http404
 
     def safe_filter(self, query, parameters):
-        dfields = query.model._meta.dfields
+        dfields = query._meta.dfields
         valid = {}
         for name in parameters:
             field = dfields.get(name)

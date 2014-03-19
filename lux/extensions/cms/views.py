@@ -94,9 +94,10 @@ class PageMixin(object):
     def get_page(self, request, site_id=None, url=None, id=None, **kw):
         '''Retrieve a page instance if not already available.'''
         if 'pages' not in request.cache:
+            models = request.models
             site_id = request.app.config['SITE_ID']
             page = None
-            page_list = yield request.models.page.filter(
+            page_list = yield from models.page.filter(
                 site=site_id).load_related('site').all()
             pages = dict(((p.url, p) for p in page_list))
             pages_id = dict(((str(p.id), p) for p in page_list))
@@ -111,18 +112,14 @@ class PageMixin(object):
             else:
                 page = pages.get(url)
             if page is None:
-                site = yield request.models.site.filter(id=site_id).all()
-                if site:
-                    site = site[0]
-                else:
-                    site = yield request.models.site.new(id=site_id)
+                site = yield from models.site.get(site_id)
             else:
                 site = page.site
             request.cache.site = site
             request.cache.pages = pages
             request.cache.pages_id = pages
             request.cache.page = page
-        coroutine_return(request.cache.page)
+        return request.cache.page
 
     def get_router_page(self, request):
         handler = request.app_handler
@@ -404,7 +401,7 @@ class PageUpdates(api.CrudWebSocket, PageMixin):
         else:
             if instances:
                 instances = [{'fields': i.fields(),
-                              'id': getattr(i, '_cid', i.pkvalue())}
+                              'id': getattr(i, '_cid', i.id)}
                              for i in instances]
             message['data'] = instances
             self.write(websocket, message)

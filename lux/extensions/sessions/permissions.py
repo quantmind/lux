@@ -10,7 +10,7 @@ from pulsar.utils.importer import import_module
 from pulsar.utils.pep import ispy3k, to_string, to_bytes
 
 import lux
-from lux import AuthenticationError, coroutine_return
+from lux import AuthenticationError
 
 from .crypt import generate_secret_key
 from .models import Session
@@ -18,7 +18,7 @@ from .models import Session
 logger = logging.getLogger('lux.sessions')
 
 
-ANONYMOUS_USER = 'anonymous'
+ANONYMOUS = 'anonymous'
 UNUSABLE_PASSWORD = '!'  # This will never be a valid hash
 
 
@@ -41,21 +41,21 @@ class ModelPermissions(object):
 class AuthBackend(lux.AuthBackend):
     '''Permission back-end based sessions and users
 
-.. attribute:: secret_key
+    .. attribute:: secret_key
 
-    Secret key for encryption SALT
+        Secret key for encryption SALT
 
-.. attribute:: session_cookie_name
+    .. attribute:: session_cookie_name
 
-    Session cookie name
+        Session cookie name
 
-.. attribute:: session_expiry
+    .. attribute:: session_expiry
 
-    Session expiry in seconds
+        Session expiry in seconds
 
-    Default: 2 weeks
+        Default: 2 weeks
 
-'''
+    '''
     def __init__(self, app):
         self.encoding = app.config['ENCODING']
         self.secret_key = app.config['SECRET_KEY'].encode()
@@ -91,19 +91,20 @@ class AuthBackend(lux.AuthBackend):
         user = user or session.user
         if user:
             if session.user_id != user.id:
-                cache.session = yield self._create_session(request, user)
-            coroutine_return(user)
+                cache.session = yield from self._create_session(request, user)
+            return user
 
     def logout(self, request, user=None):
         session = request.cache.session
         user = user or session.user
         if user.is_authenticated():
-            request.cache.session = yield self._create_session(request)
-        coroutine_return(True)
+            request.cache.session = yield from self._create_session(request)
+        return True
 
     def get_user(self, request, username=None, email=None,
                  session=None, **opt):
-        '''Retrieve a user.'''
+        '''Retrieve a user
+        '''
         if username:
             return request.models.user.get(username=username)
         elif email:
@@ -154,8 +155,9 @@ class AuthBackend(lux.AuthBackend):
     # MIDDLEWARE
     def get_session(self, environ, start_response):
         request = lux.wsgi_request(environ)
-        request.cache.session = s = yield self._get_session(request)
-        request.cache.permissions = yield self._get_permissions(request, s)
+        cache = request.cache
+        cache.session = s = yield from self._get_session(request)
+        cache.permissions = yield from self._get_permissions(request, s)
 
     def process_response(self, environ, response):
         """If request.session was modified set a session cookie."""
@@ -164,19 +166,19 @@ class AuthBackend(lux.AuthBackend):
             session = request.cache.session
             if session is not None:
                 if session.must_save:
-                    yield session.save()
-                if session.modified:
+                    yield from session.save()
+                if session._modified:
                     response.set_cookie(self.session_cookie_name,
                                         value=session.id,
                                         expires=session.expiry)
-        coroutine_return(response)
+        return response
 
     ########################################################################
     #    PRIVATE METHODS
     def _valid_username(self, username):
         if username:
             lname = username.lower()
-            if lname != ANONYMOUS_USER:
+            if lname != ANONYMOUS:
                 return self.check_username(username)
         return False
 
@@ -189,66 +191,64 @@ class AuthBackend(lux.AuthBackend):
         qs = request.url_data
         session = None
         if 'access_token' in qs:
-            session = yield self._session_from_token(request,
-                                                     qs['access_token'])
+            session = yield from self._session_from_token(request,
+                                                          qs['access_token'])
         if session is None and self.session_cookie_name:
             cookie_name = self.session_cookie_name
             cookies = request.response.cookies
             session_key = cookies.get(cookie_name)
             session = None
             if session_key:
-                session = yield self._session_from_token(request,
-                                                         session_key.value)
+                session = yield from self._session_from_token(
+                    request, session_key.value)
             if session is None:
-                session = yield self._create_session(request,
-                                                     request.cache.user)
-        coroutine_return(session)
+                session = yield from self._create_session(
+                    request, request.cache.user)
+        return session
 
     def _get_permissions(self, request, session):
-        roles = yield session.user.roles.query().all()
-        coroutine_return(ModelPermissions(session.user, roles))
+        roles = yield []
+        #roles = yield from session.user.roles.query().all()
+        return ModelPermissions(session.user, roles)
 
     def _session_from_token(self, request, key):
-        qs = request.models[Session].query().load_related('user')
-        session = yield qs.filter(id=key).all()
-        if session:
-            session = session[0]
-            session.modified = False
+        models = request.models
+        try:
+            session = yield from models.session.get(key)
+        except models.ModelNotFound:
+            session = None
+        else:
             if session.expired:
-                yield session.delete()
+                yield from session.delete()
                 session = None
             else:
-                # HACK!, need to fix stdnet!
-                session.user.session = session.session
-                request.cache.user = session.user
-        else:
-            session = None
-        coroutine_return(session)
+                request.cache.user = yield from session.user
+        return session
 
     def _create_session(self, request, user=None):
         #Create new session and added it to the environment.
         old = request.cache.session
         if isinstance(old, Session):
             old.expiry = datetime.now()
-            yield old.save()
+            yield from old.save()
         if not user:
-            user = yield self._anonymous_user(request)
+            user = yield from self._anonymous_user(request)
         expiry = datetime.now() + timedelta(seconds=self.session_expiry)
         pid = os.getpid()
         sa = os.urandom(self.salt_size)
         val = to_bytes("%s%s" % (pid, time.time())) + sa + self.secret_key
         id = sha1(val).hexdigest()
         #session is a reserved attribute in router, use dict access
-        session = yield request.models.session.create(id=id, expiry=expiry,
-                                                      user=user)
+        session = yield from request.models.session.create(
+            id=id, expiry=expiry, user=user)
         request.cache.user = session.user
-        coroutine_return(session)
+        return session
 
     def _anonymous_user(self, request):
-        user = yield request.models.user.filter(username=ANONYMOUS_USER).all()
+        user = yield from request.models.user.filter(username=ANONYMOUS).all()
         if user:
             user = user[0]
         else:
-            user = request.models.user.new(username=ANONYMOUS_USER,
-                                           can_login=False)
-        coroutine_return(user)
+            user = yield from request.models.user.create(username=ANONYMOUS,
+                                                         can_login=False)
+        return user

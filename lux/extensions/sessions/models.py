@@ -109,7 +109,7 @@ class PermissionManager(odm.Manager):
             qs = self.query(model_type=object)
         else:
             qs = self.query(model_type=object.__class__,
-                            object_pk=object.pkvalue())
+                            object_pk=object.id)
         if params:
             qs = qs.filter(**params)
         return qs
@@ -252,7 +252,7 @@ class Role(odm.Model):
             pk = ''
         else:
             model_type = resource.__class__
-            pk = resource.pkvalue()
+            pk = resource.id
         model = odm.get_hash_from_model(model_type)
         p = (model, pk, operation)
         if p not in self.permissions:
@@ -285,34 +285,10 @@ class Session(odm.Model):
     TEST_COOKIE_NAME = 'testcookie'
     TEST_COOKIE_VALUE = 'worked'
     id = odm.CharField(primary_key=True)
-    data = odm.JSONField()
     expiry = odm.DateTimeField()
     user = odm.ForeignKey(User)
     must_save = False
-    modified = True
-
-    def __unicode__(self):
-        return self.id
 
     @property
     def expired(self):
         return datetime.now() >= self.expiry
-
-    def get(self, key, default=None):
-        return self.data.get(key, default)
-
-    def __contains__(self, key):
-        return key in self.data
-
-    def __getitem__(self, key):
-        return self.data[key]
-
-    def __setitem__(self, key, val):
-        self.data[key] = val
-        self.must_save = True
-
-    def __delitem__(self, key):
-        del self.data[key]
-
-    def pop(self, key, *arg):
-        return self.data.pop(key, *arg)

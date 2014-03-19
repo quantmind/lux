@@ -89,7 +89,8 @@ Models
 .. automodule:: lux.extensions.cms.models
 
 '''
-from pulsar import HttpException, HttpRedirect, PermissionDenied
+from pulsar import (HttpException, HttpRedirect, PermissionDenied,
+                    HaltServer)
 from pulsar.utils.structures import OrderedDict
 from pulsar.apps.ws import WebSocket
 
@@ -110,7 +111,7 @@ class Extension(lux.Extension):
                                      templates.nav_page_fixed,
                                      templates.center_page],
                   'A list of Templates which can be used to render a page.'),
-        Parameter('SITE_ID', 1, 'The database id of the site'),
+        Parameter('SITE_ID', None, 'The database id of the site'),
         Parameter('PAGE_EDIT_URL', 'pages',
                   'Base url for editing pages on the browser.'),
         Parameter('CREATE_PAGE_TEMPLATE', templates.center_page,
@@ -140,6 +141,11 @@ class Extension(lux.Extension):
         handler.middleware.extend((EditPage(path, models.page, ws),
                                    CmsRouter('<path:path>')))
 
+    def on_start(self, app, server):
+        if not app.config['SITE_ID']:
+            raise HaltServer('SITE_ID not given. Run the '
+                             '"create_site" command to get one')
+
     def on_html_response(self, app, request, html):
         '''Fired when an HTML response is about to be sent to the client.
 
@@ -163,12 +169,3 @@ class Extension(lux.Extension):
                            form_class=PageForm,
                            content_manager=PageContentManager())
             yield api.Crud(CONTENT_API_URL, models.content)
-
-    def _get_or_create_site(self, request):
-        app = request.app
-        site_id = app.config['SITE_ID']
-        site = yield request.models.filter(id=site_id).all()
-        if not site:
-            yield request.models.new(id=site_id)
-        else:
-            yield site[0]

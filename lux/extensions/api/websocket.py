@@ -168,7 +168,7 @@ class CrudWebSocket(ws.WS):
         data = []
         if instances:
             for i in instances:
-                pk = i.pkvalue()
+                pk = i.id
                 data.append({'fields': i.tojson(),
                              'pk': pk,
                              'cid': getattr(i, '_cid', pk)})
