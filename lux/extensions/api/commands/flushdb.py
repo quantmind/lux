@@ -4,40 +4,51 @@ except NameError:
     pass
 
 from pulsar import Setting
+from pulsar.utils.html import plural
 
 import lux
 
 
 class Command(lux.Command):
     option_list = (
-        Setting('apps', nargs='*', desc='app app.modelname ...'),
+        Setting('dryrun', ('--dryrun',),
+                action='store_true',
+                default=False,
+                desc=("It does not remove any data, instead it displays "
+                      "the number of models which could be removed")),
+        Setting('apps', nargs='*', desc='app app.modelname ...')
     )
     help = "Flush models in the data server."
 
     def __call__(self, argv, **params):
         return self.run_until_complete(argv, **params)
 
-    def run(self, argv, dump=True):
+    def run(self, argv):
         options = self.options(argv)
+        dryrun = options.dryrun
         models = self.app.models
+        self.write('\nFlush model data\n')
         if not models:
-            self.logger.info('No model registered')
+            return self.write('No model registered')
         apps = options.apps or None
-        managers = models.flush(include=apps, dryrun=True)
-        if managers:
-            print('')
-            print('Are you sure you want to remove these models?')
-            print('')
-            for manager in sorted(managers, key=lambda x: x._meta.modelkey):
-                backend = manager.backend
-                print('%s from %s' % (manager._meta, backend))
-            print('')
+        managers_count = yield from models.flush(include=apps, dryrun=True)
+        if not managers_count:
+            return self.write('Nothing done. No models selected')
+        if not dryrun:
+            self.write('\nAre you sure you want to remove these models?\n')
+        for manager, N in sorted(managers_count,
+                                 key=lambda x: x[0]._meta.table_name):
+            self.write('%s - %s' % (manager, plural(N, 'model')))
+        #
+        if dryrun:
+            self.write('\nNothing done. Dry run')
+        else:
+            self.write('')
             yn = input('yes/no : ')
             if yn.lower() == 'yes':
-                result = yield models.flush(include=apps)
-                for manager, N in zip(managers, result):
-                    print('{0} - removed {1} models'.format(manager._meta, N))
+                managers_count = yield from models.flush(include=apps)
+                for manager, removed in managers_count:
+                    N = plural(len(removed), 'model')
+                    self.write('{0} - removed {1}'.format(manager, N))
             else:
-                print('Nothing done.')
-        else:
-            print('Nothing done. No models selected')
+                self.write('Nothing done.')

@@ -48,7 +48,8 @@ class ContentManager(lux.ContentManager):
             if not columns:
                 new_columns = [self.column(meta.pk)]
                 for field in meta.scalarfields:
-                    new_columns.append(self.column(field))
+                    if not field.hidden:
+                        new_columns.append(self.column(field))
             else:
                 new_columns = []
                 for col in columns:

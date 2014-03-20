@@ -167,7 +167,8 @@ class ContentManager(object):
 
     No assumption is made on the type of object or collection to be managed.
 
-    :param columns: Optional list of fields to include in responses.
+    :param columns: Optional list of fields to include in responses
+    :param exclude: Optional set of fields to exclude in responses
     :param html_collection: Optional string to specify the ``html`` rendering
         style for collections. If not supplied, ``html`` requests are
         rendered using a ``table`` element via the
@@ -194,10 +195,11 @@ class ContentManager(object):
 
     _router = None
 
-    def __init__(self, columns=None, html_collection=None, html_object=None,
-                 filters=False, sortable=True, head=True, foot=False,
-                 table_class_name=None, required_fields=None):
+    def __init__(self, columns=None, exclude=None, html_collection=None,
+                 html_object=None, filters=False, sortable=True, head=True,
+                 foot=False, table_class_name=None, required_fields=None):
         self._columns = columns
+        self._exclude = exclude
         self.sortable = sortable
         self.table_class_name = table_class_name or self.table_class_name
         self._html_collection_as = html_collection or 'table'

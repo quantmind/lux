@@ -10,8 +10,3 @@ class Extension(lux.Extension):
         return [sessions.LoginUser('login'),
                 #services.ServiceLogin('login'),
                 sessions.LogoutUser('logout')]
-
-    def api_sections(self, app):
-        worditem = app.models.worditem
-        if worditem:
-            yield 'Indexes', [api.Crud('indexes', worditem)]

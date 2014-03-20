@@ -143,7 +143,7 @@ class AuthBackend(lux.AuthBackend):
             user['password'] = self._encript(raw_password)
         else:
             user['password'] = UNUSABLE_PASSWORD
-        return request.models.user.save(user)
+        return user.save()
 
     def has_permission(self, request, action, model):
         if request.cache.user.is_superuser:
@@ -248,10 +248,10 @@ class AuthBackend(lux.AuthBackend):
         return session
 
     def _anonymous_user(self, request):
-        user = yield from request.models.user.filter(username=ANONYMOUS).all()
-        if user:
-            user = user[0]
-        else:
-            user = yield from request.models.user.create(username=ANONYMOUS,
-                                                         can_login=False)
+        models = request.models
+        try:
+            user = yield from models.user.get(username=ANONYMOUS)
+        except models.ModelNotFound:
+            user = yield from models.user.create(username=ANONYMOUS,
+                                                 can_login=False)
         return user

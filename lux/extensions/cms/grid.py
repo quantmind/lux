@@ -209,6 +209,8 @@ class CmsContext(Context):
         if 'content_ids' not in context:
             context['content_ids'] = {}
         ids = context['content_ids']
+        if not page.content:
+            return container
         for content in page.content.get(self.key) or ():
             template = content.get('template')
             row = Html('div', template=template)

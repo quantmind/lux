@@ -63,11 +63,11 @@ class Page(PageModel, ModelBase):
 in the sitemap.'''
     template = odm.CharField()
     site = odm.ForeignKey(Site)
-    title = odm.CharField()
-    link = odm.CharField()
+    title = odm.CharField(required=False)
+    link = odm.CharField(required=False)
     url = odm.CharField()
     in_navigation = odm.IntegerField(default=1)
-    body_class = odm.CharField()
+    body_class = odm.CharField(required=False)
     #
     # Access
     soft_root = odm.BooleanField(default=False)
@@ -75,7 +75,7 @@ in the sitemap.'''
     published = odm.BooleanField(default=True)
     #
     # Content is a Json object
-    content = odm.JSONField()
+    content = odm.JSONField(default=dict)
     head = odm.JSONField()
 
     manager_class = PageManger

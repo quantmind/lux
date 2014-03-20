@@ -51,8 +51,7 @@ from copy import copy
 from functools import partial
 
 from pulsar import (PermissionDenied, HttpException, Http404, HttpRedirect,
-                    MethodNotAllowed, ContentNotAccepted, coroutine_return,
-                    async)
+                    MethodNotAllowed, ContentNotAccepted, async)
 from pulsar.apps import ws
 from pulsar.utils.httpurl import iri_to_uri, JSON_CONTENT_TYPES
 from pulsar.apps.wsgi import Json
@@ -129,24 +128,22 @@ class PageMixin(object):
         if isinstance(page, list):
             pages = dict(((p.url, p) for p in page))
             page = pages.get(path, pages.get(rule))
-        coroutine_return(page)
+        return page
 
     def create_page_form(self, request, path):
         '''Called when an authorised user lands on a non-existing page.'''
         form = self.form_factory(request, initial={'url': path})
         action = request.full_path('/%s' % request.app.config['PAGE_EDIT_URL'],
                                    redirect=request.full_path())
-        formhtml = yield from form.layout(request, action=action)
-        dia = Dialog(request,
-                     {'title': 'This page does not exist, Create one ?',
-                      'body': formhtml})
-        coroutine_return(dia)
+        return Dialog(request,
+                      {'title': 'This page does not exist, Create one ?',
+                       'body': form.layout(request, action=action)})
 
     def create_page_doc(self, request, path):
-        dialog = yield from self.create_page_form(request, path)
+        dialog = self.create_page_form(request, path)
         template = request.app.config['CREATE_PAGE_TEMPLATE']
         html = yield from template(request, {THIS: dialog})
-        coroutine_return(html)
+        return html
 
     def page_template(self, request, page):
         '''Get the :class:`.PageTemplate` instance for the current ``page``.
@@ -188,10 +185,10 @@ class CmsResponse(PageMixin):
             template = request.app.config['NO_PAGE_TEMPLATE']
             if request.has_permission('create', request.models.page):
                 path = request.app_handler.rule
-                body = yield from self.create_page_form(request, path)
+                body = self.create_page_form(request, path)
         html = yield from template(request, {THIS: body})
-        content = yield from html.render(request)
-        coroutine_return(content)
+        content = yield from html(request)
+        return content
 
 
 class CmsRouter(Router, PageMixin):
@@ -221,7 +218,7 @@ class CmsRouter(Router, PageMixin):
         else:
             raise PermissionDenied
         response = yield from doc.http_response(request)
-        coroutine_return(response)
+        return response
 
 
 class EditPage(PageMixin, api.Crud):
@@ -272,7 +269,7 @@ class EditPage(PageMixin, api.Crud):
             # Add codemirror css
             doc.head.links.append('codemirror')
             response = yield from doc.http_response(request)
-            coroutine_return(response)
+            return response
         else:
             raise PermissionDenied
 
@@ -298,7 +295,7 @@ class EditPage(PageMixin, api.Crud):
         the user is authenticated and has valid permissions.
         '''
         if request.cache.session:
-            user = request.cache.session.user
+            user = request.cache.user
             if user.is_authenticated():
                 edit = self.get_route('edit')
                 if request.cache.app_handler == edit:
