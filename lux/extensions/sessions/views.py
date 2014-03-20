@@ -28,13 +28,12 @@ class LoginUser(lux.Router):
         app = request.app
         data, files = yield request.data_and_files()
         form = self.LoginForm(request, data=data, files=files)
-        valid = yield form.is_valid()
+        valid = yield from form.is_valid()
         if valid:
             url = request.url_data.get('redirect', '/')
-            response = yield form.redirect(request, url)
+            return form.redirect(request, url)
         else:
-            response = yield form.http_response(request)
-        coroutine_return(response)
+            return form.http_response(request)
 
     def get(self, request):
         '''Get the form'''

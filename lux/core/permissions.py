@@ -163,7 +163,7 @@ class PermissionHandler(object):
         '''
         for b in self.auth_backends:
             try:
-                user = yield b.get_user(request, *args, **kwargs)
+                user = yield from b.get_user(request, *args, **kwargs)
             except Exception:
                 continue
             if user is not None:
@@ -174,7 +174,7 @@ class PermissionHandler(object):
 an :class:`AuthenticationError` if the ``user`` could not be authenticated.'''
         if user.is_active:
             user = self.authenticate(request, user, **params)
-            user = yield self.login(request, user)
+            user = yield from self.login(request, user)
             coroutine_return(user)
         else:
             raise AuthenticationError('%s is not active' % user)
@@ -203,18 +203,18 @@ an :class:`AuthenticationError` if the ``user`` could not be authenticated.'''
         Raises an :class:`LoginError` if the ``user`` could not login.'''
         for b in self.auth_backends:
             try:
-                u = yield b.login(request, user)
+                u = yield from b.login(request, user)
             except Exception:
                 continue
             if u is not None:
-                coroutine_return(u)
+                return u
         raise LoginError('Could not login')
 
     def logout(self, request):
         '''Logout user'''
         for b in self.auth_backends:
             try:
-                u = yield b.logout(request)
+                u = yield from b.logout(request)
             except Exception:
                 continue
             if u is not None:

@@ -80,10 +80,6 @@ in the sitemap.'''
 
     manager_class = PageManger
 
-    def __unicode__(self):
-        return self.url
-        #return escape(self.url)
-
     def path(self, **urlargs):
         return Route(self.url).url(**urlargs)
 

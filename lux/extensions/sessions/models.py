@@ -287,7 +287,6 @@ class Session(odm.Model):
     id = odm.CharField(primary_key=True)
     expiry = odm.DateTimeField()
     user = odm.ForeignKey(User)
-    must_save = False
 
     @property
     def expired(self):

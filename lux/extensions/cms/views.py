@@ -125,7 +125,7 @@ class PageMixin(object):
         handler = request.app_handler
         rule = handler.rule
         path = request.path[1:]
-        page = yield self.get_page(request, url=(rule, path))
+        page = yield from self.get_page(request, url=(rule, path))
         if isinstance(page, list):
             pages = dict(((p.url, p) for p in page))
             page = pages.get(path, pages.get(rule))
@@ -136,16 +136,16 @@ class PageMixin(object):
         form = self.form_factory(request, initial={'url': path})
         action = request.full_path('/%s' % request.app.config['PAGE_EDIT_URL'],
                                    redirect=request.full_path())
-        formhtml = yield form.layout(request, action=action)
+        formhtml = yield from form.layout(request, action=action)
         dia = Dialog(request,
                      {'title': 'This page does not exist, Create one ?',
                       'body': formhtml})
         coroutine_return(dia)
 
     def create_page_doc(self, request, path):
-        dialog = yield self.create_page_form(request, path)
+        dialog = yield from self.create_page_form(request, path)
         template = request.app.config['CREATE_PAGE_TEMPLATE']
-        html = yield template(request, {THIS: dialog})
+        html = yield from template(request, {THIS: dialog})
         coroutine_return(html)
 
     def page_template(self, request, page):
@@ -179,7 +179,7 @@ class CmsResponse(PageMixin):
 
     def body(self, request, body):
         doc = request.html_document
-        page = yield self.get_router_page(request)
+        page = yield from self.get_router_page(request)
         if page:
             request.cache.page = page
             template = self.page_template(request, page)
@@ -188,9 +188,9 @@ class CmsResponse(PageMixin):
             template = request.app.config['NO_PAGE_TEMPLATE']
             if request.has_permission('create', request.models.page):
                 path = request.app_handler.rule
-                body = yield self.create_page_form(request, path)
-        html = yield template(request, {THIS: body})
-        content = yield html.render(request)
+                body = yield from self.create_page_form(request, path)
+        html = yield from template(request, {THIS: body})
+        content = yield from html.render(request)
         coroutine_return(content)
 
 
@@ -206,21 +206,21 @@ class CmsRouter(Router, PageMixin):
     '''
     def get(self, request):
         path = request.urlargs['path'] or '/'
-        page = yield self.get_page(request, url=path)
+        page = yield from self.get_page(request, url=path)
         if not page:
             if request.has_permission('create', request.models.page):
-                doc = yield self.create_page_doc(request, path)
+                doc = yield from self.create_page_doc(request, path)
             else:
                 raise Http404
         elif request.has_permission('read', page):
             doc = request.html_document
             doc.body.addClass(page.body_class)
             template = self.page_template(request, page)
-            html_page = yield template(request)
+            html_page = yield from template(request)
             doc.body.append(html_page)
         else:
             raise PermissionDenied
-        response = yield doc.http_response(request)
+        response = yield from doc.http_response(request)
         coroutine_return(response)
 
 
@@ -235,7 +235,7 @@ class EditPage(PageMixin, api.Crud):
     def read(self, request):
         '''Handle the html view of a page in editing mode.
         '''
-        page = yield self.get_page(request, **request.urlargs)
+        page = yield from self.get_page(request, **request.urlargs)
         if not page:
             raise Http404
         # We have permissions
@@ -249,7 +249,7 @@ class EditPage(PageMixin, api.Crud):
             doc.body.addClass(page.body_class)
             edit = form.layout(request, action=request.full_path())
             template = self.page_template(request, page)
-            html_page = yield template(request)
+            html_page = yield from template(request)
             #
             doc.body.append(Html('div', edit, cn='cms-control'))
             #
@@ -271,7 +271,7 @@ class EditPage(PageMixin, api.Crud):
                                                          CONTENT_API_URL)})
             # Add codemirror css
             doc.head.links.append('codemirror')
-            response = yield doc.http_response(request)
+            response = yield from doc.http_response(request)
             coroutine_return(response)
         else:
             raise PermissionDenied
@@ -286,7 +286,7 @@ class EditPage(PageMixin, api.Crud):
 
     @route('<id>/exit', name='exit edit')
     def exit(self, request):
-        page = yield self.get_page(request, **request.urlargs)
+        page = yield from self.get_page(request, **request.urlargs)
         if not page:
             raise Http404
         raise HttpRedirect(page.path(**request.url_data))
@@ -325,6 +325,7 @@ class EditPage(PageMixin, api.Crud):
         return urls
 
     def _content_urls(self, request, handle):
+        #NOT A COROUTINE!
         content = getattr(handle, 'cms_content', None)
         if content:
             path = handle.path()
@@ -341,7 +342,7 @@ class PageUpdates(api.CrudWebSocket, PageMixin):
     '''
     def on_open(self, websocket):
         request = websocket.handshake
-        page = yield self.get_page(request, **request.urlargs)
+        page = yield from self.get_page(request, **request.urlargs)
         if not page:
             raise Http404
         if request.has_permission('update', page):

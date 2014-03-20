@@ -1,5 +1,5 @@
 import sys
-from lux import forms, AuthenticationError, LoginError, coroutine_return
+from lux import forms, AuthenticationError, LoginError
 
 
 class LoginForm(forms.Form):
@@ -13,18 +13,18 @@ class LoginForm(forms.Form):
         request = self.request
         permissions = request.app.permissions
         username = self.cleaned_data['username']
-        user = yield permissions.get_user(request, username=username)
+        user = yield from permissions.get_user(request, username=username)
         if not user:
             raise forms.ValidationError(self.error_message)
         password = self.cleaned_data['password']
         try:
-            user = yield permissions.authenticate_and_login(
+            user = yield from permissions.authenticate_and_login(
                 request, user, password=password)
         except AuthenticationError:
             raise forms.ValidationError(self.error_message)
         except LoginError as e:
             raise forms.ValidationError(str(e))
-        coroutine_return(user)
+        return user
 
 
 class CreateUserForm(forms.Form):

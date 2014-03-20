@@ -146,7 +146,7 @@ class AuthBackend(lux.AuthBackend):
         return request.models.user.save(user)
 
     def has_permission(self, request, action, model):
-        if request.cache.session.user.is_superuser:
+        if request.cache.user.is_superuser:
             return True
         else:
             return request.cache.permissions.has(request, action, model)
@@ -164,13 +164,16 @@ class AuthBackend(lux.AuthBackend):
         if response.can_set_cookies():
             request = lux.wsgi_request(environ)
             session = request.cache.session
-            if session is not None:
-                if session.must_save:
-                    yield from session.save()
+            if session:
                 if session._modified:
-                    response.set_cookie(self.session_cookie_name,
-                                        value=session.id,
-                                        expires=session.expiry)
+                    session.save()
+                if self.session_cookie_name:
+                    cookie_name = self.session_cookie_name
+                    session_key = response.cookies.get(cookie_name)
+                    if not session_key or session_key.value != session.id:
+                        response.set_cookie(cookie_name,
+                                            value=session.id,
+                                            expires=session.expiry)
         return response
 
     ########################################################################
@@ -219,7 +222,7 @@ class AuthBackend(lux.AuthBackend):
             session = None
         else:
             if session.expired:
-                yield from session.delete()
+                session.delete()
                 session = None
             else:
                 request.cache.user = yield from session.user
@@ -229,8 +232,8 @@ class AuthBackend(lux.AuthBackend):
         #Create new session and added it to the environment.
         old = request.cache.session
         if isinstance(old, Session):
-            old.expiry = datetime.now()
-            yield from old.save()
+            old['expiry'] = datetime.now()
+            old.save()
         if not user:
             user = yield from self._anonymous_user(request)
         expiry = datetime.now() + timedelta(seconds=self.session_expiry)
