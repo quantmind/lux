@@ -368,11 +368,12 @@
     }),
 
     //
-    //  Grid View
-    //  --------------------
-    //
-    //  View manager for a Grid. A grid is a container of Rows.
-    //  In editing mode it is used to add and remove Rows.
+    //  ## GridView
+
+    //  View manager for an html grid.
+
+    //  A grid is a container of rows.
+    //  In editing mode it is used to add and remove rows.
     GridView = views.grid = BaseContentView.extend({
         type: 'grid',
         //
@@ -553,14 +554,17 @@
         }
     }),
 
-    //  Content View
-    //  --------------------
     //
-    //  The container of contents and therefore the atom of lux CMS.
+    //  ## Content View
+
+    //  The view for contents and therefore the atom of lux CMS.
+
     //  The content can be either retrieved via a backend (when in editing mode)
-    //  Or accessed via children elements when in read mode. Childern elements
+    //  or accessed via children elements when in read mode. Childern elements
     //  have the ``field`` entry in their html data attribute. The field contains
     //  the name of the field for which the inner html of the element provides value.
+    //
+    //  [Inline editing](#inline-editing) is available when in editing mode.
     ContentView = views.content = BaseContentView.extend({
         type: 'content',
         //
@@ -584,8 +588,6 @@
                         data[field] = elem.html();
                     } else {
                         self.log('Field not available in content', 'WARNING');
-                        //TODO: what is this?
-                        //this.content_type.fields.jQuery = elem;
                     }
                 });
                 if (!data.keywords) data.keywords = [];

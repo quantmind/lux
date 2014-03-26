@@ -89,8 +89,7 @@
         return t;
     }(function(){})),
     //
-    //  Class
-    //  ----------------
+    //  ## Class
 
     //  Lux base class.
     //  The `extend` method is the most important function of this object.
@@ -301,8 +300,7 @@
         }
     }),
     //
-    // Model
-    // --------------------------
+    // ## Model
     //
     // The base class for a model. A model is a single, definitive source
     // of data about your data. A Model consists of ``fields`` and behaviours

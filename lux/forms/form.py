@@ -36,7 +36,10 @@ def smart_redirect(request, url=None, status=None):
     url = url or request.full_path()
     if request.is_xhr:
         response = request.response
-        response.content = json.dumps({'redirect': url})
+        ct = request.content_types.best_match(JSON_CONTENT_TYPES)
+        if ct in JSON_CONTENT_TYPES:
+            response.content_type = ct
+            response.content = json.dumps({'redirect': url})
         return response
     else:
         raise HttpRedirect(url, status=status)

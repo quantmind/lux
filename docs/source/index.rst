@@ -2,8 +2,8 @@
 Lux
 ================
 
-An asynchronous, highly customizable, web-framework for Python.
-It requires python 2.6 up to python 3.3 in a single code base.
+An asynchronous, highly customisable, web-framework for Python.
+It requires python 3.3 and up.
 
 .. toctree::
    :maxdepth: 1

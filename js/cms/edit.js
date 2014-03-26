@@ -1,10 +1,10 @@
     //
-    // Dialog for editing Content
-    // ------------------------------------
+    // ## Inline Editing
 
     //
-    // Pop up dialog for editing content within a block element.
-    // ``self`` is a positionview object.
+    // Inline editing is implemented with a pop up dialog
+    // within a [content view](#content-view) element.
+
     var edit_content_dialog = function (options) {
         var dialog = new lux.Dialog(options.contentedit),
             page_limit = options.page_limit || 10,
@@ -60,7 +60,8 @@
             block.wrapper = this.value;
         });
         //
-        // AJAX Content Loading
+        // AJAX Content Loading is available when the ``options`` object
+        // contain the ``content_url``
         if (options.content_url) {
             fieldset_dbfields.find('[name="title"]').Select({
                 placeholder: 'Search content',

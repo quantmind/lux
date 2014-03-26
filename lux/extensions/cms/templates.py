@@ -44,8 +44,3 @@ center_page = PageTemplate(
     Context('this', tag='div', cn='center-page'),
     fixed_footer,
     key='Navigation-Center')
-
-
-Dialog = Template(
-    Template(Context('title', tag='h3'), tag='div', cn='hd'),
-    Template(Context('body', tag='div'), tag='div', cn='bd'))

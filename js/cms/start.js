@@ -1,17 +1,17 @@
 //
 //  LUX CMS
-//  ---------------------------------
+//  =========
 
-//  This is a the fornt-end implementation of lux content management system
+//  Fornt-end implementation of lux content management system
 //  extension. It provides an easy and elegant way to add content to
 //  pages. It includes:
 
-//  * Inline editing
+//  * [Inline editing](#inline-editing) of [content views](#content-view)
 //  * drag & drop for content blocks within a page
 //  * Extendibility using javascript alone
 
 //  The layout starts with a Page which contains a given set of ``Grid``
-//  components which are managed the ``GridView`` model.
+//  components, each managed by a [GridView](#gridview).
 //
 //  Each ``Grid`` contains one or more ``Row`` components which can be added
 //  interactively. A row has several templates with a predefined set of

@@ -1,3 +1,15 @@
+//
+//  Lux
+//  ==========
+
+//  Javascript library for lux web-framework. It defines the following
+//  components:
+//
+//  * [Class](#class): an object-oriented class construct. It provides inheritance
+//    and overriding capabilities via the ``_super`` method.
+//  * [Model](#model): extends ``Class`` with methods for handling back-end data.
+//    A model is a representation of a data store item/row.
+//
 define(['lodash', 'jquery'], function (_, $) {
     "use strict";
 

@@ -22,7 +22,7 @@
             ajax: false,
             complete: null,
             error: null,
-            success: null
+            success: lux.ajaxResponse
         },
         //
         initialise: function (options) {
@@ -430,4 +430,3 @@
     };
     //
     lux.set_value_hooks.push(get_select2_value);
-

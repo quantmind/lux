@@ -1,4 +1,5 @@
 {
+    "aws": "//sdk.amazonaws.com/js/aws-sdk-2.0.0-rc13",
     "bootstrap": "//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/js/bootstrap",
     "backbone": "//cdnjs.cloudflare.com/ajax/libs/backbone.js/1.0.0/backbone-min",
     "codemirror": "//cdnjs.cloudflare.com/ajax/libs/codemirror/3.21.0/codemirror",

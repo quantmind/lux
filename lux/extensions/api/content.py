@@ -1,5 +1,4 @@
 from pulsar import Http404
-from pulsar.apps.data.odm import get_field_type
 
 import lux
 from lux import Column, HtmlLink, coroutine_return
@@ -70,7 +69,7 @@ class ContentManager(lux.ContentManager):
         return columns
 
     def column(self, field):
-        return Column.get(field.store_name, type=get_field_type(field))
+        return Column.get(field.store_name, field.repr_type)
 
     def paginate(self, request, query, parameters):
         '''Refine ``query`` from input ``parameters`` and perform

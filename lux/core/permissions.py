@@ -11,7 +11,7 @@ Permissions Codes
 * ``ADD`` Allows to add new objects. Value ``30``.
 '''
 from pulsar.apps.wsgi import authorization_middleware
-from pulsar import PermissionDenied, coroutine_return
+from pulsar import PermissionDenied
 
 __all__ = ['PermissionsCodes',
            'AuthBackend',
@@ -167,7 +167,7 @@ class PermissionHandler(object):
             except Exception:
                 continue
             if user is not None:
-                coroutine_return(user)
+                return user
 
     def authenticate_and_login(self, request, user, **params):
         ''':meth:`authenticate` and :meth:`login` a ``user``. Raises
@@ -175,7 +175,7 @@ an :class:`AuthenticationError` if the ``user`` could not be authenticated.'''
         if user.is_active:
             user = self.authenticate(request, user, **params)
             user = yield from self.login(request, user)
-            coroutine_return(user)
+            return user
         else:
             raise AuthenticationError('%s is not active' % user)
 
@@ -218,7 +218,7 @@ an :class:`AuthenticationError` if the ``user`` could not be authenticated.'''
             except Exception:
                 continue
             if u is not None:
-                coroutine_return(u)
+                return u
         raise LogoutError('Could not logout')
 
     def create_user(self, request, *args, **kwargs):

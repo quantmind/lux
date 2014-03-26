@@ -9,6 +9,7 @@ Parameters
 '''
 import sys
 import os
+import logging
 from inspect import isclass
 from collections import OrderedDict
 from importlib import import_module
@@ -16,8 +17,7 @@ from importlib import import_module
 from pulsar.utils.httpurl import remove_double_slash
 from pulsar.apps.wsgi import WsgiHandler, HtmlDocument, test_wsgi_environ
 from pulsar.utils.pep import itervalues
-from pulsar.utils.log import (LocalMixin, local_property, local_method,
-                              configured_logger)
+from pulsar.utils.log import LocalMixin, local_property, local_method
 
 from lux.commands import ConsoleParser, CommandError, execute_app
 from lux import media_libraries, javascript_dependencies
@@ -128,6 +128,15 @@ class App(ConsoleParser, LocalMixin, Extension):
         self._params = params
         self.configure(config_file)
 
+    def __call__(self, environ, start_response):
+        '''The WSGI thing.'''
+        handler = self.handler
+        request = self.wsgi_request(environ)
+        if self.debug:
+            self.logger.debug('Serving request %s' % request.path)
+        self.fire('on_request', request)
+        return handler(environ, start_response)
+
     @property
     def config_module(self):
         '''The :ref:`configuration file` used by this :class:`App`.'''
@@ -139,7 +148,7 @@ class App(ConsoleParser, LocalMixin, Extension):
 
     @property
     def extensions(self):
-        '''Ordered dictionary of :class:`Extension` available.
+        '''Ordered dictionary of :class:`.Extension` available.
 
         The order is the same as in the
         :ref:`EXTENSIONS config <configuration>` parameter.
@@ -207,11 +216,6 @@ class App(ConsoleParser, LocalMixin, Extension):
         environ['error.handler'] = self.config['ERROR_HANDLER']
         request.cache.app = self
         return request
-
-    def __call__(self, environ, start_response):
-        '''The WSGI thing.'''
-        self.fire('on_request', self.wsgi_request(environ))
-        return self.handler(environ, start_response)
 
     def html_document(self, request):
         '''Build the HTML document.
@@ -402,8 +406,7 @@ class App(ConsoleParser, LocalMixin, Extension):
     def setup_logger(self, config, debug, loglevel):
         self.debug = debug
         log_config = config['LOGGING_CONFIG']
-        self.local.logger = configured_logger('lux', config=log_config,
-                                              level=loglevel)
+        self.local.logger = logging.getLogger('lux')
 
     def bind_events(self, extension):
         events = self.events

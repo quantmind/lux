@@ -25,6 +25,7 @@ from asyncio import set_event_loop
 from pulsar import (Setting, get_event_loop, arbiter, task, Application,
                     maybe_async, Future)
 from pulsar.utils.pep import native_str
+from pulsar.utils.log import configured_logger
 
 from lux import __version__
 
@@ -83,9 +84,11 @@ class ConsoleParser(object):
         return parser
 
 
-class DummyApp(Application):
+class LuxApp(Application):
+    name = 'lux'
 
     def on_config(self, actor):
+        set_event_loop(actor._loop)
         return False
 
 
@@ -113,6 +116,7 @@ class Command(ConsoleParser):
 
         Default: ``sys.stderr``
     '''
+    _build_pulsar = True
     def __init__(self, name, app, stdout=None, stderr=None):
         self.name = name
         self.app = app
@@ -120,6 +124,9 @@ class Command(ConsoleParser):
         self.stderr = stderr
 
     def __call__(self, argv, **params):
+        if self._build_pulsar:
+            app = self.pulsar_app(argv, loghandlers=['console_level_message'])
+            app()
         return self.run(argv, **params)
 
     def get_version(self):
@@ -144,9 +151,6 @@ class Command(ConsoleParser):
             self.pulsar_cfg(rest)
         return options
 
-    def log_config(self):
-        return {'root': {'handlers': ['console_message']}}
-
     def run(self, argv, **params):
         '''Run this :class:`Command`.
 
@@ -166,7 +170,7 @@ class Command(ConsoleParser):
 
     @property
     def logger(self):
-        return logging.getLogger('lux.command.%s' % self.name)
+        return logging.getLogger('lux.%s' % self.name)
 
     def write(self, stream=''):
         '''Write ``stream`` to the :attr:`stdout`.'''
@@ -182,14 +186,15 @@ class Command(ConsoleParser):
             h.write(native_str(stream))
         h.write('\n')
 
-    def pulsar_app(self, argv, application=None, **kw):
-        if application is None:
-            application = DummyApp
+    def pulsar_app(self, argv, application=None, log_name='lux', **kw):
         app = self.app
+        if application is None:
+            application = LuxApp
         return application(callable=app,
                            desc=app.config.get('DESCRIPTION'),
                            epilog=app.config.get('EPILOG'),
                            argv=argv,
+                           log_name=log_name,
                            version=app.meta.version,
                            debug=app.debug,
                            config=app.config_module,
@@ -204,8 +209,6 @@ class Command(ConsoleParser):
 def execute_app(app, argv=None, **params):
     '''Execute a command for a given ``app``.
     '''
-    # Make sure the loop exists
-    set_event_loop(arbiter()._loop)
     if argv is None:
         argv = sys.argv
     app.meta.argv = argv = list(argv)
@@ -221,6 +224,7 @@ def execute_app(app, argv=None, **params):
         except CommandError as e:
             print('\n'.join(('%s.' % e, 'Pass -h for list of commands')))
             exit(1)
+        # Make sure the loop exists
         try:
             return command(argr, **params)
         except CommandError as e:

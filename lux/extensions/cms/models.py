@@ -27,6 +27,11 @@ class KeywordsField(odm.CharField):
             value = ','.join(value)
         return super(KeywordsField, self).to_python(value, backend=backend)
 
+    def to_json(self, value, store=None):
+        if not isinstance(value, (list, tuple)):
+            return value.split(',')
+        return value
+
 
 class ModelBase(odm.Model):
     created = odm.DateTimeField(default=datetime.now)
@@ -36,12 +41,6 @@ class ModelBase(odm.Model):
 
     class Meta:
         abstract = True
-
-    def tojson(self):
-        data = super(ModelBase, self).tojson()
-        if 'keywords' in data:
-            data['keywords'] = data['keywords'].split(',')
-        return data
 
 
 class PageManger(odm.Manager):

@@ -2,39 +2,32 @@
 
 **Requirements**: :mod:`lux.extensions.base`, :mod:`lux.extensions.api`
 
-The extension add two :ref:`routers <router>` to the list of your application
-middleware.
+Features
+============
 
-Parameters
-================
-
-.. lux_extension:: lux.extensions.cms
-
-Usage
-=======
-
-This adds a :ref:`on_html_response <event_on_html_document>` callback
-for handling the html layout. The callback is implemented via the
-:class:`.CmsResponse` class.
-
-Positioning and editing
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-When the configuration parageter ``PAGE_EDIT_URL`` is enabled, it is
-possible to edit html page layout by moving content around and adding
-new content.
-
-* A page specify a given template which in turns can have several
-  (usually one or two) grid elements.
-* Each ``grid`` element contain one or more ``row`` elements.
-* Each ``row`` element contain one or more ``column`` elements.
+* Programmatically specify one or several templates for HTML pages
+* A page template has one or more grid elements
+* Each ``grid`` element contain one or more ``row`` elements
+* Each ``row`` element contain one or more ``column`` elements
 * Each ``column`` element contain one or more ``block`` elements, rendered
-  vertically, one after the other.
+  vertically, one after the other
 * Finally a ``block`` element contains one or more ``position`` elements which
-  display a ``content``.
+  display a ``content``
+* The ``content`` is stored in the :class:`models.Content` model
+* Inline editing of pages and content within a page when the
+  :setting:`PAGE_EDIT_URL` parameter is enabled
 
-The ``content`` is stored in the :class:`models.Content` model.
 
+Contents
+============
+
+Contents within a page are of three types:
+
+* A simple json object stored within a block in the :attr:`Page.content`
+  object. These objects tend to be simple and are implemented in javascript
+  only.
+* A content defined by :class:`.Router` with ``cms_content`` attribute which
+  evaluates to ``True``.
 
 .. _contenturl:
 
@@ -62,9 +55,18 @@ of site contents. For example::
 The :meth:`views.EditPage.content_urls` method is responsible for collecting
 all valid site content to include in the drop-down selection element.
 
+Parameters
+================
+
+.. lux_extension:: lux.extensions.cms
+
 
 API
 =========
+
+This adds a :ref:`on_html_response <event_on_html_document>` callback
+for handling the html layout. The callback is implemented via the
+:class:`.CmsResponse` class.
 
 API Extension
 ~~~~~~~~~~~~~~~~~~~~~
@@ -124,7 +126,7 @@ class Extension(lux.Extension):
     def on_config(self, app):
         self.cms_response = CmsResponse()
         url = app.config['PAGE_EDIT_URL']
-        if not url.endswith('/'):
+        if url and not url.endswith('/'):
             app.config['PAGE_EDIT_URL'] = '%s/' % url
 
     def on_loaded(self, app, handler):
@@ -137,9 +139,10 @@ class Extension(lux.Extension):
         app.config['PAGE_TEMPLATES'] = dtemplates
         models = app.models
         path = app.config['PAGE_EDIT_URL']
-        ws = WebSocket('<id>/updates', PageUpdates())
-        handler.middleware.extend((EditPage(path, models.page, ws),
-                                   CmsRouter('<path:path>')))
+        if path:
+            ws = WebSocket('<id>/updates', PageUpdates())
+            handler.middleware.extend((EditPage(path, models.page, ws),
+                                       CmsRouter('<path:path>')))
 
     def on_start(self, app, server):
         if not app.config['SITE_ID']:

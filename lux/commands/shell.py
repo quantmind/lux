@@ -4,6 +4,7 @@ import lux
 
 
 class Command(lux.Command):
+    _build_pulsar = False
     help = "Runs a Python interactive interpreter. Use IPython if available"
 
     def run(self, argv, start=True):

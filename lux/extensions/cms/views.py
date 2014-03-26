@@ -56,20 +56,101 @@ from pulsar.apps import ws
 from pulsar.utils.httpurl import iri_to_uri, JSON_CONTENT_TYPES
 from pulsar.apps.wsgi import Json
 
-from lux import Router, forms, route, Html, RouterParam
+from lux import Router, forms, route, Html, RouterParam, Template, Context
 from lux.extensions import api
 from lux.forms import smart_redirect
 
-from .templates import Dialog
-from .grid import CmsContext, THIS
 from .forms import PageForm
 
 
 CONTENT_API_URL = 'content'
+CONTENT_URL = 'content_url'
+THIS = 'this'
+
+
+def int_or_string(value):
+    try:
+        return int(value)
+    except ValueError:
+        return value
 
 
 def same_pk(pk1, pk2):
     return str(pk1) == str(pk2)
+
+
+Dialog = Template(
+    Template(Context('title', tag='h3'), tag='div', cn='hd'),
+    Template(Context('body', tag='div'), tag='div', cn='bd'))
+
+
+class CmsContext(Context):
+    '''A specialised :class:`.Context` for rendering
+    the dynamic content in a :class:`PageTemplate`.
+
+    The dynamic content is retrieved from data in a backend database.
+
+    :param all_pages: optional boolean to pass during initialisation,
+        it sets the :attr:`all_pages` attribute
+    '''
+    tag = 'div'
+    classes = 'cms-grid'
+
+    def html(self, request, context, children, **kw):
+        page = request.cache.page if request else None
+        if page:
+            context[self.key] = self._get_content(page, context)
+        elif self.all_pages:
+            pass
+        return super(CmsContext, self).html(request, context, children, **kw)
+
+    @property
+    def all_pages(self):
+        '''When ``True``, this context is used by all pages.'''
+        return self.parameters.all_pages
+
+    def _get_content(self, page, context):
+        container = Html(None)
+        if 'content_ids' not in context:
+            context['content_ids'] = {}
+        ids = context['content_ids']
+        if not page.content:
+            return container
+        for content in page.content.get(self.key) or ():
+            template = content.get('template')
+            row = Html('div', template=template)
+            for content in content.get('children') or ():
+                column = Html('div')
+                for bc in content or ():
+                    block = Html('div', template=bc.get('template'))
+                    for data in bc.get('children') or ():
+                        if not data:
+                            continue
+                        content = data.pop('content', None)
+                        if content is None:
+                            continue
+                        if isinstance(content, dict):
+                            elem = Html('div', data=content)
+                            # This is THE very special case where the
+                            # content in this element is the content
+                            # served by the url if there was no cms extension
+                            if content.get(CONTENT_URL) == THIS:
+                                value = context.get(THIS)
+                                elem.append(Html('div', value, field=THIS))
+                        else:
+                            # id, we need to retrieve the content
+                            content = int_or_string(content)
+                            elem = Html('div')
+                            if content in ids:
+                                ids[content].append(elem)
+                            else:
+                                ids[content] = [elem]
+                        elem.data(data)
+                        block.append(elem)
+                    column.append(block)
+                row.append(column)
+            container.append(row)
+        return container
 
 
 class PageContentManager(api.ContentManager):
@@ -113,7 +194,7 @@ class PageMixin(object):
             if page is None:
                 site = yield from models.site.get(site_id)
             else:
-                site = page.site
+                site = yield page.site
             request.cache.site = site
             request.cache.pages = pages
             request.cache.pages_id = pages
@@ -237,7 +318,6 @@ class EditPage(PageMixin, api.Crud):
             raise Http404
         # We have permissions
         if request.has_permission('update', page):
-            this_url = page.path(**request.url_data)
             form = self.form_factory(request=request, instance=page,
                                      manager=self.manager)
             #
@@ -250,8 +330,7 @@ class EditPage(PageMixin, api.Crud):
             #
             doc.body.append(Html('div', edit, cn='cms-control'))
             #
-            doc.data({'this_url': this_url,
-                      'content_urls': self.content_urls(request)})
+            doc.data('content_urls', self.content_urls(request, page))
             #
             scheme = 'ws'
             if request.is_secure:
@@ -313,23 +392,36 @@ class EditPage(PageMixin, api.Crud):
                         navigation.user.insert(0, navigation.item(
                             url, icon=self.edit_icon, text='edit'))
 
-    def content_urls(self, request):
+    def content_urls(self, request, page):
         '''The list of :ref:`cms site content <contenturl>` available.'''
+        # current url
+        this_url = page.path(**request.url_data)
         urls = []
         for handle in request.app.handler.middleware:
             if isinstance(handle, Router):
-                urls.extend(self._content_urls(request, handle))
+                urls.extend(self._content_urls(request, handle, this_url))
+        if urls:
+            urls = sorted(urls, key=lambda x: x['text'])
+            if urls[0]['value'] == 'this':
+                 urls[0]['text'] = 'this page'
         return urls
 
-    def _content_urls(self, request, handle):
+    def _content_urls(self, request, handle, this_url):
         #NOT A COROUTINE!
-        content = getattr(handle, 'cms_content', None)
-        if content:
-            path = handle.path()
-            yield (content, path)
-        for router in handle.routes:
-            for cp in self._content_urls(request, router):
-                yield cp
+        try:
+            path = handle.path(**request.url_data)
+        except Exception:
+            pass
+        else:
+            if path == this_url:
+                yield {'value': 'this', 'text': ''}
+            else:
+                content = getattr(handle, 'cms_content', None)
+                if content:
+                    yield {'value': path, 'text': content}
+            for router in handle.routes:
+                for cp in self._content_urls(request, router, this_url):
+                    yield cp
 
 
 class PageUpdates(api.CrudWebSocket, PageMixin):
@@ -385,8 +477,12 @@ class PageUpdates(api.CrudWebSocket, PageMixin):
                 # site contents, update site
                 if site_contents:
                     fields['content'] = page_contents
-                    site = instance.site
-                    site.content.update(site_contents)
+                    site = request.cache.site
+                    content = site.get('content')
+                    if not content:
+                        site['content'] = site_contents
+                    else:
+                        content.update(site_contents)
                     request.models.site.save(site)
             return super(PageUpdates, self).update_create(websocket, manager,
                                                           fields, instance)

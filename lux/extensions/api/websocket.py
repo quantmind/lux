@@ -56,10 +56,10 @@ class CrudWebSocket(ws.WS):
         pkname = manager._meta.pkname()
         if isinstance(pks, list):
             query = manager.filter(**{pkname: pks})
-            instances = yield query.all()
+            instances = yield from query.all()
             self.write_instances(websocket, message, instances)
         elif isinstance(pks, dict):
-            instance = yield manager.get(**{pkname: pks[pkname]})
+            instance = yield from manager.get(pks[pkname])
             self.write_instance(websocket, message, instance)
         else:
             raise BadRequest('Cannot get instance')
@@ -72,7 +72,7 @@ class CrudWebSocket(ws.WS):
         if websocket.handshake.has_permission('create', manager):
             data = message.get('data')
             if data is not None:
-                instance = yield create(websocket, manager, data)
+                instance = yield from create(websocket, manager, data)
                 self.write_instance(websocket, message, instance, 201)
             else:
                 raise BadRequest('Cannot create model. No data')
@@ -89,9 +89,10 @@ class CrudWebSocket(ws.WS):
             pkname = manager._meta.pkname()
             pk = data.get(pkname)
             if pk:
-                instance = yield manager.get(**{pkname: pk})
+                instance = yield from manager.get(pk)
                 if websocket.handshake.has_permission('update', instance):
-                    instance = yield update(websocket, manager, data, instance)
+                    instance = yield from update(websocket, manager,
+                                                 data, instance)
                     self.write_instance(websocket, message, instance)
                 else:
                     raise PermissionDenied
@@ -108,9 +109,9 @@ class CrudWebSocket(ws.WS):
             pkname = manager._meta.pkname()
             pk = data.get(pkname)
             if pk:
-                instance = yield manager.get(pk)
+                instance = yield from manager.get(pk)
                 if websocket.handshake.has_permission('delete', instance):
-                    yield instance.delete()
+                    yield from instance.delete()
                     self.write(websocket, message, 204)
                 else:
                     raise PermissionDenied
@@ -175,7 +176,7 @@ class CrudWebSocket(ws.WS):
         self.write(websocket, {'mid': mid, 'data': data})
 
     def write_instance(self, websocket, message, instance, status=200):
-        message['data'] = instance.tojson()
+        message['data'] = instance.to_json()
         self.write(websocket, message, status)
 
     def error(self, websocket, message, msg, status=500):

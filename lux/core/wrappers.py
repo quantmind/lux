@@ -119,7 +119,8 @@ class headers:
 
 
 class Router(wsgi.Router):
-    '''Extend pulsar Router with content management.'''
+    '''Extend pulsar :class:`~pulsar.apps.wsgi.routers.Router` with content
+    management.'''
     content_manager = None
     '''Optional :class:`lux.core.content.ContentManager`.
 

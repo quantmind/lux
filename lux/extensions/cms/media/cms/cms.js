@@ -1,17 +1,17 @@
 //
 //  LUX CMS
-//  ---------------------------------
+//  =========
 
-//  This is a the fornt-end implementation of lux content management system
+//  Fornt-end implementation of lux content management system
 //  extension. It provides an easy and elegant way to add content to
 //  pages. It includes:
 
-//  * Inline editing
+//  * [Inline editing](#inline-editing) of [content views](#content-view)
 //  * drag & drop for content blocks within a page
 //  * Extendibility using javascript alone
 
 //  The layout starts with a Page which contains a given set of ``Grid``
-//  components which are managed the ``GridView`` model.
+//  components, each managed by a [GridView](#gridview).
 //
 //  Each ``Grid`` contains one or more ``Row`` components which can be added
 //  interactively. A row has several templates with a predefined set of
@@ -269,12 +269,12 @@ define(['lux'], function (lux) {
     });
 
     //
-    // Dialog for editing Content
-    // ------------------------------------
+    // ## Inline Editing
 
     //
-    // Pop up dialog for editing content within a block element.
-    // ``self`` is a positionview object.
+    // Inline editing is implemented with a pop up dialog
+    // within a [content view](#content-view) element.
+
     var edit_content_dialog = function (options) {
         var dialog = new lux.Dialog(options.contentedit),
             page_limit = options.page_limit || 10,
@@ -330,7 +330,8 @@ define(['lux'], function (lux) {
             block.wrapper = this.value;
         });
         //
-        // AJAX Content Loading
+        // AJAX Content Loading is available when the ``options`` object
+        // contain the ``content_url``
         if (options.content_url) {
             fieldset_dbfields.find('[name="title"]').Select({
                 placeholder: 'Search content',
@@ -833,11 +834,12 @@ define(['lux'], function (lux) {
     }),
 
     //
-    //  Grid View
-    //  --------------------
-    //
-    //  View manager for a Grid. A grid is a container of Rows.
-    //  In editing mode it is used to add and remove Rows.
+    //  ## GridView
+
+    //  View manager for an html grid.
+
+    //  A grid is a container of rows.
+    //  In editing mode it is used to add and remove rows.
     GridView = views.grid = BaseContentView.extend({
         type: 'grid',
         //
@@ -1018,14 +1020,17 @@ define(['lux'], function (lux) {
         }
     }),
 
-    //  Content View
-    //  --------------------
     //
-    //  The container of contents and therefore the atom of lux CMS.
+    //  ## Content View
+
+    //  The view for contents and therefore the atom of lux CMS.
+
     //  The content can be either retrieved via a backend (when in editing mode)
-    //  Or accessed via children elements when in read mode. Childern elements
+    //  or accessed via children elements when in read mode. Childern elements
     //  have the ``field`` entry in their html data attribute. The field contains
     //  the name of the field for which the inner html of the element provides value.
+    //
+    //  [Inline editing](#inline-editing) is available when in editing mode.
     ContentView = views.content = BaseContentView.extend({
         type: 'content',
         //
@@ -1049,8 +1054,6 @@ define(['lux'], function (lux) {
                         data[field] = elem.html();
                     } else {
                         self.log('Field not available in content', 'WARNING');
-                        //TODO: what is this?
-                        //this.content_type.fields.jQuery = elem;
                     }
                 });
                 if (!data.keywords) data.keywords = [];
@@ -1678,10 +1681,9 @@ define(['lux'], function (lux) {
     });
 
     //
-    //  lux web CMS extension
+    //  Lux cms view
     //  --------------------------------
     //
-    //  This is the javascript handler of ``lux.extensions.cms``.
     //  Updates to the backend are either via a websocket or ajax requests.
     var CmsView = lux.CmsView = lux.createView('cms', {
         //
@@ -1761,7 +1763,6 @@ define(['lux'], function (lux) {
             }
         },
         //
-        // The decorator called by ``lux.web``
         initialise: function (options) {
             var self = this,
                 elem = self._element;

@@ -311,6 +311,7 @@ class Extension(lux.Extension):
                 config['DATASTORE'][''] = address
             else:
                 raise ValueError('Default datastore not set')
+        self.logger.debug('Create odm mapper at %s', address)
         mapper = odm.Mapper(address)
         self.set_search_engine(app, mapper)
         # don't need lux has we know it does not have any model

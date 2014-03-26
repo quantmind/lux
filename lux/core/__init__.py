@@ -66,4 +66,4 @@ from .permissions import *
 from .app import *
 from .wrappers import *
 from .content import *
-from . import grid
+from .templates import *

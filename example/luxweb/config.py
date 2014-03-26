@@ -8,6 +8,7 @@ EXTENSIONS = ['lux.extensions.base',
               'lux.extensions.api',
               'lux.extensions.cms',
               'lux.extensions.services',
+              'lux.extensions.debug',
               'jstest']
 
 CLEAN_URL = False

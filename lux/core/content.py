@@ -15,22 +15,6 @@ Html
    :member-order: bysource
 
 
-Template
-~~~~~~~~~~~~~~~~~~~~
-
-.. autoclass:: Template
-   :members:
-   :member-order: bysource
-
-
-Context
-~~~~~~~~~~~~~~~~~~~~
-
-.. autoclass:: Context
-   :members:
-   :member-order: bysource
-
-
 .. _html-link:
 
 HtmlLink
@@ -77,7 +61,7 @@ else:
         dw.writeheader()
 
 
-__all__ = ['HtmlLink', 'Column', 'ContentManager', 'Template', 'Context']
+__all__ = ['HtmlLink', 'Column', 'ContentManager']
 
 
 class HtmlLink(namedtuple('HtmlLinkBase', 'href text icon')):
@@ -502,145 +486,3 @@ class ContentManager(object):
     def _setup(self):
         columns = self._columns or ()
         self._columns = [Column.get(c) for c in columns]
-
-
-class Template(object):
-    '''A factory of :class:`Html` objects.
-
-    This is a callable class used for creating :class:`Html` instances from
-    a template::
-
-        >>> simple = Template(Context('foo', tag='span'), tag='div')
-        >>> html = simple(cn='test', context={'foo': 'bla'})
-        >>> html.render()
-        <div class='test'><span data-context='foo'>bla</span></div>
-
-    .. attribute:: key
-
-        An optional string which identify this :class:`Template`.
-
-    .. attribute:: children
-
-        List of :class:`Template` objects which are rendered as children
-        of this :class:`Template`
-
-    .. attribute:: parameters
-
-        An attribute dictionary containing all key-valued parameters.
-
-        it is initialised by the :meth:`init_parameters` method at the end
-        of initialisation.
-    '''
-    key = None
-    tag = None
-    classes = None
-
-    def __init__(self, *children, **parameters):
-        if 'key' in parameters:
-            self.key = parameters.pop('key')
-        if not children:
-            children = [self.child_template()]
-        new_children = []
-        for child in children:
-            child = self.child_template(child)
-            if child:
-                new_children.append(child)
-        self.children = new_children
-        self.init_parameters(**parameters)
-
-    def __repr__(self):
-        return '%s(%s)' % (self.key or self.__class__.__name__, self.tag or '')
-
-    def __str__(self):
-        return self.__repr__()
-
-    def child_template(self, child=None):
-        return child
-
-    def init_parameters(self, tag=None, **parameters):
-        '''Called at the and of initialisation.
-
-        It fills the :attr:`parameters` attribute.
-        It can be overwritten to customise behaviour.
-        '''
-        self.tag = tag or self.tag
-        self.parameters = AttributeDictionary(parameters)
-
-    def __call__(self, request=None, context=None, children=None, **kwargs):
-        '''Create an Html element from this template.'''
-        c = []
-        if context is None:
-            context = {}
-        for child in self.children:
-            child = child(request, context, **kwargs)
-            c.append(self.post_process_child(child, **kwargs))
-        if children:
-            c.extend(children)
-        return self.html(request, context, c, **kwargs)
-
-    def html(self, request, context, children, **kwargs):
-        '''Create the :class:`Html` instance.
-
-        This method is invoked at the end of the ``__call__`` method with
-        a list of ``children`` elements and a ``context`` dictionary.
-        This method shouldn't be accessed directly.
-
-        :param request: a client request, can be ``None``.
-        :param context: a dictionary of :class:`Html` or strings to include.
-        :param children: list of children elements.
-        :param kwargs: additional parameters used when initialising the
-            :attr:`Html` for this template.
-        :return: an :class:`Html` object.
-        '''
-        params = self.parameters
-        if kwargs:
-            params = dict(params)
-            params.update(kwargs)
-        html = Html(self.tag, *children, **params)
-        html.maker = self
-        return html.addClass(self.classes)
-
-    def get(self, key):
-        '''Retrieve a children :class:`Template` with :attr:`Template.key`
-equal to ``key``. The search is done recursively and the first match is
-returned. If not available return ``None``.'''
-        for child in self.children:
-            if child.key == key:
-                return child
-        for child in self.children:
-            elem = child.get(key)
-            if elem is not None:
-                return elem
-
-    def post_process_child(self, child, **parameters):
-        return child
-
-
-class Context(Template):
-    '''A specialised :class:`Template` which uses the :attr:`Template.key`
-    to extract content from the ``context`` dictionary passed to the template
-    callable method.
-
-    :param key: initialise the :attr:`Template.key` attribute. It must be
-        provided.
-
-    Fore example::
-
-        >>> from lux import Context
-        >>> template = Context('foo', tag='div')
-        >>> template.key
-        'foo'
-        >>> html = template(context={'foo': 'pippo'})
-        >>> html.render()
-        <div>pippo</div>
-    '''
-    def __init__(self, key, *children, **params):
-        params['key'] = key
-        params['context'] = key
-        super(Context, self).__init__(*children, **params)
-
-    def html(self, request, context, children, **kwargs):
-        html = super(Context, self).html(request, context, children, **kwargs)
-        if context:
-            html.append(context.get(self.key))
-        return html

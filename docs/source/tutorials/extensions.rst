@@ -7,7 +7,7 @@ Writing Extensions
 ====================================
 
 When writing a new extensions, one starts by subclassing the
-:class:`Extension` class::
+:class:`.Extension` class::
 
     import lux
 
@@ -19,9 +19,9 @@ When writing a new extensions, one starts by subclassing the
             ...
 
 
-Probably, the :meth:`Extension.middleware` is the single
+Probably, the :meth:`.Extension.middleware` is the
 most important method an extensions can override. It is called once only
-by the :class:`App` serving the web site, and it must return an iterable over
+by the :class:`.App` serving the web site, and it must return an iterable over
 WSGI_ middleware or ``None``. It is also a chance to perform
 custom initialisation of the extensions.
 
@@ -31,7 +31,7 @@ Events
 
 An extension can register several handlers which are invoked at different
 points during the application live-span. These handlers receive as
-first positional argument, the :class:`App` instance running the web site
+first positional argument, the :class:`.App` instance running the web site
 and are implemented by adding some of the following methods to your
 extension class:
 
@@ -42,9 +42,10 @@ on_config
 
 .. py:method:: Extension.on_config(self, app)
 
-Called once only after the :attr:`App.config` dictionary has been loaded from
+This is the first event to be fired. It is executd once only after the
+:attr:`.App.config` dictionary has been loaded from
 the setting file. This is a chance to perform post processing on
-parameters before the wsgi :attr:`App.handler` is loaded.
+parameters before the wsgi :attr:`.App.handler` is loaded.
 
 
 .. _event_on_loaded:
@@ -54,8 +55,8 @@ on_loaded
 
 .. py:method:: Extension.on_loaded(self, app, handler)
 
-Called once only when all the :class:`Extension` load their
-:meth:`~Extension.middleware` into
+Called once only when all :class:`.Extension` have loaded their
+:meth:`~.Extension.middleware` into
 the WSGI ``handler``. A chance to add additional middleware or perform
 any sort of post-processing on the wsgi application ``handler``.
 

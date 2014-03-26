@@ -4,6 +4,7 @@ import lux
 
 
 class Command(lux.Command):
+    _build_pulsar = False
     help = "Starts a fully-functional Web server using pulsar."
 
     def run(self, argv, start=True):

@@ -1,8 +1,7 @@
     //
-    //  lux web CMS extension
+    //  Lux cms view
     //  --------------------------------
     //
-    //  This is the javascript handler of ``lux.extensions.cms``.
     //  Updates to the backend are either via a websocket or ajax requests.
     var CmsView = lux.CmsView = lux.createView('cms', {
         //
@@ -82,7 +81,6 @@
             }
         },
         //
-        // The decorator called by ``lux.web``
         initialise: function (options) {
             var self = this,
                 elem = self._element;

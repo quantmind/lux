@@ -59,7 +59,7 @@ class LogoutUser(lux.Router):
     icon = 'sign-out'
 
     def post(self, request):
-        yield request.app.permissions.logout(request)
+        yield from request.app.permissions.logout(request)
         url = request.url_data.get('redirect', '/')
         coroutine_return(smart_redirect(request, url))
 

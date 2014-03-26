@@ -1,3 +1,15 @@
+//
+//  Lux
+//  ==========
+
+//  Javascript library for lux web-framework. It defines the following
+//  components:
+//
+//  * [Class](#class): an object-oriented class construct. It provides inheritance
+//    and overriding capabilities via the ``_super`` method.
+//  * [Model](#model): extends ``Class`` with methods for handling back-end data.
+//    A model is a representation of a data store item/row.
+//
 define(['lodash', 'jquery'], function (_, $) {
     "use strict";
 
@@ -178,8 +190,7 @@ define(['lodash', 'jquery'], function (_, $) {
         return t;
     }(function(){})),
     //
-    //  Class
-    //  ----------------
+    //  ## Class
 
     //  Lux base class.
     //  The `extend` method is the most important function of this object.
@@ -390,8 +401,7 @@ define(['lodash', 'jquery'], function (_, $) {
         }
     }),
     //
-    // Model
-    // --------------------------
+    // ## Model
     //
     // The base class for a model. A model is a single, definitive source
     // of data about your data. A Model consists of ``fields`` and behaviours
@@ -1421,12 +1431,12 @@ define(['lodash', 'jquery'], function (_, $) {
             var o = this.options,
                 self = this;
             if (!this._delay) {
-                web.logger.info('Exiting websocket');
+                logger.info('Exiting websocket');
                 return;
             }
             this._retries += 1;
             if (o.maxRetries !== null && (this._retries > o.maxRetries)) {
-                web.logger.info('Exiting websocket after ' + this.retries + ' retries.');
+                logger.info('Exiting websocket after ' + this.retries + ' retries.');
                 return;
             }
             //
@@ -1435,7 +1445,7 @@ define(['lodash', 'jquery'], function (_, $) {
                 this._delay = lux.math.normalvariate(this._delay, this._delay * o.jitter);
             }
             //
-            web.logger.info('Try to reconnect websocket in ' + this._delay + ' seconds');
+            logger.info('Try to reconnect websocket in ' + this._delay + ' seconds');
             this.trigger('reconnecting', this._delay);
             this._reconnect = lux.eventloop.call_later(this._delay, function () {
                 self._reconnect = null;
@@ -2048,17 +2058,20 @@ define(['lodash', 'jquery'], function (_, $) {
     });
     //  Ajax Links & buttons
     //  ------------------------
-    var ajax_on_success = function (o, s, xhr) {
-        if (o.redirect) {
-            window.location = o.redirect;
-        }
+    //
+    lux.ajaxResponses = [];
+    //
+    lux.ajaxResponse = function (o, code, jqXHR) {
+        _(lux.ajaxResponses).forEach(function (response) {
+            return response(o, jqXHR);
+        });
     };
 
     lux.ajaxElement = function (elem) {
         var url = elem.is('a') ? elem.attr('href') : elem.data('href'),
             options = {
                 type: elem.data('action') || 'get',
-                success: ajax_on_success
+                success: lux.ajaxResponse
             };
         elem.click(function (e) {
             e.preventDefault();
@@ -2070,6 +2083,20 @@ define(['lodash', 'jquery'], function (_, $) {
         selector: '[data-ajax="true"]',
         load: function(elem) {
             lux.ajaxElement($(elem));
+        }
+    });
+
+    //
+    lux.ajaxResponses.push(function (o, status, jqXHR) {
+        if (o.redirect) {
+            window.location = o.redirect;
+            return true;
+        }
+    });
+
+    //
+    lux.ajaxResponses.push(function (o, status, jqXHR) {
+        if (o.html) {
         }
     });
 
@@ -2158,7 +2185,7 @@ define(['lodash', 'jquery'], function (_, $) {
             ajax: false,
             complete: null,
             error: null,
-            success: null
+            success: lux.ajaxResponse
         },
         //
         initialise: function (options) {
@@ -2566,7 +2593,6 @@ define(['lodash', 'jquery'], function (_, $) {
     };
     //
     lux.set_value_hooks.push(get_select2_value);
-
 
     //
     //  A view for displaying grids
