@@ -15,25 +15,33 @@ Context
    :member-order: bysource
 
 
-GridTemplate
-=============
+Page Template
+~~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: PageTemplate
+   :members:
+   :member-order: bysource
+
+
+Grid Template
+~~~~~~~~~~~~~~~~~~~~
 
 .. autoclass:: GridTemplate
    :members:
    :member-order: bysource
 
 
-Row
-=============
+Row Template
+~~~~~~~~~~~~~~~~~~~~
 
-.. autoclass:: Row
+.. autoclass:: RowTemplate
    :members:
    :member-order: bysource
 
-Column
-=============
+Column Template
+~~~~~~~~~~~~~~~~~~~~
 
-.. autoclass:: Column
+.. autoclass:: ColumnTemplate
    :members:
    :member-order: bysource
 '''
@@ -189,7 +197,12 @@ class Context(Template):
 
 
 class ColumnTemplate(Template):
-    '''A column can have one or more :class:`Block`.
+    '''A template to place inside a :class:`.RowTemplate`.
+
+    :param span: fraction indicating how much this template extend across
+        its row container. For example ``0.5`` is half span. Must be between
+        0 and 1.
+
     '''
     tag = 'div'
     classes = 'column'
@@ -203,7 +216,8 @@ class ColumnTemplate(Template):
 
 class RowTemplate(Template):
     '''A :class:`.RowTemplate` is a container of :class:`.ColumnTemplate`
-    elements.
+    elements. It should be placed inside a :class:`.GridTemplate` for
+    better rendering.
 
     :param column: Optional parameter which set the :attr:`column` attribute.
 
@@ -214,6 +228,7 @@ class RowTemplate(Template):
 
         Default: 12
     '''
+    grid_child = True
     tag = 'div'
     columns = 12
 
@@ -248,24 +263,23 @@ class GridTemplate(Template):
         return html.addClass(cn)
 
     def child_template(self, child=None):
-        if not isinstance(child, (Row, CmsContext)):
-            child = Row(child)
+        if not getattr(child, 'grid_child', False):
+            child = RowTemplate(child)
         return child
 
 
 class PageTemplate(Template):
-    '''The main :class:`.Template` of the content management system extension.
+    '''A :class:`.Template` to render the inner part of the HTML ``body`` tag.
 
-    The template renders the inner part of the HTML ``body`` tag.
     A page template is created by including the page components during
     initialisation, for example::
 
         from lux.extensions.cms.grid import PageTemplate
 
         head_body_foot = PageTemplate(
-            Row()
-            GridTemplate(CmsContext('content')),
-            GridTemplate(CmsContext('footer', all_pages=True)))
+            Template(...),
+            GridTemplate(...),
+            ...)
     '''
     tag = 'div'
     classes = 'cms-page'
@@ -285,8 +299,6 @@ class PageTemplate(Template):
                 for content in contents:
                     for elem in ids.get(content.id, ()):
                         self.apply_content(elem, content)
-            doc = request.html_document
-            doc.head.scripts.require('cms')
         return html
 
     def apply_content(self, elem, content):

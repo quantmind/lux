@@ -11,6 +11,7 @@ except ImportError:
 from .contents import Page, Category, Tag, Author
 
 
+READERS = {}
 METADATA_PROCESSORS = {
     'tags': lambda x, y: [Tag(tag, y) for tag in x.split(',')],
     'date': lambda x, y: get_date(x),
@@ -22,7 +23,39 @@ METADATA_PROCESSORS = {
 }
 
 
+def process_file(app, path):
+    if not os.path.isfile(path):
+        path = '%s.%s' % (path, app.config['SOURCE_SUFFIX'])
+    if not os.path.isfile(path):
+        app.logger.warning('Could not locate %s', path)
+        return
+    extension = path.split('.')[-1]
+    Reader = READERS.get(extension)
+    if not Reader:
+        app.logger.warning('Reader for %s extension not available', extension)
+    elif not Reader.enabled:
+        app.logger.warning('Missing dependencies for %s' % Reader.__name__)
+    else:
+        reader = Reader(app)
+        return reader.read(path)
 
+
+def get_rel_dir(d, base, res=''):
+    if d == base:
+        return res
+    br, r = os.path.split(d)
+    if res:
+        r = os.path.join(r, res)
+    return get_rel_dir(br, base, r)
+
+
+def register_reader(cls):
+    for extension in cls.file_extensions:
+        READERS[extension] = cls
+    return cls
+
+
+@register_reader
 class BaseReader(object):
     """Base class to read files.
 
@@ -40,12 +73,16 @@ class BaseReader(object):
     file_extensions = ['static']
     extensions = None
 
-    def __init__(self, settings):
-        self.settings = settings
+    def __init__(self, app):
+        self.app = app
+        self.config = app.config
+
+    def __str__(self):
+        return self.__class__.__name__
 
     def process_metadata(self, name, value):
         if name in METADATA_PROCESSORS:
-            return METADATA_PROCESSORS[name](value, self.settings)
+            return METADATA_PROCESSORS[name](value, self.config)
         return value
 
     def read(self, source_path):
@@ -55,107 +92,7 @@ class BaseReader(object):
         return content, metadata
 
 
-class _FieldBodyTranslator(HTMLTranslator):
-
-    def __init__(self, document):
-        HTMLTranslator.__init__(self, document)
-        self.compact_p = None
-
-    def astext(self):
-        return ''.join(self.body)
-
-    def visit_field_body(self, node):
-        pass
-
-    def depart_field_body(self, node):
-        pass
-
-
-def render_node_to_html(document, node):
-    visitor = _FieldBodyTranslator(document)
-    node.walkabout(visitor)
-    return visitor.astext()
-
-
-class PelicanHTMLTranslator(HTMLTranslator):
-
-    def visit_abbreviation(self, node):
-        attrs = {}
-        if node.hasattr('explanation'):
-            attrs['title'] = node['explanation']
-        self.body.append(self.starttag(node, 'abbr', '', **attrs))
-
-    def depart_abbreviation(self, node):
-        self.body.append('</abbr>')
-
-    def visit_image(self, node):
-        # set an empty alt if alt is not specified
-        # avoids that alt is taken from src
-        node['alt'] = node.get('alt', '')
-        return HTMLTranslator.visit_image(self, node)
-
-
-class RstReader(BaseReader):
-    """Reader for reStructuredText files"""
-
-    enabled = bool(docutils)
-    file_extensions = ['rst']
-
-    def __init__(self, *args, **kwargs):
-        super(RstReader, self).__init__(*args, **kwargs)
-
-    def _parse_metadata(self, document):
-        """Return the dict containing document metadata"""
-        output = {}
-        for docinfo in document.traverse(docutils.nodes.docinfo):
-            for element in docinfo.children:
-                if element.tagname == 'field':  # custom fields (e.g. summary)
-                    name_elem, body_elem = element.children
-                    name = name_elem.astext()
-                    if name == 'summary':
-                        value = render_node_to_html(document, body_elem)
-                    else:
-                        value = body_elem.astext()
-                elif element.tagname == 'authors':  # author list
-                    name = element.tagname
-                    value = [element.astext() for element in element.children]
-                else:  # standard fields (e.g. address)
-                    name = element.tagname
-                    value = element.astext()
-                name = name.lower()
-
-                output[name] = self.process_metadata(name, value)
-        return output
-
-    def _get_publisher(self, source_path):
-        extra_params = {'initial_header_level': '2',
-                        'syntax_highlight': 'short',
-                        'input_encoding': 'utf-8'}
-        user_params = self.settings.get('DOCUTILS_SETTINGS')
-        if user_params:
-            extra_params.update(user_params)
-
-        pub = docutils.core.Publisher(
-            destination_class=docutils.io.StringOutput)
-        pub.set_components('standalone', 'restructuredtext', 'html')
-        pub.writer.translator_class = PelicanHTMLTranslator
-        pub.process_programmatic_settings(None, extra_params, None)
-        pub.set_source(source_path=source_path)
-        pub.publish()
-        return pub
-
-    def read(self, source_path):
-        """Parses restructured text"""
-        pub = self._get_publisher(source_path)
-        parts = pub.writer.parts
-        content = parts.get('body')
-
-        metadata = self._parse_metadata(pub.document)
-        metadata.setdefault('title', parts.get('title'))
-
-        return content, metadata
-
-
+@register_reader
 class MarkdownReader(BaseReader):
     """Reader for Markdown files"""
 
@@ -164,7 +101,7 @@ class MarkdownReader(BaseReader):
 
     def __init__(self, *args, **kwargs):
         super(MarkdownReader, self).__init__(*args, **kwargs)
-        self.extensions = list(self.settings['MD_EXTENSIONS'])
+        self.extensions = list(self.config['MD_EXTENSIONS'])
         if 'meta' not in self.extensions:
             self.extensions.append('meta')
 
@@ -187,177 +124,13 @@ class MarkdownReader(BaseReader):
         """Parse content and metadata of markdown files"""
 
         self._md = Markdown(extensions=self.extensions)
-        with pelican_open(source_path) as text:
-            content = self._md.convert(text)
-
+        with open(source_path) as text:
+            content = self._md.convert(text.read())
         metadata = self._parse_metadata(self._md.Meta)
         return content, metadata
 
 
-class HTMLReader(BaseReader):
-    """Parses HTML files as input, looking for meta, title, and body tags"""
-
-    file_extensions = ['htm', 'html']
-    enabled = True
-
-    class _HTMLParser(HTMLParser):
-        def __init__(self, settings, filename):
-            HTMLParser.__init__(self)
-            self.body = ''
-            self.metadata = {}
-            self.settings = settings
-
-            self._data_buffer = ''
-
-            self._filename = filename
-
-            self._in_top_level = True
-            self._in_head = False
-            self._in_title = False
-            self._in_body = False
-            self._in_tags = False
-
-        def handle_starttag(self, tag, attrs):
-            if tag == 'head' and self._in_top_level:
-                self._in_top_level = False
-                self._in_head = True
-            elif tag == 'title' and self._in_head:
-                self._in_title = True
-                self._data_buffer = ''
-            elif tag == 'body' and self._in_top_level:
-                self._in_top_level = False
-                self._in_body = True
-                self._data_buffer = ''
-            elif tag == 'meta' and self._in_head:
-                self._handle_meta_tag(attrs)
-
-            elif self._in_body:
-                self._data_buffer += self.build_tag(tag, attrs, False)
-
-        def handle_endtag(self, tag):
-            if tag == 'head':
-                if self._in_head:
-                    self._in_head = False
-                    self._in_top_level = True
-            elif tag == 'title':
-                self._in_title = False
-                self.metadata['title'] = self._data_buffer
-            elif tag == 'body':
-                self.body = self._data_buffer
-                self._in_body = False
-                self._in_top_level = True
-            elif self._in_body:
-                self._data_buffer += '</{}>'.format(escape(tag))
-
-        def handle_startendtag(self, tag, attrs):
-            if tag == 'meta' and self._in_head:
-                self._handle_meta_tag(attrs)
-            if self._in_body:
-                self._data_buffer += self.build_tag(tag, attrs, True)
-
-        def handle_comment(self, data):
-            self._data_buffer += '<!--{}-->'.format(data)
-
-        def handle_data(self, data):
-            self._data_buffer += data
-
-        def handle_entityref(self, data):
-            self._data_buffer += '&{};'.format(data)
-
-        def handle_charref(self, data):
-            self._data_buffer += '&#{};'.format(data)
-
-        def build_tag(self, tag, attrs, close_tag):
-            result = '<{}'.format(escape(tag))
-            for k, v in attrs:
-                result += ' ' + escape(k)
-                if v is not None:
-                    result += '="{}"'.format(escape(v))
-            if close_tag:
-                return result + ' />'
-            return result + '>'
-
-        def _handle_meta_tag(self, attrs):
-            name = self._attr_value(attrs, 'name')
-            if name is None:
-                attr_serialized = ', '.join(['{}="{}"'.format(k, v) for k, v in attrs])
-                logger.warning("Meta tag in file %s does not have a 'name' attribute, skipping. Attributes: %s", self._filename, attr_serialized)
-                return
-            name = name.lower()
-            contents = self._attr_value(attrs, 'content', '')
-            if not contents:
-                contents = self._attr_value(attrs, 'contents', '')
-                if contents:
-                    logger.warning("Meta tag attribute 'contents' used in file %s, should be changed to 'content'", self._filename)
-
-            if name == 'keywords':
-                name = 'tags'
-            self.metadata[name] = contents
-
-        @classmethod
-        def _attr_value(cls, attrs, name, default=None):
-            return next((x[1] for x in attrs if x[0] == name), default)
-
-    def read(self, filename):
-        """Parse content and metadata of HTML files"""
-        with pelican_open(filename) as content:
-            parser = self._HTMLParser(self.settings, filename)
-            parser.feed(content)
-            parser.close()
-
-        metadata = {}
-        for k in parser.metadata:
-            metadata[k] = self.process_metadata(k, parser.metadata[k])
-        return parser.body, metadata
-
-
-class AsciiDocReader(BaseReader):
-    """Reader for AsciiDoc files"""
-
-    enabled = bool(asciidoc)
-    file_extensions = ['asc', 'adoc', 'asciidoc']
-    default_options = ["--no-header-footer", "-a newline=\\n"]
-
-    def read(self, source_path):
-        """Parse content and metadata of asciidoc files"""
-        from cStringIO import StringIO
-        with pelican_open(source_path) as source:
-            text = StringIO(source)
-        content = StringIO()
-        ad = AsciiDocAPI()
-
-        options = self.settings['ASCIIDOC_OPTIONS']
-        if isinstance(options, (str, unicode)):
-            options = [m.strip() for m in options.split(',')]
-        options = self.default_options + options
-        for o in options:
-            ad.options(*o.split())
-
-        ad.execute(text, content, backend="html4")
-        content = content.getvalue()
-
-        metadata = {}
-        for name, value in ad.asciidoc.document.attributes.items():
-            name = name.lower()
-            metadata[name] = self.process_metadata(name, value)
-        if 'doctitle' in metadata:
-            metadata['title'] = metadata['doctitle']
-        return content, metadata
-
-
 class Readers(object):
-    """Interface for all readers.
-
-    This class contains a mapping of file extensions / Reader classes, to know
-    which Reader class must be used to read a file (based on its extension).
-    This is customizable both with the 'READERS' setting, and with the
-    'readers_init' signall for plugins.
-
-    """
-
-    # used to warn about missing dependencies only once, at the first
-    # instanciation of a Readers object.
-    warn_missing_deps = True
 
     def __init__(self, settings=None):
         self.settings = settings or {}
@@ -428,10 +201,6 @@ class Readers(object):
         content, reader_metadata = reader.read(path)
         metadata.update(reader_metadata)
 
-        if content:
-            # find images with empty alt
-            find_empty_alt(content, path)
-
         # eventually filter the content with typogrify if asked so
         if content and self.settings['TYPOGRIFY']:
             from typogrify.filters import typogrify
@@ -447,44 +216,6 @@ class Readers(object):
                              settings=self.settings, source_path=path,
                              context=context)
 
-
-def find_empty_alt(content, path):
-    """Find images with empty alt
-
-    Create warnings for all images with empty alt (up to a certain number),
-    as they are really likely to be accessibility flaws.
-
-    """
-    imgs = re.compile(r"""
-        (?:
-            # src before alt
-            <img
-            [^\>]*
-            src=(['"])(.*)\1
-            [^\>]*
-            alt=(['"])\3
-        )|(?:
-            # alt before src
-            <img
-            [^\>]*
-            alt=(['"])\4
-            [^\>]*
-            src=(['"])(.*)\5
-        )
-        """, re.X)
-    matches = re.findall(imgs, content)
-    # find a correct threshold
-    nb_warnings = 10
-    if len(matches) == nb_warnings + 1:
-        nb_warnings += 1  # avoid bad looking case
-    # print one warning per image with empty alt until threshold
-    for match in matches[:nb_warnings]:
-        logger.warning('Empty alt attribute for image {} in {}'.format(
-            os.path.basename(match[1] + match[5]), path))
-    # print one warning for the other images with empty alt
-    if len(matches) > nb_warnings:
-        logger.warning('{} other images with empty alt attributes'
-                       .format(len(matches) - nb_warnings))
 
 
 def default_metadata(settings=None, process=None):

@@ -23,14 +23,31 @@ class Command(lux.Command):
         sitemap = config['STATIC_SITEMAP']
         self.create_media()
         self.copy_files(config['EXTRA_FILES'])
+        yield from self.build()
+
+    def build(self):
+        location = os.path.abspath(self.app.config['STATIC_LOCATION'])
+        app = self.app
+        config = app.config
+        for name, content in sorted(config['STATIC_SITEMAP'].items(),
+                                    key=lambda x: x[1].creation_counter):
+            for file_name, data in content(app, name):
+                data = yield from data
+                dst = os.path.join(location, file_name)
+                dirname = os.path.dirname(dst)
+                if not os.path.isdir(dirname):
+                    os.makedirs(dirname)
+                self.logger.info('Creating "%s"', dst)
+                with open(dst, 'w') as f:
+                    f.write(data)
 
     def create_media(self):
         location = os.path.abspath(self.app.config['STATIC_LOCATION'])
         media_dir = os.path.join(location, 'media')
         if os.path.isdir(media_dir):
-            self.logger.info('Removing media directory "%s"' % media_dir)
+            self.logger.info('Removing media directory "%s"', media_dir)
             shutil.rmtree(media_dir)
-        self.logger.info('Creating media directory "%s"' % media_dir)
+        self.logger.info('Creating media directory "%s"', media_dir)
         os.makedirs(media_dir)
         self.copy_media(media_dir, lux.PACKAGE_DIR, 'lux')
         for ext in self.app.extensions.values():

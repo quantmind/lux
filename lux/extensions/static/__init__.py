@@ -1,7 +1,13 @@
+'''Static site generator
+
+**Requirements**: :mod:`lux.extensions.base`
+
+'''
 import lux
 from lux import Parameter
 
-from .templates import DEFAULT_TEMPLATES
+from .templates import DEFAULT_TEMPLATE
+from .builder import Content
 
 
 class Extension(lux.Extension):
@@ -12,8 +18,10 @@ class Extension(lux.Extension):
     protection and user permissions levels.
     '''
     _config = [
-        Parameter('PAGE_TEMPLATES', DEFAULT_TEMPLATES,
-                  'A list of functions to perocess metadata'),
+        Parameter('STATIC_TEMPLATE', DEFAULT_TEMPLATE,
+                  'Default static template'),
+        Parameter('SOURCE_SUFFIX', 'md',
+                  'The default suffix of source filenames'),
         Parameter('METADATA_PROCESSORS', [],
                   'A list of functions to perocess metadata'),
         Parameter('STATIC_LOCATION', 'build',
@@ -22,5 +30,7 @@ class Extension(lux.Extension):
                   'Dictionary of contents for the site'),
         Parameter('EXTRA_FILES', (),
                   'List/tuple of additional files to copy to the '
-                  'STATIC_LOCATION')
+                  'STATIC_LOCATION'),
+        Parameter('MD_EXTENSIONS', [],
+                  'List/tuple of makrdown extensions')
                ]

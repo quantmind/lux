@@ -1,15 +1,12 @@
-import copy
-import locale
-import logging
-import functools
 import os
-import re
-import sys
-from urllib.parse import urlparse, urlunparse
-from datetime import datetime
+from functools import partial
+
+from lux.utils import memoized
+
+from .urlwrappers import Tag, Author, Category
 
 
-class Content(object):
+class BaseContent(object):
     """Represents a content.
 
     :param content: the string to parse, containing the original content.
@@ -262,10 +259,10 @@ class Content(object):
         """Dummy function"""
         pass
 
-    summary = property(_get_summary, _set_summary, "Summary of the article."
-                       "Based on the content. Can't be set")
-    url = property(functools.partial(get_url_setting, key='url'))
-    save_as = property(functools.partial(get_url_setting, key='save_as'))
+    #summary = property(_get_summary, _set_summary, "Summary of the article."
+    #                   "Based on the content. Can't be set")
+    #url = property(partial(get_url_setting, key='url'))
+    #save_as = property(partial(get_url_setting, key='save_as'))
 
     def _get_template(self):
         if hasattr(self, 'template') and self.template is not None:
@@ -298,45 +295,20 @@ class Content(object):
         )
 
 
-class Page(Content):
+class Page(BaseContent):
     mandatory_properties = ('title',)
     default_template = 'page'
 
 
-class Article(Page):
+class Article(BaseContent):
     mandatory_properties = ('title', 'date', 'category')
     default_template = 'article'
 
 
-class Draft(Page):
+class Draft(BaseContent):
     mandatory_properties = ('title', 'category')
     default_template = 'article'
 
 
-class Quote(Page):
+class Quote(BaseContent):
     base_properties = ('author', 'date')
-
-
-@python_2_unicode_compatible
-class Static(Page):
-    @deprecated_attribute(old='filepath', new='source_path', since=(3, 2, 0))
-    def filepath():
-        return None
-
-    @deprecated_attribute(old='src', new='source_path', since=(3, 2, 0))
-    def src():
-        return None
-
-    @deprecated_attribute(old='dst', new='save_as', since=(3, 2, 0))
-    def dst():
-        return None
-
-
-def is_valid_content(content, f):
-    try:
-        content.check_properties()
-        return True
-    except NameError as e:
-        logger.error("Skipping %s: could not find information about "
-                     "'%s'" % (f, e))
-        return False

@@ -4,8 +4,10 @@ import lux
 
 
 class Command(lux.Command):
-    _build_pulsar = False
     help = "Runs a Python interactive interpreter. Use IPython if available"
+
+    def __call__(self, argv, **params):
+        return self.run(argv, **params)
 
     def run(self, argv, start=True):
         app = self.app

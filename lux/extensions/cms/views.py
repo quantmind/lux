@@ -102,6 +102,7 @@ class CmsContext(Context):
             context[self.key] = self._get_content(page, context)
         elif self.all_pages:
             pass
+        request.html_document.head.scripts.require('cms')
         return super(CmsContext, self).html(request, context, children, **kw)
 
     @property

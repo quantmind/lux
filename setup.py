@@ -54,13 +54,13 @@ def fullsplit(path, result=None):
 
 # Compile the list of packages available, because distutils doesn't have
 # an easy way to do this.
-def get_rel_dir(d,base,res=''):
+def get_rel_dir(d, base, res=''):
     if d == base:
         return res
     br,r = os.path.split(d)
     if res:
         r = os.path.join(r,res)
-    return get_rel_dir(br,base,r)
+    return get_rel_dir(br, base, r)
 
 packages, data_files = [], []
 pieces = fullsplit(root_dir)

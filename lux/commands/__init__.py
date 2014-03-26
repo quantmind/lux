@@ -116,7 +116,6 @@ class Command(ConsoleParser):
 
         Default: ``sys.stderr``
     '''
-    _build_pulsar = True
     def __init__(self, name, app, stdout=None, stderr=None):
         self.name = name
         self.app = app
@@ -124,10 +123,9 @@ class Command(ConsoleParser):
         self.stderr = stderr
 
     def __call__(self, argv, **params):
-        if self._build_pulsar:
-            app = self.pulsar_app(argv, loghandlers=['console_level_message'])
-            app()
-        return self.run(argv, **params)
+        app = self.pulsar_app(argv, loghandlers=['console_level_message'])
+        app()
+        return self.run_until_complete(argv, **params)
 
     def get_version(self):
         """Return the :class:`.Command` version.
