@@ -17,3 +17,4 @@ Extensions
    cms
    sitemap
    services
+   static

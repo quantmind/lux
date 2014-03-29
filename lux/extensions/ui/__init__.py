@@ -58,14 +58,16 @@ from lux import Parameter
 class Extension(lux.Extension):
 
     _config = [
-        Parameter('THEME', None, ''),
-        Parameter('ICON_PROVIDER', 'fontawesome', 'Icons provider to use')]
+        Parameter('ICON_PROVIDER', 'fontawesome', 'Icons provider to use'),
+        Parameter('BOOTSTRAP', True, 'Set to true to use twitter bootstrap')]
 
     def on_html_document(self, app, request, doc):
         if doc.has_default_content_type:
             icon = app.config['ICON_PROVIDER']
             if icon == 'fontawesome':
                 doc.head.links.append('fontawesome')
+            if app.config['BOOTSTRAP']:
+                doc.head.links.append('bootstrap_css')
             doc.data('icon', icon)
 
 

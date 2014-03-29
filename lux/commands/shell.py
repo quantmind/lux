@@ -6,10 +6,7 @@ import lux
 class Command(lux.Command):
     help = "Runs a Python interactive interpreter. Use IPython if available"
 
-    def __call__(self, argv, **params):
-        return self.run(argv, **params)
-
-    def run(self, argv, start=True):
+    def __call__(self, argv, start=True):
         app = self.app
         server = self.pulsar_app(argv, PulsarShell,
                                  imported_objects={'app': app})

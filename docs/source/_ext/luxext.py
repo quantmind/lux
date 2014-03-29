@@ -63,7 +63,7 @@ class LuxExtensionDirective(Directive):
             yield '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
             yield ''
             try:
-                yield 'Default: ``%r``' % p.default
+                yield 'Default: ``%r``' % str(p.default)
             except Exception as e:
                 yield 'Default: ``%r``' % str(e)
             yield ''

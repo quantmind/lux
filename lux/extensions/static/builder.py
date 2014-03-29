@@ -2,17 +2,59 @@ import os
 
 from pulsar.utils.httpurl import remove_double_slash
 
-from lux import Html
+from lux import Html, template_engine, Template
 
-from .readers import process_file, get_rel_dir
+from .readers import READERS, get_rel_dir
+from .contents import Snippet, modified_datetime
+
+
+class BuildError(Exception):
+    pass
+
+
+def get_reader(app, ext):
+    Reader = READERS.get(ext)
+    if not Reader:
+        raise BuildError('Reader for %s extension not available' % ext)
+    elif not Reader.enabled:
+        raise BuildError('Missing dependencies for %s' % Reader.__name__)
+    return Reader(app)
+
+
+def build_snippets(app, context):
+    '''Build snippets for site contents
+    '''
+    src = app.config['SNIPPETS_LOCATION']
+    snippets = {}
+    if os.path.isdir(src):
+        for dirpath, _, filenames in os.walk(src):
+            rel_dir = get_rel_dir(dirpath, src)
+            for filename in filenames:
+                if filename.startswith('.'):
+                    continue
+                name, _ = os.path.join(rel_dir, filename).split('.', 1)
+                key = name.replace('/', '_')
+                src = os.path.join(dirpath, filename)
+                try:
+                    snippets[key] = yield from build_content(app, src, context)
+                except BuildError as e:
+                    app.logger.warning(str(e))
+                except Exception:
+                    app.logger.exception('Unhandled exception while building '
+                                         'snippet "%s"', src,
+                                         exc_info=True)
+    return snippets
 
 
 class Content(object):
+    '''Content builder
+    '''
     creation_counter = 0
 
-    def __init__(self, path, template=None):
+    def __init__(self, path, template=None, tag=None, **kw):
         self.path = path
         self.template = template
+        self.container = Template(tag=tag, **kw)
         self.creation_counter = Content.creation_counter
         Content.creation_counter += 1
 
@@ -20,10 +62,13 @@ class Content(object):
         return '%s(%s)' % (self.__class__.__name__, self.path)
     __str__ = __repr__
 
-    def __call__(self, app, name, path=None):
-        if not path:
-            bits = self.path.split('.')
-            path = os.path.join(app.meta.path, *bits)
+    def __call__(self, app, name, location, context):
+        if self.template is None:
+            self.template = app.config['STATIC_TEMPLATE']
+        self.container.children.append(self.template)
+        bits = self.path.split('.')
+        # the directory/file of source files
+        path = os.path.join(app.meta.path, *bits)
         if os.path.isdir(path):
             for dirpath, _, filenames in os.walk(path):
                 rel_dir = get_rel_dir(dirpath, path)
@@ -34,28 +79,58 @@ class Content(object):
                     name = filename.split('.')[0]
                     fname = os.path.join(dname, name)
                     fpath = os.path.join(dirpath, filename)
-                    for doc, name in self(app, fname, fpath):
-                        yield doc, name
-            return
+                    yield from self.build_file(app, fpath, fname, location,
+                                               context)
         else:
-            content_metadata = process_file(app, path)
-            if content_metadata:
-                name_doc = self.build_document(app, name, *content_metadata)
-                if name_doc:
-                    yield name_doc
+            if not os.path.isfile(path):
+                path = '%s.%s' % (path, app.config['SOURCE_SUFFIX'])
+            yield from self.build_file(app, path, name, location, context)
 
-    def build_document(self, app, name, content, metadata):
+    def build_file(self, app, src_filename, dst, location, context):
+        try:
+            if not os.path.isfile(src_filename):
+                raise BuildError('Could not locate %s', src_filename)
+            template = self.container
+            content = yield from build_content(app, src_filename, context,
+                                               template, dst)
+            #
+            dst_filename = os.path.join(location, content._dst)
+            dirname = os.path.dirname(dst_filename)
+            if not os.path.isdir(dirname):
+                os.makedirs(dirname)
+            #
+            app.logger.info('Creating "%s"', dst_filename)
+            with open(dst_filename, 'w') as f:
+                f.write(content._content)
+
+        except BuildError as e:
+            app.logger.warning(str(e))
+        except Exception:
+            app.logger.exception('Unhandled exception while building "%s"',
+                                 src_filename, exc_info=True)
+
+
+def build_content(app, src, context, template=None, dst=None):
+    ext = src.split('.')[-1]
+    reader = get_reader(app, ext)
+    data, metadata = reader.read(src)
+    content = Snippet(data, metadata, src=src)
+    #
+    if template:
+        assert dst, 'Requires destination'
+        engine = metadata.get('template',
+                              app.config['DEFAULT_TEMPLATE_ENGINE'])
         request = app.wsgi_request()
         response = request.response
-        response.content_type = metadata.get('content_type', 'text/html')
-        media = app.config['MEDIA_URL']
-        if response.content_type == 'text/html':
-            template = self.template
-            if template is None:
-                template = app.config['STATIC_TEMPLATE']
-            element = template(request, {'main': content})
-            name = '%s.html' % name
+        response.content_type = content.content_type
+        context = context.copy()
+        #
+        if content.content_type == 'text/html':
+            media = app.config['MEDIA_URL']
+            context['main'] = content
             doc = request.html_document
+            element = template(request, context)
+            dst = '%s.html' % dst
             favicon = app.config['FAVICON']
             if favicon:
                 if not favicon.startswith(media):
@@ -64,48 +139,60 @@ class Content(object):
                                            rel="shortcut icon"))
 
             doc.body.append(element)
-            dots = len(name.split('/')) - 1
-            self.relative_media(app, doc, dots)
-            return name, doc.render(request)
+            #
+            # Handle site url
+            site_url = app.config['SITE_URL']
+            if app.config['RELATIVE_URLS'] or not site_url:
+                dots = len(dst.split('/')) - 1
+                site_url = '/'.join(['..']*dots) if dots else '.'
+            if site_url.endswith('/'):
+                site_url = site_url[:-1]
+
+            relative_media(app, doc, site_url)
+            data = yield from doc(request)
+            context['site_url'] = site_url
+            content._content = template_engine(engine)(data, context)
+            content._dst = dst
         else:
-            app.logger.warning('Cannot build document. Content type %s is '
-                               'not supported', response.content_type)
+            raise BuildError('Cannot build document. Content type %s is '
+                             'not supported' % response.content_type)
 
-    def relative_media(self, app, doc, dots):
-        scripts = doc.head.scripts
-        links = doc.head.links
-        known_libraries = scripts.known_libraries
-        libraries = known_libraries.copy()
-        # override known libraries
-        scripts.known_libraries = libraries
-        links.known_libraries = libraries
-        #
-        omedia = app.config['MEDIA_URL']
-        if dots:
-            media = '%s%s' % ('/'.join(['..']*dots), omedia)
-        else:
-            media = omedia[1:]
+    return content
 
-        for links in doc.head.links.children.values():
-            for link in links:
-                self._modify_href('href', link, omedia, media)
-        #
-        required = []
-        for name, path in list(libraries.items()):
-            if isinstance(path, dict):
-                pass
-            elif path.startswith('//'):
-                path = 'http:%s' % path
-                libraries[name] = path
 
-        scripts.media_path = media
-        for script in scripts.children:
-            self._modify_href('src', script, omedia, media)
+def relative_media(app, doc, site_url):
+    scripts = doc.head.scripts
+    links = doc.head.links
+    known_libraries = scripts.known_libraries
+    libraries = known_libraries.copy()
+    # override known libraries
+    scripts.known_libraries = libraries
+    links.known_libraries = libraries
+    #
+    omedia = app.config['MEDIA_URL']
+    media = '%s%s' % (site_url, omedia)
 
-    def _modify_href(self, attr, html, omedia, media):
-        href = html.attr(attr)
-        if href.startswith(omedia):
-            href = '%s%s' % (media, href[len(omedia):])
-            html.attr(attr, href)
-        elif href.startswith('//'):
-            html.attr(attr, 'http:%s' % href)
+    for links in doc.head.links.children.values():
+        for link in links:
+            _modify_href('href', link, omedia, media)
+    #
+    required = []
+    for name, path in list(libraries.items()):
+        if isinstance(path, dict):
+            pass
+        elif path.startswith('//'):
+            path = 'http:%s' % path
+            libraries[name] = path
+
+    scripts.media_path = media
+    for script in scripts.children:
+        _modify_href('src', script, omedia, media)
+
+
+def _modify_href(attr, html, omedia, media):
+    href = html.attr(attr)
+    if href.startswith(omedia):
+        href = '%s%s' % (media, href[len(omedia):])
+        html.attr(attr, href)
+    elif href.startswith('//'):
+        html.attr(attr, 'http:%s' % href)

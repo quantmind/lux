@@ -1,7 +1,10 @@
+import codecs
 import datetime
 import logging
 import os
 import re
+
+from dateutil.parser import parse
 
 try:
     from markdown import Markdown
@@ -14,30 +17,13 @@ from .contents import Page, Category, Tag, Author
 READERS = {}
 METADATA_PROCESSORS = {
     'tags': lambda x, y: [Tag(tag, y) for tag in x.split(',')],
-    'date': lambda x, y: get_date(x),
-    'modified': lambda x, y: get_date(x),
+    'date': lambda x, y: parse(x),
+    'modified': lambda x, y: parse(x),
     'status': lambda x, y: x.strip(),
     'category': Category,
     'author': Author,
     'authors': lambda x, y: [Author(author, y) for author in x],
 }
-
-
-def process_file(app, path):
-    if not os.path.isfile(path):
-        path = '%s.%s' % (path, app.config['SOURCE_SUFFIX'])
-    if not os.path.isfile(path):
-        app.logger.warning('Could not locate %s', path)
-        return
-    extension = path.split('.')[-1]
-    Reader = READERS.get(extension)
-    if not Reader:
-        app.logger.warning('Reader for %s extension not available', extension)
-    elif not Reader.enabled:
-        app.logger.warning('Missing dependencies for %s' % Reader.__name__)
-    else:
-        reader = Reader(app)
-        return reader.read(path)
 
 
 def get_rel_dir(d, base, res=''):
@@ -124,7 +110,7 @@ class MarkdownReader(BaseReader):
         """Parse content and metadata of markdown files"""
 
         self._md = Markdown(extensions=self.extensions)
-        with open(source_path) as text:
+        with codecs.open(source_path, encoding='utf-8') as text:
             content = self._md.convert(text.read())
         metadata = self._parse_metadata(self._md.Meta)
         return content, metadata

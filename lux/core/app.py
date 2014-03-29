@@ -119,7 +119,12 @@ class App(ConsoleParser, LocalMixin, Extension):
                     'content': 'width=device-width, initial-scale=1'}],
                   'List of default ``meta`` elements to add to the html head'
                   'element'),
-
+        Parameter('DATE_FORMAT', '%Y %b %d %H:%M:%S',
+                  'Default formatting for dates'),
+        Parameter('DEFAULT_TEMPLATE_ENGINE', 'python',
+                  'Default template engine'),
+        Parameter('SITE_URL', None,
+                  'Web site url')
         ]
 
     def __init__(self, config_file, **params):

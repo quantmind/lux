@@ -148,7 +148,19 @@ class Template(object):
             params.update(kwargs)
         html = Html(self.tag, *children, **params)
         html.maker = self
-        return html.addClass(self.classes)
+        classes = self.classes
+        if hasattr(classes, '__call__'):
+            classes = classes()
+        return html.addClass(classes)
+
+    def keys(self):
+        '''Generator of keys in this :class:`.Template`
+        '''
+        for child in self.children:
+            if child.key:
+                yield child.key
+            for key in child.keys():
+                yield  key
 
     def get(self, key):
         '''Retrieve a children :class:`Template` with :attr:`Template.key`
@@ -205,10 +217,10 @@ class ColumnTemplate(Template):
 
     '''
     tag = 'div'
-    classes = 'column'
 
     def __init__(self, *children, **params):
         self.span = params.pop('span', 1)
+        self.device = params.pop('device', 'md')
         super(ColumnTemplate, self).__init__(*children, **params)
         if self.span > 1:
             raise ValueError('Column span "%s" greater than one!' % self.span)
@@ -230,18 +242,19 @@ class RowTemplate(Template):
     '''
     grid_child = True
     tag = 'div'
+    classes = 'row'
     columns = 12
 
     def __init__(self, *children, **params):
         self.columns = params.pop('columns', self.columns)
-        self.classes = 'grid%s row' % self.columns
+        #self.classes = 'grid%s row' % self.columns
         super(RowTemplate, self).__init__(*children, **params)
 
     def child_template(self, child=None):
         if not isinstance(child, ColumnTemplate):
             child = ColumnTemplate(child)
-        span = int(child.span * self.columns)
-        child.classes += ' span%s' % span
+        span = round(child.span * self.columns)
+        child.classes = 'col-%s-%s' % (child.device, span)
         return child
 
 
@@ -255,11 +268,14 @@ class GridTemplate(Template):
 
     '''
     tag = 'div'
+    def __init__(self, *children, **params):
+        self.fixed = params.pop('fixed', True)
+        super().__init__(*children, **params)
 
     def html(self, request, context, children, **kwargs):
         html = super(GridTemplate, self).html(request, context, children,
                                               **kwargs)
-        cn = 'grid fixed' if self.parameters.fixed else 'grid fluid'
+        cn = 'container' if self.fixed else 'container-fluid'
         return html.addClass(cn)
 
     def child_template(self, child=None):
@@ -299,7 +315,8 @@ class PageTemplate(Template):
                 for content in contents:
                     for elem in ids.get(content.id, ()):
                         self.apply_content(elem, content)
-        return html
+        content = yield from html(request)
+        return content
 
     def apply_content(self, elem, content):
         elem.data({'id': content.id, 'content_type': content.content_type})

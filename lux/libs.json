@@ -1,6 +1,7 @@
 {
     "aws": "//sdk.amazonaws.com/js/aws-sdk-2.0.0-rc13",
-    "bootstrap": "//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/js/bootstrap",
+    "bootstrap": "//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.1.1/js/bootstrap",
+    "bootstrap_css": "//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.1.1/css/bootstrap",
     "backbone": "//cdnjs.cloudflare.com/ajax/libs/backbone.js/1.0.0/backbone-min",
     "codemirror": "//cdnjs.cloudflare.com/ajax/libs/codemirror/3.21.0/codemirror",
     "fontawesome": "//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome",

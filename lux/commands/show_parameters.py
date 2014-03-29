@@ -13,8 +13,7 @@ class Command(lux.Command):
                 desc='Extensions to display parameters from.'),
     )
 
-    def run(self, argv, **params):
-        options = self.options(argv)
+    def run(self, options, **params):
         display = options.extensions
         config = self.app.config
         extensions = self.app.extensions

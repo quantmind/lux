@@ -123,9 +123,11 @@ class Command(ConsoleParser):
         self.stderr = stderr
 
     def __call__(self, argv, **params):
-        app = self.pulsar_app(argv, loghandlers=['console_level_message'])
+        parser = self.get_parser(description=self.help or self.name)
+        options, rest = parser.parse_known_args(argv)
+        app = self.pulsar_app(rest, loghandlers=['console_level_message'])
         app()
-        return self.run_until_complete(argv, **params)
+        return self.run_until_complete(options, **params)
 
     def get_version(self):
         """Return the :class:`.Command` version.
@@ -156,10 +158,10 @@ class Command(ConsoleParser):
         '''
         raise NotImplementedError
 
-    def run_until_complete(self, argv, **params):
+    def run_until_complete(self, options, **params):
         '''Run a command using pulsar asynchronous engine.'''
         loop = get_event_loop()
-        result = maybe_async(self.run(argv, **params), loop=loop)
+        result = maybe_async(self.run(options, **params), loop=loop)
         if isinstance(result, Future):
             assert not loop.is_running(), 'Loop already running'
             return loop.run_until_complete(result)
@@ -197,11 +199,6 @@ class Command(ConsoleParser):
                            debug=app.debug,
                            config=app.config_module,
                            **kw)
-
-    def pulsar_cfg(self, argv):
-        app = self.pulsar_app(argv)
-        app()
-        return app.cfg
 
 
 def execute_app(app, argv=None, **params):

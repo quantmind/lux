@@ -1,15 +1,26 @@
 import os
 import shutil
+import json
+from datetime import datetime
 
 from pulsar import Setting
 
 import lux
+from lux.extensions.static.builder import build_snippets
 
 
 class Command(lux.Command):
-    help = "create the site model"
+    option_list = (
+        Setting('relative_urls',
+                ('--relative-urls',),
+                action='store_true',
+                default=False,
+                desc=('Display links with relative paths (useful during '
+                      'development)')),
+    )
+    help = "create the static site"
 
-    def run(self, argv):
+    def run(self, options):
         app = self.app
         config = app.config
         request = app.wsgi_request()
@@ -20,26 +31,26 @@ class Command(lux.Command):
         location = config['STATIC_LOCATION']
         if not os.path.isdir(location):
             os.makedirs(location)
-        sitemap = config['STATIC_SITEMAP']
+        #
+        app.config['RELATIVE_URLS'] = options.relative_urls
+        link = app.config.get('NAVIGATION_BRAND_LINK')
+        if link == '/':
+            app.config['NAVIGATION_BRAND_LINK'] = '$site_url/'
+        info = self.build_info()
+        context = dict((('site_%s' % k, v) for k, v in info.items()))
+        contents = yield from build_snippets(app, context)
+        contents.update(context)
         self.create_media()
         self.copy_files(config['EXTRA_FILES'])
-        yield from self.build()
+        yield from self.build(contents)
 
-    def build(self):
+    def build(self, contents):
         location = os.path.abspath(self.app.config['STATIC_LOCATION'])
         app = self.app
         config = app.config
         for name, content in sorted(config['STATIC_SITEMAP'].items(),
                                     key=lambda x: x[1].creation_counter):
-            for file_name, data in content(app, name):
-                data = yield from data
-                dst = os.path.join(location, file_name)
-                dirname = os.path.dirname(dst)
-                if not os.path.isdir(dirname):
-                    os.makedirs(dirname)
-                self.logger.info('Creating "%s"', dst)
-                with open(dst, 'w') as f:
-                    f.write(data)
+            yield from content(app, name, location, contents)
 
     def create_media(self):
         location = os.path.abspath(self.app.config['STATIC_LOCATION'])
@@ -70,3 +81,17 @@ class Command(lux.Command):
             self.logger.info('Copying media directory %s into %s'
                              % (src, dst))
             shutil.copytree(src, dst)
+
+    def build_info(self):
+        location = os.path.abspath(self.app.config['STATIC_LOCATION'])
+        filename = os.path.join(location, 'buildinfo.json')
+        app = self.app
+        dte = datetime.now()
+        info = {
+            'date': dte.strftime(app.config['DATE_FORMAT']),
+            'year': dte.year,
+            'lux_version': lux.__version__
+        }
+        with open(filename, 'w') as f:
+            json.dump(info, f, indent=4)
+        return info

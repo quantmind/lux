@@ -13,6 +13,7 @@
         var url = elem.is('a') ? elem.attr('href') : elem.data('href'),
             options = {
                 type: elem.data('action') || 'get',
+
                 success: lux.ajaxResponse
             };
         elem.click(function (e) {

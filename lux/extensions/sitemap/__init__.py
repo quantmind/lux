@@ -5,12 +5,6 @@ adds an handler to the :ref:`on_html_document event <event_on_html_document>`.
 Therefore, the extension is only used when the response to a client
 request has a ``text/html`` content type.
 
-Parameters
-================
-
-.. lux_extension:: lux.extensions.sitemap
-
-
 Usage
 =============
 This extensions is only used when the HTTP response has a ``text/html``
@@ -50,6 +44,12 @@ For example this router implement a 'doc' link::
 For example, in the :ref:`cms extensions <extension-cms>`, the
 :class:`.EditPage` router adds links to edit or exit-editing of pages.
 
+Parameters
+================
+
+.. lux_extension:: lux.extensions.sitemap
+
+
 API
 ==========
 
@@ -75,17 +75,11 @@ Navigation
    :member-order: bysource
 
 '''
-import logging
-from collections import namedtuple
-
 import lux
 from lux import Router, Parameter, Html
 
 from .links import *
 from .ui import add_css
-
-
-LOGGER = logging.getLogger('lux.navigation')
 
 
 def request_from_view(request, view, urlargs=None):
@@ -186,9 +180,10 @@ class Navigation(lux.Template):
         if request:
             info = request.cache.html_navigation
             if info is None:
-                LOGGER.warning('To use the navigation you must include '
-                               'lux.extensions.sitemap in your EXTENSIONS '
-                               'list')
+                request.app.logger.warning('To use the "Navigation" template '
+                                           'you need to include the '
+                                           '"lux.extensions.sitemap" '
+                                           'in your EXTENSIONS list')
             else:
                 info.load(request)
                 nav = Html(None)

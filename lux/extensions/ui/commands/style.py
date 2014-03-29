@@ -43,7 +43,7 @@ class Command(lux.Command):
         target = options.file
         app = self.app
         name = app.meta.name
-        self.theme = options.theme or self.app.config['THEME'] or name
+        self.theme = options.theme or name
         if not target and not options.variables:
             target = self.theme
             mdir = os.path.join(self.app.meta.path, 'media', name)

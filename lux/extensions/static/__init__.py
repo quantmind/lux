@@ -2,6 +2,18 @@
 
 **Requirements**: :mod:`lux.extensions.base`
 
+Usage
+=======
+Put the ``lux.extensions.static`` extension into your :setting:`EXTENSIONS`
+list and build the static web site via the ``build_static`` option in the
+command line::
+
+    python managet.py build_static
+
+Parameters
+================
+
+.. lux_extension:: lux.extensions.static
 '''
 import lux
 from lux import Parameter
@@ -25,12 +37,16 @@ class Extension(lux.Extension):
         Parameter('METADATA_PROCESSORS', [],
                   'A list of functions to perocess metadata'),
         Parameter('STATIC_LOCATION', 'build',
-                  'Directory where static site is created'),
+                  'Directory where the static site is created'),
         Parameter('STATIC_SITEMAP', {},
                   'Dictionary of contents for the site'),
+        Parameter('SNIPPETS_LOCATION', 'snippets',
+                  'Directory where to find snippets used as content'),
         Parameter('EXTRA_FILES', (),
                   'List/tuple of additional files to copy to the '
-                  'STATIC_LOCATION'),
-        Parameter('MD_EXTENSIONS', [],
-                  'List/tuple of makrdown extensions')
+                  ':setting:`STATIC_LOCATION`'),
+        Parameter('MD_EXTENSIONS', ['extra', 'meta'],
+                  'List/tuple of makrdown extensions'),
+        Parameter('RELATIVE_URLS', False,
+                  'Display urls as relative paths (useful during development)')
                ]

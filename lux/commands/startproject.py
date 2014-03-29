@@ -34,8 +34,7 @@ class Command(lux.Command):
 
     template_type = "project"
 
-    def run(self, argv, name=None, target=None):
-        options = self.options(argv)
+    def run(self, options, name=None, target=None):
         name = options.name[0]
         validate_name(name, self.template_type)
         # Check that the name cannot be imported.

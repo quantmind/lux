@@ -268,8 +268,7 @@ class CmsResponse(PageMixin):
             if request.has_permission('create', request.models.page):
                 path = request.app_handler.rule
                 body = self.create_page_form(request, path)
-        html = yield from template(request, {THIS: body})
-        content = yield from html(request)
+        content = yield from template(request, {THIS: body})
         return content
 
 

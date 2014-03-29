@@ -33,6 +33,7 @@ def add_css(all):
     css = all.css
     classes.dl_horizontal = 'dl-horizontal'
     skins = add_skins(all)
+    bootstrap = all.app.config['BOOTSTRAP']
     #
     # Set defaults on body
     cssv.body.font_family = ("Helvetica,Arial,'Liberation Sans',FreeSans,"
@@ -64,7 +65,6 @@ def add_css(all):
     ##################################################### BODY AND RESETS
     css('body',
         gradient(cssv.body.background),
-        CssInclude(all.get_media_url('normalize')),
         color=cssv.body.color,
         font_family=cssv.body.font_family,
         font_size=cssv.body.font_size,
@@ -74,9 +74,18 @@ def add_css(all):
         padding=0,
         margin=0)
 
-    ##################################################### Global classes
-    css('.pull-right', float='right !important')
-    css('.pull-left', float='left !important')
+    if not bootstrap:
+        css('body',
+            CssInclude(all.get_media_url('normalize')))
+
+        ##################################################### Global classes
+        css('.pull-right', float='right !important')
+        css('.pull-left', float='left !important')
+
+        size = lambda n: 30*n
+        for n in range(1, 21):
+            css('.span%s' % n, width=px(size(n)))
+
     css('.close', float='right')
     css('.clearfix', Clearfix())
     css('markdown', display='none')
@@ -92,10 +101,6 @@ def add_css(all):
         overflow='hidden')
     css('.square',
         Radius(0))
-
-    size = lambda n: 30*n
-    for n in range(1, 21):
-        css('.span%s' % n, width=px(size(n)))
 
     # Border box by default
     css('*',
