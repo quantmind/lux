@@ -20,8 +20,9 @@
     "datagrid": "lux/datagrid",
     "mathjax": {
         "url": "https://c328740.ssl.cf1.rackcdn.com/mathjax/latest/MathJax",
-        "urlparams": "TeX-AMS-MML_HTMLorMML"
+        "urlparams": "config=TeX-AMS-MML_HTMLorMML"
     },
+    "moment": "//cdnjs.cloudflare.com/ajax/libs/moment.js/2.5.1/moment",
     "mustache": "//cdnjs.cloudflare.com/ajax/libs/mustache.js/0.7.2/mustache",
     "pjax": "//cdnjs.cloudflare.com/ajax/libs/jquery.pjax/1.7.0/jquery.pjax",
     "prettify": "//cdnjs.cloudflare.com/ajax/libs/prettify/r298/prettify",

@@ -32,8 +32,20 @@ class Snippet(object):
         return self._metadata.get('content_type', 'text/html')
 
     @property
+    def date(self):
+        return self._metadata.get('date')
+
+    @property
+    def title(self):
+        return self._metadata.get('title')
+
+    @property
     def modified(self):
         return self._metadata.get('modified')
+
+    @property
+    def draft(self):
+        return self._metadata.get('draft')
 
 
 class Page(Snippet):

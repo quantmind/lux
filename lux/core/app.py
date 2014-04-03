@@ -124,7 +124,12 @@ class App(ConsoleParser, LocalMixin, Extension):
         Parameter('DEFAULT_TEMPLATE_ENGINE', 'python',
                   'Default template engine'),
         Parameter('SITE_URL', None,
-                  'Web site url')
+                  'Web site url'),
+        Parameter('LINKS',
+                  {'python': 'https://www.python.org/',
+                   'lux': 'https://github.com/quantmind/lux',
+                   'pulsar': 'http://pythonhosted.org/pulsar/index.html'},
+                  'Links used throught the web site'),
         ]
 
     def __init__(self, config_file, **params):

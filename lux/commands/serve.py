@@ -6,7 +6,7 @@ import lux
 class Command(lux.Command):
     help = "Starts a fully-functional Web server using pulsar."
 
-    def __call__(self, argv, **params):
+    def __call__(self, argv, start=True):
         app = self.app
         server = self.pulsar_app(argv, wsgi.WSGIServer)
         #app.clear_local()
@@ -15,7 +15,3 @@ class Command(lux.Command):
             server.start()
         else:
             return server
-
-    def configure_logging(self, config=None):
-        #No need for this since the pulsar application will do the job
-        pass

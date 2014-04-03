@@ -23,6 +23,8 @@ def get_reader(app, ext):
 
 def build_snippets(app, context):
     '''Build snippets for site contents
+
+    :return: a dictionary of compiled contents
     '''
     src = app.config['SNIPPETS_LOCATION']
     snippets = {}
@@ -51,10 +53,11 @@ class Content(object):
     '''
     creation_counter = 0
 
-    def __init__(self, path, template=None, tag=None, **kw):
+    def __init__(self, path, template=None, container=None, **context):
         self.path = path
         self.template = template
-        self.container = Template(tag=tag, **kw)
+        self.container = container if container is not None else Template()
+        self._context = context
         self.creation_counter = Content.creation_counter
         Content.creation_counter += 1
 
@@ -69,6 +72,16 @@ class Content(object):
         bits = self.path.split('.')
         # the directory/file of source files
         path = os.path.join(app.meta.path, *bits)
+        return self._build(path, app, name, location, context)
+
+    # INTERNALS
+    def _build(self, path, app, name, location, context):
+        if self._context:
+            context = context.copy()
+            for key, value in self._context.items():
+                if value in context:
+                    context[key] = context[value]
+        #
         if os.path.isdir(path):
             for dirpath, _, filenames in os.walk(path):
                 rel_dir = get_rel_dir(dirpath, path)
@@ -88,8 +101,6 @@ class Content(object):
 
     def build_file(self, app, src_filename, dst, location, context):
         try:
-            if not os.path.isfile(src_filename):
-                raise BuildError('Could not locate %s', src_filename)
             template = self.container
             content = yield from build_content(app, src_filename, context,
                                                template, dst)
@@ -110,16 +121,21 @@ class Content(object):
                                  src_filename, exc_info=True)
 
 
-def build_content(app, src, context, template=None, dst=None):
-    ext = src.split('.')[-1]
-    reader = get_reader(app, ext)
-    data, metadata = reader.read(src)
-    content = Snippet(data, metadata, src=src)
+def build_content(app, src, context=None, template=None, dst=None):
+    if isinstance(src, Snippet):
+        content = src
+    elif not os.path.isfile(src):
+        raise BuildError('Could not locate %s', src)
+    else:
+        ext = src.split('.')[-1]
+        reader = get_reader(app, ext)
+        data, metadata = reader.read(src)
+        content = Snippet(data, metadata, src=src)
     #
     if template:
         assert dst, 'Requires destination'
-        engine = metadata.get('template',
-                              app.config['DEFAULT_TEMPLATE_ENGINE'])
+        engine = content._metadata.get('template',
+                                       app.config['DEFAULT_TEMPLATE_ENGINE'])
         request = app.wsgi_request()
         response = request.response
         response.content_type = content.content_type
@@ -138,6 +154,11 @@ def build_content(app, src, context, template=None, dst=None):
                 doc.head.links.append(Html('link', href=favicon,
                                            rel="shortcut icon"))
 
+            requires = content._metadata.get('requires')
+            if requires:
+                for script in requires:
+                    doc.head.scripts.append(script)
+                #doc.head.scripts.require(*requires)
             doc.body.append(element)
             #
             # Handle site url
