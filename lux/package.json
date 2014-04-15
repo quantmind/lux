@@ -1,8 +1,8 @@
 {
     "name": "lux",
-    "title": "Lux Javascript Library",
+    "title": "Lux Library",
     "description": "Asynchronous web application server for python and jquery",
-    "version": "0.1.0",
+    "version": "0.1.0-beta.1",
     "homepage": "https://github.com/lsbardel/lux",
     "author": {
         "name": "Luca Sbardella",

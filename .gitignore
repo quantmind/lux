@@ -10,3 +10,4 @@ example/luxweb/settings.py
 npm*
 node_modules
 MANIFEST
+.DS_Store

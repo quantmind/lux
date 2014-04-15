@@ -88,25 +88,26 @@ class Blog(Content):
         config = app.config
         site_url = config['SITE_URL']
         relative = config['RELATIVE_URLS'] or not site_url
+        site_url = '/' if relative else '%s/' % site_url
         date_format = config['DATE_FORMAT']
         container = Html('div')
         if drafts:
             container.append(Html('h1', 'Blog drafts'))
-            if not relative:
-                site_url = '%s/%s' % (site_urls, drafts)
+            site_url = '%s%s/' % (site_url, drafts)
             if not posts:
                 container.append(Html('p', 'Nothing here!'))
         elif not posts:
             container.append(Html('div', '<p>No posts yet! Coming soon</p>',
                                   cn="jumbotron"))
         for entry, path in posts:
-            if not relative:
-                path = '%s/%s' % (site_url, path)
+            path = '%s%s' % (site_url, path)
             date = entry.date
             elem = Html('div',
                         Html('h4', Html('a', entry.title, href=path)),
-                        Html('p', date.strftime(date_format)),
+                        Html('p', date.strftime(date_format), cn='text-muted'),
                         cn='blog-entry')
+            if entry.summary:
+                elem.append(Html('p', entry.summary))
             container.append(elem)
         return Snippet(container.render())
 

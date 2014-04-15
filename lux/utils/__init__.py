@@ -56,3 +56,16 @@ class memoized(object):
     def __get__(self, obj, objtype):
         '''Support instance methods.'''
         return partial(self.__call__, obj)
+
+
+def version_tuple(version):
+    bits = version.split('-')
+    version = bits[0].split('.')
+    assert len(version) == 3
+    version = list(map(int, version))
+    if len(bits) == 2:
+        rel = bits[1].split('.')
+        assert len(rel) == 2
+        version.append(rel[0])
+        version.append(int(rel[1]))
+    return tuple(version)

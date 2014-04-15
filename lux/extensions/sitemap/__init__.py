@@ -1,16 +1,14 @@
 '''
 An extension for managing navigation on a web site. The extension does not add
-any :ref:`middleware <middleware>` to the lux WSGi handler, instead it
-adds an handler to the :ref:`on_html_document event <event_on_html_document>`.
-Therefore, the extension is only used when the response to a client
-request has a ``text/html`` content type.
+any :ref:`middleware <middleware>` to the lux WSGI callable, instead it
+adds an handler to the :ref:`on_html_document <event_on_html_document>` event.
+In other words, the sitemap extension operates on ``text/html``
+responses only.
 
 Usage
 =============
-This extensions is only used when the HTTP response has a ``text/html``
-content type.
-In this case, when the :attr:`.WsgiRequest.html_document` is accessed for the
-first time, the extension, via the :meth:`~Extension.on_html_document` handler,
+When the :attr:`.WsgiRequest.html_document` attribute is accessed for the
+first time, the extension, via the :meth:`~Extension.on_html_document` event,
 adds a :class:`NavigationInfo` object to the ``request.cache`` dictionary.
 This object can be accessed via ``request.cache.html_navigation`` if needed.
 

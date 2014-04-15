@@ -427,6 +427,9 @@ class App(ConsoleParser, LocalMixin, Extension):
             if hasattr(extension, name):
                 handlers.append(getattr(extension, name))
 
+    def format_date(self, dte):
+        return dte.strftime(self.config['DATE_FORMAT'])
+
 
 def add_app(apps, name, pos=None):
     '''Insert a name to the list'''

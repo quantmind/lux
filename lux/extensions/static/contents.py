@@ -47,6 +47,22 @@ class Snippet(object):
     def draft(self):
         return self._metadata.get('draft')
 
+    @property
+    def summary(self):
+        return self._metadata.get('summary')
+
+    def html(self, request):
+        if self.title:
+            app = request.app
+            doc = request.html_document
+            doc.head.title = self.title
+            title = '<h1>%s</h1>' % self.title
+            if self.date:
+                title += '<p>%s</p>' % app.format_date(self.date)
+            return title + self._content
+        else:
+            return self._content
+
 
 class Page(Snippet):
     mandatory_properties = ('title',)

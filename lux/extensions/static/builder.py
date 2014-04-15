@@ -72,16 +72,16 @@ class Content(object):
         bits = self.path.split('.')
         # the directory/file of source files
         path = os.path.join(app.meta.path, *bits)
-        return self._build(path, app, name, location, context)
-
-    # INTERNALS
-    def _build(self, path, app, name, location, context):
         if self._context:
             context = context.copy()
             for key, value in self._context.items():
                 if value in context:
                     context[key] = context[value]
         #
+        return self._build(path, app, name, location, context)
+
+    # INTERNALS
+    def _build(self, path, app, name, location, context):
         if os.path.isdir(path):
             for dirpath, _, filenames in os.walk(path):
                 rel_dir = get_rel_dir(dirpath, path)
@@ -121,6 +121,15 @@ class Content(object):
                                  src_filename, exc_info=True)
 
 
+def extend_context(context, data, prefix=None):
+    if prefix:
+        prefix = '%s_' % prefix
+    else:
+        prefix = ''
+    context.update((('%s%s' % (prefix, k), v) for k, v in data.items()))
+    return context
+
+
 def build_content(app, src, context=None, template=None, dst=None):
     if isinstance(src, Snippet):
         content = src
@@ -134,8 +143,8 @@ def build_content(app, src, context=None, template=None, dst=None):
     #
     if template:
         assert dst, 'Requires destination'
-        engine = content._metadata.get('template',
-                                       app.config['DEFAULT_TEMPLATE_ENGINE'])
+        meta = content._metadata
+        engine = meta.get('template', app.config['DEFAULT_TEMPLATE_ENGINE'])
         request = app.wsgi_request()
         response = request.response
         response.content_type = content.content_type
@@ -143,7 +152,7 @@ def build_content(app, src, context=None, template=None, dst=None):
         #
         if content.content_type == 'text/html':
             media = app.config['MEDIA_URL']
-            context['main'] = content
+            context['main'] = content.html(request)
             doc = request.html_document
             element = template(request, context)
             dst = '%s.html' % dst

@@ -92,7 +92,7 @@ module.exports = function(grunt) {
     //
     // Initialise Grunt with all tasks defined above
     grunt.initConfig({
-        pkg: grunt.file.readJSON('package.json'),
+        pkg: grunt.file.readJSON('lux/package.json'),
         libs: grunt.file.read("lux/libs.json"),
         concat: libs,
         uglify: uglify_libs(),

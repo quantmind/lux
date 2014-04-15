@@ -164,8 +164,11 @@ class Template(object):
 
     def get(self, key):
         '''Retrieve a children :class:`Template` with :attr:`Template.key`
-equal to ``key``. The search is done recursively and the first match is
-returned. If not available return ``None``.'''
+        equal to ``key``.
+
+        The search is done recursively and the first match is
+        returned. If not available return ``None``.
+        '''
         for child in self.children:
             if child.key == key:
                 return child
