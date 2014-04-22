@@ -1,7 +1,7 @@
 from pulsar import HttpException, Http404, PermissionDenied
 
 import lux
-from lux import Router, RouterParam, route, coroutine_return
+from lux import Router, RouterParam, route
 
 from .content import ContentManager
 
@@ -97,7 +97,7 @@ class Crud(Router):
             params = dict(request.url_data)
             content = yield c.collection(request, query, params)
             response = yield content.http_response(request)
-            coroutine_return(response)
+            return response
         else:
             raise Http404
 
@@ -132,7 +132,7 @@ class Crud(Router):
         except Exception:
             raise Http404
         response = yield self.create_update_instance(request, instance)
-        coroutine_return(response)
+        return response
 
     def handle_delete_instance(self, request):
         '''The ``D`` in CRUD.
@@ -146,7 +146,7 @@ class Crud(Router):
             raise Http404
         yield instance.delete()
         request.response.status_code = 204
-        coroutine_return(request.response)
+        return request.response
 
     def handle_html_edit_instance(self, request):
         '''Handler for Html edit requests of an ``instance``.
@@ -180,7 +180,7 @@ class Crud(Router):
             query = self.query(request)
             content = yield c.object(request, query, request.urlargs)
             response = yield content.http_response(request)
-            coroutine_return(response)
+            return response
         else:
             raise Http404
 
@@ -209,15 +209,15 @@ class Crud(Router):
                 if instance is None:
                     instance = yield self.create_instance(request, kw)
                     response.status_code = 201
-                    #TODO set the location
-                    #response.headers['location'] =
+                    # TODO set the location
+                    # response.headers['location'] =
                 else:
                     instance = yield self.update_instance(request,
                                                           instance, kw)
                 response = yield cm.form_response(form, instance)
             else:
                 response = yield cm.form_response(form)
-            coroutine_return(response)
+            return response
         else:
             raise Http404
 

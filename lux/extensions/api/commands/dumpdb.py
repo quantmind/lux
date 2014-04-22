@@ -58,8 +58,8 @@ class Command(lux.Command):
         models = self.app.models()
         if apps:
             pass
-        #if not getattr(model, 'serializable', True):
-        #    continue
+        # if not getattr(model, 'serializable', True):
+        #     continue
         return models
 
     def preprocess(self, options, queries):

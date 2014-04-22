@@ -1,4 +1,10 @@
 '''
+The :class:`.Template` defines a family of classes which can be used to
+build HTML elements in a pythonic fashion. No template specific language is
+required, instead a template for an html element is created by adding children
+:class:`.Template` to a parent one.
+
+
 Template
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -64,10 +70,17 @@ class Template(object):
         >>> html.render()
         <div class='test'><span data-context='foo'>bla</span></div>
 
+    .. attribute:: tag
+
+        An optional HTML tag_ for the outer element of this template.
+        If not specified, this template is a container of other templates
+        and no outer element is rendered.
+
     .. attribute:: key
 
         An optional string which identify this :class:`Template` within
-        other templates.
+        other templates. It is also used for extracting content from the
+        ``context`` dictionary passed to the template callable method.
 
     .. attribute:: children
 
@@ -76,10 +89,14 @@ class Template(object):
 
     .. attribute:: parameters
 
-        An attribute dictionary containing all key-valued parameters.
+        An attribute dictionary containing all key-valued parameters passed
+        during initialisation. These parameters are used when building an
+        :class:`.Html` element via the callable method.
 
         it is initialised by the :meth:`init_parameters` method at the end
         of initialisation.
+
+    .. _tag: http://www.w3schools.com/tags/
     '''
     key = None
     tag = None
@@ -148,6 +165,8 @@ class Template(object):
             params.update(kwargs)
         html = Html(self.tag, *children, **params)
         html.maker = self
+        if context and self.key:
+            html.append(context.get(self.key))
         classes = self.classes
         if hasattr(classes, '__call__'):
             classes = classes()
@@ -160,7 +179,7 @@ class Template(object):
             if child.key:
                 yield child.key
             for key in child.keys():
-                yield  key
+                yield key
 
     def get(self, key):
         '''Retrieve a children :class:`Template` with :attr:`Template.key`
@@ -182,12 +201,8 @@ class Template(object):
 
 
 class Context(Template):
-    '''A specialised :class:`Template` which uses the :attr:`Template.key`
-    to extract content from the ``context`` dictionary passed to the template
-    callable method.
-
-    :param key: initialise the :attr:`Template.key` attribute. It must be
-        provided.
+    '''A :class:`Template` which enforces the :attr:`~.Template.key`
+    attribute.
 
     Fore example::
 
@@ -201,23 +216,23 @@ class Context(Template):
     '''
     def __init__(self, key, *children, **params):
         params['key'] = key
-        params['context'] = key
         super(Context, self).__init__(*children, **params)
-
-    def html(self, request, context, children, **kwargs):
-        html = super(Context, self).html(request, context, children, **kwargs)
-        if context:
-            html.append(context.get(self.key))
-        return html
 
 
 class ColumnTemplate(Template):
     '''A template to place inside a :class:`.RowTemplate`.
 
-    :param span: fraction indicating how much this template extend across
+    :param span=1: fraction indicating how much this template extend across
         its row container. For example ``0.5`` is half span. Must be between
         0 and 1.
 
+    :param device='md': The device which render the column with the correct
+        ``span``. Valid options are
+
+        * ``xs`` extra small (phones)
+        * ``sm`` small (tablets)
+        * ``md`` medium (desktops)
+        * ``lg`` large (desktops)
     '''
     tag = 'div'
 
@@ -250,7 +265,7 @@ class RowTemplate(Template):
 
     def __init__(self, *children, **params):
         self.columns = params.pop('columns', self.columns)
-        #self.classes = 'grid%s row' % self.columns
+        # self.classes = 'grid%s row' % self.columns
         super(RowTemplate, self).__init__(*children, **params)
 
     def child_template(self, child=None):
@@ -271,6 +286,7 @@ class GridTemplate(Template):
 
     '''
     tag = 'div'
+
     def __init__(self, *children, **params):
         self.fixed = params.pop('fixed', True)
         super().__init__(*children, **params)
@@ -314,7 +330,8 @@ class PageTemplate(Template):
             site_contents = []
             ids = context.get('content_ids')
             if ids:
-                contents = yield from request.models.content.filter(id=ids).all()
+                contents = yield from request.models.content.filter(
+                    id=ids).all()
                 for content in contents:
                     for elem in ids.get(content.id, ()):
                         self.apply_content(elem, content)

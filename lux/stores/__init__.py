@@ -1,8 +1,4 @@
-from pulsar.utils.importer import import_module
+from importlib import import_module
 
-
-for module in ('mongodb',):
-    try:
-        import_module('lux.stores.%s' % module)
-    except ImportError:
-        pass
+from .sql import SqlStore
+from .postgresql import PostgreSqlStore

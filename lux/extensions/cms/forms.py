@@ -28,8 +28,6 @@ class ContentForm(forms.Form):
     content_type = forms.CharField()
     title = forms.CharField(required=True)
     slug = forms.HiddenField(required=False)
-
-
     layout = forms.Layout(forms.Fieldset('title', show_label=False),
                           forms.Fieldset('body', show_label=False))
 

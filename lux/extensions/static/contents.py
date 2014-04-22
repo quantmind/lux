@@ -52,16 +52,24 @@ class Snippet(object):
         return self._metadata.get('summary')
 
     def html(self, request):
+        meta = self._metadata
+        content = self._content
+        head = request.html_document.head
         if self.title:
             app = request.app
-            doc = request.html_document
-            doc.head.title = self.title
+            head.title = self.title
             title = '<h1>%s</h1>' % self.title
             if self.date:
                 title += '<p>%s</p>' % app.format_date(self.date)
-            return title + self._content
-        else:
-            return self._content
+            content = '%s\n%s' % (title, content)
+        #
+        author = meta.get('author')
+        if author:
+            head.add_meta(name="author", content=str(author))
+        #
+        robots = meta.get('robots') or 'index, follow'
+        head.add_meta(name='robots', content=robots)
+        return content
 
 
 class Page(Snippet):

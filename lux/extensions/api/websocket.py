@@ -43,8 +43,8 @@ class CrudWebSocket(ws.WS):
             msg = str(e) or e.__class__.__name__
             self.error(websocket, message, msg, status)
 
-    ########################################################################
-    ##    HANDLERS
+    #
+    # HANDLERS
     def get(self, websocket, message):
         '''Handle get response.
 

@@ -22,7 +22,7 @@ from inspect import isclass
 from functools import partial
 
 import lux
-from lux import Html, coroutine_return
+from lux import Html
 
 
 __all__ = ['Layout', 'Fieldset', 'register_layout_style', 'LayoutStyle']
@@ -176,14 +176,14 @@ class Layout(lux.Template):
         return html
 
     def _inner_form(self, form, request):
-        yield form.is_valid()
+        yield from form.is_valid()
         html = Html(None)
         for child in self.children:
             html.append(child(form, request))
         for child in form.inputs:
             html.append(child)
-        content = yield html.render(request)
-        coroutine_return(content)
+        content = yield from html(request)
+        return content
 
     def setup(self):
         missings = list(self.form_class.base_fields)

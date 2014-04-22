@@ -10,9 +10,8 @@ class Command(lux.Command):
         app = self.app
         server = self.pulsar_app(argv, PulsarShell,
                                  imported_objects={'app': app})
-        #app.clear_local()
         app.on_start(server)
-        if start:   #    pragma    nocover
+        if start:   # pragma    nocover
             server.start()
         else:
             return server

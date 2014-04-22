@@ -1,8 +1,6 @@
-Lux
-========
 
-Lux extends pulsar_ wsgi application with content management and
-javascript interaction.
+Lux is an asynchronous web framework highly extendible and customisable.
+Written in python 3 and javascript.
 
 .. _requirements:
 
@@ -21,9 +19,9 @@ To run tests and the example site add a new ``settings.py`` file in the
     from .config *
 
 
-Lux?
-===============
-Lux is the latin name for ``light``.
+.. note::
+
+    Lux is the Latin name for ``light``
 
 
 .. _pulsar: https://github.com/quantmind/pulsar

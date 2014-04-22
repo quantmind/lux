@@ -1,7 +1,7 @@
 from pulsar import Http404
 
 import lux
-from lux import Column, HtmlLink, coroutine_return
+from lux import Column, HtmlLink
 
 
 def safe_int(value):
@@ -124,7 +124,7 @@ class ContentManager(lux.ContentManager):
             length = total_size
             data = yield query.all()
         info = self.pag_info(data, start, length, total_size, columns, pretty)
-        coroutine_return(info)
+        return info
 
     def get_object(self, request, query, parameters):
         pretty = request.url_data.get('pretty')
@@ -136,7 +136,7 @@ class ContentManager(lux.ContentManager):
                 o = self.obj_info(all[0],
                                   self.columns(request, query.model),
                                   pretty)
-                coroutine_return(o)
+                return o
         raise Http404
 
     def safe_filter(self, query, parameters):

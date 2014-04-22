@@ -325,7 +325,7 @@ class ContentManager(object):
         '''Return an icon used in links for ``instance``.'''
         pass
 
-    ##  COLLECTION RENDERERS
+    # COLLECTION RENDERERS
     def html_collection_table(self, request, info):
         '''Render a collection as an html table.
         '''
@@ -370,7 +370,7 @@ class ContentManager(object):
             objs.append(OrderedDict(self.column_to_name(obj, info.pretty)))
         return Json(objs)
 
-    ##  INSTANCE RENDERERS
+    # INSTANCE RENDERERS
 
     def html_object(self, request, data):
         '''Render ``instance`` as ``html``.

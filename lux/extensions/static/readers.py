@@ -112,9 +112,25 @@ class MarkdownReader(BaseReader):
     def read(self, source_path):
         """Parse content and metadata of markdown files"""
 
-        self._md = Markdown(extensions=self.extensions)
+        self._md = md = Markdown(extensions=self.extensions)
         with codecs.open(source_path, encoding='utf-8') as text:
-            content = self._md.convert(text.read())
+            raw = '%s\n\n%s' % (text.read(), self.links())
+            content = md.convert(raw)
         metadata = self._parse_metadata(self._md.Meta)
         return content, metadata
+
+    def links(self):
+        links = self.app.config.get('_MARKDOWN_LINKS_')
+        if links is None:
+            links = []
+            for name, href in self.app.config['LINKS'].items():
+                title = None
+                if isinstance(href, dict):
+                    title = href.get('title')
+                    href = href['href']
+                md = '[%s]: %s "%s"' % (name, href, title or name)
+                links.append(md)
+            links = '\n'.join(links)
+            self.app.config['_MARKDOWN_LINKS_'] = links
+        return links
 

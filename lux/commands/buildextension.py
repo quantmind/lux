@@ -8,7 +8,7 @@ class Command(startproject.Command):
                            nargs=1,
                            desc='Extension name.'),
                    Setting('target', ['--target'],
-                            desc='directory containing the extension.'))
+                           desc='directory containing the extension.'))
     help = ('Creates a Lux project directory structure for the given '
             'project name in the current directory or optionally in the '
             'given directory.')

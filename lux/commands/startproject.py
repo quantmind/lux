@@ -27,7 +27,7 @@ class Command(lux.Command):
                            nargs=1,
                            desc='Name of the project.'),
                    Setting('target', ['--target'],
-                            desc='directory containing the project.'))
+                           desc='directory containing the project.'))
     help = ('Creates a Lux project directory structure for the given '
             'project name in the current directory or optionally in the '
             'given directory.')

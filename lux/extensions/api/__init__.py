@@ -263,10 +263,10 @@ class Extension(lux.Extension):
             sections = {}
             admin = Admin(url, sections=sections)
             middleware.append(admin)
-            #for extension in itervalues(app.extensions):
-            #    api_sections = getattr(extension, 'api_sections', None)
-            #    if api_sections:
-            #        pass
+            # for extension in itervalues(app.extensions):
+            #     api_sections = getattr(extension, 'api_sections', None)
+            #     if api_sections:
+            #         pass
         return middleware
 
     def on_config(self, app):

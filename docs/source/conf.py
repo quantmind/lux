@@ -19,16 +19,9 @@ except ImportError:
         sys.path.append(pdir)
     import lux
 
-try:
-    import stdnet
-except ImportError:
-    pdir = os.path.join(p(base_dir), 'python-stdnet')
-    if os.path.isdir(pdir):
-        sys.path.append(pdir)
-
 version = lux.__version__
 release = version
-pkg = lux.load_pkg('package.json', base_dir)
+pkg = lux.package
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the

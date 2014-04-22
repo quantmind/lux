@@ -12,7 +12,7 @@ from pulsar.utils.pep import iteritems, to_string
 from pulsar.utils.structures import OrderedDict
 from pulsar.utils.html import nicename, UnicodeMixin, NOTHING
 
-from lux import Html, coroutine_return, async
+from lux import Html
 from lux.utils import JSON_CONTENT_TYPES
 
 from .formsets import FormSet
@@ -247,13 +247,13 @@ class Form(FormType('BaseForm', (UnicodeMixin,), {})):
 
         Includes any subforms. It returns a coroutine.'''
         if not self._check_unwind(False):
-            yield self._unwind()
+            yield from self._unwind()
             if not bool(self._errors):
                 for fset in self.form_sets.values():
                     valid = yield fset.is_valid()
                     if not valid:
                         break
-        coroutine_return(not bool(self._errors) if self.is_bound else False)
+        return not bool(self._errors) if self.is_bound else False
 
     @property
     def data(self):
@@ -407,7 +407,7 @@ The field included are the one available in the :attr:`errors` and
             self._cleaned_data = {}
             self._errors = {}
         rawdata = self.rawdata
-        yield multi_async(self._clean_fields(rawdata))
+        yield from multi_async(self._clean_fields(rawdata))
         if is_bound:
             if not self._errors:
                 # Invoke the form clean method.
@@ -436,7 +436,7 @@ The field included are the one available in the :attr:`errors` and
             field_value = None
             if is_bound:
                 field_value = field.value_from_datadict(rawdata, files, key)
-                yield async(bfield.clean(field_value), loop)
+                yield from bfield.clean(field_value)
                 if field_value != initial.get(name):
                     self.changed = True
                     data[name] = field_value

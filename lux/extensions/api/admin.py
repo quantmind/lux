@@ -1,10 +1,8 @@
 import lux
-from lux import Context, grid
+from lux import Context
 
 
-DEFAULT_TEMPLATE = grid.Grid(grid.Row(
-    grid.Column(Context('nav'), span=0.25),
-    grid.Column(Context('main'), span=0.75)), column=12)
+DEFAULT_TEMPLATE = None
 
 
 class Admin(lux.Router):
@@ -26,4 +24,3 @@ class Admin(lux.Router):
 
     def main(self, request):
         return 'Hello'
-

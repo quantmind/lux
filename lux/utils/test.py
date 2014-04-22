@@ -1,3 +1,5 @@
+from io import StringIO
+
 import lux
 
 from pulsar import get_actor
@@ -5,11 +7,6 @@ from pulsar.apps.test import unittest, HttpTestClient, TestSuite
 from pulsar.apps.test.plugins import bench, profile
 from pulsar.utils.httpurl import ispy3k
 from pulsar.apps.wsgi import test_wsgi_environ
-
-if ispy3k:
-    from io import StringIO as Stream
-else:   # pragma    nocover
-    from io import BytesIO as Stream
 
 
 def get_params(*names):
@@ -53,7 +50,7 @@ class TestCase(unittest.TestCase):
 
     def fetch_command(self, command, out=None):
         '''Fetch a command.'''
-        out = out or Stream()
+        out = out or StringIO()
         app = self.application()
         cmd = app.get_command(command, stdout=out)
         self.assertTrue(cmd.logger)

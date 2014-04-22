@@ -57,7 +57,7 @@ class SimpleRobots(object):
 
     def __call__(self, request):
         if request.has_permission(user=None):
-            #if not self.page or self.page.insitemap:
+            # if not self.page or self.page.insitemap:
             return 'ALL'
         return 'NONE,NOARCHIVE'
 

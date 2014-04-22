@@ -4,14 +4,13 @@ from functools import partial, total_ordering
 from pulsar.utils.html import slugify
 
 
-@total_ordering
-class URLWrapper(object):
+#@total_ordering
+class URLWrapper:
+
     def __init__(self, name, settings):
         # next 2 lines are redundant with the setter of the name property
         # but are here for clarity
         self.settings = settings
-        self._name = name
-        self.slug = slugify(name, self.settings.get('SLUG_SUBSTITUTIONS', ()))
         self.name = name
 
     @property
@@ -34,48 +33,11 @@ class URLWrapper(object):
     def _key(self):
         return self.slug
 
-    def _normalize_key(self, key):
-        subs = self.settings.get('SLUG_SUBSTITUTIONS', ())
-        return six.text_type(slugify(key, subs))
-
-    def __eq__(self, other):
-        return self._key() == self._normalize_key(other)
-
-    def __ne__(self, other):
-        return self._key() != self._normalize_key(other)
-
-    def __lt__(self, other):
-        return self._key() < self._normalize_key(other)
-
     def __str__(self):
         return self.name
 
     def __repr__(self):
         return '<{} {}>'.format(type(self).__name__, str(self))
-
-    def _from_settings(self, key, get_page_name=False):
-        """Returns URL information as defined in settings.
-
-        When get_page_name=True returns URL without anything after {slug} e.g.
-        if in settings: CATEGORY_URL="cat/{slug}.html" this returns
-        "cat/{slug}" Useful for pagination.
-
-        """
-        setting = "%s_%s" % (self.__class__.__name__.upper(), key)
-        value = self.settings[setting]
-        if not isinstance(value, six.string_types):
-            logger.warning('%s is set to %s' % (setting, value))
-            return value
-        else:
-            if get_page_name:
-                return os.path.splitext(value)[0].format(**self.as_dict())
-            else:
-                return value.format(**self.as_dict())
-
-    page_name = property(partial(_from_settings, key='URL',
-                         get_page_name=True))
-    url = property(partial(_from_settings, key='URL'))
-    save_as = property(partial(_from_settings, key='SAVE_AS'))
 
 
 class Category(URLWrapper):
@@ -83,6 +45,7 @@ class Category(URLWrapper):
 
 
 class Tag(URLWrapper):
+
     def __init__(self, name, *args, **kwargs):
         super(Tag, self).__init__(name.strip(), *args, **kwargs)
 

@@ -128,7 +128,7 @@ class App(ConsoleParser, LocalMixin, Extension):
         Parameter('LINKS',
                   {'python': 'https://www.python.org/',
                    'lux': 'https://github.com/quantmind/lux',
-                   'pulsar': 'http://pythonhosted.org/pulsar/index.html'},
+                   'pulsar': 'http://pythonhosted.org/pulsar'},
                   'Links used throught the web site'),
         ]
 

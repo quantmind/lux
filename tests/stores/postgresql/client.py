@@ -1,21 +1,19 @@
 '''Test PostgreSQL client.'''
-from pulsar.utils.security import random_string, ascii_letters
 from pulsar.apps.data import create_store
 
 from lux.utils import test
 
+from example.luxweb import settings
 
-@test.skipUnless(test.get_params('POSTGRESQL_SETTINGS'),
-                 'POSTGRESQL_SETTINGS required in test_settings.py file.')
+psql = getattr(settings, 'POSTGRESQL_SETTINGS')
+
+
+@test.skipUnless(
+    psql, '"POSTGRESQL_SETTINGS" required in example.luxweb.settings file')
 class TestCase(test.TestCase):
 
-    @classmethod
-    def setUpClass(cls):
-        cls.test_id = ('test_%s' % random_string(length=10)).lower()
-
     def abc(self):
-        _, address, params = parse_connection_string(
-            cls.cfg.get('POSTGRESQL_SETTINGS'), 0)
+        _, address, params = parse_connection_string(psql)
         cls.pool = PostgresPool()
         cls.client1 = cls.pool(address, **params)
         cls.test_id = ('test_%s' % random_string(length=10)).lower()
@@ -34,25 +32,24 @@ class TestCase(test.TestCase):
 
     @classmethod
     def name(cls, name):
-        return '%s_%s' % (cls.test_id, name)
+        return '%s_%s' % (cls.cfg.exec_id, name)
 
-    def test_create_engine(self):
-        engine = create_engine(self.cfg.get('POSTGRESQL_SETTINGS'))
-        self.assertEqual(engine.name, 'postgresql')
-        self.assertIsInstance(engine.pool, SqlPool)
+    def __test_create_store(self):
+        store = create_store(psql)
+        self.assertEqual(store.name, 'postgresql')
+        sql = store.sql_engine
+        self.assertTrue(sql)
 
     def test_create_connection(self):
-        engine = create_engine(self.cfg.get('POSTGRESQL_SETTINGS'),
-                               database='postgres')
-        conn = yield engine.connect()
+        from sqlalchemy.engine import Connection
+        store = create_store(psql)
+        conn = yield store.connect()
         self.assertIsInstance(conn, Connection)
-        name = self.name('bla')
-        result = yield conn.execute('CREATE DATABASE %s;' % name)
-        self.assertTrue(result)
-
+        #name = self.name('bla')
+        #result = conn.execute('CREATE DATABASE %s;' % name)
+        #self.assertTrue(result)
 
 class d:
-
     @classmethod
     def createdb(cls, name):
         name = cls.name(name)

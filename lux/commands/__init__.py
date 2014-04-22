@@ -72,7 +72,7 @@ class ConsoleParser(object):
                             version=self.get_version(),
                             help="Show version number and exit")
         config = Setting('config',
-                        ('-c', '--config'),
+                         ('-c', '--config'),
                          default=self.config_module,
                          desc=('python dotted path to a Lux/Pulsar config '
                                ' file, where settings can be specified.'))

@@ -25,5 +25,5 @@ class Command(lux.Command):
         for model in models:
             manager = models[model]
             result = yield from manager.create_table(
-                                    remove_existing=options.force)
+                remove_existing=options.force)
             self.write('Created table for %s' % manager)

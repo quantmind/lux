@@ -5,7 +5,7 @@ from pulsar.utils.html import slugify
 from lux import Html, Template
 
 from .contents import Snippet
-from .builder import Content, build_content
+from .builder import Content
 
 
 class Blog(Content):
@@ -21,7 +21,7 @@ class Blog(Content):
                     if filename.startswith('.'):
                         continue
                     src = os.path.join(dirpath, filename)
-                    entry = yield from build_content(app, src)
+                    entry = yield from self.build_content(app, src)
                     dt = entry.date
                     title = entry.title
                     if not dt:
@@ -46,8 +46,8 @@ class Blog(Content):
                             if not month:
                                 year[dt.month] = month = {}
                             if slug in month:
-                                app.logger.exception('Cannot build blog post "%s" '
-                                                     'already available')
+                                app.logger.exception('Cannot build blog post '
+                                                     '"%s" already available')
                             else:
                                 month[slug] = entry
             posts = []
@@ -70,37 +70,36 @@ class Blog(Content):
             #
             # Create drafts page
             if self.drafts:
+                meta = {'robots': 'noindex, nofollow'}
                 posts = []
                 name = os.path.join(name, self.drafts)
                 for entry in sorted(drafts, key=lambda x: x.date):
                     slug = entry._metadata['slug']
-                    dst = os.path.join(name, slug)
-                    yield from self.build_file(app, entry, dst, location,
-                                               context)
-                    posts.append((entry, os.path.join(self.drafts, slug)))
-                index = self.blog_index(app, posts, drafts=self.drafts)
+                    path = os.path.join(name, slug)
+                    yield from self.build_file(app, entry, path, location,
+                                               context, meta=meta)
+                    posts.append((entry, path))
+                index = self.blog_index(app, posts, True)
                 dst = os.path.join(name, 'index')
-                yield from self.build_file(app, index, dst, location, context)
+                yield from self.build_file(app, index, dst, location,
+                                           context, meta=meta)
         else:
             raise ValueError('Blog content requires a directory of blog posts')
 
-    def blog_index(self, app, posts, drafts=None):
-        config = app.config
-        site_url = config['SITE_URL']
-        relative = config['RELATIVE_URLS'] or not site_url
-        site_url = '/' if relative else '%s/' % site_url
-        date_format = config['DATE_FORMAT']
+    def blog_index(self, app, posts, drafts=False):
+        site_url = self.site_url(app)
+        date_format = app.config['DATE_FORMAT']
         container = Html('div')
+        metadata = None
         if drafts:
             container.append(Html('h1', 'Blog drafts'))
-            site_url = '%s%s/' % (site_url, drafts)
             if not posts:
                 container.append(Html('p', 'Nothing here!'))
         elif not posts:
             container.append(Html('div', '<p>No posts yet! Coming soon</p>',
                                   cn="jumbotron"))
         for entry, path in posts:
-            path = '%s%s' % (site_url, path)
+            path = '%s/%s' % (site_url, path)
             date = entry.date
             elem = Html('div',
                         Html('h4', Html('a', entry.title, href=path)),
