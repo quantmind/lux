@@ -24,7 +24,8 @@ import lux
 from lux import Parameter
 
 from .templates import DEFAULT_TEMPLATE
-from .builder import Content
+from .builder import Renderer, Content
+from .contents import Snippet
 from .blog import Blog
 
 

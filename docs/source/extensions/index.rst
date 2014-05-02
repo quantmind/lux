@@ -18,3 +18,4 @@ Extensions
    sitemap
    services
    static
+   google

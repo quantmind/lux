@@ -212,14 +212,14 @@ class App(ConsoleParser, LocalMixin, Extension):
         :class:`.ConsoleParser`.'''
         return self.meta.version
 
-    def wsgi_request(self, environ=None, loop=None, **kw):
+    def wsgi_request(self, environ=None, loop=None, path=None, **kw):
         '''Create a :class:`WsgiRequest` from a wsgi ``environ`` and set the
         ``app`` attribute in the cache.
         Additional keyed-valued parameters can be inserted.
         '''
         if not environ:
             # No WSGI environment, build a test one
-            environ = test_wsgi_environ(loop=loop)
+            environ = test_wsgi_environ(path=path, loop=loop)
         if kw:
             environ.update(kw)
         request = WsgiRequest(environ)

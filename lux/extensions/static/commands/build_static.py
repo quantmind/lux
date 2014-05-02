@@ -10,14 +10,6 @@ from lux.extensions.static.builder import build_snippets
 
 
 class Command(lux.Command):
-    option_list = (
-        Setting('relative_urls',
-                ('--relative-urls',),
-                action='store_true',
-                default=False,
-                desc=('Display links with relative paths (useful during '
-                      'development)')),
-    )
     help = "create the static site"
 
     def run(self, options):
@@ -32,10 +24,6 @@ class Command(lux.Command):
         if not os.path.isdir(location):
             os.makedirs(location)
         #
-        app.config['RELATIVE_URLS'] = options.relative_urls
-        link = app.config.get('NAVIGATION_BRAND_LINK')
-        if link == '/':
-            app.config['NAVIGATION_BRAND_LINK'] = '$site_url/'
         info = self.build_info()
         context = dict((('site_%s' % k, v) for k, v in info.items()))
         contents = yield from build_snippets(app, context)
@@ -83,14 +71,20 @@ class Command(lux.Command):
             shutil.copytree(src, dst)
 
     def build_info(self):
-        location = os.path.abspath(self.app.config['STATIC_LOCATION'])
-        filename = os.path.join(location, 'buildinfo.json')
         app = self.app
+        cfg = app.config
+        location = os.path.abspath(cfg['STATIC_LOCATION'])
+        filename = os.path.join(location, 'buildinfo.json')
         dte = datetime.now()
+        url = cfg['SITE_URL'] or ''
+        if url.endswith('/'):
+            url = url[:-1]
         info = {
             'date': dte.strftime(app.config['DATE_FORMAT']),
             'year': dte.year,
-            'lux_version': lux.__version__
+            'lux_version': lux.__version__,
+            'url': url,
+            'media': cfg['MEDIA_URL'][:-1]
         }
         with open(filename, 'w') as f:
             json.dump(info, f, indent=4)

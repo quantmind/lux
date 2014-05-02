@@ -4,9 +4,12 @@ from functools import partial
 from datetime import datetime
 
 from lux.utils import memoized
+from lux.extensions.twitter import twitter_card
 
 from .urlwrappers import Tag, Author, Category
 
+
+meta_properties = ('js', 'css')
 
 def modified_datetime(src):
     stat_src = os.stat(src)
@@ -14,6 +17,7 @@ def modified_datetime(src):
 
 
 class Snippet(object):
+    keys = ('main',)
 
     def __init__(self, content, metadata=None, src=None, dst=None):
         self._content = content
@@ -47,29 +51,47 @@ class Snippet(object):
     def draft(self):
         return self._metadata.get('draft')
 
-    @property
-    def summary(self):
-        return self._metadata.get('summary')
-
     def html(self, request):
+        '''Build an HTML5 page for this content
+        '''
         meta = self._metadata
-        content = self._content
         head = request.html_document.head
-        if self.title:
-            app = request.app
-            head.title = self.title
-            title = '<h1>%s</h1>' % self.title
-            if self.date:
-                title += '<p>%s</p>' % app.format_date(self.date)
-            content = '%s\n%s' % (title, content)
+        title = meta.get('title')
+        head_title = meta.get('head-title') or title
+        if head_title:
+            head.title = head_title
+        #
+        description = (meta.get('head-description') or meta.get('summary') or
+                       meta.get('description'))
+        if description:
+            des = head.replace_meta('description', description)
+        #
+        if 'js' in meta:
+            for script in meta['js'].split(','):
+                head.scripts.append(script.strip())
+        if 'requirejs' in meta:
+            head.scripts.require(*meta['requirejs'].split(','))
         #
         author = meta.get('author')
         if author:
-            head.add_meta(name="author", content=str(author))
+            head.replace_meta("author", str(author))
+        twitter_card(request, **meta)
         #
         robots = meta.get('robots') or 'index, follow'
         head.add_meta(name='robots', content=robots)
-        return content
+        for key in self.keys:
+            attrname = 'html_%s' % key
+            if hasattr(self, attrname):
+                yield (key, getattr(self, attrname)(request))
+
+    def html_main(self, request):
+        '''Return the content to '''
+        return self._content
+
+
+for meta_property in meta_properties:
+    setattr(Snippet, meta_property, property(
+        lambda self: self._metadata.get(meta_property)))
 
 
 class Page(Snippet):

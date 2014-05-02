@@ -26,7 +26,7 @@
         //
         tagName: 'button',
         //
-        selector: '.btn',
+        //selector: '.btn',
         //
         defaults: {
             skin: 'default'

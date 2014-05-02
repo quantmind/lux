@@ -11,6 +11,7 @@
     //  immediately up to date
     var
     //
+    // List of views which out-load when the DOM is ready
     autoViews = lux.autoViews = [],
     //
     SKIN_NAMES = lux.SKIN_NAMES = ['default', 'primary', 'success', 'inverse', 'error'],
@@ -48,6 +49,8 @@
     //
     // A view class
     View = lux.View = Class.extend({
+        //
+        // Default HTML tag for the view
         tagName: 'div',
         //
         defaults: null,
@@ -231,8 +234,13 @@
                 var view = elem.data(key);
                 if (!view) {
                     options || (options = {});
-                    if (lux.data_api)
-                        options = _.extend({}, elem.data(), options);
+                    if (lux.data_api) {
+                        var data = elem.data();
+                        _.forEach(data, function(val, key) {
+                            if (val === "") data[key] = true;
+                        });
+                        options = _.extend({}, data, options);
+                    }
                     options.elem = elem;
                     view = new NewView(options);
                     if (render) view.render();

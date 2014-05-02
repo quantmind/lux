@@ -28,4 +28,3 @@ VERSION = version_tuple(__version__)
 from .media import *
 from .commands import *
 from .core import *
-from .stores import *

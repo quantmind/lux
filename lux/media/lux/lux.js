@@ -800,6 +800,7 @@ define(['lodash', 'jquery'], function (_, $) {
     //  immediately up to date
     var
     //
+    // List of views which out-load when the DOM is ready
     autoViews = lux.autoViews = [],
     //
     SKIN_NAMES = lux.SKIN_NAMES = ['default', 'primary', 'success', 'inverse', 'error'],
@@ -837,6 +838,8 @@ define(['lodash', 'jquery'], function (_, $) {
     //
     // A view class
     View = lux.View = Class.extend({
+        //
+        // Default HTML tag for the view
         tagName: 'div',
         //
         defaults: null,
@@ -1020,8 +1023,13 @@ define(['lodash', 'jquery'], function (_, $) {
                 var view = elem.data(key);
                 if (!view) {
                     options || (options = {});
-                    if (lux.data_api)
-                        options = _.extend({}, elem.data(), options);
+                    if (lux.data_api) {
+                        var data = elem.data();
+                        _.forEach(data, function(val, key) {
+                            if (val === "") data[key] = true;
+                        });
+                        options = _.extend({}, data, options);
+                    }
                     options.elem = elem;
                     view = new NewView(options);
                     if (render) view.render();
@@ -2071,6 +2079,7 @@ define(['lodash', 'jquery'], function (_, $) {
         var url = elem.is('a') ? elem.attr('href') : elem.data('href'),
             options = {
                 type: elem.data('action') || 'get',
+
                 success: lux.ajaxResponse
             };
         elem.click(function (e) {
@@ -2127,7 +2136,7 @@ define(['lodash', 'jquery'], function (_, $) {
         //
         tagName: 'button',
         //
-        selector: '.btn',
+        //selector: '.btn',
         //
         defaults: {
             skin: 'default'
@@ -2175,7 +2184,7 @@ define(['lodash', 'jquery'], function (_, $) {
     //
     Form = lux.Form = lux.createView('form', {
         //
-        selector: 'form',
+        selector: 'form[data-lux]',
         //
         tagName: 'form',
         //
@@ -2185,21 +2194,38 @@ define(['lodash', 'jquery'], function (_, $) {
             ajax: false,
             complete: null,
             error: null,
+            validate: false,
             success: lux.ajaxResponse
         },
         //
         initialise: function (options) {
-            if (this.elem.hasClass('horizontal')) {
+            var elem = this.elem;
+            if (elem.hasClass('horizontal')) {
                 options.layout = 'horizontal';
-            } else if (this.elem.hasClass('inline')) {
+            } else if (elem.hasClass('inline')) {
                 options.layout = 'inline';
             }
             if (options.layout) {
                 this.layout = options.layout;
-                this.elem.addClass('form-' + this.layout);
+                elem.addClass('form-' + this.layout);
             }
-            if (options.ajax || this.elem.hasClass('ajax')) {
+            if (options.ajax || elem.hasClass('ajax')) {
                 this.ajax(options);
+            }
+            // Check if we need to use parsleyjs for form validation
+            if (options.validate !== false) {
+                options.validate = true;
+                require(['parsley'], function () {
+                    elem.attr('novalidate','novalidate').parsley({
+                        successClass: 'success',
+                        errorClass: 'error',
+                        classHandler: function(el) {
+                            return $(el).closest('.control-group');
+                        },
+                        errorsWrapper: '<span class=\"help-inline\"></span>',
+                        errorElem: '<span></span>'
+                    });
+                });
             }
         },
         //
@@ -3330,6 +3356,155 @@ $.extend(math, {
         return mu + z*sigma;
     }
 });
+(function () {
+
+    var isCommonjs = typeof module !== 'undefined' && module.exports;
+    var keyboardAllowed = typeof Element !== 'undefined' && 'ALLOW_KEYBOARD_INPUT' in Element;
+
+    var fn = (function () {
+        var val;
+        var valLength;
+
+        var fnMap = [
+            [
+                'requestFullscreen',
+                'exitFullscreen',
+                'fullscreenElement',
+                'fullscreenEnabled',
+                'fullscreenchange',
+                'fullscreenerror'
+            ],
+            // new WebKit
+            [
+                'webkitRequestFullscreen',
+                'webkitExitFullscreen',
+                'webkitFullscreenElement',
+                'webkitFullscreenEnabled',
+                'webkitfullscreenchange',
+                'webkitfullscreenerror'
+
+            ],
+            // old WebKit (Safari 5.1)
+            [
+                'webkitRequestFullScreen',
+                'webkitCancelFullScreen',
+                'webkitCurrentFullScreenElement',
+                'webkitCancelFullScreen',
+                'webkitfullscreenchange',
+                'webkitfullscreenerror'
+
+            ],
+            [
+                'mozRequestFullScreen',
+                'mozCancelFullScreen',
+                'mozFullScreenElement',
+                'mozFullScreenEnabled',
+                'mozfullscreenchange',
+                'mozfullscreenerror'
+            ],
+            [
+                'msRequestFullscreen',
+                'msExitFullscreen',
+                'msFullscreenElement',
+                'msFullscreenEnabled',
+                'MSFullscreenChange',
+                'MSFullscreenError'
+            ]
+        ];
+
+        var i = 0;
+        var l = fnMap.length;
+        var ret = {};
+
+        for (; i < l; i++) {
+            val = fnMap[i];
+            if (val && val[1] in document) {
+                for (i = 0, valLength = val.length; i < valLength; i++) {
+                    ret[fnMap[0][i]] = val[i];
+                }
+                return ret;
+            }
+        }
+
+        return false;
+    })();
+
+    var screenfull = {
+        request: function (elem) {
+            var request = fn.requestFullscreen;
+
+            elem = elem || document.documentElement;
+
+            // Work around Safari 5.1 bug: reports support for
+            // keyboard in fullscreen even though it doesn't.
+            // Browser sniffing, since the alternative with
+            // setTimeout is even worse.
+            if (/5\.1[\.\d]* Safari/.test(navigator.userAgent)) {
+                elem[request]();
+            } else {
+                elem[request](keyboardAllowed && Element.ALLOW_KEYBOARD_INPUT);
+            }
+        },
+        exit: function () {
+            document[fn.exitFullscreen]();
+        },
+        toggle: function (elem) {
+            if (this.isFullscreen) {
+                this.exit();
+            } else {
+                this.request(elem);
+            }
+        },
+        onchange: function () {},
+        onerror: function () {},
+        raw: fn
+    };
+
+    if (!fn) {
+        if (isCommonjs) {
+            module.exports = false;
+        } else {
+            window.screenfull = false;
+        }
+
+        return;
+    }
+
+    Object.defineProperties(screenfull, {
+        isFullscreen: {
+            get: function () {
+                return !!document[fn.fullscreenElement];
+            }
+        },
+        element: {
+            enumerable: true,
+            get: function () {
+                return document[fn.fullscreenElement];
+            }
+        },
+        enabled: {
+            enumerable: true,
+            get: function () {
+                // Coerce to boolean in case of old WebKit
+                return !!document[fn.fullscreenEnabled];
+            }
+        }
+    });
+
+    document.addEventListener(fn.fullscreenchange, function (e) {
+        screenfull.onchange.call(screenfull, e);
+    });
+
+    document.addEventListener(fn.fullscreenerror, function (e) {
+        screenfull.onerror.call(screenfull, e);
+    });
+
+    if (isCommonjs) {
+        module.exports = screenfull;
+    } else {
+        window.screenfull = screenfull;
+    }
+})();
 
 	return _.extend(lux, prev_lux);
 });

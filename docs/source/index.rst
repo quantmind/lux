@@ -15,6 +15,7 @@ It requires python 3.3 and up.
    scripts/index
    development
    changelog
+   images
 
 
 Indices and tables

@@ -17,6 +17,7 @@
             "js/utils/utils.js",
             "js/utils/math.js",
             "js/utils/stats.js",
+            "js/utils/screenfull.js",
             "js/lux/close.js"],
     "dest": "lux/media/lux/lux.js",
     "banner": "js/lux/start.js"

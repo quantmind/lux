@@ -12,7 +12,7 @@
     //
     Form = lux.Form = lux.createView('form', {
         //
-        selector: 'form',
+        selector: 'form[data-lux]',
         //
         tagName: 'form',
         //
@@ -22,21 +22,38 @@
             ajax: false,
             complete: null,
             error: null,
+            validate: false,
             success: lux.ajaxResponse
         },
         //
         initialise: function (options) {
-            if (this.elem.hasClass('horizontal')) {
+            var elem = this.elem;
+            if (elem.hasClass('horizontal')) {
                 options.layout = 'horizontal';
-            } else if (this.elem.hasClass('inline')) {
+            } else if (elem.hasClass('inline')) {
                 options.layout = 'inline';
             }
             if (options.layout) {
                 this.layout = options.layout;
-                this.elem.addClass('form-' + this.layout);
+                elem.addClass('form-' + this.layout);
             }
-            if (options.ajax || this.elem.hasClass('ajax')) {
+            if (options.ajax || elem.hasClass('ajax')) {
                 this.ajax(options);
+            }
+            // Check if we need to use parsleyjs for form validation
+            if (options.validate !== false) {
+                options.validate = true;
+                require(['parsley'], function () {
+                    elem.attr('novalidate','novalidate').parsley({
+                        successClass: 'success',
+                        errorClass: 'error',
+                        classHandler: function(el) {
+                            return $(el).closest('.control-group');
+                        },
+                        errorsWrapper: '<span class=\"help-inline\"></span>',
+                        errorElem: '<span></span>'
+                    });
+                });
             }
         },
         //

@@ -14,5 +14,8 @@
     },
     "bootstrap": {
         "deps": ["jquery"]
+    },
+    "parsley": {
+        "deps": ["jquery"]
     }
 }
