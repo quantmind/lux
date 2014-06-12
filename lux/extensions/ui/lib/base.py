@@ -48,13 +48,12 @@ Mixin
 import os
 import json
 import time
-import asyncio
 from copy import copy
 from importlib import import_module
-
 from collections import Mapping
 from datetime import datetime
 
+from pulsar import asyncio
 from pulsar.utils.structures import OrderedDict, mapping_iterator
 from pulsar.utils.pep import itervalues, iteritems, ispy3k
 from pulsar.utils.html import UnicodeMixin

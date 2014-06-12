@@ -168,3 +168,10 @@ intersphinx_mapping = {
     'python': ('http://python.readthedocs.org/en/latest/', None),
     'pulsar': ('http://pythonhosted.org/pulsar/', None)
 }
+
+extlinks = {'django': ('https://www.djangoproject.com/', None),
+            'postgresql': ('http://www.postgresql.org/', None),
+            'sqlalchemy': ('http://www.sqlalchemy.org/', None),
+            'greenlet': ('http://greenlet.readthedocs.org/', None),
+            'grunt': ('http://gruntjs.com/', None),
+            'nodejs': ('http://nodejs.org/', None)}

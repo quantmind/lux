@@ -1,15 +1,25 @@
 '''
-
-Parameters
+High level Functions
 =====================
 
-.. lux_extension:: lux.core.app
-   :classname: App
+.. autofunction:: execute_from_config
+
+
+.. autofunction:: execute_app
+
+
+Application
+=====================
+
+.. autoclass:: App
+   :members:
+   :member-order: bysource
 
 '''
 import sys
 import os
 import logging
+import pickle
 from inspect import isclass
 from collections import OrderedDict
 from importlib import import_module
@@ -19,11 +29,9 @@ from pulsar.apps.wsgi import WsgiHandler, HtmlDocument, test_wsgi_environ
 from pulsar.utils.pep import itervalues
 from pulsar.utils.log import LocalMixin, local_property, local_method
 
-from lux.commands import ConsoleParser, CommandError, execute_app
-from lux import media_libraries, javascript_dependencies
+from lux.commands import ConsoleParser, CommandError
 
 from .extension import Extension, Parameter
-from .permissions import PermissionHandler
 from .wrappers import WsgiRequest, JsonDocument
 
 
@@ -66,6 +74,42 @@ def execute_from_command_line(argv=None):
     execute_app(App('lux.core.app'))
 
 
+def execute_app(app, argv=None, **params):
+    '''Execute a given ``app``.
+
+    :parameter app: the :class:`.App` to execute
+    :parameter argv: optional list of parameters, if not given ``sys.argv``
+        is used instead.
+    :parameter params: additional key-valued parameters to pass to the
+        :class:`.Command` executing the ``app``.
+    '''
+    if argv is None:
+        argv = sys.argv
+    app.meta.argv = argv = list(argv)
+    app.meta.script = argv.pop(0)
+    # Parse for the command
+    parser = app.get_parser(add_help=False)
+    args, argr = parser.parse_known_args(argv)
+    #
+    # we have a command
+    if args.command:
+        try:
+            command = app.get_command(args.command)
+        except CommandError as e:
+            print('\n'.join(('%s.' % e, 'Pass -h for list of commands')))
+            exit(1)
+        # Make sure the loop exists
+        try:
+            return command(argr, **params)
+        except CommandError as e:
+            print(str(e))
+            exit(1)
+    else:
+        # this should fail unless we pass -h
+        parser = app.get_parser(nargs=1)
+        parser.parse_args(argv)
+
+
 class App(ConsoleParser, LocalMixin, Extension):
     '''This is the main class for driving lux applications.
 
@@ -82,8 +126,14 @@ class App(ConsoleParser, LocalMixin, Extension):
 
             python myappscript.py serve --debug
 
+    .. attribute:: auth_backend
+
+        Used by the sessions extension
+
     '''
     debug = False
+    auth_backend = None
+
     _config = [
         Parameter('EXTENSIONS', [],
                   'List of extension names to use in your application. '
@@ -166,11 +216,6 @@ class App(ConsoleParser, LocalMixin, Extension):
         return self.config['EXTENSION_HANDLERS']
 
     @local_property
-    def permissions(self):
-        '''The :class:`PermissionHandler` for this :class:`App`.'''
-        return PermissionHandler()
-
-    @local_property
     def events(self):
         return {}
 
@@ -242,8 +287,8 @@ class App(ConsoleParser, LocalMixin, Extension):
         doc = HtmlDocument(title=title or cfg['HTML_HEAD_TITLE'],
                            media_path=cfg['MEDIA_URL'],
                            minified=cfg['MINIFIED_MEDIA'],
-                           known_libraries=media_libraries,
-                           scripts_dependencies=javascript_dependencies,
+                           known_libraries=None,
+                           scripts_dependencies=None,
                            require_callback=cfg['JSREQUIRE_CALLBACK'],
                            debug=self.debug,
                            content_type=content_type,
@@ -429,6 +474,9 @@ class App(ConsoleParser, LocalMixin, Extension):
 
     def format_date(self, dte):
         return dte.strftime(self.config['DATE_FORMAT'])
+
+    def clone(self):
+        return pickle.loads(pickle.dumps(self))
 
 
 def add_app(apps, name, pos=None):

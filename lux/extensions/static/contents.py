@@ -65,7 +65,13 @@ class Snippet(object):
                        meta.get('description'))
         if description:
             des = head.replace_meta('description', description)
+        if 'tags' in meta:
+            tags = meta['tags']
+            head.replace_meta("keywords", ', '.join((str(t) for t in tags)))
         #
+        if 'css' in meta:
+            for css in meta['css'].split(','):
+                head.links.append(css.strip())
         if 'js' in meta:
             for script in meta['js'].split(','):
                 head.scripts.append(script.strip())

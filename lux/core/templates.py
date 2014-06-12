@@ -53,6 +53,8 @@ Column Template
 '''
 from itertools import chain
 
+from pulsar import coroutine_return
+
 from .wrappers import Html, AttributeDictionary
 
 
@@ -330,13 +332,13 @@ class PageTemplate(Template):
             site_contents = []
             ids = context.get('content_ids')
             if ids:
-                contents = yield from request.models.content.filter(
+                contents = yield request.models.content.filter(
                     id=ids).all()
                 for content in contents:
                     for elem in ids.get(content.id, ()):
                         self.apply_content(elem, content)
-        content = yield from html(request)
-        return content
+        content = yield html(request)
+        coroutine_return(content)
 
     def apply_content(self, elem, content):
         elem.data({'id': content.id, 'content_type': content.content_type})

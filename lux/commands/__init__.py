@@ -1,6 +1,7 @@
 '''The :mod:`lux.core` module contains all the functionalities to run a
 web site or an rpc server using lux and pulsar_.
 
+
 ConsoleParser
 =====================
 
@@ -20,10 +21,9 @@ Command
 import sys
 import argparse
 import logging
-from asyncio import set_event_loop
 
-from pulsar import (Setting, get_event_loop, arbiter, task, Application,
-                    maybe_async, Future)
+from pulsar import (Setting, get_event_loop, task, Application,
+                    asyncio, maybe_async, Future)
 from pulsar.utils.pep import native_str
 from pulsar.utils.log import configured_logger
 
@@ -32,8 +32,7 @@ from lux import __version__
 
 __all__ = ['ConsoleParser',
            'CommandError',
-           'Command',
-           'execute_app']
+           'Command']
 
 
 class CommandError(Exception):
@@ -41,7 +40,10 @@ class CommandError(Exception):
 
 
 class ConsoleParser(object):
-    '''A class for parsing the console inputs.'''
+    '''A class for parsing the console inputs.
+
+    Used as base class for both :class:`.Command` and :class:`.App`
+    '''
     help = None
     option_list = ()
     default_option_list = (
@@ -88,13 +90,15 @@ class LuxApp(Application):
     name = 'lux'
 
     def on_config(self, actor):
-        set_event_loop(actor._loop)
+        asyncio.set_event_loop(actor._loop)
         return False
 
 
 class Command(ConsoleParser):
     '''Signature class for lux commands. A :class:`.Command` is never
     created directly, instead, the :meth:`.App.get_command` method is used.
+
+    A command is executed via its callable method.
 
     .. attribute:: name
 
@@ -125,8 +129,12 @@ class Command(ConsoleParser):
     def __call__(self, argv, **params):
         parser = self.get_parser(description=self.help or self.name)
         options, rest = parser.parse_known_args(argv)
-        app = self.pulsar_app(rest, loghandlers=['console_level_message'])
-        app()
+        papp = self.pulsar_app(rest, loghandlers=['console_level_message'])
+        # call pulsar app so that pulsar is ready to run
+        papp()
+        # get a fresh app
+        self.app = self.app.clone()
+        assert self.app.handler
         return self.run_until_complete(options, **params)
 
     def get_version(self):
@@ -159,7 +167,10 @@ class Command(ConsoleParser):
         raise NotImplementedError
 
     def run_until_complete(self, options, **params):
-        '''Run a command using pulsar asynchronous engine.'''
+        '''Execute the :meth:`run` method using pulsar asynchronous engine.
+
+        Most commands are run using this method.
+        '''
         loop = get_event_loop()
         result = maybe_async(self.run(options, **params), loop=loop)
         if isinstance(result, Future):
@@ -199,33 +210,3 @@ class Command(ConsoleParser):
                            debug=app.debug,
                            config=app.config_module,
                            **kw)
-
-
-def execute_app(app, argv=None, **params):
-    '''Execute a command for a given ``app``.
-    '''
-    if argv is None:
-        argv = sys.argv
-    app.meta.argv = argv = list(argv)
-    app.meta.script = argv.pop(0)
-    # Parse for the command
-    parser = app.get_parser(add_help=False)
-    args, argr = parser.parse_known_args(argv)
-    #
-    # we have a command
-    if args.command:
-        try:
-            command = app.get_command(args.command)
-        except CommandError as e:
-            print('\n'.join(('%s.' % e, 'Pass -h for list of commands')))
-            exit(1)
-        # Make sure the loop exists
-        try:
-            return command(argr, **params)
-        except CommandError as e:
-            print(str(e))
-            exit(1)
-    else:
-        # this should fail unless we pass -h
-        parser = app.get_parser(nargs=1)
-        parser.parse_args(argv)

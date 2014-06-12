@@ -10,7 +10,9 @@ API
 Core
 =============================
 
-.. automodule:: lux.core
+.. automodule:: lux.core.app
+
+.. automodule:: lux.core.extension
 
 
 .. _api-wrappers:

@@ -1,114 +1,95 @@
-import json
+try:
+    import jwt
+except ImportError:
+    jwt = None
 
-from pulsar import coroutine_return, MethodNotAllowed
+from pulsar.apps.wsgi import Router, Json, route
 
-import lux
-from lux.forms import smart_redirect
-from lux.extensions.api import Crud, ContentManager
-
-from . import forms
-
-
-__all__ = ['WebUser', 'LoginUser', 'LogoutUser', 'UserCrud', 'SessionCrud']
+from .oauth import Accounts
 
 
-class LoginUser(lux.Router):
-    '''Login a User.
+__all__ = ['Login', 'Logout', 'Token', 'OAuth']
 
-.. attribute:: LoginForm
 
-    The Form to use to login
+class Login(Router):
+    '''Adds login get ("text/html") and post handlers
+    '''
+    html_response = None
 
-'''
-    LoginForm = forms.LoginForm
-    icon = 'sign-in'
-    text = 'login'
-
-    def post(self, request):
-        app = request.app
-        data, files = yield request.data_and_files()
-        form = self.LoginForm(request, data=data, files=files)
-        valid = yield from form.is_valid()
-        if valid:
-            url = request.url_data.get('redirect', '/')
-            return form.redirect(request, url)
-        else:
-            return form.http_response(request)
-
+    @route(response_content_types=['text/html'])
     def get(self, request):
-        '''Get the form'''
-        user = request.cache.session.user
-        if user.is_authenticated():
-            yield smart_redirect(request)
-        form = self.LoginForm(request)
-        html = yield form.layout(request, action=request.full_path())
-        response = yield html.http_response(request)
-        coroutine_return(response)
+        '''Handle the HTML page for login
+        '''
+        return self.html_auth(request, 'login')
 
-    def navigation_visit(self, request, navigation):
-        user = request.cache.session.user
-        if not user.is_authenticated():
-            url = request.full_path(self.path(), redirect=request.full_path())
-            navigation.user.append(navigation.item(url=url,
-                                                   icon=self.icon,
-                                                   text=self.text))
+    @route(response_content_types=['text/html'])
+    def signup(self, request):
+        return self.html_auth(request, 'signup')
+
+    @route('/', method='post')
+    def do_login(self, request):
+        '''Handle login post data
+        '''
+        user = request.cache.user
+        if user:
+            raise MethodNotAllowed
+        return self.app.auth_backend.login(request)
+
+    def html_auth(self, request, template):
+        html_response = self.html_response
+        if html_response:
+            return html_response(request, template)
+        else:
+            raise NotImplementedError
 
 
-class LogoutUser(lux.Router):
-    '''Default User CRUD views'''
-    icon = 'sign-out'
+class Logout(Router):
 
     def post(self, request):
-        yield from request.app.permissions.logout(request)
-        url = request.url_data.get('redirect', '/')
-        coroutine_return(smart_redirect(request, url))
-
-    def navigation_visit(self, request, navigation):
-        user = request.cache.session.user
-        if user.is_authenticated():
-            url = request.full_path(self.path(), redirect=request.full_path())
-            navigation.user.append(navigation.item(url=url,
-                                                   icon=self.icon,
-                                                   text='logout',
-                                                   action='post',
-                                                   ajax=True))
+        '''Logout via post method'''
+        user = request.cache.user
+        if user:
+            sessions.set_user(request)
+            return Json({'success': True,
+                         'redirect': request.absolute_uri('/')}
+                        ).http_response(request)
+        else:
+            return Json({'success': False}).http_response(request)
 
 
-class SessionCrud(Crud):
+class OAuth(Router):
+
+    def oauth(self, request):
+        providers = request.app.config['LOGIN_PROVIDERS']
+        return dict(((o['name'].lower(), Accounts[o['name'].lower()](o))
+                     for o in providers))
+
+    @route('oauth/<name>')
+    def oauth(self, request):
+        name = request.urlargs['name']
+        redirect_uri = request.absolute_uri('/oauth/%s/redirect' % name)
+        p = self.oauth(request).get(name)
+        authorization_url = p.authorization_url(redirect_uri)
+        return self.redirect(authorization_url)
+
+    @route('oauth/<name>/redirect')
+    def oauth_redirect(self, request):
+        name = request.urlargs['name']
+        p = self.oauth(request).get(name)
+        redirect_uri = request.absolute_uri('/oauth/%s/redirect' % name)
+        token = p.access_token(request.url_data, redirect_uri=redirect_uri)
+        user = sessions.set_user(request, p.create_user(token))
+        return self.redirect('/%s' % user.username)
+
+
+class Token(Router):
 
     def post(self, request):
-        raise MethodNotAllowed()
-
-
-class UserCrud(Crud):
-    content_manager = lux.RouterParam(ContentManager(
-        ('id', 'username', 'first_name', 'last_name', 'email',
-         'is_active', 'can_login', 'is_superuser')))
-
-    @lux.route('/<username>')
-    def read(self, request):
-        return self.read_instance(request)
-
-
-class WebUser(lux.Router):
-    '''Default User CRUD views'''
-
-    @lux.route('login', method='post')
-    def post_login(self, request):
-        app = request.app
-        data = yield app.form_data(request, LoginForm)
-        user = yield app.permisions.authenticate(request, **data)
-        if user:
-            user = yield app.permisions.login(request, user)
-
-    @lux.route('login', method='get')
-    def get_login(self, request):
-        app = request.app
-        data = yield app.form_data(request, LoginForm)
-        user = yield app.permisions.authenticate(request, **data)
-        if user:
-            user = yield app.permisions.login(request, user)
-
-    @lux.route('logout', method='post')
-    def web_logout(self, request):
-        request.app.permisions.logout(request)
+        '''Obtain a Json Web Token (JWT)
+        '''
+        user = request.cache.user
+        if not user:
+            raise PermissionDenied
+        secret = request.app.config['SECRET_KEY']
+        token = jwt.encode({"username": user.username}, secret)
+        return Json({'token': token}).http_response(request)

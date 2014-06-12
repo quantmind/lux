@@ -4,10 +4,12 @@ from pulsar import ImproperlyConfigured
 
 __all__ = ['register_template_engine', 'template_engine']
 
+default_engine = 'python'
 template_engines = {}
 
 
-def template_engine(name):
+def template_engine(name=None):
+    name = name or default_engine
     engine = template_engines.get(name)
     if engine is None:
         raise ImproperlyConfigured('Template engine %s not available' %
@@ -23,4 +25,4 @@ def render(text, context):
     return Template(text).safe_substitute(context)
 
 
-register_template_engine('python', render)
+register_template_engine(default_engine, render)

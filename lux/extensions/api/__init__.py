@@ -123,7 +123,7 @@ CRUD message
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 '''
-from pulsar import HttpException, Http404
+from pulsar import HttpException, Http404, ImproperlyConfigured
 from pulsar.utils.structures import OrderedDict, mapping_iterator
 from pulsar.utils.pep import itervalues
 from pulsar.utils.html import slugify
@@ -308,9 +308,10 @@ class Extension(lux.Extension):
         if not address:
             if default_address:
                 address = default_address
-                config['DATASTORE'][''] = address
+                datastore[''] = address
             else:
                 raise ValueError('Default datastore not set')
+        config['DATASTORE'] = datastore
         self.logger.debug('Create odm mapper at %s', address)
         mapper = odm.Mapper(address)
         self.set_search_engine(app, mapper)
@@ -343,5 +344,8 @@ class Extension(lux.Extension):
         if engine is None:
             engine = app.config['DATASTORE'].get('')
         odm = app.config['ODM']
-        engine = odm.search_engine(engine)
-        mapper.set_search_engine(engine)
+        try:
+            engine = odm.search_engine(engine)
+            mapper.set_search_engine(engine)
+        except ImproperlyConfigured:
+            pass

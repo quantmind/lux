@@ -1,3 +1,26 @@
+'''
+
+Extension
+=====================
+
+.. autoclass:: Extension
+   :members:
+   :member-order: bysource
+
+Extension Meta
+=====================
+
+.. autoclass:: ExtensionMeta
+   :members:
+   :member-order: bysource
+
+Parameter
+=====================
+
+.. autoclass:: Parameter
+   :members:
+   :member-order: bysource
+'''
 import os
 import sys
 import logging
@@ -64,10 +87,8 @@ class ExtensionMeta(object):
         file = Path(file)
         if file.isdir():
             appdir = file
-        elif file.isfile():
-            appdir = file.realpath().parent
         else:
-            raise ValueError('Could not find %s' % file)
+            appdir = file.realpath().parent
         self.file = file
         self.path = appdir.realpath()
         self.version = version or __version__
@@ -95,6 +116,7 @@ class ExtensionMeta(object):
 
     @property
     def has_module(self):
+        return True
         return self.path.ispymodule()
 
     @property

@@ -11,6 +11,7 @@ It requires python 3.3 and up.
    overview
    tutorials/index
    api/index
+   api/params
    extensions/index
    scripts/index
    development

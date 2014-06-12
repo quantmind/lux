@@ -55,7 +55,7 @@ class Extension(lux.Extension):
                   'If a positive integer, a response middleware is added so '
                   'that it encodes the response via the gzip algorithm.'),
         Parameter('USE_ETAGS', False, ''),
-        Parameter('CLEAN_URL', True,
+        Parameter('CLEAN_URL', False,
                   'When ``True``, requests on url with consecutive slashes '
                   'are converted to valid url and redirected.'),
         Parameter('SERVE_STATIC_FILES', False,

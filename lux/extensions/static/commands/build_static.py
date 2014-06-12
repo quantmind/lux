@@ -19,7 +19,6 @@ class Command(lux.Command):
         path = app.meta.path
         cur_path = os.curdir
         os.chdir(app.meta.path)
-        #options = self.options(argv)
         location = config['STATIC_LOCATION']
         if not os.path.isdir(location):
             os.makedirs(location)
@@ -30,6 +29,7 @@ class Command(lux.Command):
         contents.update(context)
         self.create_media()
         self.copy_files(config['EXTRA_FILES'])
+        self.copy_redirects()
         yield from self.build(contents)
 
     def build(self, contents):
@@ -89,3 +89,46 @@ class Command(lux.Command):
         with open(filename, 'w') as f:
             json.dump(info, f, indent=4)
         return info
+
+    def copy_redirects(self):
+        '''Reads the ``redirects.json`` file if it exists and
+        create redirects files.
+        '''
+        app = self.app
+        name = os.path.join(app.meta.path, 'redirects.json')
+        if os.path.isfile(name):
+            with open(name) as file:
+                redirects = json.loads(file.read())
+        else:
+            return
+        location = os.path.abspath(self.app.config['STATIC_LOCATION'])
+        engine = lux.template_engine()
+        for origin, target in redirects.items():
+            content = engine(REDIRECT_TEMPLATE, {'target': target})
+            if origin.startswith('/'):
+                origin = origin[1:]
+            dst = os.path.join(location, origin)
+            dir = os.path.dirname(dst)
+            base = os.path.basename(dst)
+            if not base:
+                dst = os.path.join(dir, 'index')
+            if not dst.endswith('.html'):
+                dst = '%s.html' % dst
+            if not os.path.exists(dir):
+                os.makedirs(dir)
+            self.logger.info('Redirect %s into %s', origin, dst)
+            with open(dst, 'w') as f:
+                f.write(content)
+
+
+
+REDIRECT_TEMPLATE = '''\
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset='utf-8'>
+<script type="text/javascript">
+window.location = location.origin + "$target";
+</script>
+<head>
+'''

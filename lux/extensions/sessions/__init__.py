@@ -14,18 +14,75 @@ Permissions
 
 .. automodule:: lux.extensions.sessions.models
 '''
+from importlib import import_module
+
 from pulsar import PermissionDenied
 from pulsar.utils.importer import module_attribute
 
 import lux
 from lux import Parameter
+from lux.utils.crypt import get_random_string
 
 from .views import *
-from .crypt import get_random_string
-from .models import Session
 
 
-pass_through = lambda u: u
+class AuthBackend(object):
+    '''Interface for authentication backends.
+
+    An Authentication backend manage authentication, login, logout and
+    several other activities which are required for managing users of
+    a web site.
+    '''
+    def __init__(self, app):
+        self.encoding = app.config['ENCODING']
+        self.secret_key = app.config['SECRET_KEY'].encode()
+        self.session_cookie_name = app.config['SESSION_COOKIE_NAME']
+        self.session_expiry = app.config['SESSION_EXPIRY']
+        self.salt_size = app.config['AUTH_SALT_SIZE']
+        self.csrf = app.config['CSRF_KEY_LENGTH']
+        self.check_username = app.config['CHECK_USERNAME']
+        algorithm = app.config['CRYPT_ALGORITHM']
+        self.crypt_module = import_module(algorithm)
+
+    def authenticate(self, request, user, **params):
+        '''Authenticate a user'''
+        pass
+
+    def login(self, request):
+        '''Login handler
+        '''
+        raise NotImplementedError
+
+    def logout(self, request, user):
+        '''Logout handler
+        '''
+        raise NotImplementedError
+
+    def get_user(self, request, *args, **kwargs):
+        '''Retrieve a user.
+
+        This method can raise an exception if the user could not be found,
+        or return ``None``.
+        '''
+        pass
+
+    def create_user(self, request, *args, **kwargs):
+        '''Create a standard user.'''
+        pass
+
+    def create_superuser(self, request, *args, **kwargs):
+        '''Create a user with *superuser* permissions.'''
+        pass
+
+    def middleware(self, app):
+        return ()
+
+    def response_middleware(self, app):
+        return ()
+
+    def has_permission(self, request, action, model):
+        '''Check for permission on a model.'''
+        pass
 
 
 class Extension(lux.Extension):
@@ -36,13 +93,12 @@ class Extension(lux.Extension):
     protection and user permissions levels.
     '''
     _config = [
-        Parameter('AUTHENTICATION_BACKENDS',
+        Parameter('AUTHENTICATION_BACKEND',
                   ['lux.extensions.sessions.permissions.AuthBackend'],
-                  'A list of python dotted path to a class used to provide '
-                  'a backend for authentication. There can be several of '
-                  'them.'),
+                  'Python dotted path to a class used to provide '
+                  'a backend for authentication.'),
         Parameter('CRYPT_ALGORITHM',
-                  'lux.extensions.sessions.crypt.arc4',
+                  'lux.utils.crypt.arc4',
                   'Python dotted path to module which provides the '
                   '``encrypt`` and ``descript`` method for password and '
                   'sensitive data encryption/decription'),
@@ -69,17 +125,21 @@ class Extension(lux.Extension):
         Parameter('DEFAULT_PERMISSION_LEVEL', 'read',
                   'When no roles has tested positive for permissions, this '
                   'parameter is used to check if a model has permission for '
-                  'an action')]
+                  'an action'),
+        Parameter('LOGIN_PROVIDERS', {},
+                  'Dictionary of OAuth providers')]
 
     def middleware(self, app):
         self._response_middleware = []
         middleware = []
-        for dotted_path in app.config['AUTHENTICATION_BACKENDS']:
-            backend = module_attribute(dotted_path)
-            backend = backend(app)
-            app.permissions.auth_backends.append(backend)
+        dotted_path = app.config['AUTHENTICATION_BACKEND']
+        if dotted_path:
+            backend = module_attribute(dotted_path)(app)
+            app.auth_backend = backend
             middleware.extend(backend.middleware(app))
             self._response_middleware.extend(backend.response_middleware(app))
+        else:
+            raise RuntimeError('AUTHENTICATION_BACKEND not available')
         return middleware
 
     def response_middleware(self, app):
@@ -103,7 +163,7 @@ class Extension(lux.Extension):
         '''
         session = request.cache.session
         if session:
-            key = session.get('csrf_token')
+            key = session.csrf_token
             if not key:
                 length = request.app.config['CSRF_KEY_LENGTH']
                 if length > 0:
@@ -120,5 +180,20 @@ class Extension(lux.Extension):
         if not models:
             self.logger.warning('Session extensions requires model extension')
         else:
-            yield SessionCrud('sessions', models[Session])
+            yield SessionCrud('sessions', models.session)
             yield UserCrud('users', models.user)
+
+
+class UserMixin(object):
+
+    def is_authenticated(self):
+        return False
+
+    def is_active(self):
+        return False
+
+    def is_anonymous(self):
+        return True
+
+    def get_id(self):
+        return 0

@@ -16,8 +16,6 @@ def load_pkg(name, dir=None):
     return json.loads(data)
 
 package = load_pkg('package.json')
-media_libraries = load_pkg('libs.json')
-javascript_dependencies = load_pkg('deps.json')
 
 
 from .utils import version_tuple
@@ -25,6 +23,5 @@ from .utils import version_tuple
 __version__ = package['version']
 VERSION = version_tuple(__version__)
 
-from .media import *
 from .commands import *
 from .core import *

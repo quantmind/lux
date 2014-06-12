@@ -2,19 +2,20 @@
 Development
 ==================
 
-To develop lux or lux -based applications there are additional requirements:
+To develop lux or lux-based applications there are additional requirements:
 
-* gruntjs_ and therefore nodejs_::
+* :grunt:`gruntjs <>` and therefore :nodejs:`nodejs <>`::
 
     npm install -g grunt-cli
 
-  will install the grunt command line. Then on the ``lux`` distribution
-  directory type::
+  install the grunt command line globally.
+  Then on the ``lux`` distribution directory, or in a lux project directory,
+  type::
 
     npm install
 
   to locally install ``grunt` and the other javascript libraries used
-  during development (specified in ``package.json``).
+  during development (specified in the ``package.json`` file).
 
 
 Documentation
