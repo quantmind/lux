@@ -68,7 +68,7 @@ class Command(lux.Command):
 
     def render(self, theme, dump_variables):
         self.write('Building theme "%s".' % theme)
-        css = Css(app=self.app, known_libraries=lux.media_libraries)
+        css = Css(app=self.app)
         return css.dump(theme, dump_variables=dump_variables)
 
     def minify(self, options, data):

@@ -1,7 +1,7 @@
-'''A :ref:`lux extension <extensions>` for managing user, sessions
-and permissions. The extension
-is added simply by inserting ``lux.extensions.sessions`` into the
-list of ``EXTENSIONS`` of your application.
+'''A :ref:`lux extension <extensions>` for managing users, sessions
+and permissions. The extension is added by inserting
+``lux.extensions.sessions`` into the
+list of :setting:`EXTENSIONS` of your application.
 
 Parameters
 ================
@@ -24,6 +24,11 @@ from lux import Parameter
 from lux.utils.crypt import get_random_string
 
 from .views import *
+from .oauth import *
+
+
+class AuthenticationError(Exception):
+    pass
 
 
 class AuthBackend(object):
@@ -48,15 +53,18 @@ class AuthBackend(object):
         '''Authenticate a user'''
         pass
 
-    def login(self, request):
-        '''Login handler
-        '''
+    def login(self, request, user=None):
+        '''Login a ``user`` if it is already authenticated, otherwise do
+        nothing.'''
         raise NotImplementedError
 
-    def logout(self, request, user):
-        '''Logout handler
-        '''
-        raise NotImplementedError
+    def logout(self, request, user=None):
+        '''Logout'''
+        session = request.cache.session
+        user = user or request.cache.user
+        if user and user.is_authenticated():
+            request.cache.session = self.create_session(request)
+            request.cache.user = Anonymous()
 
     def get_user(self, request, *args, **kwargs):
         '''Retrieve a user.
@@ -65,6 +73,11 @@ class AuthBackend(object):
         or return ``None``.
         '''
         pass
+
+    def create_session(self, request, user=None, expiry=None):
+        '''Create a new session
+        '''
+        raise NotImplementedError
 
     def create_user(self, request, *args, **kwargs):
         '''Create a standard user.'''
@@ -187,9 +200,21 @@ class Extension(lux.Extension):
 class UserMixin(object):
 
     def is_authenticated(self):
-        return False
+        return True
 
     def is_active(self):
+        return False
+
+    def is_anonymous(self):
+        return False
+
+    def get_id(self):
+        raise NotImplementedError
+
+
+class Anonymous(UserMixin):
+
+    def is_authenticated(self):
         return False
 
     def is_anonymous(self):

@@ -31,7 +31,7 @@ class Login(Router):
         '''Handle login post data
         '''
         user = request.cache.user
-        if user:
+        if user.is_authenticated():
             raise MethodNotAllowed
         return self.app.auth_backend.login(request)
 
@@ -44,12 +44,14 @@ class Login(Router):
 
 
 class Logout(Router):
-
+    '''Logout handler, post view only
+    '''
     def post(self, request):
-        '''Logout via post method'''
+        '''Logout via post method
+        '''
         user = request.cache.user
         if user:
-            sessions.set_user(request)
+            request.app.auth_backend.logout(request)
             return Json({'success': True,
                          'redirect': request.absolute_uri('/')}
                         ).http_response(request)
@@ -58,27 +60,27 @@ class Logout(Router):
 
 
 class OAuth(Router):
-
-    def oauth(self, request):
-        providers = request.app.config['LOGIN_PROVIDERS']
+    '''A :class:`.Router` for the oauth authentication flow
+    '''
+    def _oauth(self, request):
+        providers = request.config['LOGIN_PROVIDERS']
         return dict(((o['name'].lower(), Accounts[o['name'].lower()](o))
                      for o in providers))
 
-    @route('oauth/<name>')
+    @route('<name>')
     def oauth(self, request):
         name = request.urlargs['name']
-        redirect_uri = request.absolute_uri('/oauth/%s/redirect' % name)
-        p = self.oauth(request).get(name)
+        redirect_uri = request.absolute_uri('redirect')
+        p = self._oauth(request).get(name)
         authorization_url = p.authorization_url(redirect_uri)
         return self.redirect(authorization_url)
 
-    @route('oauth/<name>/redirect')
+    @route('<name>/redirect')
     def oauth_redirect(self, request):
         name = request.urlargs['name']
-        p = self.oauth(request).get(name)
-        redirect_uri = request.absolute_uri('/oauth/%s/redirect' % name)
-        token = p.access_token(request.url_data, redirect_uri=redirect_uri)
-        user = sessions.set_user(request, p.create_user(token))
+        p = self._oauth(request).get(name)
+        token = p.access_token(request.url_data, redirect_uri=request.uri)
+        user = request.app.auth_backend.login(request, p.create_user(token))
         return self.redirect('/%s' % user.username)
 
 

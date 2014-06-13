@@ -1,5 +1,3 @@
-from datetime import datetime, timedelta
-
 from google.appengine.ext import ndb
 
 from .. import sessions
@@ -65,23 +63,8 @@ class User(ndb.Model, sessions.UserMixin):
                 break
         return username
 
-    @classmethod
-    def authenticate(cls, username, password):
-        pass
-
 
 class Session(ndb.Model):
     expiry = ndb.DateTimeProperty()
     user = ndb.KeyProperty(User)
     agent = ndb.StringProperty()
-
-    @classmethod
-    def create(cls, request, backend, user=None, expiry=None):
-        '''Create a new session for the current request
-        '''
-        if not expiry:
-            expiry = datetime.now() + timedelta(seconds=backend.session_expiry)
-        session = cls(user=user.key if user else None, expiry=expiry,
-                      agent=request.get('HTTP_USER_AGENT', ''))
-        session.put()
-        return session

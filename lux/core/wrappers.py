@@ -75,6 +75,11 @@ class WsgiRequest(wsgi.WsgiRequest):
         return self.cache.app
 
     @property
+    def config(self):
+        '''The configuration dictionary'''
+        return self.cache.app.config
+
+    @property
     def models(self):
         '''The router to registered models for the application serving
         the request'''
@@ -84,6 +89,13 @@ class WsgiRequest(wsgi.WsgiRequest):
     def html_document(self):
         '''The HTML document for this request.'''
         return self.app.html_document(self)
+
+    @cached_property
+    def cache_server(self):
+        cache = self.config['CACHE_SERVER']
+        if isinstance(cache, str):
+            raise NotImplementedError
+        return cache
 
     def has_permission(self, action, model):
         '''Check if this request has permission on ``model`` to perform a

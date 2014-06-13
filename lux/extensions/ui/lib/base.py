@@ -60,8 +60,6 @@ from pulsar.utils.html import UnicodeMixin
 from pulsar.apps.http import HttpClient
 from pulsar.apps import wsgi
 
-import lux
-
 __all__ = ['Css', 'Variable', 'Symbol', 'Mixin',
            'px', 'em', 'pc', 'size', 'as_value', 'Lazy',
            'spacing', 'Variables', 'as_params']
@@ -478,7 +476,7 @@ class Css(CssBase):
             assert tag is None, 'app should be passed to the root element only'
             self._app = app
         if self._tag is None:
-            known_libraries = known_libraries or lux.media_libraries
+            known_libraries = known_libraries or wsgi.media_libraries
             self._css_libs = wsgi.Css(self.config('MEDIA_URL', '/media/'),
                                       known_libraries=known_libraries)
             self.variables = Variables() if vars is None else vars

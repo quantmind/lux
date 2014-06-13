@@ -179,7 +179,11 @@ class App(ConsoleParser, LocalMixin, Extension):
                   {'python': 'https://www.python.org/',
                    'lux': 'https://github.com/quantmind/lux',
                    'pulsar': 'http://pythonhosted.org/pulsar'},
-                  'Links used throught the web site'),
+                  'Links used throughout the web site'),
+        Parameter('CACHE_SERVER', None,
+                  ('Cache server, can be a connection string to a valid '
+                   'datastore which support the cache protocol or an object '
+                   'supporting the cache protocol'))
         ]
 
     def __init__(self, config_file, **params):
