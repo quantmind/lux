@@ -11,13 +11,17 @@ class User(ndb.Model, sessions.UserMixin):
     name = ndb.StringProperty()
     surname = ndb.StringProperty()
     email = ndb.StringProperty()
-    active = ndb.BooleanProperty()
+    active = ndb.BooleanProperty(default=False)
+    is_superuser = ndb.BooleanProperty(default=False)
     #
     twitter_name = ndb.StringProperty()
     twitter_token = ndb.JsonProperty()
     #
     google_id = ndb.StringProperty()
     google_token = ndb.JsonProperty()
+
+    def is_active(self):
+        return self.active
 
     def todict(self):
         return self.to_dict()

@@ -1,4 +1,5 @@
-'''Implement a :class:`djpcms.cms.permissions.PermissionHandler`.'''
+'''Implement a :class:`~lux.extensions.sessions.AuthBackend`.
+'''
 import sys
 import os
 import logging
@@ -11,6 +12,7 @@ from pulsar.utils.pep import ispy3k, to_string, to_bytes
 
 import lux
 from lux import AuthenticationError
+from lux.extensions import sessions
 
 from .crypt import generate_secret_key
 from .models import Session
@@ -38,7 +40,7 @@ class ModelPermissions(object):
             'PERMISSION_LEVELS'].get(default, 50)
 
 
-class AuthBackend(lux.AuthBackend):
+class AuthBackend(sessions.AuthBackend):
     '''Permission back-end based sessions and users
 
     .. attribute:: secret_key

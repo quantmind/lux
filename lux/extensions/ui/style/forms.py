@@ -21,7 +21,7 @@ def add_css(all):
     cssv.input.inverse.inset_shadow = '#555'
     #
     css('fieldset',
-        Border(width=0, style='none'),
+        Border('none', width=0),
         margin=0,
         padding=0)
 
@@ -53,7 +53,7 @@ def add_css(all):
 
     fc = css('.form-control',
              Radius(cssv.body.radius),
-             Border(width=px(1), style='solid'),
+             Border(width=px(1)),
              Transition('border, box-shadow', '0.2s', 'linear'),
              padding=cssv.input.padding,
              line_height=cssv.body.line_height,

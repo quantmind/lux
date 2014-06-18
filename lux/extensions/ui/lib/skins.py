@@ -37,24 +37,23 @@ STATES = frozenset(('default', 'hover', 'active'))
 
 
 def createskin(cssv, name, default, hover=None, active=None):
-    '''Create a new :class:`Variables` container with :attr:`Variables`.name``
-    attribute set to ``name`` and containing variables which define a
-    css skin.
+    '''Create a new :class:`.Variables` container with :attr:`~.Variables.name`
+    set to ``name`` and containing variables which define a css skin.
 
-    :param cssv: the :class:`Variables` container which holds the ``skins``
+    :param cssv: the :class:`.Variables` container which holds the ``skins``
         container which holds the new container returned by this function.
         For example, if ``name`` is ``myskin``::
 
             cssv.skins.myskin = V
 
-        where ``V`` is the :class:`Variables` container for ``myskin``, which
+        where ``V`` is the :class:`.Variables` container for ``myskin``, which
         is also returned by this function.
     :param name: Skin name (default, primary, moon and so forth)
     :param default: container of variables for the ``default`` state.
     :param hover: optional container of variables for the ``hover`` state.
     :param active: optional container of variables for the ``active`` state.
     :param class_name: optional class name for this skin.
-    :returns: a :class:`Variables` container.
+    :returns: a :class:`.Variables` container.
     '''
     assert default, 'Default skin data must be defined'
     skins = cssv.skins
@@ -208,7 +207,7 @@ class Skin(Mixin):
         #
         # Apply border information
         if self.border_width or self.border_style:
-            border = Border(width=self.border_width, style=self.border_style)
+            border = Border(self.border_style, width=self.border_width)
             if self.child:
                 css(self.child, border)
             else:

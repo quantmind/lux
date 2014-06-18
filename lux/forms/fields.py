@@ -93,7 +93,8 @@ __all__ = ['FormError',
            'FileField',
            'HiddenField',
            'PasswordField',
-           'ChoiceFieldOptions']
+           'ChoiceFieldOptions',
+           'ChoiceGroup']
 
 
 class FormError(Exception):
@@ -130,6 +131,44 @@ dictionary of ``defaults`` parameters. For example::
         p.update(params)
         return Html(tag, *children, **p)
     return html_input
+
+
+class Choice(object):
+
+    def __init__(self, choices):
+        self._choices = choices
+
+    def choices(self):
+        choices = self._choices
+        if hasattr(self._choices, '__call__'):
+            choices = choices()
+        return choices
+
+    def html(self, html, value=None):
+        choices = self.choices()
+        for choice in choices:
+            if isinstance(choice, ChoiceGroup):
+                choice.html(html, value)
+            else:
+                if isinstance(choice, (list, tuple)):
+                    assert len(choice) == 2, ("choice must be a two elements "
+                                              "tuple or list")
+                    opt = Html('option', choice[1], value=choice[0])
+                else:
+                    opt = Html('option', choice, value=choice)
+                if opt.get_form_value() == value:
+                    opt.addDir('selected')
+
+
+class ChoiceGroup(Choice):
+
+    def __init__(self, name, choices):
+        self.name = name
+        self._choices = choices
+
+    def html(self, html, value=None):
+        html.append('<optgroup label="%s">' % self.name)
+        super(ChoiceGroup, self).html(html, value)
 
 
 class Field(object):
@@ -752,10 +791,10 @@ via the :class:`ChoiceFieldOptions` class.
         return self.choices.value_from_instance(self, instance)
 
     def handle_params(self, choices=None, **kwargs):
-        '''Choices is an iterable or a callable which takes the
-form as only argument'''
-        if not isinstance(choices, ChoiceFieldOptions):
-            choices = ChoiceFieldOptions(choices, **kwargs)
+        '''Choices is an iterable or a callable which takes bound field
+        as only argument'''
+        if not isinstance(choices, Choice):
+            choices = Choice(choices, **kwargs)
         else:
             self._raise_error(kwargs)
         self.choices = choices

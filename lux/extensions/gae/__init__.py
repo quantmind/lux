@@ -52,6 +52,13 @@ class AuthBackend(sessions.AuthBackend):
         session.put()
         return session
 
+    def get_user(self, request, username=None, email=None):
+        if username:
+            assert email is None, 'get_user by username or email'
+            return User.get_by_username(username)
+        elif email:
+            return User.get_by_email(email)
+
     def _load(self, environ, start_response):
         request = wsgi_request(environ)
         cookies = request.response.cookies

@@ -25,6 +25,7 @@ class Google(OAuth2):
                 username = User.unique_username(data['name'])
                 user = User(username=username,
                             email=email,
+                            active=True,
                             name=data['given_name'],
                             surname=data['family_name'],
                             google_id=data['id'],

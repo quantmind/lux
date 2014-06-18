@@ -23,5 +23,4 @@ from .utils import version_tuple
 __version__ = package['version']
 VERSION = version_tuple(__version__)
 
-from .commands import *
 from .core import *

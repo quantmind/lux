@@ -25,7 +25,8 @@ import lux
 from lux import Html
 
 
-__all__ = ['Layout', 'Fieldset', 'register_layout_style', 'LayoutStyle']
+__all__ = ['Layout', 'Fieldset', 'register_layout_style', 'LayoutStyle',
+           'Row', 'Group']
 
 
 SUBMITS = 'submits'  # string indicating submits in forms
@@ -49,11 +50,15 @@ def check_fields(fields, missings, layout):
         yield field
 
 
-class FieldMaker(lux.Template):
+class FieldTemplate(lux.Template):
 
-    def __init__(self, field, container):
-        self.field = field
-        self.container = container
+    def setup(self, missings, layout):
+        assert len(self.children) == 1
+
+
+
+class Group(FieldTemplate):
+    classes = 'form-group'
 
     def __call__(self, form, request, render):
         '''Return an iterable over Html objects or strings.'''
@@ -65,8 +70,38 @@ class FieldMaker(lux.Template):
         else:
             return render(html, bound_field, self.container)
 
+    def setup(self, missings, layout):
+        children = self.children
+        self.children = []
+        for field in check_fields(children, missings, layout):
+            if not isinstance(field, FieldTemplate):
+                field = FieldTemplate(field)
+            self.children.append(field)
 
-class Fieldset(lux.Template):
+
+class Row(FieldTemplate):
+    classes = ('form-group', 'row')
+
+    def setup(self, missings, layout):
+        children = []
+        spans = []
+        num = 12/len(children)
+        for field in self.children:
+            if not isinstance(field, tuple):
+                field = (field, 'sm-%d' % num)
+            children.append(field[0])
+            spans.append(field[1])
+        #
+        self.children = []
+        for field, sp in zip(check_fields(children, missings, layout), spans):
+            div = Template('div', cn='col-%s' % sp)
+            if not isinstance(field, FieldTemplate):
+                field = FieldTemplate(field)
+            div.append(field)
+            self.append(div)
+
+
+class Fieldset(FieldTemplate):
     '''A :class:`BaseFormLayout` class for :class:`FormLayout`
 components. An instance of this class render one or several
 :class:`Field` of a form.
@@ -95,7 +130,8 @@ components. An instance of this class render one or several
 
     def setup(self, missings, layout):
         '''Check if the specified fields are available in the form and
-remove available fields from the *missings* set.'''
+        remove available fields from the *missings* set.
+        '''
         if self.form_class:
             raise RuntimeError('Fieldset already setup')
         if self.style is None:
@@ -176,13 +212,13 @@ class Layout(lux.Template):
         return html
 
     def _inner_form(self, form, request):
-        yield from form.is_valid()
+        form.is_valid()
         html = Html(None)
         for child in self.children:
             html.append(child(form, request))
         for child in form.inputs:
             html.append(child)
-        content = yield from html(request)
+        content = html(request)
         return content
 
     def setup(self):

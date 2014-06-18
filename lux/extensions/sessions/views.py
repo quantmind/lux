@@ -8,23 +8,27 @@ from pulsar.apps.wsgi import Router, Json, route
 from .oauth import Accounts
 
 
-__all__ = ['Login', 'Logout', 'Token', 'OAuth']
+__all__ = ['Login', 'SignUp', 'Logout', 'Token', 'OAuth']
+
+
+def oauth_context(request):
+    cfg = request.app.config
+    #TODO make this configurable
+    path = '/oauth/%s'
+    return {'oauths': [{'name': o['name'],
+                               'href': path % o['name'].lower(),
+                               'fa': o.get('fa')}
+                       for o in cfg['LOGIN_PROVIDERS']]}
 
 
 class Login(Router):
     '''Adds login get ("text/html") and post handlers
     '''
-    html_response = None
-
-    @route(response_content_types=['text/html'])
     def get(self, request):
         '''Handle the HTML page for login
         '''
-        return self.html_auth(request, 'login')
-
-    @route(response_content_types=['text/html'])
-    def signup(self, request):
-        return self.html_auth(request, 'signup')
+        context = oauth_context(request)
+        return request.app.html_response(request, 'login.html', context)
 
     @route('/', method='post')
     def do_login(self, request):
@@ -35,12 +39,21 @@ class Login(Router):
             raise MethodNotAllowed
         return self.app.auth_backend.login(request)
 
-    def html_auth(self, request, template):
-        html_response = self.html_response
-        if html_response:
-            return html_response(request, template)
-        else:
-            raise NotImplementedError
+
+class SignUp(Router):
+
+    def get(self, request):
+        context = oauth_context(request)
+        return request.app.html_response(request, 'signup.html', context)
+
+    @route('/', method='post')
+    def do_login(self, request):
+        '''Handle login post data
+        '''
+        user = request.cache.user
+        if user.is_authenticated():
+            raise MethodNotAllowed
+        return self.app.auth_backend.login(request)
 
 
 class Logout(Router):

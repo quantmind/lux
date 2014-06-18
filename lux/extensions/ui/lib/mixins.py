@@ -31,9 +31,6 @@ Gradient
 ~~~~~~~~~~~~~~~
 .. autoclass:: Gradient
 
-Media
-~~~~~~~~~~~~~~~~~
-.. autoclass:: Media
 
 Opacity
 ~~~~~~~~~
@@ -81,7 +78,6 @@ __all__ = ['Opacity',
            'horizontal_navigation',
            # generators
            'CssInclude',
-           'Media',
            'Image',
            'Fontface',
            'Stack']
@@ -184,7 +180,7 @@ class Border(Mixin):
         one of: ``solid``, ``dotted``, ``none``.
     :param width: border width. If not set ``1px`` is used.
     '''
-    def __init__(self, color=None, style=None, width=None, top=0,
+    def __init__(self, style=None, color=None, width=None, top=0,
                  right=0, bottom=0, left=0):
         self.color = color
         self.style = style
@@ -747,25 +743,6 @@ class horizontal_navigation(Clickable):
             float='none',
             line_height=line_height,
             padding=self.padding)
-
-
-################################################# Media
-class Media(Mixin):
-    '''Add @media queries to css.'''
-    def __init__(self, query):
-        self.query = query
-        self.container = Css()
-
-    def css(self, tag, *components, **attributes):
-        self.container.css(tag, *components, **attributes)
-        return self
-
-    def __call__(self, elem):
-        self.container.variables = elem.root.variables
-        stream = '\n'.join(('@media %s {' % self.query,
-                            self.container.render('    '),
-                            '}'))
-        elem.add_stream(stream)
 
 
 ################################################# INCLUDE CSS

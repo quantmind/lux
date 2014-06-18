@@ -286,8 +286,8 @@ class Size(Unit):
 
 class Spacing(Unit):
     '''Css spacing with same unit. It can be used to specify padding,
-marging or any other css parameters which requires spacing box of
-the form (top, right, bottom, left).'''
+    margin or any other css parameters which requires spacing box of
+    the form (top, right, bottom, left).'''
     def __init__(self, *top_right_bottom_left):
         if not top_right_bottom_left:
             top_right_bottom_left = (px(0),)
@@ -295,12 +295,6 @@ the form (top, right, bottom, left).'''
 
     def __unicode__(self):
         return ' '.join((str(b) for b in self._value))
-
-    def iter_all(self):
-        yield self.top
-        yield self.right
-        yield self.bottom
-        yield self.left
 
     @property
     def unit(self):
@@ -426,9 +420,10 @@ class CssBase(UnicodeMixin):
 
 class Mixin(CssBase):
     '''A css *Mixin* is a generator of :class:`css` and other
-:class:`Mixin` elements. All :class:`Mixin` must implement the
-callable method which receives the :class:`css` element which
-contains them.'''
+    :class:`Mixin` elements. All :class:`Mixin` must implement the
+    callable method which receives the :class:`css` element which
+    contains them.
+    '''
     def __call__(self, elem):
         return self.apply(elem, self.value())
 
@@ -443,6 +438,29 @@ contains them.'''
             return self(parent)
         else:
             parent.add_child(self)
+
+
+################################################# Media
+class Media(Mixin):
+    '''Add @media queries to css.'''
+    def __init__(self, type, query):
+        self.type = type
+        self.query = query
+        self.container = Css()
+
+    def css(self, tag, *components, **attributes):
+        self.container.css(tag, *components, **attributes)
+        return self
+
+    def __call__(self, elem):
+        self.container.variables = elem.root.variables
+        media = ' and '.join(('(%s:%s)' % (k.replace('_', '-'), v)
+                              for k, v in iteritems(self.query)))
+        media = '%s and %s' % (self.type, media)
+        stream = '\n'.join(('@media %s {' % media,
+                            self.container.render('    '),
+                           '}'))
+        elem.add_stream(stream)
 
 
 class Css(CssBase):
@@ -501,7 +519,13 @@ class Css(CssBase):
 
         Always defined unless this is the root instance.
         '''
-        return self._full_tag(self._tag)
+        tag = self._tag
+        if self._parent:
+            ptag = self._parent.tag
+            if ptag:
+                tag = '%s%s' % (ptag, tag)
+        if tag:
+            return tag[1:] if tag.startswith(' ') else tag
 
     @property
     def code(self):
@@ -574,6 +598,12 @@ class Css(CssBase):
                 for c in cl:
                     css.add(c.clone() if clone else c)
         return elems[0] if len(elems) == 1 else elems
+
+    def media(self, *type, **query):
+        assert len(type) <= 1
+        media = Media(type[0] if type else 'all', query)
+        self.add(media)
+        return media
 
     def get_media_url(self, path):
         '''Build the url for a media path.
@@ -665,7 +695,7 @@ class Css(CssBase):
                 data.append('%s    %s: %s;' % (whitespace, k, v))
         if data:
             yield (self.tag, '\n'.join(data))
-        # yield Mixins and children
+        # Mixins and children
         for child_list in itervalues(self._children):
             if isinstance(child_list, list):
                 child = child_list[0]
@@ -735,15 +765,6 @@ Created by lux {0} in {1} seconds.
             return json.dumps(data, indent=4)
         else:
             return root.render_all()
-
-    ########################################################################
-    ##    PRIVATE METHODS
-    ########################################################################
-    def _full_tag(self, tag):
-        if self._parent and self._parent.tag:
-            tag = '%s%s' % (self._parent.tag, tag)
-        if tag:
-            return tag[1:] if tag.startswith(' ') else tag
 
 
 class Variables(object):

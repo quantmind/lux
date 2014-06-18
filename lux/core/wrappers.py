@@ -68,10 +68,12 @@ DEFAULT_CONTENT_TYPES = unique_tuple(('text/html', 'text/plain', 'text/csv'),
 
 
 class WsgiRequest(wsgi.WsgiRequest):
-    '''Extend pulsar Wsgi Request with additional methods and attributes.'''
+    '''Extend :class:`~pulsar.apps.wsgi.WsgiRequest` with additional
+    methods and attributes.
+    '''
     @property
     def app(self):
-        '''The :class:`lux.core.App` running the website.'''
+        '''The :class:`.App` running the website.'''
         return self.cache.app
 
     @property

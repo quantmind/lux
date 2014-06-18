@@ -56,11 +56,11 @@ def add_css(all):
     # control variant
     dialog.css('.control',
                Radius(0),
-               Border(style='none'),
+               Border('none'),
                Skin(gradient=False, prefix='control'),
                css(' > .header',
                    Radius(0),
-                   Border(style='none'),
+                   Border('none'),
                    padding=0),
                css(' > .body-wrap > .body',
                    padding=0))

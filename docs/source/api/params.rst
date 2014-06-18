@@ -21,3 +21,9 @@ Sessions
 =====================
 
 .. lux_extension:: lux.extensions.sessions
+
+
+Web design
+=====================
+
+.. lux_extension:: lux.extensions.ui

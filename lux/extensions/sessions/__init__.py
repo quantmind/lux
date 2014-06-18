@@ -3,20 +3,18 @@ and permissions. The extension is added by inserting
 ``lux.extensions.sessions`` into the
 list of :setting:`EXTENSIONS` of your application.
 
-Parameters
-================
 
-.. lux_extension:: lux.extensions.sessions
+Authentication Backend
+=========================
 
-
-Permissions
-==================
-
-.. automodule:: lux.extensions.sessions.models
+.. autoclass:: AuthBackend
+   :members:
+   :member-order: bysource
 '''
 from importlib import import_module
+from functools import wraps
 
-from pulsar import PermissionDenied
+from pulsar import PermissionDenied, Http404
 from pulsar.utils.importer import module_attribute
 
 import lux
@@ -59,7 +57,8 @@ class AuthBackend(object):
         raise NotImplementedError
 
     def logout(self, request, user=None):
-        '''Logout'''
+        '''Logout a ``user``
+        '''
         session = request.cache.session
         user = user or request.cache.user
         if user and user.is_authenticated():
@@ -107,7 +106,7 @@ class Extension(lux.Extension):
     '''
     _config = [
         Parameter('AUTHENTICATION_BACKEND',
-                  ['lux.extensions.sessions.permissions.AuthBackend'],
+                  'lux.extensions.sessions.permissions.AuthBackend',
                   'Python dotted path to a class used to provide '
                   'a backend for authentication.'),
         Parameter('CRYPT_ALGORITHM',

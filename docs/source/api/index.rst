@@ -36,7 +36,7 @@ Contents
 Commands
 =============================
 
-.. automodule:: lux.commands
+.. automodule:: lux.core.commands
 
 
 .. _api-forms:

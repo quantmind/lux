@@ -28,6 +28,7 @@ Authentication Error
 
 .. _pulsar: https://pypi.python.org/pypi/pulsar
 '''
+from .commands import *
 from .extension import Extension, ExtensionMeta, Parameter
 from .app import *
 from .wrappers import *

@@ -20,6 +20,7 @@ import sys
 import os
 import logging
 import pickle
+import json
 from inspect import isclass
 from collections import OrderedDict
 from importlib import import_module
@@ -29,8 +30,7 @@ from pulsar.apps.wsgi import WsgiHandler, HtmlDocument, test_wsgi_environ
 from pulsar.utils.pep import itervalues
 from pulsar.utils.log import LocalMixin, local_property, local_method
 
-from lux.commands import ConsoleParser, CommandError
-
+from .commands import ConsoleParser, CommandError
 from .extension import Extension, Parameter
 from .wrappers import WsgiRequest, JsonDocument
 
@@ -132,6 +132,7 @@ class App(ConsoleParser, LocalMixin, Extension):
 
     '''
     debug = False
+    admin = None
     auth_backend = None
 
     _config = [
@@ -300,7 +301,6 @@ class App(ConsoleParser, LocalMixin, Extension):
         #
         if doc.has_default_content_type:
             head = doc.head
-            head.links.append(cfg['CSS'])
             #
             required = cfg['JSREQUIRED']
             if required:
@@ -312,6 +312,9 @@ class App(ConsoleParser, LocalMixin, Extension):
                 head.add_meta(**entry)
 
             self.fire('on_html_document', request, doc)
+            #
+            # Add css last
+            head.links.append(cfg['CSS'])
         return doc
 
     @local_property
@@ -322,7 +325,7 @@ class App(ConsoleParser, LocalMixin, Extension):
         cmnds = OrderedDict()
         for e in self.config['EXTENSIONS']:
             try:
-                modname = e + '.commands'
+                modname = e + ('.core' if e == 'lux' else '') + '.commands'
                 mod = import_module(modname)
                 if hasattr(mod, '__path__'):
                     path = mod.__path__[0]
@@ -481,6 +484,36 @@ class App(ConsoleParser, LocalMixin, Extension):
 
     def clone(self):
         return pickle.loads(pickle.dumps(self))
+
+    def template(self, name):
+        '''Load a template from the file system
+        '''
+        for ext in reversed(self.extensions.values()):
+            filename = os.path.join(ext.meta.path, 'templates', name)
+            if os.path.exists(filename):
+                with open(filename, 'r') as file:
+                    return file.read()
+
+    def context(self, request, context=None):
+        context = context or {}
+        for ext in self.extensions.values():
+            if hasattr(ext, 'context'):
+                ext.context(request, context)
+        return context
+
+    def html_response(self, request, template_name, context=None, title=None):
+        '''Html response via a template
+        '''
+        if request.response.content_type == 'text/html':
+            document = request.html_document
+            head = document.head
+            if title:
+                head.title = title % head.title
+            context = self.context(request, context)
+            head.embedded_js.append('var context=%s;' % json.dumps(context))
+            template = self.template(template_name)
+            document.body.append(template)
+            return document.http_response(request)
 
 
 def add_app(apps, name, pos=None):

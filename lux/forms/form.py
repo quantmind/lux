@@ -247,11 +247,10 @@ class Form(FormType('BaseForm', (UnicodeMixin,), {})):
 
         Includes any subforms. It returns a coroutine.'''
         if not self._check_unwind(False):
-            yield from self._unwind()
+            self._unwind()
             if not bool(self._errors):
                 for fset in self.form_sets.values():
-                    valid = yield fset.is_valid()
-                    if not valid:
+                    if not fset.is_valid():
                         break
         return not bool(self._errors) if self.is_bound else False
 
@@ -407,13 +406,13 @@ The field included are the one available in the :attr:`errors` and
             self._cleaned_data = {}
             self._errors = {}
         rawdata = self.rawdata
-        yield from multi_async(self._clean_fields(rawdata))
+        self._clean_fields(rawdata)
         if is_bound:
             if not self._errors:
                 # Invoke the form clean method.
                 # Useful for cross fields checking
                 try:
-                    yield self.clean()
+                    self.clean()
                 except ValidationError as err:
                     self._form_message(self._errors, FORMKEY, err)
             if self._errors:
@@ -436,7 +435,7 @@ The field included are the one available in the :attr:`errors` and
             field_value = None
             if is_bound:
                 field_value = field.value_from_datadict(rawdata, files, key)
-                yield from bfield.clean(field_value)
+                bfield.clean(field_value)
                 if field_value != initial.get(name):
                     self.changed = True
                     data[name] = field_value
@@ -536,10 +535,10 @@ class BoundField(object):
         try:
             if self.field.required and value in NOTHING:
                 raise ValidationError('required')
-            value = yield self.field.clean(value, self)
+            value = self.field.clean(value, self)
             func_name = 'clean_' + self.name
             if hasattr(form, func_name):
-                self.value = yield getattr(self.form, func_name)(value)
+                self.value = getattr(self.form, func_name)(value)
             self.value = value
             self.form._cleaned_data[self.name] = value
         except ValidationError as err:

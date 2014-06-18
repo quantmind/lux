@@ -4,7 +4,6 @@ import re
 import sys
 
 import lux
-from lux import coroutine_return
 
 try:
     input = raw_input
@@ -27,26 +26,22 @@ def get_def_username(request):
     # Determine whether the default username is taken, so we don't display
     # it as an option.
     if def_username:
-        user = yield request.app.permissions.get_user(request,
-                                                      username=def_username)
+        user = request.app.auth_backend.get_user(request,
+                                                 username=def_username)
         if user:
             def_username = ''
-    coroutine_return(def_username)
+    return def_username
 
 
 class Command(lux.Command):
     help = 'Create a superuser.'
 
-    def __call__(self, argv, **params):
-        return self.run_until_complete(argv, **params)
-
-    def run(self, argv, interactive=True, **params):
+    def run(self, options, interactive=True, **params):
         request = self.app.wsgi_request()
-        options = self.options(argv)
         username = None
         password = None
-        permissions = self.app.permissions
-        def_username = yield get_def_username(request)
+        auth = self.app.auth_backend
+        def_username = get_def_username(request)
         input_msg = 'Username'
         if def_username:
             input_msg += ' (Leave blank to use %s)' % def_username
