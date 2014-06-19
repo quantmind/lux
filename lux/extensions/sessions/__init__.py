@@ -159,6 +159,7 @@ class Extension(lux.Extension):
 
     def on_form(self, app, form):
         '''Handle CSRF if in config.'''
+        return
         request = form.request
         if form.is_bound:
             token = self.get_or_create_csrf_token(request)

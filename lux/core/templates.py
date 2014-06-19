@@ -141,7 +141,8 @@ class Template(object):
         if context is None:
             context = {}
         for child in self.children:
-            child = child(request, context, **kwargs)
+            if not isinstance(child, str):
+                child = child(request, context, **kwargs)
             c.append(self.post_process_child(child, **kwargs))
         if children:
             c.extend(children)

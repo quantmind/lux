@@ -22,7 +22,7 @@ from inspect import isclass
 from functools import partial
 
 import lux
-from lux import Html
+from lux import Html, Template
 
 
 __all__ = ['Layout', 'Fieldset', 'register_layout_style', 'LayoutStyle',
@@ -36,56 +36,98 @@ control_class = 'form-control'
 LAYOUT_HANDLERS = {}
 
 
-def check_fields(fields, missings, layout):
+def check_fields(fields, missings, parent, Default=None):
     '''Utility function for checking fields in layouts'''
     for field in fields:
         if field in missings:
             if field == SUBMITS:
-                field = SubmitElement()
-                field.check_fields(missings, layout)
+                field = SubmitElement(field)
             else:
-                missings.remove(field)
-        elif isinstance(field, FormLayoutElement):
-            field.setup(missings, layout)
-        yield field
+                field = (Default or FieldWrapper)(field)
+        if isinstance(field, FieldTemplate):
+            field.check_fields(missings, parent)
+            yield field
 
 
-class FieldTemplate(lux.Template):
+class FieldTemplate(Template):
+    parent = None
 
-    def setup(self, missings, layout):
+    @property
+    def style(self):
+        if self.parent:
+            return self.parent.style
+
+    def check_fields(self, missings, parent):
+        self.parent = parent
+        self.setup(missings)
+
+    def setup(self, missings):
+        raise NotImplementedError
+
+    def wrap_field(self, html, field):
+        style = self.style
+        if style:
+            label = self.parameters.label
+            return style.wrap_field(html, field, label)
+        else:
+            return html
+
+
+class FieldWrapper(FieldTemplate):
+
+    def setup(self, missings):
         assert len(self.children) == 1
+        missings.remove(self.children[0])
+        self.key = self.children[0]
 
+    def __repr__(self):
+        return self.key
+    __str__ = __repr__
+
+    def __call__(self, request=None, context=None, **kwargs):
+        '''Return an iterable over Html objects or strings.'''
+        if context:
+            form = context.get('form')
+            if form:
+                bound_field = form.dfields[self.key]
+                html = bound_field.widget()
+                if (html.attr('type') == 'hidden' or
+                    html.css('display') == 'none'):
+                    html.addClass('hidden')
+                if self.parent:
+                    html = self.parent.wrap_field(html, bound_field)
+                return html
+
+
+class SubmitElement(FieldWrapper):
+
+    def __call__(self, request=None, context=None, cn=None, **kwargs):
+        cn = cn or 'btn btn-default'
+        return Html('button', 'submit', cn=cn, type='submit')
 
 
 class Group(FieldTemplate):
+    tag = 'div'
     classes = 'form-group'
 
-    def __call__(self, form, request, render):
-        '''Return an iterable over Html objects or strings.'''
-        bound_field = form.dfields[self.field]
-        html = bound_field.widget()
-        hidden = html.attr('type') == 'hidden' or html.css('display') == 'none'
-        if hidden:
-            return (html.addClass('hidden'),)
-        else:
-            return render(html, bound_field, self.container)
-
-    def setup(self, missings, layout):
+    def setup(self, missings):
         children = self.children
         self.children = []
-        for field in check_fields(children, missings, layout):
-            if not isinstance(field, FieldTemplate):
-                field = FieldTemplate(field)
+        for field in check_fields(children, missings, self):
             self.children.append(field)
+        if len(self.children) == 1:
+            # Check if hidden
+            pass
 
 
 class Row(FieldTemplate):
+    tag = 'div'
     classes = ('form-group', 'row')
 
-    def setup(self, missings, layout):
+    def setup(self, missings):
         children = []
         spans = []
-        num = 12/len(children)
+        num = 12/len(self.children)
         for field in self.children:
             if not isinstance(field, tuple):
                 field = (field, 'sm-%d' % num)
@@ -93,87 +135,67 @@ class Row(FieldTemplate):
             spans.append(field[1])
         #
         self.children = []
-        for field, sp in zip(check_fields(children, missings, layout), spans):
-            div = Template('div', cn='col-%s' % sp)
-            if not isinstance(field, FieldTemplate):
-                field = FieldTemplate(field)
-            div.append(field)
-            self.append(div)
+        fields = check_fields(children, missings, self)
+        for field, sp in zip(fields, spans):
+            div = Template(field, tag='div', cn='col-%s' % sp)
+            self.children.append(div)
 
 
 class Fieldset(FieldTemplate):
     '''A :class:`BaseFormLayout` class for :class:`FormLayout`
-components. An instance of this class render one or several
-:class:`Field` of a form.
-'''
+    components. An instance of this class render one or several
+    :class:`Field` of a form.
+    '''
     tag = 'fieldset'
-    form_class = None
 
-    def __init__(self, *children, **params):
-        self.name = self.__class__.__name__.lower()
-        self.legend = params.pop('legend', None)
-        self.tag = params.pop('tag', self.tag)
-        self.style = params.pop('style', None)
-        self.show_label = params.pop('show_label', True)
-        super(Fieldset, self).__init__(*children, **params)
+    def init_parameters(self, legend=None, **params):
+        self.legend = legend
+        super(Fieldset, self).init_parameters(**params)
 
-    def __call__(self, form, request):
-        handler = LAYOUT_HANDLERS.get(self.style, LAYOUT_HANDLERS[''])
-        render = getattr(handler, self.name, handler.default)
-        html = Html(self.tag)
-        if self.legend:
-            html.append('<legend>%s</legend>' % self.legend)
-        for child in self.children:
-            for txt in child(form, request, render):
-                html.append(txt)
-        return html
-
-    def setup(self, missings, layout):
+    def setup(self, missings):
         '''Check if the specified fields are available in the form and
         remove available fields from the *missings* set.
         '''
-        if self.form_class:
-            raise RuntimeError('Fieldset already setup')
-        if self.style is None:
-            self.style = layout.style
-        self.form_class = layout.form_class
         children = self.children
         self.children = []
-        for field in check_fields(children, missings, layout):
-            if not isinstance(field, Fieldset):
-                if field in self.form_class.base_fields:
-                    field = FieldMaker(field, self)
+        if self.legend:
+            self.children.append(Template(self.legend, tag='legend'))
+        for field in check_fields(children, missings, self, Group):
             self.children.append(field)
 
 
-class SubmitElement(Fieldset):
-
-    def setup(self, missings, layout):
-        pass
-
-    def __call__(self, form, request):
-        return Html(self.tag,
-                    Html('button', 'submit', cn='btn', type='submit'))
-
-
-class Layout(lux.Template):
+class Layout(Template):
     '''A :class:`Layout` renders the form into an HTML page.
 
-:param style: Optional style name. A style handler must be registered via the
-    :func:`register_layout_style` function. It sets the :attr:style:
-    attribute
+    :param style: Optional style name.
+        A style handler must be registered via the
+        :func:`register_layout_style` function. It sets the :attr:style:
+        attribute
 
-.. attribute:: style
+    .. attribute:: style
 
-    The name of the :class:`LayoutStyle` for this :class:`Layout`.
-'''
+        The name of the :class:`LayoutStyle` for this :class:`Layout`.
+    '''
+    tag = 'form'
     default_element = Fieldset
     form_class = None
 
-    def __init__(self, *children, **params):
-        self.style = params.pop('style', '')
-        self.add_submits = params.pop('add_submits', True)
-        super(Layout, self).__init__(*children, **params)
+    @property
+    def style(self):
+        return LAYOUT_HANDLERS.get(self._style)
+
+    def init_parameters(self, style='', add_submits=True,
+                        enctype=None, method=None, **parameters):
+        '''Called at the and of initialisation.
+
+        It fills the :attr:`parameters` attribute.
+        It can be overwritten to customise behaviour.
+        '''
+        self.add_submits = add_submits
+        self._style = style
+        parameters['enctype'] = enctype or 'multipart/form-data'
+        parameters['method'] = method or 'post'
+        super(Layout, self).init_parameters(**parameters)
 
     def __repr__(self):
         if self.form_class:
@@ -198,55 +220,30 @@ class Layout(lux.Template):
                 raise RuntimeError('Form layout element for multiple forms')
             return partial(self, form)
 
-    def __call__(self, form, request=None, tag='form', cn=None, method='post',
-                 enctype=None, **params):
-        enctype = enctype or 'multipart/form-data'
-        if request:
-            cn = cn or 'ajax'
-            request.html_document.head.scripts.require('jquery-form')
-        # we need to make sure the form is validated
-        html = Html(tag, cn=cn, method=method, enctype=enctype, **params)
-        if self.style:
-            html.addClass('form-%s' % self.style)
-        html.append(self._inner_form(form, request))
-        return html
-
-    def _inner_form(self, form, request):
+    def __call__(self, form, request=None, context=None, **params):
+        context = context or {}
+        context['form'] = form
         form.is_valid()
-        html = Html(None)
-        for child in self.children:
-            html.append(child(form, request))
-        for child in form.inputs:
-            html.append(child)
-        content = html(request)
-        return content
+        return super(Layout, self).__call__(request, context, **params)
 
     def setup(self):
         missings = list(self.form_class.base_fields)
         children = self.children
         self.children = []
-        if SUBMITS not in missings and self.add_submits:
+        if self.add_submits:
             missings.append(SUBMITS)
-        for field in children:
-            if isinstance(field, Fieldset):
-                field.setup(missings, self)
+        for field in check_fields(children, missings, self, Group):
             self.children.append(field)
-        add_submits = False
-        if SUBMITS in missings:
-            add_submits = True
-            missings.remove(SUBMITS)
         if missings:
             field = self.default_element(*missings)
-            field.setup(missings, self)
+            field.check_fields(missings, self)
             self.children.append(field)
-        if add_submits:
-            self.children.append(SubmitElement())
 
 
-def register_layout_style(handler):
+def register_layout_style(name, handler):
     '''Register a new :class:`LayoutStyle` for rendring forms.'''
     global LAYOUT_HANDLERS
-    LAYOUT_HANDLERS[handler.name] = handler
+    LAYOUT_HANDLERS[name] = handler
 
 
 class LayoutStyle(object):
@@ -259,36 +256,23 @@ class LayoutStyle(object):
         For example the ``horizontal``
         layout has a form class ``form-horizontal``.
     '''
-    name = ''
-
-    def default(self, html, bound_field):
-        yield html
-
-    def fieldset(self, html, bfield, container):
-        type = html.attr('type')
-        if type in special_types:
-            yield Html('div', Html('label', html, bfield.label), cn=type)
+    def wrap_field(self, html, bfield, label=None):
+        if html.attr('type') in ('radio', 'checkbox'):
+            return html
         else:
-            yield Html('div',
-                       '<label>%s</label>' % bfield.label,
-                       html.addClass(control_class),
-                       cn=control_group)
+            html.addClass('form-control')
+            if label is not False:
+                label = Html('label', bfield.label)
+                label.attr('for', html.attr('id'))
+                html = Html(None, label, html)
+            return html
 
 
 class HorizontalLayout(LayoutStyle):
-    name = 'horizontal'
 
-    def fieldset(self, html, bfield, container):
-        control = Html('div', cn='control-group')
-        if html.attr('type') == 'checkbox':
-            control.append(Html('label', html, bfield.label, cn='checkbox'))
-        else:
-            label = Html('label', bfield.label, cn='control-label')
-            label.attr('for', bfield.id)
-            control.append(label)
-            control.append(Html('div', html, cn='controls'))
-        yield control
+    def wrap_field(self, html, bfield):
+        return html
 
 
-register_layout_style(LayoutStyle())
-register_layout_style(HorizontalLayout())
+register_layout_style('', LayoutStyle())
+register_layout_style('horizontal', HorizontalLayout())

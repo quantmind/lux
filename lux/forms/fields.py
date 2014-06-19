@@ -158,6 +158,7 @@ class Choice(object):
                     opt = Html('option', choice, value=choice)
                 if opt.get_form_value() == value:
                     opt.addDir('selected')
+                html.append(opt)
 
 
 class ChoiceGroup(Choice):
@@ -167,8 +168,9 @@ class ChoiceGroup(Choice):
         self._choices = choices
 
     def html(self, html, value=None):
-        html.append('<optgroup label="%s">' % self.name)
-        super(ChoiceGroup, self).html(html, value)
+        group = Html('optgroup', label=self.name)
+        html.append(group)
+        super(ChoiceGroup, self).html(group, value)
 
 
 class Field(object):
@@ -766,25 +768,22 @@ is ``True``, in which case the value is returned.'''
 
 class ChoiceField(MultipleMixin, Field):
     '''A :class:`Field` which validates against a set of ``choices``.
-It has several additional attributes which can be specified
-via the :class:`ChoiceFieldOptions` class.
 
-.. attribute:: choices
+    It has several additional attributes which can be specified
+    via the :class:`ChoiceFieldOptions` class.
 
-    An instance of :class:`ChoiceFieldOptions` or any of the
-    possible values for the :attr:`ChoiceFieldOptions.query`
-    attribute.
-'''
+    .. attribute:: choices
+
+        An instance of :class:`ChoiceFieldOptions` or any of the
+        possible values for the :attr:`ChoiceFieldOptions.query`
+        attribute.
+    '''
     def html(self, bfield, **params):
         html = Html('select')
         if self.multiple:
             html.attr('multiple', 'multiple')
-        self.choices.add_options(bfield, html)
+        self.choices.html(html, bfield.value)
         return html
-
-    def get_initial(self, form):
-        # Delegate to choices
-        return self.choices.get_initial(self, form)
 
     def value_from_instance(self, instance):
         # Delegate to choices
@@ -795,21 +794,13 @@ via the :class:`ChoiceFieldOptions` class.
         as only argument'''
         if not isinstance(choices, Choice):
             choices = Choice(choices, **kwargs)
-        else:
-            self._raise_error(kwargs)
         self.choices = choices
-
-    @property
-    def multiple(self):
-        return self.choices.multiple
+        super(ChoiceField, self).handle_params(**kwargs)
 
     def _clean(self, value, bfield):
         if value is not None:
             return self.choices.clean(value, bfield)
         return value
-
-    def get_widget_data(self, bfield):
-        return self.choices.get_widget_data(bfield)
 
 
 class EmailField(CharField):
