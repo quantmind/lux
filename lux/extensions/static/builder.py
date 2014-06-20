@@ -166,8 +166,8 @@ class Renderer(object):
                 if favicon:
                     if not favicon.startswith(media):
                         favicon = remove_double_slash('%s%s' % (media, favicon))
-                    doc.head.links.append(Html('link', href=favicon,
-                                               rel="shortcut icon"))
+                    doc.head.links.append(favicon, rel="icon",
+                                          type='image/x-icon')
 
                 requires = meta.get('requires')
                 if requires:

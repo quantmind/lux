@@ -495,8 +495,8 @@ class Css(CssBase):
             self._app = app
         if self._tag is None:
             known_libraries = known_libraries or wsgi.media_libraries
-            self._css_libs = wsgi.Css(self.config('MEDIA_URL', '/media/'),
-                                      known_libraries=known_libraries)
+            self._css_libs = wsgi.Links(self.config('MEDIA_URL', '/media/'),
+                                        known_libraries=known_libraries)
             self.variables = Variables() if vars is None else vars
             self.classes = Variables()
             self.classes.hover = 'hover'

@@ -779,7 +779,7 @@ class ChoiceField(MultipleMixin, Field):
         attribute.
     '''
     def html(self, bfield, **params):
-        html = Html('select')
+        html = Html('select', **params)
         if self.multiple:
             html.attr('multiple', 'multiple')
         self.choices.html(html, bfield.value)

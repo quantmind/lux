@@ -57,6 +57,11 @@ class FieldTemplate(Template):
         if self.parent:
             return self.parent.style
 
+    @property
+    def ngmodel(self):
+        if self.parent:
+            return self.parent.ngmodel
+
     def check_fields(self, missings, parent):
         self.parent = parent
         self.setup(missings)
@@ -66,6 +71,9 @@ class FieldTemplate(Template):
 
     def wrap_field(self, html, field):
         style = self.style
+        ngmodel = self.ngmodel
+        if ngmodel:
+            html.attr('ng-model', '%s.%s' % (ngmodel, field.name))
         if style:
             label = self.parameters.label
             return style.wrap_field(html, field, label)
@@ -184,7 +192,7 @@ class Layout(Template):
     def style(self):
         return LAYOUT_HANDLERS.get(self._style)
 
-    def init_parameters(self, style='', add_submits=True,
+    def init_parameters(self, style='', add_submits=True, ngmodel=None,
                         enctype=None, method=None, **parameters):
         '''Called at the and of initialisation.
 
@@ -193,6 +201,7 @@ class Layout(Template):
         '''
         self.add_submits = add_submits
         self._style = style
+        self.ngmodel = ngmodel
         parameters['enctype'] = enctype or 'multipart/form-data'
         parameters['method'] = method or 'post'
         super(Layout, self).init_parameters(**parameters)

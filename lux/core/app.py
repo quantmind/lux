@@ -157,8 +157,8 @@ class App(ConsoleParser, LocalMixin, Extension):
                   'Use minified media files. All media files will replace '
                   'their extensions with .min.ext. For example, javascript '
                   'links *.js become *.min.js'),
-        Parameter('CSS', {},
-                  'Dictionary of css locations.'),
+        Parameter('HTML_LINKS', [],
+                  'List of links to include in the html head tag.'),
         Parameter('JSREQUIRED', ('jquery', 'lodash', 'json', 'lux'),
                   'Default Required javascript. Loaded via requirejs.'),
         Parameter('JSREQUIRE_CALLBACK', 'lux.initWeb',
@@ -313,8 +313,13 @@ class App(ConsoleParser, LocalMixin, Extension):
 
             self.fire('on_html_document', request, doc)
             #
-            # Add css last
-            head.links.append(cfg['CSS'])
+            # Add links last
+            links = head.links
+            for link in cfg['HTML_LINKS']:
+                if isinstance(link, dict):
+                    links.append(**link)
+                else:
+                    links.append(link)
         return doc
 
     @local_property
@@ -381,13 +386,12 @@ class App(ConsoleParser, LocalMixin, Extension):
         '''Construct and return a :class:`Command` for this application.'''
         commands = {}
         for e, cmnds in self.commands.items():
-            commands.update(((cmnd, e) for cmnd in cmnds))
-        try:
-            modname = commands[name]
-        except KeyError:
-            raise CommandError("Unknown command '%s'" % name)
-        mod = import_module('%s.commands.%s' % (modname, name))
-        return mod.Command(name, self, stdout, stderr)
+            for cmnd in cmnds:
+                if name == cmnd:
+                    modname = 'lux.core' if e == 'lux' else e
+                    mod = import_module('%s.commands.%s' % (modname, name))
+                    return mod.Command(name, self, stdout, stderr)
+        raise CommandError("Unknown command '%s'" % name)
 
     def get_usage(self):
         '''Returns the script's main help text, as a string.'''
