@@ -1,0 +1,32 @@
+<div class="login" ng-controller="page" ng-cloak>
+    <div id="page-header">
+        <a href="/" class="navbar-brand" target="_self">Sipnote</a>
+    </div>
+
+    <hr>
+
+    <div class="oauth">
+        <a class="btn btn-primary btn-block" href="{{oauth.href}}" target="_self" ng-repeat="oauth in oauths">
+        <i class="fa fa-{{oauth.fa}}"></i> Log in with {{oauth.name}}</a>
+    </div>
+
+    <hr>
+
+    <form role="form" ng-submit="processForm('/login')" ng-controller="formController">
+        <div id="messages" ng-show="message">{{ message }}</div>
+        <div id="messages" ng-show="error">{{ error }}</div>
+        <div class="form-group">
+            <input type="text" class="form-control" id="username" placeholder="username" name="username" ng-model="formData.username" required>
+        </div>
+        <div class="form-group">
+            <input type="password" class="form-control" id="password" placeholder="password" name="password" ng-model="formData.password" required>
+        </div>
+        <button class="btn-block btn btn-primary">
+            <i class="fa fa-sign-in"></i> login
+        </button>
+    </form>
+
+    <hr>
+
+    <p class="text-center">Don't have an account? <a href="/signup" target="_self">Create one</a></p>
+</div>

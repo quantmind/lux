@@ -19,17 +19,16 @@ Registering layouts
 .. autofunction:: register_layout_style
 '''
 from inspect import isclass
-from functools import partial
+from functools import partial, reduce
 
 import lux
 from lux import Html, Template
 
 
 __all__ = ['Layout', 'Fieldset', 'register_layout_style', 'LayoutStyle',
-           'Row', 'Group']
+           'Row', 'Group', 'Submit']
 
 
-SUBMITS = 'submits'  # string indicating submits in forms
 special_types = set(('checkbox', 'radio'))
 control_group = 'form-group'
 control_class = 'form-control'
@@ -40,27 +39,21 @@ def check_fields(fields, missings, parent, Default=None):
     '''Utility function for checking fields in layouts'''
     for field in fields:
         if field in missings:
-            if field == SUBMITS:
-                field = SubmitElement(field)
-            else:
-                field = (Default or FieldWrapper)(field)
+            field = (Default or Group)(field)
         if isinstance(field, FieldTemplate):
             field.check_fields(missings, parent)
             yield field
 
 
 class FieldTemplate(Template):
+    '''A :class:`.Template` for fields or group of fields in
+    a :class:`.Form`'''
     parent = None
 
     @property
-    def style(self):
+    def layout(self):
         if self.parent:
-            return self.parent.style
-
-    @property
-    def ngmodel(self):
-        if self.parent:
-            return self.parent.ngmodel
+            return self.parent.layout
 
     def check_fields(self, missings, parent):
         self.parent = parent
@@ -69,19 +62,10 @@ class FieldTemplate(Template):
     def setup(self, missings):
         raise NotImplementedError
 
-    def wrap_field(self, html, field):
-        style = self.style
-        ngmodel = self.ngmodel
-        if ngmodel:
-            html.attr('ng-model', '%s.%s' % (ngmodel, field.name))
-        if style:
-            label = self.parameters.label
-            return style.wrap_field(html, field, label)
-        else:
-            return html
 
-
-class FieldWrapper(FieldTemplate):
+class Group(FieldTemplate):
+    '''A group is a container of a field and its label'''
+    tag = 'div'
 
     def setup(self, missings):
         assert len(self.children) == 1
@@ -92,40 +76,48 @@ class FieldWrapper(FieldTemplate):
         return self.key
     __str__ = __repr__
 
-    def __call__(self, request=None, context=None, **kwargs):
+    def required_message(self, field):
+        return '%s is required' % field.name
+
+    def error_message(self, field):
+        return '%s is invalid' % field.label
+
+    def post_process_child(self, html, child, request, context):
         '''Return an iterable over Html objects or strings.'''
         if context:
             form = context.get('form')
+            layout = self.layout
             if form:
-                bound_field = form.dfields[self.key]
-                html = bound_field.widget()
-                if (html.attr('type') == 'hidden' or
-                    html.css('display') == 'none'):
+                field = form.dfields[child]
+                w = field.widget()
+                if (w.attr('type') == 'hidden' or
+                    w.css('display') == 'none'):
                     html.addClass('hidden')
-                if self.parent:
-                    html = self.parent.wrap_field(html, bound_field)
-                return html
+
+                if not layout:
+                    return w
+
+                # ng-model
+                if layout.ngmodel:
+                    w.attr({'ng-model': 'formModel.%s' % field.name,
+                            'watch-change': "checkField('%s')" % field.name})
+                    if field.value:
+                        w.attr('ng-init', "formModel.%s='%s'" %
+                               (field.name, field.value))
+                    html.attr('ng-class', 'formClasses.%s' % field.name)
+
+                # styling
+                layout.style(html, w, field)
 
 
-class SubmitElement(FieldWrapper):
-
-    def __call__(self, request=None, context=None, cn=None, **kwargs):
-        cn = cn or 'btn btn-default'
-        return Html('button', 'submit', cn=cn, type='submit')
-
-
-class Group(FieldTemplate):
-    tag = 'div'
-    classes = 'form-group'
+class Submit(FieldTemplate):
+    tag = 'button'
+    classes = 'btn btn-default'
+    defaults = {'type': 'submit'}
 
     def setup(self, missings):
-        children = self.children
-        self.children = []
-        for field in check_fields(children, missings, self):
-            self.children.append(field)
-        if len(self.children) == 1:
-            # Check if hidden
-            pass
+        if not self.children:
+            self.children.append('submit')
 
 
 class Row(FieldTemplate):
@@ -183,27 +175,44 @@ class Layout(Template):
     .. attribute:: style
 
         The name of the :class:`LayoutStyle` for this :class:`Layout`.
+
+    .. attribute:: ngmodel
+
+        Optional model for angular.js. If provided, the forms will include
+        angular directives and model properties.
     '''
     tag = 'form'
     default_element = Fieldset
     form_class = None
+    defaults = {'role': 'form'}
+
+    @property
+    def layout(self):
+        return self
 
     @property
     def style(self):
         return LAYOUT_HANDLERS.get(self._style)
 
-    def init_parameters(self, style='', add_submits=True, ngmodel=None,
-                        enctype=None, method=None, **parameters):
+    def init_parameters(self, style='', labels=True, submits=True,
+                        ngmodel=None, enctype=None, method=None, name=None,
+                        ngcontroller=None, **parameters):
         '''Called at the and of initialisation.
 
         It fills the :attr:`parameters` attribute.
         It can be overwritten to customise behaviour.
         '''
-        self.add_submits = add_submits
+        self.submits = submits
         self._style = style
         self.ngmodel = ngmodel
+        self.labels = labels
         parameters['enctype'] = enctype or 'multipart/form-data'
         parameters['method'] = method or 'post'
+        if ngmodel:
+            parameters['novalidate'] = ''
+            parameters['name'] = name or 'form'
+            parameters['ng-controller'] = ngcontroller or 'formController'
+            parameters['ng-submit'] = 'processForm()'
         super(Layout, self).init_parameters(**parameters)
 
     def __repr__(self):
@@ -239,14 +248,25 @@ class Layout(Template):
         missings = list(self.form_class.base_fields)
         children = self.children
         self.children = []
-        if self.add_submits:
-            missings.append(SUBMITS)
         for field in check_fields(children, missings, self, Group):
             self.children.append(field)
         if missings:
             field = self.default_element(*missings)
             field.check_fields(missings, self)
             self.children.append(field)
+        if self.submits:
+            if self.submits is True:
+                field = self.default_element(Submit())
+            elif self.submits:
+                submits = self.submits
+                if not isinstance(submits, (list, tuple)):
+                    submits = [submits]
+                field = self.default_element(*submits)
+            field.check_fields((), self)
+            self.children.append(field)
+
+    def wrap_field(self, html, bfield, label):
+        return self.style(self, html, bfield, label)
 
 
 def register_layout_style(name, handler):
@@ -265,21 +285,49 @@ class LayoutStyle(object):
         For example the ``horizontal``
         layout has a form class ``form-horizontal``.
     '''
-    def wrap_field(self, html, bfield, label=None):
-        if html.attr('type') in ('radio', 'checkbox'):
-            return html
+    label_class = 'control-label'
+
+    def __call__(self, html, widget, field):
+        type = widget.attr('type')
+        maker = html.maker
+        params = maker.parameters
+        #
+        if type in ('radio', 'checkbox'):
+            if maker.parameters.inline:
+                html.addClass('%s-inline' % type)
+            else:
+                html.addClass(type)
+            html.append(Html('label', widget, field.label))
         else:
-            html.addClass('form-control')
-            if label is not False:
-                label = Html('label', bfield.label)
+            layout = maker.layout
+            html.addClass('form-group')
+            widget.addClass('form-control')
+            if layout.labels and params.label is not False:
+                label = Html('label', field.label, cn=self.label_class)
                 label.attr('for', html.attr('id'))
-                html = Html(None, label, html)
-            return html
+                html.append(label)
+            elif not widget.attr('placeholder'):
+                widget.attr('placeholder', field.label)
+            html.append(widget)
+            #
+            # Add error tags
+            if layout.ngmodel:
+                cn = self.label_class + ' help-block'
+                name = layout.parameters.name
+                if field.required:
+                    error = Html('p', maker.required_message(field), cn=cn)
+                    error.attr('ng-class', '{active: %s.%s.$error.required}' %
+                               (name, field.name))
+                    html.append(error)
+                error = Html('p', '{{formErrors.%s}}' % field.name, cn=cn)
+                error.attr('ng-class', '{active: %s.%s.$error.%s}' %
+                           (name, field.name, field.name))
+                html.append(error)
 
 
 class HorizontalLayout(LayoutStyle):
 
-    def wrap_field(self, html, bfield):
+    def __call__(self, html, widget, field):
         return html
 
 

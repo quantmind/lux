@@ -144,6 +144,16 @@ class Choice(object):
             choices = choices()
         return choices
 
+    def get_initial(self, form):
+        choices = self.choices()
+        if choices:
+            initial = choices[0]
+            if isinstance(initial, ChoiceGroup):
+                initial = initial.get_initial(form)
+            elif isinstance(initial, (list, tuple)):
+                initial = initial[0]
+            return initial
+
     def html(self, html, value=None):
         choices = self.choices()
         for choice in choices:
@@ -336,11 +346,10 @@ of this field. Returns None if it's not provided.
         return value
 
     def get_initial(self, form):
-        '''\
-Get the initial value of field if available.
+        '''Get the initial value of field if available.
 
-:parameter form: an instance of the :class:`Form` class
-                 where the ``self`` is declared.
+        :param form: an instance of the :class:`Form` class
+            where the field is declared.
         '''
         initial = self.initial
         if hasattr(initial, '__call__'):
@@ -374,46 +383,50 @@ attribute. By default return ``None``. Override for custom behaviour.
 
 class CharField(Field):
     '''A text :class:`Field` which introduces three
-optional parameter (attribute):
+    optional parameter (attribute):
 
-.. attribute:: max_length
+    .. attribute:: max_length
 
-    If provided, the text length will be validated accordingly.
+        If provided, the text length will be validated accordingly.
 
-    Default ``None``.
+        Default ``None``.
 
-.. attribute:: char_transform
+    .. attribute:: char_transform
 
-    One of ``None``, ``u`` for upper and ``l`` for lower. If provided
-    converts text to upper or lower.
+        One of ``None``, ``u`` for upper and ``l`` for lower. If provided
+        converts text to upper or lower.
 
-    Default ``None``.
+        Default ``None``.
 
-.. attribute:: toslug
+    .. attribute:: toslug
 
-    If provided it will be used to create a slug text which can be used
-    as URI without the need to escape.
-    For example, if ``toslug`` is set to "_", than::
+        If provided it will be used to create a slug text which can be used
+        as URI without the need to escape.
+        For example, if ``toslug`` is set to "_", than::
 
-        bla foo; bee
+            bla foo; bee
 
-    becomes::
+        becomes::
 
-        bla_foo_bee
+            bla_foo_bee
 
-    Default ``None``
-'''
+        Default ``None``
+    '''
     default = ''
     widget = field_widget('input', type='text')
 
-    def handle_params(self, max_length=30, char_transform=None,
-                      toslug=None, **kwargs):
+    def handle_params(self, max_length=50, min_length=None,
+                      char_transform=None, toslug=None, **kwargs):
         if not max_length:
             raise ValueError('max_length must be provided for {0}'
                              .format(self.__class__.__name__))
+        self.min_length = min_length
         self.max_length = int(max_length)
         if self.max_length <= 0:
             raise ValueError('max_length must be positive')
+        self.widget_attrs['data-max-length'] = self.max_length
+        if self.min_length:
+            self.widget_attrs['data-min-length'] = self.min_length
         self.char_transform = char_transform
         if toslug:
             if toslug is True:
@@ -784,6 +797,14 @@ class ChoiceField(MultipleMixin, Field):
             html.attr('multiple', 'multiple')
         self.choices.html(html, bfield.value)
         return html
+
+    def get_initial(self, form):
+        initial = self.initial
+        if hasattr(initial, '__call__'):
+            initial = initial(form)
+        if not initial:
+            initial = self.choices.get_initial(form)
+        return initial
 
     def value_from_instance(self, instance):
         # Delegate to choices

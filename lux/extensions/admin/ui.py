@@ -16,6 +16,14 @@ def add_css(all):
     css('#admin',
         width=pc(100))
 
+    css('.navbar.admin',
+        css(' > ul li',
+            display='inline-block'),
+        margin_bottom=0)
+
+    css('#page-admin',
+        padding=spacing(0, 20))
+
     media(min_width=admin.min_width_collapse).css('#page-admin',
         margin=spacing(0, 0, 0, admin.size),
         min_height=px(1300))
@@ -46,4 +54,3 @@ def add_css(all):
 
     css('.sidebar-search',
         padding=px(15))
-

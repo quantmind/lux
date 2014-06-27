@@ -8,10 +8,7 @@ module.exports = function(grunt) {
         // All libraries
         libs = {
             lux: grunt.file.readJSON('js/lux/lib.json'),
-            web: grunt.file.readJSON('js/web/lib.json'),
-            cms: grunt.file.readJSON('js/cms/lib.json'),
-            lorem: grunt.file.readJSON('js/lorem/lib.json'),
-            datagrid: grunt.file.readJSON('js/datagrid/lib.json')
+            lorem: grunt.file.readJSON('js/lorem/lib.json')
         };
     //
     function for_each(obj, callback) {
@@ -93,7 +90,6 @@ module.exports = function(grunt) {
     // Initialise Grunt with all tasks defined above
     grunt.initConfig({
         pkg: grunt.file.readJSON('lux/package.json'),
-        libs: grunt.file.read("lux/libs.json"),
         concat: libs,
         uglify: uglify_libs(),
         jshint: jshint_libs(),

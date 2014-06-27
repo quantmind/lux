@@ -151,6 +151,12 @@ class Router(wsgi.Router):
         '''Return an :ref:`Html Link <html-link>` object for ``item``.'''
         pass
 
+    def partial_form(self, request, form_class):
+        html = form_class(request).layout(request)
+        response = request.response
+        response.content = html.render(request)
+        return response
+
 
 class HtmlRouter(Router):
     '''A pulsar Router for html content.

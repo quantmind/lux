@@ -54,6 +54,8 @@ Creating Skins
 import lux
 from lux import Parameter
 
+from .lib import *
+
 
 class Extension(lux.Extension):
 
@@ -71,31 +73,11 @@ class Extension(lux.Extension):
             doc.data('icon', icon)
 
 
-class Tabs(lux.Html):
-    def __init__(self, *children, **params):
-        super(Tabs, self).__init__('div', *children, **params)
-        self.addClass('tabs')
+def add_css(all):
+    css = all.css
 
-    def append(self, child):
-        if isinstance(child, (list, tuple)):
-            # must be of length 2
-            if len(child) != 2:
-                raise TypeError('Adding wrong type to tabs. Required a string'
-                                ' or a two element tuple. Got a %s elements'
-                                % len(child))
-            a, div = child
-        else:
-            # when a string set the div to empty string
-            a, div = child, ''
-        if not self.children:
-            ul = lux.Html('ul')
-            self.children.append(ul)
-        a = lux.as_tag(a, 'a')
-        if not a.attr('href'):
-            count = len(self.children[0].children) + 1
-            id = 'tabs-%s' % count
-            a.attr('href', '#%s' % id)
-            div = lux.as_tag(div, 'div').attr('id', id)
-        self.children[0].append(a)
-        if div:
-            self.children.append(div)
+    css('.form-group .help-block',
+        display='none')
+
+    css('.form-group.has-error .help-block.active',
+        display='block')

@@ -1,0 +1,20 @@
+<div class="signup" ng-controller="page" ng-cloak>
+    <div id="page-header">
+        <a href="/" class="navbar-brand" target="_self">$site_name</a>
+    </div>
+
+    <hr>
+
+    <p class="text-center">Have an account? <a href="/login" target="_self">Log-in here</a></p>
+
+    <hr>
+
+    <div class="oauth">
+        <a class="btn btn-primary btn-block" href="{{oauth.href}}" ng-repeat="oauth in oauths">
+        <i class="fa fa-{{oauth.fa}}"></i> Sign up with {{oauth.name}}</a>
+    </div>
+
+    <hr>
+
+    $form
+</div>

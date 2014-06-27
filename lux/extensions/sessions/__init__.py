@@ -138,7 +138,7 @@ class Extension(lux.Extension):
                   'When no roles has tested positive for permissions, this '
                   'parameter is used to check if a model has permission for '
                   'an action'),
-        Parameter('LOGIN_PROVIDERS', {},
+        Parameter('OAUTH_PROVIDERS', {},
                   'Dictionary of OAuth providers')]
 
     def middleware(self, app):
@@ -184,20 +184,10 @@ class Extension(lux.Extension):
                     session['csrf_token'] = key
             return key
 
-    def api_sections(self, app):
-        '''API routes'''
-        yield 'User and sessions', self.api_routes(app)
-
-    def api_routes(self, app):
-        models = app.models
-        if not models:
-            self.logger.warning('Session extensions requires model extension')
-        else:
-            yield SessionCrud('sessions', models.session)
-            yield UserCrud('users', models.user)
-
 
 class UserMixin(object):
+    '''Mixin for a User model
+    '''
 
     def is_authenticated(self):
         return True
@@ -209,6 +199,19 @@ class UserMixin(object):
         return False
 
     def get_id(self):
+        raise NotImplementedError
+
+    def get_oauths(self):
+        '''Return a dictionary of oauths account'''
+        return {}
+
+    def set_oauth(self, name, data):
+        raise NotImplementedError
+
+    def remove_oauth(self, name):
+        '''Remove a connected oauth account.
+        Return ``True`` if successfully removed
+        '''
         raise NotImplementedError
 
 

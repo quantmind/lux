@@ -5,10 +5,12 @@ from datetime import datetime, timedelta
 
 from pulsar.apps.wsgi import wsgi_request
 
+import lux
 from lux.extensions import sessions
 
 from .models import Session
 from .oauth import User
+from .api import *
 
 
 isdev = lambda: os.environ.get('SERVER_SOFTWARE', '').startswith('Development')
@@ -17,7 +19,7 @@ ndbid = lambda value: int(value)
 
 
 class AuthBackend(sessions.AuthBackend):
-    '''Authentication backend for Google appengine
+    '''Authentication backend for Google app-engine
     '''
     def middleware(self, app):
         return [self._load]
@@ -39,7 +41,12 @@ class AuthBackend(sessions.AuthBackend):
         request.cache.session = self.create_session(request, user)
         request.cache.user = user
         return user
-
+    
+    def create_user(self, request):
+        data = request.body_data()
+        username = data.get('username')
+        password = data.get('password')
+        
     def create_session(self, request, user=None, expiry=None):
         session = request.cache.session
         if session:

@@ -11,7 +11,7 @@ from .ui import add_css
 
 class Extension(lux.Extension):
     _config = [
-        Parameter('ADMIN_URL', 'admin',
+        Parameter('ADMIN_URL', 'admin/',
                   'the base url for the admin site'),
         Parameter('ADMIN_THEME', 'default',
                   'Theme for the admin site')
@@ -50,9 +50,11 @@ class Admin(lux.Router):
         links.append((link, router))
 
     def get(self, request):
+        links = [{'name': l[0], 'href': l[1].path()} for l in self.links]
+        ctx = {'links': links}
         return request.app.html_response(request, 'admin.html',
+                                         jscontext=ctx,
                                          title='%s - Admin')
-
 
 def require_superuser(handler, request):
     user = request.cache.user

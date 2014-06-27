@@ -561,7 +561,7 @@ factory.'''
                      'name': self.html_name,
                      'title': self.help_text or self.label})
         if field.required:
-            widget.attr('required', 'required')
+            widget.attr('required', '')
         widget.set_form_value(self.value)
         return widget
 

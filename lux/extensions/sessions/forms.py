@@ -1,5 +1,5 @@
 import sys
-from lux import forms, AuthenticationError, LoginError
+from lux import forms
 
 
 class LoginForm(forms.Form):
@@ -13,12 +13,12 @@ class LoginForm(forms.Form):
         request = self.request
         permissions = request.app.permissions
         username = self.cleaned_data['username']
-        user = yield from permissions.get_user(request, username=username)
+        user = permissions.get_user(request, username=username)
         if not user:
             raise forms.ValidationError(self.error_message)
         password = self.cleaned_data['password']
         try:
-            user = yield from permissions.authenticate_and_login(
+            user = permissions.authenticate_and_login(
                 request, user, password=password)
         except AuthenticationError:
             raise forms.ValidationError(self.error_message)
@@ -28,6 +28,14 @@ class LoginForm(forms.Form):
 
 
 class CreateUserForm(forms.Form):
-    username = forms.CharField(max_length=30)
-    email = forms.EmailField(required=False)
-    password = forms.PasswordField(max_length=60)
+    username = forms.CharField(min_length=6, max_length=30)
+    email = forms.EmailField()
+    password = forms.PasswordField(min_length=6, max_length=60)
+    password_repeat = forms.PasswordField(required=False)
+
+    layout = forms.Layout(
+        submits=forms.Submit('Sign up', classes='btn btn-primary btn-block'),
+        labels=False,
+        ngmodel=True,
+        ngcontroller='userController')
+

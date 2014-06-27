@@ -103,6 +103,7 @@ class Template(object):
     key = None
     tag = None
     classes = None
+    defaults = None
 
     def __init__(self, *children, **parameters):
         if 'key' in parameters:
@@ -126,54 +127,50 @@ class Template(object):
     def child_template(self, child=None):
         return child
 
-    def init_parameters(self, tag=None, **parameters):
+    def init_parameters(self, tag=None, classes=None, **parameters):
         '''Called at the and of initialisation.
 
         It fills the :attr:`parameters` attribute.
         It can be overwritten to customise behaviour.
         '''
         self.tag = tag or self.tag
-        self.parameters = AttributeDictionary(parameters)
+        self.classes = classes or self.classes
+        self.parameters = AttributeDictionary(self.defaults or ())
+        self.parameters.update(parameters)
 
     def __call__(self, request=None, context=None, children=None, **kwargs):
         '''Create an Html element from this template.'''
         c = []
         if context is None:
             context = {}
-        for child in self.children:
-            if not isinstance(child, str):
-                child = child(request, context, **kwargs)
-            c.append(self.post_process_child(child, **kwargs))
-        if children:
-            c.extend(children)
-        return self.html(request, context, c, **kwargs)
-
-    def html(self, request, context, children, **kwargs):
-        '''Create the :class:`Html` instance.
-
-        This method is invoked at the end of the ``__call__`` method with
-        a list of ``children`` elements and a ``context`` dictionary.
-        This method shouldn't be accessed directly.
-
-        :param request: a client request, can be ``None``.
-        :param context: a dictionary of :class:`Html` or strings to include.
-        :param children: list of children elements.
-        :param kwargs: additional parameters used when initialising the
-            :attr:`Html` for this template.
-        :return: an :class:`Html` object.
-        '''
         params = self.parameters
         if kwargs:
             params = dict(params)
             params.update(kwargs)
-        html = Html(self.tag, *children, **params)
-        html.maker = self
-        if context and self.key:
-            html.append(context.get(self.key))
+        html = Html(self.tag, **params)
         classes = self.classes
         if hasattr(classes, '__call__'):
             classes = classes()
-        return html.addClass(classes)
+        html.addClass(classes)
+        html.maker = self
+        #
+        for child in self.children:
+            if not isinstance(child, str):
+                child = child(request, context)
+            child = self.post_process_child(html, child, request, context)
+            html.append(child)
+
+        if children:
+            for child in children:
+                if not isinstance(child, str):
+                    child = self.post_process_child(html, child,
+                                                    request, context)
+                html.append(child)
+        #
+        if context and self.key:
+            html.append(context.get(self.key))
+        #
+        return html
 
     def keys(self):
         '''Generator of keys in this :class:`.Template`
@@ -199,7 +196,9 @@ class Template(object):
             if elem is not None:
                 return elem
 
-    def post_process_child(self, child, **parameters):
+    def post_process_child(self, html, child, request, context):
+        '''Called just before adding ``child`` to ``html``
+        '''
         return child
 
 
@@ -292,13 +291,8 @@ class GridTemplate(Template):
 
     def __init__(self, *children, **params):
         self.fixed = params.pop('fixed', True)
+        self.classes = 'container' if self.fixed else 'container-fluid'
         super().__init__(*children, **params)
-
-    def html(self, request, context, children, **kwargs):
-        html = super(GridTemplate, self).html(request, context, children,
-                                              **kwargs)
-        cn = 'container' if self.fixed else 'container-fluid'
-        return html.addClass(cn)
 
     def child_template(self, child=None):
         if not getattr(child, 'grid_child', False):

@@ -33,6 +33,7 @@ from pulsar.utils.log import LocalMixin, local_property, local_method
 from .commands import ConsoleParser, CommandError
 from .extension import Extension, Parameter
 from .wrappers import WsgiRequest, JsonDocument
+from .engines import template_engine
 
 
 __all__ = ['App',
@@ -159,9 +160,9 @@ class App(ConsoleParser, LocalMixin, Extension):
                   'links *.js become *.min.js'),
         Parameter('HTML_LINKS', [],
                   'List of links to include in the html head tag.'),
-        Parameter('JSREQUIRED', ('jquery', 'lodash', 'json', 'lux'),
+        Parameter('JSREQUIRED', ('require',),
                   'Default Required javascript. Loaded via requirejs.'),
-        Parameter('JSREQUIRE_CALLBACK', 'lux.initWeb',
+        Parameter('JSREQUIRE_CALLBACK', None,
                   'Callback used by requirejs.'),
         Parameter('HTML_META',
                   [{'http-equiv': 'X-UA-Compatible',
@@ -174,6 +175,7 @@ class App(ConsoleParser, LocalMixin, Extension):
                   'Default formatting for dates'),
         Parameter('DEFAULT_TEMPLATE_ENGINE', 'python',
                   'Default template engine'),
+        Parameter('SITE_NAME', 'Lux', 'Web site name'),
         Parameter('SITE_URL', None,
                   'Web site url'),
         Parameter('LINKS',
@@ -304,9 +306,7 @@ class App(ConsoleParser, LocalMixin, Extension):
             #
             required = cfg['JSREQUIRED']
             if required:
-                scripts = head.scripts
-                scripts.append('require')
-                scripts.require(*required)
+                head.scripts.require(*required)
             #
             for entry in cfg['HTML_META'] or ():
                 head.add_meta(**entry)
@@ -498,15 +498,23 @@ class App(ConsoleParser, LocalMixin, Extension):
                 with open(filename, 'r') as file:
                     return file.read()
 
-    def context(self, request, context=None):
+    def context(self, request, context, js=None):
+        '''Load the ``context`` dictionary for this ``request``
+        '''
         context = context or {}
+        method = 'jscontext' if js else 'context'
         for ext in self.extensions.values():
-            if hasattr(ext, 'context'):
-                ext.context(request, context)
+            if hasattr(ext, method):
+                getattr(ext, method)(request, context)
         return context
 
-    def html_response(self, request, template_name, context=None, title=None):
-        '''Html response via a template
+    def html_response(self, request, template_name, context=None,
+                      jscontext=None, title=None):
+        '''Html response via a template.
+
+        :param request: the :class:`.WsgiRequest`
+        :param template_name: the template file name to load
+        :param context: optional context dictionary
         '''
         if request.response.content_type == 'text/html':
             document = request.html_document
@@ -514,8 +522,14 @@ class App(ConsoleParser, LocalMixin, Extension):
             if title:
                 head.title = title % head.title
             context = self.context(request, context)
-            head.embedded_js.append('var context=%s;' % json.dumps(context))
+            jscontext = self.context(request, jscontext, 'js')
+            if jscontext:
+                jscontext = json.dumps(jscontext)
+                head.embedded_js.append('var context=%s;' % jscontext)
             template = self.template(template_name)
+            if context:
+                rnd = template_engine(self.config['DEFAULT_TEMPLATE_ENGINE'])
+                template = rnd(template, context)
             document.body.append(template)
             return document.http_response(request)
 

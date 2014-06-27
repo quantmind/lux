@@ -132,58 +132,23 @@ from pulsar.utils.httpurl import JSON_CONTENT_TYPES, remove_double_slash
 from pulsar.apps.ds import DEFAULT_PULSAR_STORE_ADDRESS
 
 import lux
-from lux import Router, Parameter
+from lux import Parameter
 
-from .crud import Crud
-from .content import ContentManager
-from .websocket import CrudWebSocket
-from .admin import Admin
+from .crud import ModelManager, CRUD
 
 
-DEFAULT_ADDRESS = 'pulsar://%s/3' % DEFAULT_PULSAR_STORE_ADDRESS
-
-
-class Api(lux.Router):
-    ''':ref:`Router <router>` to use as root for all api routers.'''
-    sections = None
+class ApiRoot(lux.Router):
+    '''Api Root'''
     response_content_types = lux.RouterParam(JSON_CONTENT_TYPES)
 
+    def apis(self, request):
+        routes = {}
+        for route in self.routes:
+            routes['%s_url' % route.name] = request.absolute_uri(route.path())
+        return routes
+
     def get(self, request):
-        '''Get all routes grouped in sections.
-
-        This is the only method available for the router base route.'''
-        if request.response.content_type in JSON_CONTENT_TYPES:
-            json = Json(as_list=True)
-            for name, section in mapping_iterator(self.sections):
-                json.append(OrderedDict((('name', name),
-                                         ('routes', section.json(request)))))
-            return json.http_response(request)
-        else:
-            raise HttpException(status=415)
-
-
-class ApiSection(object):
-
-    def __init__(self):
-        self.routers = []
-
-    def append(self, router):
-        self.routers.append(router)
-
-    def info(self, request):
-        all = []
-        for router in self.routers:
-            all.append((router.model, router.path()))
-        return all
-
-    def json(self, request):
-        all = []
-        for router in self.routers:
-            fields = router.columns(request)
-            all.append(OrderedDict((('model', router.manager._meta.name),
-                                    ('api_url', router.path()),
-                                    ('fields', fields))))
-        return all
+        return Json(self.apis(request)).http_response(request)
 
 
 class Extension(lux.Extension):
@@ -202,25 +167,21 @@ class Extension(lux.Extension):
                   'Dictionary for mapping models to their back-ends database'),
         Parameter('SEARCHENGINE', None,
                   'Search engine for models'),
-        Parameter('ODM', None,
-                  'Object Data Mapper. Must provide the Mapper class.'),
+        Parameter('ODM', None, 'Optional Object Data Mapper.'),
         Parameter('DUMPDB_EXTENSIONS', None, ''),
         Parameter('API_URL', 'api', ''),
-        Parameter('ADMIN_URL', '',
-                  'Optional admin url for HTML views of models'),
-        Parameter('ADMIN_TEMPLATE', '',
-                  'Optional template class for the admin site'),
         Parameter('API_DOCS_URL', 'api/docs', ''),
-        Parameter('QUERY_MAX_LENGTH', 100,
-                  'Maximum number of elements per query'),
-        Parameter('QUERY_FIELD_KEY', 'field',
-                  'The query key to retrieve specific fields of a model'),
-        Parameter('QUERY_SEARCH_KEY', 'q',
+        Parameter('API_SEARCH_KEY', 'q',
                   'The query key for full text search'),
-        Parameter('QUERY_START_KEY', 'start', ''),
-        Parameter('QUERY_LENGTH_KEY', 'per_page', '')]
-    html_crud_routers = None
-    api_crud_routers = None
+        Parameter('API_OFFSET_KEY', 'offset', ''),
+        Parameter('API_LIMIT_KEY', 'limit', ''),
+        Parameter('API_LIMIT_DEFAULT', 30, 'Default number of items returned'),
+        Parameter('API_LIMIT_AUTH', 100,
+                  ('Maximum number of items returned when user is '
+                   'authenticated')),
+        Parameter('API_LIMIT_NOAUTH', 30,
+                  ('Maximum number of items returned when user is '
+                   'not authenticated'))]
 
     def middleware(self, app):
         '''Build the API middleware.
@@ -228,124 +189,22 @@ class Extension(lux.Extension):
         If :setting:`API_URL` is defined, it loops through all extensions
         and checks if the ``api_sections`` method is available.
         '''
-        middleware = []
         url = app.config['API_URL']
-        if url:
-            app.config['API_URL'] = url = remove_double_slash('/%s/' % url)
-            sections = {}
-            self.api = api = Api(url, sections=sections)
-            middleware.append(api)
-            docs = None
-            url = app.config['API_DOCS_URL']
-            if url:
-                app.config['API_DOCS_URL'] = url = remove_double_slash('/%s/'
-                                                                       % url)
-                self.docs = Router(url, sections=sections)
-                middleware.append(self.docs)
-            #
-            for extension in itervalues(app.extensions):
-                api_sections = getattr(extension, 'api_sections', None)
-                if api_sections:
-                    for name, routers in api_sections(app):
-                        # Routes must be instances of CRUD
-                        # name is the section name
-                        if name not in sections:
-                            sections[name] = ApiSection()
-                        section = sections[name]
-                        for router in routers:
-                            api.add_child(router)
-                            section.append(router)
-                            manager = router.manager
-                            self.api_crud_routers[manager] = manager
-        url = app.config['ADMIN_URL']
-        if url:
-            app.config['ADMIN_URL'] = url = remove_double_slash('/%s/' % url)
-            sections = {}
-            admin = Admin(url, sections=sections)
-            middleware.append(admin)
-            # for extension in itervalues(app.extensions):
-            #     api_sections = getattr(extension, 'api_sections', None)
-            #     if api_sections:
-            #         pass
-        return middleware
+        self.api = api = ApiRoot(url)
+        for extension in itervalues(app.extensions):
+            api_sections = getattr(extension, 'api_sections', None)
+            if api_sections:
+                for router in api_sections(app):
+                    api.add_child(router)
+        return [self.api]
 
     def on_config(self, app):
         '''Create a pulsar mapper with all models registered.
         '''
-        app.local.models = self._create_mapper(app)
-
-    def on_loaded(self, app, handler):
-        for router in handler.middleware:
-            self.add_to_html_router(router)
-
-    def on_html_document(self, app, request, doc):
-        '''When the document is created add stylesheet and default
-        scripts to the document media.
-        '''
-        if doc.has_default_content_type:
-            config = app.config
-            url = config['API_URL']
-            if url:
-                doc.data('api', {'url': url,
-                                 'search': config['QUERY_SEARCH_KEY'],
-                                 'start': config['QUERY_START_KEY'],
-                                 'per_page': config['QUERY_LENGTH_KEY']})
-
-    #    INTERNALS
-    def _create_mapper(self, app):
-        # Create the object data mapper
-        config = app.config
-        odm = config['ODM']
-        default_address = None
-        if not odm:
-            from pulsar.apps.data import odm
-            config['ODM'] = odm
-            default_address = DEFAULT_ADDRESS
-        self.html_crud_routers = odm.ModelDictionary()
-        self.api_crud_routers = odm.ModelDictionary()
-        datastore = config['DATASTORE'] or {}
-        address = datastore.get('')
-        if not address:
-            if default_address:
-                address = default_address
-                datastore[''] = address
-            else:
-                raise ValueError('Default datastore not set')
-        config['DATASTORE'] = datastore
-        self.logger.debug('Create odm mapper at %s', address)
-        mapper = odm.Mapper(address)
-        self.set_search_engine(app, mapper)
-        # don't need lux has we know it does not have any model
-        extensions = config['EXTENSIONS'][1:]
-        mapper.register_applications(extensions, stores=datastore)
-        return mapper
-
-    def add_to_html_router(self, router):
-        '''Add ``router`` to the :attr:`html_crud_routers` dictionary if
-        the default content type is ``text/html`` and the router model is not
-        already available.'''
-        if isinstance(router, Crud):
-            if (router.default_content_type == 'text/html'
-                    and router.manager not in self.html_crud_routers):
-                self.html_crud_routers[router.manager] = router
-        if isinstance(router, Router):
-            for router in router.routes:
-                self.add_to_html_router(router)
-
-    def get_url(self, manager, instance=None):
-        router = self.api.manager_map.get(manager.model)
-        if router:
-            return router.get_url(instance)
-
-    def set_search_engine(self, app, mapper):
-        '''Set the full-text search engine.
-        '''
-        engine = app.config['SEARCHENGINE']
-        if engine is None:
-            engine = app.config['DATASTORE'].get('')
         odm = app.config['ODM']
-        try:
-            engine = odm.search_engine(engine)
-            mapper.set_search_engine(engine)
-        except ImproperlyConfigured:
-            pass
+        if odm:
+            app.local.models = odm(app)
+
+    def jscontext(self, request, context):
+        '''Add the api routes to the javascript context'''
+        context['api'] = self.api.apis(request)

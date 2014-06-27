@@ -1,3 +1,3 @@
 
-	return _.extend(lux, prev_lux);
+	return lux;
 });

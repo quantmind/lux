@@ -3,6 +3,22 @@ from google.appengine.ext import ndb
 from .. import sessions
 
 
+class Oauth(ndb.Model):
+    name = ndb.StringProperty()
+    identifier = ndb.StringProperty()
+    image = ndb.StringProperty()
+    url = ndb.StringProperty()
+    data = ndb.JsonProperty()
+
+    def todict(self):
+        d = self.data.copy() if self.data else {}
+        d.update({'name': self.name,
+                  'identifier': self.identifier,
+                  'image': self.image,
+                  'url': self.url})
+        return d
+
+
 class User(ndb.Model, sessions.UserMixin):
     '''Model for users
     '''
@@ -13,18 +29,29 @@ class User(ndb.Model, sessions.UserMixin):
     email = ndb.StringProperty()
     active = ndb.BooleanProperty(default=False)
     is_superuser = ndb.BooleanProperty(default=False)
+    company = ndb.StringProperty()
     #
-    twitter_name = ndb.StringProperty()
-    twitter_token = ndb.JsonProperty()
-    #
-    google_id = ndb.StringProperty()
-    google_token = ndb.JsonProperty()
+    oauths = ndb.StructuredProperty(Oauth, repeated=True)
 
     def is_active(self):
         return self.active
 
     def todict(self):
         return self.to_dict()
+
+    def get_oauths(self):
+        return dict(((o.name, o.todict()) for o in self.oauths))
+
+    def set_oauth(self, name, data):
+        if self.oauths is None:
+            self.oauths = {}
+        self.oauths[name] = data
+
+    def remove_oauth(self, name):
+        if self.oauths is not None:
+            if self.oauths.pop(name, None) is not None:
+                self.put()
+                return True
 
     @classmethod
     def create_from_oauth(cls, data, provider, token):
@@ -37,6 +64,13 @@ class User(ndb.Model, sessions.UserMixin):
         Returns ``None`` if no user match the username.
         '''
         q = cls.query(cls.username == username)
+        users = q.fetch(1)
+        if users:
+            return users[0]
+
+    @classmethod
+    def get_by_oauth(cls, name, identifier):
+        q = cls.query(cls.oauths == Oauth(name=name, identifier=identifier))
         users = q.fetch(1)
         if users:
             return users[0]

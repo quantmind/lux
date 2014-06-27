@@ -6,19 +6,25 @@ except ImportError:
 from pulsar.apps.wsgi import Router, Json, route
 
 from .oauth import Accounts
+from .forms import CreateUserForm
 
 
-__all__ = ['Login', 'SignUp', 'Logout', 'Token', 'OAuth']
+__all__ = ['Login', 'SignUp', 'Logout', 'Token', 'OAuth', 'oauth_context']
 
 
-def oauth_context(request):
-    cfg = request.app.config
-    #TODO make this configurable
-    path = '/oauth/%s'
-    return {'oauths': [{'name': o['name'],
-                               'href': path % o['name'].lower(),
-                               'fa': o.get('fa')}
-                       for o in cfg['LOGIN_PROVIDERS']]}
+def oauth_context(request, path='/oauth/'):
+    user = request.cache.user
+    oauths = []
+    current = user.get_oauths()
+    for o in request.config['OAUTH_PROVIDERS']:
+        name = o['name'].lower()
+        data = {'href': path + name,
+                'name': name,
+                'fa': o.get('fa')}
+        if name in current:
+            data['current'] = current[name]
+        oauths.append(data)
+    return oauths
 
 
 class Login(Router):
@@ -27,11 +33,11 @@ class Login(Router):
     def get(self, request):
         '''Handle the HTML page for login
         '''
-        context = oauth_context(request)
-        return request.app.html_response(request, 'login.html', context)
+        context = {'oauths': oauth_context(request)}
+        return request.app.html_response(request, 'login.html',
+                                         jscontext=context)
 
-    @route('/', method='post')
-    def do_login(self, request):
+    def post(self, request):
         '''Handle login post data
         '''
         user = request.cache.user
@@ -42,18 +48,33 @@ class Login(Router):
 
 class SignUp(Router):
 
-    def get(self, request):
-        context = oauth_context(request)
-        return request.app.html_response(request, 'signup.html', context)
+    @property
+    def form_class(self):
+        fclass = self.parameters.form or CreateUserForm
 
-    @route('/', method='post')
-    def do_login(self, request):
+    def get(self, request):
+        fclass = self.form_class
+        html = fclass(request).layout(request, action=request.full_path())
+        context = {'form': html.render(request),
+                   'site_name': request.config['SITE_NAME']}
+        jscontext = {'oauths': oauth_context(request)}
+        return request.app.html_response(request, 'signup.html',
+                                         context=context,
+                                         jscontext=jscontext)
+
+    def post(self, request):
         '''Handle login post data
         '''
         user = request.cache.user
         if user.is_authenticated():
             raise MethodNotAllowed
-        return self.app.auth_backend.login(request)
+        data, files = request.body_data()
+        form = self.form_class(request, data=data)
+        if form.is_valid():
+            data = form.cleaned_data
+            return request.app.auth_backend.create_user(request, **data)
+        else:
+            return form.tojson()
 
 
 class Logout(Router):
@@ -76,7 +97,7 @@ class OAuth(Router):
     '''A :class:`.Router` for the oauth authentication flow
     '''
     def _oauth(self, request):
-        providers = request.config['LOGIN_PROVIDERS']
+        providers = request.config['OAUTH_PROVIDERS']
         return dict(((o['name'].lower(), Accounts[o['name'].lower()](o))
                      for o in providers))
 
@@ -85,16 +106,30 @@ class OAuth(Router):
         name = request.urlargs['name']
         redirect_uri = request.absolute_uri('redirect')
         p = self._oauth(request).get(name)
-        authorization_url = p.authorization_url(redirect_uri)
+        authorization_url = p.authorization_url(request, redirect_uri)
         return self.redirect(authorization_url)
 
     @route('<name>/redirect')
     def oauth_redirect(self, request):
+        user = request.cache.user
         name = request.urlargs['name']
         p = self._oauth(request).get(name)
-        token = p.access_token(request.url_data, redirect_uri=request.uri)
-        user = request.app.auth_backend.login(request, p.create_user(token))
+        token = p.access_token(request, request.url_data,
+                               redirect_uri=request.uri)
+        if not user.is_authenticated():
+            user = p.create_user(token)
+            user = request.app.auth_backend.login(request, user)
+        else:
+            user = p.create_user(token, user)
         return self.redirect('/%s' % user.username)
+
+    @route('<name>/remove', method='post')
+    def oauth_remove(self, request):
+        user = request.cache.user
+        if user.is_authenticated():
+            name = request.urlargs['name']
+            removed = user.remove_oauth(name)
+            return Json({'success': removed}).http_response(request)
 
 
 class Token(Router):
