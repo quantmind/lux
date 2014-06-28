@@ -7,6 +7,7 @@ from pulsar.apps.wsgi import Router, Json, route
 
 from .oauth import Accounts
 from .forms import CreateUserForm
+from .backend import AuthenticationError
 
 
 __all__ = ['Login', 'SignUp', 'Logout', 'Token', 'OAuth', 'oauth_context']
@@ -49,12 +50,11 @@ class Login(Router):
 class SignUp(Router):
 
     @property
-    def form_class(self):
-        fclass = self.parameters.form or CreateUserForm
+    def fclass(self):
+        return self.parameters.form or CreateUserForm
 
     def get(self, request):
-        fclass = self.form_class
-        html = fclass(request).layout(request, action=request.full_path())
+        html = self.fclass(request).layout(request, action=request.full_path())
         context = {'form': html.render(request),
                    'site_name': request.config['SITE_NAME']}
         jscontext = {'oauths': oauth_context(request)}
@@ -68,13 +68,15 @@ class SignUp(Router):
         user = request.cache.user
         if user.is_authenticated():
             raise MethodNotAllowed
-        data, files = request.body_data()
-        form = self.form_class(request, data=data)
+        data = request.body_data()
+        form = self.fclass(request, data=data)
         if form.is_valid():
             data = form.cleaned_data
-            return request.app.auth_backend.create_user(request, **data)
-        else:
-            return form.tojson()
+            try:
+                user = request.app.auth_backend.create_user(request, **data)
+            except AuthenticationError as e:
+                form.add_error_message(str(e))
+        return Json(form.tojson()).http_response(request)
 
 
 class Logout(Router):

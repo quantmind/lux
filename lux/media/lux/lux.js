@@ -21,24 +21,7 @@ define(['jquery', 'angular', 'angular-route'], function ($) {
         routes.push([url, data]);
     };
 
-    // Load angular
-    angular.element(document).ready(function() {
-        //
-        if (routes.length && context.html5) {
-            var rs = routes;
-            routes = [];
-            lux.setupRouter(rs);
-        }
-        angular.bootstrap(document, ['lux']);
-        //
-        var callbacks = lux.ready_callbacks;
-        lux.ready_callbacks = [];
-        angular.forEach(callbacks, function (callback) {
-            callback();
-        });
-    });
-
-    lux.setupRouter = function (routes) {
+    lux._setupRouter = function (routes) {
         //
         lux.app.config(['$routeProvider', '$locationProvider', function($routeProvider, $locationProvider) {
 
@@ -77,6 +60,8 @@ define(['jquery', 'angular', 'angular-route'], function ($) {
         };
 
     }]);
+    var FORMKEY = 'm__form';
+    //
     // add the watch change directive
     lux.app.directive('watchChange', function() {
         return {
@@ -98,12 +83,28 @@ define(['jquery', 'angular', 'angular-route'], function ($) {
         };
     });
 
-    function formController ($scope, $element, $location, $http, model) {
+    // Change the form data depending on content type
+    function formData(ct) {
+        return function (data, getHeaders ) {
+            if (ct === 'application/x-www-form-urlencoded')
+                return $.param(options.data);
+            else if (ct === 'multipart/form-data') {
+                var fd = new FormData();
+                angular.forEach(data, function (value, key) {
+                    fd.append(key, value);
+                });
+                return fd;
+            } else return data;
+        };
+    }
+
+    function formController ($scope, $element, $location, $http, $sce, model) {
         model || (model = {});
 
         $scope.formModel = model;
         $scope.formClasses = {};
         $scope.formErrors = {};
+        $scope.formMessages = {};
 
         $scope.checkField = function (name) {
             var checker = $scope['check_' + name];
@@ -124,52 +125,56 @@ define(['jquery', 'angular', 'angular-route'], function ($) {
         // display field errors
         $scope.showErrors = function () {
             var error = $scope.form.$error;
+            angular.forEach(error.required, function (e) {
+                $scope.formClasses[e.$name] = 'has-error';
+            });
         };
 
         // process form
-        $scope.processForm = function() {
+        $scope.processForm = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            //
             if ($scope.form.$invalid) {
                 return $scope.showErrors();
             }
 
-            var options = {
-                url: $element.attr('action'),
-                method: $element.attr('method') || 'POST',
-                data: $scope.formModel
-            };
-            var enctype = $element.attr('enctype');
-            if (enctype)
-                options.headers = {
-                    "Content-Type": enctype
+            var enctype = $element.attr('enctype') || '',
+                ct = enctype.split(';')[0],
+                options = {
+                    url: $element.attr('action'),
+                    method: $element.attr('method') || 'POST',
+                    data: $scope.formModel,
+                    transformRequest: formData(ct),
                 };
+            // Let the browser choose the content type
+            if (ct === 'application/x-www-form-urlencoded' || ct === 'multipart/form-data') {
+                options.headers = {
+                    'content-type': undefined
+                };
+            }
+            //
+            $scope.formMessages = {};
+            //
             // submit
             $http(options).success(function(data) {
-                console.log(data);
-
-                if (!data.success) {
-                    // if not successful, bind errors to error variables
-                    $scope.message = data.message;
-                    if (data.errors) {
-                        _(data.errors).forEach(function (obj) {
-                            //$scope.errorName = data.errors.name;
-                            //$scope.errorSuperhero = data.errors.superheroAlias;
-                        });
-                    } else if (data.html_url) {
-                        window.location.href = data.html_url;
-                    }
+                if (data.messages) {
+                    angular.forEach(data.messages, function (messages, field) {
+                        $scope.formMessages[field] = messages;
+                    });
                 } else {
-                    // if successful, bind success message to message
-                    $scope.message = data.message;
+                    window.location.href = data.redirect || '/';
                 }
+            }).error(function(data, status, headers, config) {
             });
         };
     }
 
     // Controller for User
-    lux.controllers.controller('userController', ['$scope', '$element', '$location', '$http',
-            function ($scope, $element, $location, $http) {
+    lux.controllers.controller('userController', ['$scope', '$element', '$location', '$http', '$sce',
+            function ($scope, $element, $location, $http, $sce) {
         // Model for a user when updating
-        formController($scope, $element, $location, $http);
+        formController($scope, $element, $location, $http, $sce);
 
         // Unlink account for a OAuth provider
         $scope.unlink = function(e, name) {
@@ -199,6 +204,24 @@ define(['jquery', 'angular', 'angular-route'], function ($) {
         };
 
     }]);
+
+    //
+    // Load angular
+    angular.element(document).ready(function() {
+        //
+        if (routes.length && context.html5) {
+            var rs = routes;
+            routes = [];
+            lux._setupRouter(rs);
+        }
+        angular.bootstrap(document, ['lux']);
+        //
+        var callbacks = lux.ready_callbacks;
+        lux.ready_callbacks = [];
+        angular.forEach(callbacks, function (callback) {
+            callback();
+        });
+    });
 
 	return lux;
 });

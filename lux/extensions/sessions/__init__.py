@@ -15,86 +15,16 @@ from importlib import import_module
 from functools import wraps
 
 from pulsar import PermissionDenied, Http404
+from pulsar.utils.pep import to_bytes, to_string
 from pulsar.utils.importer import module_attribute
 
 import lux
 from lux import Parameter
-from lux.utils.crypt import get_random_string
+from lux.utils.crypt import get_random_string, digest
 
 from .views import *
 from .oauth import *
-
-
-class AuthenticationError(Exception):
-    pass
-
-
-class AuthBackend(object):
-    '''Interface for authentication backends.
-
-    An Authentication backend manage authentication, login, logout and
-    several other activities which are required for managing users of
-    a web site.
-    '''
-    def __init__(self, app):
-        self.encoding = app.config['ENCODING']
-        self.secret_key = app.config['SECRET_KEY'].encode()
-        self.session_cookie_name = app.config['SESSION_COOKIE_NAME']
-        self.session_expiry = app.config['SESSION_EXPIRY']
-        self.salt_size = app.config['AUTH_SALT_SIZE']
-        self.csrf = app.config['CSRF_KEY_LENGTH']
-        self.check_username = app.config['CHECK_USERNAME']
-        algorithm = app.config['CRYPT_ALGORITHM']
-        self.crypt_module = import_module(algorithm)
-
-    def authenticate(self, request, user, **params):
-        '''Authenticate a user'''
-        pass
-
-    def login(self, request, user=None):
-        '''Login a ``user`` if it is already authenticated, otherwise do
-        nothing.'''
-        raise NotImplementedError
-
-    def logout(self, request, user=None):
-        '''Logout a ``user``
-        '''
-        session = request.cache.session
-        user = user or request.cache.user
-        if user and user.is_authenticated():
-            request.cache.session = self.create_session(request)
-            request.cache.user = Anonymous()
-
-    def get_user(self, request, *args, **kwargs):
-        '''Retrieve a user.
-
-        This method can raise an exception if the user could not be found,
-        or return ``None``.
-        '''
-        pass
-
-    def create_session(self, request, user=None, expiry=None):
-        '''Create a new session
-        '''
-        raise NotImplementedError
-
-    def create_user(self, request, *args, **kwargs):
-        '''Create a standard user.'''
-        pass
-
-    def create_superuser(self, request, *args, **kwargs):
-        '''Create a user with *superuser* permissions.'''
-        pass
-
-    def middleware(self, app):
-        return ()
-
-    def response_middleware(self, app):
-        return ()
-
-    def has_permission(self, request, action, model):
-        '''Check for permission on a model.'''
-        pass
+from .backend import *
 
 
 class Extension(lux.Extension):
@@ -139,7 +69,9 @@ class Extension(lux.Extension):
                   'parameter is used to check if a model has permission for '
                   'an action'),
         Parameter('OAUTH_PROVIDERS', {},
-                  'Dictionary of OAuth providers')]
+                  'Dictionary of OAuth providers'),
+        Parameter('ACCOUNT_ACTIVATION_DAYS', 2,
+                  'Number of days the activation code is valid')]
 
     def middleware(self, app):
         self._response_middleware = []
@@ -188,7 +120,6 @@ class Extension(lux.Extension):
 class UserMixin(object):
     '''Mixin for a User model
     '''
-
     def is_authenticated(self):
         return True
 
@@ -211,6 +142,22 @@ class UserMixin(object):
     def remove_oauth(self, name):
         '''Remove a connected oauth account.
         Return ``True`` if successfully removed
+        '''
+        raise NotImplementedError
+
+    def email_user(self, subject, message, from_email, **kwargs):
+        '''Sends an email to this User'''
+        send_mail(subject, message, from_email, [self.email], **kwargs)
+
+    @classmethod
+    def get_by_username(cls, username):
+        '''Retrieve a user from username
+        '''
+        raise NotImplementedError
+
+    @classmethod
+    def get_by_oauth(cls, name, identifier):
+        '''Retrieve a user from OAuth ``name`` with ``identifier``
         '''
         raise NotImplementedError
 

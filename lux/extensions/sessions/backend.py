@@ -1,63 +1,41 @@
-'''Implement a :class:`~lux.extensions.sessions.AuthBackend`.
-'''
-import sys
-import os
-import logging
-import time
-from hashlib import sha1
-from functools import partial
-from datetime import datetime, timedelta
-from pulsar.utils.importer import import_module
-from pulsar.utils.pep import ispy3k, to_string, to_bytes
+from importlib import import_module
+
+from pulsar import PermissionDenied, Http404
+from pulsar.utils.pep import to_bytes, to_string
+from pulsar.utils.importer import module_attribute
 
 import lux
-from lux import AuthenticationError
-from lux.extensions import sessions
-
-from .crypt import generate_secret_key
-from .models import Session
-
-logger = logging.getLogger('lux.sessions')
+from lux import Parameter
+from lux.utils.crypt import get_random_string, digest
 
 
-ANONYMOUS = 'anonymous'
-UNUSABLE_PASSWORD = '!'  # This will never be a valid hash
+__all__ = ['AuthBackend', 'AuthenticationError', 'LoginError', 'LogoutError']
 
 
-class ModelPermissions(object):
-
-    def __init__(self, user, roles):
-        self.user = user
-        self.roles = roles
-
-    def has(self, request, action, model):
-        level = request.app.config['PERMISSION_LEVELS'].get(action, 0)
-        for role in self.roles:
-            if role.has_permission(model, level):
-                return True
-        default = request.app.config['DEFAULT_PERMISSION_LEVEL']
-        return level <= request.app.config[
-            'PERMISSION_LEVELS'].get(default, 50)
+UNUSABLE_PASSWORD = '!'
 
 
-class AuthBackend(sessions.AuthBackend):
-    '''Permission back-end based sessions and users
+class AuthenticationError(ValueError):
+    pass
 
-    .. attribute:: secret_key
 
-        Secret key for encryption SALT
+class LoginError(RuntimeError):
+    pass
 
-    .. attribute:: session_cookie_name
 
-        Session cookie name
+class LogoutError(RuntimeError):
+    pass
 
-    .. attribute:: session_expiry
 
-        Session expiry in seconds
+class AuthBackend(object):
+    '''Interface for authentication backends.
 
-        Default: 2 weeks
-
+    An Authentication backend manage authentication, login, logout and
+    several other activities which are required for managing users of
+    a web site.
     '''
+    model = None
+
     def __init__(self, app):
         self.encoding = app.config['ENCODING']
         self.secret_key = app.config['SECRET_KEY'].encode()
@@ -67,193 +45,94 @@ class AuthBackend(sessions.AuthBackend):
         self.csrf = app.config['CSRF_KEY_LENGTH']
         self.check_username = app.config['CHECK_USERNAME']
         algorithm = app.config['CRYPT_ALGORITHM']
-
         self.crypt_module = import_module(algorithm)
 
-    def middleware(self, app):
-        return [self.get_session]
-
-    def response_middleware(self, app):
-        return [self.process_response]
-
-    def authenticate(self, request, user, password=None):
-        if password is not None:
-            password = to_bytes(password, self.encoding)
-            encrypted = to_bytes(user.password, self.encoding)
-            if self.crypt_module.verify(password, encrypted, self.secret_key):
-                return user
-            else:
-                raise AuthenticationError('Invalid password')
+    def authenticate(self, request, user, **params):
+        '''Authenticate a user'''
+        pass
 
     def login(self, request, user=None):
-        """Login a ``user`` if it is already authenticated, otherwise do
-        nothing."""
-        cache = request.cache
-        session = cache.session
-        user = user or session.user
-        if user:
-            if session.user_id != user.id:
-                cache.session = yield from self._create_session(request, user)
-            return user
+        '''Login a ``user`` if it is already authenticated, otherwise do
+        nothing.'''
+        raise NotImplementedError
 
     def logout(self, request, user=None):
-        session = request.cache.session
-        user = user or session.user
-        if user.is_authenticated():
-            request.cache.session = yield from self._create_session(request)
-        return True
-
-    def get_user(self, request, username=None, email=None,
-                 session=None, **opt):
-        '''Retrieve a user
+        '''Logout a ``user``
         '''
-        if username:
-            return request.models.user.get(username=username)
-        elif email:
-            return request.models.user.get(email=email)
-        elif session:
-            user = session.user
-            if not user:
-                self.flush_session(session)
-                user = AnonymousUser()
-            return user
+        session = request.cache.session
+        user = user or request.cache.user
+        if user and user.is_authenticated():
+            request.cache.session = self.create_session(request)
+            request.cache.user = Anonymous()
 
-    def create_user(self, request, username=None, password=None, email=None,
-                    is_superuser=False, is_active=True):
-        if email:
-            try:
-                email_name, domain_part = email.strip().split('@', 1)
-            except ValueError:
-                email = ''
-            else:
-                email = '@'.join([email_name, domain_part.lower()])
-        else:
-            email = ''
-        if not username:
-            username = email
-        if self._valid_username(username):
-            user = request.models.user(username=username, email=email,
-                                       is_superuser=is_superuser,
-                                       is_active=is_active)
-            return self.set_password(request, user, password)
+    def get_user(self, request, *args, **kwargs):
+        '''Retrieve a user.
 
-    def create_superuser(self, request, is_superuser=None, **params):
-        return self.create_user(request, is_superuser=True, **params)
+        This method can raise an exception if the user could not be found,
+        or return ``None``.
+        '''
+        pass
 
-    def set_password(self, request, user, raw_password=None):
-        if raw_password:
-            user['password'] = self._encript(raw_password)
-        else:
-            user['password'] = UNUSABLE_PASSWORD
-        return user.save()
+    def create_session(self, request, user=None, expiry=None):
+        '''Create a new session
+        '''
+        raise NotImplementedError
+
+    def create_user(self, request, **kwargs):
+        '''Create a standard user.'''
+        pass
+
+    def create_superuser(self, request, *args, **kwargs):
+        '''Create a user with *superuser* permissions.'''
+        pass
+
+    def middleware(self, app):
+        return ()
+
+    def response_middleware(self, app):
+        return ()
 
     def has_permission(self, request, action, model):
-        if request.cache.user.is_superuser:
-            return True
+        '''Check for permission on a model.'''
+        pass
+
+    def password(self, raw_password=None):
+        if raw_password:
+            return self._encript(raw_password)
         else:
-            return request.cache.permissions.has(request, action, model)
+            return UNUSABLE_PASSWORD
 
-    ########################################################################
-    # MIDDLEWARE
-    def get_session(self, environ, start_response):
-        request = lux.wsgi_request(environ)
-        cache = request.cache
-        cache.session = s = yield from self._get_session(request)
-        cache.permissions = yield from self._get_permissions(request, s)
+    def normalise_email(self, email):
+        """
+        Normalise the address by lowercasing the domain part of the email
+        address.
+        """
+        email = email or ''
+        try:
+            email_name, domain_part = email.strip().rsplit('@', 1)
+        except ValueError:
+            pass
+        else:
+            email = '@'.join([email_name, domain_part.lower()])
+        return email
 
-    def process_response(self, environ, response):
-        """If request.session was modified set a session cookie."""
-        if response.can_set_cookies():
-            request = lux.wsgi_request(environ)
-            session = request.cache.session
-            if session:
-                if session._modified:
-                    session.save()
-                if self.session_cookie_name:
-                    cookie_name = self.session_cookie_name
-                    session_key = response.cookies.get(cookie_name)
-                    if not session_key or session_key.value != session.id:
-                        response.set_cookie(cookie_name,
-                                            value=session.id,
-                                            expires=session.expiry)
-        return response
+    def send_email_confirmation(self, request, user):
+        '''Send an email to user to confirm his/her email address'''
+        cache = request.cache_server
+        app = request.app
+        cfg = app.config
+        activation_key = digest(user.username)
+        ctx = {'activation_key': activation_key,
+               'expiration_days': cfg['ACCOUNT_ACTIVATION_DAYS'],
+               'site_uri': request.absolute_uri('/')[:-1]}
+        subject = app.render_template('activation_email_subject.txt', ctx)
+        # Email subject *must not* contain newlines
+        subject = ''.join(subject.splitlines())
+        message = app.render_template('activation_email.txt', ctx)
+        user.email_user(subject, message, cfg['DEFAULT_FROM_EMAIL'])
 
-    ########################################################################
-    #    PRIVATE METHODS
-    def _valid_username(self, username):
-        if username:
-            lname = username.lower()
-            if lname != ANONYMOUS:
-                return self.check_username(username)
-        return False
-
+    # INTERNALS
     def _encript(self, password):
         p = self.crypt_module.encrypt(to_bytes(password, self.encoding),
                                       self.secret_key, self.salt_size)
         return to_string(p, self.encoding)
-
-    def _get_session(self, request):
-        qs = request.url_data
-        session = None
-        if 'access_token' in qs:
-            session = yield from self._session_from_token(request,
-                                                          qs['access_token'])
-        if session is None and self.session_cookie_name:
-            cookie_name = self.session_cookie_name
-            cookies = request.response.cookies
-            session_key = cookies.get(cookie_name)
-            session = None
-            if session_key:
-                session = yield from self._session_from_token(
-                    request, session_key.value)
-            if session is None:
-                session = yield from self._create_session(
-                    request, request.cache.user)
-        return session
-
-    def _get_permissions(self, request, session):
-        roles = yield []
-        #roles = yield from session.user.roles.query().all()
-        return ModelPermissions(session.user, roles)
-
-    def _session_from_token(self, request, key):
-        models = request.models
-        try:
-            session = yield from models.session.get(key)
-        except models.ModelNotFound:
-            session = None
-        else:
-            if session.expired:
-                session.delete()
-                session = None
-            else:
-                request.cache.user = yield from session.user
-        return session
-
-    def _create_session(self, request, user=None):
-        #Create new session and added it to the environment.
-        old = request.cache.session
-        if isinstance(old, Session):
-            old['expiry'] = datetime.now()
-            old.save()
-        if not user:
-            user = yield from self._anonymous_user(request)
-        expiry = datetime.now() + timedelta(seconds=self.session_expiry)
-        pid = os.getpid()
-        sa = os.urandom(self.salt_size)
-        val = to_bytes("%s%s" % (pid, time.time())) + sa + self.secret_key
-        id = sha1(val).hexdigest()
-        #session is a reserved attribute in router, use dict access
-        session = yield from request.models.session.create(
-            id=id, expiry=expiry, user=user)
-        request.cache.user = session.user
-        return session
-
-    def _anonymous_user(self, request):
-        models = request.models
-        try:
-            user = yield from models.user.get(username=ANONYMOUS)
-        except models.ModelNotFound:
-            user = yield from models.user.create(username=ANONYMOUS,
-                                                 can_login=False)
-        return user

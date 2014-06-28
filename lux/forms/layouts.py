@@ -33,6 +33,7 @@ special_types = set(('checkbox', 'radio'))
 control_group = 'form-group'
 control_class = 'form-control'
 LAYOUT_HANDLERS = {}
+FORMKEY = 'm__form'
 
 
 def check_fields(fields, missings, parent, Default=None):
@@ -212,7 +213,8 @@ class Layout(Template):
             parameters['novalidate'] = ''
             parameters['name'] = name or 'form'
             parameters['ng-controller'] = ngcontroller or 'formController'
-            parameters['ng-submit'] = 'processForm()'
+            parameters['ng-submit'] = 'processForm($event)'
+            parameters['ng-cloak'] = ''
         super(Layout, self).init_parameters(**parameters)
 
     def __repr__(self):
@@ -248,6 +250,14 @@ class Layout(Template):
         missings = list(self.form_class.base_fields)
         children = self.children
         self.children = []
+        if self.ngmodel:
+            model = 'formMessages.%s' % FORMKEY
+            ngc = "{'alert-danger': o.error, 'alert-info': !o.error}"
+            messages = Template('{{o.message}}', tag='div', classes='alert')
+            messages.parameters['ng-repeat'] = 'o in %s' % model
+            messages.parameters['ng-model'] = model
+            messages.parameters['ng-class'] = ngc
+            self.children.append(messages)
         for field in check_fields(children, missings, self, Group):
             self.children.append(field)
         if missings:
@@ -323,6 +333,10 @@ class LayoutStyle(object):
                 error.attr('ng-class', '{active: %s.%s.$error.%s}' %
                            (name, field.name, field.name))
                 html.append(error)
+                error = Html('p', '{{o.message}}', cn=cn).addClass('active')
+                error.attr('ng-repeat-start',
+                           "o in formMessages.%s" % field.name)
+                html.append(Html('p', '{{formErrors.%s}}' % field.name, cn=cn))
 
 
 class HorizontalLayout(LayoutStyle):

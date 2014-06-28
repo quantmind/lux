@@ -186,7 +186,9 @@ class App(ConsoleParser, LocalMixin, Extension):
         Parameter('CACHE_SERVER', None,
                   ('Cache server, can be a connection string to a valid '
                    'datastore which support the cache protocol or an object '
-                   'supporting the cache protocol'))
+                   'supporting the cache protocol')),
+        Parameter('DEFAULT_FROM_EMAIL', '',
+                  'Default email address to send email from')
         ]
 
     def __init__(self, config_file, **params):
@@ -508,6 +510,12 @@ class App(ConsoleParser, LocalMixin, Extension):
                 getattr(ext, method)(request, context)
         return context
 
+    def render_template(self, template_name, context=None):
+        '''Render a template'''
+        template = self.template(template_name)
+        rnd = template_engine(self.config['DEFAULT_TEMPLATE_ENGINE'])
+        return rnd(template, context)
+
     def html_response(self, request, template_name, context=None,
                       jscontext=None, title=None):
         '''Html response via a template.
@@ -526,11 +534,8 @@ class App(ConsoleParser, LocalMixin, Extension):
             if jscontext:
                 jscontext = json.dumps(jscontext)
                 head.embedded_js.append('var context=%s;' % jscontext)
-            template = self.template(template_name)
-            if context:
-                rnd = template_engine(self.config['DEFAULT_TEMPLATE_ENGINE'])
-                template = rnd(template, context)
-            document.body.append(template)
+            body = self.render_template(template_name, context)
+            document.body.append(body)
             return document.http_response(request)
 
 

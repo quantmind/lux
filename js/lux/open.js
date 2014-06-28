@@ -21,24 +21,7 @@ define(['jquery', 'angular', 'angular-route'], function ($) {
         routes.push([url, data]);
     };
 
-    // Load angular
-    angular.element(document).ready(function() {
-        //
-        if (routes.length && context.html5) {
-            var rs = routes;
-            routes = [];
-            lux.setupRouter(rs);
-        }
-        angular.bootstrap(document, ['lux']);
-        //
-        var callbacks = lux.ready_callbacks;
-        lux.ready_callbacks = [];
-        angular.forEach(callbacks, function (callback) {
-            callback();
-        });
-    });
-
-    lux.setupRouter = function (routes) {
+    lux._setupRouter = function (routes) {
         //
         lux.app.config(['$routeProvider', '$locationProvider', function($routeProvider, $locationProvider) {
 

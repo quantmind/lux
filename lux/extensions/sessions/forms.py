@@ -31,7 +31,7 @@ class CreateUserForm(forms.Form):
     username = forms.CharField(min_length=6, max_length=30)
     email = forms.EmailField()
     password = forms.PasswordField(min_length=6, max_length=60)
-    password_repeat = forms.PasswordField(required=False)
+    password_repeat = forms.PasswordField()
 
     layout = forms.Layout(
         submits=forms.Submit('Sign up', classes='btn btn-primary btn-block'),

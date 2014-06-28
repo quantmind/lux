@@ -21,6 +21,8 @@ ndbid = lambda value: int(value)
 class AuthBackend(sessions.AuthBackend):
     '''Authentication backend for Google app-engine
     '''
+    model = User
+
     def middleware(self, app):
         return [self._load]
 
@@ -41,12 +43,22 @@ class AuthBackend(sessions.AuthBackend):
         request.cache.session = self.create_session(request, user)
         request.cache.user = user
         return user
-    
-    def create_user(self, request):
-        data = request.body_data()
-        username = data.get('username')
-        password = data.get('password')
-        
+
+    def create_user(self, request, username=None, password=None, email=None,
+                    name=None, surname=None, active=False, **kwargs):
+        assert username
+        email = self.normalise_email(email)
+        if self.model.get_by_username(username):
+            raise sessions.AuthenticationError('%s already used' % username)
+        if email and self.model.get_by_email(email):
+            raise sessions.AuthenticationError('%s already used' % email)
+        user = User(username=username, password=self.password(password),
+                    email=email, name=name, surname=surname, active=active)
+        user.put()
+        if user.email and not user.active:
+            self.send_email_confirmation(request, user)
+        return user
+
     def create_session(self, request, user=None, expiry=None):
         session = request.cache.session
         if session:

@@ -17,7 +17,7 @@ from lux.utils import JSON_CONTENT_TYPES
 
 from .formsets import FormSet
 from .fields import Field, ValidationError, FormError
-from .layouts import Layout
+from .layouts import Layout, FORMKEY
 
 
 __all__ = ['FormType',
@@ -26,9 +26,6 @@ __all__ = ['FormType',
            'FieldList',
            'MakeForm',
            'smart_redirect']
-
-
-FORMKEY = '__all__'
 
 
 def smart_redirect(request, url=None, status=None):
@@ -339,11 +336,13 @@ instances with initial values.'''
     def redirect(self, request=None, url=None, status=None):
         return smart_redirect(request or self.request, url, status)
 
-    def add_message(self, msg):
-        '''Add a message to the form.
+    def add_message(self, message):
+        '''Add a message to the form'''
+        self._form_message(self.messages, FORMKEY, message)
 
-        :parameteer msg: the actual message string.'''
-        self._form_message(self.messages, FORMKEY, msg)
+    def add_error_message(self, message):
+        '''Add an error message to the form'''
+        self._form_message(self.errors, FORMKEY, message)
 
     def save_as_new(self, commit=True):
         if self.instance is not None:
@@ -358,9 +357,12 @@ be implemented by subclasses. By default it does nothing.'''
 
     def tojson(self):
         '''Return a json-serialisable dictionary of messages for form fields.
-The field included are the one available in the :attr:`errors` and
-:attr:`messages` dictionary.'''
+        The field included are the one available in the :attr:`errors` and
+        :attr:`messages` dictionary.
+        '''
+        errors = self.errors
         data = {}
+        message = {'success': not errors}
         for name, msg in self.errors.items():
             field = self.dfields.get(name)
             if field:
@@ -373,7 +375,9 @@ The field included are the one available in the :attr:`errors` and
             l = data.get(name, [])
             l.extend(({'message': m} for m in msg))
             data[name] = l
-        return data
+        if data:
+            message['messages'] = data
+        return message
 
     def get_widget_data(self, bound_field):
         pass

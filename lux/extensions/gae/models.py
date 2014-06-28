@@ -1,4 +1,5 @@
 from google.appengine.ext import ndb
+from google.appengine.api import mail
 
 from .. import sessions
 
@@ -30,6 +31,7 @@ class User(ndb.Model, sessions.UserMixin):
     active = ndb.BooleanProperty(default=False)
     is_superuser = ndb.BooleanProperty(default=False)
     company = ndb.StringProperty()
+    joined = ndb.DateTimeProperty(auto_now_add=True)
     #
     oauths = ndb.StructuredProperty(Oauth, repeated=True)
 
@@ -52,6 +54,12 @@ class User(ndb.Model, sessions.UserMixin):
             if self.oauths.pop(name, None) is not None:
                 self.put()
                 return True
+
+    def email_user(self, subject, message, from_email, **kwargs):
+        mail.send_mail(sender=from_email,
+                       to=self.email,
+                       subject=subject,
+                       body=message)
 
     @classmethod
     def create_from_oauth(cls, data, provider, token):
