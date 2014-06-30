@@ -7,8 +7,10 @@ from pulsar.apps.wsgi import wsgi_request
 
 import lux
 from lux.extensions import sessions
+from lux.utils.crypt import digest
+from lux.extensions.sessions import AuthenticationError
 
-from .models import Session
+from .models import Session, Registration
 from .oauth import User
 from .api import *
 
@@ -29,20 +31,44 @@ class AuthBackend(sessions.AuthBackend):
     def response_middleware(self, app):
         return [self._save]
 
-    def login(self, request, user=None):
-        '''Login a user from a model or from post data
-        '''
-        if user is None:
-            data = request.body_data()
-            username = data.get('username')
-            password = data.get('password')
-            user = User.authenticate(username, password)
-            if user is None:
-                raise sessions.AuthenticationError(
-                    'Invalid username or password')
-        request.cache.session = self.create_session(request, user)
-        request.cache.user = user
-        return user
+    def confirm_registration(self, request, key=None, **params):
+        reg = None
+        if key:
+            reg = Registration.get_by_id(key)
+            if reg:
+                user = reg.user.get()
+                session = request.cache.session
+                if reg.confirmed:
+                    session.warning('Registration already confirmed')
+                    return user
+                # the registration key has expired
+                if reg.expiry < datetime.now():
+                    session.warning('The confirmation link has expired')
+                else:
+                    reg.confirmed = True
+                    user.active = True
+                    user.put()
+                    reg.put()
+                    return user
+        else:
+            user = self.get_user(**params)
+            reg = self._get_or_create_registration(request, user)
+
+    def authenticate(self, request, username=None, email=None, password=None):
+        user = None
+        if username:
+            user = User.get_by_username(username)
+        elif email:
+            user = User.get_by_email(self.normalise_email(email))
+        else:
+            raise AuthenticationError('Invalid credentials')
+        if user and self.decript(user.password) == password:
+            return user
+        else:
+            if username:
+                raise AuthenticationError('Invalid username or password')
+            else:
+                raise AuthenticationError('Invalid email or password')
 
     def create_user(self, request, username=None, password=None, email=None,
                     name=None, surname=None, active=False, **kwargs):
@@ -55,8 +81,7 @@ class AuthBackend(sessions.AuthBackend):
         user = User(username=username, password=self.password(password),
                     email=email, name=name, surname=surname, active=active)
         user.put()
-        if user.email and not user.active:
-            self.send_email_confirmation(request, user)
+        self._get_or_create_registration(request, user)
         return user
 
     def create_session(self, request, user=None, expiry=None):
@@ -107,5 +132,13 @@ class AuthBackend(sessions.AuthBackend):
                                         expires=session.expiry)
         return response
 
-    def authenticate(self, username, password):
-        pass
+    def _get_or_create_registration(self, request, user):
+        if user and user.email and not user.active:
+            activation_key = digest(user.username)
+            days = request.config['ACCOUNT_ACTIVATION_DAYS']
+            expiry = datetime.now() + timedelta(days=days)
+            reg = Registration(id=activation_key, user=user.key,
+                               expiry=expiry, confirmed=False)
+            reg.put()
+            self.send_email_confirmation(request, user, activation_key)
+            return reg

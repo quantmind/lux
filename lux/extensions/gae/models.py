@@ -39,7 +39,10 @@ class User(ndb.Model, sessions.UserMixin):
         return self.active
 
     def todict(self):
-        return self.to_dict()
+        d = self.to_dict()
+        d.pop('password', None)
+        d.pop('joined', None)
+        return d
 
     def get_oauths(self):
         return dict(((o.name, o.todict()) for o in self.oauths))
@@ -110,7 +113,37 @@ class User(ndb.Model, sessions.UserMixin):
         return username
 
 
-class Session(ndb.Model):
+class Message(ndb.Model):
+    level = ndb.StringProperty()
+    body = ndb.TextProperty()
+
+
+class Session(ndb.Model, sessions.SessionMixin):
     expiry = ndb.DateTimeProperty()
     user = ndb.KeyProperty(User)
     agent = ndb.StringProperty()
+    messages = ndb.StructuredProperty(Message, repeated=True)
+
+    def message(self, level, message):
+        msg = Message(level=level, body=message)
+        self.messages.append(msg)
+        self.put()
+
+    def get_messages(self):
+        return [m.to_dict() for m in self.messages]
+
+    def remove_message(self, data):
+        body = data.get('body')
+        for idx, msg in enumerate(self.messages):
+            if body == msg.body:
+                self.messages.pop(idx)
+                self.put()
+                return True
+        return False
+
+
+class Registration(ndb.Model):
+    key = ndb.StringProperty()
+    user = ndb.KeyProperty(User)
+    expiry = ndb.DateTimeProperty()
+    confirmed = ndb.BooleanProperty()

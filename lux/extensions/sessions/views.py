@@ -6,11 +6,12 @@ except ImportError:
 from pulsar.apps.wsgi import Router, Json, route
 
 from .oauth import Accounts
-from .forms import CreateUserForm
+from .forms import LoginForm, CreateUserForm
 from .backend import AuthenticationError
 
 
-__all__ = ['Login', 'SignUp', 'Logout', 'Token', 'OAuth', 'oauth_context']
+__all__ = ['Login', 'SignUp', 'Logout', 'Token', 'OAuth',
+           'oauth_context']
 
 
 def oauth_context(request, path='/oauth/'):
@@ -31,12 +32,20 @@ def oauth_context(request, path='/oauth/'):
 class Login(Router):
     '''Adds login get ("text/html") and post handlers
     '''
+    @property
+    def fclass(self):
+        return self.parameters.form or LoginForm
+
     def get(self, request):
         '''Handle the HTML page for login
         '''
-        context = {'oauths': oauth_context(request)}
+        html = self.fclass(request).layout(request, action=request.full_path())
+        context = {'form': html.render(request),
+                   'site_name': request.config['SITE_NAME']}
+        jscontext = {'oauths': oauth_context(request)}
         return request.app.html_response(request, 'login.html',
-                                         jscontext=context)
+                                         context=context,
+                                         jscontext=jscontext)
 
     def post(self, request):
         '''Handle login post data
@@ -44,7 +53,15 @@ class Login(Router):
         user = request.cache.user
         if user.is_authenticated():
             raise MethodNotAllowed
-        return self.app.auth_backend.login(request)
+        form = self.fclass(request, data=request.body_data())
+        if form.is_valid():
+            auth = request.app.auth_backend
+            try:
+                user = auth.authenticate(request, **form.cleaned_data)
+                auth.login(request, user)
+            except AuthenticationError as e:
+                form.add_error_message(str(e))
+        return Json(form.tojson()).http_response(request)
 
 
 class SignUp(Router):
@@ -77,6 +94,19 @@ class SignUp(Router):
             except AuthenticationError as e:
                 form.add_error_message(str(e))
         return Json(form.tojson()).http_response(request)
+
+    @route('confirmation/<username>')
+    def new_confirmation(self, request):
+        username = request.urlargs['username']
+        user = request.app.auth_backend.confirm_registration(request,
+                                                             username=username)
+        return request.redirect('/')
+
+    @route('<key>')
+    def confirmation(self, request):
+        key = request.urlargs['key']
+        user = request.app.auth_backend.confirm_registration(request, key)
+        return request.redirect('/')
 
 
 class Logout(Router):

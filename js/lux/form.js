@@ -36,7 +36,7 @@
         };
     }
 
-    function formController ($scope, $element, $location, $http, $sce, model) {
+    function formController ($scope, $location, $http, $sce, model) {
         model || (model = {});
 
         $scope.formModel = model;
@@ -69,9 +69,10 @@
         };
 
         // process form
-        $scope.processForm = function(e) {
-            e.preventDefault();
-            e.stopPropagation();
+        $scope.processForm = function($event) {
+            $event.preventDefault();
+            $event.stopPropagation();
+            var $element = angular.element($event.target);
             //
             if ($scope.form.$invalid) {
                 return $scope.showErrors();

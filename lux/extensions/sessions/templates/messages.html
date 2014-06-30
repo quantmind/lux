@@ -1,0 +1,7 @@
+<div class="alert alert-{{m.level}} alert-dismissible" role="alert" ng-repeat="m in messages" ng-cloack>
+<button type="button" class="close" data-dismiss="alert" ng-click="dismiss(m)">
+<span aria-hidden="true">&times;</span>
+<span class="sr-only">Close</span>
+</button>
+<div ng-bind-html="m.body"></div>
+</div>

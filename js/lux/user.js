@@ -1,9 +1,9 @@
 
     // Controller for User
-    lux.controllers.controller('userController', ['$scope', '$element', '$location', '$http', '$sce',
-            function ($scope, $element, $location, $http, $sce) {
+    lux.controllers.controller('userController', ['$scope', '$location', '$http', '$sce',
+            function ($scope, $location, $http, $sce) {
         // Model for a user when updating
-        formController($scope, $element, $location, $http, $sce);
+        formController($scope, $location, $http, $sce, context.user);
 
         // Unlink account for a OAuth provider
         $scope.unlink = function(e, name) {

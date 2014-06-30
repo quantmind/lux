@@ -61,7 +61,7 @@ else:
         dw.writeheader()
 
 
-__all__ = ['HtmlLink', 'Column', 'ContentManager']
+__all__ = ['HtmlLink', 'Column', 'ContentManager', 'JSON_CONTENT_TYPES']
 
 
 class HtmlLink(namedtuple('HtmlLinkBase', 'href text icon')):

@@ -1,35 +1,57 @@
-define(['jquery', 'angular', 'angular-route'], function ($) {
+define(['jquery', 'angular', 'angular-route', 'angular-sanitize'], function ($) {
     "use strict";
 
     var lux = {},
         defaults = {},
         root = window,
-        routes = [];
+        routes = [],
+        ready_callbacks = [],
         context = angular.extend(defaults, root.context);
 
     lux.$ = $;
     lux.context = context;
     lux.services = angular.module('lux.services', []),
     lux.controllers = angular.module('lux.controllers', ['lux.services']);
-    lux.app = angular.module('lux', ['ngRoute', 'lux.controllers', 'lux.services']);
-    //
-    // Callbacks run after angular has finished bootstrapping
-    lux.ready_callbacks = [];
+    lux.app = angular.module('lux', ['ngRoute', 'ngSanitize', 'lux.controllers', 'lux.services']);
 
     // Add a new HTML5 route to the page router
     lux.addRoute = function (url, data) {
         routes.push([url, data]);
     };
 
-    lux._setupRouter = function (routes) {
+    // Callbacks run after angular has finished bootstrapping
+    lux.add_ready_callback = function (callback) {
+        if (ready_callbacks === true) callback();
+        else ready_callbacks.push(callback);
+    };
+
+    lux.bootstrap = function () {
+        angular.element(document).ready(function() {
+            //
+            if (routes.length && context.html5mode) {
+                var rs = routes;
+                routes = [];
+                lux._setupRouter(rs);
+            }
+            //
+            angular.bootstrap(document, ['lux']);
+            //
+            angular.forEach(ready_callbacks, function (callback) {
+                callback();
+            });
+            ready_callbacks = true;
+        });
+    };
+
+    lux._setupRouter = function (all) {
         //
         lux.app.config(['$routeProvider', '$locationProvider', function($routeProvider, $locationProvider) {
 
-            angular.forEach(routes, function (route) {
+            angular.forEach(all, function (route) {
                 var url = route[0];
                 var data = route[1];
                 if ($.isFunction(data)) data = data();
-                $routeProvider.when('/', data);
+                $routeProvider.when(url, data);
             });
             // use the HTML5 History API
             $locationProvider.html5Mode(true);
@@ -41,7 +63,7 @@ define(['jquery', 'angular', 'angular-route'], function ($) {
     lux.controllers.controller('page', ['$scope', '$http', '$location', function ($scope, $http, $location) {
         angular.extend($scope, context);
         $scope.search_text = '';
-
+        //
         // logout via post method
         $scope.logout = function(e, url) {
             e.preventDefault();
@@ -51,12 +73,17 @@ define(['jquery', 'angular', 'angular-route'], function ($) {
                     window.location.replace(data.redirect);
             });
         };
-
+        //
         // Search
         $scope.search = function () {
             if ($scope.search_text) {
                 window.location.href = '/search?' + $.param({q: $scope.search_text});
             }
+        };
+
+        // Dismiss a message
+        $scope.dismiss = function (m) {
+            $http.post('/_dismiss_message', m);
         };
 
     }]);
@@ -98,7 +125,7 @@ define(['jquery', 'angular', 'angular-route'], function ($) {
         };
     }
 
-    function formController ($scope, $element, $location, $http, $sce, model) {
+    function formController ($scope, $location, $http, $sce, model) {
         model || (model = {});
 
         $scope.formModel = model;
@@ -131,9 +158,10 @@ define(['jquery', 'angular', 'angular-route'], function ($) {
         };
 
         // process form
-        $scope.processForm = function(e) {
-            e.preventDefault();
-            e.stopPropagation();
+        $scope.processForm = function($event) {
+            $event.preventDefault();
+            $event.stopPropagation();
+            var $element = angular.element($event.target);
             //
             if ($scope.form.$invalid) {
                 return $scope.showErrors();
@@ -171,10 +199,10 @@ define(['jquery', 'angular', 'angular-route'], function ($) {
     }
 
     // Controller for User
-    lux.controllers.controller('userController', ['$scope', '$element', '$location', '$http', '$sce',
-            function ($scope, $element, $location, $http, $sce) {
+    lux.controllers.controller('userController', ['$scope', '$location', '$http', '$sce',
+            function ($scope, $location, $http, $sce) {
         // Model for a user when updating
-        formController($scope, $element, $location, $http, $sce);
+        formController($scope, $location, $http, $sce, context.user);
 
         // Unlink account for a OAuth provider
         $scope.unlink = function(e, name) {
@@ -204,24 +232,6 @@ define(['jquery', 'angular', 'angular-route'], function ($) {
         };
 
     }]);
-
     //
-    // Load angular
-    angular.element(document).ready(function() {
-        //
-        if (routes.length && context.html5) {
-            var rs = routes;
-            routes = [];
-            lux._setupRouter(rs);
-        }
-        angular.bootstrap(document, ['lux']);
-        //
-        var callbacks = lux.ready_callbacks;
-        lux.ready_callbacks = [];
-        angular.forEach(callbacks, function (callback) {
-            callback();
-        });
-    });
-
 	return lux;
 });

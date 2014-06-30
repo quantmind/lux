@@ -2,29 +2,20 @@ import sys
 from lux import forms
 
 
+__all__ = ['LoginForm', 'CreateUserForm', 'ChangePassword']
+
+
 class LoginForm(forms.Form):
     '''The Standard login form'''
     error_message = 'Incorrect username or password'
     username = forms.CharField(max_length=30)
-    password = forms.PasswordField(max_length=60)
+    password = forms.PasswordField(max_length=128)
 
-    def clean(self):
-        '''Process login'''
-        request = self.request
-        permissions = request.app.permissions
-        username = self.cleaned_data['username']
-        user = permissions.get_user(request, username=username)
-        if not user:
-            raise forms.ValidationError(self.error_message)
-        password = self.cleaned_data['password']
-        try:
-            user = permissions.authenticate_and_login(
-                request, user, password=password)
-        except AuthenticationError:
-            raise forms.ValidationError(self.error_message)
-        except LoginError as e:
-            raise forms.ValidationError(str(e))
-        return user
+    layout = forms.Layout(
+        submits=forms.Submit('Login', classes='btn btn-primary btn-block'),
+        labels=False,
+        ngmodel=True,
+        ngcontroller='userController')
 
 
 class CreateUserForm(forms.Form):
@@ -39,3 +30,16 @@ class CreateUserForm(forms.Form):
         ngmodel=True,
         ngcontroller='userController')
 
+
+class ChangePassword(forms.Form):
+    username = forms.HiddenField()
+    old_password = forms.PasswordField(required=False)
+    new_password = forms.PasswordField()
+    confirm_new_password = forms.PasswordField()
+
+    layout = forms.Layout(
+        submits=forms.Submit('Update password',
+                             classes='btn btn-primary'),
+        labels=False,
+        ngmodel=True,
+        ngcontroller='userController')

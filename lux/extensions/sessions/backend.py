@@ -6,10 +6,11 @@ from pulsar.utils.importer import module_attribute
 
 import lux
 from lux import Parameter
-from lux.utils.crypt import get_random_string, digest
+from lux.utils.crypt import get_random_string
 
 
-__all__ = ['AuthBackend', 'AuthenticationError', 'LoginError', 'LogoutError']
+__all__ = ['AuthBackend', 'AuthenticationError', 'LoginError', 'LogoutError',
+           'SessionMixin', 'UserMixin', 'Anonymous']
 
 
 UNUSABLE_PASSWORD = '!'
@@ -25,6 +26,82 @@ class LoginError(RuntimeError):
 
 class LogoutError(RuntimeError):
     pass
+
+
+class SessionMixin(object):
+
+    def info(self, message):
+        self.message('info', message)
+
+    def warning(self, message):
+        self.message('warning', message)
+
+    def error(self, message):
+        self.message('error', message)
+
+    def message(self, level, message):
+        raise NotImplementedError
+
+    def remove_message(self, data):
+        '''Remove a message from the list of messages'''
+        raise NotImplementedError
+
+
+class UserMixin(object):
+    '''Mixin for a User model
+    '''
+    def is_authenticated(self):
+        return True
+
+    def is_active(self):
+        return False
+
+    def is_anonymous(self):
+        return False
+
+    def get_id(self):
+        raise NotImplementedError
+
+    def get_oauths(self):
+        '''Return a dictionary of oauths account'''
+        return {}
+
+    def set_oauth(self, name, data):
+        raise NotImplementedError
+
+    def remove_oauth(self, name):
+        '''Remove a connected oauth account.
+        Return ``True`` if successfully removed
+        '''
+        raise NotImplementedError
+
+    def email_user(self, subject, message, from_email, **kwargs):
+        '''Sends an email to this User'''
+        send_mail(subject, message, from_email, [self.email], **kwargs)
+
+    @classmethod
+    def get_by_username(cls, username):
+        '''Retrieve a user from username
+        '''
+        raise NotImplementedError
+
+    @classmethod
+    def get_by_oauth(cls, name, identifier):
+        '''Retrieve a user from OAuth ``name`` with ``identifier``
+        '''
+        raise NotImplementedError
+
+
+class Anonymous(UserMixin):
+
+    def is_authenticated(self):
+        return False
+
+    def is_anonymous(self):
+        return True
+
+    def get_id(self):
+        return 0
 
 
 class AuthBackend(object):
@@ -47,14 +124,30 @@ class AuthBackend(object):
         algorithm = app.config['CRYPT_ALGORITHM']
         self.crypt_module = import_module(algorithm)
 
-    def authenticate(self, request, user, **params):
-        '''Authenticate a user'''
-        pass
-
     def login(self, request, user=None):
-        '''Login a ``user`` if it is already authenticated, otherwise do
-        nothing.'''
-        raise NotImplementedError
+        '''Login a user from a model or from post data
+        '''
+        if user is None:
+            data = request.body_data()
+            user = self.authenticate(request, **data)
+            if user is None:
+                raise AuthenticationError('Invalid username or password')
+        if not user.is_active():
+            return self.inactive_user_login(request, user)
+        request.cache.session = self.create_session(request, user)
+        request.cache.user = user
+        return user
+
+    def inactive_user_login(self, request, user):
+        '''Handle a user not yet active'''
+        cfg = request.config
+        url = '/signup/confirmation/%s' % user.username
+        session = request.cache.session
+        context = {'email': user.email,
+                   'email_from': cfg['DEFAULT_FROM_EMAIL'],
+                   'confirmation_url': url}
+        message = request.app.render_template('inactive.txt', context)
+        session.warning(message)
 
     def logout(self, request, user=None):
         '''Logout a ``user``
@@ -64,6 +157,14 @@ class AuthBackend(object):
         if user and user.is_authenticated():
             request.cache.session = self.create_session(request)
             request.cache.user = Anonymous()
+
+    def authenticate(self, request, **params):
+        '''Authenticate user'''
+        raise NotImplementedError
+
+    def confirm_registration(self, request, **params):
+        '''Confirm registration'''
+        raise NotImplementedError
 
     def get_user(self, request, *args, **kwargs):
         '''Retrieve a user.
@@ -116,20 +217,30 @@ class AuthBackend(object):
             email = '@'.join([email_name, domain_part.lower()])
         return email
 
-    def send_email_confirmation(self, request, user):
+    def send_email_confirmation(self, request, user, activation_key):
         '''Send an email to user to confirm his/her email address'''
         cache = request.cache_server
         app = request.app
         cfg = app.config
-        activation_key = digest(user.username)
         ctx = {'activation_key': activation_key,
                'expiration_days': cfg['ACCOUNT_ACTIVATION_DAYS'],
+               'email': user.email,
                'site_uri': request.absolute_uri('/')[:-1]}
         subject = app.render_template('activation_email_subject.txt', ctx)
         # Email subject *must not* contain newlines
         subject = ''.join(subject.splitlines())
         message = app.render_template('activation_email.txt', ctx)
         user.email_user(subject, message, cfg['DEFAULT_FROM_EMAIL'])
+        message = app.render_template('activation_message.txt', ctx)
+        request.cache.session.info(message)
+
+    def decript(self, password=None):
+        if password:
+            p = self.crypt_module.decrypt(to_bytes(password, self.encoding),
+                                          self.secret_key)
+            return to_string(p, self.encoding)
+        else:
+            return UNUSABLE_PASSWORD
 
     # INTERNALS
     def _encript(self, password):

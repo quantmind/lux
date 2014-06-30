@@ -179,8 +179,7 @@ class Layout(Template):
 
     .. attribute:: ngmodel
 
-        Optional model for angular.js. If provided, the forms will include
-        angular directives and model properties.
+        If ``True``, render the form so that it can be managed by angular.
     '''
     tag = 'form'
     default_element = Fieldset

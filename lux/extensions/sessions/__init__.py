@@ -11,6 +11,7 @@ Authentication Backend
    :members:
    :member-order: bysource
 '''
+import json
 from importlib import import_module
 from functools import wraps
 
@@ -19,12 +20,13 @@ from pulsar.utils.pep import to_bytes, to_string
 from pulsar.utils.importer import module_attribute
 
 import lux
-from lux import Parameter
-from lux.utils.crypt import get_random_string, digest
+from lux import Parameter, Router
+from lux.utils.crypt import get_random_string
 
 from .views import *
 from .oauth import *
 from .backend import *
+from .forms import *
 
 
 class Extension(lux.Extension):
@@ -84,10 +86,16 @@ class Extension(lux.Extension):
             self._response_middleware.extend(backend.response_middleware(app))
         else:
             raise RuntimeError('AUTHENTICATION_BACKEND not available')
+        middleware.append(Router('_dismiss_message',
+                                 post=self._dismiss_message))
         return middleware
 
     def response_middleware(self, app):
         return self._response_middleware
+
+    def jscontext(self, request, context):
+        session = request.cache.session
+        context['messages'] = session.get_messages()
 
     def on_form(self, app, form):
         '''Handle CSRF if in config.'''
@@ -116,59 +124,11 @@ class Extension(lux.Extension):
                     session['csrf_token'] = key
             return key
 
-
-class UserMixin(object):
-    '''Mixin for a User model
-    '''
-    def is_authenticated(self):
-        return True
-
-    def is_active(self):
-        return False
-
-    def is_anonymous(self):
-        return False
-
-    def get_id(self):
-        raise NotImplementedError
-
-    def get_oauths(self):
-        '''Return a dictionary of oauths account'''
-        return {}
-
-    def set_oauth(self, name, data):
-        raise NotImplementedError
-
-    def remove_oauth(self, name):
-        '''Remove a connected oauth account.
-        Return ``True`` if successfully removed
-        '''
-        raise NotImplementedError
-
-    def email_user(self, subject, message, from_email, **kwargs):
-        '''Sends an email to this User'''
-        send_mail(subject, message, from_email, [self.email], **kwargs)
-
-    @classmethod
-    def get_by_username(cls, username):
-        '''Retrieve a user from username
-        '''
-        raise NotImplementedError
-
-    @classmethod
-    def get_by_oauth(cls, name, identifier):
-        '''Retrieve a user from OAuth ``name`` with ``identifier``
-        '''
-        raise NotImplementedError
-
-
-class Anonymous(UserMixin):
-
-    def is_authenticated(self):
-        return False
-
-    def is_anonymous(self):
-        return True
-
-    def get_id(self):
-        return 0
+    def _dismiss_message(self, request):
+        response = request.response
+        if response.content_type in lux.JSON_CONTENT_TYPES:
+            session = request.cache.session
+            data = request.body_data()
+            body = {'success': session.remove_message(data)}
+            response.content = json.dumps(body)
+            return response

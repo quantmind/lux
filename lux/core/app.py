@@ -188,6 +188,8 @@ class App(ConsoleParser, LocalMixin, Extension):
                    'datastore which support the cache protocol or an object '
                    'supporting the cache protocol')),
         Parameter('DEFAULT_FROM_EMAIL', '',
+                  'Default email address to send email from'),
+        Parameter('MESSAGES_BACKEND', 'lux.MessageBackend',
                   'Default email address to send email from')
         ]
 
@@ -305,6 +307,7 @@ class App(ConsoleParser, LocalMixin, Extension):
         #
         if doc.has_default_content_type:
             head = doc.head
+            head.scripts.known_libraries['lux'] = 'lux/lux'
             #
             required = cfg['JSREQUIRED']
             if required:
