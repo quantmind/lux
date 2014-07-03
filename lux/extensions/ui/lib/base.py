@@ -116,29 +116,35 @@ def as_params(value, default_name=None):
         raise TypeError('"%s" is not a mapping' % value)
 
 
+addition = lambda a, b: a+b
+subtraction = lambda a, b: a-b
+multiplication = lambda a, b: a*b
+division = lambda a, b: a/b
+floordivision = lambda a, b: a//b
+
 class Symbolic(UnicodeMixin):
     '''Base class for :class:`Variable` and :class:`Unit`.'''
     def __add__(self, other):
-        return self._op(other, lambda a, b: a+b)
+        return self._op(other, addition)
 
     def __sub__(self, other):
-        return self._op(other, lambda a, b: a-b)
+        return self._op(other, subtraction)
 
     def __mul__(self, other):
-        return self._sp(other, lambda a, b: a*b)
+        return self._sp(other, multiplication)
 
     def __floordiv__(self, other):
-        return self._sp(other, lambda a, b: a//b)
+        return self._sp(other, floordivision)
 
     def __rmul__(self, other):
         return self.__mul__(other)
 
     if ispy3k:  # pragma: no cover
         def __truediv__(self, other):
-            return self._sp(other, lambda a, b: a/b)
+            return self._sp(other, division)
     else:   # pragma: no cover
         def __div__(self, other):
-            return self._sp(other, lambda a, b: a/b)
+            return self._sp(other, division)
 
     def _op(self, other, op):
         raise NotImplementedError
@@ -162,10 +168,10 @@ a :class:`Variables` container.'''
         return str(self)
 
     def _op(self, other, op):
-        return lazyop(self, other, op)
+        return LazyOp(self, other, op)
 
     def _sp(self, other, op):
-        return lazyop(self, other, op)
+        return LazyOp(self, other, op)
 
 
 class Symbol(Variable):
@@ -210,15 +216,15 @@ class Lazy(Variable):
         return self.callable(*self.args, **self.kwargs)
 
 
-class lazyop(Variable):
+class LazyOp(Variable):
     '''A :class:`Variable` representing a lazy operation.'''
     def __init__(self, a, b, op):
         self.v1 = a
         self.v2 = b
-        self._op = op
+        self._calculate = op
 
     def value(self):
-        return self._op(as_value(self.v1), as_value(self.v2))
+        return self._calculate(as_value(self.v1), as_value(self.v2))
 
 
 class Unit(Symbolic):
@@ -403,6 +409,7 @@ def spacing(v, *vals):
 
 
 class CssBase(UnicodeMixin):
+    _spacings = ('top', 'right', 'bottom', 'left')
 
     @property
     def code(self):

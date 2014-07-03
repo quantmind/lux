@@ -180,46 +180,44 @@ class Border(Mixin):
         one of: ``solid``, ``dotted``, ``none``.
     :param width: border width. If not set ``1px`` is used.
     '''
-    def __init__(self, style=None, color=None, width=None, top=0,
-                 right=0, bottom=0, left=0):
+    def __init__(self, style=None, color=None, width=None, top=None,
+                 right=None, bottom=None, left=None):
         self.color = color
         self.style = style
-        has_spacing = (top or bottom or right or left)
-        if not width:
-            if has_spacing:
-                width = spacing(top, right, bottom, left)
-        else:
-            assert not has_spacing, 'bad inputs in Border mixin'
         self.width = width
+        self.spacing = (top, right, bottom, left)
 
     def __call__(self, elem):
         c = as_value(self.color)
         s = as_value(self.style)
         w = as_value(self.width)
-        if s == 'none':
+        if c:
+            c = str(color(c))
+        spacings = []
+        for where, sp in zip(self._spacings, self.spacing):
+            sp = as_value(sp)
+            if sp is not None:
+                spacings.append((where, sp))
+        if s == 'none' and not spacings:
             elem['border'] = s
         else:
-            bits = []
             if w is not None:
-                w = str(w)
-                if ' ' in w:
-                    elem['border-width'] = w
-                else:
-                    bits.append(w)
-            if s or w:
-                s = s or 'solid'
-                if bits:
-                    bits.append(s)
-                else:
+                elem['border'] = self._border(w, s, c)
+            elif not spacings:
+                if s:
                     elem['border-style'] = s
-            if c:
-                c = str(color(c))
-                if bits:
-                    bits.append(c)
-                else:
+                if c:
                     elem['border-color'] = c
-            if bits:
-                elem['border'] = ' '.join(bits)
+
+            for where, w in spacings:
+                border = 'border-%s' % where
+                elem[border] = s if s == 'none' else self._border(w, s, c)
+
+    def _border(self, w, s, c):
+        bits = [str(w), s or 'solid']
+        if c:
+            bits.append(c)
+        return ' '.join(bits)
 
 
 ################################################# CSS3 BOX SHADOW

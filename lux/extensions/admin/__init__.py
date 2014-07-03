@@ -3,10 +3,10 @@
 This extension requires the :mod:`~lux.extensions.sessions` extension.
 '''
 import lux
-from lux import Parameter
+from lux import Parameter, Html
 
 from pulsar import ImproperlyConfigured, Http404
-from .ui import add_css
+from .ui import add_css, collapse_width
 
 
 class Extension(lux.Extension):
@@ -21,40 +21,77 @@ class Extension(lux.Extension):
         if not app.auth_backend:
             raise ImproperlyConfigured('sessions backend required')
         path = app.config['ADMIN_URL']
-        app.admin = Admin(path, response_wrapper=require_superuser)
+        app.admin = Router(path, name='admin',
+                           response_wrapper=require_superuser)
         return [app.admin]
 
-    def context(self, request, context):
-        app_handler = request.app_handler
-        if app_handler and app_handler.has_parent(request.app.admin):
-            links = request.app.admin.links
-            context['theme'] = request.config['ADMIN_THEME']
-            if links:
-                context['admin_links'] = [{'name': l[0],
-                                           'href': l[1].full_route.path}
-                                          for l in links]
 
-
-class Admin(lux.Router):
-    '''Admin for a site
+class Router(lux.Router):
+    '''A specialised Router for the admin site
     '''
-    links = None
+    in_nav = True
+    target = None
 
-    def add(self, link, router):
-        '''Add a new router to the admin and insert the link in the
-        list of links'''
-        self.add_child(router)
-        links = self.links
-        if not links:
-            self.links = links = []
-        links.append((link, router))
+    def sitemap(self, path):
+        '''Build the sitemap for this router.
+        '''
+        root = self.root
+        parent = {'href': root.path(),
+                  'name': root.name,
+                  'target': '_self'}
+        sitemap, page = root._sitemap([parent], path, children=True)
+        page = parent if path == parent['href'] else page
+        return sitemap, page
 
     def get(self, request):
-        links = [{'name': l[0], 'href': l[1].path()} for l in self.links]
-        ctx = {'links': links}
-        return request.app.html_response(request, 'admin.html',
-                                         jscontext=ctx,
-                                         title='%s - Admin')
+        sitemap, page = self.sitemap(request.path)
+        if self == self.root and sitemap:
+            return request.redirect(sitemap[0]['href'])
+        else:
+            ctx = {'sitemap': sitemap,
+                   'page': page,
+                   'collapse_width': collapse_width,
+                   'theme': request.config['ADMIN_THEME']}
+            return request.app.html_response(request, 'admin.html',
+                                             jscontext=ctx,
+                                             title='%s - Admin')
+
+    def wrap_html(self, request, html, span=12):
+        '''Default wrapper for html loaded via angular
+        '''
+        return Html('div',
+                    Html('div', html, cn='col-sm-%d' % span),
+                    cn='row').render(request)
+
+    def _sitemap(self, parents, path, children=False):
+        links = []
+        page = None
+        for route in self.routes:
+            # In navigation
+            if getattr(route, 'in_nav', False):
+                href = route.path()
+                link = {'href': href,
+                        'name': route.name,
+                        'title': getattr(route, 'title', route.name),
+                        'parents': parents,
+                        'target': getattr(route, 'target', None)}
+                if href == path:
+                    page = link
+                    parents[-1]['active'] = True
+                if children:
+                    new_parents = [link]
+                    new_parents.extend(parents)
+                    children, pg = route._sitemap(list(reversed(new_parents)),
+                                                  path)
+                    page = page or pg
+                if children:
+                    parent = {'links': children}
+                    parent.update(link)
+                    links.append(parent)
+                else:
+                    links.append(link)
+        return links, page
+
 
 def require_superuser(handler, request):
     user = request.cache.user

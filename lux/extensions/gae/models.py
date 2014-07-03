@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from google.appengine.ext import ndb
 from google.appengine.api import mail
 
@@ -147,3 +149,9 @@ class Registration(ndb.Model):
     user = ndb.KeyProperty(User)
     expiry = ndb.DateTimeProperty()
     confirmed = ndb.BooleanProperty()
+
+    def check_valid(self):
+        if self.confirmed:
+            raise sessions.AuthenticationError('already used')
+        elif self.expiry < datetime.now():
+            raise sessions.AuthenticationError('expired')

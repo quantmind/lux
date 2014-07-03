@@ -75,9 +75,23 @@ class Extension(lux.Extension):
 
 def add_css(all):
     css = all.css
+    skins = all.variables.skins
+
+    default = skins.default
+    default.background = color('#f7f7f9')
+
+    inverse = skins.inverse
+    inverse.background = color('#3d3d3d')
+
+    css(('[ng\:cloak], [ng-cloak], [data-ng-cloak], '
+         '[x-ng-cloak], .ng-cloak, .x-ng-cloak'),
+        display='none !important')
 
     css('.form-group .help-block',
         display='none')
 
     css('.form-group.has-error .help-block.active',
         display='block')
+
+    css('.nav-second-level li a',
+        padding_left=px(37))

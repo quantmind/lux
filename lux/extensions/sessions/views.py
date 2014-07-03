@@ -3,15 +3,18 @@ try:
 except ImportError:
     jwt = None
 
+import lux
+from pulsar import Http404
 from pulsar.apps.wsgi import Router, Json, route
 
 from .oauth import Accounts
-from .forms import LoginForm, CreateUserForm
+from .forms import (LoginForm, CreateUserForm, ChangePassword,
+                    ForgotPasswordForm, ChangePassword2)
 from .backend import AuthenticationError
 
 
 __all__ = ['Login', 'SignUp', 'Logout', 'Token', 'OAuth',
-           'oauth_context']
+           'ForgotPassword', 'oauth_context']
 
 
 def oauth_context(request, path='/oauth/'):
@@ -107,6 +110,82 @@ class SignUp(Router):
         key = request.urlargs['key']
         user = request.app.auth_backend.confirm_registration(request, key)
         return request.redirect('/')
+
+
+class ForgotPassword(Router):
+    '''Adds login get ("text/html") and post handlers
+    '''
+    @property
+    def fclass(self):
+        return self.parameters.form or ForgotPasswordForm
+
+    def get(self, request):
+        '''Handle the HTML page for login
+        '''
+        html = self.fclass(request).layout(request, action=request.full_path())
+        context = {'form': html.render(request),
+                   'site_name': request.config['SITE_NAME']}
+        return request.app.html_response(request, 'forgot.html',
+                                         context=context)
+
+    @route('<key>')
+    def get_reset_form(self, request):
+        key = request.urlargs['key']
+        try:
+            user = request.app.auth_backend.get_user(request, auth_key=key)
+        except AuthenticationError as e:
+            session = request.cache.session
+            session.error('The link is no longer valid, %s' % e)
+            return request.redirect('/')
+        if not user:
+            raise Http404
+        form = ChangePassword2(request)
+        html = form.layout(request, action=request.full_path('reset'))
+        context = {'form': html.render(request),
+                   'site_name': request.config['SITE_NAME']}
+        return request.app.html_response(request, 'reset_password.html',
+                                         context=context)
+
+    def post(self, request):
+        '''Handle request for resetting password
+        '''
+        user = request.cache.user
+        if user.is_authenticated():
+            raise MethodNotAllowed
+        form = self.fclass(request, data=request.body_data())
+        if form.is_valid():
+            auth = request.app.auth_backend
+            email = form.cleaned_data['email']
+            try:
+                auth.password_recovery(request, email)
+            except AuthenticationError as e:
+                form.add_error_message(str(e))
+        return Json(form.tojson()).http_response(request)
+
+    @route('<key>/reset', method='post',
+           response_content_types=lux.JSON_CONTENT_TYPES)
+    def reset(self, request):
+        key = request.urlargs['key']
+        session = request.cache.session
+        result = {}
+        try:
+            user = request.app.auth_backend.get_user(request, auth_key=key)
+        except AuthenticationError as e:
+            session.error('The link is no longer valid, %s' % e)
+        else:
+            if not user:
+                session.error('Could not find the user')
+            else:
+                form = ChangePassword2(request, data=request.body_data())
+                if form.is_valid():
+                    auth = request.app.auth_backend
+                    password = form.cleaned_data['password']
+                    auth.set_password(user, password)
+                    session.info('Password successfully changed')
+                    auth.auth_key_used(key)
+                else:
+                    result = form.tojson()
+        return Json(result).http_response(request)
 
 
 class Logout(Router):

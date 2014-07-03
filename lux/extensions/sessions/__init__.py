@@ -73,7 +73,9 @@ class Extension(lux.Extension):
         Parameter('OAUTH_PROVIDERS', {},
                   'Dictionary of OAuth providers'),
         Parameter('ACCOUNT_ACTIVATION_DAYS', 2,
-                  'Number of days the activation code is valid')]
+                  'Number of days the activation code is valid'),
+        Parameter('RESET_PASSWORD_URL', '',
+                  'If given, add the router to handle password resets')]
 
     def middleware(self, app):
         self._response_middleware = []
@@ -88,6 +90,10 @@ class Extension(lux.Extension):
             raise RuntimeError('AUTHENTICATION_BACKEND not available')
         middleware.append(Router('_dismiss_message',
                                  post=self._dismiss_message))
+        reset = app.config['RESET_PASSWORD_URL']
+        if reset:
+            router = backend.ForgotPasswordRouter or ForgotPassword
+            middleware.append(router(reset))
         return middleware
 
     def response_middleware(self, app):

@@ -31,6 +31,23 @@ class AuthBackend(sessions.AuthBackend):
     def response_middleware(self, app):
         return [self._save]
 
+    def create_registration(self, request, user, expiry):
+        auth_key = digest(user.username)
+        reg = Registration(id=auth_key, user=user.key,
+                           expiry=expiry, confirmed=False)
+        reg.put()
+        return auth_key
+
+    def set_password(self, user, raw_password):
+        user.password = self.password(raw_password)
+        user.put()
+
+    def auth_key_used(self, key):
+        reg = Registration.get_by_id(key)
+        if reg:
+            reg.confirmed = True
+            reg.put()
+
     def confirm_registration(self, request, key=None, **params):
         reg = None
         if key:
@@ -52,7 +69,7 @@ class AuthBackend(sessions.AuthBackend):
                     return user
         else:
             user = self.get_user(**params)
-            reg = self._get_or_create_registration(request, user)
+            self._get_or_create_registration(request, user)
 
     def authenticate(self, request, username=None, email=None, password=None):
         user = None
@@ -96,12 +113,19 @@ class AuthBackend(sessions.AuthBackend):
         session.put()
         return session
 
-    def get_user(self, request, username=None, email=None):
+    def get_user(self, request, username=None, email=None, auth_key=None):
         if username:
             assert email is None, 'get_user by username or email'
+            assert auth_key is None
             return User.get_by_username(username)
         elif email:
+            assert auth_key is None
             return User.get_by_email(email)
+        elif auth_key:
+            reg = Registration.get_by_id(auth_key)
+            if reg:
+                reg.check_valid()
+                return reg.user.get()
 
     def _load(self, environ, start_response):
         request = wsgi_request(environ)
@@ -131,14 +155,3 @@ class AuthBackend(sessions.AuthBackend):
                     response.set_cookie(key, value=str(id),
                                         expires=session.expiry)
         return response
-
-    def _get_or_create_registration(self, request, user):
-        if user and user.email and not user.active:
-            activation_key = digest(user.username)
-            days = request.config['ACCOUNT_ACTIVATION_DAYS']
-            expiry = datetime.now() + timedelta(days=days)
-            reg = Registration(id=activation_key, user=user.key,
-                               expiry=expiry, confirmed=False)
-            reg.put()
-            self.send_email_confirmation(request, user, activation_key)
-            return reg

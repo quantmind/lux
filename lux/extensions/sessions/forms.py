@@ -2,7 +2,8 @@ import sys
 from lux import forms
 
 
-__all__ = ['LoginForm', 'CreateUserForm', 'ChangePassword']
+__all__ = ['LoginForm', 'CreateUserForm', 'ChangePassword',
+           'ForgotPasswordForm']
 
 
 class LoginForm(forms.Form):
@@ -34,12 +35,36 @@ class CreateUserForm(forms.Form):
 class ChangePassword(forms.Form):
     username = forms.HiddenField()
     old_password = forms.PasswordField(required=False)
-    new_password = forms.PasswordField()
-    confirm_new_password = forms.PasswordField()
+    password = forms.PasswordField(label='New password',
+                                   min_length=6, max_length=60)
+    password_repeat = forms.PasswordField(label='Confirm new password')
 
     layout = forms.Layout(
         submits=forms.Submit('Update password',
                              classes='btn btn-primary'),
+        labels=False,
+        ngmodel=True,
+        ngcontroller='userController')
+
+
+class ChangePassword2(forms.Form):
+    password = forms.PasswordField(label='New password',
+                                   min_length=6, max_length=60)
+    password_repeat = forms.PasswordField(label='Confirm new password')
+
+    layout = forms.Layout(
+        submits=forms.Submit('Reset password',
+                             classes='btn btn-primary'),
+        labels=False,
+        ngmodel=True,
+        ngcontroller='userController')
+
+
+class ForgotPasswordForm(forms.Form):
+    email = forms.EmailField()
+
+    layout = forms.Layout(
+        submits=forms.Submit('Submit', classes='btn btn-primary'),
         labels=False,
         ngmodel=True,
         ngcontroller='userController')

@@ -36,6 +36,7 @@
         };
     }
 
+    // A general from controller factory
     function formController ($scope, $location, $http, $sce, model) {
         model || (model = {});
 
@@ -108,3 +109,9 @@
             });
         };
     }
+
+    lux.controllers.controller('formController', ['$scope', '$location', '$http', '$sce',
+            function ($scope, $location, $http, $sce) {
+        // Model for a user when updating
+        formController($scope, $location, $http, $sce);
+    }]);

@@ -4,7 +4,7 @@ from lux.extensions.ui.style.base import add_skins
 from lux.extensions.ui.lib import *
 
 
-class TestCase(test.TestCase):
+class TestVariables(test.TestCase):
 
     def root(self, skins=False):
         all = Css()
@@ -20,8 +20,23 @@ class TestCase(test.TestCase):
         add_css(all)
         return all
 
+    def test_lazy_from_sum(self):
+        vars = Variables()
+        vars.size = px(100)
+        val = vars.size + 1
+        self.assertIsInstance(val, Variable)
+        self.assertEqual(val.value(), '101px')
+        vars.size = 200
+        self.assertEqual(val.value(), 201)
 
-class TestVariables(TestCase):
+    def test_lazy_from_mult_sum(self):
+        vars = Variables()
+        vars.size = px(100)
+        val = 2*vars.size + 1
+        self.assertIsInstance(val, Variable)
+        self.assertEqual(val.value(), '201px')
+        vars.size = 200
+        self.assertEqual(val.value(), 401)
 
     def testNotImplemented(self):
         v = Variable()
@@ -44,9 +59,6 @@ class TestVariables(TestCase):
         # Now change the v symbol
         v.value(px(2))
         self.assertEqual(v2.value(), '3px')
-
-
-class TestSize(TestCase):
 
     def test_symbol(self):
         v = Symbol('bla', 3)

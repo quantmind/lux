@@ -135,6 +135,7 @@ class headers:
 class Router(wsgi.Router):
     '''Extend pulsar :class:`~pulsar.apps.wsgi.routers.Router` with content
     management.'''
+    in_nav = False
     content_manager = None
     '''Optional :class:`lux.core.content.ContentManager`.
 
@@ -151,11 +152,15 @@ class Router(wsgi.Router):
         '''Return an :ref:`Html Link <html-link>` object for ``item``.'''
         pass
 
+    def template_response(self, request, template):
+        response = request.response
+        response.content_type = 'text/html'
+        response.content = template
+        return response
+
     def partial_form(self, request, form_class):
         html = form_class(request).layout(request)
-        response = request.response
-        response.content = html.render(request)
-        return response
+        return html.render(request)
 
 
 class HtmlRouter(Router):

@@ -1,4 +1,5 @@
 from importlib import import_module
+from datetime import datetime, timedelta
 
 from pulsar import PermissionDenied, Http404
 from pulsar.utils.pep import to_bytes, to_string
@@ -6,7 +7,7 @@ from pulsar.utils.importer import module_attribute
 
 import lux
 from lux import Parameter
-from lux.utils.crypt import get_random_string
+from lux.utils.crypt import get_random_string, digest
 
 
 __all__ = ['AuthBackend', 'AuthenticationError', 'LoginError', 'LogoutError',
@@ -30,6 +31,9 @@ class LogoutError(RuntimeError):
 
 class SessionMixin(object):
 
+    def success(self, message):
+        self.message('success', message)
+
     def info(self, message):
         self.message('info', message)
 
@@ -37,7 +41,7 @@ class SessionMixin(object):
         self.message('warning', message)
 
     def error(self, message):
-        self.message('error', message)
+        self.message('danger', message)
 
     def message(self, level, message):
         raise NotImplementedError
@@ -50,6 +54,8 @@ class SessionMixin(object):
 class UserMixin(object):
     '''Mixin for a User model
     '''
+    email = None
+
     def is_authenticated(self):
         return True
 
@@ -86,6 +92,10 @@ class UserMixin(object):
         raise NotImplementedError
 
     @classmethod
+    def get_by_email(cls, email):
+        raise NotImplementedError
+
+    @classmethod
     def get_by_oauth(cls, name, identifier):
         '''Retrieve a user from OAuth ``name`` with ``identifier``
         '''
@@ -112,6 +122,7 @@ class AuthBackend(object):
     a web site.
     '''
     model = None
+    ForgotPasswordRouter = None
 
     def __init__(self, app):
         self.encoding = app.config['ENCODING']
@@ -123,6 +134,41 @@ class AuthBackend(object):
         self.check_username = app.config['CHECK_USERNAME']
         algorithm = app.config['CRYPT_ALGORITHM']
         self.crypt_module = import_module(algorithm)
+
+    def create_registration(self, request, user, expiry):
+        '''Create a registration entry for a user.
+        This method should return the registration/activation key.'''
+        raise NotImplementedError
+
+    def authenticate(self, request, **params):
+        '''Authenticate user'''
+        raise NotImplementedError
+
+    def confirm_registration(self, request, **params):
+        '''Confirm registration'''
+        raise NotImplementedError
+
+    def create_session(self, request, user=None, expiry=None):
+        '''Create a new session
+        '''
+        raise NotImplementedError
+
+    def get_user(self, request, **kwargs):
+        '''Retrieve a user.
+        Return ``None`` if the user could not be found'''
+        pass
+
+    def set_password(self, user, password):
+        '''Set the password for ``user``.
+        This method should commit changes.'''
+        raise NotImplementedError
+
+    def auth_key_used(self, key):
+        '''The authentication ``key`` has been used and this method is
+        for setting/updating the backend model accordingly.
+        Used during password retrieval and user registration
+        '''
+        raise NotImplementedError
 
     def login(self, request, user=None):
         '''Login a user from a model or from post data
@@ -158,26 +204,21 @@ class AuthBackend(object):
             request.cache.session = self.create_session(request)
             request.cache.user = Anonymous()
 
-    def authenticate(self, request, **params):
-        '''Authenticate user'''
-        raise NotImplementedError
+    def get_or_create_registration(self, request, user, **kw):
+        if user and user.email:
+            days = request.config['ACCOUNT_ACTIVATION_DAYS']
+            expiry = datetime.now() + timedelta(days=days)
+            auth_key = self.create_registration(request, user, expiry)
+            self.send_email_confirmation(request, user, auth_key, **kw)
+            return auth_key
 
-    def confirm_registration(self, request, **params):
-        '''Confirm registration'''
-        raise NotImplementedError
-
-    def get_user(self, request, *args, **kwargs):
-        '''Retrieve a user.
-
-        This method can raise an exception if the user could not be found,
-        or return ``None``.
-        '''
-        pass
-
-    def create_session(self, request, user=None, expiry=None):
-        '''Create a new session
-        '''
-        raise NotImplementedError
+    def password_recovery(self, request, email):
+        user = self.model.get_by_email(email)
+        if not self.get_or_create_registration(
+                request, user, email_subject='password_email_subject.txt',
+                email_message='password_email.txt',
+                message='password_message.txt'):
+            raise AuthenticationError("Can't find that email, sorry")
 
     def create_user(self, request, **kwargs):
         '''Create a standard user.'''
@@ -217,21 +258,26 @@ class AuthBackend(object):
             email = '@'.join([email_name, domain_part.lower()])
         return email
 
-    def send_email_confirmation(self, request, user, activation_key):
+    def send_email_confirmation(self, request, user, auth_key,
+                                email_subject=None, email_message=None,
+                                message=None):
         '''Send an email to user to confirm his/her email address'''
-        cache = request.cache_server
         app = request.app
         cfg = app.config
-        ctx = {'activation_key': activation_key,
+        ctx = {'auth_key': auth_key,
                'expiration_days': cfg['ACCOUNT_ACTIVATION_DAYS'],
                'email': user.email,
                'site_uri': request.absolute_uri('/')[:-1]}
-        subject = app.render_template('activation_email_subject.txt', ctx)
+
+        subject = app.render_template(
+            email_subject or 'activation_email_subject.txt', ctx)
         # Email subject *must not* contain newlines
         subject = ''.join(subject.splitlines())
-        message = app.render_template('activation_email.txt', ctx)
-        user.email_user(subject, message, cfg['DEFAULT_FROM_EMAIL'])
-        message = app.render_template('activation_message.txt', ctx)
+        body = app.render_template(
+            email_message or 'activation_email.txt', ctx)
+        user.email_user(subject, body, cfg['DEFAULT_FROM_EMAIL'])
+        message = app.render_template(
+            message or 'activation_message.txt', ctx)
         request.cache.session.info(message)
 
     def decript(self, password=None):

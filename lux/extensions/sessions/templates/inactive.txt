@@ -1,2 +1,2 @@
-Your account is not active yet. You need to confirm your email address via the email link sent from $email_from.
+Your account is not active yet. You need to confirm your email address via the email link sent from <strong>$email_from</strong>.
 To receive a new confirmation email click <a href="$confirmation_url" target="_self">here</a>.

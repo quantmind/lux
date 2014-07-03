@@ -17,7 +17,7 @@ class TestMixins(vars.TestCase):
         self.assertEqual(len(s.children), 1)
         text = s.render()
         self.assertEqual(text, '''.bla {
-    border: 1px solid #555;
+    border-color: #555;
 }
 ''')
 
@@ -30,7 +30,20 @@ class TestMixins(vars.TestCase):
         s = all.css('.blax', b)
         text = s.render()
         self.assertEqual(text, '''.blax {
-    border: 0 none;
+    border: none;
+}
+''')
+
+    def test_border_bottom(self):
+        all = Css()
+        b = Border('solid', '#E7E7E7', bottom=px(1))
+        self.assertEqual(b.color, '#E7E7E7')
+        self.assertEqual(b.width, None)
+        self.assertEqual(b.style, 'solid')
+        s = all.css('.blax', b)
+        text = s.render()
+        self.assertEqual(text, '''.blax {
+    border-bottom: 1px solid #e7e7e7;
 }
 ''')
 
