@@ -123,6 +123,10 @@ class AuthBackend(object):
     '''
     model = None
     ForgotPasswordRouter = None
+    READ = 10
+    UPDATE = 20
+    CREATE = 30
+    REMOVE = 40
 
     def __init__(self, app):
         self.encoding = app.config['ENCODING']
@@ -234,9 +238,9 @@ class AuthBackend(object):
     def response_middleware(self, app):
         return ()
 
-    def has_permission(self, request, action, model):
+    def has_permission(self, request, level, model):
         '''Check for permission on a model.'''
-        pass
+        return False
 
     def password(self, raw_password=None):
         if raw_password:

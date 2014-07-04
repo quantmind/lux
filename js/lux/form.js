@@ -37,13 +37,19 @@
     }
 
     // A general from controller factory
-    function formController ($scope, $location, $http, $sce, model) {
+    function formController ($scope, $lux, model) {
         model || (model = {});
 
         $scope.formModel = model;
         $scope.formClasses = {};
         $scope.formErrors = {};
         $scope.formMessages = {};
+
+        function formMessages (messages) {
+            angular.forEach(messages, function (messages, field) {
+                $scope.formMessages[field] = messages;
+            });
+        }
 
         $scope.checkField = function (name) {
             var checker = $scope['check_' + name];
@@ -73,45 +79,85 @@
         $scope.processForm = function($event) {
             $event.preventDefault();
             $event.stopPropagation();
-            var $element = angular.element($event.target);
+            var $element = angular.element($event.target),
+                apiname = $element.attr('data-api'),
+                target = $element.attr('action'),
+                promise,
+                api;
             //
             if ($scope.form.$invalid) {
                 return $scope.showErrors();
             }
 
-            var enctype = $element.attr('enctype') || '',
-                ct = enctype.split(';')[0],
-                options = {
-                    url: $element.attr('action'),
-                    method: $element.attr('method') || 'POST',
-                    data: $scope.formModel,
-                    transformRequest: formData(ct),
-                };
-            // Let the browser choose the content type
-            if (ct === 'application/x-www-form-urlencoded' || ct === 'multipart/form-data') {
-                options.headers = {
-                    'content-type': undefined
-                };
+            // Get the api information
+            if (!target && apiname) {
+                api = $lux.api(apiname);
+                if (!api)
+                    $lux.log.error('Could not find api url for ' + apiname);
             }
-            //
+
             $scope.formMessages = {};
             //
-            // submit
-            $http(options).success(function(data) {
-                if (data.messages) {
-                    angular.forEach(data.messages, function (messages, field) {
-                        $scope.formMessages[field] = messages;
-                    });
-                } else {
-                    window.location.href = data.redirect || '/';
+            if (target) {
+                var enctype = $element.attr('enctype') || '',
+                    ct = enctype.split(';')[0],
+                    options = {
+                        url: target,
+                        method: $element.attr('method') || 'POST',
+                        data: $scope.formModel,
+                        transformRequest: formData(ct),
+                    };
+                // Let the browser choose the content type
+                if (ct === 'application/x-www-form-urlencoded' || ct === 'multipart/form-data') {
+                    options.headers = {
+                        'content-type': undefined
+                    };
                 }
-            }).error(function(data, status, headers, config) {
-            });
+                promise = $lux.http(options);
+            } else if (api) {
+                promise = api.put($scope.formModel);
+            } else {
+                $lux.log.error('Could not process form. No target or api');
+                return;
+            }
+
+            //
+            promise.then(
+                function(data) {
+                    if (data.messages) {
+                        angular.forEach(data.messages, function (messages, field) {
+                            $scope.formMessages[field] = messages;
+                        });
+                    } else {
+                        window.location.href = data.redirect || '/';
+                    }
+                },
+                function(data, status, headers) {
+                    var messages, msg;
+                    if (data) {
+                        messages = data.messages;
+                        if (!messages) {
+                            msg = data.message;
+                            if (!msg) {
+                                status = status || data.status || 501;
+                                msg = 'Server error (' + data.status + ')';
+                            }
+                            messages = {};
+                            messages[FORMKEY] = [{message: msg, error: true}];
+                        }
+                    } else {
+                        status = status || 501;
+                        msg = 'Server error (' + data.status + ')';
+                        messages = {};
+                        messages[FORMKEY] = [{message: msg, error: true}];
+                    }
+                    formMessages(messages);
+                });
         };
     }
 
-    lux.controllers.controller('formController', ['$scope', '$location', '$http', '$sce',
-            function ($scope, $location, $http, $sce) {
+    lux.controllers.controller('formController', ['$scope', '$lux',
+            function ($scope, $lux) {
         // Model for a user when updating
-        formController($scope, $location, $http, $sce);
+        formController($scope, $lux);
     }]);

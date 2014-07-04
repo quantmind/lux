@@ -1,5 +1,6 @@
 {
     "src": ["js/lux/open.js",
+            "js/lux/api.js",
             "js/lux/page.js",
             "js/lux/form.js",
             "js/lux/user.js",

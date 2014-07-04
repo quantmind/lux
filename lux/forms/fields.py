@@ -94,7 +94,8 @@ __all__ = ['FormError',
            'HiddenField',
            'PasswordField',
            'ChoiceFieldOptions',
-           'ChoiceGroup']
+           'ChoiceGroup',
+           'UrlField']
 
 
 class FormError(Exception):
@@ -169,6 +170,14 @@ class Choice(object):
                 if opt.get_form_value() == value:
                     opt.addDir('selected')
                 html.append(opt)
+
+    def clean(self, values, bfield):
+        choices = dict(self.choices())
+        for v in values:
+            v = to_string(v)
+            if v not in choices:
+                raise ValidationError('%s is not a valid choice' % v)
+        return values
 
 
 class ChoiceGroup(Choice):
@@ -820,7 +829,9 @@ class ChoiceField(MultipleMixin, Field):
 
     def _clean(self, value, bfield):
         if value is not None:
-            return self.choices.clean(value, bfield)
+            values = value if self.multiple else (value,)
+            values = self.choices.clean(values, bfield)
+            return values if self.multiple else values[0]
         return value
 
 
@@ -830,6 +841,10 @@ class EmailField(CharField):
 
 class PasswordField(CharField):
     widget = field_widget('input', type='password')
+
+
+class UrlField(CharField):
+    widget = field_widget('input', type='url')
 
 
 class FileField(MultipleMixin, Field):

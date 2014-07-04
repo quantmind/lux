@@ -1,5 +1,7 @@
 
-
+    // Page Controller
+    //
+    // Handle html5 sitemap
     lux.controllers.controller('page', ['$scope', '$http', '$location', function ($scope, $http, $location) {
         angular.extend($scope, context);
         $scope.search_text = '';

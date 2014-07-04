@@ -134,7 +134,7 @@ from pulsar.apps.ds import DEFAULT_PULSAR_STORE_ADDRESS
 import lux
 from lux import Parameter
 
-from .crud import ModelManager, CRUD
+from .crud import ModelManager, CRUD, html_form
 
 
 class ApiRoot(lux.Router):
@@ -204,7 +204,3 @@ class Extension(lux.Extension):
         odm = app.config['ODM']
         if odm:
             app.local.models = odm(app)
-
-    def jscontext(self, request, context):
-        '''Add the api routes to the javascript context'''
-        context['api'] = self.api.apis(request)

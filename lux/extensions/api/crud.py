@@ -1,8 +1,14 @@
-from pulsar import MethodNotAllowed
+from pulsar import MethodNotAllowed, PermissionDenied
 from pulsar.apps.wsgi import Json
 
 import lux
 from lux import route
+
+
+def html_form(request, Form, name):
+    form = Form(request)
+    html = form.layout(enctype='application/json').data('api', name)
+    return html
 
 
 class ModelManager(object):
@@ -19,13 +25,13 @@ class ModelManager(object):
         user = request.cache.user
         MAXLIMIT = (cfg['API_LIMIT_AUTH'] if user.is_authenticated() else
                     cfg['API_LIMIT_LIMIT'])
-        limit = request.body_data.get(cfg['API_LIMIT_KEY'],
-                                      cfg['API_LIMIT_DEFAULT'])
+        limit = request.body_data().get(cfg['API_LIMIT_KEY'],
+                                        cfg['API_LIMIT_DEFAULT'])
         return min(limit, MAXLIMIT)
 
     def offset(self, request):
         cfg = request.config
-        return request.body_data.get(cfg['API_OFFSET_KEY'], 0)
+        return request.body_data().get(cfg['API_OFFSET_KEY'], 0)
 
     def collection(self, limit, offset=0, text=None):
         raise NotImplementedError
@@ -34,6 +40,9 @@ class ModelManager(object):
         raise NotImplementedError
 
     def create_model(self, data):
+        raise NotImplementedError
+
+    def has_permission(self, user, level, instance=None):
         raise NotImplementedError
 
     def _setup(self, columns):
@@ -51,18 +60,23 @@ class CRUD(lux.Router):
         return Json(data).http_response(request)
 
     def post(self, request):
-        '''Create a new model'''
-        form_class = self.manager.form
+        '''Create a new model
+        '''
+        manager = self.manager
+        form_class = manager.form
         if not form_class:
             raise MethodNotAllowed
-        data, files = request.data_and_files()
-        form = form_cls(request, data=data, files=files)
-        if form.is_valid():
-            instance = self.manager.create_model(form.cleaned_data)
-            data = self.manager.instance(instance)
-        else:
-            data = form.tojson()
-        return Json(data).http_response(request)
+        auth = request.app.auth_backend
+        if auth and auth.has_permission(request, auth.CREATE, manager.model):
+            data, files = request.data_and_files()
+            form = form_class(request, data=data, files=files)
+            if form.is_valid():
+                instance = manager.create_model(form.cleaned_data)
+                data = manager.instance(instance)
+            else:
+                data = form.tojson()
+            return Json(data).http_response(request)
+        raise PermissionDenied
 
     @route('<id>')
     def read(self, request):
@@ -72,17 +86,20 @@ class CRUD(lux.Router):
 
     @route('<id>', method='post')
     def update(self, request):
-        form_class = self.manager.form
+        manager = self.manager
+        form_class = manager.form
         if not form_class:
             raise MethodNotAllowed
-        data, files = request.data_and_files()
-        form = form_cls(request, data=data, files=files)
-        if form.is_valid():
-            instance = self.manager.create_model(form.cleaned_data)
-            data = self.manager.instance(instance)
-        else:
-            data = form.tojson()
-        return Json(data).http_response(request)
+        if manager.has_permission(user, manager.UPDATE):
+            data, files = request.data_and_files()
+            form = form_cls(request, data=data, files=files)
+            if form.is_valid():
+                instance = manager.create_model(form.cleaned_data)
+                data = self.manager.instance(instance)
+            else:
+                data = form.tojson()
+            return Json(data).http_response(request)
+        raise PermissionDenied
 
     def get_user(self, request):
         return request.cache.user

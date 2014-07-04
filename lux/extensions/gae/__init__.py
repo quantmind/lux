@@ -10,7 +10,12 @@ from lux.extensions import sessions
 from lux.utils.crypt import digest
 from lux.extensions.sessions import AuthenticationError
 
-from .models import Session, Registration
+try:
+    import jwt
+except ImportError:
+    jwt = None
+
+from .models import ndb, Session, Registration, UserRole
 from .oauth import User
 from .api import *
 
@@ -20,7 +25,33 @@ isdev = lambda: os.environ.get('SERVER_SOFTWARE', '').startswith('Development')
 ndbid = lambda value: int(value)
 
 
-class AuthBackend(sessions.AuthBackend):
+def role_name(model):
+    if isinstance(model, ndb.Model):
+        model = model.__class__
+    return model.__name__.lower()
+
+
+class GaeBackend(sessions.AuthBackend):
+    model = User
+
+    def has_permission(self, request, level, model):
+        user = request.cache.user
+        if user.is_superuser:
+            return True
+        elif level <= self.READ:
+            return True
+        elif user.is_authenticated():
+            roles = request.cache.user_roles
+            if roles is None:
+                request.cache.user_roles = roles = UserRole.get_by_user(user)
+            name = role_name(model)
+            for role in roles:
+                if role.name == name and role.level >= level:
+                    return True
+        return False
+
+
+class AuthBackend(GaeBackend):
     '''Authentication backend for Google app-engine
     '''
     model = User
@@ -155,3 +186,36 @@ class AuthBackend(sessions.AuthBackend):
                     response.set_cookie(key, value=str(id),
                                         expires=session.expiry)
         return response
+
+
+class JwtBackend(GaeBackend):
+    '''Authentication backend based on JWT
+    '''
+
+    def middleware(self, app):
+        return [self._load]
+
+    def get_user(self, request, username=None, email=None, auth_key=None):
+        if username:
+            assert email is None, 'get_user by username or email'
+            assert auth_key is None
+            return self.model.get_by_username(username)
+        elif email:
+            assert auth_key is None
+            return self.model.get_by_email(email)
+        elif auth_key:
+            assert jwt, 'jwt library required'
+            data = jwt.decode(auth_key, self.secret_key)
+            return self.model.get_by_username(data['username'])
+
+    def _load(self, environ, start_response):
+        request = wsgi_request(environ)
+        auth = request.get('HTTP_AUTHORIZATION')
+        if auth:
+            auth_type, key = auth.split(None, 1)
+            auth_type = auth_type.lower()
+            if auth_type == 'bearer':
+                try:
+                    request.cache.user = self.get_user(request, auth_key=key)
+                except Exception:
+                    request.app.logger.exception('Could not load user')

@@ -155,3 +155,19 @@ class Registration(ndb.Model):
             raise sessions.AuthenticationError('already used')
         elif self.expiry < datetime.now():
             raise sessions.AuthenticationError('expired')
+
+
+class Role(ndb.Model):
+    name = ndb.StringProperty()
+    level = ndb.IntegerProperty()
+
+
+class UserRole(ndb.Model):
+    user = ndb.KeyProperty(User)
+    roles = ndb.StructuredProperty(Role, repeated=True)
+
+    @classmethod
+    def get_by_user(cls, user):
+        q = cls.query(cls.user == user.key())
+        roles = q.fetch(1)
+        return users[0].roles if roles else []

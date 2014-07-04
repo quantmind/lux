@@ -39,22 +39,30 @@ class Router(lux.Router):
         parent = {'href': root.path(),
                   'name': root.name,
                   'target': '_self'}
-        sitemap, page = root._sitemap([parent], path, children=True)
+        sitemap, page = _sitemap(root, [parent], path, children=True)
         page = parent if path == parent['href'] else page
         return sitemap, page
 
     def get(self, request):
-        sitemap, page = self.sitemap(request.path)
-        if self == self.root and sitemap:
+        path = request.path
+        sitemap, page = self.sitemap(path)
+        if self.root.path() == path and sitemap:
             return request.redirect(sitemap[0]['href'])
         else:
             ctx = {'sitemap': sitemap,
                    'page': page,
                    'collapse_width': collapse_width,
                    'theme': request.config['ADMIN_THEME']}
-            return request.app.html_response(request, 'admin.html',
-                                             jscontext=ctx,
-                                             title='%s - Admin')
+            return self.html_response(request, ctx)
+
+
+    def html_response(self, request, ctx):
+        '''Build the html response
+        '''
+        app = request.app
+        context = {'page_footer': app.template('footer.html')}
+        return app.html_response(request, 'admin.html', jscontext=ctx,
+                                 context=context, title='%s - Admin')
 
     def wrap_html(self, request, html, span=12):
         '''Default wrapper for html loaded via angular
@@ -63,34 +71,35 @@ class Router(lux.Router):
                     Html('div', html, cn='col-sm-%d' % span),
                     cn='row').render(request)
 
-    def _sitemap(self, parents, path, children=False):
-        links = []
-        page = None
-        for route in self.routes:
-            # In navigation
-            if getattr(route, 'in_nav', False):
-                href = route.path()
-                link = {'href': href,
-                        'name': route.name,
-                        'title': getattr(route, 'title', route.name),
-                        'parents': parents,
-                        'target': getattr(route, 'target', None)}
-                if href == path:
-                    page = link
-                    parents[-1]['active'] = True
-                if children:
-                    new_parents = [link]
-                    new_parents.extend(parents)
-                    children, pg = route._sitemap(list(reversed(new_parents)),
-                                                  path)
-                    page = page or pg
-                if children:
-                    parent = {'links': children}
-                    parent.update(link)
-                    links.append(parent)
-                else:
-                    links.append(link)
-        return links, page
+
+def _sitemap(self, parents, path, children=False):
+    links = []
+    page = None
+    for route in self.routes:
+        # In navigation
+        if getattr(route, 'in_nav', False):
+            href = route.path()
+            link = {'href': href,
+                    'name': route.name,
+                    'title': getattr(route, 'title', route.name),
+                    'parents': parents,
+                    'target': getattr(route, 'target', None)}
+            if href == path:
+                page = link
+                parents[-1]['active'] = True
+            if children:
+                nparents = [link]
+                nparents.extend(parents)
+                nparents = list(reversed(nparents))
+                children, pg = _sitemap(route, nparents, path)
+                page = page or pg
+            if children:
+                parent = {'links': children}
+                parent.update(link)
+                links.append(parent)
+            else:
+                links.append(link)
+    return links, page
 
 
 def require_superuser(handler, request):

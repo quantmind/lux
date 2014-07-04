@@ -25,6 +25,7 @@ from inspect import isclass
 from collections import OrderedDict
 from importlib import import_module
 
+import pulsar
 from pulsar.utils.httpurl import remove_double_slash
 from pulsar.apps.wsgi import WsgiHandler, HtmlDocument, test_wsgi_environ
 from pulsar.utils.pep import itervalues
@@ -52,7 +53,7 @@ ALL_EVENTS = ('on_config',  # Config ready.
               )
 
 
-def execute_from_config(config_file):
+def execute_from_config(config_file, **params):
     '''Create and run an :class:`App` from a ``config_file``.
 
 This is the function to use when creating the script which runs your
@@ -67,7 +68,7 @@ web applications::
     up a new :class:`App`. The config file should be located in the
     python module which implements the :ref:`main application` of the web site.
     '''
-    execute_app(App(config_file))
+    execute_app(App(config_file, **params))
 
 
 def execute_from_command_line(argv=None):
@@ -112,12 +113,12 @@ def execute_app(app, argv=None, **params):
 
 
 class App(ConsoleParser, LocalMixin, Extension):
-    '''This is the main class for driving lux applications.
+    '''A lux :class:`App` is the WSGI callable for serving lux applications.
 
     It is a specialised :class:`~.Extension` which collects
     all extensions of your application and setup the wsgi middleware used by
     the web server.
-    An :class:`App` is not initialised directly, the higher level
+    An :class:`App` is not usually initialised directly, the higher level
     :func:`execute_from_config` is used instead.
 
 
@@ -175,7 +176,7 @@ class App(ConsoleParser, LocalMixin, Extension):
                   'Default formatting for dates'),
         Parameter('DEFAULT_TEMPLATE_ENGINE', 'python',
                   'Default template engine'),
-        Parameter('SITE_NAME', 'Lux', 'Web site name'),
+        Parameter('APP_NAME', 'Lux', 'Application site name'),
         Parameter('SITE_URL', None,
                   'Web site url'),
         Parameter('LINKS',
@@ -188,8 +189,6 @@ class App(ConsoleParser, LocalMixin, Extension):
                    'datastore which support the cache protocol or an object '
                    'supporting the cache protocol')),
         Parameter('DEFAULT_FROM_EMAIL', '',
-                  'Default email address to send email from'),
-        Parameter('MESSAGES_BACKEND', 'lux.MessageBackend',
                   'Default email address to send email from')
         ]
 
@@ -280,6 +279,13 @@ class App(ConsoleParser, LocalMixin, Extension):
             environ.update(kw)
         request = WsgiRequest(environ)
         environ['error.handler'] = self.config['ERROR_HANDLER']
+        # Check if pulsar is serving the application
+        if 'pulsar.cfg' not in environ:
+            cfg = self.local.cfg
+            if not cfg:
+                self.local.cfg = cfg = pulsar.Config(debug=self.debug)
+            environ['pulsar.cfg'] = cfg
+
         request.cache.app = self
         return request
 
@@ -358,16 +364,22 @@ class App(ConsoleParser, LocalMixin, Extension):
 
         Evaluated lazily when :attr:`extensions` are loaded.
         '''
+        params = self._params
         parser = self.get_parser(with_commands=False, add_help=False)
-        options, _ = parser.parse_known_args(self.meta.argv)
-        config_module = import_module(options.config)
-        if options.config != self.config_module:
+        opts, _ = parser.parse_known_args(self.meta.argv)
+        config_module = import_module(opts.config)
+        if opts.config != self.config_module:
             # Different config file, configure again
             self.configure(config_module.__file__)
         #
+        # Allow for debug and loglevel to be set during initialisation
+        debug = opts.debug or params.get('debug', False)
+        loglevel = opts.loglevel
+        if loglevel == 'info':
+            loglevel = params.get('loglevel', loglevel)
+        #
         # setup application
-        config = self.setup(config_module, options.debug, options.loglevel,
-                            self._params)
+        config = self.setup(config_module, debug, loglevel, params)
         #
         # Load extensions
         self.logger.debug('Setting up extensions')
@@ -383,8 +395,8 @@ class App(ConsoleParser, LocalMixin, Extension):
                 extension = Ext()
                 extensions[extension.meta.name] = extension
                 self.bind_events(extension)
-                config.update(extension.setup(config_module, options.debug,
-                                              options.loglevel, self._params))
+                config.update(extension.setup(config_module, debug,
+                                              loglevel, params))
         return config
 
     def get_command(self, name, stdout=None, stderr=None):
@@ -502,6 +514,7 @@ class App(ConsoleParser, LocalMixin, Extension):
             if os.path.exists(filename):
                 with open(filename, 'r') as file:
                     return file.read()
+        return ''
 
     def context(self, request, context, js=None):
         '''Load the ``context`` dictionary for this ``request``
@@ -527,7 +540,8 @@ class App(ConsoleParser, LocalMixin, Extension):
         :param template_name: the template file name to load
         :param context: optional context dictionary
         '''
-        if request.response.content_type == 'text/html':
+        if 'text/html' in request.content_types:
+            request.response.content_types = 'text/html'
             document = request.html_document
             head = document.head
             if title:

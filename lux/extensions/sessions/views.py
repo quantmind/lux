@@ -4,7 +4,7 @@ except ImportError:
     jwt = None
 
 import lux
-from pulsar import Http404
+from pulsar import Http404, PermissionDenied
 from pulsar.apps.wsgi import Router, Json, route
 
 from .oauth import Accounts
@@ -44,7 +44,7 @@ class Login(Router):
         '''
         html = self.fclass(request).layout(request, action=request.full_path())
         context = {'form': html.render(request),
-                   'site_name': request.config['SITE_NAME']}
+                   'site_name': request.config['APP_NAME']}
         jscontext = {'oauths': oauth_context(request)}
         return request.app.html_response(request, 'login.html',
                                          context=context,
@@ -76,7 +76,7 @@ class SignUp(Router):
     def get(self, request):
         html = self.fclass(request).layout(request, action=request.full_path())
         context = {'form': html.render(request),
-                   'site_name': request.config['SITE_NAME']}
+                   'site_name': request.config['APP_NAME']}
         jscontext = {'oauths': oauth_context(request)}
         return request.app.html_response(request, 'signup.html',
                                          context=context,
@@ -124,7 +124,7 @@ class ForgotPassword(Router):
         '''
         html = self.fclass(request).layout(request, action=request.full_path())
         context = {'form': html.render(request),
-                   'site_name': request.config['SITE_NAME']}
+                   'site_name': request.config['APP_NAME']}
         return request.app.html_response(request, 'forgot.html',
                                          context=context)
 
@@ -142,7 +142,7 @@ class ForgotPassword(Router):
         form = ChangePassword2(request)
         html = form.layout(request, action=request.full_path('reset'))
         context = {'form': html.render(request),
-                   'site_name': request.config['SITE_NAME']}
+                   'site_name': request.config['APP_NAME']}
         return request.app.html_response(request, 'reset_password.html',
                                          context=context)
 
@@ -251,6 +251,8 @@ class Token(Router):
         user = request.cache.user
         if not user:
             raise PermissionDenied
-        secret = request.app.config['SECRET_KEY']
-        token = jwt.encode({"username": user.username}, secret)
+        cfg = request.config
+        secret = cfg['SECRET_KEY']
+        token = jwt.encode({'username': user.username,
+                            'application': cfg['APP_NAME']}, secret)
         return Json({'token': token}).http_response(request)
