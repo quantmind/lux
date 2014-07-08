@@ -184,6 +184,7 @@ class Layout(Template):
     tag = 'form'
     default_element = Fieldset
     form_class = None
+    controller = None
     defaults = {'role': 'form'}
 
     @property
@@ -206,12 +207,12 @@ class Layout(Template):
         self._style = style
         self.ngmodel = ngmodel
         self.labels = labels
+        self.controller = ngcontroller or 'formController'
         parameters['enctype'] = enctype or 'multipart/form-data'
         parameters['method'] = method or 'post'
         if ngmodel:
             parameters['novalidate'] = ''
             parameters['name'] = name or 'form'
-            parameters['ng-controller'] = ngcontroller or 'formController'
             parameters['ng-submit'] = 'processForm($event)'
             parameters['ng-cloak'] = ''
         super(Layout, self).init_parameters(**parameters)

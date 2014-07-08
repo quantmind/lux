@@ -4,6 +4,7 @@ except ImportError:
     jwt = None
 
 import lux
+from lux.forms import Form
 from pulsar import Http404, PermissionDenied
 from pulsar.apps.wsgi import Router, Json, route
 
@@ -30,6 +31,17 @@ def oauth_context(request, path='/oauth/'):
             data['current'] = current[name]
         oauths.append(data)
     return oauths
+
+
+def csrf(method):
+
+    def _(self, request):
+        # make sure CSRF is checked
+        data, files = request.data_and_files()
+        Form(request, data=data, files=files)
+        return method(self, request)
+
+    return _
 
 
 class Login(Router):
@@ -191,6 +203,7 @@ class ForgotPassword(Router):
 class Logout(Router):
     '''Logout handler, post view only
     '''
+    @csrf
     def post(self, request):
         '''Logout via post method
         '''
@@ -245,6 +258,7 @@ class OAuth(Router):
 
 class Token(Router):
 
+    @csrf
     def post(self, request):
         '''Obtain a Json Web Token (JWT)
         '''

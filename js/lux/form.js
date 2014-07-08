@@ -6,13 +6,13 @@
             scope: {
                 onchange: '&watchChange'
             },
+            //
             link: function(scope, element, attrs) {
                 element.on('keyup', function() {
                     scope.$apply(function () {
                         scope.onchange();
                     });
-                });
-                element.on('change', function() {
+                }).on('change', function() {
                     scope.$apply(function () {
                         scope.onchange();
                     });
@@ -23,16 +23,20 @@
 
     // Change the form data depending on content type
     function formData(ct) {
+
         return function (data, getHeaders ) {
+            angular.extend(data, context.csrf);
             if (ct === 'application/x-www-form-urlencoded')
-                return $.param(options.data);
+                return $.param(data);
             else if (ct === 'multipart/form-data') {
                 var fd = new FormData();
                 angular.forEach(data, function (value, key) {
                     fd.append(key, value);
                 });
                 return fd;
-            } else return data;
+            } else {
+                return data;
+            }
         };
     }
 
@@ -122,42 +126,40 @@
             }
 
             //
-            promise.then(
-                function(data) {
-                    if (data.messages) {
-                        angular.forEach(data.messages, function (messages, field) {
-                            $scope.formMessages[field] = messages;
-                        });
-                    } else {
-                        window.location.href = data.redirect || '/';
-                    }
-                },
-                function(data, status, headers) {
-                    var messages, msg;
-                    if (data) {
-                        messages = data.messages;
-                        if (!messages) {
-                            msg = data.message;
-                            if (!msg) {
-                                status = status || data.status || 501;
-                                msg = 'Server error (' + data.status + ')';
-                            }
-                            messages = {};
-                            messages[FORMKEY] = [{message: msg, error: true}];
+            promise.success(function(data) {
+                if (data.messages) {
+                    angular.forEach(data.messages, function (messages, field) {
+                        $scope.formMessages[field] = messages;
+                    });
+                } else {
+                    window.location.href = data.redirect || '/';
+                }
+            }).error(function(data, status, headers) {
+                var messages, msg;
+                if (data) {
+                    messages = data.messages;
+                    if (!messages) {
+                        msg = data.message;
+                        if (!msg) {
+                            status = status || data.status || 501;
+                            msg = 'Server error (' + data.status + ')';
                         }
-                    } else {
-                        status = status || 501;
-                        msg = 'Server error (' + data.status + ')';
                         messages = {};
                         messages[FORMKEY] = [{message: msg, error: true}];
                     }
-                    formMessages(messages);
-                });
+                } else {
+                    status = status || 501;
+                    msg = 'Server error (' + data.status + ')';
+                    messages = {};
+                    messages[FORMKEY] = [{message: msg, error: true}];
+                }
+                formMessages(messages);
+            });
         };
     }
 
     lux.controllers.controller('formController', ['$scope', '$lux',
-            function ($scope, $lux) {
+            function ($scope, $lux, data) {
         // Model for a user when updating
-        formController($scope, $lux);
+        formController($scope, $lux, data);
     }]);

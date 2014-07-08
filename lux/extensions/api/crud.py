@@ -1,4 +1,4 @@
-from pulsar import MethodNotAllowed, PermissionDenied
+from pulsar import MethodNotAllowed, PermissionDenied, Http404
 from pulsar.apps.wsgi import Json
 
 import lux
@@ -24,7 +24,7 @@ class ModelManager(object):
         cfg = request.config
         user = request.cache.user
         MAXLIMIT = (cfg['API_LIMIT_AUTH'] if user.is_authenticated() else
-                    cfg['API_LIMIT_LIMIT'])
+                    cfg['API_LIMIT_NOAUTH'])
         limit = request.body_data().get(cfg['API_LIMIT_KEY'],
                                         cfg['API_LIMIT_DEFAULT'])
         return min(limit, MAXLIMIT)
@@ -34,6 +34,11 @@ class ModelManager(object):
         return request.body_data().get(cfg['API_OFFSET_KEY'], 0)
 
     def collection(self, limit, offset=0, text=None):
+        raise NotImplementedError
+
+    def get(self, id):
+        '''Fetch an instance by its id
+        '''
         raise NotImplementedError
 
     def instance(self, instance):
@@ -53,10 +58,10 @@ class CRUD(lux.Router):
     manager = lux.RouterParam(ModelManager())
 
     def get(self, request):
-        user = self.get_user(request)
         limit = self.manager.limit(request)
         offset = self.manager.offset(request)
-        data = self.manager.collection(limit, offset)
+        collection = self.manager.collection(limit, offset)
+        data = self.collection_data(request, collection)
         return Json(data).http_response(request)
 
     def post(self, request):
@@ -72,7 +77,8 @@ class CRUD(lux.Router):
             form = form_class(request, data=data, files=files)
             if form.is_valid():
                 instance = manager.create_model(form.cleaned_data)
-                data = manager.instance(instance)
+                data = self.instance_data(request, instance)
+                request.response.status_code = 201
             else:
                 data = form.tojson()
             return Json(data).http_response(request)
@@ -80,8 +86,11 @@ class CRUD(lux.Router):
 
     @route('<id>')
     def read(self, request):
-        instance = self.manager.get(request.url_args['id'])
-        data = self.manager.instance(instance)
+        instance = self.manager.get(request.urlargs['id'])
+        if not instance:
+            raise Http404
+        url = request.absolute_uri()
+        data = self.instance_data(request, instance, url=url)
         return Json(data).http_response(request)
 
     @route('<id>', method='post')
@@ -101,5 +110,13 @@ class CRUD(lux.Router):
             return Json(data).http_response(request)
         raise PermissionDenied
 
-    def get_user(self, request):
-        return request.cache.user
+    def instance_data(self, request, instance, url=None):
+        data = self.manager.instance(instance)
+        url = url or request.absolute_uri('%s' % data['id'])
+        data['api_url'] = url
+        return data
+
+    def collection_data(self, request, collection):
+        d = self.instance_data
+        return [d(request, instance) for instance in collection]
+

@@ -29,19 +29,10 @@ class Extension(lux.Extension):
 class Router(lux.Router):
     '''A specialised Router for the admin site
     '''
+    template_name = lux.RouterParam('html')
+    api = lux.RouterParam(None)
     in_nav = True
     target = None
-
-    def sitemap(self, path):
-        '''Build the sitemap for this router.
-        '''
-        root = self.root
-        parent = {'href': root.path(),
-                  'name': root.name,
-                  'target': '_self'}
-        sitemap, page = _sitemap(root, [parent], path, children=True)
-        page = parent if path == parent['href'] else page
-        return sitemap, page
 
     def get(self, request):
         path = request.path
@@ -55,6 +46,16 @@ class Router(lux.Router):
                    'theme': request.config['ADMIN_THEME']}
             return self.html_response(request, ctx)
 
+    def sitemap(self, path):
+        '''Build the sitemap for this router.
+        '''
+        root = self.root
+        parent = {'href': root.path(),
+                  'name': root.name,
+                  'target': '_self'}
+        sitemap, page = _sitemap(root, [parent], path, children=True)
+        page = parent if path == parent['href'] else page
+        return sitemap, page
 
     def html_response(self, request, ctx):
         '''Build the html response
@@ -75,15 +76,32 @@ class Router(lux.Router):
 def _sitemap(self, parents, path, children=False):
     links = []
     page = None
-    for route in self.routes:
+    root = self
+    getmany = False
+    for router in self.routes:
+        if children:
+            root = router
+            getmany = True
         # In navigation
-        if getattr(route, 'in_nav', False):
-            href = route.path()
+        if getattr(router, 'in_nav', False):
+            vars = router.route.ordered_variables or None
+            if vars:
+                params = dict(((v, ':%s' % v) for v in vars))
+                href = router.path(**params)
+            else:
+                href = router.path()
+            template_router = root.get_route(router.template_name)
             link = {'href': href,
-                    'name': route.name,
-                    'title': getattr(route, 'title', route.name),
+                    'vars': vars,
+                    'name': router.name,
+                    'title': getattr(router, 'title', router.name),
                     'parents': parents,
-                    'target': getattr(route, 'target', None)}
+                    'api': router.api,
+                    'getmany': getmany,
+                    'target': getattr(router, 'target', None)}
+            if template_router:
+                link.update({'template_url': template_router.path(),
+                             'controller': template_router.get_controller()})
             if href == path:
                 page = link
                 parents[-1]['active'] = True
@@ -91,7 +109,7 @@ def _sitemap(self, parents, path, children=False):
                 nparents = [link]
                 nparents.extend(parents)
                 nparents = list(reversed(nparents))
-                children, pg = _sitemap(route, nparents, path)
+                children, pg = _sitemap(router, nparents, path)
                 page = page or pg
             if children:
                 parent = {'links': children}

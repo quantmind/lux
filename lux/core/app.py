@@ -313,7 +313,8 @@ class App(ConsoleParser, LocalMixin, Extension):
         #
         if doc.has_default_content_type:
             head = doc.head
-            head.scripts.known_libraries['lux'] = 'lux/lux'
+            head.scripts.known_libraries['lux'] = {'url': 'lux/lux',
+                                                   'minify': False}
             #
             required = cfg['JSREQUIRED']
             if required:

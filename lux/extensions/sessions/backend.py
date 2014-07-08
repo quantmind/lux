@@ -134,7 +134,6 @@ class AuthBackend(object):
         self.session_cookie_name = app.config['SESSION_COOKIE_NAME']
         self.session_expiry = app.config['SESSION_EXPIRY']
         self.salt_size = app.config['AUTH_SALT_SIZE']
-        self.csrf = app.config['CSRF_KEY_LENGTH']
         self.check_username = app.config['CHECK_USERNAME']
         algorithm = app.config['CRYPT_ALGORITHM']
         self.crypt_module = import_module(algorithm)
@@ -156,6 +155,16 @@ class AuthBackend(object):
         '''Create a new session
         '''
         raise NotImplementedError
+
+    def csrf_token(self, session):
+        '''Create a token for CSRF
+        '''
+        pass
+
+    def validate_csrf_token(self, request, token):
+        '''Validate CSRF
+        '''
+        pass
 
     def get_user(self, request, **kwargs):
         '''Retrieve a user.

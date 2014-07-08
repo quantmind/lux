@@ -1,14 +1,16 @@
 '''Google appengine utilities
 '''
 import os
+import time
 from datetime import datetime, timedelta
 
+from pulsar import PermissionDenied
 from pulsar.apps.wsgi import wsgi_request
 
 import lux
 from lux.extensions import sessions
-from lux.utils.crypt import digest
-from lux.extensions.sessions import AuthenticationError
+from lux.utils.crypt import digest, get_random_string
+from lux.extensions.sessions import AuthenticationError, REASON_BAD_TOKEN
 
 try:
     import jwt
@@ -21,8 +23,6 @@ from .api import *
 
 
 isdev = lambda: os.environ.get('SERVER_SOFTWARE', '').startswith('Development')
-
-ndbid = lambda value: int(value)
 
 
 def role_name(model):
@@ -50,17 +50,40 @@ class GaeBackend(sessions.AuthBackend):
                     return True
         return False
 
+    def decode_jwt(self, token):
+        data = jwt.decode(token, self.secret_key)
+        expiry = data.get('expiry')
+        if expiry and time.time() > expiry:
+            raise PermissionDenied('Session expired, try reloading the page')
+        return data
+
 
 class AuthBackend(GaeBackend):
     '''Authentication backend for Google app-engine
     '''
     model = User
+    csrf_expiry = 12*60*60
 
     def middleware(self, app):
         return [self._load]
 
     def response_middleware(self, app):
         return [self._save]
+
+    def csrf_token(self, request):
+        session = request.cache.session
+        if session:
+            assert jwt, 'Requires jwt package'
+            return jwt.encode({'session': session.key.id(),
+                               'expiry': time.time() + self.csrf_expiry},
+                              self.secret_key)
+
+    def validate_csrf_token(self, request, token):
+        if not token:
+            raise PermissionDenied(REASON_BAD_TOKEN)
+        token = self.decode_jwt(token)
+        if token['session'] != request.cache.session.key.id():
+            raise PermissionDenied(REASON_BAD_TOKEN)
 
     def create_registration(self, request, user, expiry):
         auth_key = digest(user.username)
@@ -139,7 +162,10 @@ class AuthBackend(GaeBackend):
             session.put()
         if not expiry:
             expiry = datetime.now() + timedelta(seconds=self.session_expiry)
-        session = Session(user=user.key if user else None, expiry=expiry,
+        session = Session(id=self._create_session_id(user),
+                          user=user.key if user else None,
+                          expiry=expiry,
+                          client_address=request.get_client_address(),
                           agent=request.get('HTTP_USER_AGENT', ''))
         session.put()
         return session
@@ -160,12 +186,11 @@ class AuthBackend(GaeBackend):
 
     def _load(self, environ, start_response):
         request = wsgi_request(environ)
-        cookies = request.response.cookies
         key = request.app.config['SESSION_COOKIE_NAME']
-        session_key = cookies.get(key)
+        session_key = request.cookies.get(key)
         session = None
         if session_key:
-            session = Session.get_by_id(ndbid(session_key.value))
+            session = Session.get_by_id(session_key.value)
         if not session:
             session = self.create_session(request)
         request.cache.session = session
@@ -175,17 +200,26 @@ class AuthBackend(GaeBackend):
             request.cache.user = sessions.Anonymous()
 
     def _save(self, environ, response):
-        if response.can_set_cookies():
-            request = wsgi_request(environ)
-            session = request.cache.session
-            if session:
+        request = wsgi_request(environ)
+        session = request.cache.session
+        if session:
+            if response.can_set_cookies():
                 key = request.app.config['SESSION_COOKIE_NAME']
-                session_key = response.cookies.get(key)
+                session_key = request.cookies.get(key)
                 id = str(session.key.id())
                 if not session_key or session_key.value != id:
-                    response.set_cookie(key, value=str(id),
+                    response.set_cookie(key, value=str(id), httponly=True,
                                         expires=session.expiry)
+
+            session.put()
         return response
+
+    def _create_session_id(self, user):
+        while True:
+            session_key = get_random_string(32)
+            if not Session.get_by_id(session_key):
+                break
+        return session_key
 
 
 class JwtBackend(GaeBackend):
@@ -211,11 +245,13 @@ class JwtBackend(GaeBackend):
     def _load(self, environ, start_response):
         request = wsgi_request(environ)
         auth = request.get('HTTP_AUTHORIZATION')
+        user = None
         if auth:
             auth_type, key = auth.split(None, 1)
             auth_type = auth_type.lower()
             if auth_type == 'bearer':
                 try:
-                    request.cache.user = self.get_user(request, auth_key=key)
+                    user = self.get_user(request, auth_key=key)
                 except Exception:
                     request.app.logger.exception('Could not load user')
+        request.cache.user = user or sessions.Anonymous()

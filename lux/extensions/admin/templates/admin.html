@@ -33,7 +33,7 @@
                             <i class="fa" ng-class="{'fa-chevron-left': !link.active, 'fa-chevron-down': link.active}"></i></a>
                         <ul ng-if="link.links" class="nav nav-second-level collapse" ng-class="{in: link.active}">
                             <li ng-repeat="link in link.links">
-                                <a href="{{link.href}}" ng-click="loadPage($event)">{{link.name}}</a>
+                                <a ng-if="!link.vars" href="{{link.href}}" ng-click="loadPage($event)">{{link.name}}</a>
                             </li>
                         </ul>
                     </li>

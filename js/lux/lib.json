@@ -3,6 +3,7 @@
             "js/lux/api.js",
             "js/lux/page.js",
             "js/lux/form.js",
+            "js/lux/nglist.js",
             "js/lux/user.js",
             "js/lux/close.js"],
     "dest": "lux/media/lux/lux.js",

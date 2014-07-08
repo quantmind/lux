@@ -137,22 +137,29 @@ class Router(wsgi.Router):
     management.'''
     in_nav = False
     content_manager = None
-    '''Optional :class:`lux.core.content.ContentManager`.
-
-    A content manager can be used to separate the matching and parsing
-    of a URL, provided by the :class:`Router` with the actual handling of
-    the request.'''
+    controller = None
+    form = RouterParam(None)
 
     def __init__(self, *args, **kwargs):
         super(Router, self).__init__(*args, **kwargs)
         if self.content_manager:
             self.content_manager = self.content_manager._clone(self)
 
+    @classmethod
+    def make_router(cls, rule, **params):
+        return Router(rule, **params)
+
+    def get_controller(self):
+        if self.controller:
+            return self.controller
+        elif self.form:
+            return self.form.layout.controller
+
     def template_response(self, request, template):
         '''A text/html response with an angular template
         '''
         response = request.response
-        response.content_type = 'text/html'
+        response.content_type = 'text/plain'
         response.content = template
         return response
 

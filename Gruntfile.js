@@ -31,7 +31,7 @@ module.exports = function(grunt) {
         var result = {};
         for_each(libs, function (name) {
             result[name] = {dest: this.dest.replace('.js', '.min.js'),
-                            src: ['<banner>', this.dest]};
+                            src: [this.dest]};
         });
         return result;
     }

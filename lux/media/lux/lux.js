@@ -6,11 +6,12 @@ define(['jquery', 'angular', 'angular-route', 'angular-sanitize'], function ($) 
         root = window,
         routes = [],
         ready_callbacks = [],
-        context = angular.extend(defaults, root.context);
+        context = $.extend(defaults, root.context);
 
+    angular.element = $;
     lux.$ = $;
     lux.context = context;
-    lux.services = angular.module('lux.services', []),
+    lux.services = angular.module('lux.services', []);
     lux.controllers = angular.module('lux.controllers', ['lux.services']);
     lux.app = angular.module('lux', ['ngRoute', 'ngSanitize', 'lux.controllers', 'lux.services']);
 
@@ -26,7 +27,7 @@ define(['jquery', 'angular', 'angular-route', 'angular-sanitize'], function ($) 
     };
 
     lux.bootstrap = function () {
-        angular.element(document).ready(function() {
+        $(document).ready(function() {
             //
             if (routes.length && context.html5mode) {
                 var rs = routes;
@@ -58,9 +59,16 @@ define(['jquery', 'angular', 'angular-route', 'angular-sanitize'], function ($) 
         }]);
     };
 
-
-    var LuxApis = {};
-
+    // If CSRF token is not available
+    // try to obtain it from the meta tags
+    if (!context.csrf) {
+        var name = $("meta[name=csrf-param]").attr('content'),
+            token = $("meta[name=csrf-token]").attr('content');
+        if (name && token) {
+            context.csrf = {};
+            context.csrf[name] = token;
+        }
+    }
     //  Lux Api service factory for angular
     //  ---------------------------------------
     //
@@ -71,6 +79,15 @@ define(['jquery', 'angular', 'angular-route', 'angular-sanitize'], function ($) 
         this.log = $log;
         this.http = $http;
         this.q = $q;
+
+        // A post method with CSRF parameter
+        this.post = function (url, data, cfg) {
+            if (context.csrf) {
+                data || (data = {});
+                angular.extend(data, context.csrf);
+            }
+            return $http.post(url, data, cfg);
+        };
 
         this.api = function (name, provider) {
             if (!provider) provider = LuxApiProvider;
@@ -97,7 +114,11 @@ define(['jquery', 'angular', 'angular-route', 'angular-sanitize'], function ($) 
                 deferred = $lux.q.defer();
 
             function _error (data, status, headers) {
-                deferred.reject(data, status, headers);
+                deferred.reject({
+                    'data': data,
+                    'status': status,
+                    'headers': headers
+                });
             }
 
             if (this._api) {
@@ -106,8 +127,8 @@ define(['jquery', 'angular', 'angular-route', 'angular-sanitize'], function ($) 
                     deferred.reject('Could not find a valid url for ' + api.name);
                 else if (this.user_token === undefined && context.user) {
                     $lux.log.info('Fetching authentication token');
-                    $lux.http.post('/_token').success(function (resp) {
-                        self.user_token = resp.token || null;
+                    $lux.post('/_token').success(function (data) {
+                        self.user_token = data.token || null;
                         self.call(api, options, callback, deferred);
                     }).error(_error);
                 } else {
@@ -125,8 +146,13 @@ define(['jquery', 'angular', 'angular-route', 'angular-sanitize'], function ($) 
                     if (!url) url = api_url;
                     options.url = url;
                     //
-                    $lux.http(options).success(function (resp) {
-                        deferred.resolve(callback ? callback(resp) : resp);
+                    $lux.http(options).success(function (data, status, headers) {
+                        data = callback ? callback(data) : data;
+                        deferred.resolve({
+                            'data': data,
+                            'status': status,
+                            'headers': headers
+                        });
                     }).error(_error);
                 }
             } else if (context.apiUrl) {
@@ -137,10 +163,31 @@ define(['jquery', 'angular', 'angular-route', 'angular-sanitize'], function ($) 
                     self.call(api, options, callback, deferred);
                 }).error(_error);
             } else {
-                deferred.resolve({'message': 'Api url not available'});
+                deferred.resolve({
+                    data: {
+                        'message': 'Api url not available',
+                        'error': true
+                    }
+                });
             }
             //
-            return deferred.promise;
+            var promise = deferred.promise;
+            //
+            promise.success = function(fn) {
+                promise.then(function(response) {
+                    fn(response.data, response.status, response.headers);
+                });
+                return promise;
+            };
+
+            promise.error = function(fn) {
+                promise.then(null, function(response) {
+                    fn(response.data, response.status, response.headers);
+                });
+                return promise;
+            };
+            //
+            return promise;
         }
     };
 
@@ -189,8 +236,9 @@ define(['jquery', 'angular', 'angular-route', 'angular-sanitize'], function ($) 
     // Page Controller
     //
     // Handle html5 sitemap
-    lux.controllers.controller('page', ['$scope', '$http', '$location', function ($scope, $http, $location) {
+    lux.controllers.controller('page', ['$scope', '$lux', function ($scope, $lux) {
         angular.extend($scope, context);
+        //
         $scope.search_text = '';
         $scope.page = context.page || {};
         $scope.sidebar_collapse = '';
@@ -199,7 +247,7 @@ define(['jquery', 'angular', 'angular-route', 'angular-sanitize'], function ($) 
         $scope.logout = function(e, url) {
             e.preventDefault();
             e.stopPropagation();
-            $.post(url).success(function (data) {
+            $lux.post(url).success(function (data) {
                 if (data.redirect)
                     window.location.replace(data.redirect);
             });
@@ -214,7 +262,7 @@ define(['jquery', 'angular', 'angular-route', 'angular-sanitize'], function ($) 
 
         // Dismiss a message
         $scope.dismiss = function (m) {
-            $http.post('/_dismiss_message', m);
+            $lux.post('/_dismiss_message', {message: m});
         };
 
         $scope.togglePage = function ($event) {
@@ -244,16 +292,35 @@ define(['jquery', 'angular', 'angular-route', 'angular-sanitize'], function ($) 
     }]);
 
     //  SITEMAP
+    //  -----------------
     //
+    //  Build an HTML5 sitemap when the ``context.sitemap`` variable is set.
     function _load_sitemap (sitemap) {
         angular.forEach(sitemap, function (page) {
             _load_sitemap(page.links);
             if (page.href && page.target !== '_self') {
-                lux.addRoute(page.href, {
-                    templateUrl: page.href + '/html'
-                });
+                lux.addRoute(page.href, route_config(page));
             }
         });
+    }
+
+    function route_config (page) {
+        return {
+            templateUrl: page.template_url,
+            controller: page.controller,
+            resolve: {
+                data: function ($lux, $route) {
+                    if (page.api) {
+                        var api = $lux.api(page.api, page.api_provider),
+                            id = $route.current.params.id;
+                        if (id)
+                            return $lux.get(id);
+                        else if (page.getmany)
+                            return api.getMany();
+                    }
+                }
+            }
+        };
     }
     //
     // Load sitemap if available
@@ -268,13 +335,13 @@ define(['jquery', 'angular', 'angular-route', 'angular-sanitize'], function ($) 
             scope: {
                 onchange: '&watchChange'
             },
+            //
             link: function(scope, element, attrs) {
                 element.on('keyup', function() {
                     scope.$apply(function () {
                         scope.onchange();
                     });
-                });
-                element.on('change', function() {
+                }).on('change', function() {
                     scope.$apply(function () {
                         scope.onchange();
                     });
@@ -285,16 +352,20 @@ define(['jquery', 'angular', 'angular-route', 'angular-sanitize'], function ($) 
 
     // Change the form data depending on content type
     function formData(ct) {
+
         return function (data, getHeaders ) {
+            angular.extend(data, context.csrf);
             if (ct === 'application/x-www-form-urlencoded')
-                return $.param(options.data);
+                return $.param(data);
             else if (ct === 'multipart/form-data') {
                 var fd = new FormData();
                 angular.forEach(data, function (value, key) {
                     fd.append(key, value);
                 });
                 return fd;
-            } else return data;
+            } else {
+                return data;
+            }
         };
     }
 
@@ -384,44 +455,47 @@ define(['jquery', 'angular', 'angular-route', 'angular-sanitize'], function ($) 
             }
 
             //
-            promise.then(
-                function(data) {
-                    if (data.messages) {
-                        angular.forEach(data.messages, function (messages, field) {
-                            $scope.formMessages[field] = messages;
-                        });
-                    } else {
-                        window.location.href = data.redirect || '/';
-                    }
-                },
-                function(data, status, headers) {
-                    var messages, msg;
-                    if (data) {
-                        messages = data.messages;
-                        if (!messages) {
-                            msg = data.message;
-                            if (!msg) {
-                                status = status || data.status || 501;
-                                msg = 'Server error (' + data.status + ')';
-                            }
-                            messages = {};
-                            messages[FORMKEY] = [{message: msg, error: true}];
+            promise.success(function(data) {
+                if (data.messages) {
+                    angular.forEach(data.messages, function (messages, field) {
+                        $scope.formMessages[field] = messages;
+                    });
+                } else {
+                    window.location.href = data.redirect || '/';
+                }
+            }).error(function(data, status, headers) {
+                var messages, msg;
+                if (data) {
+                    messages = data.messages;
+                    if (!messages) {
+                        msg = data.message;
+                        if (!msg) {
+                            status = status || data.status || 501;
+                            msg = 'Server error (' + data.status + ')';
                         }
-                    } else {
-                        status = status || 501;
-                        msg = 'Server error (' + data.status + ')';
                         messages = {};
                         messages[FORMKEY] = [{message: msg, error: true}];
                     }
-                    formMessages(messages);
-                });
+                } else {
+                    status = status || 501;
+                    msg = 'Server error (' + data.status + ')';
+                    messages = {};
+                    messages[FORMKEY] = [{message: msg, error: true}];
+                }
+                formMessages(messages);
+            });
         };
     }
 
     lux.controllers.controller('formController', ['$scope', '$lux',
-            function ($scope, $lux) {
+            function ($scope, $lux, data) {
         // Model for a user when updating
-        formController($scope, $lux);
+        formController($scope, $lux, data);
+    }]);
+
+
+    lux.controllers.controller('listgroup', ['$scope', '$lux', 'data', function ($scope, $lux, data) {
+        $scope.data = data.data;
     }]);
 
 

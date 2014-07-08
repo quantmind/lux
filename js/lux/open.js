@@ -6,11 +6,12 @@ define(['jquery', 'angular', 'angular-route', 'angular-sanitize'], function ($) 
         root = window,
         routes = [],
         ready_callbacks = [],
-        context = angular.extend(defaults, root.context);
+        context = $.extend(defaults, root.context);
 
+    angular.element = $;
     lux.$ = $;
     lux.context = context;
-    lux.services = angular.module('lux.services', []),
+    lux.services = angular.module('lux.services', []);
     lux.controllers = angular.module('lux.controllers', ['lux.services']);
     lux.app = angular.module('lux', ['ngRoute', 'ngSanitize', 'lux.controllers', 'lux.services']);
 
@@ -26,7 +27,7 @@ define(['jquery', 'angular', 'angular-route', 'angular-sanitize'], function ($) 
     };
 
     lux.bootstrap = function () {
-        angular.element(document).ready(function() {
+        $(document).ready(function() {
             //
             if (routes.length && context.html5mode) {
                 var rs = routes;

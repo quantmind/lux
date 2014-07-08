@@ -123,13 +123,13 @@ class Message(ndb.Model):
 class Session(ndb.Model, sessions.SessionMixin):
     expiry = ndb.DateTimeProperty()
     user = ndb.KeyProperty(User)
-    agent = ndb.StringProperty()
+    agent = ndb.TextProperty()
+    client_address = ndb.TextProperty()
     messages = ndb.StructuredProperty(Message, repeated=True)
 
     def message(self, level, message):
         msg = Message(level=level, body=message)
         self.messages.append(msg)
-        self.put()
 
     def get_messages(self):
         return [m.to_dict() for m in self.messages]
