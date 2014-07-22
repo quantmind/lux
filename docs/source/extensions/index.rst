@@ -11,11 +11,9 @@ Extensions
 
    app
    base
-   ui
-   api
    sessions
-   cms
-   sitemap
-   services
+   api
+   admin
+   ui
    static
    google

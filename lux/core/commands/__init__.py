@@ -26,6 +26,7 @@ from pulsar import (Setting, get_event_loop, task, Application,
                     asyncio, maybe_async, Future)
 from pulsar.utils.pep import native_str
 from pulsar.utils.log import configured_logger
+from pulsar.utils.config import Loglevel, Debug, LogHandlers
 
 from lux import __version__
 
@@ -46,19 +47,9 @@ class ConsoleParser(object):
     '''
     help = None
     option_list = ()
-    default_option_list = (
-        Setting('loglevel',
-                ('--log-level',),
-                meta='LEVEL',
-                default='info',
-                desc='Set the overall log level.',
-                choices=('debug', 'info', 'warning', 'error', 'critical')),
-        Setting('debug',
-                ('--debug',),
-                action="store_true",
-                default=False,
-                desc='Run in debug mode.')
-    )
+    default_option_list = (Loglevel(),
+                           LogHandlers(default=['console_level_message']),
+                           Debug())
 
     @property
     def config_module(self):
@@ -128,13 +119,8 @@ class Command(ConsoleParser):
 
     def __call__(self, argv, **params):
         parser = self.get_parser(description=self.help or self.name)
-        options, rest = parser.parse_known_args(argv)
-        papp = self.pulsar_app(rest, loghandlers=['console_level_message'])
-        # call pulsar app so that pulsar is ready to run
-        papp()
-        # get a fresh app
-        self.app = self.app.clone()
-        assert self.app.handler
+        options, _ = parser.parse_known_args(argv)
+        self.pulsar_app(argv)()
         return self.run_until_complete(options, **params)
 
     def get_version(self):
@@ -201,7 +187,7 @@ class Command(ConsoleParser):
         app = self.app
         if application is None:
             application = LuxApp
-        return application(callable=app,
+        return application(callable=app.callable,
                            desc=app.config.get('DESCRIPTION'),
                            epilog=app.config.get('EPILOG'),
                            argv=argv,

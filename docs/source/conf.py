@@ -21,7 +21,6 @@ except ImportError:
 
 version = lux.__version__
 release = version
-pkg = lux.package
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -55,8 +54,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = pkg['name']
-copyright = '2011-2013, %s' % pkg['author']['name']
+project = 'lux'
+copyright = '2011-2013, %s' % lux.__author__
 
 html_theme = 'pulsar'
 pygments_style = 'sphinx'

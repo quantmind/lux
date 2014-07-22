@@ -31,7 +31,7 @@ class User(ndb.Model, sessions.UserMixin):
     surname = ndb.StringProperty()
     email = ndb.StringProperty()
     active = ndb.BooleanProperty(default=False)
-    is_superuser = ndb.BooleanProperty(default=False)
+    superuser = ndb.BooleanProperty(default=False)
     company = ndb.StringProperty()
     joined = ndb.DateTimeProperty(auto_now_add=True)
     #
@@ -39,6 +39,9 @@ class User(ndb.Model, sessions.UserMixin):
 
     def is_active(self):
         return self.active
+
+    def is_superuser(self):
+        return self.superuser
 
     def todict(self):
         d = self.to_dict()
@@ -139,7 +142,6 @@ class Session(ndb.Model, sessions.SessionMixin):
         for idx, msg in enumerate(self.messages):
             if body == msg.body:
                 self.messages.pop(idx)
-                self.put()
                 return True
         return False
 
@@ -171,3 +173,4 @@ class UserRole(ndb.Model):
         q = cls.query(cls.user == user.key())
         roles = q.fetch(1)
         return users[0].roles if roles else []
+

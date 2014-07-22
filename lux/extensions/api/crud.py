@@ -7,17 +7,37 @@ from lux import route
 
 def html_form(request, Form, name):
     form = Form(request)
-    html = form.layout(enctype='application/json').data('api', name)
+    html = form.layout(enctype='application/json',
+                       controller=False).data('api', name)
     return html
 
 
 class ModelManager(object):
-    '''Model-based :ref:`ContentManager <api-content>`.
+    '''Model-based :ref:`ContentManager <api-content>`
+
+    .. attribute:: model
+
+        The model managed by this manager
     '''
     def __init__(self, model=None, columns=None, form=None):
         self.model = model
         self.form = form
         self._setup(columns)
+
+    def collection(self, limit, offset=0, text=None):
+        '''Retrieve a collection of models
+        '''
+        raise NotImplementedError
+
+    def get(self, id):
+        '''Fetch an instance by its id
+        '''
+        raise NotImplementedError
+
+    def instance(self, instance):
+        '''convert the instance into a JSON-serializable dictionary
+        '''
+        raise NotImplementedError
 
     def limit(self, request):
         '''Limit for a items request'''
@@ -32,17 +52,6 @@ class ModelManager(object):
     def offset(self, request):
         cfg = request.config
         return request.body_data().get(cfg['API_OFFSET_KEY'], 0)
-
-    def collection(self, limit, offset=0, text=None):
-        raise NotImplementedError
-
-    def get(self, id):
-        '''Fetch an instance by its id
-        '''
-        raise NotImplementedError
-
-    def instance(self, instance):
-        raise NotImplementedError
 
     def create_model(self, data):
         raise NotImplementedError
@@ -86,6 +95,8 @@ class CRUD(lux.Router):
 
     @route('<id>')
     def read(self, request):
+        '''Read an instance
+        '''
         instance = self.manager.get(request.urlargs['id'])
         if not instance:
             raise Http404
@@ -93,17 +104,21 @@ class CRUD(lux.Router):
         data = self.instance_data(request, instance, url=url)
         return Json(data).http_response(request)
 
-    @route('<id>', method='post')
-    def update(self, request):
+    @route('<id>')
+    def post_update(self, request):
         manager = self.manager
+        instance = manager.get(request.urlargs['id'])
+        if not instance:
+            raise Http404
         form_class = manager.form
         if not form_class:
             raise MethodNotAllowed
-        if manager.has_permission(user, manager.UPDATE):
+        auth = request.app.auth_backend
+        if auth.has_permission(request, auth.UPDATE, instance):
             data, files = request.data_and_files()
-            form = form_cls(request, data=data, files=files)
+            form = form_class(request, data=data, files=files)
             if form.is_valid():
-                instance = manager.create_model(form.cleaned_data)
+                instance = manager.update_model(instance, form.cleaned_data)
                 data = self.manager.instance(instance)
             else:
                 data = form.tojson()

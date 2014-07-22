@@ -2,7 +2,7 @@ import os
 
 from pulsar.utils.html import slugify
 
-from lux import Html, Template
+from lux import Html
 
 from .contents import Snippet
 from .builder import Content, BuildError
@@ -34,14 +34,14 @@ class Blog(Content):
     :param drafts='drafts': url for drafts. If ``None``, drafts are not
         compiled.
     '''
-    def __init__(self, path=None, archive=True, drafts='drafts', snippet=None,
-                 **context):
+    def __init__(self, path=None, archive=True, drafts='drafts',
+                 snippet=None, **context):
         self.archive = archive
         self.drafts = drafts
         snippet = snippet or BlogSnippet
         super().__init__(path=path, snippet=snippet, **context)
 
-    def _build(self, path, app, name, location, context):
+    def _build(self, request, path, name, location, context):
         c = self._children
         drafts = []
         years = {}
@@ -54,45 +54,43 @@ class Blog(Content):
                         continue
                     src = os.path.join(dirpath, filename)
                     try:
-                        entry = yield from c.build_content(app, src)
+                        entry = c.build_content(request, src, context)
                     except BuildError as e:
-                        app.logger.warning(str(e))
+                        request.logger.error(str(e))
                         continue
                     dt = entry.date
-                    title = entry.title
                     if not dt:
-                        app.logger.warning('Cannot build post "%s" in "%s" '
-                                           'no date', src, name)
-                    elif not title:
-                        app.logger.warning('Cannot build blog post "%s" '
-                                           'no title', src)
+                        request.logger.warning('Cannot build post "%s" in '
+                                               '"%s" no date', src, name)
+                    elif not entry.title:
+                        request.logger.warning('Cannot build blog post "%s" '
+                                               'no title', src)
                     else:
-                        slug = entry._metadata.get('slug')
-                        if not slug:
-                            slug = slugify(title)
-                        entry._metadata['slug'] = slug = slug.lower()
+                        if not entry.slug:
+                            entry.slug = slugify(entry.title)
+                        entry.slug = entry.slug.lower()
 
                         if entry.draft:
                             drafts.append(entry)
                         else:
                             if not self.archive:
-                                if slug in all:
-                                    app.logger.exception('Cannot build '
-                                                     '"%s" already available')
+                                if entry.slug in all:
+                                    request.logger.error(
+                                        'Cannot build "%s" already available')
                                     continue
                                 else:
-                                    all[slug] = entry
+                                    all[entry.slug] = entry
                             year = years.get(dt.year)
                             if not year:
                                 years[dt.year] = year = {}
                             month = year.get(dt.month)
                             if not month:
                                 year[dt.month] = month = {}
-                            if slug in month:
-                                app.logger.exception('Cannot build '
-                                                     '"%s" already available')
+                            if entry.slug in month:
+                                request.logger.error(
+                                    'Cannot build "%s" already available')
                             else:
-                                month[slug] = entry
+                                month[entry.slug] = entry
             posts = []
             for year in reversed(sorted(years)):
                 months = years[year]
@@ -104,37 +102,36 @@ class Blog(Content):
                         if self.archive:
                             path = os.path.join(name, str(year),
                                                 dt.strftime('%m'),
-                                                entry._metadata['slug'])
+                                                entry.slug)
                         else:
-                            path = os.path.join(name, entry._metadata['slug'])
-                        yield from c.build_file(app, entry, path, location,
-                                                context)
+                            path = os.path.join(name, entry.slug)
+                        c.build_file(request, entry, path, location, context)
                         posts.append((entry, path))
             # Create the blog index
-            index = self.blog_index(app, posts)
+            index = self.blog_index(request, posts)
             dst = os.path.join(name, 'index')
-            yield from self.build_file(app, index, dst, location, context)
+            self.build_file(request, index, dst, location, context)
             #
             # Create drafts page
             if self.drafts:
-                meta = {'robots': 'noindex, nofollow'}
+                meta = {'robots': ['noindex', 'nofollow']}
                 posts = []
                 name = os.path.join(name, self.drafts)
                 for entry in sorted(drafts, key=lambda x: x.date):
-                    slug = entry._metadata['slug']
+                    slug = entry.slug
                     path = os.path.join(name, slug)
-                    yield from c.build_file(app, entry, path, location,
-                                            context, meta=meta)
+                    c.build_file(request, entry, path, location,
+                                 context, meta=meta)
                     posts.append((entry, path))
-                index = self.blog_index(app, posts, True)
+                index = self.blog_index(request, posts, True)
                 dst = os.path.join(name, 'index')
-                yield from self.build_file(app, index, dst, location,
-                                           context, meta=meta)
+                self.build_file(request, index, dst, location,
+                                context, meta=meta)
         else:
             raise ValueError('Blog content requires a directory of blog posts')
 
-    def blog_index(self, app, posts, drafts=False):
-        date_format = app.config['DATE_FORMAT']
+    def blog_index(self, request, posts, drafts=False):
+        date_format = request.config['DATE_FORMAT']
         container = Html('div')
         metadata = None
         if drafts:
@@ -147,12 +144,11 @@ class Blog(Content):
         for entry, path in posts:
             path = '/%s' % path
             date = entry.date
-            meta = entry._metadata
             elem = Html('div',
                         Html('h4', Html('a', entry.title, href=path)),
                         Html('p', date.strftime(date_format), cn='text-muted'),
                         cn='blog-entry')
-            if 'summary-html' in meta:
-                elem.append(Html('p', meta['summary-html']))
+            if entry.description:
+                elem.append(Html('p', entry.description))
             container.append(elem)
         return self._snippet(container.render())

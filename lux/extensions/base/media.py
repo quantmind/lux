@@ -15,13 +15,12 @@ from pulsar.apps import wsgi
 from pulsar.apps.wsgi import Html
 
 
-def filesystem_path(request, base, bits):
+def filesystem_path(app, base, bits):
     name = bits[0]
     if name == 'lux':
         base = os.path.join(lux.PACKAGE_DIR, 'media')
-    elif name in request.app.extensions:
-        base = os.path.join(request.app.extensions.get(name).meta.path,
-                            'media')
+    elif name in app.extensions:
+        base = os.path.join(app.extensions.get(name).meta.path, 'media')
     if base:
         return os.path.join(base, *bits)
     else:
@@ -32,7 +31,7 @@ class FileRouter(wsgi.FileRouter):
     request_class = lux.WsgiRequest
 
     def filesystem_path(self, request):
-        return filesystem_path(request, None, self._file_path.split('/'))
+        return filesystem_path(request.app, None, self._file_path.split('/'))
 
 
 class MediaRouter(wsgi.MediaRouter):
@@ -46,22 +45,24 @@ class MediaRouter(wsgi.MediaRouter):
 
     def filesystem_path(self, request):
         bits = request.urlargs['path'].split('/')
-        return filesystem_path(request, self._file_path, bits)
+        return filesystem_path(request.app, self._file_path, bits)
 
-    def _get_apps(self, request):
-        links = []
-        media_url = request.app.config['MEDIA_URL']
-        for name in sorted(chain(request.app.extensions, ('lux',))):
-            path = filesystem_path(request, None, (name,))
+    def extension_paths(self, app):
+        media_url = app.config['MEDIA_URL']
+        for name in sorted(chain(app.extensions, ('lux',))):
+            path = filesystem_path(app, None, (name,))
             if os.path.isdir(path):
-                href = '%s%s/' % (media_url, name)
-                links.append(Html('a', name, href=href))
-        return self.static_index(request, links)
+                yield name, path
 
-    def get(self, request):
+    def __get(self, request):
         if not request.urlargs['path']:
             if self._show_indexes:
-                return self._get_apps(request)
+                links = []
+                media_url = request.config['MEDIA_URL']
+                for name, _ in self.extension_paths(request.app):
+                    href = '%s%s/' % (media_url, name)
+                    links.append(Html('a', name, href=href))
+                return self.static_index(request, links)
             else:
                 raise PermissionDenied
         else:

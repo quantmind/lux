@@ -1,26 +1,13 @@
-'''Asynchronous web framework for python'''
+'''python web toolkit'''
+VERSION = (0, 1, 0, 'beta', 1)
+
 import os
-import json
-
-release = 'beta'
-
+from pulsar.utils.version import get_version
 
 PACKAGE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-
-def load_pkg(name, dir=None):
-    p = os.path
-    dir = dir or PACKAGE_DIR
-    with open(os.path.join(dir, name)) as f:
-        data = f.read()
-    return json.loads(data)
-
-package = load_pkg('package.json')
-
-
-from .utils import version_tuple
-
-__version__ = package['version']
-VERSION = version_tuple(__version__)
+__version__ = version = get_version(VERSION)
+__license__ = "BSD"
+__author__ = "Luca Sbardella"
 
 from .core import *

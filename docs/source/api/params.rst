@@ -23,6 +23,12 @@ Sessions
 .. lux_extension:: lux.extensions.sessions
 
 
+API
+================
+
+.. lux_extension:: lux.extensions.api
+
+
 Web design
 =====================
 

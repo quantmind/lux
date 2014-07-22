@@ -3,13 +3,10 @@ and permissions. The extension is added by inserting
 ``lux.extensions.sessions`` into the
 list of :setting:`EXTENSIONS` of your application.
 
+Messages
+==============
 
-Authentication Backend
-=========================
 
-.. autoclass:: AuthBackend
-   :members:
-   :member-order: bysource
 '''
 import json
 from datetime import datetime, timedelta
@@ -23,6 +20,7 @@ from pulsar.apps.wsgi import wsgi_request
 
 import lux
 from lux import Parameter, Router
+from lux.forms import Form
 from lux.utils.crypt import get_random_string
 from lux.utils.http import same_origin
 
@@ -131,7 +129,8 @@ class Extension(lux.Extension):
         response = request.response
         if response.content_type in lux.JSON_CONTENT_TYPES:
             session = request.cache.session
-            data = request.body_data()
+            form = Form(request, data=request.body_data())
+            data = form.rawdata['message']
             body = {'success': session.remove_message(data)}
             response.content = json.dumps(body)
             return response

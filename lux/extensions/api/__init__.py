@@ -15,11 +15,6 @@ If :setting:`API_URL` is defined, the extension include a middleware for
 serving the restful api url. The middleware collects :class:`.Crud` routers
 from all extensions which provides the ``api_sections`` method.
 
-Parameters
-================
-
-.. lux_extension:: lux.extensions.api
-
 Usage
 ================
 
@@ -126,7 +121,7 @@ CRUD message
 from pulsar import HttpException, Http404, ImproperlyConfigured
 from pulsar.utils.structures import OrderedDict, mapping_iterator
 from pulsar.utils.pep import itervalues
-from pulsar.utils.html import slugify
+from pulsar.utils.slugify import slugify
 from pulsar.apps.wsgi import Json
 from pulsar.utils.httpurl import JSON_CONTENT_TYPES, remove_double_slash
 from pulsar.apps.ds import DEFAULT_PULSAR_STORE_ADDRESS
@@ -149,6 +144,15 @@ class ApiRoot(lux.Router):
 
     def get(self, request):
         return Json(self.apis(request)).http_response(request)
+
+
+def api404(environ, start_response):
+    request = lux.wsgi_request(environ)
+    ct = request.content_types.best_match(JSON_CONTENT_TYPES)
+    if not ct:
+        raise HttpException(status=415, msg=request.content_types)
+    request.response.content_type = ct
+    raise Http404
 
 
 class Extension(lux.Extension):
@@ -196,7 +200,7 @@ class Extension(lux.Extension):
             if api_sections:
                 for router in api_sections(app):
                     api.add_child(router)
-        return [self.api]
+        return [self.api, api404]
 
     def on_config(self, app):
         '''Create a pulsar mapper with all models registered.

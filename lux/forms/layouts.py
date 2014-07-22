@@ -240,11 +240,15 @@ class Layout(Template):
                 raise RuntimeError('Form layout element for multiple forms')
             return partial(self, form)
 
-    def __call__(self, form, request=None, context=None, **params):
+    def __call__(self, form, request=None, context=None, controller=True,
+                 **params):
         context = context or {}
         context['form'] = form
         form.is_valid()
-        return super(Layout, self).__call__(request, context, **params)
+        html = super(Layout, self).__call__(request, context, **params)
+        if controller and self.controller:
+            html.attr('ng-controller', self.controller)
+        return html
 
     def setup(self):
         missings = list(self.form_class.base_fields)

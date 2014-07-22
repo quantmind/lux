@@ -1,6 +1,17 @@
 '''Admin interface for a site.
 
 This extension requires the :mod:`~lux.extensions.sessions` extension.
+
+API
+=======
+
+Router
+------------
+
+.. autoclass:: Router
+   :members:
+   :member-order: bysource
+
 '''
 import lux
 from lux import Parameter, Html
@@ -13,24 +24,33 @@ class Extension(lux.Extension):
     _config = [
         Parameter('ADMIN_URL', 'admin/',
                   'the base url for the admin site'),
+        Parameter('ADMIN_SERVE', True,
+                  'Include the admin router in the wsgi middleware'),
         Parameter('ADMIN_THEME', 'default',
                   'Theme for the admin site')
     ]
 
     def middleware(self, app):
         if not app.auth_backend:
-            raise ImproperlyConfigured('sessions backend required')
+            raise ImproperlyConfigured('Authentication backend required')
         path = app.config['ADMIN_URL']
         app.admin = Router(path, name='admin',
                            response_wrapper=require_superuser)
-        return [app.admin]
+        if app.config['ADMIN_SERVE']:
+            return [app.admin]
 
 
 class Router(lux.Router):
-    '''A specialised Router for the admin site
+    '''A specialised Router for an admin site
+
+    The admin root router can be access from the application ``admin``
+    attribute::
+
+        def handler(request):
+            admin = request.app.admin
+
     '''
     template_name = lux.RouterParam('html')
-    api = lux.RouterParam(None)
     in_nav = True
     target = None
 
@@ -65,6 +85,11 @@ class Router(lux.Router):
         return app.html_response(request, 'admin.html', jscontext=ctx,
                                  context=context, title='%s - Admin')
 
+    def instance_url(self, request, instance):
+        '''Return the url for editing the ``instance``
+        '''
+        pass
+
     def wrap_html(self, request, html, span=12):
         '''Default wrapper for html loaded via angular
         '''
@@ -78,10 +103,12 @@ def _sitemap(self, parents, path, children=False):
     page = None
     root = self
     getmany = False
+    apiname = self.name
     for router in self.routes:
         if children:
             root = router
             getmany = True
+            apiname = router.name
         # In navigation
         if getattr(router, 'in_nav', False):
             vars = router.route.ordered_variables or None
@@ -96,7 +123,7 @@ def _sitemap(self, parents, path, children=False):
                     'name': router.name,
                     'title': getattr(router, 'title', router.name),
                     'parents': parents,
-                    'api': router.api,
+                    'api': apiname,
                     'getmany': getmany,
                     'target': getattr(router, 'target', None)}
             if template_router:

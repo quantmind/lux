@@ -27,8 +27,7 @@ Wsgi Request
 '''
 from functools import wraps
 
-from pulsar import (HttpException, ContentNotAccepted, Http404, get_event_loop,
-                    multi_async)
+from pulsar import HttpException, Http404, get_event_loop, multi_async
 from pulsar.utils.system import json
 from pulsar.utils.structures import AttributeDictionary
 from pulsar.apps.wsgi import (route, wsgi_request, cached_property,
@@ -80,6 +79,11 @@ class WsgiRequest(wsgi.WsgiRequest):
     def config(self):
         '''The configuration dictionary'''
         return self.cache.app.config
+
+    @property
+    def logger(self):
+        '''Shortcut to app logger'''
+        return self.cache.app.logger
 
     @property
     def models(self):
@@ -145,10 +149,6 @@ class Router(wsgi.Router):
         if self.content_manager:
             self.content_manager = self.content_manager._clone(self)
 
-    @classmethod
-    def make_router(cls, rule, **params):
-        return Router(rule, **params)
-
     def get_controller(self):
         if self.controller:
             return self.controller
@@ -162,6 +162,12 @@ class Router(wsgi.Router):
         response.content_type = 'text/plain'
         response.content = template
         return response
+
+    def make_router(self, rule, cls=None, **params):
+        '''Create a new :class:`.Router` form rule and parameters
+        '''
+        cls = cls or Router
+        return cls(rule, **params)
 
 
 class HtmlRouter(Router):

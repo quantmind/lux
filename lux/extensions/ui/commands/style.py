@@ -33,13 +33,9 @@ class Command(lux.Command):
                 desc='Minify the file')
     )
 
-    def __call__(self, argv, **params):
-        return self.run(argv, **params)
-
-    def run(self, argv, dump=True, **params):
+    def run(self, options, dump=True, **params):
         if 'base' not in self.app.extensions:
             raise RuntimeError('"ui" requires the "base" extension.')
-        options = self.options(argv)
         target = options.file
         app = self.app
         name = app.meta.name

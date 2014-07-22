@@ -1,4 +1,5 @@
 from pulsar.apps.wsgi import Json
+from pulsar.utils.pep import iteritems
 
 import lux
 from lux import Column
@@ -44,6 +45,15 @@ class ModelManager(api.ModelManager):
         m = self.model(**data)
         m.put()
         return m
+
+    def update_model(self, instance, data):
+        for name, value in iteritems(data):
+            if name == 'id':
+                assert instance.key.id() == value
+            else:
+                setattr(instance, name, value)
+        instance.put()
+        return instance
 
     def column(self, code):
         return Column.get(code)

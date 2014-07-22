@@ -1,8 +1,3 @@
-import codecs
-import datetime
-import logging
-import os
-import re
 import json
 
 from dateutil.parser import parse
@@ -12,30 +7,33 @@ try:
 except ImportError:
     Markdown = False
 
-from .contents import Page, Category, Tag, Author
-
+from .contents import Processor, list_of
+from .urlwrappers import Tag, Author, Category
 
 READERS = {}
-METADATA_PROCESSORS = {
-    'tags': lambda x, y: [Tag(tag, y) for tag in x.split(',')],
-    'date': lambda x, y: parse(x),
-    'modified': lambda x, y: parse(x),
-    'status': lambda x, y: x.strip(),
-    'category': Category,
-    'author': Author,
-    'authors': lambda x, y: [Author(author, y) for author in x],
-    'requires': lambda x, y: [script.strip() for script in x.split(',')],
-    'draft': lambda x, y: json.loads(x)
-}
 
-
-def get_rel_dir(d, base, res=''):
-    if d == base:
-        return res
-    br, r = os.path.split(d)
-    if res:
-        r = os.path.join(r, res)
-    return get_rel_dir(br, base, r)
+METADATA_PROCESSORS = dict(((p.name, p) for p in (
+    Processor('name'),
+    Processor('title'),
+    Processor('slug'),
+    Processor('description'),
+    Processor('head-title'),
+    Processor('head-description'),
+    Processor('tag', list_of(Tag), multiple=True),
+    Processor('date', lambda x, cfg: [parse(x)]),
+    Processor('status'),
+    Processor('image'),
+    Processor('category', list_of(Category), multiple=True),
+    Processor('author', list_of(Author), multiple=True),
+    Processor('require_css', multiple=True),
+    Processor('require_js', multiple=True),
+    Processor('require_context', multiple=True),
+    Processor('content_type', default='text/html'),
+    Processor('draft', lambda x, cfg: json.loads(x)),
+    Processor('template', default=lambda cfg: cfg['DEFAULT_TEMPLATE_ENGINE']),
+    Processor('robots', default=['index', 'follow'], multiple=True),
+    Processor('header-image')
+)))
 
 
 def register_reader(cls):
@@ -49,7 +47,7 @@ class BaseReader(object):
     """Base class to read files.
 
     This class is used to process static files, and it can be inherited for
-    other types of file. A Reader class must have the following attributes:
+    other t    pes of file. A Reader class must have the following attributes:
 
     - enabled: (boolean) tell if the Reader class is enabled. It
       generally depends on the import of some dependency.
@@ -64,15 +62,31 @@ class BaseReader(object):
 
     def __init__(self, app):
         self.app = app
+        self.logger = app.extensions['static'].logger
         self.config = app.config
 
     def __str__(self):
         return self.__class__.__name__
 
-    def process_metadata(self, name, value):
-        if name in METADATA_PROCESSORS:
-            return METADATA_PROCESSORS[name](value, self.config)
-        return value
+    def process_metadata(self, meta):
+        """Return the dict containing document metadata
+        """
+        cfg = self.config
+        output = dict(((p.name, p(cfg)) for p in METADATA_PROCESSORS.values()))
+        for name, values in meta.items():
+            name = name.lower()
+            if name not in output:
+                self.logger.warning('Unknown meta tag "%s"', name)
+            else:
+                proc = METADATA_PROCESSORS[name].process
+                for value in values:
+                    try:
+                        value = proc(value, cfg)
+                    except Exception:
+                        self.logger.exception('Could not process meta "%s"',
+                                              name)
+                    output[name].extend(value)
+        return output
 
     def read(self, source_path):
         "No-op parser"
@@ -94,30 +108,14 @@ class MarkdownReader(BaseReader):
         if 'meta' not in self.extensions:
             self.extensions.append('meta')
 
-    def _parse_metadata(self, meta):
-        """Return the dict containing document metadata"""
-        output = {}
-        for name, value in meta.items():
-            name = name.lower()
-            if name == "summary":
-                summary_values = "\n".join(value)
-                # reset the markdown instance to clear any state
-                self._md.reset()
-                summary = self._md.convert(summary_values)
-                output['summary'] = summary_values
-                output['summary-html'] = self.process_metadata(name, summary)
-            else:
-                output[name] = self.process_metadata(name, value[0])
-        return output
-
     def read(self, source_path):
         """Parse content and metadata of markdown files"""
 
         self._md = md = Markdown(extensions=self.extensions)
-        with codecs.open(source_path, encoding='utf-8') as text:
+        with open(source_path, encoding='utf-8') as text:
             raw = '%s\n\n%s' % (text.read(), self.links())
             content = md.convert(raw)
-        metadata = self._parse_metadata(self._md.Meta)
+        metadata = self.process_metadata(self._md.Meta)
         return content, metadata
 
     def links(self):
@@ -134,4 +132,3 @@ class MarkdownReader(BaseReader):
             links = '\n'.join(links)
             self.app.config['_MARKDOWN_LINKS_'] = links
         return links
-

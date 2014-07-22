@@ -1,7 +1,7 @@
 import os
 from functools import partial, total_ordering
 
-from pulsar.utils.html import slugify
+from pulsar.utils.slugify import slugify
 
 
 #@total_ordering

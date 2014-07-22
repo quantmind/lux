@@ -30,20 +30,33 @@ class LogoutError(RuntimeError):
 
 
 class SessionMixin(object):
-
+    '''Mixin for a session class
+    '''
     def success(self, message):
+        '''Store a ``success`` message to show to the web user
+        '''
         self.message('success', message)
 
     def info(self, message):
+        '''Store an ``info`` message to show to the web user
+        '''
         self.message('info', message)
 
     def warning(self, message):
+        '''Store a ``warning`` message to show to the web user
+        '''
         self.message('warning', message)
 
     def error(self, message):
+        '''Store an ``error`` message to show to the web user
+        '''
         self.message('danger', message)
 
     def message(self, level, message):
+        '''Store a ``message`` of ``level`` to show to the web user.
+
+        Must be implemented by session classes.
+        '''
         raise NotImplementedError
 
     def remove_message(self, data):
@@ -55,6 +68,9 @@ class UserMixin(object):
     '''Mixin for a User model
     '''
     email = None
+
+    def is_superuser(self):
+        return False
 
     def is_authenticated(self):
         return True
@@ -218,6 +234,13 @@ class AuthBackend(object):
             request.cache.user = Anonymous()
 
     def get_or_create_registration(self, request, user, **kw):
+        '''Create a registration profile for ``user``.
+
+        This method send an email to the user so that the email
+        is verified once the user follows the link in the email.
+
+        Usually called after user registration.
+        '''
         if user and user.email:
             days = request.config['ACCOUNT_ACTIVATION_DAYS']
             expiry = datetime.now() + timedelta(days=days)

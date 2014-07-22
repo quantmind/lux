@@ -26,24 +26,6 @@ define(['jquery', 'angular', 'angular-route', 'angular-sanitize'], function ($) 
         else ready_callbacks.push(callback);
     };
 
-    lux.bootstrap = function () {
-        $(document).ready(function() {
-            //
-            if (routes.length && context.html5mode) {
-                var rs = routes;
-                routes = [];
-                lux._setupRouter(rs);
-            }
-            //
-            angular.bootstrap(document, ['lux']);
-            //
-            angular.forEach(ready_callbacks, function (callback) {
-                callback();
-            });
-            ready_callbacks = true;
-        });
-    };
-
     lux._setupRouter = function (all) {
         //
         lux.app.config(['$routeProvider', '$locationProvider', function($routeProvider, $locationProvider) {
@@ -106,10 +88,12 @@ define(['jquery', 'angular', 'angular-route', 'angular-sanitize'], function ($) 
             return new LuxApi(name, this, $lux);
         },
         //
+        // Internal method for executing an API call
         call: function (api, options, callback, deferred) {
             var self = this,
                 $lux = api.lux;
             //
+            // First time here, build the deferred
             if (!deferred)
                 deferred = $lux.q.defer();
 
@@ -123,17 +107,26 @@ define(['jquery', 'angular', 'angular-route', 'angular-sanitize'], function ($) 
 
             if (this._api) {
                 var api_url = this._api[api.name + '_url'];
-                if (!api_url)
-                    deferred.reject('Could not find a valid url for ' + api.name);
-                else if (this.user_token === undefined && context.user) {
+                //
+                // No api url!
+                if (!api_url) {
+                    deferred.reject({
+                        error: true,
+                        message: 'Could not find a valid url for ' + api.name
+                    });
+                //
+                // Fetch authentication token
+                } else if (this.user_token === undefined && context.user) {
                     $lux.log.info('Fetching authentication token');
                     $lux.post('/_token').success(function (data) {
                         self.user_token = data.token || null;
                         self.call(api, options, callback, deferred);
                     }).error(_error);
+                //
+                // Make the api call
                 } else {
                     //
-                    // Make the call
+                    // Add authentication token
                     if (this.user_token) {
                         var headers = options.headers;
                         if (!headers)
@@ -141,6 +134,8 @@ define(['jquery', 'angular', 'angular-route', 'angular-sanitize'], function ($) 
 
                         headers.Authorization = 'Bearer ' + this.user_token;
                     }
+                    //
+                    // Build url from ``options.url`` which can be a function
                     var url = options.url;
                     if ($.isFunction(url)) url = url(api_url);
                     if (!url) url = api_url;
@@ -203,7 +198,13 @@ define(['jquery', 'angular', 'angular-route', 'angular-sanitize'], function ($) 
         //  Get a single element
         //  ---------------------------
         this.get = function (id, options) {
-
+            options = angular.extend({
+                url: function (url) {
+                    return url + '/' + id;
+                },
+                method: 'GET'
+            }, options);
+            return provider.call(self, options);
         };
 
         //  Create or update a model
@@ -237,10 +238,18 @@ define(['jquery', 'angular', 'angular-route', 'angular-sanitize'], function ($) 
     //
     // Handle html5 sitemap
     lux.controllers.controller('page', ['$scope', '$lux', function ($scope, $lux) {
+        //
+        $lux.log.info('Setting up angular page');
+        //
         angular.extend($scope, context);
+        var page = $scope.page;
+        if (page && $scope.pages) {
+            $scope.page = page = $scope.pages[page];
+        } else {
+            $scope.page = page = {};
+        }
         //
         $scope.search_text = '';
-        $scope.page = context.page || {};
         $scope.sidebar_collapse = '';
         //
         // logout via post method
@@ -295,18 +304,27 @@ define(['jquery', 'angular', 'angular-route', 'angular-sanitize'], function ($) 
     //  -----------------
     //
     //  Build an HTML5 sitemap when the ``context.sitemap`` variable is set.
-    function _load_sitemap (sitemap) {
-        angular.forEach(sitemap, function (page) {
-            _load_sitemap(page.links);
-            if (page.href && page.target !== '_self') {
+    function _load_sitemap (hrefs, pages) {
+        //
+        angular.forEach(hrefs, function (href) {
+            var page = pages[href];
+            if (page && page.href && page.target !== '_self') {
                 lux.addRoute(page.href, route_config(page));
             }
         });
     }
 
     function route_config (page) {
+
         return {
-            templateUrl: page.template_url,
+            templateUrl: function (obj) {
+                var url = page.template_url;
+                angular.forEach(page.template_url_vars, function (name) {
+                    var r = obj[name] || '';
+                    url = url.replace(':' + name, r);
+                });
+                return url;
+            },
             controller: page.controller,
             resolve: {
                 data: function ($lux, $route) {
@@ -314,7 +332,7 @@ define(['jquery', 'angular', 'angular-route', 'angular-sanitize'], function ($) 
                         var api = $lux.api(page.api, page.api_provider),
                             id = $route.current.params.id;
                         if (id)
-                            return $lux.get(id);
+                            return api.get(id);
                         else if (page.getmany)
                             return api.getMany();
                     }
@@ -324,8 +342,7 @@ define(['jquery', 'angular', 'angular-route', 'angular-sanitize'], function ($) 
     }
     //
     // Load sitemap if available
-    _load_sitemap(context.sitemap);
-
+    _load_sitemap(context.hrefs, context.pages);
 
     var FORMKEY = 'm__form';
     //
@@ -373,10 +390,16 @@ define(['jquery', 'angular', 'angular-route', 'angular-sanitize'], function ($) 
     function formController ($scope, $lux, model) {
         model || (model = {});
 
-        $scope.formModel = model;
+        var page = $scope.$parent ? $scope.$parent.page : {};
+
+        $scope.formModel = model.data || model;
         $scope.formClasses = {};
         $scope.formErrors = {};
         $scope.formMessages = {};
+
+        if ($scope.formModel.name) {
+            page.title = 'Update ' + $scope.formModel.name;
+        }
 
         function formMessages (messages) {
             angular.forEach(messages, function (messages, field) {
@@ -455,11 +478,18 @@ define(['jquery', 'angular', 'angular-route', 'angular-sanitize'], function ($) 
             }
 
             //
-            promise.success(function(data) {
+            promise.success(function(data, status) {
                 if (data.messages) {
                     angular.forEach(data.messages, function (messages, field) {
                         $scope.formMessages[field] = messages;
                     });
+                } else if (api) {
+                    // Created
+                    if (status === 201) {
+                        $scope.formMessages[FORMKEY] = [{message: 'Succesfully created'}];
+                    } else {
+                        $scope.formMessages[FORMKEY] = [{message: 'Succesfully updated'}];
+                    }
                 } else {
                     window.location.href = data.redirect || '/';
                 }
@@ -487,7 +517,7 @@ define(['jquery', 'angular', 'angular-route', 'angular-sanitize'], function ($) 
         };
     }
 
-    lux.controllers.controller('formController', ['$scope', '$lux',
+    lux.controllers.controller('formController', ['$scope', '$lux', 'data',
             function ($scope, $lux, data) {
         // Model for a user when updating
         formController($scope, $lux, data);
@@ -533,5 +563,24 @@ define(['jquery', 'angular', 'angular-route', 'angular-sanitize'], function ($) 
 
     }]);
     //
+    lux.bootstrap = function () {
+        //
+        $(document).ready(function() {
+            //
+            if (routes.length && context.html5mode) {
+                var rs = routes;
+                routes = [];
+                lux._setupRouter(rs);
+            }
+            //
+            angular.bootstrap(document, ['lux']);
+            //
+            angular.forEach(ready_callbacks, function (callback) {
+                callback();
+            });
+            ready_callbacks = true;
+        });
+    };
+
 	return lux;
 });

@@ -1,19 +1,74 @@
 import os
 import stat
+import json
 from functools import partial
 from datetime import datetime
 
+from pulsar.utils.slugify import slugify
+
+from lux import template_engine
 from lux.utils import memoized
 from lux.extensions.twitter import twitter_card
 
-from .urlwrappers import Tag, Author, Category
+
+identity = lambda x, cfg: x
+
+as_list = lambda x, cfg, w=identity: [w(v.strip(), cfg) for v in x.split(',')]
 
 
-meta_properties = ('js', 'css')
+def list_of(W):
+    return lambda x, cfg: as_list(x, cfg, W)
+
+
+class Processor:
+
+    def __init__(self, name, processor=None, default=None, multiple=False):
+        self.name = name
+        self._default = default
+        self.process = processor or as_list
+        self.multiple = multiple
+
+    def __call__(self, cfg):
+        meta = Multi() if self.multiple else Single()
+        default = self._default
+        if hasattr(self._default, '__call__'):
+            default = default(cfg)
+        meta.extend(default)
+        return meta
+
+
+class Multi(list):
+
+    def extend(self, values):
+        if values:
+            if isinstance(values, str) or not hasattr(values, '__iter__'):
+                values = (values,)
+            super(Multi, self).extend(values)
+
+    def value(self):
+        return self
+
+    def join(self, sep=', '):
+        return sep.join(('%s' % v for v in self))
+
+
+class Single(Multi):
+
+    def value(self):
+        return self[0] if self else None
+
 
 def modified_datetime(src):
     stat_src = os.stat(src)
     return datetime.fromtimestamp(stat_src[stat.ST_MTIME])
+
+
+def _meta_iterator(meta):
+    if meta:
+        for n, m in meta.items():
+            if isinstance(m, Single):
+                m = m[0] if m else None
+            yield slugify(n, separator='_'), m
 
 
 class Snippet(object):
@@ -21,83 +76,66 @@ class Snippet(object):
 
     def __init__(self, content, metadata=None, src=None, dst=None):
         self._content = content
-        self._metadata = metadata if metadata is not None else {}
+        self._compiled = None
         self._src = src
         self._dst = dst
-        if src:
-            self._metadata['modified'] = modified_datetime(src)
+        self.modified = modified_datetime(src)
+        self.update_meta(metadata)
+
+    def update_meta(self, meta):
+        self.__dict__.update(_meta_iterator(meta))
 
     def __repr__(self):
         return self._content
     __str__ = __repr__
 
-    @property
-    def content_type(self):
-        return self._metadata.get('content_type', 'text/html')
+    def render(self, context):
+        return template_engine(self.template)(self._content, context)
 
-    @property
-    def date(self):
-        return self._metadata.get('date')
+    def json(self, context):
+        return json.dumps(self.json_dict(context))
 
-    @property
-    def title(self):
-        return self._metadata.get('title')
+    def json_dict(self, context):
+        text = self.render(context)
+        return {'head_title': self.head_title or self.title,
+                'head_description': self.head_description or self.description,
+                'tags': self.tag.join(),
+                'css': self.require_css,
+                'js': self.require_js,
+                'author': self.author.join(),
+                'robots': self.robots.join(),
+                'content': text,
+                'content-type': self.content_type}
 
-    @property
-    def modified(self):
-        return self._metadata.get('modified')
-
-    @property
-    def draft(self):
-        return self._metadata.get('draft')
-
-    def html(self, request):
+    def html(self, request, context):
         '''Build an HTML5 page for this content
         '''
-        meta = self._metadata
+        context = context.copy()
         head = request.html_document.head
-        title = meta.get('title')
-        head_title = meta.get('head-title') or title
+        head_title = self.head_title or self.title
         if head_title:
             head.title = head_title
         #
-        description = (meta.get('head-description') or meta.get('summary') or
-                       meta.get('description'))
+        description = self.head_description or self.description
         if description:
             des = head.replace_meta('description', description)
-        if 'tags' in meta:
-            tags = meta['tags']
-            head.replace_meta("keywords", ', '.join((str(t) for t in tags)))
+        if self.tag:
+            head.replace_meta("keywords", self.tag.join())
         #
-        if 'css' in meta:
-            for css in meta['css'].split(','):
-                head.links.append(css.strip())
-        if 'js' in meta:
-            for script in meta['js'].split(','):
-                head.scripts.append(script.strip())
-        if 'requirejs' in meta:
-            head.scripts.require(*meta['requirejs'].split(','))
+        for css in self.require_css:
+            head.links.append(css)
+        for js in self.require_js:
+            head.scripts.append(js)
         #
-        author = meta.get('author')
-        if author:
-            head.replace_meta("author", str(author))
-        twitter_card(request, **meta)
+        #if 'requirejs' in meta:
+        #    head.scripts.require(*meta['requirejs'].split(','))
         #
-        robots = meta.get('robots') or 'index, follow'
-        head.add_meta(name='robots', content=robots)
-        for key in self.keys:
-            attrname = 'html_%s' % key
-            if hasattr(self, attrname):
-                yield (key, getattr(self, attrname)(request))
-
-    def html_main(self, request):
-        '''Return the content to '''
-        return self._content
-
-
-for meta_property in meta_properties:
-    setattr(Snippet, meta_property, property(
-        lambda self: self._metadata.get(meta_property)))
+        if self.author:
+            head.replace_meta("author", self.author.join())
+        twitter_card(request, **self.__dict__)
+        #
+        head.add_meta(name='robots', content=self.robots.join())
+        return self.render(context)
 
 
 class Page(Snippet):

@@ -45,10 +45,12 @@
             return new LuxApi(name, this, $lux);
         },
         //
+        // Internal method for executing an API call
         call: function (api, options, callback, deferred) {
             var self = this,
                 $lux = api.lux;
             //
+            // First time here, build the deferred
             if (!deferred)
                 deferred = $lux.q.defer();
 
@@ -62,17 +64,26 @@
 
             if (this._api) {
                 var api_url = this._api[api.name + '_url'];
-                if (!api_url)
-                    deferred.reject('Could not find a valid url for ' + api.name);
-                else if (this.user_token === undefined && context.user) {
+                //
+                // No api url!
+                if (!api_url) {
+                    deferred.reject({
+                        error: true,
+                        message: 'Could not find a valid url for ' + api.name
+                    });
+                //
+                // Fetch authentication token
+                } else if (this.user_token === undefined && context.user) {
                     $lux.log.info('Fetching authentication token');
                     $lux.post('/_token').success(function (data) {
                         self.user_token = data.token || null;
                         self.call(api, options, callback, deferred);
                     }).error(_error);
+                //
+                // Make the api call
                 } else {
                     //
-                    // Make the call
+                    // Add authentication token
                     if (this.user_token) {
                         var headers = options.headers;
                         if (!headers)
@@ -80,6 +91,8 @@
 
                         headers.Authorization = 'Bearer ' + this.user_token;
                     }
+                    //
+                    // Build url from ``options.url`` which can be a function
                     var url = options.url;
                     if ($.isFunction(url)) url = url(api_url);
                     if (!url) url = api_url;
@@ -142,7 +155,13 @@
         //  Get a single element
         //  ---------------------------
         this.get = function (id, options) {
-
+            options = angular.extend({
+                url: function (url) {
+                    return url + '/' + id;
+                },
+                method: 'GET'
+            }, options);
+            return provider.call(self, options);
         };
 
         //  Create or update a model

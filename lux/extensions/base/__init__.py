@@ -41,7 +41,7 @@ import os
 import hashlib
 
 from pulsar.apps import wsgi
-from pulsar.utils.html import mark_safe
+from pulsar.utils.httpurl import remove_double_slash
 
 import lux
 from lux import Parameter
@@ -70,17 +70,14 @@ class Extension(lux.Extension):
         if app.config['CLEAN_URL']:
             middleware.append(wsgi.clean_path_middleware)
         if app.config['SERVE_STATIC_FILES']:
-            icon = app.config['FAVICON']
-            if icon:
-                middleware.append(FileRouter('/favicon.ico', icon))
             path = app.config['MEDIA_URL']
             # Check if node modules are available
-            node_modules = os.path.join(os.path.dirname(app.meta.path),
-                                        'node_modules')
-            if os.path.isdir(node_modules):
-                node = '%snode_modules/' % path
-                middleware.append(wsgi.MediaRouter(node, node_modules,
-                                                   show_indexes=app.debug))
+            # node_modules = os.path.join(os.path.dirname(app.meta.path),
+            #                             'node_modules')
+            # if os.path.isdir(node_modules):
+            #     node = '%snode_modules/' % path
+            #     middleware.append(wsgi.MediaRouter(node, node_modules,
+            #                                        show_indexes=app.debug))
             middleware.append(MediaRouter(path, app.meta.media_dir,
                                           show_indexes=app.debug))
         return middleware
@@ -93,6 +90,15 @@ class Extension(lux.Extension):
         if app.config['USE_ETAGS']:
             middleware.append(self.etag)
         return middleware
+
+    def on_html_document(self, app, request, doc):
+        favicon = app.config['FAVICON']
+        if favicon:
+            media = app.config['MEDIA_URL']
+            if not favicon.startswith(media):
+                favicon = remove_double_slash('%s%s' % (media, favicon))
+            doc.head.links.append(favicon, rel="icon",
+                                  type='image/x-icon')
 
     def etag(self, environ, response):
         if response.has_header('ETag'):

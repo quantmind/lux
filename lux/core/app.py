@@ -26,25 +26,27 @@ from collections import OrderedDict
 from importlib import import_module
 
 import pulsar
-from pulsar.utils.httpurl import remove_double_slash
-from pulsar.apps.wsgi import WsgiHandler, HtmlDocument, test_wsgi_environ
+from pulsar.utils.httpurl import urljoin, remove_double_slash
+from pulsar.apps.wsgi import (WsgiHandler, HtmlDocument, test_wsgi_environ,
+                              LazyWsgi)
 from pulsar.utils.pep import itervalues
-from pulsar.utils.log import LocalMixin, local_property, local_method
+from pulsar.utils.log import lazyproperty
 
 from .commands import ConsoleParser, CommandError
 from .extension import Extension, Parameter
-from .wrappers import WsgiRequest, JsonDocument
+from .wrappers import JsonDocument, wsgi_request
 from .engines import template_engine
 
 
 __all__ = ['App',
+           'Application',
            'execute_from_config',
            'execute_from_command_line']
 
 
 # All events are fired with app as first positional argument
 ALL_EVENTS = ('on_config',  # Config ready.
-              'on_loaded',  # Wsgi handler ready. Extra args: handler
+              'on_loaded',  # Wsgi handler ready.
               'on_start',  # Wsgi server starts. Extra args: server
               'on_request',  # Fired when a new request arrives
               'on_html_document',  # Html doc built. Extra args: request, html
@@ -56,17 +58,18 @@ ALL_EVENTS = ('on_config',  # Config ready.
 def execute_from_config(config_file, **params):
     '''Create and run an :class:`App` from a ``config_file``.
 
-This is the function to use when creating the script which runs your
-web applications::
+    This is the function to use when creating the script which runs your
+    web applications::
 
-    import lux
+        import lux
 
-    if __name__ == '__main__':
-        lux.execute_from_config('path.to.config')
+        if __name__ == '__main__':
+            lux.execute_from_config('path.to.config')
 
-:param config_file: the python dotted path to the config file for setting
-    up a new :class:`App`. The config file should be located in the
-    python module which implements the :ref:`main application` of the web site.
+    :param config_file: the python dotted path to the config file for setting
+        up a new :class:`App`. The config file should be located in the
+        python module which implements the :ref:`main application`
+        of the web site.
     '''
     execute_app(App(config_file, **params))
 
@@ -76,7 +79,7 @@ def execute_from_command_line(argv=None):
     execute_app(App('lux.core.app'))
 
 
-def execute_app(app, argv=None, **params):
+def execute_app(callable, argv=None, **params):
     '''Execute a given ``app``.
 
     :parameter app: the :class:`.App` to execute
@@ -87,22 +90,25 @@ def execute_app(app, argv=None, **params):
     '''
     if argv is None:
         argv = sys.argv
-    app.meta.argv = argv = list(argv)
-    app.meta.script = argv.pop(0)
+    callable._argv = argv = list(argv)
+    callable._script = argv.pop(0)
+    app = callable.handler()
     # Parse for the command
     parser = app.get_parser(add_help=False)
-    args, argr = parser.parse_known_args(argv)
+    opts, _ = parser.parse_known_args(argv)
     #
     # we have a command
-    if args.command:
+    if opts.command:
         try:
-            command = app.get_command(args.command)
+            command = app.get_command(opts.command)
         except CommandError as e:
             print('\n'.join(('%s.' % e, 'Pass -h for list of commands')))
             exit(1)
         # Make sure the loop exists
+        argv = list(argv)
+        argv.remove(command.name)
         try:
-            return command(argr, **params)
+            return command(argv, **params)
         except CommandError as e:
             print(str(e))
             exit(1)
@@ -112,7 +118,21 @@ def execute_app(app, argv=None, **params):
         parser.parse_args(argv)
 
 
-class App(ConsoleParser, LocalMixin, Extension):
+class App(LazyWsgi):
+
+    def __init__(self, config_file, script=None, argv=None, **params):
+        if not os.path.exists(config_file):
+            config_file = import_module(config_file).__file__
+        self._params = params
+        self._config_file = config_file
+        self._script = script
+        self._argv = argv
+
+    def setup(self, environ=None):
+        return Application(self)
+
+
+class Application(ConsoleParser, Extension):
     '''A lux :class:`App` is the WSGI callable for serving lux applications.
 
     It is a specialised :class:`~.Extension` which collects
@@ -133,7 +153,10 @@ class App(ConsoleParser, LocalMixin, Extension):
         Used by the sessions extension
 
     '''
+    cfg = None
     debug = False
+    logger = None
+    models = None
     admin = None
     auth_backend = None
 
@@ -192,29 +215,28 @@ class App(ConsoleParser, LocalMixin, Extension):
                   'Default email address to send email from')
         ]
 
-    def __init__(self, config_file, **params):
-        if not os.path.exists(config_file):
-            config_file = import_module(config_file).__file__
-        self._params = params
-        self.configure(config_file)
+    def __init__(self, callable):
+        self.callable = callable
+        self.meta.argv = callable._argv
+        self.meta.script = callable._script
+        self.events = {}
+        self.config = self._build_config(callable._config_file)
+        self.fire('on_config')
+        self.handler = self._build_handler()
+        self.fire('on_loaded')
 
     def __call__(self, environ, start_response):
         '''The WSGI thing.'''
-        handler = self.handler
         request = self.wsgi_request(environ)
         if self.debug:
             self.logger.debug('Serving request %s' % request.path)
         self.fire('on_request', request)
-        return handler(environ, start_response)
+        return self.handler(environ, start_response)
 
     @property
     def config_module(self):
         '''The :ref:`configuration file` used by this :class:`App`.'''
         return '%s.%s' % (self, self.meta.file.module_name())
-
-    @property
-    def logger(self):
-        return self.local.logger
 
     @property
     def extensions(self):
@@ -225,49 +247,13 @@ class App(ConsoleParser, LocalMixin, Extension):
         '''
         return self.config['EXTENSION_HANDLERS']
 
-    @local_property
-    def events(self):
-        return {}
-
-    @property
-    def models(self):
-        '''Registered models for this applications.
-
-        Models are registered via the :mod:`lux.extensions.api` extension.
-        '''
-        return self.local.models
-
-    @local_property
-    def handler(self):
-        '''The WSGI application handler for this :class:`App`.
-
-        It is lazily loaded the first time it is accessed so that
-        this :class:`App` can be used by pulsar in a multiprocessing setup.
-        '''
-        # do this here so that the config is already loaded before fire signal
-        extensions = list(itervalues(self.extensions))
-        self.fire('on_config')
-        middleware = []
-        rmiddleware = []
-        for extension in extensions:
-            _middleware = extension.middleware(self)
-            if _middleware:
-                middleware.extend(_middleware)
-            _middleware = extension.response_middleware(self)
-            if _middleware:
-                rmiddleware.extend(_middleware)
-        # Response middleware executed in reversed order
-        rmiddleware = list(reversed(rmiddleware))
-        handler = WsgiHandler(middleware, response_middleware=rmiddleware)
-        self.fire('on_loaded', handler)
-        return handler
-
     def get_version(self):
         '''Get version of this :class:`App`. Required by
         :class:`.ConsoleParser`.'''
         return self.meta.version
 
-    def wsgi_request(self, environ=None, loop=None, path=None, **kw):
+    def wsgi_request(self, environ=None, loop=None, path=None,
+                     app_handler=None, urlargs=None, **kw):
         '''Create a :class:`WsgiRequest` from a wsgi ``environ`` and set the
         ``app`` attribute in the cache.
         Additional keyed-valued parameters can be inserted.
@@ -277,14 +263,14 @@ class App(ConsoleParser, LocalMixin, Extension):
             environ = test_wsgi_environ(path=path, loop=loop)
         if kw:
             environ.update(kw)
-        request = WsgiRequest(environ)
+        request = wsgi_request(environ, app_handler=app_handler,
+                               urlargs=urlargs)
         environ['error.handler'] = self.config['ERROR_HANDLER']
         # Check if pulsar is serving the application
         if 'pulsar.cfg' not in environ:
-            cfg = self.local.cfg
-            if not cfg:
-                self.local.cfg = cfg = pulsar.Config(debug=self.debug)
-            environ['pulsar.cfg'] = cfg
+            if not self.cfg:
+                self.cfg = pulsar.Config(debug=self.debug)
+            environ['pulsar.cfg'] = self.cfg
 
         request.cache.app = self
         return request
@@ -334,11 +320,9 @@ class App(ConsoleParser, LocalMixin, Extension):
                     links.append(link)
         return doc
 
-    @local_property
+    @lazyproperty
     def commands(self):
         '''Load all commands from installed applications'''
-        # we need to make sure the middleware is loaded
-        self.handler
         cmnds = OrderedDict()
         for e in self.config['EXTENSIONS']:
             try:
@@ -357,48 +341,6 @@ class App(ConsoleParser, LocalMixin, Extension):
             except ImportError:
                 pass    # No management module
         return cmnds
-
-    @local_property
-    def config(self):
-        '''The :ref:`configuration <configuration>` dictionary for this
-        :class:`App`.
-
-        Evaluated lazily when :attr:`extensions` are loaded.
-        '''
-        params = self._params
-        parser = self.get_parser(with_commands=False, add_help=False)
-        opts, _ = parser.parse_known_args(self.meta.argv)
-        config_module = import_module(opts.config)
-        if opts.config != self.config_module:
-            # Different config file, configure again
-            self.configure(config_module.__file__)
-        #
-        # Allow for debug and loglevel to be set during initialisation
-        debug = opts.debug or params.get('debug', False)
-        loglevel = opts.loglevel
-        if loglevel == 'info':
-            loglevel = params.get('loglevel', loglevel)
-        #
-        # setup application
-        config = self.setup(config_module, debug, loglevel, params)
-        #
-        # Load extensions
-        self.logger.debug('Setting up extensions')
-        apps = list(config['EXTENSIONS'])
-        add_app(apps, 'lux', 0)
-        add_app(apps, self.meta.name)
-        config['MEDIA_URL'] = remove_double_slash('/%s/' % config['MEDIA_URL'])
-        config['EXTENSIONS'] = tuple(apps)
-        config['EXTENSION_HANDLERS'] = extensions = OrderedDict()
-        for name in config['EXTENSIONS'][1:]:
-            Ext = self.load_extension(name)
-            if Ext:
-                extension = Ext()
-                extensions[extension.meta.name] = extension
-                self.bind_events(extension)
-                config.update(extension.setup(config_module, debug,
-                                              loglevel, params))
-        return config
 
     def get_command(self, name, stdout=None, stderr=None):
         '''Construct and return a :class:`Command` for this application.'''
@@ -435,7 +377,7 @@ class App(ConsoleParser, LocalMixin, Extension):
         '''
         if with_commands:
             params['usage'] = self.get_usage()
-        parser = super(App, self).get_parser(**params)
+        parser = super(Application, self).get_parser(**params)
         parser.add_argument('command', nargs=nargs, help='command to run')
         return parser
 
@@ -468,18 +410,6 @@ class App(ConsoleParser, LocalMixin, Extension):
         if Ext and isclass(Ext) and issubclass(Ext, Extension):
             return Ext
 
-    def configure(self, file):
-        # Check if an extension module is available
-        self.meta = self.meta.copy(file)
-        self.meta.path.add2python(self.meta.name, up=1)
-        extension = self.load_extension(self.meta.name)
-        if extension:   # extension available, get the version from it
-            self.meta.version = extension.meta.version
-        if not self.meta.has_module:
-            raise RuntimeError('Invalid project setup. The Application '
-                               'config module must be within a valid python '
-                               'module.')
-
     def fire(self, event, *args):
         '''Fire an ``event``.'''
         handlers = self.events.get(event)
@@ -487,10 +417,16 @@ class App(ConsoleParser, LocalMixin, Extension):
             for handler in handlers:
                 handler(self, *args)
 
-    def setup_logger(self, config, debug, loglevel):
-        self.debug = debug
-        log_config = config['LOGGING_CONFIG']
-        self.local.logger = logging.getLogger('lux')
+    def setup_logger(self, config, opts):
+        debug = opts.debug or self.callable._params.get('debug', False)
+        cfg = pulsar.Config(log_name='lux')
+        cfg.set('debug', debug)
+        cfg.set('loglevel', opts.loglevel)
+        cfg.set('loghandlers', opts.loghandlers)
+        cfg.set('logconfig', config['LOGGING_CONFIG'])
+        cfg.configured_logger()
+        self.debug = cfg.debug
+        self.logger = logging.getLogger('lux')
 
     def bind_events(self, extension):
         events = self.events
@@ -504,23 +440,30 @@ class App(ConsoleParser, LocalMixin, Extension):
     def format_date(self, dte):
         return dte.strftime(self.config['DATE_FORMAT'])
 
-    def clone(self):
-        return pickle.loads(pickle.dumps(self))
+    def template_full_path(self, name):
+        '''Return the template full path or None.
+
+        Loops through all :attr:`extensions` in reversed order and
+        check for ``name`` within the ``templates`` directory
+        '''
+        for ext in reversed(tuple(self.extensions.values())):
+            filename = os.path.join(ext.meta.path, 'templates', name)
+            if os.path.exists(filename):
+                return filename
 
     def template(self, name):
         '''Load a template from the file system
         '''
-        for ext in reversed(self.extensions.values()):
-            filename = os.path.join(ext.meta.path, 'templates', name)
-            if os.path.exists(filename):
-                with open(filename, 'r') as file:
-                    return file.read()
+        filename = self.template_full_path(name)
+        if filename:
+            with open(filename, 'r') as file:
+                return file.read()
         return ''
 
-    def context(self, request, context, js=None):
+    def context(self, request, context=None, js=None):
         '''Load the ``context`` dictionary for this ``request``
         '''
-        context = context or {}
+        context = context if context is not None else {}
         method = 'jscontext' if js else 'context'
         for ext in self.extensions.values():
             if hasattr(ext, method):
@@ -534,7 +477,7 @@ class App(ConsoleParser, LocalMixin, Extension):
         return rnd(template, context)
 
     def html_response(self, request, template_name, context=None,
-                      jscontext=None, title=None):
+                      jscontext=None, title=None, status_code=None):
         '''Html response via a template.
 
         :param request: the :class:`.WsgiRequest`
@@ -542,11 +485,13 @@ class App(ConsoleParser, LocalMixin, Extension):
         :param context: optional context dictionary
         '''
         if 'text/html' in request.content_types:
-            request.response.content_types = 'text/html'
+            request.response.content_type = 'text/html'
             document = request.html_document
             head = document.head
             if title:
                 head.title = title % head.title
+            if status_code:
+                response.status_code = status_code
             context = self.context(request, context)
             jscontext = self.context(request, jscontext, 'js')
             if jscontext:
@@ -555,6 +500,74 @@ class App(ConsoleParser, LocalMixin, Extension):
             body = self.render_template(template_name, context)
             document.body.append(body)
             return document.http_response(request)
+
+    def site_url(self, request, path=None):
+        '''Build the site url from an optional ``path``
+        '''
+        base = self.config['SITE_URL'] or self.request.absolute_uri('')
+        return urljoin(base, path)
+
+    # INTERNALS
+    def _build_config(self, file):
+        # Check if an extension module is available
+        self.meta = self.meta.copy(file)
+        self.meta.path.add2python(self.meta.name, up=1)
+        extension = self.load_extension(self.meta.name)
+        if extension:   # extension available, get the version from it
+            self.meta.version = extension.meta.version
+        if not self.meta.has_module:
+            raise RuntimeError('Invalid project setup. The Application '
+                               'config module must be within a valid python '
+                               'module.')
+        params = self.callable._params
+        parser = self.get_parser(with_commands=False, add_help=False)
+        opts, _ = parser.parse_known_args(self.meta.argv)
+        config_module = import_module(opts.config)
+        if opts.config != self.config_module:
+            # Different config file, configure again
+            return self._build_config(config_module.__file__)
+        #
+        # setup application
+        config = self.setup(config_module, params, opts)
+        #
+        # Load extensions
+        self.logger.debug('Setting up extensions')
+        apps = list(config['EXTENSIONS'])
+        add_app(apps, 'lux', 0)
+        add_app(apps, self.meta.name)
+        config['MEDIA_URL'] = remove_double_slash('/%s/' % config['MEDIA_URL'])
+        config['EXTENSIONS'] = tuple(apps)
+        config['EXTENSION_HANDLERS'] = extensions = OrderedDict()
+        for name in config['EXTENSIONS'][1:]:
+            Ext = self.load_extension(name)
+            if Ext:
+                extension = Ext()
+                extensions[extension.meta.name] = extension
+                self.bind_events(extension)
+                config.update(extension.setup(config_module, params))
+        return config
+
+    def _build_handler(self):
+        '''The WSGI application handler for this :class:`App`.
+
+        It is lazily loaded the first time it is accessed so that
+        this :class:`App` can be used by pulsar in a multiprocessing setup.
+        '''
+        # do this here so that the config is already loaded before fire signal
+        extensions = list(itervalues(self.extensions))
+        self.fire('on_config')
+        middleware = []
+        rmiddleware = []
+        for extension in extensions:
+            _middleware = extension.middleware(self)
+            if _middleware:
+                middleware.extend(_middleware)
+            _middleware = extension.response_middleware(self)
+            if _middleware:
+                rmiddleware.extend(_middleware)
+        # Response middleware executed in reversed order
+        rmiddleware = list(reversed(rmiddleware))
+        return WsgiHandler(middleware, response_middleware=rmiddleware)
 
 
 def add_app(apps, name, pos=None):

@@ -1,6 +1,6 @@
 /*jshint node: true */
 /*global config:true, task:true, process:true*/
-module.exports = function(grunt) {
+module.exports = function (grunt) {
   "use strict";
     // Project configuration.
     var docco_output = '../docs/lux/html/docco',
@@ -89,7 +89,7 @@ module.exports = function(grunt) {
     //
     // Initialise Grunt with all tasks defined above
     grunt.initConfig({
-        pkg: grunt.file.readJSON('lux/package.json'),
+        pkg: grunt.file.readJSON('package.json'),
         concat: libs,
         uglify: uglify_libs(),
         jshint: jshint_libs(),

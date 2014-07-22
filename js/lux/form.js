@@ -44,10 +44,16 @@
     function formController ($scope, $lux, model) {
         model || (model = {});
 
-        $scope.formModel = model;
+        var page = $scope.$parent ? $scope.$parent.page : {};
+
+        $scope.formModel = model.data || model;
         $scope.formClasses = {};
         $scope.formErrors = {};
         $scope.formMessages = {};
+
+        if ($scope.formModel.name) {
+            page.title = 'Update ' + $scope.formModel.name;
+        }
 
         function formMessages (messages) {
             angular.forEach(messages, function (messages, field) {
@@ -126,11 +132,18 @@
             }
 
             //
-            promise.success(function(data) {
+            promise.success(function(data, status) {
                 if (data.messages) {
                     angular.forEach(data.messages, function (messages, field) {
                         $scope.formMessages[field] = messages;
                     });
+                } else if (api) {
+                    // Created
+                    if (status === 201) {
+                        $scope.formMessages[FORMKEY] = [{message: 'Succesfully created'}];
+                    } else {
+                        $scope.formMessages[FORMKEY] = [{message: 'Succesfully updated'}];
+                    }
                 } else {
                     window.location.href = data.redirect || '/';
                 }
@@ -158,7 +171,7 @@
         };
     }
 
-    lux.controllers.controller('formController', ['$scope', '$lux',
+    lux.controllers.controller('formController', ['$scope', '$lux', 'data',
             function ($scope, $lux, data) {
         // Model for a user when updating
         formController($scope, $lux, data);

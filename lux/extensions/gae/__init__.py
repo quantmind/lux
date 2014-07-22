@@ -36,7 +36,7 @@ class GaeBackend(sessions.AuthBackend):
 
     def has_permission(self, request, level, model):
         user = request.cache.user
-        if user.is_superuser:
+        if user.is_superuser():
             return True
         elif level <= self.READ:
             return True
@@ -120,10 +120,12 @@ class AuthBackend(GaeBackend):
                     user.active = True
                     user.put()
                     reg.put()
+                    session.success('Your email has been confirmed! You can '
+                                    'now login')
                     return user
         else:
             user = self.get_user(**params)
-            self._get_or_create_registration(request, user)
+            self.get_or_create_registration(request, user)
 
     def authenticate(self, request, username=None, email=None, password=None):
         user = None
@@ -152,7 +154,7 @@ class AuthBackend(GaeBackend):
         user = User(username=username, password=self.password(password),
                     email=email, name=name, surname=surname, active=active)
         user.put()
-        self._get_or_create_registration(request, user)
+        self.get_or_create_registration(request, user)
         return user
 
     def create_session(self, request, user=None, expiry=None):
@@ -196,7 +198,7 @@ class AuthBackend(GaeBackend):
         request.cache.session = session
         if session.user:
             request.cache.user = session.user.get()
-        else:
+        if not request.cache.user:
             request.cache.user = sessions.Anonymous()
 
     def _save(self, environ, response):

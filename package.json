@@ -14,7 +14,7 @@
     },
     "licenses": [{"type": "BSD"}],
     "dependencies": {
-        "jQuery": "",
+        "jquery": "",
         "lodash": ""
     },
     "devDependencies": {

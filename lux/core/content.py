@@ -45,7 +45,8 @@ from pulsar import HttpException, coroutine_return
 from pulsar.apps.wsgi import Json, AsyncString, HtmlVisitor
 from pulsar.utils.structures import OrderedDict
 from pulsar.utils.pep import zip
-from pulsar.utils.html import nicename, slugify
+from pulsar.utils.html import nicename
+from pulsar.utils.slugify import slugify
 from pulsar.utils.structures import AttributeDictionary
 from pulsar.utils.httpurl import JSON_CONTENT_TYPES
 

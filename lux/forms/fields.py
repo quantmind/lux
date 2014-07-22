@@ -168,7 +168,7 @@ class Choice(object):
                 else:
                     opt = Html('option', choice, value=choice)
                 if opt.get_form_value() == value:
-                    opt.addDir('selected')
+                    opt.attr('selected', '')
                 html.append(opt)
 
     def clean(self, values, bfield):

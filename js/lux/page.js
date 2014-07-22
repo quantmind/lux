@@ -3,10 +3,18 @@
     //
     // Handle html5 sitemap
     lux.controllers.controller('page', ['$scope', '$lux', function ($scope, $lux) {
+        //
+        $lux.log.info('Setting up angular page');
+        //
         angular.extend($scope, context);
+        var page = $scope.page;
+        if (page && $scope.pages) {
+            $scope.page = page = $scope.pages[page];
+        } else {
+            $scope.page = page = {};
+        }
         //
         $scope.search_text = '';
-        $scope.page = context.page || {};
         $scope.sidebar_collapse = '';
         //
         // logout via post method
@@ -61,26 +69,36 @@
     //  -----------------
     //
     //  Build an HTML5 sitemap when the ``context.sitemap`` variable is set.
-    function _load_sitemap (sitemap) {
-        angular.forEach(sitemap, function (page) {
-            _load_sitemap(page.links);
-            if (page.href && page.target !== '_self') {
+    function _load_sitemap (hrefs, pages) {
+        //
+        angular.forEach(hrefs, function (href) {
+            var page = pages[href];
+            if (page && page.href && page.target !== '_self') {
                 lux.addRoute(page.href, route_config(page));
             }
         });
     }
 
     function route_config (page) {
+
         return {
-            templateUrl: page.template_url,
-            controller: page.controller,
+            templateUrl: function (obj) {
+                var url = page.template_url;
+                angular.forEach(page.template_url_vars, function (name) {
+                    var r = obj[name] || '';
+                    url = url.replace(':' + name, r);
+                });
+
+                return url;
+            },
+            controller: page.controller || 'page',
             resolve: {
                 data: function ($lux, $route) {
                     if (page.api) {
                         var api = $lux.api(page.api, page.api_provider),
                             id = $route.current.params.id;
                         if (id)
-                            return $lux.get(id);
+                            return api.get(id);
                         else if (page.getmany)
                             return api.getMany();
                     }
@@ -90,5 +108,4 @@
     }
     //
     // Load sitemap if available
-    _load_sitemap(context.sitemap);
-
+    _load_sitemap(context.hrefs, context.pages);
