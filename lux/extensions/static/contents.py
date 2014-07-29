@@ -72,13 +72,11 @@ def _meta_iterator(meta):
 
 
 class Snippet(object):
-    keys = ('main',)
+    template = None
 
-    def __init__(self, content, metadata=None, src=None, dst=None):
+    def __init__(self, content, metadata, src):
         self._content = content
-        self._compiled = None
         self._src = src
-        self._dst = dst
         self.modified = modified_datetime(src)
         self.update_meta(metadata)
 
@@ -86,26 +84,32 @@ class Snippet(object):
         self.__dict__.update(_meta_iterator(meta))
 
     def __repr__(self):
-        return self._content
+        return self._src
     __str__ = __repr__
 
     def render(self, context):
-        return template_engine(self.template)(self._content, context)
+        if self.content_type == 'text/html':
+            return template_engine(self.template)(self._content, context)
+        else:
+            return self._content
 
     def json(self, context):
-        return json.dumps(self.json_dict(context))
+        d = self.json_dict(context)
+        return json.dumps(d) if d else None
 
     def json_dict(self, context):
-        text = self.render(context)
-        return {'head_title': self.head_title or self.title,
-                'head_description': self.head_description or self.description,
-                'tags': self.tag.join(),
-                'css': self.require_css,
-                'js': self.require_js,
-                'author': self.author.join(),
-                'robots': self.robots.join(),
-                'content': text,
-                'content-type': self.content_type}
+        if self.content_type == 'text/html':
+            text = self.render(context)
+            head_des = self.head_description or self.description
+            return {'head_title': self.head_title or self.title,
+                    'head_description': head_des,
+                    'tags': self.tag.join(),
+                    'css': self.require_css,
+                    'js': self.require_js,
+                    'author': self.author.join(),
+                    'robots': self.robots.join(),
+                    'content': text,
+                    'content-type': self.content_type}
 
     def html(self, request, context):
         '''Build an HTML5 page for this content

@@ -1,4 +1,5 @@
 import json
+import mimetypes
 
 from dateutil.parser import parse
 
@@ -32,7 +33,9 @@ METADATA_PROCESSORS = dict(((p.name, p) for p in (
     Processor('draft', lambda x, cfg: json.loads(x)),
     Processor('template', default=lambda cfg: cfg['DEFAULT_TEMPLATE_ENGINE']),
     Processor('robots', default=['index', 'follow'], multiple=True),
-    Processor('header-image')
+    Processor('header-image'),
+    Processor('twitter-image'),
+    Processor('type')
 )))
 
 
@@ -57,7 +60,7 @@ class BaseReader(object):
 
     """
     enabled = True
-    file_extensions = ['static']
+    file_extensions = [None, 'html', 'static']
     extensions = None
 
     def __init__(self, app):
@@ -68,7 +71,7 @@ class BaseReader(object):
     def __str__(self):
         return self.__class__.__name__
 
-    def process_metadata(self, meta):
+    def process_metadata(self, meta, src):
         """Return the dict containing document metadata
         """
         cfg = self.config
@@ -76,22 +79,30 @@ class BaseReader(object):
         for name, values in meta.items():
             name = name.lower()
             if name not in output:
-                self.logger.warning('Unknown meta tag "%s"', name)
+                self.logger.warning("Unknown meta '%s' in '%s'", name, src)
             else:
                 proc = METADATA_PROCESSORS[name].process
                 for value in values:
                     try:
                         value = proc(value, cfg)
                     except Exception:
-                        self.logger.exception('Could not process meta "%s"',
-                                              name)
+                        self.logger.exception("Could not process meta '%s' "
+                                              "in '%s'", name, src)
                     output[name].extend(value)
         return output
 
     def read(self, source_path):
-        "No-op parser"
-        content = None
-        metadata = {}
+        '''Default read method
+        '''
+        ct, encoding = mimetypes.guess_type(source_path)
+        if encoding or (ct and ct.startswith('text/')):
+            with open(source_path, 'r', encoding=encoding or 'utf-8') as f:
+                content = f.read()
+        else:
+            with open(source_path, 'rb') as f:
+                content = f.read()
+        metadata = {'content_type': ct,
+                    'require_context': []}
         return content, metadata
 
 
@@ -115,7 +126,7 @@ class MarkdownReader(BaseReader):
         with open(source_path, encoding='utf-8') as text:
             raw = '%s\n\n%s' % (text.read(), self.links())
             content = md.convert(raw)
-        metadata = self.process_metadata(self._md.Meta)
+        metadata = self.process_metadata(self._md.Meta, source_path)
         return content, metadata
 
     def links(self):

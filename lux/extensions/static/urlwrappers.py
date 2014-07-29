@@ -20,7 +20,7 @@ class URLWrapper:
     @name.setter
     def name(self, name):
         self._name = name
-        self.slug = slugify(name, self.settings.get('SLUG_SUBSTITUTIONS', ()))
+        self.slug = slugify(name)
 
     def as_dict(self):
         d = self.__dict__
@@ -45,9 +45,7 @@ class Category(URLWrapper):
 
 
 class Tag(URLWrapper):
-
-    def __init__(self, name, *args, **kwargs):
-        super(Tag, self).__init__(name.strip(), *args, **kwargs)
+    pass
 
 
 class Author(URLWrapper):

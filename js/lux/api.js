@@ -28,6 +28,11 @@
             return $http.post(url, data, cfg);
         };
 
+        //  Create an api client
+        //  -------------------------
+        //
+        //  name: the api name
+        //  provider: optional provider
         this.api = function (name, provider) {
             if (!provider) provider = LuxApiProvider;
             return provider.api(name, $lux);
@@ -40,6 +45,11 @@
     //  Lux Provider is for an API built using Lux
     //
     var LuxApiProvider = {
+        //
+        //  Object containing the urls for the api.
+        //  If not given, the object will be loaded via the ``context.apiUrl``
+        //  variable.
+        apiUrls: context.apiUrls,
         //
         api: function (name, $lux) {
             return new LuxApi(name, this, $lux);
@@ -62,8 +72,8 @@
                 });
             }
 
-            if (this._api) {
-                var api_url = this._api[api.name + '_url'];
+            if (this.apiUrls) {
+                var api_url = this.apiUrls[api.name] || this.apiUrls[api.name + '_url'];
                 //
                 // No api url!
                 if (!api_url) {
@@ -111,7 +121,7 @@
                 // Fetch the api urls
                 $lux.log.info('Fetching api info');
                 $lux.http.get(context.apiUrl).success(function (resp) {
-                    self._api = resp;
+                    self.apiUrls = resp;
                     self.call(api, options, callback, deferred);
                 }).error(_error);
             } else {
@@ -154,10 +164,24 @@
 
         //  Get a single element
         //  ---------------------------
-        this.get = function (id, options) {
+        this.get = function (params, options) {
             options = angular.extend({
                 url: function (url) {
-                    return url + '/' + id;
+                    var path = '';
+                    if (Object(params) === params) {
+                        angular.forEach(params, function (name, value) {
+                            path = '/' + value;
+                        });
+                    } else if (params) {
+                        path = '/' + params;
+                    }
+                    if (path) {
+                        if (url.substring(url.length-1) === '/')
+                            url = url.substring(0, url.length-1);
+                        return url + path;
+                    } else {
+                        return url;
+                    }
                 },
                 method: 'GET'
             }, options);

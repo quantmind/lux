@@ -65,6 +65,13 @@
 
     }]);
 
+    lux.controllers.controller('html5Page', ['$scope', '$lux', 'data',
+        function ($scope, $lux, data) {
+            if (content.title) {
+                document.title = data.title;
+            }
+            $scope.content = data.content;
+    }]);
     //  SITEMAP
     //  -----------------
     //
@@ -95,12 +102,8 @@
             resolve: {
                 data: function ($lux, $route) {
                     if (page.api) {
-                        var api = $lux.api(page.api, page.api_provider),
-                            id = $route.current.params.id;
-                        if (id)
-                            return api.get(id);
-                        else if (page.getmany)
-                            return api.getMany();
+                        var api = $lux.api(page.api, page.api_provider);
+                        return api.get($route.current.params);
                     }
                 }
             }

@@ -44,14 +44,6 @@ class Router(lux.Router, MediaMixin):
         else:
             raise Http404
 
-    def get_partial_template(self):
-        router = self
-        template = None
-        while not template and router:
-            template = router.get_route('partial_template')
-            router = router.parent
-        return template
-
     def html_title(self, app):
         return app.config['HTML_HEAD_TITLE']
 
@@ -116,17 +108,20 @@ def add_to_sitemap(sitemap, app, router, parent=None):
             'target': target,
             'head_title': router.html_title(app),
             'title': router.title or router.name,
+            'api': router.get_api_name(),
             'parent': parent}
     sitemap['hrefs'].append(href)
     sitemap['pages'][href] = page
     #
-    partial_template = router.get_partial_template()
+    controller = None
+    partial_template = router.get_route('partial_template')
     if partial_template:
+        controller = partial_template.get_controller()
         href = router_href(partial_template)
         vars = partial_template.route.ordered_variables or None
         page.update({'template_url': href,
-                     'template_url_vars': vars,
-                     'controller': partial_template.get_controller()})
+                     'template_url_vars': vars})
+    page['controller'] = controller or router.get_controller() or 'html5Page'
     #
     # Loop over children routes
     for child in router.routes:

@@ -169,6 +169,14 @@ class Router(wsgi.Router):
         cls = cls or Router
         return cls(rule, **params)
 
+    def add_api_urls(self, request, api):
+        for route in self.routes:
+            route.add_api_urls(api)
+
+    def get_api_name(self):
+        '''The api name for this :class:`.Router`
+        '''
+
 
 class HtmlRouter(Router):
     '''A pulsar Router for html content.

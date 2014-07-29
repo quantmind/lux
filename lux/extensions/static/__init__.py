@@ -25,12 +25,12 @@ from pulsar.apps.wsgi import FileRouter, WsgiHandler
 from pulsar.utils.slugify import slugify
 
 import lux
-from lux import Parameter
+from lux import Parameter, Router
 
-from .builder import StaticBuilder, ContextBuilder, get_rel_dir
+from .builder import Builder, DirBuilder, ContextBuilder, get_rel_dir
 from .contents import Snippet
-from .routers import MediaRouter, DirContent, Content, Blog, ErrorRouter
-#from .blog import Blog
+from .routers import (MediaRouter, HtmlContent, Blog, ErrorRouter,
+                      JsonRoot, JsonContent)
 
 
 class StaticHandler(WsgiHandler):
@@ -58,12 +58,9 @@ class Extension(lux.Extension):
         Parameter('CONTEXT_LOCATION', 'context',
                   'Directory where to find files to populate the context '
                   'dictionary'),
-        Parameter('EXTRA_FILES', (),
-                  'List/tuple of additional files to copy to the '
-                  ':setting:`STATIC_LOCATION`'),
         Parameter('MD_EXTENSIONS', ['extra', 'meta'],
                   'List/tuple of markdown extensions'),
-        Parameter('STATIC_HTML5', True,
+        Parameter('STATIC_HTML5', 'api',
                   'Use angular router in Html5 mode'),
         Parameter('STATIC_SPECIALS', ('404',), '')
     ]
@@ -74,16 +71,24 @@ class Extension(lux.Extension):
         return [MediaRouter(path, app.meta.media_dir, show_indexes=app.debug)]
 
     def on_loaded(self, app):
+        '''Once the app is fully loaded
+        '''
         self._static_context = None
         router404 = None
+        api_url = app.config['STATIC_HTML5']
+        api = JsonRoot(api_url or '')
+        if api_url:
+            app.api = api
+        middleware = []
         for router in app.handler.middleware:
-            if isinstance(router, StaticBuilder):
-                src_dir = router.src or router.route.rule
-                if os.path.isdir(src_dir):
-                    router.dir = src_dir
-                    for url_path, file_path, ext in router.all_files():
-                        if url_path == 'index':
-                            router.src = file_path
+            if isinstance(router, DirBuilder):
+                if api_url:
+                    api_url = None
+                    middleware.append(api)
+                api = JsonContent(router.rule, dir=router.dir)
+                app.api.add_child(api)
+            middleware.append(router)
+        app.handler.middleware = middleware
 
     def on_request(self, app, request):
         if not app.debug and not isinstance(app.handler, StaticHandler):
@@ -110,13 +115,25 @@ class Extension(lux.Extension):
             os.makedirs(location)
         #
         for middleware in app.handler.middleware:
-            if isinstance(middleware, StaticBuilder):
+            if isinstance(middleware, Builder):
                 middleware.build(app, location)
         #
         if self._static_info:
             filename = os.path.join(location, 'buildinfo.json')
             with open(filename, 'w') as f:
                 json.dump(self._static_info, f, indent=4)
+
+            self.copy_redirects(request, location)
+
+    def jscontext(self, request, context):
+        '''Add api Urls
+        '''
+        if request.config['STATIC_HTML5']:
+            apiUrls = context.get('apiUrls', {})
+            for middleware in request.app.handler.middleware:
+                if isinstance(middleware, Router):
+                    middleware.add_api_urls(request, apiUrls)
+            context['apiUrls'] = apiUrls
 
     def context(self, request, context):
         if not self._static_context:
@@ -159,66 +176,9 @@ class Extension(lux.Extension):
             'year': dte.year,
             'lux_version': lux.__version__,
             'url': url,
-            'media': cfg['MEDIA_URL'][:-1]
+            'media': cfg['MEDIA_URL'][:-1],
+            'name': cfg['APP_NAME']
         }
-
-    def __build(self, request):
-        '''Build the static site
-        '''
-        app = request.app
-        config = request.config
-        path = app.meta.path
-        cur_path = os.curdir
-        os.chdir(app.meta.path)
-        location = os.path.abspath(config['STATIC_LOCATION'])
-        if not os.path.isdir(location):
-            os.makedirs(location)
-        #
-        # INFO
-        info = self.build_info(request)
-        filename = os.path.join(location, 'buildinfo.json')
-        with open(filename, 'w') as f:
-            json.dump(info, f, indent=4)
-        #
-        # CONTEXT DICTIONARY
-        context = dict((('site_%s' % k, v) for k, v in info.items()))
-        self.build_context(request, context)
-        #
-        # Copy Media, extra files and redirects
-        self.create_media(request, location)
-        self.copy_redirects(request, location)
-        self.copy_files(config['EXTRA_FILES'], location)
-        #
-        for name, content in config['STATIC_SITEMAP'].items():
-            content(request, name, location, context)
-
-    def create_media(self, request, location):
-        media_dir = os.path.join(location, 'media')
-        if os.path.isdir(media_dir):
-            self.logger.info('Removing media directory "%s"', media_dir)
-            shutil.rmtree(media_dir)
-        self.logger.info('Creating media directory "%s"', media_dir)
-        os.makedirs(media_dir)
-        self.copy_media(media_dir, lux.PACKAGE_DIR, 'lux')
-        for ext in request.app.extensions.values():
-            self.copy_media(media_dir, ext.meta.path, ext.meta.name)
-
-    def copy_files(self, files, location):
-        for src in files:
-            if os.path.isfile(src):
-                dst = os.path.join(location, src)
-                self.logger.info('Copying %s into %s', src, dst)
-                shutil.copyfile(src, dst)
-            else:
-                self.logger.warning('File %s does not exist', src)
-
-    def copy_media(self, media_dir, path, name):
-        src = os.path.join(path, 'media', name)
-        if os.path.isdir(src):
-            dst = os.path.join(media_dir, name)
-            self.logger.info('Copying media directory %s into %s'
-                             % (src, dst))
-            shutil.copytree(src, dst)
 
     def copy_redirects(self, request, location):
         '''Reads the ``redirects.json`` file if it exists and
