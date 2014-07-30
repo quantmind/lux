@@ -93,10 +93,6 @@ class Snippet(object):
         else:
             return self._content
 
-    def json(self, context):
-        d = self.json_dict(context)
-        return json.dumps(d) if d else None
-
     def json_dict(self, context):
         if self.content_type == 'text/html':
             text = self.render(context)
@@ -114,7 +110,6 @@ class Snippet(object):
     def html(self, request, context):
         '''Build an HTML5 page for this content
         '''
-        context = context.copy()
         head = request.html_document.head
         head_title = self.head_title or self.title
         if head_title:

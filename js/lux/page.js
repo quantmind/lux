@@ -65,12 +65,16 @@
 
     }]);
 
-    lux.controllers.controller('html5Page', ['$scope', '$lux', 'data',
-        function ($scope, $lux, data) {
-            if (content.title) {
-                document.title = data.title;
+    lux.controllers.controller('html5Page', ['$scope', '$lux', 'response',
+        function ($scope, $lux, response) {
+            var page = response.data;
+            if (response.status !== 200) {
+                return;
             }
-            $scope.content = data.content;
+            $scope.page = page;
+            if (page.html_title) {
+                document.title = page.html_title;
+            }
     }]);
     //  SITEMAP
     //  -----------------
@@ -86,23 +90,22 @@
         });
     }
 
+    // Configure a route for a given page
     function route_config (page) {
 
         return {
-            templateUrl: function (obj) {
-                var url = page.template_url;
-                angular.forEach(page.template_url_vars, function (name) {
-                    var r = obj[name] || '';
-                    url = url.replace(':' + name, r);
-                });
-
-                return url;
-            },
-            controller: page.controller || 'page',
+            //
+            // template url for the page
+            templateUrl: page.template_url,
+            //
+            template: '<div ng-bind-html="page.content"></div>',
+            //
+            controller: page.controller || 'html5Page',
+            //
             resolve: {
-                data: function ($lux, $route) {
+                response: function ($lux, $route) {
                     if (page.api) {
-                        var api = $lux.api(page.api, page.api_provider);
+                        var api = $lux.api(page.api);
                         return api.get($route.current.params);
                     }
                 }

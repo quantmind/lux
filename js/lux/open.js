@@ -1,4 +1,4 @@
-define(['jquery', 'angular', 'angular-route', 'angular-sanitize'], function ($) {
+define(['jquery', 'angular', 'angular-sanitize'], function ($) {
     "use strict";
 
     var lux = {},
@@ -6,14 +6,19 @@ define(['jquery', 'angular', 'angular-route', 'angular-sanitize'], function ($) 
         root = window,
         routes = [],
         ready_callbacks = [],
-        context = $.extend(defaults, root.context);
+        context = $.extend(defaults, root.context),
+        ngModules = ['ngSanitize', 'lux.controllers', 'lux.services'];
+
+    // when in html5 mode add ngRoute to the list of required modules
+    if (context.html5mode)
+        ngModules.push('ngRoute');
 
     angular.element = $;
     lux.$ = $;
     lux.context = context;
     lux.services = angular.module('lux.services', []);
     lux.controllers = angular.module('lux.controllers', ['lux.services']);
-    lux.app = angular.module('lux', ['ngRoute', 'ngSanitize', 'lux.controllers', 'lux.services']);
+    lux.app = angular.module('lux', ngModules);
 
     // Add a new HTML5 route to the page router
     lux.addRoute = function (url, data) {
@@ -24,19 +29,4 @@ define(['jquery', 'angular', 'angular-route', 'angular-sanitize'], function ($) 
     lux.add_ready_callback = function (callback) {
         if (ready_callbacks === true) callback();
         else ready_callbacks.push(callback);
-    };
-
-    lux._setupRouter = function (all) {
-        //
-        lux.app.config(['$routeProvider', '$locationProvider', function($routeProvider, $locationProvider) {
-
-            angular.forEach(all, function (route) {
-                var url = route[0];
-                var data = route[1];
-                if ($.isFunction(data)) data = data();
-                $routeProvider.when(url, data);
-            });
-            // use the HTML5 History API
-            $locationProvider.html5Mode(true);
-        }]);
     };

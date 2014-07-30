@@ -1,13 +1,7 @@
     //
     lux.bootstrap = function () {
         //
-        $(document).ready(function() {
-            //
-            if (routes.length && context.html5mode) {
-                var rs = routes;
-                routes = [];
-                lux._setupRouter(rs);
-            }
+        function setup_angular() {
             //
             angular.bootstrap(document, ['lux']);
             //
@@ -15,6 +9,38 @@
                 callback();
             });
             ready_callbacks = true;
+        }
+        //
+        //
+        $(document).ready(function() {
+            //
+            if (context.html5mode) {
+                //
+                // Load angular-route and configure the HTML5 navigation
+                require(['angular-route'], function () {
+                    //
+                    if (routes.length) {
+                        var all = routes;
+                        routes = [];
+                        //
+                        lux.app.config(['$routeProvider', '$locationProvider',
+                                function($routeProvider, $locationProvider) {
+                            //
+                            angular.forEach(all, function (route) {
+                                var url = route[0];
+                                var data = route[1];
+                                if ($.isFunction(data)) data = data();
+                                $routeProvider.when(url, data);
+                            });
+                            // use the HTML5 History API
+                            $locationProvider.html5Mode(true);
+                        }]);
+                    }
+                    setup_angular();
+                });
+            } else {
+                setup_angular();
+            }
         });
     };
 

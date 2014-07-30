@@ -60,7 +60,7 @@ class Extension(lux.Extension):
                   'dictionary'),
         Parameter('MD_EXTENSIONS', ['extra', 'meta'],
                   'List/tuple of markdown extensions'),
-        Parameter('STATIC_HTML5', 'api',
+        Parameter('STATIC_API', 'api',
                   'Use angular router in Html5 mode'),
         Parameter('STATIC_SPECIALS', ('404',), '')
     ]
@@ -71,22 +71,21 @@ class Extension(lux.Extension):
         return [MediaRouter(path, app.meta.media_dir, show_indexes=app.debug)]
 
     def on_loaded(self, app):
-        '''Once the app is fully loaded
+        '''Once the app is fully loaded add API routes if required
         '''
+        app.config['HTML5_NAVIGATION'] = bool(app.config['STATIC_API'])
         self._static_context = None
         router404 = None
-        api_url = app.config['STATIC_HTML5']
-        api = JsonRoot(api_url or '')
-        if api_url:
-            app.api = api
+        api_url = app.config['STATIC_API']
         middleware = []
+        if api_url:
+            app.api = JsonRoot(api_url)
+            middleware.append(app.api)
+        else:
+            app.api = None
         for router in app.handler.middleware:
-            if isinstance(router, DirBuilder):
-                if api_url:
-                    api_url = None
-                    middleware.append(api)
-                api = JsonContent(router.rule, dir=router.dir)
-                app.api.add_child(api)
+            if app.api:
+                self.add_api(app, router)
             middleware.append(router)
         app.handler.middleware = middleware
 
@@ -128,7 +127,7 @@ class Extension(lux.Extension):
     def jscontext(self, request, context):
         '''Add api Urls
         '''
-        if request.config['STATIC_HTML5']:
+        if request.config['STATIC_API']:
             apiUrls = context.get('apiUrls', {})
             for middleware in request.app.handler.middleware:
                 if isinstance(middleware, Router):
@@ -209,6 +208,12 @@ class Extension(lux.Extension):
             with open(dst, 'w') as f:
                 f.write(content)
 
+    def add_api(self, app, router):
+        if isinstance(router, DirBuilder):
+            router.api = JsonContent(router.rule, dir=router.dir)
+            app.api.add_child(router.api)
+            for route in router.routes:
+                self.add_api(app, route)
 
 
 REDIRECT_TEMPLATE = '''\
