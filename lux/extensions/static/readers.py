@@ -1,42 +1,14 @@
 import json
 import mimetypes
 
-from dateutil.parser import parse
-
 try:
     from markdown import Markdown
 except ImportError:
     Markdown = False
 
-from .contents import Processor, list_of
-from .urlwrappers import Tag, Author, Category
+from .contents import METADATA_PROCESSORS
 
 READERS = {}
-
-METADATA_PROCESSORS = dict(((p.name, p) for p in (
-    Processor('name'),
-    Processor('title'),
-    Processor('slug'),
-    Processor('description'),
-    Processor('head-title'),
-    Processor('head-description'),
-    Processor('tag', list_of(Tag), multiple=True),
-    Processor('date', lambda x, cfg: [parse(x)]),
-    Processor('status'),
-    Processor('image'),
-    Processor('category', list_of(Category), multiple=True),
-    Processor('author', list_of(Author), multiple=True),
-    Processor('require_css', multiple=True),
-    Processor('require_js', multiple=True),
-    Processor('require_context', multiple=True),
-    Processor('content_type', default='text/html'),
-    Processor('draft', lambda x, cfg: json.loads(x)),
-    Processor('template', default=lambda cfg: cfg['DEFAULT_TEMPLATE_ENGINE']),
-    Processor('robots', default=['index', 'follow'], multiple=True),
-    Processor('header-image'),
-    Processor('twitter-image'),
-    Processor('type')
-)))
 
 
 def register_reader(cls):

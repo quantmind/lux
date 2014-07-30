@@ -16,6 +16,7 @@ Parameters
 .. lux_extension:: lux.extensions.static
 '''
 import os
+import sys
 import json
 import shutil
 from datetime import datetime
@@ -68,26 +69,16 @@ class Extension(lux.Extension):
 
     def middleware(self, app):
         path = app.config['MEDIA_URL']
-        return [MediaRouter(path, app.meta.media_dir, show_indexes=app.debug)]
+        app.api = JsonRoot(app.config['STATIC_API'])
+        return [app.api,
+                MediaRouter(path, app.meta.media_dir, show_indexes=app.debug)]
 
     def on_loaded(self, app):
         '''Once the app is fully loaded add API routes if required
         '''
-        app.config['HTML5_NAVIGATION'] = bool(app.config['STATIC_API'])
         self._static_context = None
-        router404 = None
-        api_url = app.config['STATIC_API']
-        middleware = []
-        if api_url:
-            app.api = JsonRoot(api_url)
-            middleware.append(app.api)
-        else:
-            app.api = None
         for router in app.handler.middleware:
-            if app.api:
-                self.add_api(app, router)
-            middleware.append(router)
-        app.handler.middleware = middleware
+            self.add_api(app, router)
 
     def on_request(self, app, request):
         if not app.debug and not isinstance(app.handler, StaticHandler):
@@ -174,6 +165,7 @@ class Extension(lux.Extension):
             'date': dte.strftime(app.config['DATE_FORMAT']),
             'year': dte.year,
             'lux_version': lux.__version__,
+            'python_version': '.'.join((str(v) for v in sys.version_info[:3])),
             'url': url,
             'media': cfg['MEDIA_URL'][:-1],
             'name': cfg['APP_NAME']
@@ -210,7 +202,8 @@ class Extension(lux.Extension):
 
     def add_api(self, app, router):
         if isinstance(router, DirBuilder):
-            router.api = JsonContent(router.rule, dir=router.dir)
+            router.api = JsonContent(router.rule, dir=router.dir,
+                                     html_router=router)
             app.api.add_child(router.api)
             for route in router.routes:
                 self.add_api(app, route)

@@ -13,6 +13,10 @@ class BuildError(Http404):
     pass
 
 
+class SkipBuild(Exception):
+    pass
+
+
 def directory(dir):
     bd, fname = os.path.split(dir)
     return dir if fname else bd
@@ -130,9 +134,12 @@ class Builder(BaseBuilder):
         site_url = app.config['SITE_URL']
         path = self.path(**params)
         url = urljoin(site_url, path)
-        environ = app.wsgi_request(path=url, HTTP_ACCEPT='*/*').environ
+        request = app.wsgi_request(path=url, HTTP_ACCEPT='*/*')
+        request.cache.building_static = True
         try:
-            response = self.response(environ, params)
+            response = self.response(request.environ, params)
+        except SkipBuild:
+            pass
         except BuildError as e:
             app.logger.error(str(e))
         except Exception:
@@ -191,15 +198,7 @@ class FileBuilder(Builder):
         dir = self.parent.get_src()
         if dir:
             path = os.path.join(dir, path)
-        try:
-            return self.read_file(request.app, path)
-        except BuildError:
-            _, name = os.path.split(path)
-            if name == 'index' and self.index_template:
-                src = self.template_full_path(self.index_template)
-                return self.read_file(request.app, src)
-            else:
-                raise
+        return self.read_file(request.app, path)
 
 
 class DirBuilder(Builder):
@@ -208,7 +207,6 @@ class DirBuilder(Builder):
     drafts = 'drafts'
     '''Drafts url
     '''
-    children_snippet = None
     '''The children render the children routes of this router
     '''
     index_template = None
@@ -255,7 +253,7 @@ class ContextBuilder(BaseBuilder):
 
         if not content.require_context:
             assert content.name
-            context[content.name] = content.render(context)
+            context[content.name] = content.render(app, context)
             waiting = self.waiting
             self.waiting = set()
             for content in waiting:

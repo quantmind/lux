@@ -2,60 +2,44 @@ import os
 import stat
 import json
 from functools import partial
-from datetime import datetime
+from datetime import datetime, date
 
-from pulsar.utils.slugify import slugify
+from dateutil.parser import parse
 
 from lux import template_engine
 from lux.utils import memoized
 from lux.extensions.twitter import twitter_card
 
-
-identity = lambda x, cfg: x
-
-as_list = lambda x, cfg, w=identity: [w(v.strip(), cfg) for v in x.split(',')]
+from .urlwrappers import (Processor, Tag, Author, Category, list_of,
+                          Multi, meta_iterator)
 
 
-def list_of(W):
-    return lambda x, cfg: as_list(x, cfg, W)
-
-
-class Processor:
-
-    def __init__(self, name, processor=None, default=None, multiple=False):
-        self.name = name
-        self._default = default
-        self.process = processor or as_list
-        self.multiple = multiple
-
-    def __call__(self, cfg):
-        meta = Multi() if self.multiple else Single()
-        default = self._default
-        if hasattr(self._default, '__call__'):
-            default = default(cfg)
-        meta.extend(default)
-        return meta
-
-
-class Multi(list):
-
-    def extend(self, values):
-        if values:
-            if isinstance(values, str) or not hasattr(values, '__iter__'):
-                values = (values,)
-            super(Multi, self).extend(values)
-
-    def value(self):
-        return self
-
-    def join(self, sep=', '):
-        return sep.join(('%s' % v for v in self))
-
-
-class Single(Multi):
-
-    def value(self):
-        return self[0] if self else None
+METADATA_PROCESSORS = dict(((p.name, p) for p in (
+    Processor('name'),
+    Processor('title'),
+    Processor('slug'),
+    Processor('description'),
+    Processor('head-title'),
+    Processor('head-description'),
+    Processor('template'),
+    Processor('tag', list_of(Tag), multiple=True),
+    Processor('date', lambda x, cfg: [parse(x)]),
+    Processor('status'),
+    Processor('image'),
+    Processor('category', list_of(Category), multiple=True),
+    Processor('author', list_of(Author), multiple=True),
+    Processor('require_css', multiple=True),
+    Processor('require_js', multiple=True),
+    Processor('require_context', multiple=True),
+    Processor('content_type', default='text/html'),
+    Processor('draft', lambda x, cfg: json.loads(x)),
+    Processor('template-engine',
+              default=lambda cfg: cfg['DEFAULT_TEMPLATE_ENGINE']),
+    Processor('robots', default=['index', 'follow'], multiple=True),
+    Processor('header-image'),
+    Processor('twitter-image'),
+    Processor('type')
+)))
 
 
 def modified_datetime(src):
@@ -63,41 +47,59 @@ def modified_datetime(src):
     return datetime.fromtimestamp(stat_src[stat.ST_MTIME])
 
 
-def _meta_iterator(meta):
-    if meta:
-        for n, m in meta.items():
-            if isinstance(m, Single):
-                m = m[0] if m else None
-            yield slugify(n, separator='_'), m
-
-
 class Snippet(object):
     template = None
+    template_engine = None
+    default_template = None
 
     def __init__(self, content, metadata, src):
         self._content = content
         self._src = src
         self.modified = modified_datetime(src)
         self.update_meta(metadata)
+        self.template = self.template or self.default_template
 
     def update_meta(self, meta):
-        self.__dict__.update(_meta_iterator(meta))
+        self.__dict__.update(meta_iterator(meta))
 
     def __repr__(self):
         return self._src
     __str__ = __repr__
 
-    def render(self, context):
+    def context(self, app, context):
+        context = context.copy()
+        for name, value in self.__dict__.items():
+            if name.startswith('_'):
+                continue
+            if value is None:
+                value = ''
+            if isinstance(value, Multi):
+                value = str(value)
+            elif isinstance(value, date):
+                context['%s_date' % name] = app.format_date(value)
+                value = app.format_datetime(value)
+            context[name] = value
+        return context
+
+    def render(self, app, context):
         if self.content_type == 'text/html':
-            return template_engine(self.template)(self._content, context)
+            engine = template_engine(self.template_engine)
+            context = self.context(app, context)
+            content = engine(self._content, context)
+            if self.template:
+                context['content'] = content
+                content = app.render_template(self.template, context=context)
+            return content
         else:
             return self._content
 
-    def json_dict(self, context):
+    def json_dict(self, app, context):
         if self.content_type == 'text/html':
-            text = self.render(context)
+            text = self.render(app, context)
             head_des = self.head_description or self.description
-            return {'head_title': self.head_title or self.title,
+            return {'title': self.title,
+                    'description': self.description,
+                    'head_title': self.head_title or self.title,
                     'head_description': head_des,
                     'tags': self.tag.join(),
                     'css': self.require_css,
@@ -134,22 +136,22 @@ class Snippet(object):
         twitter_card(request, **self.__dict__)
         #
         head.add_meta(name='robots', content=self.robots.join())
-        return self.render(context)
+        return self.render(request.app, context)
 
 
 class Page(Snippet):
     mandatory_properties = ('title',)
-    default_template = 'page'
+    default_template = 'page.html'
 
 
 class Article(Snippet):
     mandatory_properties = ('title', 'date', 'category')
-    default_template = 'article'
+    default_template = 'article.html'
 
 
 class Draft(Snippet):
     mandatory_properties = ('title', 'category')
-    default_template = 'article'
+    default_template = 'article.html'
 
 
 class Quote(Snippet):

@@ -47,21 +47,22 @@ class Router(lux.Router, MediaMixin):
         app = request.app
         html5 = app.config.get('HTML5_NAVIGATION')
         doc = request.html_document
+        doc.attr({'ng-model': 'page',
+                  'ng-controller': 'page'})
+        context = {}
         if html5:
-            doc.attr({'ng-model': 'page',
-                      'ng-controller': 'page'})
             jscontext = self.sitemap(app).copy()
             jscontext['page'] = router_href(request.app_handler)
             jscontext['html5mode'] = True
-            context = {'main': '<div ng-view></div>'}
+            context['main'] = '<div ng-view></div>'
         else:
-            jscontext = None
-            context = {'main': self.build_main(request)}
+            jscontext = {}
+            context['main'] = self.build_main(request, context, jscontext)
 
         return app.html_response(request, self.html_body_template,
                                  jscontext=jscontext, context=context)
 
-    def build_main(self, request):
+    def build_main(self, request, context, jscontext):
         '''Build the ``main`` HTML content for the get view.
         '''
         raise NotImplementedError

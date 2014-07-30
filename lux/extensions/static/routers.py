@@ -8,7 +8,7 @@ from lux.extensions import html5, base
 from pulsar.utils.slugify import slugify
 from pulsar.apps.wsgi import Json
 
-from .builder import DirBuilder, FileBuilder, BuildError
+from .builder import DirBuilder, FileBuilder, BuildError, SkipBuild
 from .contents import Article
 
 
@@ -37,22 +37,6 @@ class MediaRouter(base.MediaRouter, FileBuilder):
                 self.build_file(app, location, ext, path=url)
 
 
-class JsonFile(lux.Router, FileBuilder):
-    response_content_types = lux.RouterParam(JSON_CONTENT_TYPES)
-
-    def get(self, request):
-        response = request.response
-        snipped = self.get_snippet(request)
-        context = request.app.context(request)
-        data = snipped.json_dict(context)
-        if data:
-            #data['api_url'] = request.path
-            return Json(data).http_response(request)
-
-    def should_build(self, app, path=None, **params):
-        return path not in app.config['STATIC_SPECIALS']
-
-
 class JsonRoot(lux.Router, FileBuilder):
     '''The root for :class:`.JsonContent`
     '''
@@ -72,27 +56,62 @@ class JsonRoot(lux.Router, FileBuilder):
 class JsonContent(lux.Router, DirBuilder):
     '''Handle json content in a directory
     '''
-    def __init__(self, route, dir=None, name=None):
+    html_router = lux.RouterParam(None)
+
+    def __init__(self, route, dir=None, name=None, html_router=None):
         route = self.valid_route(route, dir) or self.dir
         name = slugify(name or route or self.dir)
         self.src = '%s.json' % self.dir
-        files = JsonFile('<path:path>', dir=self.dir, name='json_files')
-        super(JsonContent, self).__init__(route, files, name=name)
+        snippet = html_router.snippet if html_router else None
+        files = JsonFile('<path:path>', dir=self.dir, name='json_files',
+                         snippet=snippet)
+        super(JsonContent, self).__init__(route, files, name=name,
+                                          html_router=html_router,
+                                          snippet=snippet)
 
     def get(self, request):
         '''Build all the contents'''
         files = self.get_route('json_files')
-        contents = files.build(request.app)
-        data = [json.loads(d.decode('utf-8')) for d in contents]
-        return Json(data).http_response(request)
+        return Json(files.all(request.app)).http_response(request)
+
+
+class JsonFile(lux.Router, FileBuilder):
+
+    def get(self, request):
+        app = request.app
+        response = request.response
+        snipped = self.get_snippet(request)
+        context = request.app.context(request)
+        data = snipped.json_dict(app, context)
+        if data:
+            urlargs = request.urlargs
+            if urlargs.get('path') == 'index':
+                urlargs['path'] = ''
+            html = self.html_router.get_route('html_files')
+            data['api_url'] = app.site_url(request, '%s.json' % request.path)
+            data['html_url'] = app.site_url(request, html.path(**urlargs))
+            return Json(data).http_response(request)
+
+    def should_build(self, app, path=None, **params):
+        return path not in app.config['STATIC_SPECIALS']
+
+    def all(self, app, content=True):
+        contents = self.build(app)
+        all = []
+        for d in self.build(app):
+            data = json.loads(d.decode('utf-8'))
+            if not content:
+                data.pop('content')
+            all.append(data)
+        return all
 
 
 class HtmlFile(html5.Router, FileBuilder):
     '''Serve an Html file
     '''
-    def build_main(self, request):
+    def build_main(self, request, context, jscontext):
         snippet = self.get_snippet(request)
-        context = request.app.context(request)
+        context = request.app.context(request, context)
         return snippet.html(request, context)
 
     def get_api_info(self, app):
@@ -102,19 +121,23 @@ class HtmlFile(html5.Router, FileBuilder):
 class HtmlContent(html5.Router, DirBuilder):
     '''Serve a directory of files rendered in a similar fashion
 
+    The directory could contains blog posts for example.
+    If an ``index.html`` file is available, it is rendered with the
+    directory url
+
     If not specified, the ``route`` value is used
     '''
+    index_template = None
     template = None
     api = None
 
     def __init__(self, route, *routes, dir=None, name=None, **params):
         route = self.valid_route(route, dir)
         name = slugify(name or route or self.dir)
-        route = '%s/' % route
-        file = HtmlFile('<path:path>', dir=self.dir)
-        routes = list(routes)
-        routes.append(file)
         super(HtmlContent, self).__init__(route, *routes, name=name, **params)
+        file = HtmlFile('<path:path>', dir=self.dir, name='html_files',
+                        snippet=self.snippet)
+        self.add_child(file)
         #
         for url_path, file_path, ext in self.all_files():
             if url_path == 'index':
@@ -128,8 +151,26 @@ class HtmlContent(html5.Router, DirBuilder):
                     'urlparams': {'path': 'index.json'},
                     'type': 'static'}
 
+    def build_main(self, request, context, jscontext):
+        if self.src and request.cache.building_static:
+            raise SkipBuild
+        if self.index_template:
+            app = request.app
+            files = self.api.get_route('json_files') if self.api else None
+            if files:
+                jscontext['dir_entries'] = files.all(app, content=False)
+            return app.render_template(self.index_template, context)
+        # Not building, render the source file
+        elif self.src:
+            snippet = self.read_file(request.app, self.src)
+            context = request.app.context(request, context)
+            return snippet.html(request, context)
+        else:
+            return 'NO INDEX TEMPLATE'
+
 
 class Blog(HtmlContent):
     '''Defaults for a blog url
     '''
-    children = Article
+    index_template = 'blogindex.html'
+    snippet = Article

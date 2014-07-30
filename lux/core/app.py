@@ -195,7 +195,9 @@ class Application(ConsoleParser, Extension):
                     'content': 'width=device-width, initial-scale=1'}],
                   'List of default ``meta`` elements to add to the html head'
                   'element'),
-        Parameter('DATE_FORMAT', '%Y %b %d %H:%M:%S',
+        Parameter('DATE_FORMAT', '%Y %b %d',
+                  'Default formatting for dates'),
+        Parameter('DATETIME_FORMAT', '%Y %b %d %H:%M:%S',
                   'Default formatting for dates'),
         Parameter('DEFAULT_TEMPLATE_ENGINE', 'python',
                   'Default template engine'),
@@ -440,6 +442,9 @@ class Application(ConsoleParser, Extension):
     def format_date(self, dte):
         return dte.strftime(self.config['DATE_FORMAT'])
 
+    def format_datetime(self, dte):
+        return dte.strftime(self.config['DATETIME_FORMAT'])
+
     def template_full_path(self, name):
         '''Return the template full path or None.
 
@@ -470,10 +475,10 @@ class Application(ConsoleParser, Extension):
                 getattr(ext, method)(request, context)
         return context
 
-    def render_template(self, template_name, context=None):
+    def render_template(self, template_name, context=None, engine=None):
         '''Render a template'''
         template = self.template(template_name)
-        rnd = template_engine(self.config['DEFAULT_TEMPLATE_ENGINE'])
+        rnd = template_engine(engine or self.config['DEFAULT_TEMPLATE_ENGINE'])
         return rnd(template, context)
 
     def html_response(self, request, template_name, context=None,
