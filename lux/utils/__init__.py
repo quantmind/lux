@@ -59,3 +59,8 @@ def version_tuple(version):
         version.append(rel[0])
         version.append(int(rel[1]))
     return tuple(version)
+
+
+def is_url(url):
+    p = urlsplit(url)
+    return p.scheme and p.netloc

@@ -31,7 +31,8 @@ from lux import Parameter, Router
 from .builder import Builder, DirBuilder, ContextBuilder, get_rel_dir
 from .contents import Snippet
 from .routers import (MediaRouter, HtmlContent, Blog, ErrorRouter,
-                      JsonRoot, JsonContent)
+                      JsonRoot, JsonContent, JsonRedirect)
+from .ui import add_css
 
 
 class StaticHandler(WsgiHandler):
@@ -66,19 +67,29 @@ class Extension(lux.Extension):
         Parameter('STATIC_SPECIALS', ('404',), '')
     ]
     _static_info = None
+    _static_info = None
 
     def middleware(self, app):
         path = app.config['MEDIA_URL']
+        api_url = app.config['STATIC_API']
+        if api_url.startswith('/'):
+            api_url = api_url[1:]
+        if api_url.endswith('/'):
+            api_url = api_url[:-1]
+        assert api_url, 'STATIC_API must be defined'
         app.api = JsonRoot(app.config['STATIC_API'])
-        return [app.api,
+        return [app.api, JsonRedirect(api_url),
                 MediaRouter(path, app.meta.media_dir, show_indexes=app.debug)]
 
     def on_loaded(self, app):
         '''Once the app is fully loaded add API routes if required
         '''
         self._static_context = None
-        for router in app.handler.middleware:
+        middleware = app.handler.middleware
+        app.handler.middleware = []
+        for router in middleware:
             self.add_api(app, router)
+            app.handler.middleware.append(router)
 
     def on_request(self, app, request):
         if not app.debug and not isinstance(app.handler, StaticHandler):
@@ -118,9 +129,11 @@ class Extension(lux.Extension):
     def jscontext(self, request, context):
         '''Add api Urls
         '''
+        app = request.app
+        context.update(self.build_info(app))
         if request.config['STATIC_API']:
             apiUrls = context.get('apiUrls', {})
-            for middleware in request.app.handler.middleware:
+            for middleware in app.handler.middleware:
                 if isinstance(middleware, Router):
                     middleware.add_api_urls(request, apiUrls)
             context['apiUrls'] = apiUrls
@@ -128,11 +141,7 @@ class Extension(lux.Extension):
     def context(self, request, context):
         if not self._static_context:
             app = request.app
-            self._static_info = info = self.build_info(app)
-            #
-            # CONTEXT DICTIONARY
-            ctx = dict((('site_%s' % k, v) for k, v in info.items()))
-            self._static_context = ctx
+            self._static_context = ctx = self.build_info(app)
             #
             src = app.config['CONTEXT_LOCATION']
             builder = ContextBuilder()
@@ -156,20 +165,22 @@ class Extension(lux.Extension):
     def build_info(self, app):
         '''Return a dictionary with information about the build
         '''
-        cfg = app.config
-        dte = datetime.now()
-        url = cfg['SITE_URL'] or ''
-        if url.endswith('/'):
-            url = url[:-1]
-        return {
-            'date': dte.strftime(app.config['DATE_FORMAT']),
-            'year': dte.year,
-            'lux_version': lux.__version__,
-            'python_version': '.'.join((str(v) for v in sys.version_info[:3])),
-            'url': url,
-            'media': cfg['MEDIA_URL'][:-1],
-            'name': cfg['APP_NAME']
-        }
+        if not self._static_info:
+            cfg = app.config
+            dte = datetime.now()
+            url = cfg['SITE_URL'] or ''
+            if url.endswith('/'):
+                url = url[:-1]
+            self._static_info = {
+                'date': dte.strftime(app.config['DATE_FORMAT']),
+                'year': dte.year,
+                'lux_version': lux.__version__,
+                'python_version': '.'.join((str(v) for v in sys.version_info[:3])),
+                'url': url,
+                'media': cfg['MEDIA_URL'][:-1],
+                'name': cfg['APP_NAME']
+            }
+        return dict((('site_%s' % k, v) for k, v in self._static_info.items()))
 
     def copy_redirects(self, request, location):
         '''Reads the ``redirects.json`` file if it exists and
@@ -205,6 +216,7 @@ class Extension(lux.Extension):
             router.api = JsonContent(router.rule, dir=router.dir,
                                      html_router=router)
             app.api.add_child(router.api)
+            app.handler.middleware.append(JsonRedirect(router.api.route))
             for route in router.routes:
                 self.add_api(app, route)
 

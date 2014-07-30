@@ -1,0 +1,18 @@
+<ul class="media-list" ng-cloak>
+    <li ng-repeat="post in dir_entries" class="media">
+        <a href="{{post.html_url}}" class="pull-left hidden-xs dir-entry-image">
+          <img ng-if="post.image_url" src="{{post.image_url}}" alt="">
+          <img ng-if="!post.image_url" src="holder.js/120x90">
+        </a>
+        <a href="{{post.html_url}}" class="visible-xs">
+            <img ng-if="post.image_url" src="{{post.image_url}}" alt="" class="dir-entry-image">
+            <img ng-if="!post.image_url" src="holder.js/120x90">
+        </a>
+        <p class="visible-xs"></p>
+        <div class="media-body">
+            <h4 class="media-heading"><a href="{{post.html_url}}">{{post.title}}</a></h4>
+            <p ng-if="post.description">{{post.description}}</p>
+            <p class="text-info">by {{post.author}} on {{post.date_date}}</p>
+        </div>
+    </li>
+</ul>

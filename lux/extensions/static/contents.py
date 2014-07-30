@@ -7,7 +7,6 @@ from datetime import datetime, date
 from dateutil.parser import parse
 
 from lux import template_engine
-from lux.utils import memoized
 from lux.extensions.twitter import twitter_card
 
 from .urlwrappers import (Processor, Tag, Author, Category, list_of,
@@ -25,7 +24,7 @@ METADATA_PROCESSORS = dict(((p.name, p) for p in (
     Processor('tag', list_of(Tag), multiple=True),
     Processor('date', lambda x, cfg: [parse(x)]),
     Processor('status'),
-    Processor('image'),
+    Processor('image-url'),
     Processor('category', list_of(Category), multiple=True),
     Processor('author', list_of(Author), multiple=True),
     Processor('require_css', multiple=True),
@@ -66,8 +65,10 @@ class Snippet(object):
         return self._src
     __str__ = __repr__
 
-    def context(self, app, context):
-        context = context.copy()
+    def context(self, app, context=None):
+        engine = template_engine(self.template_engine)
+        context = context.copy() if context is not None else {}
+        ctx = app.extensions['static'].build_info(app)
         for name, value in self.__dict__.items():
             if name.startswith('_'):
                 continue
@@ -77,7 +78,10 @@ class Snippet(object):
                 value = str(value)
             elif isinstance(value, date):
                 context['%s_date' % name] = app.format_date(value)
-                value = app.format_datetime(value)
+                context[name] = app.format_datetime(value)
+                continue
+            if value and isinstance(value, str):
+                value = engine(value, ctx)
             context[name] = value
         return context
 
@@ -94,20 +98,16 @@ class Snippet(object):
             return self._content
 
     def json_dict(self, app, context):
+        '''Convert the snippet into a Json dictionary for the API
+        '''
+        text = self.render(app, context)
+        jd = self.context(app)
         if self.content_type == 'text/html':
-            text = self.render(app, context)
             head_des = self.head_description or self.description
-            return {'title': self.title,
-                    'description': self.description,
-                    'head_title': self.head_title or self.title,
-                    'head_description': head_des,
-                    'tags': self.tag.join(),
-                    'css': self.require_css,
-                    'js': self.require_js,
-                    'author': self.author.join(),
-                    'robots': self.robots.join(),
-                    'content': text,
-                    'content-type': self.content_type}
+            jd.update({'head_title': self.head_title or self.title,
+                       'head_description': head_des})
+        jd['content'] = text
+        return jd
 
     def html(self, request, context):
         '''Build an HTML5 page for this content

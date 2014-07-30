@@ -37,6 +37,22 @@ class MediaRouter(base.MediaRouter, FileBuilder):
                 self.build_file(app, location, ext, path=url)
 
 
+class JsonRedirect(lux.Router):
+
+    def __init__(self, route):
+        route = str(route)
+        if route.startswith('/'):
+            route = route[1:]
+        self.target = '/%s' % route
+        if route.endswith('/'):
+            route = route[:-1]
+        assert route, 'JSON route not defined'
+        super(JsonRedirect, self).__init__('/%s.json' % route)
+
+    def get(self, request):
+        return request.redirect(self.target)
+
+
 class JsonRoot(lux.Router, FileBuilder):
     '''The root for :class:`.JsonContent`
     '''

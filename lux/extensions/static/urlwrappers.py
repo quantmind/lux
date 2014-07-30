@@ -23,11 +23,13 @@ def meta_iterator(meta):
 
 class Processor:
 
-    def __init__(self, name, processor=None, default=None, multiple=False):
+    def __init__(self, name, processor=None, default=None, multiple=False,
+                 docs=None):
         self.name = name
         self._default = default
         self.process = processor or as_list
         self.multiple = multiple
+        self.docs = docs
 
     def __call__(self, cfg):
         meta = Multi() if self.multiple else Single()
