@@ -53,7 +53,7 @@ def modified_datetime(src):
 
 
 def is_text(content_type):
-    return content_type[:5] == 'text/' or content_type in JSON_CONTENT_TYPES
+    return content_type[:5] == 'text/' or content_type == 'application/json'
 
 
 class Snippet(object):
@@ -64,14 +64,18 @@ class Snippet(object):
 
     def __init__(self, content, metadata, src, path=None):
         self._content = content
-        self._src = src
-        self._path = path or src
-        self._name = slugify(path, separator='_')
         self.modified = modified_datetime(src)
         self.update_meta(metadata)
+        self._src = src
+        self._path = path or src
+        self._name = path
+        if is_text(self.content_type):
+            self._name = slugify(self._name, separator='_')
+            if not self.slug:
+                self.slug = slugify(self.title or self._name, separator='_')
+        elif not self.slug:
+            self.slug = self._name
         self.template = self.template or self.default_template
-        if not self.slug:
-            self.slug = slugify(self.title or self._name, separator='_')
 
     @property
     def name(self):
