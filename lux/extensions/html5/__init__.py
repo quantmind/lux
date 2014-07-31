@@ -1,11 +1,13 @@
 '''
-HTML5 Router and utilities.
+HTML5 Router and utilities
 '''
 import lux
 from lux import Parameter
 
 from pulsar import Http404
 from pulsar.apps.wsgi import MediaMixin, route
+
+from .ui import add_css
 
 
 class Extension(lux.Extension):
@@ -16,8 +18,14 @@ class Extension(lux.Extension):
     protection and user permissions levels.
     '''
     _config = [
-        Parameter('HTML5_NAVIGATION', True, 'Enable Html5 navigation')
+        Parameter('HTML5_NAVIGATION', True, 'Enable Html5 navigation'),
+        Parameter('NAVBAR_COLLAPSE_WIDTH', 768,
+                  'Width when to collapse the navbar')
     ]
+
+    def jscontext(self, request, context):
+        width = request.config['NAVBAR_COLLAPSE_WIDTH']
+        context['navbarCollapseWidth'] = width
 
 
 class Router(lux.Router, MediaMixin):

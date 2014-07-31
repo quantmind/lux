@@ -22,15 +22,15 @@ import shutil
 from datetime import datetime
 
 from pulsar import ImproperlyConfigured
-from pulsar.apps.wsgi import FileRouter, WsgiHandler
+from pulsar.apps.wsgi import FileRouter, WsgiHandler, MediaRouter
 from pulsar.utils.slugify import slugify
 
 import lux
 from lux import Parameter, Router
 
 from .builder import Builder, DirBuilder, ContextBuilder, get_rel_dir
-from .contents import Snippet
-from .routers import (MediaRouter, HtmlContent, Blog, ErrorRouter,
+from .contents import Snippet, Article, Draft
+from .routers import (MediaBuilder, HtmlContent, Blog, ErrorRouter,
                       JsonRoot, JsonContent, JsonRedirect)
 from .ui import add_css
 
@@ -79,7 +79,8 @@ class Extension(lux.Extension):
         assert api_url, 'STATIC_API must be defined'
         app.api = JsonRoot(app.config['STATIC_API'])
         return [app.api, JsonRedirect(api_url),
-                MediaRouter(path, app.meta.media_dir, show_indexes=app.debug)]
+                MediaBuilder(path, app.meta.media_dir,
+                             show_indexes=app.debug)]
 
     def on_loaded(self, app):
         '''Once the app is fully loaded add API routes if required
@@ -152,9 +153,9 @@ class Extension(lux.Extension):
                         if filename.startswith('.'):
                             continue
                         name, _ = os.path.join(rel_dir, filename).split('.', 1)
-                        key = slugify(name, separator='_')
                         src = os.path.join(dirpath, filename)
-                        builder(app, src, ctx, key)
+                        content = builder.read_file(app, src, name)
+                        builder(app, content, ctx)
             else:
                 self.logger.warning('Context location "%s" not available', src)
             for c in builder.waiting:

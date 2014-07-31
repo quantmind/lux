@@ -1,20 +1,23 @@
 import os
 
-from pulsar import Http404
+import pulsar
+
+from pulsar.apps.wsgi import WsgiResponse
 from pulsar.utils.httpurl import remove_double_slash, urljoin
 
 from lux import route
+from lux.utils import memoized
 
-from .contents import Snippet
-from .readers import READERS
+from .contents import Snippet, SkipBuild
+from .readers import READERS, BaseReader
 
 
-class BuildError(Http404):
+class BuildError(pulsar.Http404):
     pass
 
 
-class SkipBuild(Exception):
-    pass
+class HttpException(pulsar.HttpException):
+    status = 415
 
 
 def directory(dir):
@@ -37,26 +40,28 @@ def skip(name):
     return name.startswith('.') or name.startswith('__')
 
 
+CONTENT_EXTENSIONS = (('text/html', '.html'),
+                      ('text/plain', '.txt'),
+                      ('application/json', '.json'))
+
+
 class BaseBuilder(object):
     '''Base class for static site builders
     '''
-    snippet = Snippet
+    content = Snippet
 
-    def read_file(self, app, src):
+    @memoized
+    def read_file(self, app, src, name):
         '''Read a file and create a :class:`.Snippet`
         '''
         src = self.get_filename(src)
         bits = src.split('.')
         ext = bits[-1] if len(bits) > 1 else None
-        Reader = READERS.get(ext)
-        if not Reader:
-            raise BuildError("Reader for %s extension not available. "
-                             "Could not read '%s'" % (ext, src))
-        elif not Reader.enabled:
+        Reader = READERS.get(ext) or BaseReader
+        if not Reader.enabled:
             raise BuildError('Missing dependencies for %s' % Reader.__name__)
         reader = Reader(app)
-        data, metadata = reader.read(src)
-        return self.snippet(data, metadata, src)
+        return reader.read(src, name, content=self.content)
 
     def get_filename(self, src):
         '''Return a valid source filename from ``src``.
@@ -76,6 +81,7 @@ class BaseBuilder(object):
 
 
 class Builder(BaseBuilder):
+    archive = False
     built = None
     dir = None
 
@@ -88,14 +94,11 @@ class Builder(BaseBuilder):
             return self.built
         self.built = []
         vars = self.route.ordered_variables
-        if vars:
-            for upath, fpath, _ in self.all_files():
-                for name in reversed(vars):
-                    upath, value = os.path.split(upath)
-                    params[name] = value
-                self.build_file(app, location, **params)
+        if self.route.ordered_variables:
+            for name, src, _ in self.all_files():
+                self.build_file(app, location, src, name)
         else:
-            self.build_file(app, location, **params)
+            self.build_file(app, location)
         return self.built
 
     def all_files(self, src=None):
@@ -126,46 +129,62 @@ class Builder(BaseBuilder):
             raise BuildError("'%s' not found. Could not build route '%s'",
                              src, self)
 
-    def build_file(self, app, location, ext=None, **params):
+    def build_file(self, app, location, src=None, name=None):
         '''Build the files for a route in this Builder
         '''
-        if not self.should_build(app, **params):
+        response = None
+        content = None
+        if not self.should_build(app, name):
             return
-        site_url = app.config['SITE_URL']
-        path = self.path(**params)
-        url = urljoin(site_url, path)
-        request = app.wsgi_request(path=url, HTTP_ACCEPT='*/*')
-        request.cache.building_static = True
         try:
-            response = self.response(request.environ, params)
+            if src:
+                content = self.read_file(app, src, name)
+                urlparams = content.context(app, names=self.route.variables)
+            else:
+                content = None
+                urlparams = {}
+            site_url = app.config['SITE_URL']
+            path = self.path(**urlparams)
+            url = urljoin(site_url, path)
+            request = app.wsgi_request(path=url, HTTP_ACCEPT='*/*')
+            request.cache.building_static = True
+            request.cache.content = content
+            response = self.response(request.environ, urlparams)
         except SkipBuild:
+            content = None
+        except HttpException:
             pass
         except BuildError as e:
             app.logger.error(str(e))
         except Exception:
             app.logger.exception('Unhandled exception while building "%s"',
-                                 path)
-        else:
+                                 content)
+        if response or content:
+            path = request.path
+            if path.endswith('/'):
+                path = '%sindex' % path
             if response:
-                content = response.content[0]
-                if path.endswith('/'):
-                    path = '%sindex' % path
-                if ext:
-                    if not path.endswith('.%s' % ext):
-                        path = '%s.%s' % (path, ext)
-                elif response.content_type == 'text/html':
-                    path = '%s.html' % path
-                elif response.content_type == 'application/json':
-                    path = '%s.json' % path
-                dst_filename = os.path.join(location, path[1:])
-                dirname = os.path.dirname(dst_filename)
-                if not os.path.isdir(dirname):
-                    os.makedirs(dirname)
-                #
-                app.logger.info('Creating "%s"', dst_filename)
-                with open(dst_filename, 'wb') as f:
-                    f.write(content)
-                self.built.append(content)
+                body = response.content[0]
+                content = request.cache.content
+                content_type = response.content_type
+            else:
+                body = content._content
+                content_type = content.content_type
+            #
+            for ct, ext in CONTENT_EXTENSIONS:
+                if content_type == ct:
+                    if not path.endswith(ext):
+                        path = '%s%s' % (path, ext)
+                    break
+            dst_filename = os.path.join(location, path[1:])
+            dirname = os.path.dirname(dst_filename)
+            if not os.path.isdir(dirname):
+                os.makedirs(dirname)
+            #
+            app.logger.info('Creating "%s"', dst_filename)
+            with open(dst_filename, 'wb') as f:
+                f.write(body)
+            self.built.append(body)
 
         # Loop over child routes
         for route in self.routes:
@@ -176,7 +195,7 @@ class Builder(BaseBuilder):
 
         return self.built
 
-    def should_build(self, app, **params):
+    def should_build(self, app, name):
         return True
 
     # INTERNALS
@@ -193,27 +212,26 @@ class Builder(BaseBuilder):
 class FileBuilder(Builder):
     '''Build a static file within a :class:`.DirBuilder`
     '''
-    def get_snippet(self, request):
-        path = request.urlargs['path']
-        dir = self.parent.get_src()
-        if dir:
-            path = os.path.join(dir, path)
-        return self.read_file(request.app, path)
+    def get_content(self, request):
+        content = request.cache.content
+        if not content:
+            path = src = request.urlargs['path']
+            dir = self.parent.get_src()
+            if dir:
+                src = os.path.join(dir, path)
+            content = self.read_file(request.app, src, path)
+        return content
 
 
 class DirBuilder(Builder):
     '''A builder of a directory of static content
     '''
-    drafts = 'drafts'
-    '''Drafts url
-    '''
-    '''The children render the children routes of this router
-    '''
-    index_template = None
-    create_routes = True
+    child_url = '<slug>'
     src = None
 
     def valid_route(self, route, dir):
+        '''Check if ``route`` is a valid route for this directory builder
+        '''
         route = str(route)
         if route.endswith('/'):
             route = route[:-1]
@@ -222,25 +240,17 @@ class DirBuilder(Builder):
             dir = os.path.dirname(dir)
         assert os.path.isdir(dir), '"%s" not a valid directory' % dir
         self.dir = dir
-        return route
+        return '%s/' % route
 
 
 class ContextBuilder(BaseBuilder):
     '''Build context dictionary entry for the static site
     '''
-    def __init__(self, snippet=None):
+    def __init__(self, content=None):
         self.waiting = set()
-        self.snippet = snippet or self.snippet
+        self.content = content or self.content
 
-    def __call__(self, app, src, context, key=None):
-        if isinstance(src, Snippet):
-            content = src
-        elif not os.path.isfile(src):
-            raise BuildError('Could not locate %s', src)
-        else:
-            content = self.read_file(app, src)
-            assert key
-            content.name = key
+    def __call__(self, app, content, context):
         #
         if not isinstance(content.require_context, set):
             content.require_context = set(content.require_context)
@@ -252,7 +262,6 @@ class ContextBuilder(BaseBuilder):
                 content.require_context.remove(name)
 
         if not content.require_context:
-            assert content.name
             context[content.name] = content.render(app, context)
             waiting = self.waiting
             self.waiting = set()

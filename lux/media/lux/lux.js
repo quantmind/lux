@@ -9,6 +9,7 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
         context = $.extend(defaults, root.context),
         ngModules = ['ngSanitize', 'lux.controllers', 'lux.services'];
 
+    // when in html5 mode add ngRoute to the list of required modules
     if (context.html5mode)
         ngModules.push('ngRoute');
 
@@ -30,21 +31,6 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
         else ready_callbacks.push(callback);
     };
 
-    lux._setupRouter = function (all) {
-        //
-        lux.app.config(['$routeProvider', '$locationProvider', function($routeProvider, $locationProvider) {
-
-            angular.forEach(all, function (route) {
-                var url = route[0];
-                var data = route[1];
-                if ($.isFunction(data)) data = data();
-                $routeProvider.when(url, data);
-            });
-            // use the HTML5 History API
-            $locationProvider.html5Mode(true);
-        }]);
-    };
-
     var ApiTypes = lux.ApiTypes = {};
     //
     // If CSRF token is not available
@@ -60,7 +46,7 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
     //  Lux Api service factory for angular
     //  ---------------------------------------
     //
-    lux.services.service('$lux', function ($location, $q, $http, $log) {
+    lux.services.service('$lux', function ($location, $q, $http, $log, $anchorScroll) {
         var $lux = this;
 
         this.location = $location;
@@ -353,7 +339,7 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
         }
         //
         $scope.search_text = '';
-        $scope.sidebar_collapse = '';
+        $scope.sidebarCollapse = '';
         //
         // logout via post method
         $scope.logout = function(e, url) {
@@ -389,10 +375,10 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
 
         $scope.collapse = function () {
             var width = root.window.innerWidth > 0 ? root.window.innerWidth : root.screen.width;
-            if (width < context.collapse_width)
-                $scope.sidebar_collapse = 'collapse';
+            if (width < context.navbarCollapseWidth)
+                $scope.sidebarCollapse = 'collapse';
             else
-                $scope.sidebar_collapse = '';
+                $scope.sidebarCollapse = '';
         };
 
         $scope.collapse();

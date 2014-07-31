@@ -6,10 +6,11 @@ from lux import route, JSON_CONTENT_TYPES
 from lux.extensions import html5, base
 
 from pulsar.utils.slugify import slugify
-from pulsar.apps.wsgi import Json
+from pulsar.apps.wsgi import Json, MediaRouter
 
-from .builder import DirBuilder, FileBuilder, BuildError, SkipBuild
-from .contents import Article
+from .builder import (DirBuilder, FileBuilder, BuildError, SkipBuild,
+                      HttpException)
+from .contents import Article, Draft, parse_date
 
 
 class ErrorRouter(lux.Router, DirBuilder):
@@ -21,7 +22,7 @@ class ErrorRouter(lux.Router, DirBuilder):
                                  status_code=self.status_code)
 
 
-class MediaRouter(base.MediaRouter, FileBuilder):
+class MediaBuilder(base.MediaRouter, FileBuilder):
 
     def build(self, app, location=None):
         '''Build the files for this Builder
@@ -32,9 +33,9 @@ class MediaRouter(base.MediaRouter, FileBuilder):
             return self.built
         self.built = []
         for url_base, src in self.extension_paths(app):
-            for upath, fpath, ext in self.all_files(src):
+            for upath, src, ext in self.all_files(src):
                 url = '%s.%s' % (os.path.join(url_base, upath), ext)
-                self.build_file(app, location, ext, path=url)
+                self.build_file(app, location, src=src, name=url)
 
 
 class JsonRedirect(lux.Router):
@@ -78,12 +79,12 @@ class JsonContent(lux.Router, DirBuilder):
         route = self.valid_route(route, dir) or self.dir
         name = slugify(name or route or self.dir)
         self.src = '%s.json' % self.dir
-        snippet = html_router.snippet if html_router else None
-        files = JsonFile('<path:path>', dir=self.dir, name='json_files',
-                         snippet=snippet)
-        super(JsonContent, self).__init__(route, files, name=name,
+        assert html_router, 'html router required'
+        super(JsonContent, self).__init__(route, name=name,
                                           html_router=html_router,
-                                          snippet=snippet)
+                                          content=html_router.content)
+        self.add_child(JsonFile('<id>', dir=self.dir, name='json_files',
+                                content=self.content))
 
     def get(self, request):
         '''Build all the contents'''
@@ -96,39 +97,49 @@ class JsonFile(lux.Router, FileBuilder):
     def get(self, request):
         app = request.app
         response = request.response
-        snipped = self.get_snippet(request)
+        content = self.get_content(request)
         context = request.app.context(request)
-        data = snipped.json_dict(app, context)
+        data = content.json_dict(app, context)
         if data:
             urlargs = request.urlargs
             if urlargs.get('path') == 'index':
                 urlargs['path'] = ''
+            data['api_url'] = app.site_url(request, request.path)
             html = self.html_router.get_route('html_files')
-            data['api_url'] = app.site_url(request, '%s.json' % request.path)
-            data['html_url'] = app.site_url(request, html.path(**urlargs))
+            urlparams = content.context(app, names=html.route.variables)
+            path = html.path(**urlparams)
+            data['html_url'] = app.site_url(request, path)
             return Json(data).http_response(request)
+        else:
+            raise HttpException
 
-    def should_build(self, app, path=None, **params):
-        return path not in app.config['STATIC_SPECIALS']
+    def should_build(self, app, name):
+        return name not in app.config['STATIC_SPECIALS']
 
-    def all(self, app, content=True):
+    def all(self, app, content=True, draft=False):
         contents = self.build(app)
         all = []
+        o = 'modified' if draft else 'date'
         for d in self.build(app):
             data = json.loads(d.decode('utf-8'))
+            if bool(data['draft']) is not draft:
+                continue
             if not content:
                 data.pop('content')
             all.append(data)
-        return all
+        return list(reversed(sorted(all, key=lambda d: parse_date(d[o]))))
 
 
 class HtmlFile(html5.Router, FileBuilder):
     '''Serve an Html file
     '''
     def build_main(self, request, context, jscontext):
-        snippet = self.get_snippet(request)
-        context = request.app.context(request, context)
-        return snippet.html(request, context)
+        content = self.get_content(request)
+        if content.content_type == 'text/html':
+            context = request.app.context(request, context)
+            return content.html(request, context)
+        else:
+            raise HttpException
 
     def get_api_info(self, app):
         return self.parent.get_api_info(app)
@@ -146,13 +157,22 @@ class HtmlContent(html5.Router, DirBuilder):
     index_template = None
     template = None
     api = None
+    drafts = 'drafts'
+    '''Drafts url
+    '''
+    drafts_template = 'blogindex.html'
+    '''The children render the children routes of this router
+    '''
 
     def __init__(self, route, *routes, dir=None, name=None, **params):
         route = self.valid_route(route, dir)
         name = slugify(name or route or self.dir)
         super(HtmlContent, self).__init__(route, *routes, name=name, **params)
-        file = HtmlFile('<path:path>', dir=self.dir, name='html_files',
-                        snippet=self.snippet)
+        if self.drafts:
+            self.add_child(Drafts(self.drafts,
+                                  index_template=self.drafts_template))
+        file = HtmlFile(self.child_url, dir=self.dir, name='html_files',
+                        content=self.content, archive=self.archive)
         self.add_child(file)
         #
         for url_path, file_path, ext in self.all_files():
@@ -178,15 +198,31 @@ class HtmlContent(html5.Router, DirBuilder):
             return app.render_template(self.index_template, context)
         # Not building, render the source file
         elif self.src:
-            snippet = self.read_file(request.app, self.src)
+            content = self.read_file(request.app, self.src, 'index')
             context = request.app.context(request, context)
-            return snippet.html(request, context)
+            return content.html(request, context)
         else:
             return 'NO INDEX TEMPLATE'
+
+
+class Drafts(html5.Router, FileBuilder):
+    '''A page collecting all drafts
+    '''
+    def build_main(self, request, context, jscontext):
+        if self.index_template and self.parent:
+            app = request.app
+            api = self.parent.api
+            files = api.get_route('json_files') if api else None
+            if files:
+                jscontext['dir_entries'] = files.all(app, content=False,
+                                                     draft=True)
+            return app.render_template(self.index_template, context)
+        else:
+            return 'NO DRAFT INDEX TEMPLATE'
 
 
 class Blog(HtmlContent):
     '''Defaults for a blog url
     '''
     index_template = 'blogindex.html'
-    snippet = Article
+    content = Article

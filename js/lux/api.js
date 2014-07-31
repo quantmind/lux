@@ -13,7 +13,7 @@
     //  Lux Api service factory for angular
     //  ---------------------------------------
     //
-    lux.services.service('$lux', function ($location, $q, $http, $log) {
+    lux.services.service('$lux', function ($location, $q, $http, $log, $anchorScroll) {
         var $lux = this;
 
         this.location = $location;

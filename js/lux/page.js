@@ -15,7 +15,7 @@
         }
         //
         $scope.search_text = '';
-        $scope.sidebar_collapse = '';
+        $scope.sidebarCollapse = '';
         //
         // logout via post method
         $scope.logout = function(e, url) {
@@ -51,10 +51,10 @@
 
         $scope.collapse = function () {
             var width = root.window.innerWidth > 0 ? root.window.innerWidth : root.screen.width;
-            if (width < context.collapse_width)
-                $scope.sidebar_collapse = 'collapse';
+            if (width < context.navbarCollapseWidth)
+                $scope.sidebarCollapse = 'collapse';
             else
-                $scope.sidebar_collapse = '';
+                $scope.sidebarCollapse = '';
         };
 
         $scope.collapse();
