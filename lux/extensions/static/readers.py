@@ -6,7 +6,7 @@ try:
 except ImportError:
     Markdown = False
 
-from .contents import Draft, Snippet, METADATA_PROCESSORS
+from .contents import Draft, Snippet, METADATA_PROCESSORS, slugify
 
 READERS = {}
 
@@ -46,14 +46,22 @@ class BaseReader(object):
         """Return the dict containing document metadata
         """
         cfg = self.config
+        context = {}
         meta = dict(((p.name, p(cfg)) for p in METADATA_PROCESSORS.values()))
         for key, values in meta_input.items():
             key = key.lower()
             if key not in meta:
-                self.logger.warning("Unknown meta '%s' in '%s'", key, src)
+                key = slugify(key, separator='_')
+                bits = key.split('_', 1)
+                if len(bits) == 2 and bits[0] == 'context':
+                    if values:
+                        context[bits[1]] = values[0]
+                else:
+                    self.logger.warning("Unknown meta '%s' in '%s'", key, src)
+            #
             elif values:
-                proc = METADATA_PROCESSORS[key].process
                 # Remove default values if any
+                proc = METADATA_PROCESSORS[key].process
                 meta[key].clear()
                 for value in values:
                     try:
@@ -65,7 +73,7 @@ class BaseReader(object):
         if meta['draft'].value():
             content = Draft
         content = content or Snippet
-        return content(body, meta, src, name)
+        return content(body, meta, src, name, context)
 
     def read(self, source_path, name, content=None):
         '''Default read method

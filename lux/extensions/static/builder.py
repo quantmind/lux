@@ -6,9 +6,8 @@ from pulsar.apps.wsgi import WsgiResponse
 from pulsar.utils.httpurl import remove_double_slash, urljoin
 
 from lux import route
-from lux.utils import memoized
 
-from .contents import Snippet, SkipBuild
+from .contents import Snippet, SkipBuild, CONTENT_EXTENSIONS
 from .readers import READERS, BaseReader
 
 
@@ -40,28 +39,28 @@ def skip(name):
     return name.startswith('.') or name.startswith('__')
 
 
-CONTENT_EXTENSIONS = (('text/html', '.html'),
-                      ('text/plain', '.txt'),
-                      ('application/json', '.json'))
-
-
 class BaseBuilder(object):
     '''Base class for static site builders
     '''
     content = Snippet
 
-    @memoized
     def read_file(self, app, src, name):
         '''Read a file and create a :class:`.Snippet`
         '''
         src = self.get_filename(src)
-        bits = src.split('.')
-        ext = bits[-1] if len(bits) > 1 else None
-        Reader = READERS.get(ext) or BaseReader
-        if not Reader.enabled:
-            raise BuildError('Missing dependencies for %s' % Reader.__name__)
-        reader = Reader(app)
-        return reader.read(src, name, content=self.content)
+        if src not in app.all_contents:
+            bits = src.split('.')
+            ext = bits[-1] if len(bits) > 1 else None
+            Reader = READERS.get(ext) or BaseReader
+            if not Reader.enabled:
+                raise BuildError('Missing dependencies for %s'
+                                 % Reader.__name__)
+            reader = Reader(app)
+            content = reader.read(src, name, content=self.content)
+            app.all_contents[src] = content
+        else:
+            content = app.all_contents[src]
+        return content
 
     def get_filename(self, src):
         '''Return a valid source filename from ``src``.
@@ -134,6 +133,7 @@ class Builder(BaseBuilder):
         '''
         response = None
         content = None
+        path = None
         if not self.should_build(app, name):
             return
         try:
@@ -158,7 +158,7 @@ class Builder(BaseBuilder):
             app.logger.error(str(e))
         except Exception:
             app.logger.exception('Unhandled exception while building "%s"',
-                                 content)
+                                 content or path)
         if response or content:
             path = request.path
             if path.endswith('/'):
@@ -171,7 +171,8 @@ class Builder(BaseBuilder):
                 body = content._content
                 content_type = content.content_type
             #
-            for ct, ext in CONTENT_EXTENSIONS:
+            for ct, ext in CONTENT_EXTENSIONS.items():
+                ext = '.%s' % ext
                 if content_type == ct:
                     if not path.endswith(ext):
                         path = '%s%s' % (path, ext)
@@ -238,32 +239,43 @@ class DirBuilder(Builder):
         dir = dir or route or ''
         if os.path.basename(dir) == '':
             dir = os.path.dirname(dir)
-        assert os.path.isdir(dir), '"%s" not a valid directory' % dir
+        assert os.path.isdir(dir), ("%s' not a valid directory, cannot build "
+                                    "static router" % dir)
         self.dir = dir
         return '%s/' % route
 
 
-class ContextBuilder(BaseBuilder):
+class ContextBuilder(dict, BaseBuilder):
     '''Build context dictionary entry for the static site
     '''
-    def __init__(self, content=None):
-        self.waiting = set()
-        self.content = content or self.content
+    def __init__(self, app, *args):
+        self.app = app
+        self.waiting = {}
+        self.update(*args)
 
-    def __call__(self, app, content, context):
-        #
-        if not isinstance(content.require_context, set):
-            content.require_context = set(content.require_context)
+    def __setitem__(self, key, value):
+        super(ContextBuilder, self).__setitem__(key, value)
+        self._refresh()
 
-        for name in tuple(content.require_context):
-            if name not in context:
-                self.waiting.add(content)
-            else:
-                content.require_context.remove(name)
+    def update(self, *args):
+        super(ContextBuilder, self).update(*args)
+        self._refresh()
 
-        if not content.require_context:
-            context[content.name] = content.render(app, context)
-            waiting = self.waiting
-            self.waiting = set()
-            for content in waiting:
-                self(app, content, context)
+    def add(self, content, waiting=None):
+        if waiting is None:
+            waiting = set(content.require_context)
+        # Loop through the require context of content
+        for name in tuple(waiting):
+            if name in self:
+                waiting.discard(name)
+
+        if waiting:
+            self.waiting[content.name] = (content, waiting)
+        else:
+            self[content.name] = content.render(self.app, self)
+
+    def _refresh(self):
+        all = list(self.waiting.values())
+        self.waiting.clear()
+        for content, waiting in all:
+            self.add(content, waiting)

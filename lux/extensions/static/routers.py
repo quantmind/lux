@@ -71,7 +71,7 @@ class JsonRoot(lux.Router, FileBuilder):
 
 
 class JsonContent(lux.Router, DirBuilder):
-    '''Handle json content in a directory
+    '''Handle json contents in a directory
     '''
     html_router = lux.RouterParam(None)
 
@@ -112,6 +112,7 @@ class JsonFile(lux.Router, FileBuilder):
             return Json(data).http_response(request)
         else:
             raise HttpException
+        return Json(data).http_response(request)
 
     def should_build(self, app, name):
         return name not in app.config['STATIC_SPECIALS']
@@ -125,7 +126,9 @@ class JsonFile(lux.Router, FileBuilder):
             if bool(data['draft']) is not draft:
                 continue
             if not content:
-                data.pop('content')
+                for key in tuple(data):
+                    if key.endswith('_html'):
+                        data.pop(key)
             all.append(data)
         return list(reversed(sorted(all, key=lambda d: parse_date(d[o]))))
 
@@ -136,7 +139,9 @@ class HtmlFile(html5.Router, FileBuilder):
     def build_main(self, request, context, jscontext):
         content = self.get_content(request)
         if content.content_type == 'text/html':
+            # First build the global context
             context = request.app.context(request, context)
+            # update the global context with context from this file
             return content.html(request, context)
         else:
             raise HttpException
@@ -172,7 +177,8 @@ class HtmlContent(html5.Router, DirBuilder):
             self.add_child(Drafts(self.drafts,
                                   index_template=self.drafts_template))
         file = HtmlFile(self.child_url, dir=self.dir, name='html_files',
-                        content=self.content, archive=self.archive)
+                        content=self.content, archive=self.archive,
+                        html_body_template=self.html_body_template)
         self.add_child(file)
         #
         for url_path, file_path, ext in self.all_files():

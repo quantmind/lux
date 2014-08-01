@@ -67,7 +67,6 @@ class Extension(lux.Extension):
         Parameter('STATIC_SPECIALS', ('404',), '')
     ]
     _static_info = None
-    _static_info = None
 
     def middleware(self, app):
         path = app.config['MEDIA_URL']
@@ -85,7 +84,7 @@ class Extension(lux.Extension):
     def on_loaded(self, app):
         '''Once the app is fully loaded add API routes if required
         '''
-        self._static_context = None
+        app.all_contents = {}
         middleware = app.handler.middleware
         app.handler.middleware = []
         for router in middleware:
@@ -140,12 +139,14 @@ class Extension(lux.Extension):
             context['apiUrls'] = apiUrls
 
     def context(self, request, context):
-        if not self._static_context:
-            app = request.app
-            self._static_context = ctx = self.build_info(app)
+        app = request.app
+        ctx = request.cache.static_context
+        if not ctx:
+            context.update(self.build_info(app))
+            ctx = ContextBuilder(app, context)
+            request.cache.static_context = ctx
             #
             src = app.config['CONTEXT_LOCATION']
-            builder = ContextBuilder()
             if os.path.isdir(src):
                 for dirpath, _, filenames in os.walk(src):
                     rel_dir = get_rel_dir(dirpath, src)
@@ -154,14 +155,10 @@ class Extension(lux.Extension):
                             continue
                         name, _ = os.path.join(rel_dir, filename).split('.', 1)
                         src = os.path.join(dirpath, filename)
-                        content = builder.read_file(app, src, name)
-                        builder(app, content, ctx)
+                        ctx.add(ctx.read_file(app, src, name))
             else:
                 self.logger.warning('Context location "%s" not available', src)
-            for c in builder.waiting:
-                self.logger.warning('Context "%s" not built, requires %s',
-                                    c.name, c.require_context)
-        context.update(self._static_context)
+        return ctx
 
     def build_info(self, app):
         '''Return a dictionary with information about the build

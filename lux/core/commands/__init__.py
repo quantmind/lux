@@ -23,7 +23,7 @@ import argparse
 import logging
 
 from pulsar import (Setting, get_event_loop, task, Application,
-                    asyncio, maybe_async, Future)
+                    asyncio, maybe_async, Future, Config)
 from pulsar.utils.pep import native_str
 from pulsar.utils.log import configured_logger
 from pulsar.utils.config import Loglevel, Debug, LogHandlers
@@ -79,6 +79,7 @@ class ConsoleParser(object):
 
 class LuxApp(Application):
     name = 'lux'
+    cfg = Config(include=('loglevel', 'loghandlers', 'debug', 'config'))
 
     def on_config(self, actor):
         asyncio.set_event_loop(actor._loop)
@@ -118,10 +119,9 @@ class Command(ConsoleParser):
         self.stderr = stderr
 
     def __call__(self, argv, **params):
-        parser = self.get_parser(description=self.help or self.name)
-        options, _ = parser.parse_known_args(argv)
-        self.pulsar_app(argv)()
-        return self.run_until_complete(options, **params)
+        app = self.pulsar_app(argv)
+        app()
+        return self.run_until_complete(app.cfg, **params)
 
     def get_version(self):
         """Return the :class:`.Command` version.
@@ -133,17 +133,6 @@ class Command(ConsoleParser):
     @property
     def config_module(self):
         return self.app.config_module
-
-    def options(self, argv):
-        '''parse the *argv* list
-
-        Return the options namespace
-        '''
-        parser = self.get_parser(description=self.help or self.name)
-        options, rest = parser.parse_known_args(argv)
-        if rest:
-            self.pulsar_cfg(rest)
-        return options
 
     def run(self, argv, **params):
         '''Run this :class:`Command`.
@@ -187,9 +176,13 @@ class Command(ConsoleParser):
         app = self.app
         if application is None:
             application = LuxApp
+        cfg = application.cfg.copy()
+        for setting in self.option_list:
+            cfg.settings[setting.name] = setting.copy()
         return application(callable=app.callable,
                            desc=app.config.get('DESCRIPTION'),
                            epilog=app.config.get('EPILOG'),
+                           cfg=cfg,
                            argv=argv,
                            log_name=log_name,
                            version=app.meta.version,

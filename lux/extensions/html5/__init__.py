@@ -57,23 +57,22 @@ class Router(lux.Router, MediaMixin):
         doc = request.html_document
         doc.attr({'ng-model': 'page',
                   'ng-controller': 'page'})
+        jscontext = {}
         context = {}
+        main = self.build_main(request, context, jscontext)
         if html5:
-            jscontext = self.sitemap(app).copy()
+            jscontext.update(self.sitemap(app))
             jscontext['page'] = router_href(request.app_handler)
             jscontext['html5mode'] = True
-            context['main'] = '<div ng-view></div>'
-        else:
-            jscontext = {}
-            context['main'] = self.build_main(request, context, jscontext)
-
+            main = '<div ng-view></div>'
+        context['main'] = main
         return app.html_response(request, self.html_body_template,
                                  jscontext=jscontext, context=context)
 
     def build_main(self, request, context, jscontext):
-        '''Build the ``main`` HTML content for the get view.
+        '''Build the context when not using html5 navigation
         '''
-        raise NotImplementedError
+        return {}
 
     def html_title(self, app):
         return app.config['HTML_HEAD_TITLE']

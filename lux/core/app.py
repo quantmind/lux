@@ -472,7 +472,7 @@ class Application(ConsoleParser, Extension):
         method = 'jscontext' if js else 'context'
         for ext in self.extensions.values():
             if hasattr(ext, method):
-                getattr(ext, method)(request, context)
+                context = getattr(ext, method)(request, context) or context
         return context
 
     def render_template(self, template_name, context=None, engine=None):

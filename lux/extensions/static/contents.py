@@ -19,6 +19,11 @@ class SkipBuild(Exception):
     pass
 
 
+CONTENT_EXTENSIONS = {'text/html': 'html',
+                      'text/plain': 'txt',
+                      'application/json': 'json'}
+
+
 METADATA_PROCESSORS = dict(((p.name, p) for p in (
     Processor('name'),
     Processor('title'),
@@ -62,8 +67,10 @@ class Snippet(object):
     default_template = None
     mandatory_properties = ()
 
-    def __init__(self, content, metadata, src, path=None):
+    def __init__(self, content, metadata, src, path=None, context=None):
+        self._json_content = None
         self._content = content
+        self._context = context
         self.modified = modified_datetime(src)
         self.update_meta(metadata)
         self._src = src
@@ -86,20 +93,24 @@ class Snippet(object):
         return self._path
 
     @property
+    def reldate(self):
+        return self.date or self.modified
+
+    @property
     def year(self):
-        return self.date.year if self.date else None
+        return self.reldate.year
 
     @property
     def month(self):
-        return self.date.month if self.date else None
+        return self.reldate.month
 
     @property
     def month2(self):
-        return self.date.strftime('%m') if self.date else None
+        return self.reldate.strftime('%m')
 
     @property
     def month3(self):
-        return self.date.strftime('%b').lower() if self.date else None
+        return self.reldate.strftime('%b').lower()
 
     @property
     def id(self):
@@ -144,7 +155,6 @@ class Snippet(object):
             context[name] = value
         #
         if names is None:
-            #
             #    Check for missing properties
             for name in self.mandatory_properties:
                 assert context.get(name), ("Property '%s' not available in %s"
@@ -153,12 +163,14 @@ class Snippet(object):
         return context
 
     def render(self, app, context):
+        '''Render the snippet
+        '''
         if self.content_type == 'text/html':
             engine = template_engine(self.template_engine)
             context = self.context(app, context=context)
             content = engine(self._content, context)
             if self.template:
-                context['content'] = content
+                context['main'] = content
                 content = app.render_template(self.template, context=context)
             return content
         else:
@@ -167,30 +179,45 @@ class Snippet(object):
     def json_dict(self, app, context):
         '''Convert the content into a Json dictionary for the API
         '''
-        if is_text(self.content_type):
+        if not self._json_content and is_text(self.content_type):
             text = self.render(app, context)
             jd = self.context(app)
+
+            ext = CONTENT_EXTENSIONS[self.content_type]
+            jd[ext] = content = {}
             if self.content_type == 'text/html':
                 head_des = self.head_description or self.description
                 jd.update({'head_title': self.head_title or self.title,
                            'head_description': head_des})
-            jd['content'] = text
-            return jd
+            content['main'] = text
+            #
+            # Add additional context keys
+            if self._context:
+                for key, target in self._context.items():
+                    if target not in context:
+                        app.logger.warning("Cannot find '%s' key '%s'"
+                                           " in '%s' context"
+                                           % (key, target, self))
+                    else:
+                        content[key] = context[target]
+            self._json_content = jd
+        return self._json_content
 
     def html(self, request, context):
         '''Build an HTML5 page for this content
         '''
         assert self.content_type == 'text/html', '%s not html' % self
+        data = self.json_dict(request.app, context)
+        context.update(data['html'])
         head = request.html_document.head
-        head_title = self.head_title or self.title
-        if head_title:
-            head.title = head_title
         #
-        description = self.head_description or self.description
-        if description:
-            des = head.replace_meta('description', description)
-        if self.tag:
-            head.replace_meta("keywords", self.tag.join())
+        if 'head_title' in data:
+            head.title = data['head_title']
+        #
+        if 'head_description' in data:
+            des = head.replace_meta('description', data['head_description'])
+        if 'tag' in data:
+            head.replace_meta("keywords", data['tag'])
         #
         for css in self.require_css:
             head.links.append(css)
@@ -200,12 +227,13 @@ class Snippet(object):
         #if 'requirejs' in meta:
         #    head.scripts.require(*meta['requirejs'].split(','))
         #
-        if self.author:
-            head.replace_meta("author", self.author.join())
-        twitter_card(request, **self.__dict__)
+        if 'author' in data:
+            head.replace_meta("author", data['author'])
+        twitter_card(request, **data)
         #
-        head.add_meta(name='robots', content=self.robots.join())
-        return self.render(request.app, context)
+        if 'robots' in data:
+            head.add_meta(name='robots', content=data['robots'])
+        return context.pop('main')
 
 
 class Article(Snippet):

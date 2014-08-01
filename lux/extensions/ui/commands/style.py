@@ -15,13 +15,13 @@ import lux
 class Command(lux.Command):
     help = "Manage style-sheet files from installed applications."
     option_list = (
-        Setting('theme', ('-t', '--theme'), default='',
+        Setting('theme', ('--theme',), default='',
                 desc='Theme to use. Default is lux.'),
         Setting('variables', ('--variables',), action='store_true',
                 default=False,
                 desc=('Dump the theme variables as json'
                       ' file for the theme specified')),
-        Setting('file', ('-f', '--file'), default='',
+        Setting('cssfile', default='',
                 desc=('Target path of css file. For example '
                       '"media/site/site.css". If not provided, '
                       'a file called {{ STYLE }}.css will '
@@ -36,7 +36,7 @@ class Command(lux.Command):
     def run(self, options, dump=True, **params):
         if 'base' not in self.app.extensions:
             raise RuntimeError('"ui" requires the "base" extension.')
-        target = options.file
+        target = options.cssfile
         app = self.app
         name = app.meta.name
         self.theme = options.theme or name
