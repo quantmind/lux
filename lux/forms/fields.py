@@ -71,7 +71,8 @@ from inspect import isclass
 from datetime import datetime, date
 from collections import Mapping
 
-from pulsar.utils.html import NOTHING, escape, slugify
+from pulsar.utils.html import NOTHING, escape
+from pulsar.utils.slugify import slugify
 from pulsar.utils.pep import to_string
 
 from lux import Html

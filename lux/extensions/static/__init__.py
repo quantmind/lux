@@ -158,6 +158,7 @@ class Extension(lux.Extension):
                         ctx.add(ctx.read_file(app, src, name))
             else:
                 self.logger.warning('Context location "%s" not available', src)
+        ctx.update(context)
         return ctx
 
     def build_info(self, app):

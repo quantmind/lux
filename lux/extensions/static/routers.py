@@ -62,7 +62,8 @@ class JsonRoot(lux.Router, FileBuilder):
     def apis(self, request):
         routes = {}
         for route in self.routes:
-            url = '%s.json' % request.absolute_uri(route.path())
+            path = request.absolute_uri(route.path())
+            url = '%s.json' % path
             routes['%s_url' % route.name] = url
         return routes
 
@@ -76,7 +77,7 @@ class JsonContent(lux.Router, DirBuilder):
     html_router = lux.RouterParam(None)
 
     def __init__(self, route, dir=None, name=None, html_router=None):
-        route = self.valid_route(route, dir) or self.dir
+        route = self.valid_route(route, dir)[:-1] or self.dir
         name = slugify(name or route or self.dir)
         self.src = '%s.json' % self.dir
         assert html_router, 'html router required'
@@ -89,11 +90,13 @@ class JsonContent(lux.Router, DirBuilder):
     def get(self, request):
         '''Build all the contents'''
         files = self.get_route('json_files')
-        return Json(files.all(request.app)).http_response(request)
+        data = files.all(request.app, html=False)
+        return Json(data).http_response(request)
 
 
 class JsonFile(lux.Router, FileBuilder):
-
+    '''Serve/build a json file
+    '''
     def get(self, request):
         app = request.app
         response = request.response
@@ -115,9 +118,11 @@ class JsonFile(lux.Router, FileBuilder):
         return Json(data).http_response(request)
 
     def should_build(self, app, name):
+        '''Don't build json api for special contents (404 for example)
+        '''
         return name not in app.config['STATIC_SPECIALS']
 
-    def all(self, app, content=True, draft=False):
+    def all(self, app, html=True, draft=False):
         contents = self.build(app)
         all = []
         o = 'modified' if draft else 'date'
@@ -125,10 +130,8 @@ class JsonFile(lux.Router, FileBuilder):
             data = json.loads(d.decode('utf-8'))
             if bool(data['draft']) is not draft:
                 continue
-            if not content:
-                for key in tuple(data):
-                    if key.endswith('_html'):
-                        data.pop(key)
+            if not html:
+                data.pop('html', None)
             all.append(data)
         return list(reversed(sorted(all, key=lambda d: parse_date(d[o]))))
 
@@ -194,13 +197,15 @@ class HtmlContent(html5.Router, DirBuilder):
                     'type': 'static'}
 
     def build_main(self, request, context, jscontext):
+        '''Build the ``main`` key for the ``context`` dictionary
+        '''
         if self.src and request.cache.building_static:
             raise SkipBuild
         if self.index_template:
             app = request.app
             files = self.api.get_route('json_files') if self.api else None
             if files:
-                jscontext['dir_entries'] = files.all(app, content=False)
+                jscontext['dir_entries'] = files.all(app, html=False)
             return app.render_template(self.index_template, context)
         # Not building, render the source file
         elif self.src:
@@ -220,7 +225,7 @@ class Drafts(html5.Router, FileBuilder):
             api = self.parent.api
             files = api.get_route('json_files') if api else None
             if files:
-                jscontext['dir_entries'] = files.all(app, content=False,
+                jscontext['dir_entries'] = files.all(app, html=False,
                                                      draft=True)
             return app.render_template(self.index_template, context)
         else:
