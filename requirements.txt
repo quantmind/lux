@@ -1,3 +1,2 @@
 pulsar
-oauthlib
 python-dateutil

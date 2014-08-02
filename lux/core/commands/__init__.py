@@ -120,8 +120,7 @@ class Command(ConsoleParser):
 
     def __call__(self, argv, **params):
         app = self.pulsar_app(argv)
-        app()
-        return self.run_until_complete(app.cfg, **params)
+        return self.run_until_complete(app().cfg, **params)
 
     def get_version(self):
         """Return the :class:`.Command` version.
@@ -180,7 +179,7 @@ class Command(ConsoleParser):
         for setting in self.option_list:
             cfg.settings[setting.name] = setting.copy()
         return application(callable=app.callable,
-                           desc=app.config.get('DESCRIPTION'),
+                           description=self.help,
                            epilog=app.config.get('EPILOG'),
                            cfg=cfg,
                            argv=argv,

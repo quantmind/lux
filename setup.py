@@ -89,7 +89,6 @@ setup(
         packages=packages,
         data_files=data_files,
         package_data={pkg['name']: data_files},
-        setup_requires=requirements(),
         install_requires=requirements(),
         scripts=['bin/luxmake.py'],
         classifiers=[

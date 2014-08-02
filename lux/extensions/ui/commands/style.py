@@ -13,7 +13,7 @@ import lux
 
 
 class Command(lux.Command):
-    help = "Manage style-sheet files from installed applications."
+    help = "Build the style-sheet file from installed applications"
     option_list = (
         Setting('theme', ('--theme',), default='',
                 desc='Theme to use. Default is lux.'),
@@ -30,7 +30,7 @@ class Command(lux.Command):
                       'otherwise in the local directory.')),
         Setting('minify', ('--minify',), action='store_true',
                 default=False,
-                desc='Minify the file')
+                desc='Also create a minified file')
     )
 
     def run(self, options, dump=True, **params):

@@ -6,7 +6,7 @@ import lux
 
 class Command(lux.Command):
     default_option_list = (Loglevel(), LogHandlers(), Debug())
-    help = "Starts a fully-functional Web server using pulsar."
+    help = "Starts a fully-functional Web server using pulsar"
 
     def __call__(self, argv, start=True):
         app = self.app
