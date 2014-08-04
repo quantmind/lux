@@ -43,6 +43,9 @@ class BaseBuilder(object):
     '''Base class for static site builders
     '''
     content = Snippet
+    '''Content factory'''
+    template = None
+    '''Template to render the :attr:`content`'''
 
     def read_file(self, app, src, name):
         '''Read a file and create a :class:`.Snippet`
@@ -56,7 +59,8 @@ class BaseBuilder(object):
                 raise BuildError('Missing dependencies for %s'
                                  % Reader.__name__)
             reader = Reader(app)
-            content = reader.read(src, name, content=self.content)
+            content = reader.read(src, name, content=self.content,
+                                  template=self.template)
             app.all_contents[src] = content
         else:
             content = app.all_contents[src]
@@ -248,10 +252,25 @@ class DirBuilder(Builder):
 class ContextBuilder(dict, BaseBuilder):
     '''Build context dictionary entry for the static site
     '''
-    def __init__(self, app, *args):
+    def __init__(self, app, ctx=None, content=None):
         self.app = app
         self.waiting = {}
-        self.update(*args)
+        self.content = content
+        if ctx:
+            self.update(ctx)
+        src = app.config['CONTEXT_LOCATION']
+        if os.path.isdir(src):
+            for dirpath, _, filenames in os.walk(src):
+                rel_dir = get_rel_dir(dirpath, src)
+                for filename in filenames:
+                    if filename.startswith('.'):
+                        continue
+                    name, _ = os.path.join(rel_dir, filename).split('.', 1)
+                    src = os.path.join(dirpath, filename)
+                    self.add(self.read_file(app, src, name))
+        else:
+            app.logger.warning('Context location "%s" not available', src)
+        self._on_loaded()
 
     def __setitem__(self, key, value):
         super(ContextBuilder, self).__setitem__(key, value)
@@ -263,6 +282,14 @@ class ContextBuilder(dict, BaseBuilder):
 
     def add(self, content, waiting=None):
         if waiting is None:
+            ctx = content.context_for
+            content_for = self.content
+            if ctx or content_for:
+                if content_for and ctx:
+                    for name, values in ctx.items():
+                        if content_for.name in values:
+                            content_for.additional_context[name] = content
+                return
             waiting = set(content.require_context)
         # Loop through the require context of content
         for name in tuple(waiting):
@@ -270,12 +297,18 @@ class ContextBuilder(dict, BaseBuilder):
                 waiting.discard(name)
 
         if waiting:
-            self.waiting[content.name] = (content, waiting)
+            self.waiting[content.key()] = (content, waiting)
         else:
-            self[content.name] = content.render(self.app, self)
+            self[content.key()] = content.render(self.app, self)
 
     def _refresh(self):
         all = list(self.waiting.values())
         self.waiting.clear()
         for content, waiting in all:
             self.add(content, waiting)
+
+    def _on_loaded(self):
+        waiting = self.waiting
+        if waiting:
+            waiting = ', '.join((str(c) for c, _ in waiting.values()))
+            self.app.logger.warning('%s is still waiting to be built', waiting)

@@ -1,13 +1,13 @@
 import os
 import re
 from os import path
+from importlib import import_module
 from string import Template
 
 from pulsar import Setting
-from pulsar.utils.importer import import_module
+from pulsar.utils.security import random_string
 
 import lux
-from lux.utils import random_string
 
 
 def validate_name(name, app_or_project):
@@ -23,7 +23,7 @@ def validate_name(name, app_or_project):
 
 
 class Command(lux.Command):
-    option_list = (Setting('name',
+    option_list = (Setting('luxname',
                            nargs=1,
                            desc='Name of the project.'),
                    Setting('target', ['--target'],
@@ -35,7 +35,7 @@ class Command(lux.Command):
     template_type = "project"
 
     def run(self, options, name=None, target=None):
-        name = options.name[0]
+        name = options.luxname[0]
         validate_name(name, self.template_type)
         # Check that the name cannot be imported.
         try:

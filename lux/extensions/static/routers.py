@@ -13,6 +13,9 @@ from .builder import (DirBuilder, FileBuilder, BuildError, SkipBuild,
 from .contents import Article, Draft, parse_date
 
 
+SPECIAL_KEYS = ('html_url',)
+
+
 class ErrorRouter(lux.Router, DirBuilder):
     status_code = 500
 
@@ -83,9 +86,13 @@ class JsonContent(lux.Router, DirBuilder):
         assert html_router, 'html router required'
         super(JsonContent, self).__init__(route, name=name,
                                           html_router=html_router,
-                                          content=html_router.content)
-        self.add_child(JsonFile('<id>', dir=self.dir, name='json_files',
-                                content=self.content))
+                                          content=html_router.content,
+                                          template=html_router.template)
+        self.add_child(JsonFile('<id>',
+                                dir=self.dir,
+                                name='json_files',
+                                content=self.content,
+                                template=html_router.template))
 
     def get(self, request):
         '''Build all the contents'''
@@ -131,9 +138,13 @@ class JsonFile(lux.Router, FileBuilder):
             if bool(data['draft']) is not draft:
                 continue
             if not html:
-                data.pop('html', None)
+                data = dict(((key, data[key]) for key in data
+                             if not self.is_html(key)))
             all.append(data)
         return list(reversed(sorted(all, key=lambda d: parse_date(d[o]))))
+
+    def is_html(self, key):
+        return key.startswith('html_') and key not in SPECIAL_KEYS
 
 
 class HtmlFile(html5.Router, FileBuilder):
@@ -163,7 +174,6 @@ class HtmlContent(html5.Router, DirBuilder):
     If not specified, the ``route`` value is used
     '''
     index_template = None
-    template = None
     api = None
     drafts = 'drafts'
     '''Drafts url
@@ -181,7 +191,8 @@ class HtmlContent(html5.Router, DirBuilder):
                                   index_template=self.drafts_template))
         file = HtmlFile(self.child_url, dir=self.dir, name='html_files',
                         content=self.content, archive=self.archive,
-                        html_body_template=self.html_body_template)
+                        html_body_template=self.html_body_template,
+                        template=self.template)
         self.add_child(file)
         #
         for url_path, file_path, ext in self.all_files():

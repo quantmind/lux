@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 
 from distutils.core import setup
@@ -8,10 +9,13 @@ from distutils.command.install import INSTALL_SCHEMES
 root_dir = os.path.dirname(os.path.abspath(__file__))
 
 def read(fname):
-    return open(os.path.join(root_dir, fname)).read()
+    with open(os.path.join(root_dir, fname)) as f:
+        return f.read()
+
 
 pkg = json.loads(read('package.json'))
 package_dir = os.path.join(root_dir, pkg['name'])
+
 
 def requirements():
     req = read('requirements.txt').replace('\r','').split('\n')
@@ -21,6 +25,7 @@ def requirements():
         if r:
             result.append(r)
     return result
+
 
 class osx_install_data(install_data):
 
@@ -77,32 +82,35 @@ for dirpath, _, filenames in os.walk(package_dir):
         data_files.extend((os.path.join(rel_dir, f) for f in filenames))
 
 
-setup(
-        name=pkg['name'],
-        version=pkg['version'],
-        author=pkg['author']['name'],
-        author_email=pkg['author']['email'],
-        url=pkg['homepage'],
-        license=pkg['licenses'][0]['type'],
-        description=pkg['description'],
-        long_description=read('README.rst'),
-        packages=packages,
-        data_files=data_files,
-        package_data={pkg['name']: data_files},
-        install_requires=requirements(),
-        scripts=['bin/luxmake.py'],
-        classifiers=[
-            'Development Status :: 4 - Beta',
-            'Environment :: Web Environment',
-            'Intended Audience :: Developers',
-            'License :: OSI Approved :: BSD License',
-            'Operating System :: OS Independent',
-            'Programming Language :: JavaScript',
-            'Programming Language :: Python',
-            'Programming Language :: Python :: 2.6',
-            'Programming Language :: Python :: 2.7',
-            'Programming Language :: Python :: 3.1',
-            'Programming Language :: Python :: 3.2',
-            'Topic :: Utilities'
-        ],
-    )
+def run(argv=None):
+    if argv:
+        sys.argv = list(argv)
+    setup(name=pkg['name'],
+          version=pkg['version'],
+          author=pkg['author']['name'],
+          author_email=pkg['author']['email'],
+          url=pkg['homepage'],
+          license=pkg['licenses'][0]['type'],
+          description=pkg['description'],
+          long_description=read('README.rst'),
+          packages=packages,
+          data_files=data_files,
+          package_data={pkg['name']: data_files},
+          install_requires=requirements(),
+          scripts=['bin/luxmake.py'],
+          classifiers=['Development Status :: 4 - Beta',
+                       'Environment :: Web Environment',
+                       'Intended Audience :: Developers',
+                       'License :: OSI Approved :: BSD License',
+                       'Operating System :: OS Independent',
+                       'Programming Language :: JavaScript',
+                       'Programming Language :: Python',
+                       'Programming Language :: Python :: 2.7',
+                       'Programming Language :: Python :: 3.3',
+                       'Programming Language :: Python :: 3.4',
+                       'Topic :: Utilities']
+          )
+
+
+if __name__ == '__main__':
+    run()

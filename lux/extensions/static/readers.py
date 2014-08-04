@@ -7,6 +7,8 @@ except ImportError:
     Markdown = False
 
 from .contents import Draft, Snippet, METADATA_PROCESSORS, slugify
+from .urlwrappers import guess
+
 
 READERS = {}
 
@@ -42,7 +44,7 @@ class BaseReader(object):
     def __str__(self):
         return self.__class__.__name__
 
-    def process(self, body, meta_input, src, name, content=None):
+    def process(self, body, meta_input, src, name, content=None, **params):
         """Return the dict containing document metadata
         """
         cfg = self.config
@@ -53,11 +55,16 @@ class BaseReader(object):
             if key not in meta:
                 key = slugify(key, separator='_')
                 bits = key.split('_', 1)
-                if len(bits) == 2 and bits[0] == 'context':
-                    if values:
-                        context[bits[1]] = values[0]
-                else:
-                    self.logger.warning("Unknown meta '%s' in '%s'", key, src)
+                if len(bits) == 2:
+                    if bits[0] == 'context':
+                        if values:
+                            context[bits[1]] = values
+                            continue
+                    if bits[0] == 'meta':
+                        if values:
+                            meta[bits[1]] = guess(values)
+                            continue
+                self.logger.warning("Unknown meta '%s' in '%s'", key, src)
             #
             elif values:
                 # Remove default values if any
@@ -73,9 +80,9 @@ class BaseReader(object):
         if meta['draft'].value():
             content = Draft
         content = content or Snippet
-        return content(body, meta, src, name, context)
+        return content(body, meta, src, name, context, **params)
 
-    def read(self, source_path, name, content=None):
+    def read(self, source_path, name, **params):
         '''Default read method
         '''
         ct, encoding = mimetypes.guess_type(source_path)
@@ -88,7 +95,7 @@ class BaseReader(object):
             with open(source_path, 'rb') as f:
                 body = f.read()
         metadata = {'content_type': [ct]}
-        return self.process(body, metadata, source_path, name, content=content)
+        return self.process(body, metadata, source_path, name, **params)
 
 
 @register_reader
@@ -104,15 +111,14 @@ class MarkdownReader(BaseReader):
         if 'meta' not in self.extensions:
             self.extensions.append('meta')
 
-    def read(self, source_path, name, content=None):
+    def read(self, source_path, name, **params):
         """Parse content and metadata of markdown files"""
 
         self._md = md = Markdown(extensions=self.extensions)
         with open(source_path, encoding='utf-8') as text:
             raw = '%s\n\n%s' % (text.read(), self.links())
             body = md.convert(raw)
-        return self.process(body, self._md.Meta, source_path, name,
-                            content=content)
+        return self.process(body, self._md.Meta, source_path, name, **params)
 
     def links(self):
         links = self.app.config.get('_MARKDOWN_LINKS_')

@@ -68,6 +68,7 @@ __all__ = ['Opacity',
            'Shadow',
            'BoxSizing',
            'Radius',
+           'Background',
            'Gradient',
            'gradient',
            'Placeholder',
@@ -353,6 +354,29 @@ location where to apply the radius. For example, 'top', 'bottom', 'left',
                 elem['-webkit-border%s-radius' % l] = r
                 elem['   -moz-border%s-radius' % l] = r
                 elem['        border%s-radius' % l] = r
+
+
+################################################# CSS3 BACKGROUNd
+class Background(Mixin):
+
+    def __init__(self, url=None, size=None, repeat=None, position=None):
+        self.url = url
+        self.size = size
+        self.repeat = repeat
+        self.position = position
+
+    def __call__(self, elem):
+        if self.url:
+            elem['background-image'] = "url(%s)" % self.url
+        if self.size:
+            elem['-webkit-background-size'] = self.size
+            elem['   -moz-background-size'] = self.size
+            elem['     -o-background-size'] = self.size
+            elem['        background-size'] = self.size
+        if self.repeat:
+            elem['background-repeat'] = self.repeat
+        if self.position:
+            elem['background-position'] = self.position
 
 
 ################################################# CSS3 GRADIENT

@@ -33,6 +33,9 @@ from pulsar.utils.pep import native_str
 from lux import __version__
 
 
+__all__ = ['Extension', 'Parameter']
+
+
 class Parameter(object):
     '''Class for defining a lux :ref:`parameter <parameter>` within
     a lux :class:`.Extension`.

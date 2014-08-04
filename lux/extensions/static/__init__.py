@@ -4,16 +4,36 @@
 
 Usage
 =======
-Put the ``lux.extensions.static`` extension into your :setting:`EXTENSIONS`
+Put the :mod:`lux.extensions.static` extension into your :settings:`EXTENSIONS`
 list and build the static web site via the ``build_static`` option in the
 command line::
 
     python managet.py build_static
 
-Parameters
-================
+The are several :ref:`parameters <parameters-static>` which can be modified
+in order to customise the site.
 
-.. lux_extension:: lux.extensions.static
+The first step is to create a new project via the :command:`create_project`
+
+
+When creating the middleware for the static site one can pass the following
+key-valued parameters during initialisation of a :class:`.HtmlContent`,
+a :class:`.Blog` and other routers:
+
+* ``dir`` the directory where the source files are located, if not provided,
+  it is assumed it is the same as the route parameter
+* :attr:`~lux.extensions.Html5.Router.html_body_template` to specify the
+  location of the template which render the html body tag of the Html5
+  document. If not provided, the parent router value is used unless no parent
+  is available and the :settings:`STATIC_TEMPLATE` is used instead.
+* :attr:`
+
+Templates
+=============
+Each :attr:`~lux.extensions.Html5.Router.html_body_template` is rendered
+using a ``context`` dictionary which is an instance of the
+:class:`.ContextBuilder` class.
+
 '''
 import os
 import sys
@@ -28,7 +48,7 @@ from pulsar.utils.slugify import slugify
 import lux
 from lux import Parameter, Router
 
-from .builder import Builder, DirBuilder, ContextBuilder, get_rel_dir
+from .builder import Builder, DirBuilder, ContextBuilder
 from .contents import Snippet, Article, Draft
 from .routers import (MediaBuilder, HtmlContent, Blog, ErrorRouter,
                       JsonRoot, JsonContent, JsonRedirect)
@@ -49,14 +69,8 @@ class Extension(lux.Extension):
     _config = [
         Parameter('STATIC_TEMPLATE', 'home.html',
                   'Default static template'),
-        Parameter('SOURCE_SUFFIX', 'md',
-                  'The default suffix of source filenames'),
-        Parameter('METADATA_PROCESSORS', [],
-                  'A list of functions to perocess metadata'),
         Parameter('STATIC_LOCATION', 'build',
                   'Directory where the static site is created'),
-        Parameter('STATIC_SITEMAP', {},
-                  'Dictionary of contents for the site'),
         Parameter('CONTEXT_LOCATION', 'context',
                   'Directory where to find files to populate the context '
                   'dictionary'),
@@ -67,6 +81,7 @@ class Extension(lux.Extension):
         Parameter('STATIC_SPECIALS', ('404',), '')
     ]
     _static_info = None
+    _global_context = None
 
     def middleware(self, app):
         path = app.config['MEDIA_URL']
@@ -142,22 +157,16 @@ class Extension(lux.Extension):
         app = request.app
         ctx = request.cache.static_context
         if not ctx:
-            context.update(self.build_info(app))
-            ctx = ContextBuilder(app, context)
-            request.cache.static_context = ctx
-            #
-            src = app.config['CONTEXT_LOCATION']
-            if os.path.isdir(src):
-                for dirpath, _, filenames in os.walk(src):
-                    rel_dir = get_rel_dir(dirpath, src)
-                    for filename in filenames:
-                        if filename.startswith('.'):
-                            continue
-                        name, _ = os.path.join(rel_dir, filename).split('.', 1)
-                        src = os.path.join(dirpath, filename)
-                        ctx.add(ctx.read_file(app, src, name))
+            if not self._global_context:
+                ctx = ContextBuilder(app, self.build_info(app))
+                self._global_context = ctx.copy()
+            content = request.cache.content
+            if content:
+                ctx = ContextBuilder(app, self._global_context,
+                                     content=content)
             else:
-                self.logger.warning('Context location "%s" not available', src)
+                ctx = self._global_context.copy()
+            request.cache.static_context = ctx
         ctx.update(context)
         return ctx
 
@@ -212,7 +221,8 @@ class Extension(lux.Extension):
 
     def add_api(self, app, router):
         if isinstance(router, DirBuilder):
-            router.api = JsonContent(router.rule, dir=router.dir,
+            router.api = JsonContent(router.rule,
+                                     dir=router.dir,
                                      html_router=router)
             app.api.add_child(router.api)
             app.handler.middleware.append(JsonRedirect(router.api.route))

@@ -65,7 +65,7 @@ class Router(lux.Router, MediaMixin):
             jscontext['page'] = router_href(request.app_handler)
             jscontext['html5mode'] = True
             main = '<div ng-view></div>'
-        context['main'] = main
+        context['html_main'] = main
         return app.html_response(request, self.html_body_template,
                                  jscontext=jscontext, context=context)
 

@@ -120,7 +120,8 @@ class Command(ConsoleParser):
 
     def __call__(self, argv, **params):
         app = self.pulsar_app(argv)
-        return self.run_until_complete(app().cfg, **params)
+        app()
+        return self.run_until_complete(app.cfg, **params)
 
     def get_version(self):
         """Return the :class:`.Command` version.

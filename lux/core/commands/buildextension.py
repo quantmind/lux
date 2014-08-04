@@ -4,7 +4,7 @@ from . import startproject
 
 
 class Command(startproject.Command):
-    option_list = (Setting('name',
+    option_list = (Setting('luxname',
                            nargs=1,
                            desc='Extension name.'),
                    Setting('target', ['--target'],

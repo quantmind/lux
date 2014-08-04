@@ -75,8 +75,16 @@ class Extension(lux.Extension):
 
 def add_css(all):
     css = all.css
-    skins = all.variables.skins
+    vars = all.variables
 
+    # Helper classes
+    vars.push_bottom = '20px !important'
+
+    css('.push-bottom',
+        margin_bottom=vars.push_bottom)
+
+    # SKINS
+    skins = all.variables.skins
     default = skins.default
     default.background = color('#f7f7f9')
 

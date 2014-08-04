@@ -1,31 +1,35 @@
 {
-    "name": "lux",
-    "title": "Lux Library",
-    "description": "Asynchronous web application server for python and jquery",
-    "version": "0.1.0-beta.1",
+    "licenses": [
+        {
+            "type": "BSD"
+        }
+    ],
+    "dependencies": {
+        "lodash": "",
+        "jquery": ""
+    },
     "homepage": "https://github.com/lsbardel/lux",
+    "devDependencies": {
+        "grunt": "",
+        "grunt-contrib-uglify": "",
+        "grunt-contrib-concat": "",
+        "grunt-docco": "~0.3.2",
+        "docco": "",
+        "benchmark": "",
+        "grunt-contrib-jshint": ""
+    },
+    "name": "lux",
+    "contributors": [],
     "author": {
         "name": "Luca Sbardella",
         "email": "luca.sbardella@gmail.com"
     },
+    "version": "0.1.0",
     "repository": {
         "type": "git",
         "url": "https://github.com/lsbardel/lux"
     },
-    "licenses": [{"type": "BSD"}],
-    "dependencies": {
-        "jquery": "",
-        "lodash": ""
-    },
-    "devDependencies": {
-        "grunt": "",
-        "docco": "",
-        "grunt-docco": "~0.3.2",
-        "grunt-contrib-jshint": "",
-        "grunt-contrib-uglify": "",
-        "grunt-contrib-concat": "",
-        "benchmark": ""
-    },
-    "keywords": [],
-    "contributors": []
+    "description": "python web toolkit",
+    "title": "Lux Library",
+    "keywords": []
 }

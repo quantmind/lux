@@ -338,6 +338,10 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
             $scope.page = page = {};
         }
         //
+        $scope.windowHeight = function () {
+            return root.window.innerHeight > 0 ? root.window.innerHeight : root.screen.availHeight;
+        };
+
         $scope.search_text = '';
         $scope.sidebarCollapse = '';
         //

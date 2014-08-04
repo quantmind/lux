@@ -22,9 +22,12 @@ assert dt == date.today()
 
 assert version == 'Ver. %s' % lux.__version__
 
-pkg = json.loads(read('package.json'))
+with open('package.json', 'r') as f:
+    pkg = json.loads(f.read())
+
 pkg['version'] = lux.__version__
 pkg['description'] = lux.__doc__
+
 with open('package.json', 'w') as f:
     f.write(json.dumps(pkg, indent=4))
 
@@ -35,4 +38,4 @@ argv = [script, 'sdist'] + sys.argv[1:]
 setup.run(argv=argv)
 
 
-print('%s %s ready!' % (setup.package_name, setup.mod.__version__))
+print('%s %s ready!' % (pkg['name'], lux.__version__))

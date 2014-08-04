@@ -33,3 +33,11 @@ Web design
 =====================
 
 .. lux_extension:: lux.extensions.ui
+
+
+.. _parameters-static:
+
+Static Site
+================
+
+.. lux_extension:: lux.extensions.static

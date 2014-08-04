@@ -13,12 +13,15 @@ def list_of(W):
     return lambda x, cfg: as_list(x, cfg, W)
 
 
-def meta_iterator(meta):
+def meta_iterator(meta, params=None):
     if meta:
         for n, m in meta.items():
             if isinstance(m, Single):
-                m = m[0] if m else None
+                m = m[0] if m else params.pop(n, None)
             yield slugify(n, separator='_'), m
+    if params:
+        for n, m in params.items():
+            yield n, m
 
 
 class Processor:
@@ -62,6 +65,10 @@ class Single(Multi):
 
     def value(self):
         return self[0] if self else None
+
+
+def guess(value):
+    return Multi(value) if len(value) > 1 else Single(value)
 
 
 #@total_ordering

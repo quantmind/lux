@@ -67,19 +67,27 @@ class Snippet(object):
     default_template = None
     mandatory_properties = ()
 
-    def __init__(self, content, metadata, src, path=None, context=None):
+    def __init__(self, content, metadata, src, path=None, context=None,
+                 **params):
         self._json_content = None
         self._content = content
-        self._context = context
-        self.modified = modified_datetime(src)
-        self.update_meta(metadata)
+        self._context_for = context
+        self._additional_context = {}
         self._src = src
         self._path = path or src
-        self._name = path
+        self._name = self._path
+        self.modified = modified_datetime(src)
+        self.update_meta(metadata, params)
         if is_text(self.content_type):
+            dir, slug = os.path.split(self._path)
+            if not slug:
+                slug = self._name
+                dir = None
             self._name = slugify(self._name, separator='_')
             if not self.slug:
-                self.slug = slugify(self.title or self._name, separator='_')
+                self.slug = slugify(self.title or slug, separator='_')
+            if dir:
+                self.slug = '%s/%s' % (dir, self.slug)
         elif not self.slug:
             self.slug = self._name
         self.template = self.template or self.default_template
@@ -87,6 +95,10 @@ class Snippet(object):
     @property
     def name(self):
         return self._name
+
+    @property
+    def suffix(self):
+        return CONTENT_EXTENSIONS.get(self.content_type)
 
     @property
     def path(self):
@@ -117,20 +129,43 @@ class Snippet(object):
         if is_text(self.content_type):
             return '%s.json' % self.slug
 
+    @property
+    def context_for(self):
+        '''A list of contents names for which this snippet is required
+        in the context dictionary
+        '''
+        return self._context_for
+
+    @property
+    def additional_context(self):
+        '''Dictionary of key and :class:`.Snippet` providing additional
+        keys for this content
+        '''
+        return self._additional_context
+
     def __repr__(self):
         return self._src
     __str__ = __repr__
 
-    def update_meta(self, meta):
-        self.__dict__.update(meta_iterator(meta))
+    def key(self, name=None):
+        '''The key for a context dictionary
+        '''
+        suffix = self.suffix
+        name = name or self._name
+        return '%s_%s' % (suffix, name) if suffix else name
+
+    def update_meta(self, meta, params=None):
+        self.__dict__.update(meta_iterator(meta, params))
 
     def context(self, app, names=None, context=None):
         '''Extract a context dictionary from this snippet.
         '''
         all_names = names if names is not None else self.__dict__
-        context = context.copy() if context is not None else {}
+        if context is None:
+            context = app.extensions['static'].build_info(app)
+        ctx = context
+        context = context.copy()
         engine = template_engine(self.template_engine)
-        ctx = app.extensions['static'].build_info(app)
         #
         for name in all_names:
             if name.startswith('_'):
@@ -155,6 +190,7 @@ class Snippet(object):
             context[name] = value
         #
         if names is None:
+            #
             #    Check for missing properties
             for name in self.mandatory_properties:
                 assert context.get(name), ("Property '%s' not available in %s"
@@ -165,12 +201,12 @@ class Snippet(object):
     def render(self, app, context):
         '''Render the snippet
         '''
-        if self.content_type == 'text/html':
+        if is_text(self.content_type):
             engine = template_engine(self.template_engine)
             context = self.context(app, context=context)
             content = engine(self._content, context)
             if self.template:
-                context['main'] = content
+                context['html_main'] = content
                 content = app.render_template(self.template, context=context)
             return content
         else:
@@ -180,35 +216,32 @@ class Snippet(object):
         '''Convert the content into a Json dictionary for the API
         '''
         if not self._json_content and is_text(self.content_type):
-            text = self.render(app, context)
             jd = self.context(app)
-
-            ext = CONTENT_EXTENSIONS[self.content_type]
-            jd[ext] = content = {}
+            context.update(jd)
+            #
+            # Add additional context keys
+            if self.additional_context:
+                for key, ct in self.additional_context.items():
+                    context[ct.key(key)] = ct.render(app, context)
+            #
+            key = self.key('main')
+            jd[key] = self.render(app, context)
             if self.content_type == 'text/html':
                 head_des = self.head_description or self.description
                 jd.update({'head_title': self.head_title or self.title,
                            'head_description': head_des})
-            content['main'] = text
-            #
-            # Add additional context keys
-            if self._context:
-                for key, target in self._context.items():
-                    if target not in context:
-                        app.logger.warning("Cannot find '%s' key '%s'"
-                                           " in '%s' context"
-                                           % (key, target, self))
-                    else:
-                        content[key] = context[target]
+
             self._json_content = jd
         return self._json_content
 
     def html(self, request, context):
-        '''Build an HTML5 page for this content
+        '''Build the ``html_main`` key for this content and set
+        content specific values to the ``head`` tag of the
+        HTML5 document.
         '''
         assert self.content_type == 'text/html', '%s not html' % self
         data = self.json_dict(request.app, context)
-        context.update(data['html'])
+        context.update(data)
         head = request.html_document.head
         #
         if 'head_title' in data:
@@ -233,7 +266,7 @@ class Snippet(object):
         #
         if 'robots' in data:
             head.add_meta(name='robots', content=data['robots'])
-        return context.pop('main')
+        return context.get(self.key('main'))
 
 
 class Article(Snippet):

@@ -27,10 +27,17 @@ the following structure::
         lux.execute_from_config('quasar.config')
 
 
+Lux install an utility script which can be used to setup a project and add
+extensions to it::
+
+    luxmake.py createproject quasar
+
+creates your project layout inside the ``quasar`` directory.
+
 The Config Script
 ========================
 
-The configuration script is where your application is defined.
+The configuration script is where your application settings are defined.
 
 
 
