@@ -54,8 +54,9 @@ Column Template
 from itertools import chain
 
 from pulsar import coroutine_return
+from pulsar.utils.structures import AttributeDictionary
 
-from .wrappers import Html, AttributeDictionary
+from .wrappers import Html
 
 
 __all__ = ['Template', 'Context', 'ColumnTemplate', 'RowTemplate',
@@ -140,7 +141,6 @@ class Template(object):
 
     def __call__(self, request=None, context=None, children=None, **kwargs):
         '''Create an Html element from this template.'''
-        c = []
         if context is None:
             context = {}
         params = self.parameters
@@ -324,7 +324,6 @@ class PageTemplate(Template):
         html = super(PageTemplate, self).html(request, context, children,
                                               **kwargs)
         if request:
-            site_contents = []
             ids = context.get('content_ids')
             if ids:
                 contents = yield request.models.content.filter(

@@ -55,7 +55,7 @@ class Router(lux.Router, MediaMixin):
         app = request.app
         html5 = app.config.get('HTML5_NAVIGATION')
         doc = request.html_document
-        doc.attr({'ng-model': 'page',
+        doc.data({'ng-model': 'page',
                   'ng-controller': 'page'})
         jscontext = {}
         context = {}
@@ -64,7 +64,7 @@ class Router(lux.Router, MediaMixin):
             jscontext.update(self.sitemap(app))
             jscontext['page'] = router_href(request.app_handler)
             jscontext['html5mode'] = True
-            main = '<div ng-view></div>'
+            main = '<div dada-ng-view></div>'
         context['html_main'] = main
         return app.html_response(request, self.html_body_template,
                                  jscontext=jscontext, context=context)

@@ -25,11 +25,7 @@ Wsgi Request
    :members:
    :member-order: bysource
 '''
-from functools import wraps
-
-from pulsar import HttpException, Http404, get_event_loop, multi_async
-from pulsar.utils.system import json
-from pulsar.utils.structures import AttributeDictionary
+from pulsar import get_event_loop
 from pulsar.apps.wsgi import (route, wsgi_request, cached_property,
                               EnvironMixin, html_factory)
 from pulsar.apps import wsgi
@@ -38,7 +34,7 @@ from pulsar.utils.httpurl import JSON_CONTENT_TYPES
 
 from lux.utils import unique_tuple
 
-__all__ = ['Html', 'HtmlRouter', 'headers',
+__all__ = ['Html', 'HtmlRouter',
            'WsgiRequest', 'Router', 'route', 'wsgi_request', 'as_tag',
            'cached_property', 'EnvironMixin', 'html_factory',
            'get_event_loop', 'RouterParam', 'JSON_CONTENT_TYPES',
@@ -112,30 +108,6 @@ class WsgiRequest(wsgi.WsgiRequest):
 wsgi.set_wsgi_request_class(WsgiRequest)
 
 
-class headers:
-
-    def __init__(self, content_type=None, cache=None):
-        self.content_type = content_type
-        self.cache = cache
-
-    def __call__(self, method):
-
-        @wraps(method)
-        def _(router, request):
-            response = request.response
-            if self.content_type:
-                if (response.content_type is None and
-                        not request.get('HTTP_ACCEPT')):
-                    response.content_type = self.content_type
-                elif response.content_type != self.content_type:
-                    raise ContentNotAccepted()
-            if self.cache:
-                self.cache(response.headers)
-            return method(router, request)
-
-        return _
-
-
 class Router(wsgi.Router):
     '''Extend pulsar :class:`~pulsar.apps.wsgi.routers.Router` with content
     management.'''
@@ -170,8 +142,8 @@ class Router(wsgi.Router):
         return cls(rule, **params)
 
     def add_api_urls(self, request, api):
-        for route in self.routes:
-            route.add_api_urls(request, api)
+        for r in self.routes:
+            r.add_api_urls(request, api)
 
     def get_api_info(self, app):
         '''The api name for this :class:`.Router`
@@ -203,21 +175,3 @@ class Html(wsgi.Html):
             request.app.fire('on_html_response', request, html)
             doc.body.append(html['body'])
         return doc.http_response(request)
-
-
-class JsonDocument(wsgi.HtmlDocument):
-
-    @property
-    def is_html(self):
-        return False
-
-    def do_stream(self, request):
-        yield self.to_json(request)
-
-    def to_json(self):
-        self.body._tag = None
-        body = yield multi_async(self.body.stream(request))
-        self.head._tag = None
-        data = {'body': body}
-        data.extend(self.head.to_json())
-        coroutine_return(json.dumps(data))

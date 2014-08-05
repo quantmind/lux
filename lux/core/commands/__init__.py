@@ -22,10 +22,9 @@ import sys
 import argparse
 import logging
 
-from pulsar import (Setting, get_event_loop, task, Application,
+from pulsar import (Setting, get_event_loop, Application, ImproperlyConfigured,
                     asyncio, maybe_async, Future, Config)
 from pulsar.utils.pep import native_str
-from pulsar.utils.log import configured_logger
 from pulsar.utils.config import Loglevel, Debug, LogHandlers
 
 from lux import __version__
@@ -36,7 +35,7 @@ __all__ = ['ConsoleParser',
            'Command']
 
 
-class CommandError(Exception):
+class CommandError(ImproperlyConfigured):
     pass
 
 

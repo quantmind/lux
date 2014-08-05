@@ -35,19 +35,17 @@ import sys
 import csv
 from functools import partial
 from copy import copy
-from inspect import isgenerator
 from collections import namedtuple
 from datetime import date
 from decimal import Decimal
 from io import StringIO
 
 from pulsar import HttpException, coroutine_return
-from pulsar.apps.wsgi import Json, AsyncString, HtmlVisitor
+from pulsar.apps.wsgi import Json, AsyncString
 from pulsar.utils.structures import OrderedDict
 from pulsar.utils.pep import zip
 from pulsar.utils.html import nicename
 from pulsar.utils.slugify import slugify
-from pulsar.utils.structures import AttributeDictionary
 from pulsar.utils.httpurl import JSON_CONTENT_TYPES
 
 from .wrappers import Html
@@ -352,7 +350,7 @@ class ContentManager(object):
         if info.data:
             for link in self.html_urls(request, *info.data):
                 ul.append(link.anchor())
-        return container
+        return ul
 
     def text_collection(self, request, data):
         return self.csv(request, data, 'text/plain')

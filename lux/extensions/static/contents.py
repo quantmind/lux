@@ -244,28 +244,30 @@ class Snippet(object):
         context.update(data)
         head = request.html_document.head
         #
-        if 'head_title' in data:
-            head.title = data['head_title']
+        title = data.get('head_title')
+        if title:
+            head.title = title
         #
-        if 'head_description' in data:
-            des = head.replace_meta('description', data['head_description'])
-        if 'tag' in data:
-            head.replace_meta("keywords", data['tag'])
+        description = data.get('head_description')
+        if description:
+            des = head.replace_meta('description', description)
+        tag = data.get('tag')
+        if tag:
+            head.replace_meta('keywords', tag)
         #
         for css in self.require_css:
             head.links.append(css)
         for js in self.require_js:
             head.scripts.append(js)
         #
-        #if 'requirejs' in meta:
-        #    head.scripts.require(*meta['requirejs'].split(','))
-        #
-        if 'author' in data:
-            head.replace_meta("author", data['author'])
+        author = data.get('author')
+        if author:
+            head.replace_meta('author', author)
         twitter_card(request, **data)
         #
-        if 'robots' in data:
-            head.add_meta(name='robots', content=data['robots'])
+        robots = data.get('robots')
+        if robots:
+            head.add_meta(name='robots', content=robots)
         return context.get(self.key('main'))
 
 

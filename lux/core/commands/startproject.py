@@ -54,11 +54,7 @@ class Command(lux.Command):
             try:
                 os.makedirs(top_dir)
             except OSError as e:
-                if e.errno == errno.EEXIST:
-                    message = "'%s' already exists" % top_dir
-                else:
-                    message = e
-                raise lux.CommandError(message)
+                raise lux.CommandError(str(e))
         else:
             top_dir = path.abspath(path.expanduser(target))
             if not path.exists(top_dir):

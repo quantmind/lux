@@ -19,7 +19,6 @@ Application
 import sys
 import os
 import logging
-import pickle
 import json
 from inspect import isclass
 from collections import OrderedDict
@@ -34,7 +33,7 @@ from pulsar.utils.log import lazyproperty
 
 from .commands import ConsoleParser, CommandError
 from .extension import Extension, Parameter
-from .wrappers import JsonDocument, wsgi_request
+from .wrappers import wsgi_request
 from .engines import template_engine
 
 
@@ -295,7 +294,7 @@ class Application(ConsoleParser, Extension):
                            known_libraries=None,
                            scripts_dependencies=None,
                            require_callback=cfg['JSREQUIRE_CALLBACK'],
-                           debug=self.debug,
+                           data_debug=self.debug,
                            content_type=content_type,
                            charset=cfg['ENCODING'])
         #
@@ -345,8 +344,8 @@ class Application(ConsoleParser, Extension):
         return cmnds
 
     def get_command(self, name, stdout=None, stderr=None):
-        '''Construct and return a :class:`Command` for this application.'''
-        commands = {}
+        '''Construct and return a :class:`.Command` for this application
+        '''
         for e, cmnds in self.commands.items():
             for cmnd in cmnds:
                 if name == cmnd:
@@ -385,10 +384,6 @@ class Application(ConsoleParser, Extension):
 
     def on_start(self, server):
         self.fire('on_start', server)
-
-    def render_error(self, environ, response, trace):
-        if self.debug:
-            return render_trace(environ, response, trace)
 
     def load_extension(self, dotted_path):
         '''Load an :class:`.Extension` class into this :class:`App`.
@@ -496,7 +491,7 @@ class Application(ConsoleParser, Extension):
             if title:
                 head.title = title % head.title
             if status_code:
-                response.status_code = status_code
+                request.response.status_code = status_code
             context = self.context(request, context)
             jscontext = self.context(request, jscontext, 'js')
             if jscontext:
