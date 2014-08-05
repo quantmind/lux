@@ -20,6 +20,7 @@
         this.log = $log;
         this.http = $http;
         this.q = $q;
+        this.anchorScroll = $anchorScroll;
 
         // A post method with CSRF parameter
         this.post = function (url, data, cfg) {

@@ -30,3 +30,10 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
         if (ready_callbacks === true) callback();
         else ready_callbacks.push(callback);
     };
+
+    lux.requiresAngular = function () {
+        lux.$.each(arguments, function (i, module) {
+            if (lux.app.requires.indexOf(module) === -1)
+                lux.app.requires.push(module);
+        });
+    };

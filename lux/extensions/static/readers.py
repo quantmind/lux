@@ -7,7 +7,7 @@ except ImportError:
     Markdown = False
 
 from .contents import Draft, Snippet, METADATA_PROCESSORS, slugify
-from .urlwrappers import guess
+from .urlwrappers import guess, as_list
 
 
 READERS = {}
@@ -57,13 +57,16 @@ class BaseReader(object):
                 bits = key.split('_', 1)
                 if len(bits) == 2:
                     if bits[0] == 'context':
-                        if values:
-                            context[bits[1]] = values
-                            continue
+                        context[bits[1]] = data = []
+                        for value in values:
+                            data.extend(as_list(value, cfg))
+                        continue
                     if bits[0] == 'meta':
-                        if values:
-                            meta[bits[1]] = guess(values)
-                            continue
+                        data = []
+                        for value in values:
+                            data.extend(as_list(value, cfg))
+                        meta[bits[1]] = guess(data)
+                        continue
                 self.logger.warning("Unknown meta '%s' in '%s'", key, src)
             #
             elif values:
@@ -113,7 +116,6 @@ class MarkdownReader(BaseReader):
 
     def read(self, source_path, name, **params):
         """Parse content and metadata of markdown files"""
-
         self._md = md = Markdown(extensions=self.extensions)
         with open(source_path, encoding='utf-8') as text:
             raw = '%s\n\n%s' % (text.read(), self.links())

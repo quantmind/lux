@@ -564,37 +564,39 @@ class Clickable(Mixin):
 class Transition(Mixin):
     '''Define a CSS3 transition.
 
-A transition is controlled via the following parameters:
+    A transition is controlled via the following parameters:
 
-.. attribute:: property
+    .. attribute:: property
 
-    Specifies the name or names of the CSS properties to which transitions
-    should be applied. Only properties listed here are animated during
-    transitions; changes to all other properties occur instantaneously
-    as usual.
+        Specifies the name or comma separated names of the CSS properties
+        to which transitions
+        should be applied. Only properties listed here are animated during
+        transitions; changes to all other properties occur instantaneously
+        as usual.
 
-    Valid values are: ``opacity``, ``left``, ``top``, ``height`` and so forth.
+        Valid values are: ``opacity``, ``left``, ``top``, ``height``, ``all``
+        and so forth.
 
-.. attribute:: duration
+    .. attribute:: duration
 
-    Specifies the duration over which transitions should occur. You can specify
-    a single duration that applies to all properties during the transition,
-    or multiple values to allow each property to transition over a different
-    period of time.
+        Specifies the duration over which transitions should occur.
+        You can specify a single duration that applies to all properties
+        during the transition, or multiple values to allow each property
+        to transition over a different period of time.
 
-    Valid value is a string of type ``0.5s``, ``2s, 5s`` and so forth.
+        Valid value is a string of type ``0.5s``, ``2s, 5s`` and so forth.
 
-.. attribute:: easing
+    .. attribute:: easing
 
-    The `easing function`_ to use. Default: ``linear``.
+        The `easing function`_ to use. Default: ``linear``.
 
-.. attribute:: delay
+    .. attribute:: delay
 
-    Defines how long to wait between the time a property is changed and the
-    transition actually begins.
+        Defines how long to wait between the time a property is changed
+        and the transition actually begins.
 
-.. _`easing function`: http://easings.net/
-'''
+    .. _`easing function`: http://easings.net/
+    '''
     def __init__(self, property, duration=None, easing=None, delay=None):
         self.property = property
         self.duration = duration

@@ -31,6 +31,13 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
         else ready_callbacks.push(callback);
     };
 
+    lux.requiresAngular = function () {
+        lux.$.each(arguments, function (i, module) {
+            if (lux.app.requires.indexOf(module) === -1)
+                lux.app.requires.push(module);
+        });
+    };
+
     var ApiTypes = lux.ApiTypes = {};
     //
     // If CSRF token is not available
@@ -53,6 +60,7 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
         this.log = $log;
         this.http = $http;
         this.q = $q;
+        this.anchorScroll = $anchorScroll;
 
         // A post method with CSRF parameter
         this.post = function (url, data, cfg) {
@@ -390,6 +398,25 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
             $scope.collapse();
             $scope.$apply();
         });
+
+        $scope.scrollToHash = function (e, offset) {
+            // set the location.hash to the id of
+            // the element you wish to scroll to.
+            var target = $(e.currentTarget.hash);
+            if (target.length) {
+                offset = offset ? offset : 0;
+                e.preventDefault();
+                e.stopPropagation();
+                $lux.log.info('Scrolling to target');
+                $('html,body').animate({
+                    scrollTop: target.offset().top + offset
+                }, 1000);
+                //$lux.location.hash(hash);
+                // call $anchorScroll()
+                //$lux.anchorScroll();
+            } else
+                $lux.log.warning('Cannot scroll, target not found');
+        };
 
     }]);
 

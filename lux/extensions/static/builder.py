@@ -258,10 +258,10 @@ class ContextBuilder(dict, BaseBuilder):
         self.content = content
         if ctx:
             self.update(ctx)
-        src = app.config['CONTEXT_LOCATION']
-        if os.path.isdir(src):
-            for dirpath, _, filenames in os.walk(src):
-                rel_dir = get_rel_dir(dirpath, src)
+        location = app.config['CONTEXT_LOCATION']
+        if os.path.isdir(location):
+            for dirpath, _, filenames in os.walk(location):
+                rel_dir = get_rel_dir(dirpath, location)
                 for filename in filenames:
                     if filename.startswith('.'):
                         continue

@@ -67,6 +67,25 @@
             $scope.$apply();
         });
 
+        $scope.scrollToHash = function (e, offset) {
+            // set the location.hash to the id of
+            // the element you wish to scroll to.
+            var target = $(e.currentTarget.hash);
+            if (target.length) {
+                offset = offset ? offset : 0;
+                e.preventDefault();
+                e.stopPropagation();
+                $lux.log.info('Scrolling to target');
+                $('html,body').animate({
+                    scrollTop: target.offset().top + offset
+                }, 1000);
+                //$lux.location.hash(hash);
+                // call $anchorScroll()
+                //$lux.anchorScroll();
+            } else
+                $lux.log.warning('Cannot scroll, target not found');
+        };
+
     }]);
 
     lux.controllers.controller('html5Page', ['$scope', '$lux', 'response',

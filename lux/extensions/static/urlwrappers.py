@@ -17,7 +17,8 @@ def meta_iterator(meta, params=None):
     if meta:
         for n, m in meta.items():
             if isinstance(m, Single):
-                m = m[0] if m else params.pop(n, None)
+                p = params.pop(n, None) if params else None
+                m = m[0] if m else p
             yield slugify(n, separator='_'), m
     if params:
         for n, m in params.items():
