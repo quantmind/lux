@@ -61,3 +61,6 @@
     htmlReporter.initialize();
     env.execute();
 });
+
+lux.bootstrap();
+});

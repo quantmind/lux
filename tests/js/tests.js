@@ -1,5 +1,9 @@
-require(['../../lux/media/lux/lux.js'], function (lux) {
+require(['../../lux/media/lux/lux.js', 'angular-mocks'], function (lux) {
     "use strict";
+    lux.add_ready_callback(function () {
+    //
+    //
+    var $injector = angular.injector(['ng', 'ngMock', 'lux']);
 
     var jasmine = jasmineRequire.core(jasmineRequire);
     //Since this is being run in a browser and the results should populate to an HTML page,
@@ -61,7 +65,23 @@ require(['../../lux/media/lux/lux.js'], function (lux) {
     }
 
 
+    describe("Test lux angular app", function() {
+        var $ = lux.$;
+
+        it("Check $lux service", function() {
+            expect($injector.has('$lux')).toBe(true);
+            var $lux = $injector.get('$lux');
+            expect($lux).not.toBe(null);
+            expect($lux.http).not.toBe(null);
+            expect($lux.location).not.toBe(null);
+            expect($lux.log).not.toBe(null);
+            expect($.isFunction($lux.api)).toBe(true);
+        });
+    });
+
+
     describe("Test google spreadsheet api", function() {
+
         it("contains spec with an expectation", function() {
             expect(true).toBe(true);
         });
@@ -129,4 +149,7 @@ require(['../../lux/media/lux/lux.js'], function (lux) {
     // Run all the loaded test specs.
     htmlReporter.initialize();
     env.execute();
+});
+
+lux.bootstrap();
 });

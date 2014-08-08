@@ -20,6 +20,7 @@
     "tests": {
         "src": ["js/tests/open.js",
                 "js/tests/boot.js",
+                "js/tests/app.js",
                 "js/tests/google.js",
                 "js/tests/close.js"],
         "dest": "tests/js/tests.js",
