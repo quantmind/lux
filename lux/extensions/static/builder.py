@@ -7,12 +7,8 @@ from pulsar.utils.httpurl import remove_double_slash, urljoin
 
 from lux import route
 
-from .contents import Snippet, SkipBuild, CONTENT_EXTENSIONS
+from .contents import Snippet, SkipBuild, BuildError, CONTENT_EXTENSIONS
 from .readers import READERS, BaseReader
-
-
-class BuildError(pulsar.Http404):
-    pass
 
 
 class HttpException(pulsar.HttpException):
@@ -135,18 +131,18 @@ class Builder(BaseBuilder):
     def build_file(self, app, location, src=None, name=None):
         '''Build the files for a route in this Builder
         '''
+        if not self.should_build(app, name):
+            return
         response = None
         content = None
         path = None
-        if not self.should_build(app, name):
-            return
+        urlparams = {}
         try:
             if src:
                 content = self.read_file(app, src, name)
-                urlparams = content.context(app, names=self.route.variables)
-            else:
-                content = None
-                urlparams = {}
+                if self.route.variables:
+                    urlparams = content.context(app,
+                                                names=self.route.variables)
             site_url = app.config['SITE_URL']
             path = self.path(**urlparams)
             url = urljoin(site_url, path)
@@ -160,9 +156,11 @@ class Builder(BaseBuilder):
             pass
         except BuildError as e:
             app.logger.error(str(e))
+            content = None
         except Exception:
             app.logger.exception('Unhandled exception while building "%s"',
                                  content or path)
+            content = None
         if response or content:
             path = request.path
             if path.endswith('/'):
@@ -259,7 +257,7 @@ class ContextBuilder(dict, BaseBuilder):
         if ctx:
             self.update(ctx)
         location = app.config['CONTEXT_LOCATION']
-        if os.path.isdir(location):
+        if location and os.path.isdir(location):
             for dirpath, _, filenames in os.walk(location):
                 rel_dir = get_rel_dir(dirpath, location)
                 for filename in filenames:
@@ -268,8 +266,8 @@ class ContextBuilder(dict, BaseBuilder):
                     name, _ = os.path.join(rel_dir, filename).split('.', 1)
                     src = os.path.join(dirpath, filename)
                     self.add(self.read_file(app, src, name))
-        else:
-            app.logger.warning('Context location "%s" not available', src)
+        elif location:
+            app.logger.warning('Context location "%s" not available', location)
         self._on_loaded()
 
     def __setitem__(self, key, value):

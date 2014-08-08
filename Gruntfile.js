@@ -6,10 +6,7 @@ module.exports = function (grunt) {
     var docco_output = '../docs/lux/html/docco',
         //docco_output = 'docs/build/html/docco',
         // All libraries
-        libs = {
-            lux: grunt.file.readJSON('js/lux/lib.json'),
-            lorem: grunt.file.readJSON('js/lorem/lib.json')
-        };
+        libs = grunt.file.readJSON('js/libs.json');
     //
     function for_each(obj, callback) {
         for(var p in obj) {
@@ -30,8 +27,9 @@ module.exports = function (grunt) {
     function uglify_libs () {
         var result = {};
         for_each(libs, function (name) {
-            result[name] = {dest: this.dest.replace('.js', '.min.js'),
-                            src: [this.dest]};
+            if (this.minify !== false)
+                result[name] = {dest: this.dest.replace('.js', '.min.js'),
+                                src: [this.dest]};
         });
         return result;
     }
@@ -114,8 +112,11 @@ module.exports = function (grunt) {
     grunt.registerTask('default', ['all']);
     //
     for_each(libs, function (name) {
+        var tasks = ['concat:' + name, 'jshint:' + name];
+        if (this.minify !== false)
+            tasks.push('uglify:' + name);
+        //
         grunt.registerTask(name,
-                'Compile & lint "' + name + '" library into ' + this.dest,
-                ['concat:' + name, 'jshint:' + name, 'uglify:' + name]);
+            'Compile & lint "' + name + '" library into ' + this.dest, tasks);
     });
 };

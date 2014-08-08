@@ -3,6 +3,11 @@
         //
         function setup_angular() {
             //
+            $.each(context.ngModules, function (i, module) {
+                if (lux.app.requires.indexOf(module) === -1)
+                    lux.app.requires.push(module);
+            });
+            //
             angular.bootstrap(document, ['lux']);
             //
             angular.forEach(ready_callbacks, function (callback) {

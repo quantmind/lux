@@ -2,23 +2,27 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
     "use strict";
 
     var lux = {},
-        defaults = {},
+        defaults = {
+            ngModules: [],
+            ngDirectives: [],
+            ngControllers: []
+        },
         root = window,
         routes = [],
         ready_callbacks = [],
-        context = $.extend(defaults, root.context),
-        ngModules = ['ngSanitize', 'lux.controllers', 'lux.services'];
+        angular_bootstrapped = false,
+        context = $.extend(defaults, root.context);
 
     // when in html5 mode add ngRoute to the list of required modules
     if (context.html5mode)
-        ngModules.push('ngRoute');
+        context.ngModules.push('ngRoute');
 
     angular.element = $;
     lux.$ = $;
     lux.context = context;
     lux.services = angular.module('lux.services', []);
     lux.controllers = angular.module('lux.controllers', ['lux.services']);
-    lux.app = angular.module('lux', ngModules);
+    lux.app = angular.module('lux', []);
 
     // Add a new HTML5 route to the page router
     lux.addRoute = function (url, data) {
@@ -31,9 +35,6 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
         else ready_callbacks.push(callback);
     };
 
-    lux.requiresAngular = function () {
-        lux.$.each(arguments, function (i, module) {
-            if (lux.app.requires.indexOf(module) === -1)
-                lux.app.requires.push(module);
-        });
-    };
+    $.each(['ngSanitize', 'lux.controllers', 'lux.services'], function (i, name) {
+        context.ngModules.push(name);
+    });

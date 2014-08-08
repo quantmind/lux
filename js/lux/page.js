@@ -1,4 +1,6 @@
 
+    var isAbsolute = new RegExp('^([a-z]+://|//)');
+
     // Page Controller
     //
     // Handle html5 sitemap
@@ -66,6 +68,18 @@
             $scope.collapse();
             $scope.$apply();
         });
+
+        $scope.activeLink = function (url) {
+            var loc;
+            if (isAbsolute.test(url))
+                loc = $lux.location.absUrl();
+            else
+                loc = $lux.location.path();
+            var rest = loc.substring(url.length),
+                base = loc.substring(0, url.length),
+                folder = url.substring(url.length-1) === '/';
+            return base === url && (folder || (rest === '' || rest.substring(0, 1) === '/'));
+        };
 
         $scope.scrollToHash = function (e, offset) {
             // set the location.hash to the id of

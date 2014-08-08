@@ -18,7 +18,7 @@ class Extension(lux.Extension):
     protection and user permissions levels.
     '''
     _config = [
-        Parameter('HTML5_NAVIGATION', True, 'Enable Html5 navigation'),
+        Parameter('HTML5_NAVIGATION', False, 'Enable Html5 navigation'),
         Parameter('NAVBAR_COLLAPSE_WIDTH', 768,
                   'Width when to collapse the navbar')
     ]
@@ -75,7 +75,7 @@ class Router(lux.Router, MediaMixin):
         return {}
 
     def html_title(self, app):
-        return app.config['HTML_HEAD_TITLE']
+        return app.config['HTML_TITLE']
 
     def sitemap(self, app):
         '''Build the sitemap for this router.

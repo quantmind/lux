@@ -2,23 +2,27 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
     "use strict";
 
     var lux = {},
-        defaults = {},
+        defaults = {
+            ngModules: [],
+            ngDirectives: [],
+            ngControllers: []
+        },
         root = window,
         routes = [],
         ready_callbacks = [],
-        context = $.extend(defaults, root.context),
-        ngModules = ['ngSanitize', 'lux.controllers', 'lux.services'];
+        angular_bootstrapped = false,
+        context = $.extend(defaults, root.context);
 
     // when in html5 mode add ngRoute to the list of required modules
     if (context.html5mode)
-        ngModules.push('ngRoute');
+        context.ngModules.push('ngRoute');
 
     angular.element = $;
     lux.$ = $;
     lux.context = context;
     lux.services = angular.module('lux.services', []);
     lux.controllers = angular.module('lux.controllers', ['lux.services']);
-    lux.app = angular.module('lux', ngModules);
+    lux.app = angular.module('lux', []);
 
     // Add a new HTML5 route to the page router
     lux.addRoute = function (url, data) {
@@ -31,12 +35,9 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
         else ready_callbacks.push(callback);
     };
 
-    lux.requiresAngular = function () {
-        lux.$.each(arguments, function (i, module) {
-            if (lux.app.requires.indexOf(module) === -1)
-                lux.app.requires.push(module);
-        });
-    };
+    $.each(['ngSanitize', 'lux.controllers', 'lux.services'], function (i, name) {
+        context.ngModules.push(name);
+    });
 
     var ApiTypes = lux.ApiTypes = {};
     //
@@ -331,6 +332,8 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
         };
     }
 
+    var isAbsolute = new RegExp('^([a-z]+://|//)');
+
     // Page Controller
     //
     // Handle html5 sitemap
@@ -398,6 +401,18 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
             $scope.collapse();
             $scope.$apply();
         });
+
+        $scope.activeLink = function (url) {
+            var loc;
+            if (isAbsolute.test(url))
+                loc = $lux.location.absUrl();
+            else
+                loc = $lux.location.path();
+            var rest = loc.substring(url.length),
+                base = loc.substring(0, url.length),
+                folder = url.substring(url.length-1) === '/';
+            return base === url && (folder || (rest === '' || rest.substring(0, 1) === '/'));
+        };
 
         $scope.scrollToHash = function (e, offset) {
             // set the location.hash to the id of
@@ -690,9 +705,83 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
 
     }]);
     //
+    //  Lux Vizualization Factory
+    //  -------------------------------
+    lux.Viz = function (element, attrs, build) {
+        //
+        element = $(element);
+        //
+        var self = this,
+            parent = element.parent(),
+            elwidth, elheight;
+
+        if (!attrs.width) {
+            attrs.width = element.width();
+            if (attrs.width)
+                elwidth = element;
+            else {
+                attrs.width = parent.width();
+                if (attrs.width)
+                    elwidth = parent;
+                else
+                    attrs.width = 400;
+            }
+        }
+        //
+        if (!attrs.height) {
+            attrs.height = element.height();
+            if (attrs.height)
+                elheight = element;
+            else {
+                attrs.height = parent.height();
+                if (attrs.height)
+                    elheight = parent;
+                else
+                    attrs.height = 400;
+            }
+        }
+        //
+        this.element = element;
+        this.attrs = attrs;
+
+        //
+        // Resize the vizualization
+        this.resize = function () {
+            var w = elwidth ? elwidth.width() : attrs.width,
+                h = elheight ? elheight.height() : attrs.height;
+            if (attrs.width !== w || attrs.height !== h) {
+                attrs.width = w;
+                attrs.height = h;
+                build(self);
+            }
+        };
+
+        this.svg = function (d3) {
+            element.empty();
+            return d3.select(element[0]).append("svg")
+                .attr("width", attrs.width)
+                .attr("height", attrs.height);
+        };
+
+        this.size = function () {
+            return [attrs.width, attrs.height];
+        };
+
+        build(self);
+
+        if (attrs.resize)
+            $(window).resize(self.resize);
+    };
+
+    //
     lux.bootstrap = function () {
         //
         function setup_angular() {
+            //
+            $.each(context.ngModules, function (i, module) {
+                if (lux.app.requires.indexOf(module) === -1)
+                    lux.app.requires.push(module);
+            });
             //
             angular.bootstrap(document, ['lux']);
             //

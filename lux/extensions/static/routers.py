@@ -164,6 +164,16 @@ class HtmlFile(html5.Router, FileBuilder):
         return self.parent.get_api_info(app)
 
 
+class Partial(html5.Router, FileBuilder):
+    '''Serve an Html file
+    '''
+    def get(self, request):
+        content = self.get_content(request)
+        request.response.content_type = content.content_type
+        request.response.content = content._content
+        return request.response
+
+
 class HtmlContent(html5.Router, DirBuilder):
     '''Serve a directory of files rendered in a similar fashion
 
@@ -175,6 +185,8 @@ class HtmlContent(html5.Router, DirBuilder):
     '''
     index_template = None
     api = None
+    full = True
+    '''If true render templates as full html5 pages'''
     drafts = 'drafts'
     '''Drafts url
     '''
@@ -189,10 +201,14 @@ class HtmlContent(html5.Router, DirBuilder):
         if self.drafts:
             self.add_child(Drafts(self.drafts,
                                   index_template=self.drafts_template))
-        file = HtmlFile(self.child_url, dir=self.dir, name='html_files',
-                        content=self.content, archive=self.archive,
-                        html_body_template=self.html_body_template,
-                        template=self.template)
+        if self.full:
+            file = HtmlFile(self.child_url, dir=self.dir, name='html_files',
+                            content=self.content, archive=self.archive,
+                            html_body_template=self.html_body_template,
+                            template=self.template)
+        else:
+            file = Partial(self.child_url, dir=self.dir, name='html_files',
+                           content=self.content)
         self.add_child(file)
         #
         for url_path, file_path, ext in self.all_files():
@@ -224,7 +240,7 @@ class HtmlContent(html5.Router, DirBuilder):
             context = request.app.context(request, context)
             return content.html(request, context)
         else:
-            return 'NO INDEX TEMPLATE'
+            raise SkipBuild
 
 
 class Drafts(html5.Router, FileBuilder):
@@ -240,7 +256,7 @@ class Drafts(html5.Router, FileBuilder):
                                                      draft=True)
             return app.render_template(self.index_template, context)
         else:
-            return 'NO DRAFT INDEX TEMPLATE'
+            raise SkipBuild
 
 
 class Blog(HtmlContent):

@@ -120,7 +120,7 @@ def execute_app(callable, argv=None, **params):
 class App(LazyWsgi):
 
     def __init__(self, config_file, script=None, argv=None, **params):
-        if not os.path.exists(config_file):
+        if not os.path.isfile(config_file):
             config_file = import_module(config_file).__file__
         self._params = params
         self._config_file = config_file
@@ -171,11 +171,11 @@ class Application(ConsoleParser, Extension):
                   'Default encoding for text.'),
         Parameter('ERROR_HANDLER', None,
                   'Handler of Http exceptions'),
-        Parameter('HTML_HEAD_TITLE', 'Lux',
+        Parameter('HTML_TITLE', 'Lux',
                   'Default HTML Title'),
         Parameter('LOGGING_CONFIG', None,
                   'Dictionary for configuring logging'),
-        Parameter('MEDIA_URL', 'media',
+        Parameter('MEDIA_URL', '/media/',
                   'the base url for static files'),
         Parameter('MINIFIED_MEDIA', True,
                   'Use minified media files. All media files will replace '
@@ -288,7 +288,7 @@ class Application(ConsoleParser, Extension):
         if handler:
             title = handler.parameters.get('title')
         cfg = self.config
-        doc = HtmlDocument(title=title or cfg['HTML_HEAD_TITLE'],
+        doc = HtmlDocument(title=title or cfg['HTML_TITLE'],
                            media_path=cfg['MEDIA_URL'],
                            minified=cfg['MINIFIED_MEDIA'],
                            known_libraries=None,
@@ -535,7 +535,9 @@ class Application(ConsoleParser, Extension):
         apps = list(config['EXTENSIONS'])
         add_app(apps, 'lux', 0)
         add_app(apps, self.meta.name)
-        config['MEDIA_URL'] = remove_double_slash('/%s/' % config['MEDIA_URL'])
+        media_url = config['MEDIA_URL']
+        if media_url:
+            config['MEDIA_URL'] = remove_double_slash('/%s/' % media_url)
         config['EXTENSIONS'] = tuple(apps)
         config['EXTENSION_HANDLERS'] = extensions = OrderedDict()
         for name in config['EXTENSIONS'][1:]:

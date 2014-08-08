@@ -41,7 +41,7 @@ import os
 import hashlib
 
 from pulsar.apps import wsgi
-from pulsar.utils.httpurl import remove_double_slash
+from pulsar.utils.httpurl import remove_double_slash, urlparse
 
 import lux
 from lux import Parameter
@@ -94,9 +94,11 @@ class Extension(lux.Extension):
     def on_html_document(self, app, request, doc):
         favicon = app.config['FAVICON']
         if favicon:
-            media = app.config['MEDIA_URL']
-            if not favicon.startswith(media):
-                favicon = remove_double_slash('%s%s' % (media, favicon))
+            parsed = urlparse(favicon)
+            if not parsed.scheme and not parsed.netloc:
+                media = app.config['MEDIA_URL']
+                if not favicon.startswith(media):
+                    favicon = remove_double_slash('%s%s' % (media, favicon))
             doc.head.links.append(favicon, rel="icon",
                                   type='image/x-icon')
 

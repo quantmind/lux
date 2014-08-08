@@ -77,24 +77,37 @@ class Extension(lux.Extension):
         Parameter('MD_EXTENSIONS', ['extra', 'meta'],
                   'List/tuple of markdown extensions'),
         Parameter('STATIC_API', 'api',
-                  'Use angular router in Html5 mode'),
+                  'Build a JSON api, required when using router in Html5 '
+                  ' navigation mode'),
+        Parameter('STATIC_MEDIA', True, 'Add handler for media files'),
         Parameter('STATIC_SPECIALS', ('404',), '')
     ]
     _static_info = None
     _global_context = None
 
     def middleware(self, app):
+        try:
+            html5 = app.config['HTML5_NAVIGATION']
+        except KeyError:
+            raise ImproperlyConfigured('Static extension requires html5 '
+                                       'extension')
         path = app.config['MEDIA_URL']
-        api_url = app.config['STATIC_API']
+        api_url = app.config['STATIC_API'] or ''
         if api_url.startswith('/'):
             api_url = api_url[1:]
         if api_url.endswith('/'):
             api_url = api_url[:-1]
-        assert api_url, 'STATIC_API must be defined'
-        app.api = JsonRoot(app.config['STATIC_API'])
-        return [app.api, JsonRedirect(api_url),
-                MediaBuilder(path, app.meta.media_dir,
-                             show_indexes=app.debug)]
+        if not api_url and html5:
+            raise ImproperlyConfigured('STATIC_API must be defined')
+        middleware = []
+        app.api = None
+        if api_url:
+            app.api = JsonRoot(api_url)
+            middleware.extend([app.api, JsonRedirect(api_url)])
+        if app.config['STATIC_MEDIA']:
+            middleware.append(MediaBuilder(path, app.meta.media_dir,
+                                           show_indexes=app.debug))
+        return middleware
 
     def on_loaded(self, app):
         '''Once the app is fully loaded add API routes if required
@@ -121,11 +134,17 @@ class Extension(lux.Extension):
                 middleware.append(FileRouter('<path:path>', file404,
                                              status_code=404))
 
-    def build(self, request):
+    def on_html_document(self, app, request, doc):
+        # If the site url is not specified, force media libraries to have
+        # a scheme by using http if one is not available
+        if not app.config['SITE_URL']:
+            doc.head.links.set_default_scheme()
+            doc.head.scripts.set_default_scheme()
+
+    def build(self, app):
         '''Build the static site
         '''
-        app = request.app
-        config = request.config
+        config = app.config
         location = os.path.abspath(config['STATIC_LOCATION'])
         if not os.path.isdir(location):
             os.makedirs(location)
@@ -134,12 +153,7 @@ class Extension(lux.Extension):
             if isinstance(middleware, Builder):
                 middleware.build(app, location)
         #
-        if self._static_info:
-            filename = os.path.join(location, 'buildinfo.json')
-            with open(filename, 'w') as f:
-                json.dump(self._static_info, f, indent=4)
-
-            self.copy_redirects(request, location)
+        self.copy_redirects(app, location)
 
     def jscontext(self, request, context):
         '''Add api Urls
@@ -190,11 +204,10 @@ class Extension(lux.Extension):
             }
         return dict((('site_%s' % k, v) for k, v in self._static_info.items()))
 
-    def copy_redirects(self, request, location):
+    def copy_redirects(self, app, location):
         '''Reads the ``redirects.json`` file if it exists and
         create redirects files.
         '''
-        app = request.app
         name = os.path.join(app.meta.path, 'redirects.json')
         if os.path.isfile(name):
             with open(name) as file:
@@ -220,7 +233,7 @@ class Extension(lux.Extension):
                 f.write(content)
 
     def add_api(self, app, router):
-        if isinstance(router, DirBuilder):
+        if isinstance(router, HtmlContent) and router.full and app.api:
             router.api = JsonContent(router.rule,
                                      dir=router.dir,
                                      html_router=router)

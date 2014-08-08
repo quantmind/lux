@@ -6,6 +6,7 @@ from datetime import datetime, date
 
 from dateutil.parser import parse as parse_date
 
+import pulsar
 from pulsar.utils.slugify import slugify
 
 from lux import template_engine, JSON_CONTENT_TYPES
@@ -15,7 +16,11 @@ from .urlwrappers import (Processor, Tag, Author, Category, list_of,
                           Multi, meta_iterator)
 
 
-class SkipBuild(Exception):
+class SkipBuild(pulsar.Http404):
+    pass
+
+
+class BuildError(pulsar.Http404):
     pass
 
 
@@ -58,7 +63,7 @@ def modified_datetime(src):
 
 
 def is_text(content_type):
-    return content_type[:5] == 'text/' or content_type == 'application/json'
+    return content_type in CONTENT_EXTENSIONS
 
 
 class Snippet(object):
@@ -193,8 +198,9 @@ class Snippet(object):
             #
             #    Check for missing properties
             for name in self.mandatory_properties:
-                assert context.get(name), ("Property '%s' not available in %s"
-                                           % (name, self))
+                if not context.get(name):
+                    raise BuildError("Property '%s' not available in %s"
+                                     % (name, self))
         #
         return context
 
@@ -255,10 +261,10 @@ class Snippet(object):
         if tag:
             head.replace_meta('keywords', tag)
         #
-        for css in self.require_css:
+        for css in data.get('require_css', '').split(','):
             head.links.append(css)
-        for js in self.require_js:
-            head.scripts.append(js)
+        for js in data.get('require_js', '').split(','):
+            head.scripts.require(js)
         #
         author = data.get('author')
         if author:

@@ -1,4 +1,5 @@
-import json
+import os
+import imp
 import mimetypes
 
 try:
@@ -6,7 +7,10 @@ try:
 except ImportError:
     Markdown = False
 
-from .contents import Draft, Snippet, METADATA_PROCESSORS, slugify
+from pulsar.apps.wsgi import AsyncString
+
+from .contents import (Draft, Snippet, METADATA_PROCESSORS, slugify, is_text,
+                       SkipBuild)
 from .urlwrappers import guess, as_list
 
 
@@ -89,8 +93,7 @@ class BaseReader(object):
         '''Default read method
         '''
         ct, encoding = mimetypes.guess_type(source_path)
-        if encoding or (ct and ct.startswith('text/')):
-            ct = ct or 'text/plain'
+        if is_text(ct):
             with open(source_path, 'r', encoding=encoding or 'utf-8') as f:
                 body = f.read()
         else:
@@ -136,3 +139,25 @@ class MarkdownReader(BaseReader):
             links = '\n'.join(links)
             self.app.config['_MARKDOWN_LINKS_'] = links
         return links
+
+
+@register_reader
+class PythonReader(BaseReader):
+    '''Reader for Python template generator files
+    '''
+    file_extensions = ['py']
+
+    def read(self, source_path, name, **params):
+        name = os.path.basename(source_path).split('.')[0]
+        mod = imp.load_source(name, source_path)
+        if not hasattr(mod, 'template'):
+            raise SkipBuild
+        content = mod.template()
+        if isinstance(content, AsyncString):
+            ct = content._content_type
+            content = content.render()
+        else:
+            ct = 'text/plain'
+        metadata = {'content_type': [ct]}
+        return self.process(content, metadata, source_path, name, **params)
+
