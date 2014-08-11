@@ -39,6 +39,115 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
         context.ngModules.push(name);
     });
 
+
+    var
+    //
+    // Test for ``_super`` method in a ``Class``.
+    //
+    // Check http://ejohn.org/blog/simple-javascript-inheritance/
+    // for details.
+    fnTest = /xyz/.test(function(){var xyz;}) ? /\b_super\b/ : /.*/,
+    //
+    // Create a method for a derived Class
+    create_method = function (type, name, attr, _super) {
+        if (typeof attr === "function" && typeof _super[name] === "function" &&
+                fnTest.test(attr)) {
+            return type.new_attr(name, function() {
+                var tmp = this._super;
+                // Add a new ._super() method that is the same method
+                // but on the super-class
+                this._super = _super[name];
+                // The method only need to be bound temporarily, so we
+                // remove it when we're done executing
+                var ret = attr.apply(this, arguments);
+                this._super = tmp;
+                return ret;
+            });
+        } else {
+            return type.new_attr(name, attr);
+        }
+    },
+    //
+    //  Type
+    //  -------------
+
+    //  A Type is a factory of Classes. This is the correspondent of
+    //  python metaclasses.
+    Type = lux.Type = (function (t) {
+
+        t.new_class = function (Caller, attrs) {
+            var type = this,
+                meta = Caller === type,
+                _super = meta ? Caller : Caller.prototype;
+            // Instantiate a base class
+            Caller.initialising = true;
+            var prototype = new Caller();
+            delete Caller.initialising;
+            //
+            // Copy the properties over onto the new prototype
+            for (var name in attrs) {
+                if (name !== 'Metaclass') {
+                    prototype[name] = create_method.call(Caller,
+                            type, name, attrs[name], _super);
+                }
+            }
+            if (!meta) {
+                //
+                // The dummy class constructor
+                var constructor = function () {
+                    // All construction is actually done in the init method
+                    if ( !this.constructor.initialising && this.init ) {
+                        this.init.apply(this, arguments);
+                    }
+                };
+                //
+                // Populate our constructed prototype object
+                constructor.prototype = prototype;
+                // Enforce the constructor to be what we expect
+                constructor.prototype.constructor = constructor;
+                // And make this class extendable
+                constructor.extend = Caller.extend;
+                //
+                return constructor;
+            } else {
+                for (name in _super) {
+                    if (prototype[name] === undefined) {
+                        prototype[name] = _super[name];
+                    }
+                }
+                return prototype;
+            }
+        };
+        //
+        t.new_attr = function (name, attr) {
+            return attr;
+        };
+        // Create a new Class that inherits from this class
+        t.extend = function (attrs) {
+            return t.new_class(this, attrs);
+        };
+        //
+        return t;
+    }(function(){})),
+    //
+    //  ## Class
+
+    //  Lux base class.
+    //  The `extend` method is the most important function of this object.
+    Class = lux.Class = (function (c) {
+        c.__class__ = Type;
+        //
+        c.extend = function (attrs) {
+            var type = attrs.Metaclass || this.__class__;
+            var cls = type.new_class(this, attrs);
+            cls.__class__ = type;
+            return cls;
+        };
+        //
+        return c;
+    }(function() {}));
+
+
     var ApiTypes = lux.ApiTypes = {};
     //
     // If CSRF token is not available
@@ -84,27 +193,38 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
             if (Object(context) !== context) {
                 context = {name: context};
             }
-            var provider = ApiTypes[context.type || 'lux'];
-            if (!provider) {
-                $lux.log.error('Api provider "' + context.type + '" is not available');
-            }
-            return provider.api(context.name, context.url, $lux);
+            var Api = ApiTypes[context.name || 'lux'];
+            if (!Api)
+                $lux.log.error('Api provider "' + context.name + '" is not available');
+            else
+                return new Api(context.name, context.url, $lux);
         };
 
     });
-    //  The provider actually implements the comunication layer
+
     //
-    //  Lux Provider is for an API built using Lux
+    //  Lux API Interface
     //
-    var BaseApi = {
+    var ApiClient = lux.ApiClient = Class.extend({
         //
         //  Object containing the urls for the api.
         //  If not given, the object will be loaded via the ``context.apiUrl``
         //  variable.
         apiUrls: context.apiUrls,
         //
-        api: function (name, url, $lux) {
-            return new LuxApi(name, url, this, $lux);
+        init: function (name, url, $lux) {
+            this.name = name;
+            this.$lux = $lux;
+            this.auth = null;
+            this._url = url;
+        },
+        //
+        // Can be used to manipulate the url
+        url: function (id) {
+            if (id !== undefined)
+                return self._url + '/' + id;
+            else
+                return self._url;
         },
         //
         //  Handle authentication
@@ -120,35 +240,108 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
 
         },
         //
+        // Build the object used by $http when making the request
+        // Returns the object
         httpOptions: function (request) {
-            var options = request.options,
-                url = options.url;
-            if ($.isFunction(url)) url = url();
-            if (!url) url = request.api.url;
-            options.url = url;
+            var options = request.options;
+            options.url = this.url(request.urlparams);
             return options;
+        },
+        //
+        //
+        // Perform the actual request and return a promise
+        request: function (method, urlparams, opts, data) {
+            var d = this.$lux.q.defer(),
+                //
+                promise = d.promise,
+                //
+                request = {
+                    deferred: d,
+                    //
+                    options: $.extend({'method': method, 'data': data}, opts),
+                    //
+                    'urlparams': urlparams,
+                    //
+                    api: this,
+                    //
+                    error: function (data, status, headers) {
+                        if ($.isString(data)) {
+                            data = {error: true, message: data};
+                        }
+                        d.reject({
+                            'data': data,
+                            'status': status,
+                            'headers': headers
+                        });
+                    },
+                    //
+                    success: function (data, status, headers) {
+                        d.resolve({
+                            'data': data,
+                            'status': status,
+                            'headers': headers
+                        });
+                    }
+                };
+            //
+            promise.success = function(fn) {
+                promise.then(function(response) {
+                    fn(response.data, response.status, response.headers);
+                });
+                return promise;
+            };
+
+            promise.error = function(fn) {
+                promise.then(null, function(response) {
+                    fn(response.data, response.status, response.headers);
+                });
+                return promise;
+            };
+
+            this.call(request);
+            //
+            return promise;
+        },
+        //
+        //  Get a single element
+        //  ---------------------------
+        get: function (urlparams, options) {
+            return this.request('GET', urlparams, options);
+        },
+        //  Create or update a model
+        //  ---------------------------
+        put: function (model, options) {
+            if (model.id) {
+                return this.request('POST', {id: model.id}, options, model);
+            } else {
+                return this.request('POST', null, options, model);
+            }
+        },
+        //  Get a list of models
+        //  -------------------------
+        getMany: function (options) {
+            return this.request('GET', null, options);
         },
         //
         // Internal method for executing an API call
         call: function (request) {
-            var self = this,
-                api = request.api,
-                $lux = api.lux;
+            var $lux = this.$lux;
             //
-            if (!api.url && ! api.name) {
+            if (!this._url && ! this.name) {
                 return request.error('api should have url or name');
             }
 
-            if (!api.url) {
+            if (!this._url) {
                 if (this.apiUrls) {
-                    api.url = this.apiUrls[api.name] || this.apiUrls[api.name + '_url'];
+                    this._url = this.apiUrls[this.name] || this.apiUrls[this.name + '_url'];
                     //
                     // No api url!
-                    if (!api.url)
-                        return request.error('Could not find a valid url for ' + api.name);
+                    if (!this.url)
+                        return request.error('Could not find a valid url for ' + this.name);
                     //
                 } else if (context.apiUrl) {
                     // Fetch the api urls
+                    var self = this;
                     $lux.log.info('Fetching api info');
                     return $lux.http.get(context.apiUrl).success(function (resp) {
                         self.apiUrls = resp;
@@ -160,22 +353,25 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
             }
             //
             // Fetch authentication token?
-            if (!self.auth)
-                return self.authentication(request);
+            if (!this.auth)
+                return this.authentication(request);
             //
             // Add authentication
-            self.addAuth(request);
+            this.addAuth(request);
             //
-            var options = self.httpOptions(request);
+            var options = this.httpOptions(request);
             //
-            $lux.http(options).success(request.success).error(request.error);
+            if (options.url)
+                $lux.http(options).success(request.success).error(request.error);
+            else
+                request.error('Api url not available');
         }
-    };
+    });
     //
     //
     lux.createApi = function (name, object) {
         //
-        ApiTypes[name] = angular.extend({}, BaseApi, object);
+        ApiTypes[name] = ApiClient.extend(object);
         //
         return ApiTypes[name];
     };
@@ -232,105 +428,72 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
             return options;
         }
     });
+
+
+    //  Google Spreadsheet API
+    //  -----------------------------
     //
-    //  LuxApi
-    //  --------------
+    //  Create one by passing the key of the spreadsheeet containing data
     //
-    //  Interface for accessing apis
-    function LuxApi(name, url, provider, $lux) {
-        var self = this;
-
-        this.lux = $lux;
-        this.name = name;
-        this.url = url;
-        this.auth = null;
+    //      var api = $lux.api({name: 'googlesheets', url: sheetkey});
+    //
+    lux.createApi('googlesheets', {
         //
-        // Perform the actual request
-        this.request = function (method, urlparams, opts) {
-            var d = $lux.q.defer(),
-                //
-                promise = d.promise,
-                //
-                request = {
-                    deferred: d,
-                    //
-                    options: angular.extend({'method': method}, opts),
-                    //
-                    'urlparams': urlparams,
-                    //
-                    api: self,
-                    //
-                    error: function (data, status, headers) {
-                        if (angular.isString(data)) {
-                            data = {error: true, message: data};
-                        }
-                        d.reject({
-                            'data': data,
-                            'status': status,
-                            'headers': headers
-                        });
-                    },
-                    //
-                    success: function (data, status, headers) {
-                        d.resolve({
-                            'data': data,
-                            'status': status,
-                            'headers': headers
-                        });
-                    }
-                };
-            //
-            promise.success = function(fn) {
-                promise.then(function(response) {
-                    fn(response.data, response.status, response.headers);
-                });
-                return promise;
-            };
-
-            promise.error = function(fn) {
-                promise.then(null, function(response) {
-                    fn(response.data, response.status, response.headers);
-                });
-                return promise;
-            };
-
-            provider.call(request);
-            //
-            return promise;
-        };
+        endpoint: "https://spreadsheets.google.com",
         //
-        //  Get a single element
-        //  ---------------------------
-        this.get = function (urlparams, options) {
-            return self.request('GET', urlparams, options);
-        };
+        url: function () {
+            // when given the url is of the form key/worksheet where
+            // key is the key of the spreadsheet you want to retrieve,
+            // worksheet is the positional or unique identifier of the worksheet
+            if (this._url)
+                return this.endpoint + '/feeds/list/' + this._url + '/public/values?alt=json';
+        },
+        //
+        getMany: function (options) {
+            var Model = this.Model,
+                $lux = this.$lux;
+            return this.request('GET', null, options).success(function (data) {
+                return new Model($lux, data);
+            });
+        },
+        //
+        Model: function ($lux, data) {
+            var i, j, ilen, jlen;
+            this.column_names = [];
+            this.name = data.feed.title.$t;
+            this.elements = [];
+            this.raw = data; // A copy of the sheet's raw data, for accessing minutiae
 
-        //  Create or update a model
-        //  ---------------------------
-        this.put = function (model, options) {
-            if (model.id) {
-                options = angular.extend({
-                    url: function (url) {
-                        return url + '/' + model.id;
-                    },
-                    data: model,
-                    method: 'POST'}, options);
-            } else {
-                options = angular.extend({
-                    data: model,
-                    method: 'POST'}, options);
+            if (typeof(data.feed.entry) === 'undefined') {
+                $lux.log.warn("Missing data for " + this.name + ", make sure you didn't forget column headers");
+                return;
             }
-            return self.request(options);
-        };
 
-        //  Get a list of models
-        //  -------------------------
-        this.getMany = function (options) {
-            return self.request(angular.extend({
-                method: 'GET'
-            }, options));
-        };
-    }
+            for (var key in data.feed.entry[0]) {
+                if (/^gsx/.test(key)) this.column_names.push(key.replace("gsx$", ""));
+            }
+
+            for (i = 0, ilen = data.feed.entry.length; i < ilen; i++) {
+                var source = data.feed.entry[i];
+                var element = {};
+                for (j = 0, jlen = this.column_names.length; j < jlen; j++) {
+                    var cell = source["gsx$" + this.column_names[j]];
+                    if (typeof(cell) !== 'undefined') {
+                        if (cell.$t !== '' && !isNaN(cell.$t))
+                            element[this.column_names[j]] = +cell.$t;
+                        else
+                            element[this.column_names[j]] = cell.$t;
+                    } else {
+                        element[this.column_names[j]] = '';
+                    }
+                }
+                if (element.rowNumber === undefined)
+                    element.rowNumber = i + 1;
+                this.elements.push(element);
+            }
+        }
+    });
+
 
     var isAbsolute = new RegExp('^([a-z]+://|//)');
 
@@ -704,73 +867,155 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
         };
 
     }]);
+
+    lux.app.directive('luxElement', ['$lux', function ($lux) {
+        //
+        return {
+            //
+            // Create via element tag or attribute
+            // <d3-force data-width=300 data-height=200></d3-force>
+            restrict: 'AE',
+            //
+            link: function (scope, element, attrs) {
+                var callbackName = attrs.callback;
+                // The callback should be available from in the global scope
+                if (callbackName) {
+                    var callback = root[callbackName];
+                    if (callback) {
+                        callback($lux, scope, element, attrs);
+                    } else
+                        $lux.log.warn('Could not find callback ' + callbackName);
+                } else
+                    $lux.log.warn('Could not find callback');
+            }
+        };
+    }]);
+
     //
-    //  Lux Vizualization Factory
+    //  Lux Vizualization Class
     //  -------------------------------
-    lux.Viz = function (element, attrs, build) {
+    lux.Viz = Class.extend({
         //
-        element = $(element);
-        //
-        var self = this,
-            parent = element.parent(),
-            elwidth, elheight;
+        // Initialise the vizualization with a DOM element, an object of attributes
+        // and the (optional) $lux service
+        init: function (element, attrs, $lux) {
+            element = $(element);
+            this.element = element;
+            this.attrs = attrs;
+            this.$lux = $lux;
+            this.elwidth = null;
+            this.elheight = null;
 
-        if (!attrs.width) {
-            attrs.width = element.width();
-            if (attrs.width)
-                elwidth = element;
-            else {
-                attrs.width = parent.width();
+            var parent = this.element.parent();
+
+            if (!attrs.width) {
+                attrs.width = element.width();
                 if (attrs.width)
-                    elwidth = parent;
-                else
-                    attrs.width = 400;
+                    this.elwidth = element;
+                else {
+                    attrs.width = parent.width();
+                    if (attrs.width)
+                        this.elwidth = parent;
+                    else
+                        attrs.width = 400;
+                }
+            } else {
+                attrs.width = +attrs.width;
             }
-        }
-        //
-        if (!attrs.height) {
-            attrs.height = element.height();
-            if (attrs.height)
-                elheight = element;
-            else {
-                attrs.height = parent.height();
+            //
+            if (!attrs.height) {
+                attrs.height = element.height();
                 if (attrs.height)
-                    elheight = parent;
-                else
-                    attrs.height = 400;
+                    this.elheight = element;
+                else {
+                    attrs.height = parent.height();
+                    if (attrs.height)
+                        this.elheight = parent;
+                    else
+                        attrs.height = 400;
+                }
+            } else if (attrs.height.indexOf('%') === attrs.height.length-1) {
+                attrs.height_percentage = 0.01*parseFloat(attrs.height);
+                attrs.height = attrs.height_percentage*attrs.width;
             }
-        }
-        //
-        this.element = element;
-        this.attrs = attrs;
-
+            //
+            if (attrs.resize) {
+                var self = this;
+                $(window).resize(function () {
+                    self.resize();
+                });
+            }
+            //
+            this.build();
+        },
         //
         // Resize the vizualization
-        this.resize = function () {
-            var w = elwidth ? elwidth.width() : attrs.width,
-                h = elheight ? elheight.height() : attrs.height;
-            if (attrs.width !== w || attrs.height !== h) {
-                attrs.width = w;
-                attrs.height = h;
-                build(self);
+        resize: function (size) {
+            var w, h;
+            if (size) {
+                w = size[0];
+                h = size[1];
+            } else {
+                w = this.elwidth ? this.elwidth.width() : this.attrs.width;
+                if (this.attrs.height_percentage)
+                    h = w*this.attrs.height_percentage;
+                else
+                    h = this.elheight ? this.elheight.height() : this.attrs.height;
             }
-        };
+            if (this.attrs.width !== w || this.attrs.height !== h) {
+                this.attrs.width = w;
+                this.attrs.height = h;
+                this.build();
+            }
+        },
+        //
+        // Return a new d3 svg element insite the element without any children
+        svg: function (d3) {
+            this.element.empty();
+            return d3.select(this.element[0]).append("svg")
+                .attr("width", this.attrs.width)
+                .attr("height", this.attrs.height);
+        },
 
-        this.svg = function (d3) {
-            element.empty();
-            return d3.select(element[0]).append("svg")
-                .attr("width", attrs.width)
-                .attr("height", attrs.height);
-        };
+        size: function () {
+            return [this.attrs.width, this.attrs.height];
+        },
+        //
+        // Normalized Height
+        //
+        // Try to always work with non dimensional coordinates,
+        // Normalised vi the width
+        sy: function () {
+            var size = this.size();
+            return size[1]/size[0];
+        },
+        //
+        build: function () {
+            var self = this;
+            require(['d3'], function (d3) {
+                self.d3build(d3);
+            });
+        },
+        //
+        // This is the actual method to implement
+        d3build: function (d3) {
 
-        this.size = function () {
-            return [attrs.width, attrs.height];
-        };
+        }
+    });
 
-        build(self);
-
-        if (attrs.resize)
-            $(window).resize(self.resize);
+    lux.vizDirectiveFactory = function (Viz) {
+        return ['$lux', function ($lux) {
+            return {
+                //
+                // Create via element tag
+                // <d3-force data-width=300 data-height=200></d3-force>
+                restrict: 'AE',
+                //
+                link: function (scope, element, attrs) {
+                    new Viz(element, attrs, $lux);
+                }
+            };
+        }];
     };
 
     //

@@ -3,4 +3,6 @@ require(['../../lux/media/lux/lux.js', 'angular-mocks'], function (lux) {
     lux.add_ready_callback(function () {
     //
     //
-    var $injector = angular.injector(['ng', 'ngMock', 'lux']);
+    function luxInjector () {
+        return angular.injector(['ng', 'ngMock', 'lux']);
+    }

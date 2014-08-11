@@ -261,10 +261,14 @@ class Snippet(object):
         if tag:
             head.replace_meta('keywords', tag)
         #
-        for css in data.get('require_css', '').split(','):
-            head.links.append(css)
-        for js in data.get('require_js', '').split(','):
-            head.scripts.require(js)
+        require_css = data.get('require_css', '')
+        if require_css:
+            for css in require_css.split(','):
+                head.links.append(css)
+        require_js = data.get('require_js', '')
+        if require_js:
+            for js in require_js.split(','):
+                head.scripts.require(js)
         #
         author = data.get('author')
         if author:

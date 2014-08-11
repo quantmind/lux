@@ -3,6 +3,7 @@
         var $ = lux.$;
 
         it("Check $lux service", function() {
+            var $injector = luxInjector();
             expect($injector.has('$lux')).toBe(true);
             var $lux = $injector.get('$lux');
             expect($lux).not.toBe(null);

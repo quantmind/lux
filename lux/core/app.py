@@ -504,8 +504,8 @@ class Application(ConsoleParser, Extension):
     def site_url(self, request, path=None):
         '''Build the site url from an optional ``path``
         '''
-        base = self.config['SITE_URL'] or self.request.absolute_uri('')
-        return urljoin(base, path)
+        base = self.config['SITE_URL']
+        return urljoin(base, path) if base else path
 
     # INTERNALS
     def _build_config(self, file):

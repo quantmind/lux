@@ -1,7 +1,0 @@
-{
-    "src": ["jstest/media/src/visual/start.js",
-            "jstest/media/src/visual/forms.js",
-            "jstest/media/src/visual/dialog.js",
-            "jstest/media/src/visual/close.js"],
-    "dest": "jstest/media/jstest/visual.js"
-}

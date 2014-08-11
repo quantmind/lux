@@ -40,11 +40,11 @@ def twitter_card(request, **kwargs):
 
 
 def card_content(request, name, kwargs):
-    tname = 'twitter-%s' % name
+    tname = 'twitter_%s' % name
     if tname in kwargs:
         return kwargs[tname]
     elif name in kwargs:
-        return kwargs.get(name)
+        return kwargs.get(name) or 'summary'
     elif name == 'type':
         return 'summary'
     elif name == 'title':
@@ -54,7 +54,7 @@ def card_content(request, name, kwargs):
     elif name == 'site':
         return request.app.config['TWITTER_SITE']
     elif name == 'url':
-        return request.absolute_uri()
+        return kwargs.get('html_url')
 
 
 class Extension(lux.Extension):

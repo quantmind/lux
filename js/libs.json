@@ -1,11 +1,14 @@
 {
     "lux": {
         "src": ["js/lux/open.js",
+                "js/lux/class.js",
                 "js/lux/api.js",
+                "js/lux/google.js",
                 "js/lux/page.js",
                 "js/lux/form.js",
                 "js/lux/nglist.js",
                 "js/lux/user.js",
+                "js/lux/elem.js",
                 "js/lux/viz.js",
                 "js/lux/close.js"],
         "dest": "lux/media/lux/lux.js",
@@ -17,9 +20,17 @@
                 "js/lorem/close.js"],
         "dest": "lux/media/lux/lorem.js"
     },
+    "physics": {
+        "src": ["js/physics/open.js",
+                "js/physics/gravitational.js",
+                "js/physics/velocity.js",
+                "js/physics/close.js"],
+        "dest": "lux/media/lux/physics.js"
+    },
     "tests": {
         "src": ["js/tests/open.js",
                 "js/tests/boot.js",
+                "js/tests/class.js",
                 "js/tests/app.js",
                 "js/tests/google.js",
                 "js/tests/close.js"],

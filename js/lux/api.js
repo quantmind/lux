@@ -43,27 +43,38 @@
             if (Object(context) !== context) {
                 context = {name: context};
             }
-            var provider = ApiTypes[context.type || 'lux'];
-            if (!provider) {
-                $lux.log.error('Api provider "' + context.type + '" is not available');
-            }
-            return provider.api(context.name, context.url, $lux);
+            var Api = ApiTypes[context.name || 'lux'];
+            if (!Api)
+                $lux.log.error('Api provider "' + context.name + '" is not available');
+            else
+                return new Api(context.name, context.url, $lux);
         };
 
     });
-    //  The provider actually implements the comunication layer
+
     //
-    //  Lux Provider is for an API built using Lux
+    //  Lux API Interface
     //
-    var BaseApi = {
+    var ApiClient = lux.ApiClient = Class.extend({
         //
         //  Object containing the urls for the api.
         //  If not given, the object will be loaded via the ``context.apiUrl``
         //  variable.
         apiUrls: context.apiUrls,
         //
-        api: function (name, url, $lux) {
-            return new LuxApi(name, url, this, $lux);
+        init: function (name, url, $lux) {
+            this.name = name;
+            this.$lux = $lux;
+            this.auth = null;
+            this._url = url;
+        },
+        //
+        // Can be used to manipulate the url
+        url: function (id) {
+            if (id !== undefined)
+                return self._url + '/' + id;
+            else
+                return self._url;
         },
         //
         //  Handle authentication
@@ -79,35 +90,108 @@
 
         },
         //
+        // Build the object used by $http when making the request
+        // Returns the object
         httpOptions: function (request) {
-            var options = request.options,
-                url = options.url;
-            if ($.isFunction(url)) url = url();
-            if (!url) url = request.api.url;
-            options.url = url;
+            var options = request.options;
+            options.url = this.url(request.urlparams);
             return options;
+        },
+        //
+        //
+        // Perform the actual request and return a promise
+        request: function (method, urlparams, opts, data) {
+            var d = this.$lux.q.defer(),
+                //
+                promise = d.promise,
+                //
+                request = {
+                    deferred: d,
+                    //
+                    options: $.extend({'method': method, 'data': data}, opts),
+                    //
+                    'urlparams': urlparams,
+                    //
+                    api: this,
+                    //
+                    error: function (data, status, headers) {
+                        if ($.isString(data)) {
+                            data = {error: true, message: data};
+                        }
+                        d.reject({
+                            'data': data,
+                            'status': status,
+                            'headers': headers
+                        });
+                    },
+                    //
+                    success: function (data, status, headers) {
+                        d.resolve({
+                            'data': data,
+                            'status': status,
+                            'headers': headers
+                        });
+                    }
+                };
+            //
+            promise.success = function(fn) {
+                promise.then(function(response) {
+                    fn(response.data, response.status, response.headers);
+                });
+                return promise;
+            };
+
+            promise.error = function(fn) {
+                promise.then(null, function(response) {
+                    fn(response.data, response.status, response.headers);
+                });
+                return promise;
+            };
+
+            this.call(request);
+            //
+            return promise;
+        },
+        //
+        //  Get a single element
+        //  ---------------------------
+        get: function (urlparams, options) {
+            return this.request('GET', urlparams, options);
+        },
+        //  Create or update a model
+        //  ---------------------------
+        put: function (model, options) {
+            if (model.id) {
+                return this.request('POST', {id: model.id}, options, model);
+            } else {
+                return this.request('POST', null, options, model);
+            }
+        },
+        //  Get a list of models
+        //  -------------------------
+        getMany: function (options) {
+            return this.request('GET', null, options);
         },
         //
         // Internal method for executing an API call
         call: function (request) {
-            var self = this,
-                api = request.api,
-                $lux = api.lux;
+            var $lux = this.$lux;
             //
-            if (!api.url && ! api.name) {
+            if (!this._url && ! this.name) {
                 return request.error('api should have url or name');
             }
 
-            if (!api.url) {
+            if (!this._url) {
                 if (this.apiUrls) {
-                    api.url = this.apiUrls[api.name] || this.apiUrls[api.name + '_url'];
+                    this._url = this.apiUrls[this.name] || this.apiUrls[this.name + '_url'];
                     //
                     // No api url!
-                    if (!api.url)
-                        return request.error('Could not find a valid url for ' + api.name);
+                    if (!this.url)
+                        return request.error('Could not find a valid url for ' + this.name);
                     //
                 } else if (context.apiUrl) {
                     // Fetch the api urls
+                    var self = this;
                     $lux.log.info('Fetching api info');
                     return $lux.http.get(context.apiUrl).success(function (resp) {
                         self.apiUrls = resp;
@@ -119,22 +203,25 @@
             }
             //
             // Fetch authentication token?
-            if (!self.auth)
-                return self.authentication(request);
+            if (!this.auth)
+                return this.authentication(request);
             //
             // Add authentication
-            self.addAuth(request);
+            this.addAuth(request);
             //
-            var options = self.httpOptions(request);
+            var options = this.httpOptions(request);
             //
-            $lux.http(options).success(request.success).error(request.error);
+            if (options.url)
+                $lux.http(options).success(request.success).error(request.error);
+            else
+                request.error('Api url not available');
         }
-    };
+    });
     //
     //
     lux.createApi = function (name, object) {
         //
-        ApiTypes[name] = angular.extend({}, BaseApi, object);
+        ApiTypes[name] = ApiClient.extend(object);
         //
         return ApiTypes[name];
     };
@@ -191,102 +278,3 @@
             return options;
         }
     });
-    //
-    //  LuxApi
-    //  --------------
-    //
-    //  Interface for accessing apis
-    function LuxApi(name, url, provider, $lux) {
-        var self = this;
-
-        this.lux = $lux;
-        this.name = name;
-        this.url = url;
-        this.auth = null;
-        //
-        // Perform the actual request
-        this.request = function (method, urlparams, opts) {
-            var d = $lux.q.defer(),
-                //
-                promise = d.promise,
-                //
-                request = {
-                    deferred: d,
-                    //
-                    options: angular.extend({'method': method}, opts),
-                    //
-                    'urlparams': urlparams,
-                    //
-                    api: self,
-                    //
-                    error: function (data, status, headers) {
-                        if (angular.isString(data)) {
-                            data = {error: true, message: data};
-                        }
-                        d.reject({
-                            'data': data,
-                            'status': status,
-                            'headers': headers
-                        });
-                    },
-                    //
-                    success: function (data, status, headers) {
-                        d.resolve({
-                            'data': data,
-                            'status': status,
-                            'headers': headers
-                        });
-                    }
-                };
-            //
-            promise.success = function(fn) {
-                promise.then(function(response) {
-                    fn(response.data, response.status, response.headers);
-                });
-                return promise;
-            };
-
-            promise.error = function(fn) {
-                promise.then(null, function(response) {
-                    fn(response.data, response.status, response.headers);
-                });
-                return promise;
-            };
-
-            provider.call(request);
-            //
-            return promise;
-        };
-        //
-        //  Get a single element
-        //  ---------------------------
-        this.get = function (urlparams, options) {
-            return self.request('GET', urlparams, options);
-        };
-
-        //  Create or update a model
-        //  ---------------------------
-        this.put = function (model, options) {
-            if (model.id) {
-                options = angular.extend({
-                    url: function (url) {
-                        return url + '/' + model.id;
-                    },
-                    data: model,
-                    method: 'POST'}, options);
-            } else {
-                options = angular.extend({
-                    data: model,
-                    method: 'POST'}, options);
-            }
-            return self.request(options);
-        };
-
-        //  Get a list of models
-        //  -------------------------
-        this.getMany = function (options) {
-            return self.request(angular.extend({
-                method: 'GET'
-            }, options));
-        };
-    }

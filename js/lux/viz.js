@@ -1,68 +1,126 @@
     //
-    //  Lux Vizualization Factory
+    //  Lux Vizualization Class
     //  -------------------------------
-    lux.Viz = function (element, attrs, build) {
+    lux.Viz = Class.extend({
         //
-        element = $(element);
-        //
-        var self = this,
-            parent = element.parent(),
-            elwidth, elheight;
+        // Initialise the vizualization with a DOM element, an object of attributes
+        // and the (optional) $lux service
+        init: function (element, attrs, $lux) {
+            element = $(element);
+            this.element = element;
+            this.attrs = attrs;
+            this.$lux = $lux;
+            this.elwidth = null;
+            this.elheight = null;
 
-        if (!attrs.width) {
-            attrs.width = element.width();
-            if (attrs.width)
-                elwidth = element;
-            else {
-                attrs.width = parent.width();
+            var parent = this.element.parent();
+
+            if (!attrs.width) {
+                attrs.width = element.width();
                 if (attrs.width)
-                    elwidth = parent;
-                else
-                    attrs.width = 400;
+                    this.elwidth = element;
+                else {
+                    attrs.width = parent.width();
+                    if (attrs.width)
+                        this.elwidth = parent;
+                    else
+                        attrs.width = 400;
+                }
+            } else {
+                attrs.width = +attrs.width;
             }
-        }
-        //
-        if (!attrs.height) {
-            attrs.height = element.height();
-            if (attrs.height)
-                elheight = element;
-            else {
-                attrs.height = parent.height();
+            //
+            if (!attrs.height) {
+                attrs.height = element.height();
                 if (attrs.height)
-                    elheight = parent;
-                else
-                    attrs.height = 400;
+                    this.elheight = element;
+                else {
+                    attrs.height = parent.height();
+                    if (attrs.height)
+                        this.elheight = parent;
+                    else
+                        attrs.height = 400;
+                }
+            } else if (attrs.height.indexOf('%') === attrs.height.length-1) {
+                attrs.height_percentage = 0.01*parseFloat(attrs.height);
+                attrs.height = attrs.height_percentage*attrs.width;
             }
-        }
-        //
-        this.element = element;
-        this.attrs = attrs;
-
+            //
+            if (attrs.resize) {
+                var self = this;
+                $(window).resize(function () {
+                    self.resize();
+                });
+            }
+            //
+            this.build();
+        },
         //
         // Resize the vizualization
-        this.resize = function () {
-            var w = elwidth ? elwidth.width() : attrs.width,
-                h = elheight ? elheight.height() : attrs.height;
-            if (attrs.width !== w || attrs.height !== h) {
-                attrs.width = w;
-                attrs.height = h;
-                build(self);
+        resize: function (size) {
+            var w, h;
+            if (size) {
+                w = size[0];
+                h = size[1];
+            } else {
+                w = this.elwidth ? this.elwidth.width() : this.attrs.width;
+                if (this.attrs.height_percentage)
+                    h = w*this.attrs.height_percentage;
+                else
+                    h = this.elheight ? this.elheight.height() : this.attrs.height;
             }
-        };
+            if (this.attrs.width !== w || this.attrs.height !== h) {
+                this.attrs.width = w;
+                this.attrs.height = h;
+                this.build();
+            }
+        },
+        //
+        // Return a new d3 svg element insite the element without any children
+        svg: function (d3) {
+            this.element.empty();
+            return d3.select(this.element[0]).append("svg")
+                .attr("width", this.attrs.width)
+                .attr("height", this.attrs.height);
+        },
 
-        this.svg = function (d3) {
-            element.empty();
-            return d3.select(element[0]).append("svg")
-                .attr("width", attrs.width)
-                .attr("height", attrs.height);
-        };
+        size: function () {
+            return [this.attrs.width, this.attrs.height];
+        },
+        //
+        // Normalized Height
+        //
+        // Try to always work with non dimensional coordinates,
+        // Normalised vi the width
+        sy: function () {
+            var size = this.size();
+            return size[1]/size[0];
+        },
+        //
+        build: function () {
+            var self = this;
+            require(['d3'], function (d3) {
+                self.d3build(d3);
+            });
+        },
+        //
+        // This is the actual method to implement
+        d3build: function (d3) {
 
-        this.size = function () {
-            return [attrs.width, attrs.height];
-        };
+        }
+    });
 
-        build(self);
-
-        if (attrs.resize)
-            $(window).resize(self.resize);
+    lux.vizDirectiveFactory = function (Viz) {
+        return ['$lux', function ($lux) {
+            return {
+                //
+                // Create via element tag
+                // <d3-force data-width=300 data-height=200></d3-force>
+                restrict: 'AE',
+                //
+                link: function (scope, element, attrs) {
+                    new Viz(element, attrs, $lux);
+                }
+            };
+        }];
     };
