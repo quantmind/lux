@@ -456,14 +456,20 @@ class Media(Mixin):
         self.container = Css()
 
     def css(self, tag, *components, **attributes):
+        '''Add a `css`` rule for tag.
+
+        Return ``self`` for chaining more rules
+        '''
         self.container.css(tag, *components, **attributes)
         return self
 
     def __call__(self, elem):
         self.container.variables = elem.root.variables
-        media = ' and '.join(('(%s:%s)' % (k.replace('_', '-'), v)
-                              for k, v in iteritems(self.query)))
-        media = '%s and %s' % (self.type, media)
+        media = self.type
+        if self.query:
+            query = ' and '.join(('(%s:%s)' % (k.replace('_', '-'), v)
+                                  for k, v in iteritems(self.query)))
+            media = '%s and %s' % (media, query)
         stream = '\n'.join(('@media %s {' % media,
                             self.container.render('    '),
                            '}'))
