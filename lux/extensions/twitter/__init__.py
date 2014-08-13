@@ -41,11 +41,10 @@ def twitter_card(request, **kwargs):
 
 def card_content(request, name, kwargs):
     tname = 'twitter_%s' % name
-    if tname in kwargs:
-        return kwargs[tname]
-    elif name in kwargs:
-        return kwargs.get(name) or 'summary'
-    elif name == 'type':
+    value = kwargs.get(tname) or kwargs.get(name)
+    if value:
+        return value
+    if name == 'type':
         return 'summary'
     elif name == 'title':
         return request.html_document.head.title

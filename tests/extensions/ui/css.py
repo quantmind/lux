@@ -1,12 +1,11 @@
 import sys
 import os
 
+from lux.utils import test
 from lux.extensions.ui.lib import *
 
-from . import vars
 
-
-class TestCSS(vars.TestCase):
+class TestCSS(test.TestCase):
 
     def testSimple(self):
         # the variable does not exist
@@ -16,7 +15,7 @@ class TestCSS(vars.TestCase):
         self.assertEqual(c.parent, css('body'))
 
 
-class TestMixins(vars.TestCase):
+class TestMixins(test.TestCase):
     '''Test the simple Mixins'''
 
     def testRadius(self):
@@ -147,7 +146,7 @@ class TestMixins(vars.TestCase):
 ''' % (classes.state_hover, classes.state_active))
 
 
-class TestGradient(vars.TestCase):
+class TestGradient(test.TestCase):
 
     def test_vgradient(self):
         s = css('.bla',
@@ -180,7 +179,7 @@ class TestGradient(vars.TestCase):
         self.assertRaises(ValueError, lambda: gradient((4, 5, 6, 7))(d))
 
 
-class TestBCD(vars.TestCase):
+class TestBCD(test.TestCase):
 
     def testObject(self):
         b = bcd()
@@ -198,7 +197,7 @@ class TestBCD(vars.TestCase):
 ''')
 
 
-class TestNavigation(vars.TestCase):
+class TestNavigation(test.TestCase):
 
     def testMeta(self):
         nav = horizontal_navigation()
@@ -214,7 +213,7 @@ class TestNavigation(vars.TestCase):
         self.assertTrue(text)
 
 
-class TestTopBar(vars.TestCase):
+class TestTopBar(test.TestCase):
 
     def test_meta(self):
         tb = css('.topbar', topbar())
@@ -222,7 +221,7 @@ class TestTopBar(vars.TestCase):
         self.assertTrue(text)
 
 
-class TestUi(vars.TestCase):
+class TestUi(test.TestCase):
 
     def testHorizontalDl(self):
         dl = css('body').children['.%s' % classes.dl_horizontal]

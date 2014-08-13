@@ -10,6 +10,7 @@
                 "js/lux/user.js",
                 "js/lux/elem.js",
                 "js/lux/viz.js",
+                "js/lux/flickr.js",
                 "js/lux/close.js"],
         "dest": "lux/media/lux/lux.js",
         "banner": "js/lux/banner.js"
@@ -20,12 +21,12 @@
                 "js/lorem/close.js"],
         "dest": "lux/media/lux/lorem.js"
     },
-    "physics": {
-        "src": ["js/physics/open.js",
-                "js/physics/gravitational.js",
-                "js/physics/velocity.js",
-                "js/physics/close.js"],
-        "dest": "lux/media/lux/physics.js"
+    "d3plugins": {
+        "src": ["js/d3/open.js",
+                "js/d3/chernoff.js",
+                "js/d3/force_labels.js",
+                "js/d3/close.js"],
+        "dest": "lux/media/lux/d3plugins.js"
     },
     "tests": {
         "src": ["js/tests/open.js",

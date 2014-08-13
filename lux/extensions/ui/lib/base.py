@@ -122,13 +122,21 @@ multiplication = lambda a, b: a*b
 division = lambda a, b: a/b
 floordivision = lambda a, b: a//b
 
+
 class Symbolic(UnicodeMixin):
-    '''Base class for :class:`Variable` and :class:`Unit`.'''
+    '''Base class for :class:`Variable` and :class:`Unit`.
+    '''
     def __add__(self, other):
         return self._op(other, addition)
 
     def __sub__(self, other):
         return self._op(other, subtraction)
+
+    def __rsub__(self, other):
+        return self._op(other, addition)
+
+    def __rsub__(self, other):
+        return self._op(other, subtraction, True)
 
     def __mul__(self, other):
         return self._sp(other, multiplication)
@@ -146,7 +154,7 @@ class Symbolic(UnicodeMixin):
         def __div__(self, other):
             return self._sp(other, division)
 
-    def _op(self, other, op):
+    def _op(self, other, op, right=False):
         raise NotImplementedError
 
     def _sp(self, other, op):
@@ -155,7 +163,8 @@ class Symbolic(UnicodeMixin):
 
 class Variable(Symbolic):
     '''Base class for :class:`Variable` which can be stored in
-a :class:`Variables` container.'''
+    a :class:`Variables` container.
+    '''
     def value(self):
         '''The current value of this :class:`Variable`.'''
         raise NotImplementedError
@@ -167,8 +176,8 @@ a :class:`Variables` container.'''
     def tojson(self):
         return str(self)
 
-    def _op(self, other, op):
-        return LazyOp(self, other, op)
+    def _op(self, other, op, right=False):
+        return LazyOp(other, self, op) if right else LazyOp(self, other, op)
 
     def _sp(self, other, op):
         return LazyOp(self, other, op)
@@ -176,12 +185,12 @@ a :class:`Variables` container.'''
 
 class Symbol(Variable):
     '''A :class:`Variable` with a :attr:`name` and an underlying value which
-can be another :class:`Variable`.
+    can be another :class:`Variable`.
 
-.. attribute:: value
+    .. attribute:: value
 
-    The value of this variable. It can be another Variable
-'''
+        The value of this variable. It can be another Variable
+    '''
     def __init__(self, name, value=None):
         self.name = name
         self._value = value
@@ -203,8 +212,9 @@ can be another :class:`Variable`.
 class Lazy(Variable):
     '''A lazy :class:`Variable`.
 
-:param callable: the callable invoked when accessing the :meth:`Variable.value`
-    method of this lazy variable.'''
+    :param callable: the callable invoked when accessing the
+    :meth:`Variable.value` method of this lazy variable.
+    '''
     def __init__(self, callable, *args, **kwargs):
         if not hasattr(callable, '__call__'):
             raise TypeError('First argument must be a callable')
@@ -274,10 +284,12 @@ class Size(Unit):
         else:
             return False
 
-    def _op(self, other, op):
+    def _op(self, other, op, right=False):
         other = size(other)
         if self.unit == other.unit:
-            return self.__class__(op(self._value, other._value), self.unit)
+            return self.__class__(op(
+                other._value, self._value) if right else op(
+                    self._value, other._value), self.unit)
         else:
             raise TypeError('Cannot perform operation between %s and %s.'
                             ' Different units.' % (self, other))
@@ -351,9 +363,12 @@ class Spacing(Unit):
     def __floordiv__(self, other):
         return self.__class__(*[v//other for v in self._value])
 
-    def _op(self, other, op):
+    def _op(self, other, op, right=False):
         other = spacing(other)
-        return self.__class__(*[op(a, b) for a, b in zip(self, other)])
+        if right:
+            return self.__class__(*[op(a, b) for a, b in zip(other, self)])
+        else:
+            return self.__class__(*[op(a, b) for a, b in zip(self, other)])
 
     def _sp(self, other, op):
         if isinstance(other, (int, float)):
@@ -783,11 +798,11 @@ Created by lux {0} in {1} seconds.
 class Variables(object):
     '''A container of :class:`Variable` with name-spaces::
 
-    v = Variables()
-    v.body.height = px(16)
+        v = Variables()
+        v.body.height = px(16)
 
-If the body name-space is not available is automatically created.
-'''
+    If the body name-space is not available is automatically created.
+    '''
     reserved = (None, '_reserved', 'reserved', 'name', 'parent',
                 'current_theme')
     MEDIAURL = '/media/'

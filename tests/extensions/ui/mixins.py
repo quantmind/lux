@@ -1,9 +1,9 @@
+from lux.utils import test
+
 from lux.extensions.ui.lib import *
 
-from . import vars
 
-
-class TestMixins(vars.TestCase):
+class TestMixins(test.TestCase):
     '''Test the simple mixins'''
     def testNotImplemented(self):
         m = Mixin()

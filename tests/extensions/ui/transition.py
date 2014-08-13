@@ -1,10 +1,8 @@
 from lux.utils import test
 from lux.extensions.ui.lib import *
 
-from . import vars
 
-
-class TestMedia(vars.TestCase):
+class TestMedia(test.TestCase):
 
     def test_simple(self):
         all = Css()

@@ -1,10 +1,8 @@
 from lux.utils import test
 from lux.extensions.ui.lib import *
 
-from . import vars
 
-
-class TestSkins(vars.TestCase):
+class TestSkins(test.TestCase):
 
     def __test_border_width(self):
         all = self.root()

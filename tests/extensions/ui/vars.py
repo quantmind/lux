@@ -64,3 +64,10 @@ class TestVariables(test.TestCase):
         v = Symbol('bla', 3)
         self.assertEqual(v.name, 'bla')
         self.assertEqual(v.value(), 3)
+
+    def test_right_subtract(self):
+        vars = Variables()
+        vars.v = px(8)
+        v2 = 30 - vars.v
+        self.assertEqual(str(v2), '22px')
+        self.assertIsInstance(v2, Variable)
