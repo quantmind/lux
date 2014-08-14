@@ -672,6 +672,23 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
         };
     });
 
+    lux.app.directive('luxInput', function($parse) {
+        return {
+            restrict: "A",
+            compile: function($element, $attrs) {
+                var initialValue = $attrs.value || $element.val();
+                if (initialValue) {
+                    return {
+                        pre: function($scope, $element, $attrs) {
+                            $parse($attrs.ngModel).assign($scope, initialValue);
+                            $scope.$apply();
+                        }
+                    };
+                }
+            }
+        };
+    });
+
     // Change the form data depending on content type
     function formData(ct) {
 
@@ -692,12 +709,13 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
     }
 
     // A general from controller factory
-    function formController ($scope, $lux, model) {
+    var formController = lux.formController = function ($scope, $lux, model) {
         model || (model = {});
 
         var page = $scope.$parent ? $scope.$parent.page : {};
 
-        $scope.formModel = model.data || model;
+        if (model)
+            $scope.formModel = model.data || model;
         $scope.formClasses = {};
         $scope.formErrors = {};
         $scope.formMessages = {};
@@ -820,11 +838,11 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
                 formMessages(messages);
             });
         };
-    }
+    };
 
     lux.controllers.controller('formController', ['$scope', '$lux', 'data',
             function ($scope, $lux, data) {
-        // Model for a user when updating
+        // Default form controller
         formController($scope, $lux, data);
     }]);
 
@@ -894,6 +912,9 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
     //
     //  Lux Vizualization Class
     //  -------------------------------
+    //
+    //  Utility for building visualization using d3
+    //  The only method to implement is ``d3build``
     lux.Viz = Class.extend({
         //
         // Initialise the vizualization with a DOM element, an object of attributes
@@ -901,10 +922,11 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
         init: function (element, attrs, $lux) {
             element = $(element);
             this.element = element;
-            this.attrs = attrs;
+            this.attrs = attrs || (attrs = {});
             this.$lux = $lux;
             this.elwidth = null;
             this.elheight = null;
+            this.d3 = null;
 
             var parent = this.element.parent();
 
@@ -970,9 +992,9 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
         },
         //
         // Return a new d3 svg element insite the element without any children
-        svg: function (d3) {
+        svg: function () {
             this.element.empty();
-            return d3.select(this.element[0]).append("svg")
+            return this.d3.select(this.element[0]).append("svg")
                 .attr("width", this.attrs.width)
                 .attr("height", this.attrs.height);
         },
@@ -990,15 +1012,24 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
             return size[1]/size[0];
         },
         //
-        build: function () {
-            var self = this;
-            require(['d3'], function (d3) {
-                self.d3build(d3);
-            });
+        // Build the visualisation
+        build: function (options) {
+            if (options)
+                this.attrs = $.extend(this.attrs, options);
+            //
+            if (!this.d3) {
+                var self = this;
+                require(['d3'], function (d3) {
+                    self.d3 = d3;
+                    self.d3build();
+                });
+            } else {
+                this.d3build();
+            }
         },
         //
         // This is the actual method to implement
-        d3build: function (d3) {
+        d3build: function () {
 
         }
     });

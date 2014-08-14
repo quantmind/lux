@@ -1,5 +1,6 @@
 import os
 import json
+from copy import copy
 
 import lux
 from lux import route, JSON_CONTENT_TYPES
@@ -87,12 +88,14 @@ class JsonContent(lux.Router, DirBuilder):
         super(JsonContent, self).__init__(route, name=name,
                                           html_router=html_router,
                                           content=html_router.content,
-                                          template=html_router.template)
+                                          template=html_router.template,
+                                          meta=copy(html_router.meta))
         self.add_child(JsonFile('<id>',
                                 dir=self.dir,
                                 name='json_files',
                                 content=self.content,
-                                template=html_router.template))
+                                template=html_router.template,
+                                meta=copy(html_router.meta)))
 
     def get(self, request):
         '''Build all the contents'''
@@ -164,16 +167,6 @@ class HtmlFile(html5.Router, FileBuilder):
         return self.parent.get_api_info(app)
 
 
-class Partial(html5.Router, FileBuilder):
-    '''Serve an Html file
-    '''
-    def get(self, request):
-        content = self.get_content(request)
-        request.response.content_type = content.content_type
-        request.response.content = content._content
-        return request.response
-
-
 class HtmlContent(html5.Router, DirBuilder):
     '''Serve a directory of files rendered in a similar fashion
 
@@ -201,14 +194,10 @@ class HtmlContent(html5.Router, DirBuilder):
         if self.drafts:
             self.add_child(Drafts(self.drafts,
                                   index_template=self.drafts_template))
-        if self.full:
-            file = HtmlFile(self.child_url, dir=self.dir, name='html_files',
-                            content=self.content, archive=self.archive,
-                            html_body_template=self.html_body_template,
-                            template=self.template)
-        else:
-            file = Partial(self.child_url, dir=self.dir, name='html_files',
-                           content=self.content)
+        file = HtmlFile(self.child_url, dir=self.dir, name='html_files',
+                        content=self.content,
+                        html_body_template=self.html_body_template,
+                        meta=copy(self.meta))
         self.add_child(file)
         #
         for url_path, file_path, ext in self.all_files():
@@ -227,14 +216,19 @@ class HtmlContent(html5.Router, DirBuilder):
         '''Build the ``main`` key for the ``context`` dictionary
         '''
         if self.src and request.cache.building_static:
-            raise SkipBuild
+            raise SkipBuild     # it will be built by the file handler
         if self.index_template:
+            # Don't use the content and the template if given
+            self.content = None
+            if self.meta:
+                self.meta.pop('template', None)
             app = request.app
             files = self.api.get_route('json_files') if self.api else None
             if files:
                 jscontext['dir_entries'] = files.all(app, html=False)
-            return app.render_template(self.index_template, context)
-        # Not building, render the source file
+            src = app.template_full_path(self.index_template)
+            content = self.read_file(app, src, 'index')
+            return content.html(request, context)
         elif self.src:
             content = self.read_file(request.app, self.src, 'index')
             context = request.app.context(request, context)
@@ -257,6 +251,11 @@ class Drafts(html5.Router, FileBuilder):
             return app.render_template(self.index_template, context)
         else:
             raise SkipBuild
+
+
+class Partials(HtmlContent):
+    full = False
+    drafts = None
 
 
 class Blog(HtmlContent):

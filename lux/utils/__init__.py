@@ -64,3 +64,9 @@ def version_tuple(version):
 def is_url(url):
     p = urlsplit(url)
     return p.scheme and p.netloc
+
+
+def update_dict(d1, d2):
+    d = d1.copy()
+    d.update(d2)
+    return d

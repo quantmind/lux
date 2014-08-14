@@ -40,8 +40,8 @@ class BaseBuilder(object):
     '''
     content = Snippet
     '''Content factory'''
-    template = None
-    '''Template to render the :attr:`content`'''
+    meta = None
+    '''Default meta attribute for the content built by this builder'''
 
     def read_file(self, app, src, name):
         '''Read a file and create a :class:`.Snippet`
@@ -56,7 +56,7 @@ class BaseBuilder(object):
                                  % Reader.__name__)
             reader = Reader(app)
             content = reader.read(src, name, content=self.content,
-                                  template=self.template)
+                                  meta=self.meta)
             app.all_contents[src] = content
         else:
             content = app.all_contents[src]
@@ -80,7 +80,6 @@ class BaseBuilder(object):
 
 
 class Builder(BaseBuilder):
-    archive = False
     built = None
     dir = None
 

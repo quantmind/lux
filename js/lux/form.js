@@ -21,6 +21,23 @@
         };
     });
 
+    lux.app.directive('luxInput', function($parse) {
+        return {
+            restrict: "A",
+            compile: function($element, $attrs) {
+                var initialValue = $attrs.value || $element.val();
+                if (initialValue) {
+                    return {
+                        pre: function($scope, $element, $attrs) {
+                            $parse($attrs.ngModel).assign($scope, initialValue);
+                            $scope.$apply();
+                        }
+                    };
+                }
+            }
+        };
+    });
+
     // Change the form data depending on content type
     function formData(ct) {
 
@@ -41,12 +58,13 @@
     }
 
     // A general from controller factory
-    function formController ($scope, $lux, model) {
+    var formController = lux.formController = function ($scope, $lux, model) {
         model || (model = {});
 
         var page = $scope.$parent ? $scope.$parent.page : {};
 
-        $scope.formModel = model.data || model;
+        if (model)
+            $scope.formModel = model.data || model;
         $scope.formClasses = {};
         $scope.formErrors = {};
         $scope.formMessages = {};
@@ -169,10 +187,10 @@
                 formMessages(messages);
             });
         };
-    }
+    };
 
     lux.controllers.controller('formController', ['$scope', '$lux', 'data',
             function ($scope, $lux, data) {
-        // Model for a user when updating
+        // Default form controller
         formController($scope, $lux, data);
     }]);

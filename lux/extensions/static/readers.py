@@ -1,6 +1,7 @@
 import os
 import imp
 import mimetypes
+from itertools import chain
 
 try:
     from markdown import Markdown
@@ -48,16 +49,21 @@ class BaseReader(object):
     def __str__(self):
         return self.__class__.__name__
 
-    def process(self, body, meta_input, src, name, content=None, **params):
+    def process(self, body, meta_input, src, name, content=None, meta=None,
+                **params):
         """Return the dict containing document metadata
         """
         cfg = self.config
         context = {}
+        meta_input = meta_input.items()
+        if meta:
+            meta_input = chain(meta.items(), meta_input)
         meta = dict(((p.name, p(cfg)) for p in METADATA_PROCESSORS.values()))
-        for key, values in meta_input.items():
-            key = key.lower()
+        for key, values in meta_input:
+            key = slugify(key, separator='_')
+            if not isinstance(values, (list, tuple)):
+                values = (values,)
             if key not in meta:
-                key = slugify(key, separator='_')
                 bits = key.split('_', 1)
                 if len(bits) == 2:
                     if bits[0] == 'context':

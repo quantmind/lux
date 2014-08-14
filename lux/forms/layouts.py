@@ -100,11 +100,12 @@ class Group(FieldTemplate):
 
                 # ng-model
                 if layout.ngmodel:
-                    w.attr({'ng-model': 'formModel.%s' % field.name,
-                            'watch-change': "checkField('%s')" % field.name})
-                    if field.value:
-                        w.attr('ng-init', "formModel.%s='%s'" %
-                               (field.name, field.value))
+                    w.data({'ng-model': 'formModel.%s' % field.name,
+                            'watch-change': "checkField('%s')" % field.name,
+                            'lux-input': ''})
+                    #if field.value:
+                    #    w.attr('ng-init', "formModel.%s='%s'" %
+                    #           (field.name, field.value))
                     html.attr('ng-class', 'formClasses.%s' % field.name)
 
                 # styling
@@ -166,7 +167,7 @@ class Fieldset(FieldTemplate):
 
 
 class Layout(Template):
-    '''A :class:`Layout` renders the form into an HTML page.
+    '''A :class:`Layout` renders the form into HTML.
 
     :param style: Optional style name.
         A style handler must be registered via the
@@ -208,8 +209,8 @@ class Layout(Template):
         self.ngmodel = ngmodel
         self.labels = labels
         self.controller = ngcontroller or 'formController'
-        parameters['enctype'] = enctype or 'multipart/form-data'
-        parameters['method'] = method or 'post'
+        #parameters['enctype'] = enctype or 'multipart/form-data'
+        #parameters['method'] = method or 'post'
         if ngmodel:
             parameters['novalidate'] = ''
             parameters['name'] = name or 'form'

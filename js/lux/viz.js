@@ -1,6 +1,9 @@
     //
     //  Lux Vizualization Class
     //  -------------------------------
+    //
+    //  Utility for building visualization using d3
+    //  The only method to implement is ``d3build``
     lux.Viz = Class.extend({
         //
         // Initialise the vizualization with a DOM element, an object of attributes
@@ -8,10 +11,11 @@
         init: function (element, attrs, $lux) {
             element = $(element);
             this.element = element;
-            this.attrs = attrs;
+            this.attrs = attrs || (attrs = {});
             this.$lux = $lux;
             this.elwidth = null;
             this.elheight = null;
+            this.d3 = null;
 
             var parent = this.element.parent();
 
@@ -77,9 +81,9 @@
         },
         //
         // Return a new d3 svg element insite the element without any children
-        svg: function (d3) {
+        svg: function () {
             this.element.empty();
-            return d3.select(this.element[0]).append("svg")
+            return this.d3.select(this.element[0]).append("svg")
                 .attr("width", this.attrs.width)
                 .attr("height", this.attrs.height);
         },
@@ -97,15 +101,24 @@
             return size[1]/size[0];
         },
         //
-        build: function () {
-            var self = this;
-            require(['d3'], function (d3) {
-                self.d3build(d3);
-            });
+        // Build the visualisation
+        build: function (options) {
+            if (options)
+                this.attrs = $.extend(this.attrs, options);
+            //
+            if (!this.d3) {
+                var self = this;
+                require(['d3'], function (d3) {
+                    self.d3 = d3;
+                    self.d3build();
+                });
+            } else {
+                this.d3build();
+            }
         },
         //
         // This is the actual method to implement
-        d3build: function (d3) {
+        d3build: function () {
 
         }
     });

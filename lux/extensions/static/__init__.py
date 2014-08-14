@@ -51,7 +51,7 @@ from lux import Parameter, Router
 from .builder import Builder, DirBuilder, ContextBuilder
 from .contents import Snippet, Article, Draft
 from .routers import (MediaBuilder, HtmlContent, Blog, ErrorRouter,
-                      JsonRoot, JsonContent, JsonRedirect)
+                      Partials, JsonRoot, JsonContent, JsonRedirect)
 from .ui import add_css
 
 

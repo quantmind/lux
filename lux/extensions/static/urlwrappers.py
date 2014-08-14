@@ -29,7 +29,7 @@ class Processor:
 
     def __init__(self, name, processor=None, default=None, multiple=False,
                  docs=None):
-        self.name = name
+        self.name = slugify(name, separator='_')
         self._default = default
         self.process = processor or as_list
         self.multiple = multiple
