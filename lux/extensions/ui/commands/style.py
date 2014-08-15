@@ -21,7 +21,7 @@ class Command(lux.Command):
                 default=False,
                 desc=('Dump the theme variables as json'
                       ' file for the theme specified')),
-        Setting('cssfile', default='',
+        Setting('cssfile', ('--cssfile',), default='',
                 desc=('Target path of css file. For example '
                       '"media/site/site.css". If not provided, '
                       'a file called {{ STYLE }}.css will '

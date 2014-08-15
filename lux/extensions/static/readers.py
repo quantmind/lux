@@ -41,8 +41,9 @@ class BaseReader(object):
     file_extensions = []
     extensions = None
 
-    def __init__(self, app):
+    def __init__(self, app, ext=None):
         self.app = app
+        self.ext = ext
         self.logger = app.extensions['static'].logger
         self.config = app.config
 
@@ -106,6 +107,8 @@ class BaseReader(object):
             ct = ct or 'application/octet-stream'
             with open(source_path, 'rb') as f:
                 body = f.read()
+            if self.ext and not name.endswith('.%s' % self.ext):
+                name = '%s.%s' % (name, self.ext)
         metadata = {'content_type': [ct]}
         return self.process(body, metadata, source_path, name, **params)
 

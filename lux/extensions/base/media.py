@@ -42,28 +42,22 @@ class MediaRouter(wsgi.MediaRouter):
     in production.
     '''
     request_class = lux.WsgiRequest
+    lux = True
 
     def filesystem_path(self, request):
-        bits = request.urlargs['path'].split('/')
-        return filesystem_path(request.app, self._file_path, bits)
+        '''Override :class:`~pulsar.apps.wsgi.router.MediaRouter`
+        '''
+        if self.lux:
+            bits = request.urlargs['path'].split('/')
+            return filesystem_path(request.app, self._file_path, bits)
+        else:
+            return super(MediaRouter, self).filesystem_path(request)
 
     def extension_paths(self, app):
-        media_url = app.config['MEDIA_URL']
-        for name in sorted(chain(app.extensions, ('lux',))):
-            path = filesystem_path(app, None, (name,))
-            if os.path.isdir(path):
-                yield name, path
-
-    def __get(self, request):
-        if not request.urlargs['path']:
-            if self._show_indexes:
-                links = []
-                media_url = request.config['MEDIA_URL']
-                for name, _ in self.extension_paths(request.app):
-                    href = '%s%s/' % (media_url, name)
-                    links.append(Html('a', name, href=href))
-                return self.static_index(request, links)
-            else:
-                raise PermissionDenied
+        if self.lux:
+            for name in sorted(chain(app.extensions, ('lux',))):
+                path = filesystem_path(app, None, (name,))
+                if os.path.isdir(path):
+                    yield name, path
         else:
-            return super(MediaRouter, self).get(request)
+            yield '', self._file_path

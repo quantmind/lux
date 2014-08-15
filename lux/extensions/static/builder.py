@@ -54,7 +54,7 @@ class BaseBuilder(object):
             if not Reader.enabled:
                 raise BuildError('Missing dependencies for %s'
                                  % Reader.__name__)
-            reader = Reader(app)
+            reader = Reader(app, ext)
             content = reader.read(src, name, content=self.content,
                                   meta=self.meta)
             app.all_contents[src] = content
@@ -82,6 +82,8 @@ class BaseBuilder(object):
 class Builder(BaseBuilder):
     built = None
     dir = None
+    include_subdirectories = True
+    '''Include all subdirectories in the build'''
 
     def build(self, app, location=None, **params):
         '''Build the files managed by this :class:`.DirBuilder`
@@ -104,17 +106,27 @@ class Builder(BaseBuilder):
         '''
         src = self.get_src(src)
         if os.path.isdir(src):
-            for dirpath, _, filenames in os.walk(src):
-                if skip(os.path.basename(dirpath) or dirpath):
-                    continue
-                rel_dir = get_rel_dir(dirpath, src)
-                for filename in filenames:
+            if self.include_subdirectories:
+                for dirpath, _, filenames in os.walk(src):
+                    if skip(os.path.basename(dirpath) or dirpath):
+                        continue
+                    rel_dir = get_rel_dir(dirpath, src)
+                    for filename in filenames:
+                        if skip(filename):
+                            continue
+                        name, ext = self.split(filename)
+                        name = os.path.join(rel_dir, name)
+                        fpath = os.path.join(dirpath, filename)
+                        yield name, fpath, ext
+            else:
+                for filename in os.listdir(src):
+                    path = os.path.join(src, filename)
+                    if not os.path.isfile(path):
+                        continue
                     if skip(filename):
                         continue
                     name, ext = self.split(filename)
-                    name = os.path.join(rel_dir, name)
-                    fpath = os.path.join(dirpath, filename)
-                    yield name, fpath, ext
+                    yield name, path, ext
         #
         elif os.path.isfile(src):
             dirpath, filename = os.path.split(src)
@@ -205,10 +217,12 @@ class Builder(BaseBuilder):
         return src or self.dir
 
     def split(self, filename):
-        bits = filename.split('.', 1)
-        name = bits[0]
-        ext = bits[1] if len(bits) > 1 else None
-        return name, ext
+        bits = filename.split('.')
+        ext = None
+        if len(bits) > 1:
+            ext = bits[-1]
+            filename = '.'.join(bits[:-1])
+        return filename, ext
 
 
 class FileBuilder(Builder):
