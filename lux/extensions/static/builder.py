@@ -41,7 +41,11 @@ class BaseBuilder(object):
     content = Snippet
     '''Content factory'''
     meta = None
-    '''Default meta attribute for the content built by this builder'''
+    '''Default meta attribute for the content built by this builder.
+
+    If supplied it must be a dictionary of valid meta parameters
+    for a :class:`.Snippet`
+    '''
 
     def read_file(self, app, src, name):
         '''Read a file and create a :class:`.Snippet`

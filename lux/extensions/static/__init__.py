@@ -51,7 +51,7 @@ from lux import Parameter, Router
 from .builder import Builder, DirBuilder, ContextBuilder
 from .contents import Snippet, Article, Draft
 from .routers import (MediaBuilder, HtmlContent, Blog, ErrorRouter,
-                      Partials, JsonRoot, JsonContent, JsonRedirect)
+                      JsonRoot, JsonContent, JsonRedirect)
 from .ui import add_css
 
 
@@ -233,7 +233,7 @@ class Extension(lux.Extension):
                 f.write(content)
 
     def add_api(self, app, router):
-        if isinstance(router, HtmlContent) and router.full and app.api:
+        if isinstance(router, HtmlContent) and app.api:
             router.api = JsonContent(router.rule,
                                      dir=router.dir,
                                      html_router=router)

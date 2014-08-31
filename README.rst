@@ -26,6 +26,6 @@ To run tests and the example site add a new ``settings.py`` file in the
 
 
 .. _pulsar: https://github.com/quantmind/pulsar
-.. _dateutils: https://pypi.python.org/pypi/python-dateutil
+.. _dateutil: https://pypi.python.org/pypi/python-dateutil
 .. _gruntjs: http://gruntjs.com/
 .. _nodejs: http://nodejs.org/

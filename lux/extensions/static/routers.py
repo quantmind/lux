@@ -151,7 +151,7 @@ class JsonFile(lux.Router, FileBuilder):
 
 
 class HtmlFile(html5.Router, FileBuilder):
-    '''Serve an Html file
+    '''Serve an Html file.
     '''
     def build_main(self, request, context, jscontext):
         content = self.get_content(request)
@@ -172,16 +172,12 @@ class HtmlContent(html5.Router, DirBuilder):
 
     The directory could contains blog posts for example.
     If an ``index.html`` file is available, it is rendered with the
-    directory url
-
-    If not specified, the ``route`` value is used
+    directory url.
     '''
     index_template = None
     api = None
-    full = True
-    '''If true render templates as full html5 pages'''
     drafts = 'drafts'
-    '''Drafts url
+    '''Drafts url. If not provided drafts wont be rendered.
     '''
     drafts_template = 'blogindex.html'
     '''The children render the children routes of this router
@@ -251,11 +247,6 @@ class Drafts(html5.Router, FileBuilder):
             return app.render_template(self.index_template, context)
         else:
             raise SkipBuild
-
-
-class Partials(HtmlContent):
-    full = False
-    drafts = None
 
 
 class Blog(HtmlContent):
