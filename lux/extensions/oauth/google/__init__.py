@@ -16,6 +16,7 @@ class Google(OAuth2):
     '''
     auth_uri = "https://accounts.google.com/o/oauth2/auth"
     token_uri = "https://accounts.google.com/o/oauth2/token"
+    default_scope = ['profile', 'email']
 
     def add_meta_tags(self, request, doc):
         aid = self.config.get('analytics_id')
@@ -29,7 +30,7 @@ class Google(OAuth2):
             doc.head.append(txt)
         key = self.config.get('key')
         if key:
-            sensor = 'true' if self.config.get['map_sensor'] else 'false'
+            sensor = 'true' if self.config.get('map_sensor') else 'false'
             url = google_map_url % (key, sensor)
             doc.head.scripts.known_libraries['google-maps'] = url
             doc.head.embedded_js.append(run_google_maps_callbacks)

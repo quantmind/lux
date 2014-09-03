@@ -40,10 +40,8 @@ class Login(Router):
         html = self.fclass(request).layout(request, action=request.full_path())
         context = {'form': html.render(request),
                    'site_name': request.config['APP_NAME']}
-        jscontext = {'oauths': oauth_context(request)}
         return request.app.html_response(request, 'login.html',
-                                         context=context,
-                                         jscontext=jscontext)
+                                         context=context)
 
     def post(self, request):
         '''Handle login post data
@@ -72,10 +70,8 @@ class SignUp(Router):
         html = self.fclass(request).layout(request, action=request.full_path())
         context = {'form': html.render(request),
                    'site_name': request.config['APP_NAME']}
-        jscontext = {'oauths': oauth_context(request)}
         return request.app.html_response(request, 'signup.html',
-                                         context=context,
-                                         jscontext=jscontext)
+                                         context=context)
 
     def post(self, request):
         '''Handle login post data

@@ -57,10 +57,13 @@ class OAuth2(OAuth1):
     '''OAuth version 2
     '''
     version = 2
+    default_scope = None
 
     def available(self):
         if super(OAuth2, self).available():
-            return bool(self.config.get('scope'))
+            scope = self.config.get('scope') or self.default_scope
+            self.config['scope'] = scope
+            return bool(scope)
         return False
 
     def authorization_url(self, request, redirect_uri):
@@ -138,14 +141,6 @@ def register_oauth(cls):
     global Accounts
     name = getattr(cls, 'name', None) or cls.__name__.lower()
     Accounts[name] = cls
-
-
-def oauth_parameters(params=None):
-    global Accounts
-    params = params or []
-    for cls in Accounts.values():
-        params.extend(cls.config)
-    return params
 
 
 def oauths(config):

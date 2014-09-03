@@ -17,7 +17,7 @@ from . import linkedin
 from . import twitter
 
 
-from .oauth import oauth_parameters, get_oauths
+from .oauth import get_oauths
 from .views import OAuthRouter, oauth_context
 
 
@@ -29,6 +29,9 @@ class Extension(lux.Extension):
     def on_html_document(self, app, request, doc):
         if get_oauths(request):
             doc.before_render(self.add_meta_tags)
+
+    def jscontext(self, request, context):
+        context['oauths'] = oauth_context(request)
 
     def add_meta_tags(self, request, doc):
         if request:

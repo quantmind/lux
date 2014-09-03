@@ -11,12 +11,11 @@ def oauth_context(request, path='/oauth/'):
     user = request.cache.user
     oauths = []
     current = user.get_oauths()
-    for o in get_oauths(request).values():
-        if o.avaulable():
-            name = o['name'].lower()
+    for name, o in get_oauths(request).items():
+        if o.available():
             data = {'href': path + name,
                     'name': name,
-                    'fa': o.get('fa')}
+                    'fa': o.config.get('fa')}
             if name in current:
                 data['current'] = current[name]
             oauths.append(data)
@@ -36,7 +35,7 @@ class OAuthRouter(Router):
         redirect_uri = request.absolute_uri('redirect')
         p = self._oauth(request).get(name)
         authorization_url = p.authorization_url(request, redirect_uri)
-        return self.redirect(authorization_url)
+        return request.redirect(authorization_url)
 
     @route('<name>/redirect')
     def oauth_redirect(self, request):
@@ -50,7 +49,7 @@ class OAuthRouter(Router):
             user = request.app.auth_backend.login(request, user)
         else:
             user = p.create_user(token, user)
-        return self.redirect('/%s' % user.username)
+        return request.redirect('/%s' % user.username)
 
     @route('<name>/remove', method='post')
     def oauth_remove(self, request):
