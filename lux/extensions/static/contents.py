@@ -248,7 +248,8 @@ class Snippet(object):
         assert self.content_type == 'text/html', '%s not html' % self
         data = self.json_dict(request.app, context)
         context.update(data)
-        head = request.html_document.head
+        doc = request.html_document
+        head = doc.head
         #
         title = data.get('head_title')
         if title:

@@ -50,7 +50,6 @@ ALL_EVENTS = ('on_config',  # Config ready.
               'on_request',  # Fired when a new request arrives
               'on_html_document',  # Html doc built. Extra args: request, html
               'on_form',  # Form constructed. Extra args: form
-              'on_html_response'  # Response is ready. Extra args: request
               )
 
 
@@ -297,6 +296,8 @@ class Application(ConsoleParser, Extension):
                            data_debug=self.debug,
                            content_type=content_type,
                            charset=cfg['ENCODING'])
+        # Inject a dictionary containing information about the web page
+        doc.api = {}
         #
         if doc.has_default_content_type:
             head = doc.head

@@ -40,6 +40,7 @@ __all__ = ['Html', 'HtmlRouter',
            'get_event_loop', 'RouterParam', 'JSON_CONTENT_TYPES',
            'DEFAULT_CONTENT_TYPES']
 
+Html = wsgi.Html
 
 def frozen_set(*elems):
     def _():
@@ -163,15 +164,3 @@ It introduces the following:
     response_content_types = RouterParam(DEFAULT_CONTENT_TYPES)
     in_sitemap = RouterParam(True)
     icon = None
-
-
-class Html(wsgi.Html):
-
-    def http_response(self, request):
-        doc = request.html_document
-        if doc.has_default_content_type:
-            # if the content type is text/html fire the on_html_response event
-            html = {'body': self}
-            request.app.fire('on_html_response', request, html)
-            doc.body.append(html['body'])
-        return doc.http_response(request)

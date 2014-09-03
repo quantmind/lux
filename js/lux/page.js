@@ -74,7 +74,7 @@
             if (isAbsolute.test(url))
                 loc = $lux.location.absUrl();
             else
-                loc = $lux.location.path();
+                loc = window.location.pathname;
             var rest = loc.substring(url.length),
                 base = loc.substring(0, url.length),
                 folder = url.substring(url.length-1) === '/';
