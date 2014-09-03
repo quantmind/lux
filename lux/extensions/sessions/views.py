@@ -8,29 +8,12 @@ from lux.forms import Form
 from pulsar import Http404, PermissionDenied
 from pulsar.apps.wsgi import Router, Json, route
 
-from .oauth import Accounts
 from .forms import (LoginForm, CreateUserForm, ChangePassword,
                     ForgotPasswordForm, ChangePassword2)
 from .backend import AuthenticationError
 
 
-__all__ = ['Login', 'SignUp', 'Logout', 'Token', 'OAuth',
-           'ForgotPassword', 'oauth_context']
-
-
-def oauth_context(request, path='/oauth/'):
-    user = request.cache.user
-    oauths = []
-    current = user.get_oauths()
-    for o in request.config['OAUTH_PROVIDERS']:
-        name = o['name'].lower()
-        data = {'href': path + name,
-                'name': name,
-                'fa': o.get('fa')}
-        if name in current:
-            data['current'] = current[name]
-        oauths.append(data)
-    return oauths
+__all__ = ['Login', 'SignUp', 'Logout', 'Token', 'ForgotPassword']
 
 
 def csrf(method):
@@ -215,45 +198,6 @@ class Logout(Router):
                         ).http_response(request)
         else:
             return Json({'success': False}).http_response(request)
-
-
-class OAuth(Router):
-    '''A :class:`.Router` for the oauth authentication flow
-    '''
-    def _oauth(self, request):
-        providers = request.config['OAUTH_PROVIDERS']
-        return dict(((o['name'].lower(), Accounts[o['name'].lower()](o))
-                     for o in providers))
-
-    @route('<name>')
-    def oauth(self, request):
-        name = request.urlargs['name']
-        redirect_uri = request.absolute_uri('redirect')
-        p = self._oauth(request).get(name)
-        authorization_url = p.authorization_url(request, redirect_uri)
-        return self.redirect(authorization_url)
-
-    @route('<name>/redirect')
-    def oauth_redirect(self, request):
-        user = request.cache.user
-        name = request.urlargs['name']
-        p = self._oauth(request).get(name)
-        token = p.access_token(request, request.url_data,
-                               redirect_uri=request.uri)
-        if not user.is_authenticated():
-            user = p.create_user(token)
-            user = request.app.auth_backend.login(request, user)
-        else:
-            user = p.create_user(token, user)
-        return self.redirect('/%s' % user.username)
-
-    @route('<name>/remove', method='post')
-    def oauth_remove(self, request):
-        user = request.cache.user
-        if user.is_authenticated():
-            name = request.urlargs['name']
-            removed = user.remove_oauth(name)
-            return Json({'success': removed}).http_response(request)
 
 
 class Token(Router):

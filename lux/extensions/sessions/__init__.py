@@ -25,7 +25,6 @@ from lux.utils.crypt import get_random_string
 from lux.utils.http import same_origin
 
 from .views import *
-from .oauth import *
 from .backend import *
 from .forms import *
 
@@ -73,8 +72,6 @@ class Extension(lux.Extension):
                   'When no roles has tested positive for permissions, this '
                   'parameter is used to check if a model has permission for '
                   'an action'),
-        Parameter('OAUTH_PROVIDERS', {},
-                  'Dictionary of OAuth providers'),
         Parameter('ACCOUNT_ACTIVATION_DAYS', 2,
                   'Number of days the activation code is valid'),
         Parameter('RESET_PASSWORD_URL', '',

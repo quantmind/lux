@@ -296,8 +296,7 @@ class Application(ConsoleParser, Extension):
                            data_debug=self.debug,
                            content_type=content_type,
                            charset=cfg['ENCODING'])
-        # Inject a dictionary containing information about the web page
-        doc.api = {}
+        doc.fields['html_url'] = self.site_url(request, request.path)
         #
         if doc.has_default_content_type:
             head = doc.head

@@ -13,7 +13,12 @@ class OAuth1(object):
     config = []
 
     def __init__(self, config):
-        self.config = config
+        self.config = config or {}
+
+    def available(self):
+        '''Check if this Oauth handler has the correct configuration parameters
+        '''
+        return self.config.get('key') and self.config.get('secret')
 
     def add_meta_tags(self, request, doc):
         '''Add meta tags to the HTML5 document
@@ -53,6 +58,11 @@ class OAuth2(OAuth1):
     '''
     version = 2
 
+    def available(self):
+        if super(OAuth2, self).available():
+            return bool(self.config.get('scope'))
+        return False
+
     def authorization_url(self, request, redirect_uri):
         oauth = self.oauth(redirect_uri=redirect_uri)
         return oauth.authorization_url(self.auth_uri)[0]
@@ -86,7 +96,7 @@ class OGP(object):
 
     def get_field(self, doc, field):
         pname = '%s_%s' % (self.prefix, field)
-        return doc.api.get(pname) or doc.api.get(field)
+        return doc.fields.get(pname) or doc.fields.get(field)
 
     def add_meta_tags(self, request, doc):
         head = doc.head
@@ -96,7 +106,8 @@ class OGP(object):
             if self.prefix == 'og':
                 cfg = request.config
                 doc.attr('prefix', 'og: http://ogp.me/ns#')
-                doc.add_meta('og:site_name', cfg['APP_NAME'])
+                doc.head.add_meta(name='og:site_name',
+                                  content=cfg['APP_NAME'])
             self.add_meta(doc, 'type', type)
             self.add_meta(doc, 'url', url)
             self.add_meta(doc, 'title')
@@ -138,12 +149,24 @@ def oauth_parameters(params=None):
 
 
 def oauths(config):
+    '''Return a dictionary of OAuth handlers with configuration
+    '''
     global Accounts
     oauths = {}
-    for name, cfg in config.items():
-        if name in Accounts:
-            oauths[name] = Accounts[name](cfg)
+    for name, cls in Accounts.items():
+        oauths[name] = cls(config.get(name))
     return oauths
+
+
+def get_oauths(request):
+    o = request.cache.oauths
+    if o is None:
+        cfg = request.config.get('OAUTH_PROVIDERS')
+        if isinstance(cfg, dict):
+            o = oauths(cfg)
+        o = o or {}
+        request.cache.oauths = o
+    return o
 
 
 Accounts = {}

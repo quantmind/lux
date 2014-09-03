@@ -17,8 +17,7 @@ try:
 except ImportError:
     jwt = None
 
-from .models import ndb, Session, Registration, UserRole
-from .oauth import User
+from .models import ndb, User, Session, Registration, UserRole
 from .api import *
 
 
