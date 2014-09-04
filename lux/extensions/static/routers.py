@@ -4,14 +4,14 @@ from copy import copy
 
 import lux
 from lux import route, JSON_CONTENT_TYPES
-from lux.extensions import html5, base
+from lux.extensions import html5, base, sitemap
 
 from pulsar.utils.slugify import slugify
 from pulsar.apps.wsgi import Json, MediaRouter
 
 from .builder import (DirBuilder, FileBuilder, BuildError, SkipBuild,
                       HttpException)
-from .contents import Article, Draft, parse_date
+from .contents import Article, parse_date
 
 
 SPECIAL_KEYS = ('html_url',)
@@ -117,11 +117,11 @@ class JsonFile(lux.Router, FileBuilder):
             urlargs = request.urlargs
             if urlargs.get('path') == 'index':
                 urlargs['path'] = ''
-            data['api_url'] = app.site_url(request, request.path)
+            data['api_url'] = app.site_url(request.path)
             html = self.html_router.get_route('html_files')
             urlparams = content.context(app, names=html.route.variables)
             path = html.path(**urlparams)
-            data['html_url'] = app.site_url(request, path)
+            data['html_url'] = app.site_url(path)
             return Json(data).http_response(request)
         else:
             raise HttpException
@@ -137,8 +137,8 @@ class JsonFile(lux.Router, FileBuilder):
         all = []
         o = 'modified' if draft else 'date'
         for d in self.build(app):
-            data = json.loads(d.decode('utf-8'))
-            if bool(data['draft']) is not draft:
+            data = json.loads(d.body.decode('utf-8'))
+            if bool(data['priority']=='0') is not draft:
                 continue
             if not html:
                 data = dict(((key, data[key]) for key in data
@@ -182,6 +182,7 @@ class HtmlContent(html5.Router, DirBuilder):
     drafts_template = 'blogindex.html'
     '''The children render the children routes of this router
     '''
+    priority = 1
 
     def __init__(self, route, *routes, dir=None, name=None, **params):
         route = self.valid_route(route, dir)
@@ -236,10 +237,14 @@ class HtmlContent(html5.Router, DirBuilder):
 class Drafts(html5.Router, FileBuilder):
     '''A page collecting all drafts
     '''
+    priority = 0
+
     def build_main(self, request, context, jscontext):
         if self.index_template and self.parent:
             app = request.app
             api = self.parent.api
+            doc = request.html_document
+            doc.head.replace_meta('robots', 'noindex, nofollow')
             files = api.get_route('json_files') if api else None
             if files:
                 jscontext['dir_entries'] = files.all(app, html=False,
@@ -254,3 +259,31 @@ class Blog(HtmlContent):
     '''
     index_template = 'blogindex.html'
     content = Article
+
+
+class Sitemap(sitemap.Sitemap, FileBuilder):
+
+    def items(self, request):
+        for item in self.parent.built:
+            if item and item.content_type == 'text/html':
+                yield item
+
+    def build_file(self, app, location, src=None, name=None):
+        router = self.parent
+        assert isinstance(router, HtmlContent), ('Staticsitemap requires '
+                                                 'HtmlContent')
+        router.build_done(self._build_file)
+        self.built.append(None)
+
+    def _build_file(self, app, location, build):
+        path = self.route.path
+        request = app.wsgi_request(path=path, HTTP_ACCEPT='*/*')
+        response = self.response(request.environ, {})
+        #
+        dst_filename = os.path.join(location, path[1:])
+        dirname = os.path.dirname(dst_filename)
+        if not os.path.isdir(dirname):
+            os.makedirs(dirname)
+        app.logger.info('Creating "%s"', dst_filename)
+        with open(dst_filename, 'wb') as f:
+            f.write(response.content[0])

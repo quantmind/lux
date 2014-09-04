@@ -9,17 +9,18 @@ __all__ = ['OAuth', 'oauth_context']
 
 def oauth_context(request, path='/oauth/'):
     user = request.cache.user
-    oauths = []
-    current = user.get_oauths()
-    for name, o in get_oauths(request).items():
-        if o.available():
-            data = {'href': path + name,
-                    'name': name,
-                    'fa': o.config.get('fa')}
-            if name in current:
-                data['current'] = current[name]
-            oauths.append(data)
-    return oauths
+    if user:
+        oauths = []
+        current = user.get_oauths()
+        for name, o in get_oauths(request).items():
+            if o.available():
+                data = {'href': path + name,
+                        'name': name,
+                        'fa': o.config.get('fa')}
+                if name in current:
+                    data['current'] = current[name]
+                oauths.append(data)
+        return oauths
 
 
 class OAuthRouter(Router):

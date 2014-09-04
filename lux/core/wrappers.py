@@ -144,7 +144,8 @@ class Router(wsgi.Router):
 
     def add_api_urls(self, request, api):
         for r in self.routes:
-            r.add_api_urls(request, api)
+            if isinstance(r, Router):
+                r.add_api_urls(request, api)
 
     def get_api_info(self, app):
         '''The api name for this :class:`.Router`

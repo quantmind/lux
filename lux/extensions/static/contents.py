@@ -10,7 +10,6 @@ import pulsar
 from pulsar.utils.slugify import slugify
 
 from lux import template_engine, JSON_CONTENT_TYPES
-from lux.extensions.twitter import twitter_card
 
 from .urlwrappers import (Processor, Tag, Author, Category, list_of,
                           Multi, meta_iterator)
@@ -23,6 +22,7 @@ class SkipBuild(pulsar.Http404):
 class BuildError(pulsar.Http404):
     pass
 
+no_draft_field = ('date', 'category')
 
 CONTENT_EXTENSIONS = {'text/html': 'html',
                       'text/plain': 'txt',
@@ -41,13 +41,13 @@ METADATA_PROCESSORS = dict(((p.name, p) for p in (
     Processor('date', lambda x, cfg: [parse_date(x)]),
     Processor('status'),
     Processor('image-url'),
+    Processor('priority'),
     Processor('category', list_of(Category), multiple=True),
     Processor('author', list_of(Author), multiple=True),
     Processor('require_css', multiple=True),
     Processor('require_js', multiple=True),
     Processor('require_context', multiple=True),
     Processor('content_type', default='text/html'),
-    Processor('draft', lambda x, cfg: json.loads(x)),
     Processor('template-engine',
               default=lambda cfg: cfg['DEFAULT_TEMPLATE_ENGINE']),
     Processor('robots', default=['index', 'follow'], multiple=True),
@@ -90,7 +90,7 @@ class Snippet(object):
                 dir = None
             self._name = slugify(self._name, separator='_')
             if not self.slug:
-                self.slug = slugify(self.title or slug, separator='_')
+                self.slug = slugify(slug, separator='_')
             if dir:
                 self.slug = '%s/%s' % (dir, self.slug)
         elif not self.slug:
@@ -233,9 +233,8 @@ class Snippet(object):
             key = self.key('main')
             jd[key] = self.render(app, context)
             if self.content_type == 'text/html':
-                head_des = self.head_description or self.description
-                jd.update({'head_title': self.head_title or self.title,
-                           'head_description': head_des})
+                jd.update({'head_title': self.title,
+                           'head_description': self.description})
 
             self._json_content = jd
         return self._json_content
@@ -274,21 +273,22 @@ class Snippet(object):
         author = data.get('author')
         if author:
             head.replace_meta('author', author)
-        twitter_card(request, **data)
+        #twitter_card(request, **data)
         #
         robots = data.get('robots')
         if robots:
             head.add_meta(name='robots', content=robots)
         return context.get(self.key('main'))
 
+    @classmethod
+    def as_draft(cls):
+        mp = tuple((a for a in cls.mandatory_properties
+                    if a not in no_draft_field))
+        return cls.__class__('Draft', (cls,), {'mandatory_properties': mp})
+
 
 class Article(Snippet):
     mandatory_properties = ('title', 'date', 'category')
-    default_template = 'article.html'
-
-
-class Draft(Snippet):
-    mandatory_properties = ('title', 'category')
     default_template = 'article.html'
 
 

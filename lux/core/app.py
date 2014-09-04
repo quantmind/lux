@@ -296,7 +296,7 @@ class Application(ConsoleParser, Extension):
                            data_debug=self.debug,
                            content_type=content_type,
                            charset=cfg['ENCODING'])
-        doc.fields['html_url'] = self.site_url(request, request.path)
+        doc.fields['html_url'] = self.site_url(request.path)
         #
         if doc.has_default_content_type:
             head = doc.head
@@ -501,11 +501,14 @@ class Application(ConsoleParser, Extension):
             document.body.append(body)
             return document.http_response(request)
 
-    def site_url(self, request, path=None):
+    def site_url(self, path='/'):
         '''Build the site url from an optional ``path``
         '''
         base = self.config['SITE_URL']
-        return urljoin(base, path) if base else path
+        if base:
+            return base if path == '/' else urljoin(base, path)
+        else:
+            return path
 
     # INTERNALS
     def _build_config(self, file):

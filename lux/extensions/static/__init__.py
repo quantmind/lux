@@ -49,9 +49,9 @@ import lux
 from lux import Parameter, Router
 
 from .builder import Builder, DirBuilder, ContextBuilder
-from .contents import Snippet, Article, Draft
+from .contents import Snippet, Article
 from .routers import (MediaBuilder, HtmlContent, Blog, ErrorRouter,
-                      JsonRoot, JsonContent, JsonRedirect)
+                      JsonRoot, JsonContent, JsonRedirect, Sitemap)
 from .ui import add_css
 
 
@@ -80,7 +80,8 @@ class Extension(lux.Extension):
                   'Build a JSON api, required when using router in Html5 '
                   ' navigation mode'),
         Parameter('STATIC_MEDIA', True, 'Add handler for media files'),
-        Parameter('STATIC_SPECIALS', ('404',), '')
+        Parameter('STATIC_SPECIALS', ('404',),
+                  "paths included in this list won't create the json api")
     ]
     _static_info = None
     _global_context = None
@@ -149,6 +150,7 @@ class Extension(lux.Extension):
         if not os.path.isdir(location):
             os.makedirs(location)
         #
+        # Loop over middleware and build when instance of a Builder
         for middleware in app.handler.middleware:
             if isinstance(middleware, Builder):
                 middleware.build(app, location)

@@ -10,7 +10,7 @@ except ImportError:
 
 from pulsar.apps.wsgi import AsyncString
 
-from .contents import (Draft, Snippet, METADATA_PROCESSORS, slugify, is_text,
+from .contents import (Snippet, METADATA_PROCESSORS, slugify, is_text,
                        SkipBuild)
 from .urlwrappers import guess, as_list
 
@@ -91,8 +91,10 @@ class BaseReader(object):
                         self.logger.exception("Could not process meta '%s' "
                                               "in '%s'", key, src)
                     meta[key].extend(value)
-        if meta['draft'].value():
-            content = Draft
+        if meta['priority'].value() == '0':
+            content = content.as_draft()
+            meta['robots'].clear()
+            meta['robots'].extend(['noindex', 'nofollow'])
         content = content or Snippet
         return content(body, meta, src, name, context, **params)
 

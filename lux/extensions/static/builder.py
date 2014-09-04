@@ -1,4 +1,6 @@
 import os
+from collections import namedtuple
+from datetime import datetime
 
 import pulsar
 
@@ -9,6 +11,9 @@ from lux import route
 
 from .contents import Snippet, SkipBuild, BuildError, CONTENT_EXTENSIONS
 from .readers import READERS, BaseReader
+
+
+Item = namedtuple('Item', 'loc lastmod priority content_type body')
 
 
 class HttpException(pulsar.HttpException):
@@ -86,10 +91,12 @@ class BaseBuilder(object):
 class Builder(BaseBuilder):
     built = None
     dir = None
+    priority = 0.5
     include_subdirectories = True
     '''Include all subdirectories in the build'''
+    _build_done = None
 
-    def build(self, app, location=None, **params):
+    def build(self, app, location=None):
         '''Build the files managed by this :class:`.DirBuilder`
         '''
         if location is None:
@@ -103,7 +110,17 @@ class Builder(BaseBuilder):
                 self.build_file(app, location, src, name)
         else:
             self.build_file(app, location)
+        if self._build_done:
+            for callback in self._build_done:
+                callback(app, location, self.built)
         return self.built
+
+    def build_done(self, callback):
+        '''Add callback invoked when :meth:`build` has finished
+        '''
+        if not self._build_done:
+            self._build_done = []
+        self._build_done.append(callback)
 
     def all_files(self, src=None):
         '''Generator of all files within a directory
@@ -158,9 +175,8 @@ class Builder(BaseBuilder):
                 if self.route.variables:
                     urlparams = content.context(app,
                                                 names=self.route.variables)
-            site_url = app.config['SITE_URL']
             path = self.path(**urlparams)
-            url = urljoin(site_url, path)
+            url = app.site_url(self.normpath(path))
             request = app.wsgi_request(path=url, HTTP_ACCEPT='*/*')
             request.cache.building_static = True
             request.cache.content = content
@@ -188,6 +204,13 @@ class Builder(BaseBuilder):
                 body = content._content
                 content_type = content.content_type
             #
+            if content:
+                lastmod = content.modified
+                priority = content.priority
+            else:
+                lastmod = datetime.now()
+                priority = self.priority
+            #
             for ct, ext in CONTENT_EXTENSIONS.items():
                 ext = '.%s' % ext
                 if content_type == ct:
@@ -202,7 +225,15 @@ class Builder(BaseBuilder):
             app.logger.info('Creating "%s"', dst_filename)
             with open(dst_filename, 'wb') as f:
                 f.write(body)
-            self.built.append(body)
+            #
+            # Add file to the list of built files
+            if path.endswith('.html'):
+                if path.endswith('index.html'):
+                    path = path[:-10]
+                else:
+                    path = path[:-5]
+            self.built.append(
+                Item(url, lastmod, priority, content_type, body))
 
         # Loop over child routes
         for route in self.routes:
@@ -215,6 +246,14 @@ class Builder(BaseBuilder):
 
     def should_build(self, app, name):
         return True
+
+    def normpath(self, path):
+        if path.endswith('/index'):
+            return path[:-5]
+        elif path.endswith('/index.html'):
+            return path[:-10]
+        else:
+            return path
 
     # INTERNALS
     def get_src(self, src=None):
