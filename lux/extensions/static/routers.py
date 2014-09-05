@@ -121,7 +121,7 @@ class JsonFile(lux.Router, FileBuilder):
             html = self.html_router.get_route('html_files')
             urlparams = content.context(app, names=html.route.variables)
             path = html.path(**urlparams)
-            data['html_url'] = app.site_url(path)
+            data['html_url'] = app.site_url(self.normpath(path))
             return Json(data).http_response(request)
         else:
             raise HttpException

@@ -13,7 +13,7 @@ from .contents import Snippet, SkipBuild, BuildError, CONTENT_EXTENSIONS
 from .readers import READERS, BaseReader
 
 
-Item = namedtuple('Item', 'loc lastmod priority content_type body')
+Item = namedtuple('Item', 'loc lastmod priority file content_type body')
 
 
 class HttpException(pulsar.HttpException):
@@ -194,8 +194,8 @@ class Builder(BaseBuilder):
             content = None
         if response or content:
             path = request.path
-            if path.endswith('/'):
-                path = '%sindex' % path
+            if not path or path.endswith('/'):
+                path = '%sindex' % path if path else '/index'
             if response:
                 body = response.content[0]
                 content = request.cache.content
@@ -232,8 +232,8 @@ class Builder(BaseBuilder):
                     path = path[:-10]
                 else:
                     path = path[:-5]
-            self.built.append(
-                Item(url, lastmod, priority, content_type, body))
+            self.built.append(Item(url, lastmod, priority, dst_filename,
+                                   content_type, body))
 
         # Loop over child routes
         for route in self.routes:

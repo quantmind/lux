@@ -89,7 +89,8 @@ def execute_app(callable, argv=None, **params):
     if argv is None:
         argv = sys.argv
     callable._argv = argv = list(argv)
-    callable._script = argv.pop(0)
+    if argv:
+        callable._script = argv.pop(0)
     app = callable.handler()
     # Parse for the command
     parser = app.get_parser(add_help=False)

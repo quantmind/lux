@@ -10,7 +10,7 @@ command line::
 
     python managet.py build_static
 
-The are several :ref:`parameters <parameters-static>` which can be modified
+There are several :ref:`parameters <parameters-static>` which can be modified
 in order to customise the site.
 
 The first step is to create a new project via the :command:`create_project`
@@ -99,7 +99,7 @@ class Extension(lux.Extension):
         if api_url.endswith('/'):
             api_url = api_url[:-1]
         if not api_url and html5:
-            raise ImproperlyConfigured('STATIC_API must be defined')
+            raise ImproperlyConfigured('STATIC_API url must be defined')
         middleware = []
         app.api = None
         if api_url:

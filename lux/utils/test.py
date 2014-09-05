@@ -34,19 +34,25 @@ def all_extensions():
 
 
 class TestCase(unittest.TestCase):
-    '''TestCase class for lux tests. It provides several utilities methods.
+    '''TestCase class for lux tests.
+
+    It provides several utilities methods.
     '''
-    app = None
     config_file = 'tests.config'
     config_params = {}
+    apps = None
 
-    @classmethod
-    def application(cls):
+    def application(self, config_file=None, **params):
         '''Return an application for testing. Override if needed.
         '''
-        if cls.app is None:
-            cls.app = lux.App(cls.config_file, **cls.config_params)
-        return cls.app
+        kwargs = self.config_params.copy()
+        kwargs.update(params)
+        config_file = config_file or self.config_file
+        app = lux.App(config_file, **kwargs).setup()
+        if self.apps is None:
+            self.apps = []
+        self.apps.append(app)
+        return app
 
     def fetch_command(self, command, out=None):
         '''Fetch a command.'''
