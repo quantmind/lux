@@ -1,3 +1,4 @@
+__test__ = False
 import sys
 import os
 
@@ -13,10 +14,6 @@ class TestCSS(test.TestCase):
         c = all.css('#random', margin=cssv.skjncdfcd)
         self.assertFalse(c.attributes)
         self.assertEqual(c.parent, css('body'))
-
-
-class TestMixins(test.TestCase):
-    '''Test the simple Mixins'''
 
     def testRadius(self):
         s = css('.bla', Radius(px(5)))
@@ -145,9 +142,7 @@ class TestMixins(test.TestCase):
 }
 ''' % (classes.state_hover, classes.state_active))
 
-
-class TestGradient(test.TestCase):
-
+    # Gradient
     def test_vgradient(self):
         s = css('.bla',
                 gradient(('v', '#ffffff', '#f5f5f5')),
@@ -177,55 +172,3 @@ class TestGradient(test.TestCase):
         self.assertRaises(ValueError, lambda: gradient((5,))(d))
         self.assertRaises(ValueError, lambda: gradient((5, 4))(d))
         self.assertRaises(ValueError, lambda: gradient((4, 5, 6, 7))(d))
-
-
-class TestBCD(test.TestCase):
-
-    def testObject(self):
-        b = bcd()
-        self.assertFalse(b.color)
-        self.assertFalse(b.text_decoration)
-        self.assertFalse(b.text_shadow)
-
-    def testCss(self):
-        c = css('#testbcd', bcd(color='#444'))
-        self.assertTrue(c.children)
-        text = c.render()
-        self.assertEqual(text, '''#testbcd {
-    color: #444;
-}
-''')
-
-
-class TestNavigation(test.TestCase):
-
-    def testMeta(self):
-        nav = horizontal_navigation()
-        self.assertEqual(nav.float, 'left')
-        nav = horizontal_navigation(float='bla')
-        self.assertEqual(nav.float, 'left')
-        nav = horizontal_navigation(float='right')
-        self.assertEqual(nav.float, 'right')
-
-    def testRender(self):
-        nav = css('.nav', horizontal_navigation())
-        text = nav.render()
-        self.assertTrue(text)
-
-
-class TestTopBar(test.TestCase):
-
-    def test_meta(self):
-        tb = css('.topbar', topbar())
-        text = tb.render()
-        self.assertTrue(text)
-
-
-class TestUi(test.TestCase):
-
-    def testHorizontalDl(self):
-        dl = css('body').children['.%s' % classes.dl_horizontal]
-        self.assertEqual(len(dl), 1)
-        dl = dl[0]
-        text = dl.render()
-        self.assertTrue('.%s dt' % classes.dl_horizontal in text)

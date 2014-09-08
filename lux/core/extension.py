@@ -131,7 +131,10 @@ class ExtensionMeta(object):
                 return dir
 
     def copy(self, file):
-        return self.__class__(file, self.version, self.config.values())
+        meta = self.__class__(file, self.version, self.config.values())
+        meta.script = self.script
+        meta.argv = copy(self.argv)
+        return meta
 
     def update_config(self, config):
         for setting in config.values():

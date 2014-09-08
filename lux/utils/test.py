@@ -5,8 +5,6 @@ import lux
 from pulsar import get_actor
 from pulsar.apps.test import unittest, HttpTestClient, TestSuite
 from pulsar.apps.test.plugins import bench, profile
-from pulsar.utils.httpurl import ispy3k
-from pulsar.apps.wsgi import test_wsgi_environ
 
 
 def get_params(*names):
@@ -24,15 +22,6 @@ def get_params(*names):
 skipUnless = unittest.skipUnless
 
 
-def all_extensions():
-    return ['lux.extensions.base',
-            'lux.extensions.api',
-            'lux.extensions.sessions',
-            'lux.extensions.sitemap',
-            'lux.extensions.cms',
-            'lux.extensions.ui']
-
-
 class TestCase(unittest.TestCase):
     '''TestCase class for lux tests.
 
@@ -42,13 +31,17 @@ class TestCase(unittest.TestCase):
     config_params = {}
     apps = None
 
-    def application(self, config_file=None, **params):
+    def application(self, config_file=None, argv=None, **params):
         '''Return an application for testing. Override if needed.
         '''
         kwargs = self.config_params.copy()
         kwargs.update(params)
         config_file = config_file or self.config_file
-        app = lux.App(config_file, **kwargs).setup()
+        if argv is None:
+            argv = []
+        if '--log-level' not in argv:
+            argv.extend(('--log-level', 'none'))
+        app = lux.App(config_file, argv=argv, **kwargs).setup()
         if self.apps is None:
             self.apps = []
         self.apps.append(app)

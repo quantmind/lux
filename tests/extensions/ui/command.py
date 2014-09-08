@@ -1,3 +1,4 @@
+__test__ = False
 import os
 
 import lux

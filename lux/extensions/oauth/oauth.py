@@ -105,28 +105,30 @@ class OGP(object):
         head = doc.head
         type = self.get_field(doc, 'type') or self.default_type
         url = self.get_field(doc, 'html_url')
-        if url and not head.get_meta('%s:url' % self.prefix):
-            if self.prefix == 'og':
-                cfg = request.config
-                doc.attr('prefix', 'og: http://ogp.me/ns#')
-                doc.head.add_meta(name='og:site_name',
-                                  content=cfg['APP_NAME'])
-            self.add_meta(doc, 'type', type)
-            self.add_meta(doc, 'url', url)
-            self.add_meta(doc, 'title')
-            self.add_meta(doc, 'description')
-            #
-            image = self.get_field(doc, 'image')
-            if isinstance(image, dict):
-                url = image.get('url')
-                if url:
-                    self.add_meta(doc, 'image', url)
-                    for key, value in image.items():
-                        self.add_meta(doc, 'image:%s' % key, value)
-            elif image:
-                self.add_meta(doc, 'image', image)
-        else:
-            request.logger.warning('No doc html_url, cannot add OGP')
+        if not head.get_meta('%s:url' % self.prefix):
+            if url:
+                if self.prefix == 'og':
+                    cfg = request.config
+                    doc.attr('prefix', 'og: http://ogp.me/ns#')
+                    doc.head.add_meta(name='og:site_name',
+                                      content=cfg['APP_NAME'])
+                self.add_meta(doc, 'type', type)
+                self.add_meta(doc, 'url', url)
+                self.add_meta(doc, 'title')
+                self.add_meta(doc, 'description')
+                #
+                image = self.get_field(doc, 'image')
+                if isinstance(image, dict):
+                    url = image.get('url')
+                    if url:
+                        self.add_meta(doc, 'image', url)
+                        for key, value in image.items():
+                            self.add_meta(doc, 'image:%s' % key, value)
+                elif image:
+                    self.add_meta(doc, 'image', image)
+            else:
+                request.logger.warning('No doc html_url, cannot add open graph'
+                                       ' protocol data to %s' % request.path)
 
     def add_meta(self, doc, key, value=None):
         if not value:

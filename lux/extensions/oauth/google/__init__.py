@@ -12,6 +12,8 @@ class Google(OAuth2):
     Additional field to the OAuth2
 
     * ``analytics_id``    token for google analytics
+    * ``simple_key`` to identify your project when you do not need to
+      access user data (google map for example)
     * ``map_sensor``
     '''
     auth_uri = "https://accounts.google.com/o/oauth2/auth"
@@ -28,11 +30,12 @@ class Google(OAuth2):
             p = urlparse(site)
             txt = GOOGLE_ANALYTICS.substitute({'id': aid, 'domain': p.netloc})
             doc.head.append(txt)
-        key = self.config.get('key')
+        key = self.config.get('simple_key')
         if key:
             sensor = 'true' if self.config.get('map_sensor') else 'false'
             url = google_map_url % (key, sensor)
-            doc.head.scripts.known_libraries['google-maps'] = url
+            doc.head.scripts.known_libraries['google-maps'] = {'url': url,
+                                                               'minify': False}
             doc.head.embedded_js.append(run_google_maps_callbacks)
 
 
@@ -69,5 +72,6 @@ var google_maps_callbacks = [],
 '''
 
 
-google_map_url = ('https://maps.googleapis.com/maps/api/js?key=%s&sensor=%s&'
+google_map_url = ('https://maps.googleapis.com/maps/api/js?v=3.exp&'
+                  'key=%s&sensor=%s&'
                   'callback=run_google_maps_callbacks')

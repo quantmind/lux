@@ -56,6 +56,7 @@ class BaseReader(object):
         """
         cfg = self.config
         context = {}
+        head_meta = {}
         meta_input = meta_input.items()
         if meta:
             meta_input = chain(meta.items(), meta_input)
@@ -66,9 +67,10 @@ class BaseReader(object):
                 values = (values,)
             if key not in meta:
                 bits = key.split('_', 1)
-                if len(bits) == 2:
+                if len(bits) > 1:
+                    k = ':'.join(bits[1:])
                     if bits[0] == 'context':
-                        context[bits[1]] = data = []
+                        context[k] = data = []
                         for value in values:
                             data.extend(as_list(value, cfg))
                         continue
@@ -76,7 +78,10 @@ class BaseReader(object):
                         data = []
                         for value in values:
                             data.extend(as_list(value, cfg))
-                        meta[bits[1]] = guess(data)
+                        meta[k] = guess(data)
+                        continue
+                    if bits[0] == 'head':
+                        head_meta[k] = ', '.join(values)
                         continue
                 self.logger.warning("Unknown meta '%s' in '%s'", key, src)
             #
@@ -96,6 +101,7 @@ class BaseReader(object):
             meta['robots'].clear()
             meta['robots'].extend(['noindex', 'nofollow'])
         content = content or Snippet
+        meta['head'] = head_meta
         return content(body, meta, src, name, context, **params)
 
     def read(self, source_path, name, **params):
@@ -171,4 +177,3 @@ class PythonReader(BaseReader):
             ct = 'text/plain'
         metadata = {'content_type': [ct]}
         return self.process(content, metadata, source_path, name, **params)
-

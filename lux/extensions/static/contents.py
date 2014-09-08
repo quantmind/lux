@@ -40,7 +40,6 @@ METADATA_PROCESSORS = dict(((p.name, p) for p in (
     Processor('tag', list_of(Tag), multiple=True),
     Processor('date', lambda x, cfg: [parse_date(x)]),
     Processor('status'),
-    Processor('image-url'),
     Processor('priority'),
     Processor('category', list_of(Category), multiple=True),
     Processor('author', list_of(Author), multiple=True),
@@ -51,8 +50,6 @@ METADATA_PROCESSORS = dict(((p.name, p) for p in (
     Processor('template-engine',
               default=lambda cfg: cfg['DEFAULT_TEMPLATE_ENGINE']),
     Processor('robots', default=['index', 'follow'], multiple=True),
-    Processor('header-image'),
-    Processor('twitter-image'),
     Processor('type')
 )))
 
@@ -190,6 +187,11 @@ class Snippet(object):
                 context['%s_date' % name] = app.format_date(value)
                 context[name] = app.format_datetime(value)
                 continue
+            elif isinstance(value, dict):
+                if not value:
+                    continue
+                for k, v in tuple(value.items()):
+                    value[k] = engine(v, ctx)
             if value and isinstance(value, str):
                 value = engine(value, ctx)
             context[name] = value
@@ -250,6 +252,11 @@ class Snippet(object):
         doc = request.html_document
         head = doc.head
         #
+        head_meta = data.get('head')
+        if head_meta:
+            head.fields.update(head_meta)
+        if 'html_url' in data:
+            head.fields['html_url'] = data['html_url']
         title = data.get('head_title')
         if title:
             head.title = title

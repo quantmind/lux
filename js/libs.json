@@ -2,6 +2,7 @@
     "lux": {
         "src": ["js/lux/open.js",
                 "js/lux/class.js",
+                "js/lux/utils.js",
                 "js/lux/api.js",
                 "js/lux/google.js",
                 "js/lux/page.js",

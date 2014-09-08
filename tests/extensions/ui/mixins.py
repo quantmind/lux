@@ -47,7 +47,7 @@ class TestMixins(test.TestCase):
 }
 ''')
 
-    def test_clickable(self):
+    def __test_clickable(self):
         all = Css()
         b = Clickable(default={'background': '#111'},
                       hover={'background': '#555'})
@@ -66,7 +66,7 @@ class TestMixins(test.TestCase):
         self.assertFalse('.blax.active {' in text)
         self.assertFalse('border' in text)
 
-    def test_clearfix(self):
+    def __test_clearfix(self):
         all = Css()
         s = all.css('.bla',
                     Clearfix(),

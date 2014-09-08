@@ -1,3 +1,4 @@
+__test__ = False
 from lux.utils import test
 from lux.extensions.ui.lib import *
 
