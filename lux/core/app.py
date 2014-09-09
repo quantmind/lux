@@ -213,7 +213,8 @@ class Application(ConsoleParser, Extension):
                    'datastore which support the cache protocol or an object '
                    'supporting the cache protocol')),
         Parameter('DEFAULT_FROM_EMAIL', '',
-                  'Default email address to send email from')
+                  'Default email address to send email from'),
+        Parameter('LOCALE', 'en_GB', 'Default locale')
         ]
 
     def __init__(self, callable):
@@ -297,9 +298,14 @@ class Application(ConsoleParser, Extension):
                            data_debug=self.debug,
                            content_type=content_type,
                            charset=cfg['ENCODING'])
-        doc.fields['html_url'] = self.site_url(request.path)
         #
         if doc.has_default_content_type:
+            # Locale
+            lang = cfg['LOCALE'][:2]
+            doc.attr('lang', lang)
+            doc.fields['html_url'] = self.site_url(request.path)
+            doc.fields['locale'] = cfg['LOCALE']
+            #
             head = doc.head
             head.scripts.known_libraries['lux'] = {'url': 'lux/lux',
                                                    'minify': False}

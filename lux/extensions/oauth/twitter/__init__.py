@@ -23,6 +23,7 @@ class Twitter(OAuth1):
 
 class TwitterCard(OGP):
     prefix = 'twitter'
+    meta_key = 'name'
     default_type = 'summary'
     field_mapping = {'type': 'card'}
     card_types = {

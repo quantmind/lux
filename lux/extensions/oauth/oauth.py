@@ -89,6 +89,7 @@ class OGP(object):
     .. _OGP: http://ogp.me/
     '''
     prefix = 'og'
+    meta_key = 'property'
     default_type = 'website'
     field_mapping = {}
 
@@ -105,13 +106,15 @@ class OGP(object):
         head = doc.head
         type = self.get_field(doc, 'type') or self.default_type
         url = self.get_field(doc, 'html_url')
-        if not head.get_meta('%s:url' % self.prefix):
+        if not head.get_meta('%s:url' % self.prefix, meta_key=self.meta_key):
             if url:
                 if self.prefix == 'og':
                     cfg = request.config
                     doc.attr('prefix', 'og: http://ogp.me/ns#')
-                    doc.head.add_meta(name='og:site_name',
+                    doc.head.add_meta(property='og:site_name',
                                       content=cfg['APP_NAME'])
+                    doc.head.links.append(rel='canonical', href=url, type='')
+                    self.add_meta(doc, 'locale')
                 self.add_meta(doc, 'type', type)
                 self.add_meta(doc, 'url', url)
                 self.add_meta(doc, 'title')
@@ -135,8 +138,9 @@ class OGP(object):
             value = self.get_field(doc, key)
         key = self.field_mapping.get(key) or key
         if value:
-            doc.head.add_meta(name='%s:%s' % (self.prefix, key),
-                              content=value)
+            kwargs = {self.meta_key: '%s:%s' % (self.prefix, key),
+                      'content': value}
+            doc.head.add_meta(**kwargs)
 
 
 def register_oauth(cls):

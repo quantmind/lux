@@ -15,4 +15,4 @@ class Facebook(OAuth2):
         prefix = doc.attr('prefix')
         if key and prefix:
             doc.attr('prefix', '%s fb: http://ogp.me/ns/fb#' % prefix)
-            doc.head.add_meta(name='fb:app_id', content=key)
+            doc.head.add_meta(property='fb:app_id', content=key)
