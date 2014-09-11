@@ -2,7 +2,7 @@
 Lux
 ================
 
-An asynchronous, highly customisable, web-framework for Python.
+Highly customisable web-toolkit for Python and JavaScript.
 
 .. toctree::
    :maxdepth: 1

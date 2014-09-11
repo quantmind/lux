@@ -82,43 +82,54 @@ class OAuth2(OAuth1):
         return OAuth2Session(p['key'], scope=p['scope'], **kw)
 
 
-
-class OGP(object):
+class OGPbase(object):
     '''Open Graph Protocol (OGP_) meta tags
 
     .. _OGP: http://ogp.me/
     '''
     prefix = 'og'
     meta_key = 'property'
-    default_type = 'website'
+    default_type = None
+    types = ()
     field_mapping = {}
 
     def __init__(self, request, doc, default_type=None):
         if default_type:
             self.default_type = default_type
+        self.config = request.config
         self.add_meta_tags(request, doc)
 
-    def get_field(self, doc, field):
-        pname = '%s_%s' % (self.prefix, field)
+    def get_field(self, doc, field, prefix=None):
+        pname = '%s_%s' % (prefix or self.prefix, field)
         return doc.fields.get(pname) or doc.fields.get(field)
+
+    def get_type(self, doc):
+        value = self.get_field(doc, 'type') or self.default_type
+        if value not in self.types:
+            return self.default_type
+        return value
+
+    def add_namespace(self, doc, namespace, url=None):
+        pass
+
+    def list_key(self, index, key):
+        return key
 
     def add_meta_tags(self, request, doc):
         head = doc.head
-        type = self.get_field(doc, 'type') or self.default_type
+        type = self.get_type(doc)
         url = self.get_field(doc, 'html_url')
         if not head.get_meta('%s:url' % self.prefix, meta_key=self.meta_key):
             if url:
-                if self.prefix == 'og':
-                    cfg = request.config
-                    doc.attr('prefix', 'og: http://ogp.me/ns#')
-                    doc.head.add_meta(property='og:site_name',
-                                      content=cfg['APP_NAME'])
-                    doc.head.links.append(rel='canonical', href=url, type='')
-                    self.add_meta(doc, 'locale')
+                self.add_namespace(doc, self.prefix, url)
                 self.add_meta(doc, 'type', type)
                 self.add_meta(doc, 'url', url)
                 self.add_meta(doc, 'title')
                 self.add_meta(doc, 'description')
+                #
+                type_method = getattr(self, 'type_%s' % type, None)
+                if type_method:
+                    type_method(doc)
                 #
                 image = self.get_field(doc, 'image')
                 if isinstance(image, dict):
@@ -133,14 +144,58 @@ class OGP(object):
                 request.logger.warning('No doc html_url, cannot add open graph'
                                        ' protocol data to %s' % request.path)
 
-    def add_meta(self, doc, key, value=None):
+    def add_meta(self, doc, key, value=None, prefix=None):
         if not value:
-            value = self.get_field(doc, key)
+            value = self.get_field(doc, key, prefix=prefix)
         key = self.field_mapping.get(key) or key
         if value:
-            kwargs = {self.meta_key: '%s:%s' % (self.prefix, key),
-                      'content': value}
-            doc.head.add_meta(**kwargs)
+            if prefix:
+                self.add_namespace(doc, prefix)
+            else:
+                prefix = self.prefix
+            if isinstance(value, (list, tuple)):
+                self.add_list(doc, key, prefix, value)
+            else:
+                key = '%s:%s' % (prefix, key)
+                doc.head.add_meta(**{self.meta_key: key, 'content': value})
+
+    def add_list(self, doc, key, prefix, values):
+        for index, value in enumerate(values):
+            newkey = self.list_key(index, key)
+            if newkey:
+                newkey = '%s:%s' % (prefix, newkey)
+                doc.head.add_meta(**{self.meta_key: newkey, 'content': value})
+
+
+
+class OGP(OGPbase):
+    types = ('website', 'music', 'video', 'article', 'book', 'profile')
+    arrays = ('image')
+
+    def add_namespace(self, doc, namespace, url=None):
+        cfg = self.config
+        prefix = doc.attr('prefix')
+        if prefix is None:  # No prefix yet
+            prefix = 'og: http://ogp.me/ns#'
+            self.add_meta(doc, 'site_name', cfg['APP_NAME'])
+            self.add_meta(doc, 'locale')
+            if url:
+                doc.head.links.append(rel='canonical', href=url, type='')
+        if namespace is not 'og':
+            attr = '{0}: http://ogp.me/ns/{0}#'.format(namespace)
+            if attr not in prefix:
+                prefix += ' %s' % attr
+        doc.attr('prefix', prefix)
+
+    def type_profile(self, doc):
+        self.add_meta(doc, 'first_name')
+        self.add_meta(doc, 'last_name')
+        self.add_meta(doc, 'username')
+        self.add_meta(doc, 'gender')
+
+    def type_article(self, doc):
+        self.add_meta(doc, 'author')
+        self.add_meta(doc, 'tag')
 
 
 def register_oauth(cls):

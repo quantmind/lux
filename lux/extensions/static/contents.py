@@ -190,8 +190,11 @@ class Snippet(object):
             elif isinstance(value, dict):
                 if not value:
                     continue
-                for k, v in tuple(value.items()):
-                    value[k] = engine(v, ctx)
+                for k, val in tuple(value.items()):
+                    if isinstance(val, (list, tuple)):
+                        value[k] = tuple((engine(v, ctx) for v in val))
+                    else:
+                        value[k] = engine(val, ctx)
             if value and isinstance(value, str):
                 value = engine(value, ctx)
             context[name] = value

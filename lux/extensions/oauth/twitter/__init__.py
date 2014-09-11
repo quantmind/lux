@@ -1,6 +1,6 @@
 '''
 '''
-from ..oauth import OAuth1, OGP, register_oauth
+from ..oauth import OAuth1, OGPbase, register_oauth
 
 
 @register_oauth
@@ -21,13 +21,16 @@ class Twitter(OAuth1):
         t.add_meta(doc, 'site', site)
 
 
-class TwitterCard(OGP):
+class TwitterCard(OGPbase):
     prefix = 'twitter'
     meta_key = 'name'
     default_type = 'summary'
     field_mapping = {'type': 'card'}
-    card_types = {
+    types = {
         'summary': (),
         'summary_large_image': (),
         'photo': ()
     }
+
+    def list_key(self, index, key):
+        return '%s%d' % (key, index+1)

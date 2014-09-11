@@ -81,7 +81,10 @@ class BaseReader(object):
                         meta[k] = guess(data)
                         continue
                     if bits[0] == 'head':
-                        head_meta[k] = ', '.join(values)
+                        data = []
+                        for value in values:
+                            data.extend(as_list(value, cfg))
+                        head_meta[k] = guess(data).value()
                         continue
                 self.logger.warning("Unknown meta '%s' in '%s'", key, src)
             #
