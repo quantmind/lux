@@ -8,6 +8,8 @@ try:
 except ImportError:
     Markdown = False
 
+Restructured = False
+
 from pulsar.apps.wsgi import AsyncString
 
 from .contents import (Snippet, METADATA_PROCESSORS, slugify, is_text,
@@ -40,6 +42,7 @@ class BaseReader(object):
     enabled = True
     file_extensions = []
     extensions = None
+    content = Snippet
 
     def __init__(self, app, ext=None):
         self.app = app
@@ -99,11 +102,11 @@ class BaseReader(object):
                         self.logger.exception("Could not process meta '%s' "
                                               "in '%s'", key, src)
                     meta[key].extend(value)
+        content = content or self.content
         if meta['priority'].value() == '0':
             content = content.as_draft()
             meta['robots'].clear()
             meta['robots'].extend(['noindex', 'nofollow'])
-        content = content or Snippet
         meta['head'] = head_meta
         return content(body, meta, src, name, context, **params)
 
@@ -180,3 +183,16 @@ class PythonReader(BaseReader):
             ct = 'text/plain'
         metadata = {'content_type': [ct]}
         return self.process(content, metadata, source_path, name, **params)
+
+
+@register_reader
+class RestructuredReader(BaseReader):
+    enabled = bool(Restructured)
+    file_extensions = ['rst']
+
+    def read(self, source_path, name, **params):
+        with open(source_path, encoding='utf-8') as text:
+            raw = text.read()
+            re = Restructured(raw)
+        body = re.convert()
+        return self.process(body, re.Meta, source_path, name, **params)

@@ -25,6 +25,7 @@ from collections import OrderedDict
 from importlib import import_module
 
 import pulsar
+from pulsar import ImproperlyConfigured
 from pulsar.utils.httpurl import urljoin, remove_double_slash
 from pulsar.apps.wsgi import (WsgiHandler, HtmlDocument, test_wsgi_environ,
                               LazyWsgi)
@@ -77,7 +78,7 @@ def execute_from_command_line(argv=None):
     execute_app(App('lux.core.app'))
 
 
-def execute_app(callable, argv=None, **params):
+def execute_app(app, argv=None, **params):
     '''Execute a given ``app``.
 
     :parameter app: the :class:`.App` to execute
@@ -88,18 +89,22 @@ def execute_app(callable, argv=None, **params):
     '''
     if argv is None:
         argv = sys.argv
-    callable._argv = argv = list(argv)
+    app._argv = argv = list(argv)
     if argv:
-        callable._script = argv.pop(0)
-    app = callable.handler()
+        app._script = argv.pop(0)
+    try:
+        application = app.handler()
+    except ImproperlyConfigured as e:
+        print('IMPROPERLY CONFUGURED: %s' % e)
+        exit(1)
     # Parse for the command
-    parser = app.get_parser(add_help=False)
+    parser = application.get_parser(add_help=False)
     opts, _ = parser.parse_known_args(argv)
     #
     # we have a command
     if opts.command:
         try:
-            command = app.get_command(opts.command)
+            command = application.get_command(opts.command)
         except CommandError as e:
             print('\n'.join(('%s.' % e, 'Pass -h for list of commands')))
             exit(1)
@@ -113,12 +118,11 @@ def execute_app(callable, argv=None, **params):
             exit(1)
     else:
         # this should fail unless we pass -h
-        parser = app.get_parser(nargs=1)
+        parser = application.get_parser(nargs=1)
         parser.parse_args(argv)
 
 
 class App(LazyWsgi):
-
     def __init__(self, config_file, script=None, argv=None, **params):
         if not os.path.isfile(config_file):
             config_file = import_module(config_file).__file__
@@ -183,7 +187,7 @@ class Application(ConsoleParser, Extension):
                   'links *.js become *.min.js'),
         Parameter('HTML_LINKS', [],
                   'List of links to include in the html head tag.'),
-        Parameter('JSREQUIRED', ('require',),
+        Parameter('REQUIREJS', ('require',),
                   'Default Required javascript. Loaded via requirejs.'),
         Parameter('JSREQUIRE_CALLBACK', None,
                   'Callback used by requirejs.'),
@@ -289,8 +293,12 @@ class Application(ConsoleParser, Extension):
         if handler:
             title = handler.parameters.get('title')
         cfg = self.config
+        site_url = cfg['SITE_URL']
+        media_path=cfg['MEDIA_URL']
+        if site_url:
+            media_path = site_url + media_path
         doc = HtmlDocument(title=title or cfg['HTML_TITLE'],
-                           media_path=cfg['MEDIA_URL'],
+                           media_path=media_path,
                            minified=cfg['MINIFIED_MEDIA'],
                            known_libraries=None,
                            scripts_dependencies=None,
@@ -310,7 +318,7 @@ class Application(ConsoleParser, Extension):
             head.scripts.known_libraries['lux'] = {'url': 'lux/lux',
                                                    'minify': False}
             #
-            required = cfg['JSREQUIRED']
+            required = cfg['REQUIREJS']
             if required:
                 head.scripts.require(*required)
             #
@@ -508,12 +516,13 @@ class Application(ConsoleParser, Extension):
             document.body.append(body)
             return document.http_response(request)
 
-    def site_url(self, path='/'):
+    def site_url(self, path=None):
         '''Build the site url from an optional ``path``
         '''
         base = self.config['SITE_URL']
+        path = path or '/'
         if base:
-            return base if path == '/' else urljoin(base, path)
+            return base if path == '/' else '%s%s' % (base, path)
         else:
             return path
 

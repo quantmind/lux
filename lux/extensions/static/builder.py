@@ -9,7 +9,7 @@ from pulsar.utils.httpurl import remove_double_slash, urljoin
 
 from lux import route
 
-from .contents import Snippet, SkipBuild, BuildError, CONTENT_EXTENSIONS
+from .contents import SkipBuild, BuildError, CONTENT_EXTENSIONS
 from .readers import READERS, BaseReader
 
 
@@ -36,6 +36,15 @@ def get_rel_dir(dir, base, res=''):
     return get_rel_dir(dir, base, fname)
 
 
+def normpath(path):
+    if path.endswith('/index'):
+        return path[:-5]
+    elif path.endswith('/index.html'):
+        return path[:-10]
+    else:
+        return path
+
+
 def skip(name):
     return name.startswith('.') or name.startswith('__')
 
@@ -43,7 +52,7 @@ def skip(name):
 class BaseBuilder(object):
     '''Base class for static site builders
     '''
-    content = Snippet
+    content = None
     '''Content factory'''
     meta = None
     '''Default meta attribute for the content built by this builder.
@@ -176,7 +185,7 @@ class Builder(BaseBuilder):
                     urlparams = content.context(app,
                                                 names=self.route.variables)
             path = self.path(**urlparams)
-            url = app.site_url(self.normpath(path))
+            url = app.site_url(normpath(path))
             request = app.wsgi_request(path=url, HTTP_ACCEPT='*/*')
             request.cache.building_static = True
             request.cache.content = content
@@ -193,7 +202,7 @@ class Builder(BaseBuilder):
                                  content or path)
             content = None
         if response or content:
-            path = request.path
+            path = self.relative_path(request)
             if not path or path.endswith('/'):
                 path = '%sindex' % path if path else '/index'
             if response:
@@ -247,13 +256,13 @@ class Builder(BaseBuilder):
     def should_build(self, app, name):
         return True
 
-    def normpath(self, path):
-        if path.endswith('/index'):
-            return path[:-5]
-        elif path.endswith('/index.html'):
-            return path[:-10]
+    def relative_path(self, request):
+        site_url = request.config['SITE_URL']
+        if site_url:
+            path = request.absolute_uri()
+            return path[len(site_url):]
         else:
-            return path
+            return request.path
 
     # INTERNALS
     def get_src(self, src=None):
@@ -283,13 +292,14 @@ class FileBuilder(Builder):
 
 
 class DirBuilder(Builder):
-    '''A builder of a directory of static content
+    '''A builder for a directory of static content
     '''
     child_url = '<slug>'
+    '''The relative url of files withing the directory'''
     src = None
 
     def valid_route(self, route, dir):
-        '''Check if ``route`` is a valid route for this directory builder
+        '''Check if ``dir`` is a valid directory for this builder
         '''
         route = str(route)
         if route.endswith('/'):

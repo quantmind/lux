@@ -1,4 +1,5 @@
     //
+    // Bootstrap the document
     lux.bootstrap = function () {
         //
         function setup_angular() {

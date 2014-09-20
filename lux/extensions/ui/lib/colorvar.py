@@ -188,6 +188,8 @@ def safe_color(col):
 
 
 def darken(col, weight):
+    '''Darken a color ``col`` by a ``weight``, a number bewteen 0 and 100.
+    '''
     if isinstance(col, Variable) or isinstance(weight, Variable):
         return Lazy(lambda: darken(as_value(col), weight))
     else:

@@ -1,1 +1,3 @@
+pulsar
+python-dateutil
 oauthlibs

@@ -77,6 +77,8 @@ def add_css(all):
     css = all.css
     vars = all.variables
 
+    colors(all)
+
     # Helper classes
     vars.push_bottom = '20px !important'
 
@@ -111,3 +113,14 @@ def add_css(all):
     css('.absolute-full',
         position='absolute',
         top=0, bottom=0)
+
+
+def colors(all):
+    vars = all.variables
+    black = color('#000')
+
+    vars.colors.gray_darker = lighten(black, 13.5)
+    vars.colors.gray_dark = lighten(black, 20)
+    vars.colors.gray = lighten(black, 50)
+    vars.colors.gray_light = lighten(black, 70)
+    vars.colors.gray_lighter = lighten(black, 93.5)

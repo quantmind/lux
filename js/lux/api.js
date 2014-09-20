@@ -1,3 +1,5 @@
+    //
+    // Object containing apis by name
     var ApiTypes = lux.ApiTypes = {};
     //
     // If CSRF token is not available
@@ -10,9 +12,9 @@
             context.csrf[name] = token;
         }
     }
+    //
     //  Lux Api service factory for angular
     //  ---------------------------------------
-    //
     lux.services.service('$lux', function ($location, $q, $http, $log, $anchorScroll) {
         var $lux = this;
 
@@ -90,8 +92,7 @@
 
         },
         //
-        // Build the object used by $http when making the request
-        // Returns the object
+        // Build the object used by $http when executing the api call
         httpOptions: function (request) {
             var options = request.options;
             options.url = this.url(request.urlparams);
@@ -100,6 +101,9 @@
         //
         //
         // Perform the actual request and return a promise
+        //  method: HTTP method
+        //  urlparams:
+        //  opts: object passed to
         request: function (method, urlparams, opts, data) {
             var d = this.$lux.q.defer(),
                 //
@@ -173,7 +177,10 @@
             return this.request('GET', null, options);
         },
         //
-        // Internal method for executing an API call
+        //  Execute an API call for a given request
+        //  This method is hardly used directly, the ``request`` method is normally used.
+        //
+        //      request: a request object obtained from the ``request`` method
         call: function (request) {
             var $lux = this.$lux;
             //

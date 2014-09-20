@@ -10,7 +10,7 @@ from pulsar.utils.slugify import slugify
 from pulsar.apps.wsgi import Json, MediaRouter
 
 from .builder import (DirBuilder, FileBuilder, BuildError, SkipBuild,
-                      HttpException)
+                      HttpException, normpath)
 from .contents import Article, parse_date
 
 
@@ -65,8 +65,11 @@ class JsonRoot(lux.Router, FileBuilder):
 
     def apis(self, request):
         routes = {}
+        site_url = request.config['SITE_URL']
         for route in self.routes:
-            path = request.absolute_uri(route.path())
+            path = route.path()
+            if site_url:
+                path = '%s%s' % (site_url, path)
             url = '%s.json' % path
             routes['%s_url' % route.name] = url
         return routes
@@ -81,9 +84,11 @@ class JsonContent(lux.Router, DirBuilder):
     html_router = lux.RouterParam(None)
 
     def __init__(self, route, dir=None, name=None, html_router=None):
-        route = self.valid_route(route, dir)[:-1] or self.dir
-        name = slugify(name or route or self.dir)
-        self.src = '%s.json' % self.dir
+        route = self.valid_route(route, dir)[:-1]
+        base = os.path.basename(self.dir)
+        route = route or base
+        name = slugify(name or route)
+        self.src = '%s.json' % route
         assert html_router, 'html router required'
         super(JsonContent, self).__init__(route, name=name,
                                           html_router=html_router,
@@ -117,11 +122,11 @@ class JsonFile(lux.Router, FileBuilder):
             urlargs = request.urlargs
             if urlargs.get('path') == 'index':
                 urlargs['path'] = ''
-            data['api_url'] = app.site_url(request.path)
+            data['api_url'] = app.site_url(self.relative_path(request))
             html = self.html_router.get_route('html_files')
             urlparams = content.context(app, names=html.route.variables)
             path = html.path(**urlparams)
-            data['html_url'] = app.site_url(self.normpath(path))
+            data['html_url'] = app.site_url(normpath(path))
             return Json(data).http_response(request)
         else:
             raise HttpException

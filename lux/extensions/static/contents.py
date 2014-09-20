@@ -288,7 +288,11 @@ class Snippet(object):
         robots = data.get('robots')
         if robots:
             head.add_meta(name='robots', content=robots)
+        self.on_html(request.app, doc)
         return context.get(self.key('main'))
+
+    def on_html(self, app, doc):
+        pass
 
     @classmethod
     def as_draft(cls):

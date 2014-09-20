@@ -1,5 +1,3 @@
-#! /usr/bin/env python 
-from optparse import OptionParser
 import os
 import sys
 import shutil
@@ -35,8 +33,8 @@ class Replacer(object):
         self.to = to
 
     def process(self, text):
-
-        return text.replace( self.from_, self.to )
+        print('Replace %s to %s' % (self.from_, self.to))
+        return text.replace(self.from_, self.to)
 
 
 class FileHandler(object):
@@ -51,7 +49,6 @@ class FileHandler(object):
         text = self.opener(self.name).read()
         for replacer in self.replacers:
             text = replacer.process( text )
-
         self.opener(self.name, "w").write(text)
 
 
@@ -75,8 +72,8 @@ class ForceRename(object):
     def __call__(self, from_, to):
         self.remove(to)
         self.renamer(from_, to)
-        
-        
+
+
 class VerboseRename(object):
 
     def __init__(self, renamer, stream):
@@ -93,7 +90,7 @@ class VerboseRename(object):
 
 
 class DirectoryHandler(object):
-    "Encapsulates renaming a directory by removing its first character"
+    '''Encapsulates renaming a directory by removing its first character'''
 
     def __init__(self, name, root, renamer):
         self.name = name
@@ -133,15 +130,12 @@ class OperationsFactory(object):
         return ForceRename(renamer, remover)
 
     def create_verbose_rename(self, renamer, stream):
-
         return VerboseRename(renamer, stream)
 
     def create_replacer(self, from_, to):
-
         return Replacer(from_, to)
 
     def create_remover(self, exists, remove):
-
         return Remover(exists, remove)
 
 
@@ -182,11 +176,14 @@ class LayoutFactory(object):
         renamer = self.file_helper.move
 
         if self.force:
-            remove = self.operations_factory.create_remover(self.file_helper.exists, self.dir_helper.rmtree)
-            renamer = self.operations_factory.create_force_rename(renamer, remove) 
+            remove = self.operations_factory.create_remover(
+                self.file_helper.exists, self.dir_helper.rmtree)
+            renamer = self.operations_factory.create_force_rename(
+                renamer, remove)
 
         if self.verbose:
-            renamer = self.operations_factory.create_verbose_rename(renamer, self.output_stream) 
+            renamer = self.operations_factory.create_verbose_rename(
+                renamer, self.output_stream)
 
         # Build list of directories to process
         directories = [d for d in contents if self.is_underscore_dir(path, d)]
@@ -214,34 +211,34 @@ class LayoutFactory(object):
         filelist = []
         for root, dirs, files in self.dir_helper.walk(path):
             for f in files:
-                if f.endswith(".html"):
+                if f.endswith(".html") or f.endswith(".fjson"):
                     filelist.append(
-                            self.handler_factory.create_file_handler(
-                                self.file_helper.path_join(root, f),
-                                replacers,
-                                self.file_helper.open_)
-                            )
+                        self.handler_factory.create_file_handler(
+                            self.file_helper.path_join(root, f),
+                            replacers,
+                            self.file_helper.open_)
+                        )
                 if f.endswith(".js"):
                     filelist.append(
-                            self.handler_factory.create_file_handler(
-                                self.file_helper.path_join(root, f),
-                                [self.operations_factory.create_replacer("'_sources/'", "'sources/'")],
-                                self.file_helper.open_
-                                )
+                        self.handler_factory.create_file_handler(
+                            self.file_helper.path_join(root, f),
+                            [self.operations_factory.create_replacer(
+                                "'_sources/'", "'sources/'")],
+                            self.file_helper.open_
                             )
+                        )
 
         return Layout(underscore_directories, filelist)
 
     def is_underscore_dir(self, path, directory):
-
-        return (self.dir_helper.is_dir(self.file_helper.path_join(path, directory))
-            and directory.startswith("_"))
-
+        return (self.dir_helper.is_dir(
+            self.file_helper.path_join(path, directory))
+                and directory.startswith("_"))
 
 
 def sphinx_extension(app, exception):
     "Wrapped up as a Sphinx Extension"
-    if not app.builder.name in ("html", "dirhtml"):
+    if not app.builder.name in ("html", "dirhtml", "json"):
         return
 
     if not app.config.sphinx_to_github:
@@ -251,7 +248,8 @@ def sphinx_extension(app, exception):
 
     if exception:
         if app.config.sphinx_to_github_verbose:
-            print("Sphinx-to-github: Exception raised in main build, doing nothing.")
+            print("Sphinx-to-github: Exception raised in main build, "
+                  "doing nothing.")
         return
 
     dir_helper = DirHelper(
@@ -267,7 +265,7 @@ def sphinx_extension(app, exception):
             shutil.move,
             os.path.exists
             )
-    
+
     operations_factory = OperationsFactory()
     handler_factory = HandlerFactory()
 
@@ -290,5 +288,3 @@ def setup(app):
     app.add_config_value("sphinx_to_github", True, '')
     app.add_config_value("sphinx_to_github_verbose", True, '')
     app.connect("build-finished", sphinx_extension)
-
-

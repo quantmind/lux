@@ -52,7 +52,9 @@ from .builder import Builder, DirBuilder, ContextBuilder
 from .contents import Snippet, Article
 from .routers import (MediaBuilder, HtmlContent, Blog, ErrorRouter,
                       JsonRoot, JsonContent, JsonRedirect, Sitemap)
+from .rst import SphinxDocs
 from .ui import add_css
+from . import slides
 
 
 class StaticHandler(WsgiHandler):
@@ -90,8 +92,8 @@ class Extension(lux.Extension):
         try:
             html5 = app.config['HTML5_NAVIGATION']
         except KeyError:
-            raise ImproperlyConfigured('Static extension requires html5 '
-                                       'extension')
+            raise ImproperlyConfigured('"lux.extensions.static" requires '
+                                       '"lux.extensions.html5" in EXTENSIONS')
         path = app.config['MEDIA_URL']
         api_url = app.config['STATIC_API'] or ''
         if api_url.startswith('/'):
@@ -126,12 +128,12 @@ class Extension(lux.Extension):
             path = os.path.abspath(app.config['STATIC_LOCATION'])
             middleware = app.handler.middleware
             file404 = os.path.join(path, '404.html')
-            if os.path.isfile(file404):
-                raise_404 = False
+            if not os.path.isfile(file404):
+                file404 = None
             media = MediaRouter('', path, default_suffix='html',
-                                raise_404=raise_404)
+                                raise_404=(not file404))
             middleware.append(media)
-            if not raise_404:
+            if file404:
                 middleware.append(FileRouter('<path:path>', file404,
                                              status_code=404))
 
@@ -236,7 +238,7 @@ class Extension(lux.Extension):
 
     def add_api(self, app, router):
         if isinstance(router, HtmlContent) and app.api:
-            router.api = JsonContent(router.rule,
+            router.api = JsonContent(router.route.path,
                                      dir=router.dir,
                                      html_router=router)
             app.api.add_child(router.api)

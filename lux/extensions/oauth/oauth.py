@@ -170,7 +170,6 @@ class OGPbase(object):
 
 class OGP(OGPbase):
     types = ('website', 'music', 'video', 'article', 'book', 'profile')
-    arrays = ('image')
 
     def add_namespace(self, doc, namespace, url=None):
         cfg = self.config
