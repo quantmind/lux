@@ -5,7 +5,7 @@ from pulsar.utils.pep import native_str
 from pulsar.utils.importer import import_module
 from pulsar.utils.httpurl import remove_double_slash
 from pulsar.utils.system import convert_bytes
-from pulsar import Setting, new_event_loop
+from pulsar import Setting, new_event_loop, ImproperlyConfigured
 
 from lux.extensions.ui.lib import Css
 
@@ -34,8 +34,8 @@ class Command(lux.Command):
     )
 
     def run(self, options, dump=True, **params):
-        if 'base' not in self.app.extensions:
-            raise RuntimeError('"ui" requires the "base" extension.')
+        #if 'base' not in self.app.extensions:
+        #    raise ImproperlyConfigured('"ui" requires the "base" extension.')
         target = options.cssfile
         app = self.app
         name = app.meta.name

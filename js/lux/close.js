@@ -2,14 +2,15 @@
     // Bootstrap the document
     lux.bootstrap = function () {
         //
-        function setup_angular() {
+        function setup_angular(modules) {
             //
             $.each(context.ngModules, function (i, module) {
                 if (lux.app.requires.indexOf(module) === -1)
                     lux.app.requires.push(module);
             });
+            modules = ['lux'];
             //
-            angular.bootstrap(document, ['lux']);
+            angular.bootstrap(document, modules);
             //
             angular.forEach(ready_callbacks, function (callback) {
                 callback();

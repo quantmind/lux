@@ -15,14 +15,13 @@
     //
     //  Lux Api service factory for angular
     //  ---------------------------------------
-    lux.services.service('$lux', function ($location, $q, $http, $log, $anchorScroll) {
+    lux.services.service('$lux', function ($location, $q, $http, $log) {
         var $lux = this;
 
         this.location = $location;
         this.log = $log;
         this.http = $http;
         this.q = $q;
-        this.anchorScroll = $anchorScroll;
 
         // A post method with CSRF parameter
         this.post = function (url, data, cfg) {
@@ -49,13 +48,28 @@
             if (!Api)
                 $lux.log.error('Api provider "' + context.name + '" is not available');
             else
-                return new Api(context.name, context.url, $lux);
+                return new Api(context.name, context.url, context.options, $lux);
         };
 
     });
-
     //
-    //  Lux API Interface
+    function wrapPromise (promise) {
+        promise.success = function(fn) {
+            return wrapPromise(this.then(function(response) {
+                return fn(response.data, response.status, response.headers);
+            }));
+        };
+
+        promise.error = function(fn) {
+            return wrapPromise(this.then(null, function(response) {
+                return fn(response.data, response.status, response.headers);
+            }));
+        };
+
+        return promise;
+    }
+    //
+    //  Lux API Interface for REST
     //
     var ApiClient = lux.ApiClient = Class.extend({
         //
@@ -64,17 +78,18 @@
         //  variable.
         apiUrls: context.apiUrls,
         //
-        init: function (name, url, $lux) {
+        init: function (name, url, options, $lux) {
             this.name = name;
+            this.options = options || {};
             this.$lux = $lux;
             this.auth = null;
             this._url = url;
         },
         //
         // Can be used to manipulate the url
-        url: function (id) {
-            if (id !== undefined)
-                return self._url + '/' + id;
+        url: function (urlparams) {
+            if (urlparams)
+                return self._url + '/' + urlparams.id;
             else
                 return self._url;
         },
@@ -105,6 +120,10 @@
         //  urlparams:
         //  opts: object passed to
         request: function (method, urlparams, opts, data) {
+            // handle urlparams when not an object
+            if (urlparams && urlparams!==Object(urlparams))
+                urlparams = {id: urlparams};
+
             var d = this.$lux.q.defer(),
                 //
                 promise = d.promise,
@@ -138,23 +157,9 @@
                     }
                 };
             //
-            promise.success = function(fn) {
-                promise.then(function(response) {
-                    fn(response.data, response.status, response.headers);
-                });
-                return promise;
-            };
-
-            promise.error = function(fn) {
-                promise.then(null, function(response) {
-                    fn(response.data, response.status, response.headers);
-                });
-                return promise;
-            };
-
             this.call(request);
             //
-            return promise;
+            return wrapPromise(promise);
         },
         //
         //  Get a single element
@@ -218,8 +223,10 @@
             //
             var options = this.httpOptions(request);
             //
-            if (options.url)
+            if (options.url) {
+                $lux.log.info('Executing HTTP ' + options.method + ' request to ' + options.url);
                 $lux.http(options).success(request.success).error(request.error);
+            }
             else
                 request.error('Api url not available');
         }

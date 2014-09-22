@@ -61,7 +61,9 @@ class Extension(lux.Extension):
 
     _config = [
         Parameter('ICON_PROVIDER', 'fontawesome', 'Icons provider to use'),
-        Parameter('BOOTSTRAP', True, 'Set to true to use twitter bootstrap')]
+        Parameter('BOOTSTRAP', True, 'Set to true to use twitter bootstrap'),
+        Parameter('EXCLUDE_EXTENSIONS_CSS', None,
+                  'Optional list of extensions to exclude form the css')]
 
     def on_html_document(self, app, request, doc):
         if doc.has_default_content_type:
@@ -79,6 +81,11 @@ def add_css(all):
 
     colors(all)
 
+    vars.font_family = '"Helvetica Neue",Helvetica,Arial,sans-serif'
+    vars.font_size = px(14)
+    vars.line_height = 1.42857
+    vars.font_style = 'normal'
+    vars.color = color('#333')
     # Helper classes
     vars.push_bottom = '20px !important'
 
@@ -92,6 +99,13 @@ def add_css(all):
 
     inverse = skins.inverse
     inverse.background = color('#3d3d3d')
+
+    css('body',
+        font_family=vars.font_family,
+        font_size=vars.font_size,
+        line_height=vars.line_height,
+        font_style=vars.font_style,
+        color=vars.color)
 
     css(('[ng\:cloak], [ng-cloak], [data-ng-cloak], '
          '[x-ng-cloak], .ng-cloak, .x-ng-cloak'),

@@ -81,6 +81,7 @@ __all__ = ['Opacity',
            'CssInclude',
            'Image',
            'Fontface',
+           'FontSmoothing',
            'Stack']
 
 ############################################################################
@@ -893,6 +894,14 @@ class Fontface(Mixin):
                        "url('{0}.ttf') format('truetype'), "
                        "url('{0}.svg{1}') format('svg')"
                        .format(base, self.svg))
+
+
+class FontSmoothing(Mixin):
+
+    def __call__(self, elem):
+        elem['text_rendering'] = 'optimizeLegibility'
+        elem['-moz-osx-font-smoothing'] = 'grayscale'
+        elem['-webkit-font-smoothing'] = 'antialiased'
 
 
 ################################################# Stack

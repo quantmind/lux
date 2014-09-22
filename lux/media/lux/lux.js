@@ -11,6 +11,7 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
         routes = [],
         ready_callbacks = [],
         angular_bootstrapped = false,
+        // extend the context from the global variable context
         context = $.extend(defaults, root.context);
 
     // when in html5 mode add ngRoute to the list of required modules
@@ -19,10 +20,20 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
 
     angular.element = $;
     lux.$ = $;
+    lux.forEach = angular.forEach;
     lux.context = context;
     lux.services = angular.module('lux.services', []);
     lux.controllers = angular.module('lux.controllers', ['lux.services']);
     lux.app = angular.module('lux', []);
+    lux.directiveOptions = root.luxDirectiveOptions || {};
+
+    // Get directive options from the ``directiveOptions`` object
+    lux.getDirectiveOptions = function (attrs) {
+        if (typeof attrs.options === 'string') {
+            attrs = $.extend(attrs, lux.directiveOptions[attrs.options]);
+        }
+        return attrs;
+    };
 
     // Add a new HTML5 route to the page router
     lux.addRoute = function (url, data) {
@@ -166,6 +177,8 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
             }
         });
     };
+    //
+    // Object containing apis by name
     var ApiTypes = lux.ApiTypes = {};
     //
     // If CSRF token is not available
@@ -178,17 +191,16 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
             context.csrf[name] = token;
         }
     }
+    //
     //  Lux Api service factory for angular
     //  ---------------------------------------
-    //
-    lux.services.service('$lux', function ($location, $q, $http, $log, $anchorScroll) {
+    lux.services.service('$lux', function ($location, $q, $http, $log) {
         var $lux = this;
 
         this.location = $location;
         this.log = $log;
         this.http = $http;
         this.q = $q;
-        this.anchorScroll = $anchorScroll;
 
         // A post method with CSRF parameter
         this.post = function (url, data, cfg) {
@@ -215,13 +227,28 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
             if (!Api)
                 $lux.log.error('Api provider "' + context.name + '" is not available');
             else
-                return new Api(context.name, context.url, $lux);
+                return new Api(context.name, context.url, context.options, $lux);
         };
 
     });
-
     //
-    //  Lux API Interface
+    function wrapPromise (promise) {
+        promise.success = function(fn) {
+            return wrapPromise(this.then(function(response) {
+                return fn(response.data, response.status, response.headers);
+            }));
+        };
+
+        promise.error = function(fn) {
+            return wrapPromise(this.then(null, function(response) {
+                return fn(response.data, response.status, response.headers);
+            }));
+        };
+
+        return promise;
+    }
+    //
+    //  Lux API Interface for REST
     //
     var ApiClient = lux.ApiClient = Class.extend({
         //
@@ -230,17 +257,18 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
         //  variable.
         apiUrls: context.apiUrls,
         //
-        init: function (name, url, $lux) {
+        init: function (name, url, options, $lux) {
             this.name = name;
+            this.options = options || {};
             this.$lux = $lux;
             this.auth = null;
             this._url = url;
         },
         //
         // Can be used to manipulate the url
-        url: function (id) {
-            if (id !== undefined)
-                return self._url + '/' + id;
+        url: function (urlparams) {
+            if (urlparams)
+                return self._url + '/' + urlparams.id;
             else
                 return self._url;
         },
@@ -258,8 +286,7 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
 
         },
         //
-        // Build the object used by $http when making the request
-        // Returns the object
+        // Build the object used by $http when executing the api call
         httpOptions: function (request) {
             var options = request.options;
             options.url = this.url(request.urlparams);
@@ -268,7 +295,14 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
         //
         //
         // Perform the actual request and return a promise
+        //  method: HTTP method
+        //  urlparams:
+        //  opts: object passed to
         request: function (method, urlparams, opts, data) {
+            // handle urlparams when not an object
+            if (urlparams && urlparams!==Object(urlparams))
+                urlparams = {id: urlparams};
+
             var d = this.$lux.q.defer(),
                 //
                 promise = d.promise,
@@ -302,23 +336,9 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
                     }
                 };
             //
-            promise.success = function(fn) {
-                promise.then(function(response) {
-                    fn(response.data, response.status, response.headers);
-                });
-                return promise;
-            };
-
-            promise.error = function(fn) {
-                promise.then(null, function(response) {
-                    fn(response.data, response.status, response.headers);
-                });
-                return promise;
-            };
-
             this.call(request);
             //
-            return promise;
+            return wrapPromise(promise);
         },
         //
         //  Get a single element
@@ -341,7 +361,10 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
             return this.request('GET', null, options);
         },
         //
-        // Internal method for executing an API call
+        //  Execute an API call for a given request
+        //  This method is hardly used directly, the ``request`` method is normally used.
+        //
+        //      request: a request object obtained from the ``request`` method
         call: function (request) {
             var $lux = this.$lux;
             //
@@ -379,8 +402,10 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
             //
             var options = this.httpOptions(request);
             //
-            if (options.url)
+            if (options.url) {
+                $lux.log.info('Executing HTTP ' + options.method + ' request to ' + options.url);
                 $lux.http(options).success(request.success).error(request.error);
+            }
             else
                 request.error('Api url not available');
         }
@@ -459,23 +484,44 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
         //
         endpoint: "https://spreadsheets.google.com",
         //
-        url: function () {
+        url: function (urlparams) {
             // when given the url is of the form key/worksheet where
             // key is the key of the spreadsheet you want to retrieve,
             // worksheet is the positional or unique identifier of the worksheet
-            if (this._url)
-                return this.endpoint + '/feeds/list/' + this._url + '/public/values?alt=json';
+            if (this._url) {
+                if (urlparams) {
+                    return this.endpoint + '/feeds/list/' + this._url + '/' + urlparams.id + '/public/values?alt=json';
+                } else {
+                    return null;
+                }
+            }
         },
         //
-        getMany: function (options) {
+        getList: function (options) {
             var Model = this.Model,
+                opts = this.options,
                 $lux = this.$lux;
-            return this.request('GET', null, options).success(function (data) {
-                return new Model($lux, data);
+            return this.request('GET', null, options).then(function (response) {
+                return response;
             });
         },
         //
-        Model: function ($lux, data) {
+        get: function (urlparams, options) {
+            var Model = this.Model,
+                opts = this.options,
+                $lux = this.$lux;
+            return this.request('GET', urlparams, options).then(function (response) {
+                response.data = opts.orientation === 'columns' ? new GoogleSeries(
+                    $lux, response.data) : new GoogleModel($lux, response.data);
+                return response;
+            });
+        }
+    });
+    //
+    //
+    var GoogleModel = Class.extend({
+        //
+        init: function ($lux, data, opts) {
             var i, j, ilen, jlen;
             this.column_names = [];
             this.name = data.feed.title.$t;
@@ -486,6 +532,8 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
                 $lux.log.warn("Missing data for " + this.name + ", make sure you didn't forget column headers");
                 return;
             }
+
+            $lux.log.info('Building models from google sheet');
 
             for (var key in data.feed.entry[0]) {
                 if (/^gsx/.test(key)) this.column_names.push(key.replace("gsx$", ""));
@@ -512,7 +560,84 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
         }
     });
 
+    var GoogleSeries = Class.extend({
+        //
+        init: function ($lux, data, opts) {
+            var i, j, ilen, jlen;
+            this.column_names = [];
+            this.name = data.feed.title.$t;
+            this.series = [];
+            this.raw = data; // A copy of the sheet's raw data, for accessing minutiae
+
+            if (typeof(data.feed.entry) === 'undefined') {
+                $lux.log.warn("Missing data for " + this.name + ", make sure you didn't forget column headers");
+                return;
+            }
+            $lux.log.info('Building series from google sheet');
+
+            for (var key in data.feed.entry[0]) {
+                if (/^gsx/.test(key)) {
+                    var name = key.replace("gsx$", "");
+                    this.column_names.push(name);
+                    this.series.push([name]);
+                }
+            }
+
+            for (i = 0, ilen = data.feed.entry.length; i < ilen; i++) {
+                var source = data.feed.entry[i];
+                for (j = 0, jlen = this.column_names.length; j < jlen; j++) {
+                    var cell = source["gsx$" + this.column_names[j]],
+                        serie = this.series[j];
+                    if (typeof(cell) !== 'undefined') {
+                        if (cell.$t !== '' && !isNaN(cell.$t))
+                            serie.push(+cell.$t);
+                        else
+                            serie.push(cell.$t);
+                    } else {
+                        serie.push('');
+                    }
+                }
+            }
+        }
+    });
+
+
     lux.app.directive('googleMap', function () {
+        return {
+            //
+            // Create via element tag
+            // <d3-force data-width=300 data-height=200></d3-force>
+            restrict: 'AE',
+            //
+            link: function (scope, element, attrs) {
+                require(['google-maps'], function () {
+                    on_google_map_loaded(function () {
+                        var lat = +attrs.lat,
+                            lng = +attrs.lng,
+                            loc = new google.maps.LatLng(lat, lng),
+                            opts = {
+                                center: loc,
+                                zoom: attrs.zoom ? +attrs.zoom : 8
+                            },
+                            map = new google.maps.Map(element[0], opts);
+                        var marker = new google.maps.Marker({
+                            position: loc,
+                            map: map,
+                            title: attrs.marker
+                        });
+                        //
+                        windowResize(function () {
+                            google.maps.event.trigger(map, 'resize');
+                            map.setCenter(loc);
+                            map.setZoom(map.getZoom());
+                        }, 500);
+                    });
+                });
+            }
+        };
+    });
+
+    lux.app.directive('luxGrid', function () {
         return {
             //
             // Create via element tag
@@ -552,7 +677,6 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
 
     // Page Controller
     //
-    // Handle html5 sitemap
     lux.controllers.controller('page', ['$scope', '$lux', function ($scope, $lux) {
         //
         $lux.log.info('Setting up angular page');
@@ -630,7 +754,7 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
             return base === url && (folder || (rest === '' || rest.substring(0, 1) === '/'));
         };
 
-        $scope.scrollToHash = function (e, offset) {
+        var scrollToHash = function (e, offset) {
             // set the location.hash to the id of
             // the element you wish to scroll to.
             var target = $(e.currentTarget.hash);
@@ -648,6 +772,15 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
             } else
                 $lux.log.warning('Cannot scroll, target not found');
         };
+
+        $scope.scrollToHash = scrollToHash;
+
+        $('.toc a').each(function () {
+            var el = $(this),
+                href = el.attr('href');
+            if (href.substring(0, 1) === '#' && href.substring(0, 2) !== '##')
+                el.click(scrollToHash);
+        });
 
     }]);
 
@@ -939,28 +1072,53 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
 
     }]);
 
-    lux.app.directive('luxElement', ['$lux', function ($lux) {
-        //
-        return {
-            //
-            // Create via element tag or attribute
-            // <d3-force data-width=300 data-height=200></d3-force>
-            restrict: 'AE',
-            //
-            link: function (scope, element, attrs) {
-                var callbackName = attrs.callback;
-                // The callback should be available from in the global scope
-                if (callbackName) {
-                    var callback = root[callbackName];
-                    if (callback) {
-                        callback($lux, scope, element, attrs);
-                    } else
-                        $lux.log.warn('Could not find callback ' + callbackName);
-                } else
-                    $lux.log.warn('Could not find callback');
-            }
-        };
-    }]);
+    lux.addD3ext = function (vizualizations) {
+
+        function loadData ($lux) {
+
+            return function (callback) {
+                var self = this,
+                    src = this.attrs.src;
+                if (typeof src === 'object') {
+                    var id = src.id,
+                        api = $lux.api(src);
+                    if (api) {
+                        var p = id ? api.get(id) : api.getList();
+                        p.then(function (response) {
+                            self.attrs.data = response.data;
+                            callback();
+                            return response;
+                        });
+                    }
+                } else if (src) {
+                    this.d3.json(src, function(error, json) {
+                        if (!error) {
+                            self.attrs.data = json || {};
+                            return callback();
+                        }
+                    });
+                }
+            };
+        }
+
+        lux.forEach(vizualizations, function (v) {
+
+            lux.app.directive(v.name, ['$lux', function ($lux) {
+                return {
+                        //
+                        // Create via element tag or attribute
+                        restrict: 'AE',
+                        //
+                        link: function (scope, element, attrs) {
+                            attrs = lux.getDirectiveOptions(attrs);
+                            var viz = new v.VizClass(element, attrs);
+                            viz.loadData = loadData($lux);
+                            viz.build();
+                        }
+                    };
+            }]);
+        });
+    };
 
     //
     //  Lux Vizualization Class
@@ -1127,16 +1285,18 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
     }]);
 
     //
+    // Bootstrap the document
     lux.bootstrap = function () {
         //
-        function setup_angular() {
+        function setup_angular(modules) {
             //
             $.each(context.ngModules, function (i, module) {
                 if (lux.app.requires.indexOf(module) === -1)
                     lux.app.requires.push(module);
             });
+            modules = ['lux'];
             //
-            angular.bootstrap(document, ['lux']);
+            angular.bootstrap(document, modules);
             //
             angular.forEach(ready_callbacks, function (callback) {
                 callback();

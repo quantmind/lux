@@ -10,23 +10,44 @@
         //
         endpoint: "https://spreadsheets.google.com",
         //
-        url: function () {
+        url: function (urlparams) {
             // when given the url is of the form key/worksheet where
             // key is the key of the spreadsheet you want to retrieve,
             // worksheet is the positional or unique identifier of the worksheet
-            if (this._url)
-                return this.endpoint + '/feeds/list/' + this._url + '/public/values?alt=json';
+            if (this._url) {
+                if (urlparams) {
+                    return this.endpoint + '/feeds/list/' + this._url + '/' + urlparams.id + '/public/values?alt=json';
+                } else {
+                    return null;
+                }
+            }
         },
         //
-        getMany: function (options) {
+        getList: function (options) {
             var Model = this.Model,
+                opts = this.options,
                 $lux = this.$lux;
-            return this.request('GET', null, options).success(function (data) {
-                return new Model($lux, data);
+            return this.request('GET', null, options).then(function (response) {
+                return response;
             });
         },
         //
-        Model: function ($lux, data) {
+        get: function (urlparams, options) {
+            var Model = this.Model,
+                opts = this.options,
+                $lux = this.$lux;
+            return this.request('GET', urlparams, options).then(function (response) {
+                response.data = opts.orientation === 'columns' ? new GoogleSeries(
+                    $lux, response.data) : new GoogleModel($lux, response.data);
+                return response;
+            });
+        }
+    });
+    //
+    //
+    var GoogleModel = Class.extend({
+        //
+        init: function ($lux, data, opts) {
             var i, j, ilen, jlen;
             this.column_names = [];
             this.name = data.feed.title.$t;
@@ -37,6 +58,8 @@
                 $lux.log.warn("Missing data for " + this.name + ", make sure you didn't forget column headers");
                 return;
             }
+
+            $lux.log.info('Building models from google sheet');
 
             for (var key in data.feed.entry[0]) {
                 if (/^gsx/.test(key)) this.column_names.push(key.replace("gsx$", ""));
@@ -62,6 +85,48 @@
             }
         }
     });
+
+    var GoogleSeries = Class.extend({
+        //
+        init: function ($lux, data, opts) {
+            var i, j, ilen, jlen;
+            this.column_names = [];
+            this.name = data.feed.title.$t;
+            this.series = [];
+            this.raw = data; // A copy of the sheet's raw data, for accessing minutiae
+
+            if (typeof(data.feed.entry) === 'undefined') {
+                $lux.log.warn("Missing data for " + this.name + ", make sure you didn't forget column headers");
+                return;
+            }
+            $lux.log.info('Building series from google sheet');
+
+            for (var key in data.feed.entry[0]) {
+                if (/^gsx/.test(key)) {
+                    var name = key.replace("gsx$", "");
+                    this.column_names.push(name);
+                    this.series.push([name]);
+                }
+            }
+
+            for (i = 0, ilen = data.feed.entry.length; i < ilen; i++) {
+                var source = data.feed.entry[i];
+                for (j = 0, jlen = this.column_names.length; j < jlen; j++) {
+                    var cell = source["gsx$" + this.column_names[j]],
+                        serie = this.series[j];
+                    if (typeof(cell) !== 'undefined') {
+                        if (cell.$t !== '' && !isNaN(cell.$t))
+                            serie.push(+cell.$t);
+                        else
+                            serie.push(cell.$t);
+                    } else {
+                        serie.push('');
+                    }
+                }
+            }
+        }
+    });
+
 
     lux.app.directive('googleMap', function () {
         return {

@@ -3,7 +3,6 @@
 
     // Page Controller
     //
-    // Handle html5 sitemap
     lux.controllers.controller('page', ['$scope', '$lux', function ($scope, $lux) {
         //
         $lux.log.info('Setting up angular page');
@@ -81,7 +80,7 @@
             return base === url && (folder || (rest === '' || rest.substring(0, 1) === '/'));
         };
 
-        $scope.scrollToHash = function (e, offset) {
+        var scrollToHash = function (e, offset) {
             // set the location.hash to the id of
             // the element you wish to scroll to.
             var target = $(e.currentTarget.hash);
@@ -99,6 +98,15 @@
             } else
                 $lux.log.warning('Cannot scroll, target not found');
         };
+
+        $scope.scrollToHash = scrollToHash;
+
+        $('.toc a').each(function () {
+            var el = $(this),
+                href = el.attr('href');
+            if (href.substring(0, 1) === '#' && href.substring(0, 2) !== '##')
+                el.click(scrollToHash);
+        });
 
     }]);
 

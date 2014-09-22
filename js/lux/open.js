@@ -11,6 +11,7 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
         routes = [],
         ready_callbacks = [],
         angular_bootstrapped = false,
+        // extend the context from the global variable context
         context = $.extend(defaults, root.context);
 
     // when in html5 mode add ngRoute to the list of required modules
@@ -19,10 +20,20 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
 
     angular.element = $;
     lux.$ = $;
+    lux.forEach = angular.forEach;
     lux.context = context;
     lux.services = angular.module('lux.services', []);
     lux.controllers = angular.module('lux.controllers', ['lux.services']);
     lux.app = angular.module('lux', []);
+    lux.directiveOptions = root.luxDirectiveOptions || {};
+
+    // Get directive options from the ``directiveOptions`` object
+    lux.getDirectiveOptions = function (attrs) {
+        if (typeof attrs.options === 'string') {
+            attrs = $.extend(attrs, lux.directiveOptions[attrs.options]);
+        }
+        return attrs;
+    };
 
     // Add a new HTML5 route to the page router
     lux.addRoute = function (url, data) {

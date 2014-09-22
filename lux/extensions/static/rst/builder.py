@@ -39,7 +39,8 @@ class LuxBuilder(StandaloneHTMLBuilder):
                 return otheruri
             elif not resource:
                 otheruri = self.get_target_uri(otheruri)
-            uri = relative_uri(baseuri, otheruri) or '#'
+            #uri = relative_uri(baseuri, otheruri) or '#'
+            uri = '#'
             return uri
         ctx['pathto'] = pathto
         ctx['hasdoc'] = lambda name: name in self.env.all_docs
@@ -53,7 +54,7 @@ class LuxBuilder(StandaloneHTMLBuilder):
 
         self.app.emit('html-page-context', pagename, templatename,
                       ctx, event_arg)
-        
+
 
         try:
             output = self.templates.render(templatename, ctx)

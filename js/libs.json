@@ -9,7 +9,6 @@
                 "js/lux/form.js",
                 "js/lux/nglist.js",
                 "js/lux/user.js",
-                "js/lux/elem.js",
                 "js/lux/viz.js",
                 "js/lux/flickr.js",
                 "js/lux/close.js"],

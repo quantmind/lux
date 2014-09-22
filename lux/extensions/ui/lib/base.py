@@ -779,7 +779,10 @@ Created by lux {0} in {1} seconds.
         if app:
             module = None
             # Import applications styles if available
+            exclude = app.config['EXCLUDE_EXTENSIONS_CSS'] or ()
             for extension in app.config['EXTENSIONS']:
+                if extension in exclude:
+                    continue
                 try:
                     module = import_module(extension)
                     if hasattr(module, 'add_css'):
