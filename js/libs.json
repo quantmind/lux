@@ -10,6 +10,7 @@
                 "js/lux/nglist.js",
                 "js/lux/user.js",
                 "js/lux/viz.js",
+                "js/lux/highlight.js",
                 "js/lux/flickr.js",
                 "js/lux/close.js"],
         "dest": "lux/media/lux/lux.js",

@@ -6,8 +6,8 @@ from pulsar.utils.slugify import slugify
 
 identity = lambda x, cfg: x
 
+SEP = ', '
 as_list = lambda x, cfg, w=identity: [w(v.strip(), cfg) for v in x.split(',')]
-
 
 def list_of(W):
     return lambda x, cfg: as_list(x, cfg, W)
@@ -55,7 +55,7 @@ class Multi(list):
     def value(self):
         return self
 
-    def join(self, sep=', '):
+    def join(self, sep=SEP):
         return sep.join(('%s' % v for v in self))
 
     def __str__(self):
@@ -65,7 +65,7 @@ class Multi(list):
 class Single(Multi):
 
     def value(self):
-        return self[0] if self else None
+        return self.join() if self else None
 
 
 def guess(value):

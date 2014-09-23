@@ -34,9 +34,6 @@ METADATA_PROCESSORS = dict(((p.name, p) for p in (
     Processor('slug'),
     Processor('title'),
     Processor('description'),
-    Processor('og-title'),
-    Processor('og-description'),
-    Processor('template'),
     Processor('tag', list_of(Tag), multiple=True),
     Processor('date', lambda x, cfg: [parse_date(x)]),
     Processor('status'),
@@ -47,6 +44,7 @@ METADATA_PROCESSORS = dict(((p.name, p) for p in (
     Processor('require_js', multiple=True),
     Processor('require_context', multiple=True),
     Processor('content_type', default='text/html'),
+    Processor('template'),
     Processor('template-engine',
               default=lambda cfg: cfg['DEFAULT_TEMPLATE_ENGINE']),
     Processor('robots', default=['index', 'follow'], multiple=True),
@@ -238,8 +236,12 @@ class Snippet(object):
             key = self.key('main')
             jd[key] = self.render(app, context)
             if self.content_type == 'text/html':
-                jd.update({'head_title': self.title,
-                           'head_description': self.description})
+                head = jd.get('head')
+                if not head:
+                    head = {}
+                    jd['head'] = head
+                head.update({'title': self.title,
+                             'description': self.description})
 
             self._json_content = jd
         return self._json_content
@@ -255,21 +257,9 @@ class Snippet(object):
         doc = request.html_document
         head = doc.head
         #
-        head_meta = data.get('head')
-        if head_meta:
-            head.fields.update(head_meta)
+        head.fields.update(data['head'])
         if 'html_url' in data:
-            head.fields['html_url'] = data['html_url']
-        title = data.get('head_title')
-        if title:
-            head.title = title
-        #
-        description = data.get('head_description')
-        if description:
-            des = head.replace_meta('description', description)
-        tag = data.get('tag')
-        if tag:
-            head.replace_meta('keywords', tag)
+            head.fields.set_private('html_url', data['html_url'])
         #
         require_css = data.get('require_css', '')
         if require_css:

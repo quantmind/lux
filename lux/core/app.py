@@ -54,6 +54,14 @@ ALL_EVENTS = ('on_config',  # Config ready.
               )
 
 
+lux_require_callback = '''\
+function () {
+    var lux = window.lux;
+    if (lux)
+        lux.lux_require_callback();
+}'''
+
+
 def execute_from_config(config_file, argv=None, **params):
     '''Create and run an :class:`App` from a ``config_file``.
 
@@ -189,7 +197,7 @@ class Application(ConsoleParser, Extension):
                   'List of links to include in the html head tag.'),
         Parameter('REQUIREJS', ('require',),
                   'Default Required javascript. Loaded via requirejs.'),
-        Parameter('JSREQUIRE_CALLBACK', None,
+        Parameter('JSREQUIRE_CALLBACK', lux_require_callback,
                   'Callback used by requirejs.'),
         Parameter('HTML_META',
                   [{'http-equiv': 'X-UA-Compatible',
@@ -311,8 +319,8 @@ class Application(ConsoleParser, Extension):
             # Locale
             lang = cfg['LOCALE'][:2]
             doc.attr('lang', lang)
-            doc.fields['html_url'] = self.site_url(request.path)
-            doc.fields['locale'] = cfg['LOCALE']
+            doc.fields.set_private('html_url', self.site_url(request.path))
+            doc.fields.set_private('locale', cfg['LOCALE'])
             #
             head = doc.head
             head.scripts.known_libraries['lux'] = {'url': 'lux/lux',

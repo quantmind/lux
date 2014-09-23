@@ -93,14 +93,13 @@ class JsonContent(lux.Router, DirBuilder):
         super(JsonContent, self).__init__(route, name=name,
                                           html_router=html_router,
                                           content=html_router.content,
-                                          template=html_router.template,
                                           meta=copy(html_router.meta))
+        child_router = html_router.get_route('html_files')
         self.add_child(JsonFile('<id>',
                                 dir=self.dir,
                                 name='json_files',
                                 content=self.content,
-                                template=html_router.template,
-                                meta=copy(html_router.meta)))
+                                meta=copy(child_router.meta)))
 
     def get(self, request):
         '''Build all the contents'''
@@ -189,17 +188,22 @@ class HtmlContent(html5.Router, DirBuilder):
     '''
     priority = 1
 
-    def __init__(self, route, *routes, dir=None, name=None, **params):
+    def __init__(self, route, *routes, dir=None, name=None,
+                 meta_children=None, **params):
         route = self.valid_route(route, dir)
         name = slugify(name or route or self.dir)
         super(HtmlContent, self).__init__(route, *routes, name=name, **params)
         if self.drafts:
             self.add_child(Drafts(self.drafts,
                                   index_template=self.drafts_template))
+        meta = copy(self.meta)
+        if meta_children:
+            meta.update(meta_children)
+        #
         file = HtmlFile(self.child_url, dir=self.dir, name='html_files',
                         content=self.content,
                         html_body_template=self.html_body_template,
-                        meta=copy(self.meta))
+                        meta=meta)
         self.add_child(file)
         #
         for url_path, file_path, ext in self.all_files():
@@ -230,6 +234,7 @@ class HtmlContent(html5.Router, DirBuilder):
                 jscontext['dir_entries'] = files.all(app, html=False)
             src = app.template_full_path(self.index_template)
             content = self.read_file(app, src, 'index')
+            context = request.app.context(request, context)
             return content.html(request, context)
         elif self.src:
             content = self.read_file(request.app, self.src, 'index')
