@@ -1,15 +1,21 @@
     //
     // Bootstrap the document
-    lux.bootstrap = function () {
+    lux.bootstrap = function (modules) {
         //
-        function setup_angular(modules) {
+        // actual bootstrapping function
+        function doit() {
             //
+            // Resolve modules to load
             if (!$.isArray(modules))
                 modules = [];
             modules.push('lux');
             forEach(context.ngModules, function (module) {
                 modules.push(module);
             });
+            //
+            // routes available, setup router
+            if (routes.length)
+                setup_routes(routes);
             //
             angular.bootstrap(document, modules);
             //
@@ -19,34 +25,33 @@
             ready_callbacks = true;
         }
         //
-        $(document).ready(function() {
-            //
-            if (context.html5mode) {
+        function setup_routes (all) {
+            var routes = [];
                 //
-                // Load angular-route and configure the HTML5 navigation
-                require(['angular-route'], function () {
+                angular.module('lux')
+                    .config(['$stateProvider', '$urlRouterProvider', function($stateProvider, $urlRouterProvider) {
+                        // setup
+                        $stateProvider.html5Mode(true);
                     //
-                    if (routes.length) {
-                        var all = routes;
-                        routes = [];
-                        //
-                        lux.app.config(['$routeProvider', '$locationProvider',
-                                function($routeProvider, $locationProvider) {
-                            //
-                            angular.forEach(all, function (route) {
-                                var url = route[0];
-                                var data = route[1];
-                                if ($.isFunction(data)) data = data();
-                                $routeProvider.when(url, data);
-                            });
-                            // use the HTML5 History API
-                            $locationProvider.html5Mode(true);
-                        }]);
-                    }
-                    setup_angular();
+                    //angular.forEach(all, function (route) {
+                    //    var url = route[0];
+                    //    var data = route[1];
+                    //    if ($.isFunction(data)) data = data();
+                    //    $routeProvider.when(url, data);
+                    //});
+                    // use the HTML5 History API
+                    //$locationProvider.html5Mode(true);
+                }]);
+        }
+        //
+        //
+        $(document).ready(function() {
+            if (requires) {
+                require(requires, function () {
+                    doit();
                 });
             } else {
-                setup_angular();
+                doit();
             }
         });
     };

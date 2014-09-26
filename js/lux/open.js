@@ -8,11 +8,14 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
         require_callbacks = [],
         forEach = angular.forEach,
         angular_bootstrapped = false,
-        context = root.luxContext || {};
+        context = root.luxContext || {},
+        requires = [];
 
     // when in html5 mode add ngRoute to the list of required modules
-    if (context.html5mode)
-        context.ngModules.push('ngRoute');
+    if (context.html5mode) {
+        context.ngModules.push('ui.router');
+        requires.push('ui-router');
+    }
     context.ngModules.push('ngSanitize');
 
     root.lux = lux;

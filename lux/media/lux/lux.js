@@ -16,11 +16,14 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
         require_callbacks = [],
         forEach = angular.forEach,
         angular_bootstrapped = false,
-        context = root.luxContext || {};
+        context = root.luxContext || {},
+        requires = [];
 
     // when in html5 mode add ngRoute to the list of required modules
-    if (context.html5mode)
-        context.ngModules.push('ngRoute');
+    if (context.html5mode) {
+        context.ngModules.push('ui.router');
+        requires.push('ui-router');
+    }
     context.ngModules.push('ngSanitize');
 
     root.lux = lux;
@@ -192,16 +195,22 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
     }(function() {}));
     //
     // Bootstrap the document
-    lux.bootstrap = function () {
+    lux.bootstrap = function (modules) {
         //
-        function setup_angular(modules) {
+        // actual bootstrapping function
+        function doit() {
             //
+            // Resolve modules to load
             if (!$.isArray(modules))
                 modules = [];
             modules.push('lux');
             forEach(context.ngModules, function (module) {
                 modules.push(module);
             });
+            //
+            // routes available, setup router
+            if (routes.length)
+                setup_routes(routes);
             //
             angular.bootstrap(document, modules);
             //
@@ -211,34 +220,33 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
             ready_callbacks = true;
         }
         //
-        $(document).ready(function() {
-            //
-            if (context.html5mode) {
+        function setup_routes (all) {
+            var routes = [];
                 //
-                // Load angular-route and configure the HTML5 navigation
-                require(['angular-route'], function () {
+                angular.module('lux')
+                    .config(['$stateProvider', '$urlRouterProvider', function($stateProvider, $urlRouterProvider) {
+                        // setup
+                        $stateProvider.html5Mode(true);
                     //
-                    if (routes.length) {
-                        var all = routes;
-                        routes = [];
-                        //
-                        lux.app.config(['$routeProvider', '$locationProvider',
-                                function($routeProvider, $locationProvider) {
-                            //
-                            angular.forEach(all, function (route) {
-                                var url = route[0];
-                                var data = route[1];
-                                if ($.isFunction(data)) data = data();
-                                $routeProvider.when(url, data);
-                            });
-                            // use the HTML5 History API
-                            $locationProvider.html5Mode(true);
-                        }]);
-                    }
-                    setup_angular();
+                    //angular.forEach(all, function (route) {
+                    //    var url = route[0];
+                    //    var data = route[1];
+                    //    if ($.isFunction(data)) data = data();
+                    //    $routeProvider.when(url, data);
+                    //});
+                    // use the HTML5 History API
+                    //$locationProvider.html5Mode(true);
+                }]);
+        }
+        //
+        //
+        $(document).ready(function() {
+            if (requires) {
+                require(requires, function () {
+                    doit();
                 });
             } else {
-                setup_angular();
+                doit();
             }
         });
     };
@@ -858,13 +866,14 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
                 }
         }]);
 
-    //  SITEMAP
+
+    //  ROUTING
     //  -----------------
     //
     //  Build an HTML5 sitemap when the ``context.sitemap`` variable is set.
     function _load_sitemap (hrefs, pages) {
         //
-        angular.forEach(hrefs, function (href) {
+        forEach(hrefs, function (href) {
             var page = pages[href];
             if (page && page.href && page.target !== '_self') {
                 lux.addRoute(page.href, route_config(page));
@@ -903,7 +912,7 @@ angular.module('templates-blog', ['lux/blog/pagination.tpl.html']);
 angular.module("lux/blog/pagination.tpl.html", []).run(["$templateCache", function($templateCache) {
   $templateCache.put("lux/blog/pagination.tpl.html",
     "<ul class=\"media-list\">\n" +
-    "    <li ng-repeat=\"post in dir_entries\" class=\"media\" data-ng-controller='BlogEntry'>\n" +
+    "    <li ng-repeat=\"post in posts\" class=\"media\" data-ng-controller='BlogEntry'>\n" +
     "        <a href=\"{{post.html_url}}\" class=\"pull-left hidden-xs dir-entry-image\">\n" +
     "          <img data-ng-if=\"post.image\" src=\"{{post.image}}\" alt=\"{{post.title}}\">\n" +
     "          <img data-ng-if=\"!post.image\" src=\"holder.js/120x90\">\n" +
@@ -927,7 +936,6 @@ angular.module("lux/blog/pagination.tpl.html", []).run(["$templateCache", functi
     //
     angular.module('blog', ['templates-blog', 'lux.services', 'highlight'])
         .controller('BlogEntry', ['$scope', 'dateFilter', '$lux', function ($scope, dateFilter, $lux) {
-            // Assume the model is called ``post``
             var post = $scope.post;
             if (!post) {
                 $lux.log.error('post not available in $scope, cannot use pagination controller!');

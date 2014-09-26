@@ -14,12 +14,11 @@ Python Requirements
 Developing with lux.js
 ==========================
 
-First you need to install ``node`` and  and subsequently install the development
-packages via:
+First you need to install nodejs_ and  grunt_ cli::
 
     npm install -g grunt-cli
 
-Subsequently install the development packages via:
+Subsequently install the development packages via::
 
     npm install
 
@@ -49,5 +48,6 @@ To run tests and the example site add a new ``settings.py`` file in the
 .. _dateutil: https://pypi.python.org/pypi/python-dateutil
 .. _gruntjs: http://gruntjs.com/
 .. _nodejs: http://nodejs.org/
+.. _grunt: http://gruntjs.com/
 .. _`grunt-html2js`: https://github.com/karlgoldstein/grunt-html2js
 
