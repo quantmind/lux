@@ -1,4 +1,4 @@
-from ..oauth import OAuth2, OGP, register_oauth
+from ..oauth import OAuth2, register_oauth
 
 
 @register_oauth
@@ -8,10 +8,10 @@ class Facebook(OAuth2):
     token_uri = 'https://graph.facebook.com/oauth/access_token'
     default_scope = ['public_profile', 'email']
 
-    def add_meta_tags(self, request, doc):
+    def ogp_add_tags(self, request, ogp):
         '''Add meta tags to an HTML5 document
         '''
-        o = OGP(request, doc)
         key = self.config.get('key')
         if key:
-            o.add_meta(doc, 'app_id', key, prefix='fb')
+            ogp.prefixes.append('fb: http://ogp.me/ns/fb#')
+            ogp.doc.head.add_meta(property='fb:app_id', content=key)

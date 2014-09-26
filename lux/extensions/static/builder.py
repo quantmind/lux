@@ -9,15 +9,11 @@ from pulsar.utils.httpurl import remove_double_slash, urljoin
 
 from lux import route
 
-from .contents import SkipBuild, BuildError, CONTENT_EXTENSIONS
+from .contents import SkipBuild, BuildError, Unsupported, CONTENT_EXTENSIONS
 from .readers import READERS, BaseReader
 
 
 Item = namedtuple('Item', 'loc lastmod priority file content_type body')
-
-
-class HttpException(pulsar.HttpException):
-    status = 415
 
 
 def directory(dir):
@@ -106,7 +102,7 @@ class Builder(BaseBuilder):
     _build_done = None
 
     def build(self, app, location=None):
-        '''Build the files managed by this :class:`.DirBuilder`
+        '''Build files managed by this :class:`.Builder`
         '''
         if location is None:
             location = os.path.abspath(app.config['STATIC_LOCATION'])
@@ -181,9 +177,7 @@ class Builder(BaseBuilder):
         try:
             if src:
                 content = self.read_file(app, src, name)
-                if self.route.variables:
-                    urlparams = content.context(app,
-                                                names=self.route.variables)
+                urlparams = content.urlparams(self.route.variables)
             path = self.path(**urlparams)
             url = app.site_url(normpath(path))
             request = app.wsgi_request(path=url, HTTP_ACCEPT='*/*')
@@ -192,7 +186,7 @@ class Builder(BaseBuilder):
             response = self.response(request.environ, urlparams)
         except SkipBuild:
             content = None
-        except HttpException:
+        except Unsupported:
             pass
         except BuildError as e:
             app.logger.error(str(e))
@@ -214,8 +208,8 @@ class Builder(BaseBuilder):
                 content_type = content.content_type
             #
             if content:
-                lastmod = content.modified
-                priority = content.priority
+                lastmod = content._meta.modified
+                priority = content._meta.priority
             else:
                 lastmod = datetime.now()
                 priority = self.priority
@@ -354,7 +348,7 @@ class ContextBuilder(dict, BaseBuilder):
                         if content_for.name in values:
                             content_for.additional_context[name] = content
                 return
-            waiting = set(content.require_context)
+            waiting = set(content._meta.require_context or ())
         # Loop through the require context of content
         for name in tuple(waiting):
             if name in self:
@@ -363,7 +357,7 @@ class ContextBuilder(dict, BaseBuilder):
         if waiting:
             self.waiting[content.key()] = (content, waiting)
         else:
-            self[content.key()] = content.render(self.app, self)
+            self[content.key()] = content.render(self)
 
     def _refresh(self):
         all = list(self.waiting.values())

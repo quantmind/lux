@@ -1,7 +1,5 @@
+from lux.extensions.ui import *
 from lux.utils import test
-from lux.extensions.ui.style.all import add_css
-from lux.extensions.ui.style.base import add_skins
-from lux.extensions.ui.lib import *
 
 
 class TestVariables(test.TestCase):

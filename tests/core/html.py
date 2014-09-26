@@ -60,3 +60,11 @@ class TestHtml(test.TestCase):
         scripts.require('jstest/blafoo.js')
         self.assertEqual(len(scripts.required), 1)
         self.assertEqual(scripts.required[-1], '/static/jstest/blafoo.js')
+
+    def test_fields(self):
+        app = self.application()
+        request = app.wsgi_request()
+        doc = request.html_document
+        meta = doc.meta
+        self.assertEqual(len(meta), 5)
+        self.assertEqual(meta['og:url'], '/')

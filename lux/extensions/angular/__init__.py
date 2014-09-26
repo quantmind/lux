@@ -10,6 +10,13 @@ from pulsar.apps.wsgi import MediaMixin, route
 from .ui import add_css
 
 
+def ng_modules(request):
+    ngmodules = request.cache.ngmodules
+    if ngmodules is None:
+        request.cache.ngmodules = ngmodules = []
+    return ngmodules
+
+
 class Extension(lux.Extension):
     '''The sessions extensions provides wsgi middleware for managing sessions
     and users.
@@ -49,22 +56,31 @@ class Router(lux.Router, MediaMixin):
     html_body_template = 'home.html'
     '''The template for the body part of the Html5 document
     '''
+    ngmodules = None
+    '''List of angular modules to include
+    '''
     _sitemap = None
 
     def get(self, request):
         app = request.app
         html5 = app.config.get('HTML5_NAVIGATION')
+        ngmodules = ng_modules(request)
         doc = request.html_document
-        doc.data({'ng-model': 'page',
-                  'ng-controller': 'page'})
-        jscontext = {}
+        doc.body.data({'ng-model': 'page',
+                       'ng-controller': 'Page'})
+        # Create lux context dictionary
+        jscontext = {
+            'ngModules': ngmodules
+        }
+        if self.ngmodules:
+            ngmodules.extend(self.ngmodules)
         context = {}
         main = self.build_main(request, context, jscontext)
         if html5:
             jscontext.update(self.sitemap(app))
             jscontext['page'] = router_href(request.app_handler)
             jscontext['html5mode'] = True
-            main = '<div dada-ng-view></div>'
+            main = '<div data-ng-view></div>'
         context['html_main'] = main
         return app.html_response(request, self.html_body_template,
                                  jscontext=jscontext, context=context)

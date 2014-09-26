@@ -4,13 +4,13 @@ from copy import copy
 
 import lux
 from lux import route, JSON_CONTENT_TYPES
-from lux.extensions import html5, base, sitemap
+from lux.extensions import angular, base, sitemap
 
 from pulsar.utils.slugify import slugify
 from pulsar.apps.wsgi import Json, MediaRouter
 
 from .builder import (DirBuilder, FileBuilder, BuildError, SkipBuild,
-                      HttpException, normpath)
+                      Unsupported, normpath)
 from .contents import Article, parse_date
 
 
@@ -115,20 +115,20 @@ class JsonFile(lux.Router, FileBuilder):
         app = request.app
         response = request.response
         content = self.get_content(request)
-        context = request.app.context(request)
-        data = content.json_dict(app, context)
+        # Get the JSON representation of the resource
+        data = content.json(request)
         if data:
             urlargs = request.urlargs
             if urlargs.get('path') == 'index':
                 urlargs['path'] = ''
             data['api_url'] = app.site_url(self.relative_path(request))
             html = self.html_router.get_route('html_files')
-            urlparams = content.context(app, names=html.route.variables)
+            urlparams = content.urlparams(html.route.variables)
             path = html.path(**urlparams)
             data['html_url'] = app.site_url(normpath(path))
             return Json(data).http_response(request)
         else:
-            raise HttpException
+            raise Unsupported
         return Json(data).http_response(request)
 
     def should_build(self, app, name):
@@ -142,36 +142,31 @@ class JsonFile(lux.Router, FileBuilder):
         o = 'modified' if draft else 'date'
         for d in self.build(app):
             data = json.loads(d.body.decode('utf-8'))
-            if bool(data['priority']=='0') is not draft:
+            if bool(data.get('priority')=='0') is not draft:
                 continue
             if not html:
                 data = dict(((key, data[key]) for key in data
                              if not self.is_html(key)))
             all.append(data)
-        return list(reversed(sorted(all, key=lambda d: parse_date(d[o]))))
+        key = lambda d: parse_date(d.get('date', d['modified']))
+        return list(reversed(sorted(all, key=key)))
 
     def is_html(self, key):
         return key.startswith('html_') and key not in SPECIAL_KEYS
 
 
-class HtmlFile(html5.Router, FileBuilder):
+class HtmlFile(angular.Router, FileBuilder):
     '''Serve an Html file.
     '''
     def build_main(self, request, context, jscontext):
         content = self.get_content(request)
-        if content.content_type == 'text/html':
-            # First build the global context
-            context = request.app.context(request, context)
-            # update the global context with context from this file
-            return content.html(request, context)
-        else:
-            raise HttpException
+        return content.html(request)
 
     def get_api_info(self, app):
         return self.parent.get_api_info(app)
 
 
-class HtmlContent(html5.Router, DirBuilder):
+class HtmlContent(angular.Router, DirBuilder):
     '''Serve a directory of files rendered in a similar fashion
 
     The directory could contains blog posts for example.
@@ -186,6 +181,7 @@ class HtmlContent(html5.Router, DirBuilder):
     drafts_template = 'blogindex.html'
     '''The children render the children routes of this router
     '''
+    '''Context for the body tag'''
     priority = 1
 
     def __init__(self, route, *routes, dir=None, name=None,
@@ -203,7 +199,8 @@ class HtmlContent(html5.Router, DirBuilder):
         file = HtmlFile(self.child_url, dir=self.dir, name='html_files',
                         content=self.content,
                         html_body_template=self.html_body_template,
-                        meta=meta)
+                        meta=meta,
+                        ngmodules=self.ngmodules)
         self.add_child(file)
         #
         for url_path, file_path, ext in self.all_files():
@@ -234,17 +231,15 @@ class HtmlContent(html5.Router, DirBuilder):
                 jscontext['dir_entries'] = files.all(app, html=False)
             src = app.template_full_path(self.index_template)
             content = self.read_file(app, src, 'index')
-            context = request.app.context(request, context)
-            return content.html(request, context)
+            return content.html(request)
         elif self.src:
             content = self.read_file(request.app, self.src, 'index')
-            context = request.app.context(request, context)
-            return content.html(request, context)
+            return content.html(request)
         else:
             raise SkipBuild
 
 
-class Drafts(html5.Router, FileBuilder):
+class Drafts(angular.Router, FileBuilder):
     '''A page collecting all drafts
     '''
     priority = 0
@@ -269,6 +264,7 @@ class Blog(HtmlContent):
     '''
     index_template = 'blogindex.html'
     content = Article
+    ngmodules = ['blog']
 
 
 class Sitemap(sitemap.Sitemap, FileBuilder):

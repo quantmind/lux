@@ -34,7 +34,7 @@ from pulsar.utils.log import lazyproperty
 
 from .commands import ConsoleParser, CommandError
 from .extension import Extension, Parameter
-from .wrappers import wsgi_request
+from .wrappers import wsgi_request, HeadMeta
 from .engines import template_engine
 
 
@@ -197,8 +197,6 @@ class Application(ConsoleParser, Extension):
                   'List of links to include in the html head tag.'),
         Parameter('REQUIREJS', ('require',),
                   'Default Required javascript. Loaded via requirejs.'),
-        Parameter('JSREQUIRE_CALLBACK', lux_require_callback,
-                  'Callback used by requirejs.'),
         Parameter('HTML_META',
                   [{'http-equiv': 'X-UA-Compatible',
                     'content': 'IE=edge'},
@@ -295,7 +293,6 @@ class Application(ConsoleParser, Extension):
         Usually there is no need to call directly this method.
         Instead one can use the :attr:`.WsgiRequest.html_document`.
         '''
-        content_type = request.response.content_type
         handler = request.app_handler
         title = None
         if handler:
@@ -308,40 +305,34 @@ class Application(ConsoleParser, Extension):
         doc = HtmlDocument(title=title or cfg['HTML_TITLE'],
                            media_path=media_path,
                            minified=cfg['MINIFIED_MEDIA'],
-                           known_libraries=None,
-                           scripts_dependencies=None,
-                           require_callback=cfg['JSREQUIRE_CALLBACK'],
                            data_debug=self.debug,
-                           content_type=content_type,
                            charset=cfg['ENCODING'])
+        doc.meta = HeadMeta(doc.head)
+        # Locale
+        lang = cfg['LOCALE'][:2]
+        doc.attr('lang', lang)
         #
-        if doc.has_default_content_type:
-            # Locale
-            lang = cfg['LOCALE'][:2]
-            doc.attr('lang', lang)
-            doc.fields.set_private('html_url', self.site_url(request.path))
-            doc.fields.set_private('locale', cfg['LOCALE'])
-            #
-            head = doc.head
-            head.scripts.known_libraries['lux'] = {'url': 'lux/lux',
-                                                   'minify': False}
-            #
-            required = cfg['REQUIREJS']
-            if required:
-                head.scripts.require(*required)
-            #
-            for entry in cfg['HTML_META'] or ():
-                head.add_meta(**entry)
+        head = doc.head
+        body = doc.body
+        body.scripts.known_libraries['lux'] = {'url': 'lux/lux',
+                                               'minify': False}
+        #
+        required = cfg['REQUIREJS']
+        if required:
+            body.scripts.require(*required)
+        #
+        for entry in cfg['HTML_META'] or ():
+            head.add_meta(**entry)
 
-            self.fire('on_html_document', request, doc)
-            #
-            # Add links last
-            links = head.links
-            for link in cfg['HTML_LINKS']:
-                if isinstance(link, dict):
-                    links.append(**link)
-                else:
-                    links.append(link)
+        self.fire('on_html_document', request, doc)
+        #
+        # Add links last
+        links = head.links
+        for link in cfg['HTML_LINKS']:
+            if isinstance(link, dict):
+                links.append(**link)
+            else:
+                links.append(link)
         return doc
 
     @lazyproperty
@@ -496,8 +487,12 @@ class Application(ConsoleParser, Extension):
     def render_template(self, template_name, context=None, engine=None):
         '''Render a template'''
         template = self.template(template_name)
-        rnd = template_engine(engine or self.config['DEFAULT_TEMPLATE_ENGINE'])
+        rnd = self.template_engine(engine)
         return rnd(template, context)
+
+    def template_engine(self, engine=None):
+        engine = engine or self.config['DEFAULT_TEMPLATE_ENGINE']
+        return template_engine(engine)
 
     def html_response(self, request, template_name, context=None,
                       jscontext=None, title=None, status_code=None):
@@ -509,8 +504,8 @@ class Application(ConsoleParser, Extension):
         '''
         if 'text/html' in request.content_types:
             request.response.content_type = 'text/html'
-            document = request.html_document
-            head = document.head
+            doc = request.html_document
+            head = doc.head
             if title:
                 head.title = title % head.title
             if status_code:
@@ -519,10 +514,10 @@ class Application(ConsoleParser, Extension):
             jscontext = self.context(request, jscontext, 'js')
             if jscontext:
                 jscontext = json.dumps(jscontext)
-                head.embedded_js.append('var context=%s;' % jscontext)
+                doc.body.embedded_js.append('var luxContext = %s;' % jscontext)
             body = self.render_template(template_name, context)
-            document.body.append(body)
-            return document.http_response(request)
+            doc.body.append(body)
+            return doc.http_response(request)
 
     def site_url(self, path=None):
         '''Build the site url from an optional ``path``

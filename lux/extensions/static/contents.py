@@ -3,24 +3,33 @@ import stat
 import json
 from functools import partial
 from datetime import datetime, date
+from collections import Mapping
 
 from dateutil.parser import parse as parse_date
 
 import pulsar
+from pulsar import HttpException, Http404
 from pulsar.utils.slugify import slugify
+from pulsar.utils.structures import AttributeDictionary, mapping_iterator
+from pulsar.utils.pep import to_string
 
-from lux import template_engine, JSON_CONTENT_TYPES
+from lux import JSON_CONTENT_TYPES
+from lux.utils import iso8601
 
-from .urlwrappers import (Processor, Tag, Author, Category, list_of,
-                          Multi, meta_iterator)
+from .urlwrappers import Processor, MultiValue, Tag, Author, Category
 
 
-class SkipBuild(pulsar.Http404):
+class SkipBuild(Http404):
     pass
 
 
-class BuildError(pulsar.Http404):
+class BuildError(Http404):
     pass
+
+
+class Unsupported(HttpException):
+    status = 415
+
 
 no_draft_field = ('date', 'category')
 
@@ -33,22 +42,23 @@ METADATA_PROCESSORS = dict(((p.name, p) for p in (
     Processor('name'),
     Processor('slug'),
     Processor('title'),
+    # Description, if not head_description available it will also be used as
+    # description in head meta.
     Processor('description'),
-    Processor('tag', list_of(Tag), multiple=True),
-    Processor('date', lambda x, cfg: [parse_date(x)]),
+    # An optional image url which can be used to identify the page
+    Processor('image'),
+    Processor('date', lambda x, cfg: parse_date(x)),
     Processor('status'),
     Processor('priority'),
-    Processor('category', list_of(Category), multiple=True),
-    Processor('author', list_of(Author), multiple=True),
-    Processor('require_css', multiple=True),
-    Processor('require_js', multiple=True),
-    Processor('require_context', multiple=True),
-    Processor('content_type', default='text/html'),
+    MultiValue('keywords', Tag),
+    MultiValue('category', Category),
+    MultiValue('author', Author),
+    MultiValue('require_css'),
+    MultiValue('require_js'),
+    MultiValue('require_context'),
+    Processor('content_type'),
     Processor('template'),
-    Processor('template-engine',
-              default=lambda cfg: cfg['DEFAULT_TEMPLATE_ENGINE']),
-    Processor('robots', default=['index', 'follow'], multiple=True),
-    Processor('type')
+    Processor('template-engine')
 )))
 
 
@@ -61,44 +71,65 @@ def is_text(content_type):
     return content_type in CONTENT_EXTENSIONS
 
 
-class Snippet(object):
+class Content(object):
     template = None
     template_engine = None
-    default_template = None
+    _json_dict = None
+    '''Template engine to render this content. Overwritten my metadata.
+    If not available, the application default engine is used'''
     mandatory_properties = ()
 
-    def __init__(self, content, metadata, src, path=None, context=None,
+    def __init__(self, app, content, metadata, src, path=None, context=None,
                  **params):
-        self._json_content = None
+        self._app = app
         self._content = content
         self._context_for = context
         self._additional_context = {}
         self._src = src
         self._path = path or src
         self._name = self._path
-        self.modified = modified_datetime(src)
-        self.update_meta(metadata, params)
-        if is_text(self.content_type):
+        self._meta = AttributeDictionary(params)
+        self._meta.modified = modified_datetime(src)
+        # Get the site meta data dictionary.
+        # Used to render Content metadata
+        self._update_meta(metadata)
+        meta = self._meta
+        if self.is_text:
             dir, slug = os.path.split(self._path)
             if not slug:
                 slug = self._name
                 dir = None
             self._name = slugify(self._name, separator='_')
-            if not self.slug:
-                self.slug = slugify(slug, separator='_')
+            if not meta.slug:
+                meta.slug = slugify(slug, separator='_')
             if dir:
-                self.slug = '%s/%s' % (dir, self.slug)
-        elif not self.slug:
-            self.slug = self._name
-        self.template = self.template or self.default_template
+                meta.slug = '%s/%s' % (dir, meta.slug)
+        elif not meta.slug:
+            meta.slug = self._name
+        for name in self.mandatory_properties:
+            if not meta[name]:
+                raise BuildError("Property '%s' not available in %s"
+                                 % (name, self))
 
     @property
     def name(self):
         return self._name
 
     @property
+    def content_type(self):
+        return self._meta.content_type
+
+    @property
+    def is_text(self):
+        return self._meta.content_type in CONTENT_EXTENSIONS
+
+    @property
+    def is_html(self):
+        return self._meta.content_type == 'text/html'
+
+    @property
     def suffix(self):
-        return CONTENT_EXTENSIONS.get(self.content_type)
+        return CONTENT_EXTENSIONS.get(self._meta.content_type)
 
     @property
     def path(self):
@@ -106,7 +137,7 @@ class Snippet(object):
 
     @property
     def reldate(self):
-        return self.date or self.modified
+        return self._meta.date or self._meta.modified
 
     @property
     def year(self):
@@ -126,8 +157,8 @@ class Snippet(object):
 
     @property
     def id(self):
-        if is_text(self.content_type):
-            return '%s.json' % self.slug
+        if self.is_text:
+            return '%s.json' % self._meta.slug
 
     @property
     def context_for(self):
@@ -154,134 +185,88 @@ class Snippet(object):
         name = name or self._name
         return '%s_%s' % (suffix, name) if suffix else name
 
-    def update_meta(self, meta, params=None):
-        self.__dict__.update(meta_iterator(meta, params))
-
-    def context(self, app, names=None, context=None):
-        '''Extract a context dictionary from this snippet.
+    def context(self, context=None):
+        '''Extract the context dictionary for server side template rendering
         '''
-        all_names = names if names is not None else self.__dict__
-        if context is None:
-            context = app.extensions['static'].build_info(app)
-        ctx = context
-        context = context.copy()
-        engine = template_engine(self.template_engine)
-        #
-        for name in all_names:
-            if name.startswith('_'):
-                continue
-            value = getattr(self, name, None)
-            if value is None:
-                if name == 'id':
-                    raise SkipBuild
-                elif names:
-                    raise KeyError("%s could not obtain url variable '%s'" %
-                                   (self, name))
-                else:
-                    value = ''
-            elif isinstance(value, Multi):
-                value = str(value)
-            elif isinstance(value, date):
-                context['%s_date' % name] = app.format_date(value)
-                context[name] = app.format_datetime(value)
-                continue
-            elif isinstance(value, dict):
-                if not value:
-                    continue
-                for k, val in tuple(value.items()):
-                    if isinstance(val, (list, tuple)):
-                        value[k] = tuple((engine(v, ctx) for v in val))
-                    else:
-                        value[k] = engine(val, ctx)
-            if value and isinstance(value, str):
-                value = engine(value, ctx)
-            context[name] = value
-        #
-        if names is None:
-            #
-            #    Check for missing properties
-            for name in self.mandatory_properties:
-                if not context.get(name):
-                    raise BuildError("Property '%s' not available in %s"
-                                     % (name, self))
-        #
-        return context
+        ctx = dict(self._flatten(self._meta))
+        if context:
+            ctx.update(context)
+        return ctx
 
-    def render(self, app, context):
-        '''Render the snippet
+    def urlparams(self, names=None):
+        urlparams = {}
+        if names:
+            for name in names:
+                value = self._meta.get(name) or getattr(self, name, None)
+                if value in (None, ''):
+                    if name == 'id':
+                        raise SkipBuild
+                    elif names:
+                        raise KeyError("%s could not obtain url variable '%s'"
+                                       % (self, name))
+                urlparams[name] = value
+        return urlparams
+
+    def render(self, context):
+        '''Render the content
         '''
-        if is_text(self.content_type):
-            engine = template_engine(self.template_engine)
-            context = self.context(app, context=context)
-            content = engine(self._content, context)
+        if self.is_text:
+            context = self.context(context)
+            content = self._engine(self._content, context)
             if self.template:
                 context['html_main'] = content
-                content = app.render_template(self.template, context=context)
+                content = self._app.render_template(self.template,
+                                                    context=context)
             return content
         else:
             return self._content
 
-    def json_dict(self, app, context):
+    def json(self, request):
         '''Convert the content into a Json dictionary for the API
         '''
-        if not self._json_content and is_text(self.content_type):
-            jd = self.context(app)
-            context.update(jd)
-            #
+        if not self._json_dict and self.is_text:
+            context = self._app.context(request)
+            context = self.context(context)
             # Add additional context keys
             if self.additional_context:
                 for key, ct in self.additional_context.items():
-                    context[ct.key(key)] = ct.render(app, context)
+                    context[ct.key(key)] = ct.render(context)
             #
             key = self.key('main')
-            jd[key] = self.render(app, context)
-            if self.content_type == 'text/html':
-                head = jd.get('head')
-                if not head:
-                    head = {}
-                    jd['head'] = head
-                head.update({'title': self.title,
-                             'description': self.description})
+            jd = self._to_json(self._meta)
+            jd[key] = self.render(context)
+            self._json_dict = jd
+        return self._json_dict
 
-            self._json_content = jd
-        return self._json_content
-
-    def html(self, request, context):
+    def html(self, request):
         '''Build the ``html_main`` key for this content and set
         content specific values to the ``head`` tag of the
         HTML5 document.
         '''
-        assert self.content_type == 'text/html', '%s not html' % self
-        data = self.json_dict(request.app, context)
-        context.update(data)
+        if not self.is_html:
+            raise Unsupported
+        data = self.json(request)
         doc = request.html_document
         head = doc.head
         #
-        head.fields.update(data['head'])
-        if 'html_url' in data:
-            head.fields.set_private('html_url', data['html_url'])
+        doc.meta.update({'title': data.get('title'),
+                         'description': data.get('description'),
+                         'author': data.get('author'),
+                         'og:image': data.get('image'),
+                         'og:published_time': data.get('date'),
+                         'og:modified_time': data.get('modified')})
+        if 'head' in data:
+            doc.meta.update(data['head'])
         #
-        require_css = data.get('require_css', '')
-        if require_css:
-            for css in require_css.split(','):
-                head.links.append(css)
-        require_js = data.get('require_js', '')
-        if require_js:
-            for js in require_js.split(','):
-                head.scripts.require(js)
+        for css in data.get('require_css') or ():
+            head.links.append(css)
+        for js in data.get('require_js') or ():
+            doc.body.scripts.require(js)
         #
-        author = data.get('author')
-        if author:
-            head.replace_meta('author', author)
-        #twitter_card(request, **data)
-        #
-        robots = data.get('robots')
-        if robots:
-            head.add_meta(name='robots', content=robots)
-        self.on_html(request.app, doc)
-        return context.get(self.key('main'))
+        self.on_html(doc)
+        return data.get(self.key('main'))
 
-    def on_html(self, app, doc):
+    def on_html(self, doc):
         pass
 
     @classmethod
@@ -290,11 +275,60 @@ class Snippet(object):
                     if a not in no_draft_field))
         return cls.__class__('Draft', (cls,), {'mandatory_properties': mp})
 
+    # INTERNALS
+    def _update_meta(self, metadata):
+        meta = self._meta
+        meta.site = self._app.extensions['static'].build_info(self._app)
+        context = self.context()
+        for name in ('template_engine', 'template'):
+            default = getattr(self, name)
+            value = metadata.pop(name, default)
+            meta.site[name] = value
+            setattr(self, name, value)
+        self._engine = engine = self._app.template_engine(self.template_engine)
+        meta.update(((key, self._render_meta(value, context))
+                    for key, value in metadata.items()))
 
-class Article(Snippet):
+    def _flatten(self, meta):
+        for key, value in mapping_iterator(meta):
+            if isinstance(value, Mapping):
+                for child, value in self._flatten(value):
+                    yield '%s_%s' % (key, child), value
+            else:
+                yield key, self._to_string(value)
+
+    def _to_string(self, value):
+        if isinstance(value, Mapping):
+            raise BuildError('A dictionary found when coverting to string')
+        elif isinstance(value, (list, tuple)):
+            return ', '.join(self._to_string(v) for v in value)
+        elif isinstance(value, date):
+            return iso8601(value)
+        else:
+            return to_string(value)
+
+    def _render_meta(self, value, context):
+        if isinstance(value, Mapping):
+            return dict(((k, self._render_meta(v, context))
+                          for k, v in value.items()))
+        elif isinstance(value, (list, tuple)):
+            return [self._render_meta(v, context) for v in value]
+        elif isinstance(value, date):
+            return value
+        elif value is not None:
+            return self._engine(to_string(value), context)
+
+    def _to_json(self, value):
+        if isinstance(value, Mapping):
+            return dict(((k, self._to_json(v)) for k, v in value.items()))
+        elif isinstance(value, (list, tuple)):
+            return [self._to_json(v) for v in value]
+        elif isinstance(value, date):
+            return iso8601(value)
+        else:
+            return value
+
+
+class Article(Content):
     mandatory_properties = ('title', 'date', 'category')
-    default_template = 'article.html'
-
-
-class Quote(Snippet):
-    base_properties = ('author', 'date')
+    template = 'article.html'

@@ -5,7 +5,7 @@ import os
 
 from pulsar import ImproperlyConfigured
 
-from lux.extensions import html5
+from lux.extensions import angular
 
 from ..builder import DirBuilder, get_rel_dir
 try:
@@ -14,7 +14,7 @@ except ImportError:
     LuxSphinx = None
 
 
-class SphinxDocs(html5.Router, DirBuilder):
+class SphinxDocs(angular.Router, DirBuilder):
     builddir = '_build'
 
     def __init__(self, route, dir=None, **params):

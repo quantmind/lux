@@ -35,3 +35,12 @@ class StaticSiteTests(test.TestCase):
         # last file should be the index.html
         item = items[-1]
         self.assertTrue(item.file.endswith('/index.html'))
+
+    def test_blog_post(self):
+        app = self.application()
+        site = app.handler.middleware[-1]
+        items = site.build(app)
+        for item in items:
+            if item and item.file.endswith('/blog1.html'):
+                return
+        raise Exception('Could not fine blog1.html')

@@ -5,4 +5,4 @@
 //      Licensed <%= _.pluck(pkg.licenses, "type").join(", ") %>.
 //      For all details and documentation:
 //      <%= pkg.homepage %>
-
+//

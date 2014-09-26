@@ -3,6 +3,7 @@ from itertools import chain
 from random import choice
 from collections import Hashable
 from functools import partial
+from datetime import datetime, date
 
 from pulsar.utils.httpurl import *
 from pulsar.utils.pep import range, ispy3k, to_string
@@ -70,3 +71,7 @@ def update_dict(d1, d2):
     d = d1.copy()
     d.update(d2)
     return d
+
+
+def iso8601(dt):
+    return dt.strftime('%Y-%m-%dT%H:%M:%S')

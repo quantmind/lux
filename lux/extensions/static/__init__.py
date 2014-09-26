@@ -49,7 +49,7 @@ import lux
 from lux import Parameter, Router
 
 from .builder import Builder, DirBuilder, ContextBuilder
-from .contents import Snippet, Article
+from .contents import Content, Article
 from .routers import (MediaBuilder, HtmlContent, Blog, ErrorRouter,
                       JsonRoot, JsonContent, JsonRedirect, Sitemap)
 from .rst import SphinxDocs
@@ -93,7 +93,7 @@ class Extension(lux.Extension):
             html5 = app.config['HTML5_NAVIGATION']
         except KeyError:
             raise ImproperlyConfigured('"lux.extensions.static" requires '
-                                       '"lux.extensions.html5" in EXTENSIONS')
+                                       '"lux.extensions.ngular" in EXTENSIONS')
         path = app.config['MEDIA_URL']
         api_url = app.config['STATIC_API'] or ''
         if api_url.startswith('/'):
@@ -172,21 +172,20 @@ class Extension(lux.Extension):
             context['apiUrls'] = apiUrls
 
     def context(self, request, context):
-        app = request.app
-        ctx = request.cache.static_context
-        if not ctx:
-            if not self._global_context:
-                ctx = ContextBuilder(app, self.build_info(app))
-                self._global_context = ctx.copy()
+        if request.cache.building_static:
+            # Building the static web site
             content = request.cache.content
-            if content:
+            app = request.app
+            ctx = request.cache.static_context
+            if not ctx:
+                if not self._global_context:
+                    ctx = ContextBuilder(app)
+                    self._global_context = ctx.copy()
                 ctx = ContextBuilder(app, self._global_context,
                                      content=content)
-            else:
-                ctx = self._global_context.copy()
-            request.cache.static_context = ctx
-        ctx.update(context)
-        return ctx
+                request.cache.static_context = ctx
+            ctx.update(context)
+            return ctx
 
     def build_info(self, app):
         '''Return a dictionary with information about the build
@@ -198,7 +197,7 @@ class Extension(lux.Extension):
             if url.endswith('/'):
                 url = url[:-1]
             self._static_info = {
-                'date': dte.strftime(app.config['DATE_FORMAT']),
+                'date': dte.strftime('%Y-%m-%dT%H-%M-%S'), #ISO 8601
                 'year': dte.year,
                 'lux_version': lux.__version__,
                 'python_version': '.'.join((str(v) for v in sys.version_info[:3])),
@@ -206,7 +205,7 @@ class Extension(lux.Extension):
                 'media': cfg['MEDIA_URL'][:-1],
                 'name': cfg['APP_NAME']
             }
-        return dict((('site_%s' % k, v) for k, v in self._static_info.items()))
+        return self._static_info.copy()
 
     def copy_redirects(self, app, location):
         '''Reads the ``redirects.json`` file if it exists and

@@ -8,8 +8,6 @@ from pulsar.apps.test.plugins import bench, profile
 
 def run(**params):
     args = params.get('argv', sys.argv)
-    if '--config' not in args:
-        params['config'] = 'test_settings.py'
     if '--coverage' in args or params.get('coverage'):
         import coverage
         p = current_process()

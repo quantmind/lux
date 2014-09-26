@@ -8,7 +8,7 @@
         "lodash": "",
         "jquery": ""
     },
-    "homepage": "https://github.com/lsbardel/lux",
+    "homepage": "http://quantmind.github.io/lux",
     "devDependencies": {
         "grunt": "",
         "grunt-contrib-uglify": "",
@@ -16,7 +16,8 @@
         "grunt-docco": "~0.3.2",
         "docco": "",
         "benchmark": "",
-        "grunt-contrib-jshint": ""
+        "grunt-contrib-jshint": "",
+        "grunt-html2js": ""
     },
     "name": "lux",
     "contributors": [],
@@ -27,7 +28,7 @@
     "version": "0.1.0",
     "repository": {
         "type": "git",
-        "url": "https://github.com/lsbardel/lux"
+        "url": "https://github.com/quantmind/lux"
     },
     "description": "python web toolkit",
     "title": "Lux Library",

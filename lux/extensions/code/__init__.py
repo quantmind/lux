@@ -1,6 +1,12 @@
+'''
+Highlight code snippets with highlightjs_
+
+.. _highlightjs: https://highlightjs.org/
+'''
 import lux
 from lux import Parameter
-from lux.extensions.ui import CssInclude
+from lux.extensions.ui import CssInclude, spacing
+from lux.extensions.angular import ng_modules
 
 
 highlight = '//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.2'
@@ -20,7 +26,6 @@ class Extension(lux.Extension):
     def on_html_document(self, app, request, doc):
         src = '%s/highlight.min' % highlight
         doc.head.scripts.known_libraries['highlight'] = src
-        doc.head.scripts.require('highlight')
 
 
 def add_css(all):
@@ -32,3 +37,6 @@ def add_css(all):
         css('body',
             CssInclude(path))
 
+    css('code.hljs.inline',
+        display='inline',
+        padding=spacing(2, 4))

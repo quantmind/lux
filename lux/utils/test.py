@@ -40,7 +40,9 @@ class TestCase(unittest.TestCase):
         if argv is None:
             argv = []
         if '--log-level' not in argv:
-            argv.extend(('--log-level', 'none'))
+            argv.append('--log-level')
+            levels = self.cfg.loglevel if hasattr(self, 'cfg') else ['none']
+            argv.extend(levels)
         app = lux.App(config_file, argv=argv, **kwargs).setup()
         if self.apps is None:
             self.apps = []

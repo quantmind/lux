@@ -1,0 +1,18 @@
+<ul class="media-list">
+    <li ng-repeat="post in dir_entries" class="media" data-ng-controller='BlogEntry'>
+        <a href="{{post.html_url}}" class="pull-left hidden-xs dir-entry-image">
+          <img data-ng-if="post.image" src="{{post.image}}" alt="{{post.title}}">
+          <img data-ng-if="!post.image" src="holder.js/120x90">
+        </a>
+        <a href="{{post.html_url}}" class="visible-xs">
+            <img data-ng-if="post.image" src="{{post.image}}" alt="{{post.title}}" class="dir-entry-image">
+            <img data-ng-if="!post.image" src="holder.js/120x90">
+        </a>
+        <p class="visible-xs"></p>
+        <div class="media-body">
+            <h4 class="media-heading"><a href="{{post.html_url}}">{{post.title}}</a></h4>
+            <p data-ng-if="post.description">{{post.description}}</p>
+            <p class="text-info small">by {{post.author}} on {{post.date_text}}</p>
+        </div>
+    </li>
+</ul>

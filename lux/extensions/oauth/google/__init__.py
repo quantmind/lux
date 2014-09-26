@@ -20,7 +20,7 @@ class Google(OAuth2):
     token_uri = "https://accounts.google.com/o/oauth2/token"
     default_scope = ['profile', 'email']
 
-    def add_meta_tags(self, request, doc):
+    def on_html_document(self, request, doc):
         aid = self.config.get('analytics_id')
         if aid:
             site = request.config['SITE_URL']

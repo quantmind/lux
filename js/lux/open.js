@@ -1,33 +1,25 @@
 define(['jquery', 'angular', 'angular-sanitize'], function ($) {
     "use strict";
 
-    var lux = {},
-        defaults = {
-            ngModules: [],
-            ngDirectives: [],
-            ngControllers: []
-        },
-        root = window,
+    var root = window,
+        lux = {version: '0.1.0'},
         routes = [],
         ready_callbacks = [],
         require_callbacks = [],
         forEach = angular.forEach,
         angular_bootstrapped = false,
-        // extend the context from the global variable context
-        context = $.extend(defaults, root.context);
+        context = root.luxContext || {};
 
     // when in html5 mode add ngRoute to the list of required modules
     if (context.html5mode)
         context.ngModules.push('ngRoute');
+    context.ngModules.push('ngSanitize');
 
     root.lux = lux;
     angular.element = $;
     lux.$ = $;
     lux.forEach = angular.forEach;
     lux.context = context;
-    lux.services = angular.module('lux.services', []);
-    lux.controllers = angular.module('lux.controllers', ['lux.services']);
-    lux.app = angular.module('lux', []);
     lux.directiveOptions = root.luxDirectiveOptions || {};
 
     // Get directive options from the ``directiveOptions`` object
@@ -62,7 +54,3 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
             });
         });
     };
-
-    $.each(['ngSanitize', 'lux.controllers', 'lux.services'], function (i, name) {
-        context.ngModules.push(name);
-    });

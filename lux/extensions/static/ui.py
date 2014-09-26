@@ -3,13 +3,15 @@ from lux.extensions.ui import *
 
 def add_css(all):
     css = all.css
+    vars = all.variables
+    vars.list_image_width = 120
 
     css('.dir-entry-image',
         css(' img',
-            width=px(120),
+            width=px(vars.list_image_width),
             height='auto'),
         overflow='hidden',
-        max_height=px(90))
+        max_height=px(vars.list_image_width))
 
     sphinx(all)
 

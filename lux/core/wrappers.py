@@ -31,6 +31,7 @@ from pulsar.apps.wsgi import (route, wsgi_request, cached_property,
 from pulsar.apps import wsgi
 from pulsar.apps.wsgi import RouterParam
 from pulsar.utils.httpurl import JSON_CONTENT_TYPES
+from pulsar.utils.structures import mapping_iterator
 
 from lux.utils import unique_tuple
 
@@ -165,3 +166,49 @@ It introduces the following:
     response_content_types = RouterParam(DEFAULT_CONTENT_TYPES)
     in_sitemap = RouterParam(True)
     icon = None
+
+
+class HeadMeta(object):
+    '''Wrapper for HTML5 head metatags.
+    '''
+    def __init__(self, head):
+        self.head = head
+
+    def __repr__(self):
+        return repr(self.head.meta.children)
+
+    def __str__(self):
+        return str(self.head.meta.children)
+
+    def update(self, iterable):
+        for name, value in mapping_iterator(iterable):
+            self.set(name, value)
+
+    def __setitem__(self, entry, content):
+        self.set(entry, content)
+
+    def __getitem__(self, entry):
+        return self.get(entry)
+
+    def __len__(self):
+        return len(self.head.meta.children)
+
+    def __iter__(self):
+        return iter(self.head.meta.children)
+
+    def set(self, entry, content, meta_key=None):
+        '''Set the a meta tag with ``content`` and ``entry`` in the HTML5 head.
+        The ``key`` for ``entry`` is either ``name`` or ``property`` depending
+        on the value of ``entry``.
+        '''
+        if content:
+            if entry == 'title':
+                self.head.title = content
+            else:
+                self.head.replace_meta(entry, content, meta_key)
+
+    def get(self, entry, meta_key=None):
+        if entry == 'title':
+            return self.head.title
+        else:
+            return self.head.get_meta(entry, meta_key=meta_key)

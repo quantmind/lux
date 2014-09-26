@@ -1,33 +1,36 @@
 {
+    "html2js": {
+        "options": {
+            "base": "js"
+        },
+        "blog": {
+            "src": "js/lux/blog/*.tpl.html",
+            "dest": "js/lux/blog/blog-template.js"
+        }
+    },
     "lux": {
+        "options": {
+            "banner": "js/lux/banner.js"
+        },
         "src": ["js/lux/open.js",
-                "js/lux/class.js",
                 "js/lux/utils.js",
-                "js/lux/api.js",
-                "js/lux/google.js",
-                "js/lux/page.js",
-                "js/lux/form.js",
-                "js/lux/nglist.js",
-                "js/lux/user.js",
-                "js/lux/viz.js",
-                "js/lux/highlight.js",
-                "js/lux/flickr.js",
+                "js/lux/class.js",
+                "js/lux/bootstrap.js",
+                "js/lux/services/*.js",
+                "js/lux/page/*.js",
+                "js/lux/blog/*.js",
+                "js/lux/user/*.js",
+                "js/lux/photos/*.js",
+                "js/lux/google/*.js",
+                "js/lux/viz/*.js",
                 "js/lux/close.js"],
-        "dest": "lux/media/lux/lux.js",
-        "banner": "js/lux/banner.js"
+        "dest": "lux/media/lux/lux.js"
     },
     "lorem": {
         "src": ["js/lorem/start.js",
                 "js/lorem/core.js",
                 "js/lorem/close.js"],
         "dest": "lux/media/lux/lorem.js"
-    },
-    "d3plugins": {
-        "src": ["js/d3/open.js",
-                "js/d3/chernoff.js",
-                "js/d3/force_labels.js",
-                "js/d3/close.js"],
-        "dest": "lux/media/lux/d3plugins.js"
     },
     "tests": {
         "src": ["js/tests/open.js",

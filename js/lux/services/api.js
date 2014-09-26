@@ -15,43 +15,44 @@
     //
     //  Lux Api service factory for angular
     //  ---------------------------------------
-    lux.services.service('$lux', function ($location, $q, $http, $log) {
-        var $lux = this;
+    angular.module('lux.services', [])
+        .service('$lux', function ($location, $q, $http, $log) {
+            var $lux = this;
 
-        this.location = $location;
-        this.log = $log;
-        this.http = $http;
-        this.q = $q;
+            this.location = $location;
+            this.log = $log;
+            this.http = $http;
+            this.q = $q;
 
-        // A post method with CSRF parameter
-        this.post = function (url, data, cfg) {
-            if (context.csrf) {
-                data || (data = {});
-                angular.extend(data, context.csrf);
-            }
-            return $http.post(url, data, cfg);
-        };
+            // A post method with CSRF parameter
+            this.post = function (url, data, cfg) {
+                if (context.csrf) {
+                    data || (data = {});
+                    angular.extend(data, context.csrf);
+                }
+                return $http.post(url, data, cfg);
+            };
 
-        //  Create an api client
-        //  -------------------------
-        //
-        //  context: an api name or an object containing, name, url and type.
-        //
-        //  name: the api name
-        //  url: the api base url
-        //  type: optional api type (default is ``lux``)
-        this.api = function (context) {
-            if (Object(context) !== context) {
-                context = {name: context};
-            }
-            var Api = ApiTypes[context.name || 'lux'];
-            if (!Api)
-                $lux.log.error('Api provider "' + context.name + '" is not available');
-            else
-                return new Api(context.name, context.url, context.options, $lux);
-        };
+            //  Create an api client
+            //  -------------------------
+            //
+            //  context: an api name or an object containing, name, url and type.
+            //
+            //  name: the api name
+            //  url: the api base url
+            //  type: optional api type (default is ``lux``)
+            this.api = function (context) {
+                if (Object(context) !== context) {
+                    context = {name: context};
+                }
+                var Api = ApiTypes[context.name || 'lux'];
+                if (!Api)
+                    $lux.log.error('Api provider "' + context.name + '" is not available');
+                else
+                    return new Api(context.name, context.url, context.options, $lux);
+            };
 
-    });
+        });
     //
     function wrapPromise (promise) {
         promise.success = function(fn) {

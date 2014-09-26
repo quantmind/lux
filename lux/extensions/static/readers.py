@@ -12,9 +12,9 @@ Restructured = False
 
 from pulsar.apps.wsgi import AsyncString
 
-from .contents import (Snippet, METADATA_PROCESSORS, slugify, is_text,
+from .contents import (Content, METADATA_PROCESSORS, slugify, is_text,
                        SkipBuild)
-from .urlwrappers import guess, as_list
+from .urlwrappers import MultiValue
 
 
 READERS = {}
@@ -26,11 +26,15 @@ def register_reader(cls):
     return cls
 
 
+def guess(value):
+    return value if len(value) > 1 else value[-1]
+
+
 class BaseReader(object):
     """Base class to read files.
 
     This class is used to process static files, and it can be inherited for
-    other t    pes of file. A Reader class must have the following attributes:
+    other types of file. A Reader class must have the following attributes:
 
     - enabled: (boolean) tell if the Reader class is enabled. It
       generally depends on the import of some dependency.
@@ -42,7 +46,7 @@ class BaseReader(object):
     enabled = True
     file_extensions = []
     extensions = None
-    content = Snippet
+    content = Content
 
     def __init__(self, app, ext=None):
         self.app = app
@@ -63,52 +67,43 @@ class BaseReader(object):
         meta_input = meta_input.items()
         if meta:
             meta_input = chain(meta.items(), meta_input)
-        meta = dict(((p.name, p(cfg)) for p in METADATA_PROCESSORS.values()))
+        meta = {}
+        as_list = MultiValue()
         for key, values in meta_input:
             key = slugify(key, separator='_')
             if not isinstance(values, (list, tuple)):
                 values = (values,)
-            if key not in meta:
+            if key not in METADATA_PROCESSORS:
                 bits = key.split('_', 1)
                 if len(bits) > 1:
                     k = ':'.join(bits[1:])
                     if bits[0] == 'context':
-                        context[k] = data = []
-                        for value in values:
-                            data.extend(as_list(value, cfg))
+                        context[k] = as_list(values, cfg)
                         continue
                     if bits[0] == 'meta':
-                        data = []
-                        for value in values:
-                            data.extend(as_list(value, cfg))
-                        meta[k] = guess(data)
+                        meta[k] = guess(as_list(values, cfg))
                         continue
                     if bits[0] == 'head':
-                        data = []
-                        for value in values:
-                            data.extend(as_list(value, cfg))
-                        head_meta[k] = guess(data).value()
+                        head_meta[k] = guess(as_list(values, cfg))
+                        continue
+                    if bits[0] == 'og' or bits[1] == 'twitter':
+                        k = ':'.join(bits)
+                        head_meta[k] = guess(as_list(values, cfg))
                         continue
                 self.logger.warning("Unknown meta '%s' in '%s'", key, src)
             #
             elif values:
                 # Remove default values if any
-                proc = METADATA_PROCESSORS[key].process
-                meta[key].clear()
-                for value in values:
-                    try:
-                        value = proc(value, cfg)
-                    except Exception:
-                        self.logger.exception("Could not process meta '%s' "
-                                              "in '%s'", key, src)
-                    meta[key].extend(value)
+                proc = METADATA_PROCESSORS[key]
+                meta[key] = proc(values, cfg)
         content = content or self.content
-        if meta['priority'].value() == '0':
+        if meta.get('priority') == '0':
             content = content.as_draft()
-            meta['robots'].clear()
-            meta['robots'].extend(['noindex', 'nofollow'])
+            meta['robots'] = ['noindex', 'nofollow']
         meta['head'] = head_meta
-        return content(body, meta, src, name, context, **params)
+        if params:
+            pass
+        return content(self.app, body, meta, src, name, context, **params)
 
     def read(self, source_path, name, **params):
         '''Default read method
@@ -123,7 +118,7 @@ class BaseReader(object):
                 body = f.read()
             if self.ext and not name.endswith('.%s' % self.ext):
                 name = '%s.%s' % (name, self.ext)
-        metadata = {'content_type': [ct]}
+        metadata = {'content_type': ct}
         return self.process(body, metadata, source_path, name, **params)
 
 
@@ -146,7 +141,9 @@ class MarkdownReader(BaseReader):
         with open(source_path, encoding='utf-8') as text:
             raw = '%s\n\n%s' % (text.read(), self.links())
             body = md.convert(raw)
-        return self.process(body, self._md.Meta, source_path, name, **params)
+        meta = self._md.Meta
+        meta['content_type'] = 'text/html'
+        return self.process(body, meta, source_path, name, **params)
 
     def links(self):
         links = self.app.config.get('_MARKDOWN_LINKS_')

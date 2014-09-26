@@ -1,10 +1,10 @@
 from .readers import MarkdownReader, register_reader, Markdown
-from .contents import Snippet
+from .contents import Content
 
 reveal_src = '//cdnjs.cloudflare.com/ajax/libs/reveal.js/2.6.2'
 
 
-class Slide(Snippet):
+class Slide(Content):
 
     def on_html(self, app, doc):
         ctx = {'reveal_src': reveal_src}

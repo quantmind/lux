@@ -4,16 +4,31 @@ module.exports = function (grunt) {
   "use strict";
     // Project configuration.
     var docco_output = '../docs/lux/html/docco',
-        //docco_output = 'docs/build/html/docco',
         // All libraries
-        libs = grunt.file.readJSON('js/libs.json');
+        libs = grunt.file.readJSON('js/libs.json'),
+        allHtml2js = {},
+        allTasks = ['concat', 'jshint', 'uglify'],
+        cfg = {
+            pkg: grunt.file.readJSON('package.json'),
+            concat: libs
+        };
     //
+    // for_each function
     function for_each(obj, callback) {
         for(var p in obj) {
             if(obj.hasOwnProperty(p)) {
                 callback.call(obj[p], p);
             }
         }
+    }
+    //
+    // html2js is special, add html2js task if available
+    if (libs.html2js) {
+        cfg.html2js = libs.html2js;
+        delete libs.html2js;
+        grunt.log.debug('Adding html2js task');
+        grunt.loadNpmTasks('grunt-html2js');
+        allTasks.splice(0, 0, 'html2js');
     }
     //
     // Preprocess libs
@@ -84,18 +99,12 @@ module.exports = function (grunt) {
     //
     // This Grunt Config Entry
     // -------------------------------
+    cfg.uglify = uglify_libs();
+    cfg.jshint = jshint_libs();
+    //cfg.docco = docco_libs();
     //
     // Initialise Grunt with all tasks defined above
-    grunt.initConfig({
-        pkg: grunt.file.readJSON('package.json'),
-        concat: libs,
-        uglify: uglify_libs(),
-        jshint: jshint_libs(),
-        docco: docco_libs(),
-        qunit: {
-            files: "test/index.html"
-        }
-    });
+    grunt.initConfig(cfg);
     //
     // These plugins provide necessary tasks.
     grunt.loadNpmTasks('grunt-contrib-uglify');
@@ -103,12 +112,11 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-contrib-concat');
     //grunt.loadNpmTasks('grunt-contrib-nodeunit');
     //grunt.loadNpmTasks('grunt-contrib-watch');
-    grunt.loadNpmTasks('grunt-docco');
+    //grunt.loadNpmTasks('grunt-docco');
     //
     grunt.registerTask('gruntfile', 'jshint Gruntfile.js',
             ['jshint:gruntfile']);
-    grunt.registerTask('all', 'Compile and lint all Lux libraries',
-            ['concat', 'jshint', 'uglify', 'docco']);
+    grunt.registerTask('all', 'Compile and lint all Lux libraries', allTasks);
     grunt.registerTask('default', ['all']);
     //
     for_each(libs, function (name) {

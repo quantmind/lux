@@ -1,43 +1,5 @@
     var FORMKEY = 'm__form';
     //
-    // add the watch change directive
-    lux.app.directive('watchChange', function() {
-        return {
-            scope: {
-                onchange: '&watchChange'
-            },
-            //
-            link: function(scope, element, attrs) {
-                element.on('keyup', function() {
-                    scope.$apply(function () {
-                        scope.onchange();
-                    });
-                }).on('change', function() {
-                    scope.$apply(function () {
-                        scope.onchange();
-                    });
-                });
-            }
-        };
-    });
-
-    lux.app.directive('luxInput', function($parse) {
-        return {
-            restrict: "A",
-            compile: function($element, $attrs) {
-                var initialValue = $attrs.value || $element.val();
-                if (initialValue) {
-                    return {
-                        pre: function($scope, $element, $attrs) {
-                            $parse($attrs.ngModel).assign($scope, initialValue);
-                            $scope.$apply();
-                        }
-                    };
-                }
-            }
-        };
-    });
-
     // Change the form data depending on content type
     function formData(ct) {
 
@@ -189,8 +151,44 @@
         };
     };
 
-    lux.controllers.controller('formController', ['$scope', '$lux', 'data',
-            function ($scope, $lux, data) {
-        // Default form controller
-        formController($scope, $lux, data);
-    }]);
+        // add the watch change directive
+    angular.module('lux.form', ['lux.services'])
+        .controller('FormCtrl', ['$scope', '$lux', 'data', function ($scope, $lux, data) {
+            // Default form controller
+            formController($scope, $lux, data);
+        }])
+        .directive('watchChange', function() {
+            return {
+                scope: {
+                    onchange: '&watchChange'
+                },
+                //
+                link: function(scope, element, attrs) {
+                    element.on('keyup', function() {
+                        scope.$apply(function () {
+                            scope.onchange();
+                        });
+                    }).on('change', function() {
+                        scope.$apply(function () {
+                            scope.onchange();
+                        });
+                    });
+                }
+            };
+        })
+        .directive('luxInput', function($parse) {
+            return {
+                restrict: "A",
+                compile: function($element, $attrs) {
+                    var initialValue = $attrs.value || $element.val();
+                    if (initialValue) {
+                        return {
+                            pre: function($scope, $element, $attrs) {
+                                $parse($attrs.ngModel).assign($scope, initialValue);
+                                $scope.$apply();
+                            }
+                        };
+                    }
+                }
+            };
+        });
