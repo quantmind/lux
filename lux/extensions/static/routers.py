@@ -15,6 +15,7 @@ from .contents import Article, parse_date
 
 
 SPECIAL_KEYS = ('html_url',)
+SKIP_KEYS = ('site', 'head')
 
 
 class ErrorRouter(lux.Router, DirBuilder):
@@ -152,7 +153,8 @@ class JsonFile(lux.Router, FileBuilder):
         return list(reversed(sorted(all, key=key)))
 
     def is_html(self, key):
-        return key.startswith('html_') and key not in SPECIAL_KEYS
+        if key not in SPECIAL_KEYS:
+            return key.startswith('html_') or key in SKIP_KEYS
 
 
 class HtmlFile(angular.Router, FileBuilder):
@@ -228,7 +230,7 @@ class HtmlContent(angular.Router, DirBuilder):
             app = request.app
             files = self.api.get_route('json_files') if self.api else None
             if files:
-                jscontext['dir_entries'] = files.all(app, html=False)
+                jscontext['posts'] = files.all(app, html=False)
             src = app.template_full_path(self.index_template)
             content = self.read_file(app, src, 'index')
             return content.html(request)
@@ -243,6 +245,7 @@ class Drafts(angular.Router, FileBuilder):
     '''A page collecting all drafts
     '''
     priority = 0
+    ngmodules = ['blog']
 
     def build_main(self, request, context, jscontext):
         if self.index_template and self.parent:
@@ -252,8 +255,7 @@ class Drafts(angular.Router, FileBuilder):
             doc.head.replace_meta('robots', 'noindex, nofollow')
             files = api.get_route('json_files') if api else None
             if files:
-                jscontext['dir_entries'] = files.all(app, html=False,
-                                                     draft=True)
+                jscontext['posts'] = files.all(app, html=False, draft=True)
             return app.render_template(self.index_template, context)
         else:
             raise SkipBuild

@@ -16,7 +16,7 @@ angular.module("lux/blog/pagination.tpl.html", []).run(["$templateCache", functi
     "        <div class=\"media-body\">\n" +
     "            <h4 class=\"media-heading\"><a href=\"{{post.html_url}}\">{{post.title}}</a></h4>\n" +
     "            <p data-ng-if=\"post.description\">{{post.description}}</p>\n" +
-    "            <p class=\"text-info small\">by {{post.author}} on {{post.date_text}}</p>\n" +
+    "            <p class=\"text-info small\">by {{post.authors}} on {{post.dateText}}</p>\n" +
     "        </div>\n" +
     "    </li>\n" +
     "</ul>");

@@ -82,6 +82,8 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
         });
     };
 
+    var isAbsolute = new RegExp('^([a-z]+://|//)');
+
     var
     //
     // Test for ``_super`` method in a ``Class``.
@@ -734,15 +736,15 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
         });
 
 
-    var isAbsolute = new RegExp('^([a-z]+://|//)');
-
     // Lux main module
     angular.module('lux', ['lux.services', 'lux.form'])
-        .controller('page', ['$scope', '$lux', function ($scope, $lux) {
+        .controller('Page', ['$scope', '$lux', function ($scope, $lux) {
             //
             $lux.log.info('Setting up angular page');
             //
+            // Inject lux context into the scope of the page
             angular.extend($scope, context);
+            //
             var page = $scope.page;
             if (page && $scope.pages) {
                 $scope.page = page = $scope.pages[page];
@@ -914,7 +916,7 @@ angular.module("lux/blog/pagination.tpl.html", []).run(["$templateCache", functi
     "        <div class=\"media-body\">\n" +
     "            <h4 class=\"media-heading\"><a href=\"{{post.html_url}}\">{{post.title}}</a></h4>\n" +
     "            <p data-ng-if=\"post.description\">{{post.description}}</p>\n" +
-    "            <p class=\"text-info small\">by {{post.author}} on {{post.date_text}}</p>\n" +
+    "            <p class=\"text-info small\">by {{post.authors}} on {{post.dateText}}</p>\n" +
     "        </div>\n" +
     "    </li>\n" +
     "</ul>");
@@ -923,7 +925,7 @@ angular.module("lux/blog/pagination.tpl.html", []).run(["$templateCache", functi
     //  Blog Module
     //  ===============
     //
-    angular.module('blog', ['templates-blog', 'lux.services'])
+    angular.module('blog', ['templates-blog', 'lux.services', 'highlight'])
         .controller('BlogEntry', ['$scope', 'dateFilter', '$lux', function ($scope, dateFilter, $lux) {
             // Assume the model is called ``post``
             var post = $scope.post;
@@ -947,7 +949,7 @@ angular.module("lux/blog/pagination.tpl.html", []).run(["$templateCache", functi
                     $lux.log.error('Could not parse date');
                 }
                 post.date = date;
-                post.dateText = dateFilter(date, $scope.formatDate);
+                post.dateText = dateFilter(date, $scope.dateFormat);
             }
         }])
         .directive('blogPagination', function () {
@@ -957,18 +959,21 @@ angular.module("lux/blog/pagination.tpl.html", []).run(["$templateCache", functi
         });
 
     //
-    // Code highlighting with highlight.js
-
-    angular.module('blog').directive(function () {
-        return {
-            link: function link(scope, element, attrs) {
-                highlight(element);
-            }
-        };
-    });
+    //  Code highlighting with highlight.js
+    //
+    //  This module is added to the blog module so that the highlight
+    //  directive can be used
+    angular.module('highlight', [])
+        .directive('highlight', function () {
+            return {
+                link: function link(scope, element, attrs) {
+                    highlight(element);
+                }
+            };
+        });
 
     var highlight = function (elem) {
-        require('highlight', function (hljs) {
+        require(['highlight'], function () {
             $(elem).find('code').each(function(i, block) {
                 var elem = $(block),
                     parent = elem.parent();

@@ -16,3 +16,5 @@
             }
         });
     };
+
+    var isAbsolute = new RegExp('^([a-z]+://|//)');

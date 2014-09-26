@@ -1,6 +1,8 @@
     //
-    // Code highlighting with highlight.js
-
+    //  Code highlighting with highlight.js
+    //
+    //  This module is added to the blog module so that the highlight
+    //  directive can be used
     angular.module('highlight', [])
         .directive('highlight', function () {
             return {
@@ -11,7 +13,7 @@
         });
 
     var highlight = function (elem) {
-        require('highlight', function (hljs) {
+        require(['highlight'], function () {
             $(elem).find('code').each(function(i, block) {
                 var elem = $(block),
                     parent = elem.parent();

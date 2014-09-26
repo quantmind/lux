@@ -1,13 +1,13 @@
 
-    var isAbsolute = new RegExp('^([a-z]+://|//)');
-
     // Lux main module
     angular.module('lux', ['lux.services', 'lux.form'])
-        .controller('page', ['$scope', '$lux', function ($scope, $lux) {
+        .controller('Page', ['$scope', '$lux', function ($scope, $lux) {
             //
             $lux.log.info('Setting up angular page');
             //
+            // Inject lux context into the scope of the page
             angular.extend($scope, context);
+            //
             var page = $scope.page;
             if (page && $scope.pages) {
                 $scope.page = page = $scope.pages[page];

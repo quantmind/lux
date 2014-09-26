@@ -3,7 +3,6 @@
     //
     angular.module('blog', ['templates-blog', 'lux.services', 'highlight'])
         .controller('BlogEntry', ['$scope', 'dateFilter', '$lux', function ($scope, dateFilter, $lux) {
-            // Assume the model is called ``post``
             var post = $scope.post;
             if (!post) {
                 $lux.log.error('post not available in $scope, cannot use pagination controller!');
@@ -25,7 +24,7 @@
                     $lux.log.error('Could not parse date');
                 }
                 post.date = date;
-                post.dateText = dateFilter(date, $scope.formatDate);
+                post.dateText = dateFilter(date, $scope.dateFormat);
             }
         }])
         .directive('blogPagination', function () {

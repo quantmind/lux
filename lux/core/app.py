@@ -204,10 +204,10 @@ class Application(ConsoleParser, Extension):
                     'content': 'width=device-width, initial-scale=1'}],
                   'List of default ``meta`` elements to add to the html head'
                   'element'),
-        Parameter('DATE_FORMAT', '%Y %b %d',
-                  'Default formatting for dates'),
-        Parameter('DATETIME_FORMAT', '%Y %b %d %H:%M:%S',
-                  'Default formatting for dates'),
+        Parameter('DATE_FORMAT', 'd MMM y',
+                  'Default formatting for dates in JavaScript'),
+        Parameter('DATETIME_FORMAT', 'd MMM y, h:mm:ss a',
+                  'Default formatting for dates in JavaScript'),
         Parameter('DEFAULT_TEMPLATE_ENGINE', 'python',
                   'Default template engine'),
         Parameter('APP_NAME', 'Lux', 'Application site name'),
@@ -478,7 +478,13 @@ class Application(ConsoleParser, Extension):
         '''Load the ``context`` dictionary for this ``request``
         '''
         context = context if context is not None else {}
-        method = 'jscontext' if js else 'context'
+        if js:
+            method = 'jscontext'
+            cfg = self.config
+            context.update({'dateFormat': cfg['DATE_FORMAT'],
+                            'datetimeFormat': cfg['DATETIME_FORMAT']})
+        else:
+            method = 'context'
         for ext in self.extensions.values():
             if hasattr(ext, method):
                 context = getattr(ext, method)(request, context) or context
