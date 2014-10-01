@@ -113,6 +113,14 @@ class JsonContent(lux.Router, DirBuilder):
             self.add_child(JsonIndex('index.json',
                                      dir=self.dir,
                                      index_template=html_router.index_template))
+        #
+        # Add Drafts API if drafts are available
+        #drafts = html_router.get_route(html_router.childname('drafts'))
+        #if drafts:
+        #    self.add_child(JsonFile(drafts.route.rule,
+        #                            dir=self.dir,
+        #                            content=self.content))
+
         child_router = html_router.get_route(html_router.childname('view'))
         self.add_child(JsonFile('<path:id>',
                                 dir=self.dir,
@@ -128,32 +136,7 @@ class JsonContent(lux.Router, DirBuilder):
         return Json(data).http_response(request)
 
 
-class JsonFileBase(lux.Router, FileBuilder):
-
-    def get(self, request):
-        app = request.app
-        response = request.response
-        content = self.get_content(request)
-        # Get the JSON representation of the resource
-        data = content.json(request)
-        if data:
-            html_router = self.html_router
-            urlargs = request.urlargs
-            # The index page
-            if urlargs.get('path') == 'index':
-                urlargs['path'] = ''
-            data['api_url'] = app.site_url(self.relative_path(request))
-            html = html_router.get_route(html_router.childname('view'))
-            urlparams = content.urlparams(html.route.variables)
-            path = html.path(**urlparams)
-            data['html_url'] = app.site_url(normpath(path))
-            return Json(data).http_response(request)
-        else:
-            raise Unsupported
-        return Json(data).http_response(request)
-
-
-class JsonIndex(JsonFileBase):
+class JsonIndex(lux.Router, FileBuilder):
     index_template = None
 
     def build_file(self, app, location):
@@ -263,7 +246,7 @@ class HtmlContent(HtmlRouter, DirBuilder):
         super(HtmlContent, self).__init__(route, *routes, name=name, **params)
         if self.drafts:
             self.add_child(Drafts(self.drafts,
-                                  name=self.childname(self.drafts),
+                                  name=self.childname('drafts'),
                                   index_template=self.drafts_template))
         meta = copy(self.meta)
         if meta_children:
@@ -320,9 +303,6 @@ class HtmlContent(HtmlRouter, DirBuilder):
             return content.html(request)
         else:
             raise SkipBuild
-
-    def childname(self, prefix):
-        return '%s.%s' % (self.name, prefix) if self.name else prefix
 
 
 class Drafts(HtmlRouter, FileBuilder):

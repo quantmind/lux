@@ -120,6 +120,9 @@ class Router(lux.Router, MediaMixin):
             root._sitemap = sitemap
         return root._sitemap
 
+    def childname(self, prefix):
+        return '%s%s' % (self.name, prefix) if self.name else prefix
+
     def instance_url(self, request, instance):
         '''Return the url for editing the ``instance``
         '''

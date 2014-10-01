@@ -463,6 +463,7 @@ define(['jquery', 'angular'], function ($) {
         //
         return ApiTypes[name];
     };
+
     //
     //  Lux Default API
     //  ----------------------
@@ -503,36 +504,26 @@ define(['jquery', 'angular'], function ($) {
     //  Lux Static JSON API
     //  ------------------------
     //
-    // Api used by static sites
+    //  Api used by static sites
     lux.createApi('static', {
         //
         url: function (urlparams) {
-            var name,
-                count = 0,
-                url = this._url;
+            var url = this._url,
+                name = urlparams ? urlparams.slug : null;
             if (url.substring(url.length-5) === '.json')
                 return url;
-            //
-            forEach(urlparams, function (n) {
-                name = n;
-                count += 1;
-            });
-            if (count === 1)
-                url += '/' + name;
-            else if (count) {
-                this.$lux.log.error('Could not understand url parameters for static api');
-                return;
-            }
-            else
-                url += '/index';
-            if (url.substring(url.length-1) === '/')
+            if (url.substring(url.length-1) !== '/')
+                url += '/';
+            url += name || 'index';
+            if (url.substring(url.length-5) === '.html')
+                url = url.substring(0, url.length-5);
+            else if (url.substring(url.length-1) === '/')
                 url += 'index';
             if (url.substring(url.length-5) !== '.json')
                 url += '.json';
             return url;
         }
     });
-
     var FORMKEY = 'm__form';
     //
     // Change the form data depending on content type
@@ -728,10 +719,34 @@ define(['jquery', 'angular'], function ($) {
             };
         });
 
+    function addPageInfo(page, $scope, dateFilter, $lux) {
+        if (page.head && page.head.title) {
+            document.title = page.head.title;
+        }
+        if (page.author) {
+            if (page.author instanceof Array)
+                page.authors = page.author.join(', ');
+            else
+                page.authors = page.author;
+        } else {
+            $lux.log.info('No author in page!');
+        }
+        var date;
+        if (page.date) {
+            try {
+                date = new Date(page.date);
+            } catch (e) {
+                $lux.log.error('Could not parse date');
+            }
+            page.date = date;
+            page.dateText = dateFilter(date, $scope.dateFormat);
+        }
+        return page;
+    }
 
     // Lux main module
     angular.module('lux', ['lux.services', 'lux.form'])
-        .controller('Page', ['$scope', '$lux', function ($scope, $lux) {
+        .controller('Page', ['$scope', '$lux', '$anchorScroll', function ($scope, $lux, $anchorScroll) {
             //
             $lux.log.info('Setting up angular page');
             //
@@ -816,9 +831,11 @@ define(['jquery', 'angular'], function ($) {
                 var hash = e.currentTarget.hash,
                     target = $(hash);
                 if (target.length) {
+                    //$lux.location.hash(hash);
+                    //$anchorScroll();
                     offset = offset ? offset : 0;
-                    //e.preventDefault();
-                    //e.stopPropagation();
+                    e.preventDefault();
+                    e.stopPropagation();
                     $lux.log.info('Scrolling to target');
                     $('html,body').animate({
                         scrollTop: target.offset().top + offset
@@ -848,7 +865,11 @@ define(['jquery', 'angular'], function ($) {
         return module;
     }
     //
-    // Configure ui-Router using lux routing object
+    //  UI-Routing
+    //
+    //  Configure ui-Router using lux routing objects
+    //  Only when context.html5mode is true
+    //  Python implementation in the lux.extensions.angular Extension
     function configRouter(module) {
         module.config(['$locationProvider', '$stateProvider', '$urlRouterProvider',
             function ($locationProvider, $stateProvider, $urlRouterProvider) {
@@ -863,7 +884,7 @@ define(['jquery', 'angular'], function ($) {
                         //
                         template: page.template,
                         //
-                        url: '^' + page.url,
+                        url: page.url,
                         //
                         resolve: {
                             // Fetch page information
@@ -901,14 +922,11 @@ define(['jquery', 'angular'], function ($) {
                 }
             });
         }])
-        .controller('Html5', ['$scope', '$state', '$compile', '$sce', '$lux', 'page', 'items',
-            function ($scope, $state, $compile, $sce, $lux, page, items) {
+        .controller('Html5', ['$scope', '$state', 'dateFilter', '$lux', 'page', 'items',
+            function ($scope, $state, dateFilter, $lux, page, items) {
                 if (page && page.status === 200) {
                     $scope.items = items ? items.data : null;
-                    page = $scope.page = page.data;
-                    if (page.head && page.head.title) {
-                        document.title = page.head.title;
-                    }
+                    $scope.page = addPageInfo(page.data, $scope, dateFilter, $lux);
                 }
             }])
         .directive('dynamicPage', ['$compile', '$log', function ($compile, $log) {
@@ -927,7 +945,14 @@ define(['jquery', 'angular'], function ($) {
 
     }
 
-angular.module('templates-blog', ['lux/blog/pagination.tpl.html']);
+angular.module('templates-blog', ['lux/blog/header.tpl.html', 'lux/blog/pagination.tpl.html']);
+
+angular.module("lux/blog/header.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("lux/blog/header.tpl.html",
+    "<h2 data-ng-bind=\"page.title\"></h2>\n" +
+    "<p class=\"small\">by {{page.authors}} on {{page.dateText}}</p>\n" +
+    "<p class=\"lead storyline\">{{page.description}}</p>");
+}]);
 
 angular.module("lux/blog/pagination.tpl.html", []).run(["$templateCache", function($templateCache) {
   $templateCache.put("lux/blog/pagination.tpl.html",
@@ -961,28 +986,17 @@ angular.module("lux/blog/pagination.tpl.html", []).run(["$templateCache", functi
                 $lux.log.error('post not available in $scope, cannot use pagination controller!');
                 return;
             }
-            if (post.author) {
-                if (post.author instanceof Array)
-                    post.authors = post.author.join(', ');
-                else
-                    post.authos = post.author;
-            } else {
-                $lux.log.warn('No author in blog post!');
-            }
-            var date;
-            if (post.date) {
-                try {
-                    date = new Date(post.date);
-                } catch (e) {
-                    $lux.log.error('Could not parse date');
-                }
-                post.date = date;
-                post.dateText = dateFilter(date, $scope.dateFormat);
-            }
+            addPageInfo(post, $scope, dateFilter, $lux);
         }])
         .directive('blogPagination', function () {
             return {
                 templateUrl: "lux/blog/pagination.tpl.html",
+                restrict: 'AE'
+            };
+        })
+        .directive('blogHeader', function () {
+            return {
+                templateUrl: "lux/blog/header.tpl.html",
                 restrict: 'AE'
             };
         });

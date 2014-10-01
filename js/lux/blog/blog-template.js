@@ -1,4 +1,11 @@
-angular.module('templates-blog', ['lux/blog/pagination.tpl.html']);
+angular.module('templates-blog', ['lux/blog/header.tpl.html', 'lux/blog/pagination.tpl.html']);
+
+angular.module("lux/blog/header.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("lux/blog/header.tpl.html",
+    "<h2 data-ng-bind=\"page.title\"></h2>\n" +
+    "<p class=\"small\">by {{page.authors}} on {{page.dateText}}</p>\n" +
+    "<p class=\"lead storyline\">{{page.description}}</p>");
+}]);
 
 angular.module("lux/blog/pagination.tpl.html", []).run(["$templateCache", function($templateCache) {
   $templateCache.put("lux/blog/pagination.tpl.html",

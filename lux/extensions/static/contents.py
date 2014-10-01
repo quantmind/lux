@@ -37,6 +37,7 @@ CONTENT_EXTENSIONS = {'text/html': 'html',
                       'text/plain': 'txt',
                       'application/json': 'json'}
 
+HEAD_META = ('title', 'description', 'author', 'keywords')
 
 METADATA_PROCESSORS = dict(((p.name, p) for p in (
     Processor('name'),
@@ -87,7 +88,6 @@ class Content(object):
         self._additional_context = {}
         self._src = src
         self._path = path or src
-        self._name = self._path
         self._meta = AttributeDictionary(params)
         self._meta.modified = modified_datetime(src)
         # Get the site meta data dictionary.
@@ -97,15 +97,15 @@ class Content(object):
         if self.is_text:
             dir, slug = os.path.split(self._path)
             if not slug:
-                slug = self._name
+                slug = self._path
                 dir = None
-            self._name = slugify(self._name, separator='_')
             if not meta.slug:
                 meta.slug = slugify(slug, separator='_')
             if dir:
                 meta.slug = '%s/%s' % (dir, meta.slug)
         elif not meta.slug:
-            meta.slug = self._name
+            meta.slug = self._path
+        meta.name = slugify(meta.slug, separator='_')
         for name in self.mandatory_properties:
             if not meta.get(name):
                 raise BuildError("Property '%s' not available in %s"
@@ -113,7 +113,7 @@ class Content(object):
 
     @property
     def name(self):
-        return self._name
+        return self._meta.name
 
     @property
     def content_type(self):
@@ -182,7 +182,7 @@ class Content(object):
         '''The key for a context dictionary
         '''
         suffix = self.suffix
-        name = name or self._name
+        name = name or self.name
         return '%s_%s' % (suffix, name) if suffix else name
 
     def context(self, context=None):
@@ -235,9 +235,13 @@ class Content(object):
             key = self.key('main')
             data = self._to_json(self._meta)
             data[key] = self.render(context)
-            head = {'title': data.get('title'),
-                    'description': data.get('description'),
-                    'author': data.get('author')}
+            #
+            head = {}
+            for key in HEAD_META:
+                value = data.get(key)
+                if value:
+                    head[key] = value
+            #
             if 'head' in data:
                 head.update(data['head'])
             data['head'] = head

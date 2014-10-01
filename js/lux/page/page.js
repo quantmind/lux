@@ -1,7 +1,31 @@
+    function addPageInfo(page, $scope, dateFilter, $lux) {
+        if (page.head && page.head.title) {
+            document.title = page.head.title;
+        }
+        if (page.author) {
+            if (page.author instanceof Array)
+                page.authors = page.author.join(', ');
+            else
+                page.authors = page.author;
+        } else {
+            $lux.log.info('No author in page!');
+        }
+        var date;
+        if (page.date) {
+            try {
+                date = new Date(page.date);
+            } catch (e) {
+                $lux.log.error('Could not parse date');
+            }
+            page.date = date;
+            page.dateText = dateFilter(date, $scope.dateFormat);
+        }
+        return page;
+    }
 
     // Lux main module
     angular.module('lux', ['lux.services', 'lux.form'])
-        .controller('Page', ['$scope', '$lux', function ($scope, $lux) {
+        .controller('Page', ['$scope', '$lux', '$anchorScroll', function ($scope, $lux, $anchorScroll) {
             //
             $lux.log.info('Setting up angular page');
             //
@@ -86,9 +110,11 @@
                 var hash = e.currentTarget.hash,
                     target = $(hash);
                 if (target.length) {
+                    //$lux.location.hash(hash);
+                    //$anchorScroll();
                     offset = offset ? offset : 0;
-                    //e.preventDefault();
-                    //e.stopPropagation();
+                    e.preventDefault();
+                    e.stopPropagation();
                     $lux.log.info('Scrolling to target');
                     $('html,body').animate({
                         scrollTop: target.offset().top + offset

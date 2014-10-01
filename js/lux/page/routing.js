@@ -8,7 +8,11 @@
         return module;
     }
     //
-    // Configure ui-Router using lux routing object
+    //  UI-Routing
+    //
+    //  Configure ui-Router using lux routing objects
+    //  Only when context.html5mode is true
+    //  Python implementation in the lux.extensions.angular Extension
     function configRouter(module) {
         module.config(['$locationProvider', '$stateProvider', '$urlRouterProvider',
             function ($locationProvider, $stateProvider, $urlRouterProvider) {
@@ -23,7 +27,7 @@
                         //
                         template: page.template,
                         //
-                        url: '^' + page.url,
+                        url: page.url,
                         //
                         resolve: {
                             // Fetch page information
@@ -61,14 +65,11 @@
                 }
             });
         }])
-        .controller('Html5', ['$scope', '$state', '$compile', '$sce', '$lux', 'page', 'items',
-            function ($scope, $state, $compile, $sce, $lux, page, items) {
+        .controller('Html5', ['$scope', '$state', 'dateFilter', '$lux', 'page', 'items',
+            function ($scope, $state, dateFilter, $lux, page, items) {
                 if (page && page.status === 200) {
                     $scope.items = items ? items.data : null;
-                    page = $scope.page = page.data;
-                    if (page.head && page.head.title) {
-                        document.title = page.head.title;
-                    }
+                    $scope.page = addPageInfo(page.data, $scope, dateFilter, $lux);
                 }
             }])
         .directive('dynamicPage', ['$compile', '$log', function ($compile, $log) {
