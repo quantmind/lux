@@ -5,16 +5,9 @@ import lux
 from lux import Parameter
 
 from pulsar import Http404
-from pulsar.apps.wsgi import MediaMixin, route
+from pulsar.apps.wsgi import MediaMixin, Html, route
 
 from .ui import add_css
-
-
-def ng_modules(request):
-    ngmodules = request.cache.ngmodules
-    if ngmodules is None:
-        request.cache.ngmodules = ngmodules = []
-    return ngmodules
 
 
 class Extension(lux.Extension):
@@ -27,7 +20,8 @@ class Extension(lux.Extension):
     _config = [
         Parameter('HTML5_NAVIGATION', False, 'Enable Html5 navigation'),
         Parameter('NAVBAR_COLLAPSE_WIDTH', 768,
-                  'Width when to collapse the navbar')
+                  'Width when to collapse the navbar'),
+        Parameter('NGMODULES', [], 'Angular module to load')
     ]
 
     def jscontext(self, request, context):
@@ -36,7 +30,7 @@ class Extension(lux.Extension):
 
 
 class Router(lux.Router, MediaMixin):
-    '''A :class:`.Router` for Html5 navigation
+    '''A :class:`.Router` for Angular Html5 navigation
 
     When the :setting:`HTML5_NAVIGATION` is ``True``, this router
     does not build the ``$main`` key for the context dictionary, insteady
@@ -52,7 +46,7 @@ class Router(lux.Router, MediaMixin):
     title = None
     api = None
     has_content = True
-    template = None
+    angular_view_class = 'angular-view'
     html_body_template = 'home.html'
     '''The template for the body part of the Html5 document
     '''
@@ -63,24 +57,27 @@ class Router(lux.Router, MediaMixin):
 
     def get(self, request):
         app = request.app
-        html5 = app.config.get('HTML5_NAVIGATION')
-        ngmodules = ng_modules(request)
+        html5 = app.config['HTML5_NAVIGATION']
         doc = request.html_document
         doc.body.data({'ng-model': 'page',
                        'ng-controller': 'Page'})
-        # Create lux context dictionary
-        jscontext = {
-            'ngModules': ngmodules
-        }
-        if self.ngmodules:
-            ngmodules.extend(self.ngmodules)
+        jscontext = {}
         context = {}
-        main = self.build_main(request, context, jscontext)
+        #
+        # Using Angular Ui-Router
         if html5:
             jscontext.update(self.sitemap(app))
-            jscontext['page'] = router_href(request.app_handler)
-            jscontext['html5mode'] = True
-            main = '<div data-ng-view></div>'
+            jscontext['page'] = router_href(request.app_handler.full_route)
+        else:
+            ngmodules = set(app.config['NGMODULES'])
+            if self.ngmodules:
+                ngmodules.update(self.ngmodules)
+            jscontext['ngModules'] = tuple(ngmodules)
+
+        main = self.build_main(request, context, jscontext)
+        if html5:
+            main = self.uiview(app, main)
+
         context['html_main'] = main
         return app.html_response(request, self.html_body_template,
                                  jscontext=jscontext, context=context)
@@ -90,16 +87,36 @@ class Router(lux.Router, MediaMixin):
         '''
         return {}
 
-    def html_title(self, app):
-        return app.config['HTML_TITLE']
+    def uiview(self, app, main):
+        div = Html('div', main, cn=self.angular_view_class)
+        div.data('ui-view', '')
+        return div.render()
+
+    def state_template(self, app):
+        '''Template for ui-router state associated with this router'''
+        pass
+
+    def get_controller(self, app):
+        return 'Html5'
+
+    def angular_page(self, app, page):
+        '''Callback for adding additional data to angular page object
+        '''
+        pass
 
     def sitemap(self, app):
-        '''Build the sitemap for this router.
+        '''Build the sitemap used by angular ui-router
         '''
         root = self.root
         if root._sitemap is None:
-            sitemap = {'hrefs': [], 'pages': {}, 'html5mode': True}
+            ngmodues = set(app.config['NGMODULES'])
+            ngmodues.add('ui.router')
+            sitemap = {'hrefs': [],
+                       'pages': {},
+                       'html5mode': True,
+                       'ngModules': ngmodues}
             add_to_sitemap(sitemap, app, root)
+            sitemap['ngModules'] = tuple(ngmodues)
             root._sitemap = sitemap
         return root._sitemap
 
@@ -116,13 +133,21 @@ class Router(lux.Router, MediaMixin):
                     cn='row').render(request)
 
 
-def router_href(router):
-    vars = router.route.ordered_variables or None
-    if vars:
-        params = dict(((v, ':%s' % v) for v in vars))
-        return router.path(**params)
+def router_href(route):
+    url = '/'.join(_angular_route(route))
+    if url:
+        return '/%s' % url if route.is_leaf else '/%s/' % url
     else:
-        return router.path()
+        return '/'
+
+
+def _angular_route(route):
+    for is_dynamic, val in route.breadcrumbs:
+        if is_dynamic:
+            c = route._converters[val]
+            yield '*%s' % val if c.regex == '.*' else ':%s' % val
+        else:
+            yield val
 
 
 def add_to_sitemap(sitemap, app, router, parent=None):
@@ -131,8 +156,10 @@ def add_to_sitemap(sitemap, app, router, parent=None):
     # Router variables
     if not isinstance(router, Router):
         return
-    vars = router.route.ordered_variables or None
-    href = router_href(router)
+    href = router_href(router.full_route)
+    #site_url = app.config['SITE_URL']
+    #if site_url:
+    #    href = site_url + href if href != '/' else site_url
     #
     # Target
     target = router.target
@@ -140,27 +167,18 @@ def add_to_sitemap(sitemap, app, router, parent=None):
         if router.parent.html_body_template != router.html_body_template:
             target = '_self'
     #
-    page = {'href': href,
-            'vars': vars,
+    page = {'url': href,
             'name': router.name,
             'target': target,
-            'head_title': router.html_title(app),
-            'title': router.title or router.name,
-            'template': router.template,
+            'template': router.state_template(app),
             'api': router.get_api_info(app),
+            'controller': router.get_controller(app),
             'parent': parent}
+    router.angular_page(app, page)
     sitemap['hrefs'].append(href)
     sitemap['pages'][href] = page
-    #
-    controller = None
-    partial_template = router.get_route('partial_template')
-    if partial_template:
-        controller = partial_template.get_controller()
-        href = router_href(partial_template)
-        vars = partial_template.route.ordered_variables or None
-        page.update({'template_url': href,
-                     'template_url_vars': vars})
-    page['controller'] = controller or router.get_controller() or 'html5Page'
+    if router.ngmodules:
+        sitemap['ngModules'].update(router.ngmodules)
     #
     # Loop over children routes
     for child in router.routes:

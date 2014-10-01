@@ -6,7 +6,6 @@ Highlight code snippets with highlightjs_
 import lux
 from lux import Parameter
 from lux.extensions.ui import CssInclude, spacing
-from lux.extensions.angular import ng_modules
 
 
 highlight = '//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.2'

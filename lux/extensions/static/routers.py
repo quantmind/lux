@@ -6,8 +6,9 @@ import lux
 from lux import route, JSON_CONTENT_TYPES
 from lux.extensions import angular, base, sitemap
 
+from pulsar import ImproperlyConfigured
 from pulsar.utils.slugify import slugify
-from pulsar.apps.wsgi import Json, MediaRouter
+from pulsar.apps.wsgi import Json, MediaRouter, Html
 
 from .builder import (DirBuilder, FileBuilder, BuildError, SkipBuild,
                       Unsupported, normpath)
@@ -25,6 +26,17 @@ class ErrorRouter(lux.Router, DirBuilder):
         app = request.app
         return app.html_response(request, self.html_body_template,
                                  status_code=self.status_code)
+
+
+class HtmlRouter(angular.Router):
+    '''Base class for static Html routes.
+    '''
+    def state_template(self, app):
+        '''Template used when in html5 mode
+        '''
+        div = Html('div', cn=self.angular_view_class)
+        div.data({'dynamic-page': ''})
+        return div.render()
 
 
 class MediaBuilder(base.MediaRouter, FileBuilder):
@@ -80,7 +92,7 @@ class JsonRoot(lux.Router, FileBuilder):
 
 
 class JsonContent(lux.Router, DirBuilder):
-    '''Handle json contents in a directory
+    '''Handle JSON contents in a directory
     '''
     html_router = lux.RouterParam(None)
 
@@ -95,17 +107,74 @@ class JsonContent(lux.Router, DirBuilder):
                                           html_router=html_router,
                                           content=html_router.content,
                                           meta=copy(html_router.meta))
-        child_router = html_router.get_route('html_files')
-        self.add_child(JsonFile('<id>',
+        # When the html router is a index template, add the index.json
+        # resource for rendering the index
+        if html_router.index_template:
+            self.add_child(JsonIndex('index.json',
+                                     dir=self.dir,
+                                     index_template=html_router.index_template))
+        child_router = html_router.get_route(html_router.childname('view'))
+        self.add_child(JsonFile('<path:id>',
                                 dir=self.dir,
                                 name='json_files',
                                 content=self.content,
                                 meta=copy(child_router.meta)))
 
     def get(self, request):
-        '''Build all the contents'''
+        '''Build all the contents
+        '''
         files = self.get_route('json_files')
         data = files.all(request.app, html=False)
+        return Json(data).http_response(request)
+
+
+class JsonFileBase(lux.Router, FileBuilder):
+
+    def get(self, request):
+        app = request.app
+        response = request.response
+        content = self.get_content(request)
+        # Get the JSON representation of the resource
+        data = content.json(request)
+        if data:
+            html_router = self.html_router
+            urlargs = request.urlargs
+            # The index page
+            if urlargs.get('path') == 'index':
+                urlargs['path'] = ''
+            data['api_url'] = app.site_url(self.relative_path(request))
+            html = html_router.get_route(html_router.childname('view'))
+            urlparams = content.urlparams(html.route.variables)
+            path = html.path(**urlparams)
+            data['html_url'] = app.site_url(normpath(path))
+            return Json(data).http_response(request)
+        else:
+            raise Unsupported
+        return Json(data).http_response(request)
+
+
+class JsonIndex(JsonFileBase):
+    index_template = None
+
+    def build_file(self, app, location):
+        src = app.template_full_path(self.index_template)
+        return super(JsonIndex, self).build_file(app, location, src, 'index')
+
+    def get(self, request):
+        app = request.app
+        response = request.response
+        content = self.get_content(request)
+        # Get the JSON representation of the resource
+        data = content.json(request)
+        if data:
+            html_router = self.html_router
+            data['api_url'] = app.site_url(self.relative_path(request))
+            urlparams = content.urlparams(html_router.route.variables)
+            path = html_router.path(**urlparams)
+            data['html_url'] = app.site_url(normpath(path))
+            return Json(data).http_response(request)
+        else:
+            raise Unsupported
         return Json(data).http_response(request)
 
 
@@ -119,11 +188,13 @@ class JsonFile(lux.Router, FileBuilder):
         # Get the JSON representation of the resource
         data = content.json(request)
         if data:
+            html_router = self.html_router
             urlargs = request.urlargs
+            # The index page
             if urlargs.get('path') == 'index':
                 urlargs['path'] = ''
             data['api_url'] = app.site_url(self.relative_path(request))
-            html = self.html_router.get_route('html_files')
+            html = html_router.get_route(html_router.childname('view'))
             urlparams = content.urlparams(html.route.variables)
             path = html.path(**urlparams)
             data['html_url'] = app.site_url(normpath(path))
@@ -138,7 +209,6 @@ class JsonFile(lux.Router, FileBuilder):
         return name not in app.config['STATIC_SPECIALS']
 
     def all(self, app, html=True, draft=False):
-        contents = self.build(app)
         all = []
         o = 'modified' if draft else 'date'
         for d in self.build(app):
@@ -157,7 +227,7 @@ class JsonFile(lux.Router, FileBuilder):
             return key.startswith('html_') or key in SKIP_KEYS
 
 
-class HtmlFile(angular.Router, FileBuilder):
+class HtmlFile(HtmlRouter, FileBuilder):
     '''Serve an Html file.
     '''
     def build_main(self, request, context, jscontext):
@@ -168,18 +238,18 @@ class HtmlFile(angular.Router, FileBuilder):
         return self.parent.get_api_info(app)
 
 
-class HtmlContent(angular.Router, DirBuilder):
+class HtmlContent(HtmlRouter, DirBuilder):
     '''Serve a directory of files rendered in a similar fashion
 
     The directory could contains blog posts for example.
     If an ``index.html`` file is available, it is rendered with the
     directory url.
     '''
-    index_template = None
     api = None
     drafts = 'drafts'
     '''Drafts url. If not provided drafts wont be rendered.
     '''
+    index_template = None
     drafts_template = 'blogindex.html'
     '''The children render the children routes of this router
     '''
@@ -193,12 +263,14 @@ class HtmlContent(angular.Router, DirBuilder):
         super(HtmlContent, self).__init__(route, *routes, name=name, **params)
         if self.drafts:
             self.add_child(Drafts(self.drafts,
+                                  name=self.childname(self.drafts),
                                   index_template=self.drafts_template))
         meta = copy(self.meta)
         if meta_children:
             meta.update(meta_children)
         #
-        file = HtmlFile(self.child_url, dir=self.dir, name='html_files',
+        file = HtmlFile(self.child_url, dir=self.dir,
+                        name=self.childname('view'),
                         content=self.content,
                         html_body_template=self.html_body_template,
                         meta=meta,
@@ -208,14 +280,23 @@ class HtmlContent(angular.Router, DirBuilder):
         for url_path, file_path, ext in self.all_files():
             if url_path == 'index':
                 self.src = file_path
+        if self.src and self.index_template:
+            raise ImproperlyConfigured(
+                'Both index and index template specified')
 
     def get_api_info(self, app):
         if self.api:
             url = app.config['SITE_URL'] + self.api.path()
             return {'name': self.api.name,
                     'url': url,
-                    'urlparams': {'path': 'index.json'},
                     'type': 'static'}
+
+    def angular_page(self, app, page):
+        if self.index_template:
+            url = app.config['SITE_URL'] + self.api.path()
+            page['apiItems'] = {'name': self.api.name,
+                                'url': '%s.json' % url,
+                                'type': 'static'}
 
     def build_main(self, request, context, jscontext):
         '''Build the ``main`` key for the ``context`` dictionary
@@ -230,7 +311,7 @@ class HtmlContent(angular.Router, DirBuilder):
             app = request.app
             files = self.api.get_route('json_files') if self.api else None
             if files:
-                jscontext['posts'] = files.all(app, html=False)
+                jscontext['items'] = files.all(app, html=False)
             src = app.template_full_path(self.index_template)
             content = self.read_file(app, src, 'index')
             return content.html(request)
@@ -240,12 +321,15 @@ class HtmlContent(angular.Router, DirBuilder):
         else:
             raise SkipBuild
 
+    def childname(self, prefix):
+        return '%s.%s' % (self.name, prefix) if self.name else prefix
 
-class Drafts(angular.Router, FileBuilder):
+
+class Drafts(HtmlRouter, FileBuilder):
     '''A page collecting all drafts
     '''
     priority = 0
-    ngmodules = ['blog']
+    ngmodules = ['lux.blog']
 
     def build_main(self, request, context, jscontext):
         if self.index_template and self.parent:
@@ -266,7 +350,7 @@ class Blog(HtmlContent):
     '''
     index_template = 'blogindex.html'
     content = Article
-    ngmodules = ['blog']
+    ngmodules = ['lux.blog']
 
 
 class Sitemap(sitemap.Sitemap, FileBuilder):
@@ -278,7 +362,7 @@ class Sitemap(sitemap.Sitemap, FileBuilder):
 
     def build_file(self, app, location, src=None, name=None):
         router = self.parent
-        assert isinstance(router, HtmlContent), ('Staticsitemap requires '
+        assert isinstance(router, HtmlContent), ('Static sitemap requires '
                                                  'HtmlContent')
         router.build_done(self._build_file)
         self.built.append(None)

@@ -83,18 +83,16 @@
             var scrollToHash = function (e, offset) {
                 // set the location.hash to the id of
                 // the element you wish to scroll to.
-                var target = $(e.currentTarget.hash);
+                var hash = e.currentTarget.hash,
+                    target = $(hash);
                 if (target.length) {
                     offset = offset ? offset : 0;
-                    e.preventDefault();
-                    e.stopPropagation();
+                    //e.preventDefault();
+                    //e.stopPropagation();
                     $lux.log.info('Scrolling to target');
                     $('html,body').animate({
                         scrollTop: target.offset().top + offset
                     }, 1000);
-                    //$lux.location.hash(hash);
-                    // call $anchorScroll()
-                    //$lux.anchorScroll();
                 } else
                     $lux.log.warning('Cannot scroll, target not found');
             };
@@ -108,15 +106,4 @@
                     el.click(scrollToHash);
             });
 
-        }])
-        .controller('html5Page', ['$scope', '$lux', 'response',
-            function ($scope, $lux, response) {
-                var page = response.data;
-                if (response.status !== 200) {
-                    return;
-                }
-                $scope.page = page;
-                if (page.html_title) {
-                    document.title = page.html_title;
-                }
         }]);

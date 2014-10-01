@@ -1,7 +1,7 @@
     //  Blog Module
     //  ===============
     //
-    angular.module('blog', ['templates-blog', 'lux.services', 'highlight'])
+    angular.module('lux.blog', ['templates-blog', 'lux.services', 'highlight'])
         .controller('BlogEntry', ['$scope', 'dateFilter', '$lux', function ($scope, dateFilter, $lux) {
             var post = $scope.post;
             if (!post) {
@@ -29,6 +29,7 @@
         }])
         .directive('blogPagination', function () {
             return {
-                templateUrl: "lux/blog/pagination.tpl.html"
+                templateUrl: "lux/blog/pagination.tpl.html",
+                restrict: 'AE'
             };
         });

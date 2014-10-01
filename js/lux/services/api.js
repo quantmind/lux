@@ -33,7 +33,7 @@
                 return $http.post(url, data, cfg);
             };
 
-            //  Create an api client
+            //  Create a client api
             //  -------------------------
             //
             //  context: an api name or an object containing, name, url and type.
@@ -45,7 +45,7 @@
                 if (Object(context) !== context) {
                     context = {name: context};
                 }
-                var Api = ApiTypes[context.name || 'lux'];
+                var Api = ApiTypes[context.type || 'lux'];
                 if (!Api)
                     $lux.log.error('Api provider "' + context.name + '" is not available');
                 else
@@ -179,7 +179,7 @@
         },
         //  Get a list of models
         //  -------------------------
-        getMany: function (options) {
+        getList: function (options) {
             return this.request('GET', null, options);
         },
         //
@@ -225,7 +225,7 @@
             var options = this.httpOptions(request);
             //
             if (options.url) {
-                $lux.log.info('Executing HTTP ' + options.method + ' request to ' + options.url);
+                $lux.log.info('Executing HTTP ' + options.method + ' request @ ' + options.url);
                 $lux.http(options).success(request.success).error(request.error);
             }
             else
@@ -278,18 +278,34 @@
     });
     //
     //  Lux Static JSON API
-    //  ----------------------
+    //  ------------------------
+    //
+    // Api used by static sites
     lux.createApi('static', {
         //
-        httpOptions: function (request) {
-            var options = request.options,
-                url = request.api.url,
-                path = request.urlparams.path;
-            if (path)
-                url += '/' + path;
+        url: function (urlparams) {
+            var name,
+                count = 0,
+                url = this._url;
+            if (url.substring(url.length-5) === '.json')
+                return url;
+            //
+            forEach(urlparams, function (n) {
+                name = n;
+                count += 1;
+            });
+            if (count === 1)
+                url += '/' + name;
+            else if (count) {
+                this.$lux.log.error('Could not understand url parameters for static api');
+                return;
+            }
+            else
+                url += '/index';
+            if (url.substring(url.length-1) === '/')
+                url += 'index';
             if (url.substring(url.length-5) !== '.json')
                 url += '.json';
-            options.url = url;
-            return options;
+            return url;
         }
     });

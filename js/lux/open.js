@@ -1,4 +1,4 @@
-define(['jquery', 'angular', 'angular-sanitize'], function ($) {
+define(['jquery', 'angular'], function ($) {
     "use strict";
 
     var root = window,
@@ -10,13 +10,6 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
         angular_bootstrapped = false,
         context = root.luxContext || {},
         requires = [];
-
-    // when in html5 mode add ngRoute to the list of required modules
-    if (context.html5mode) {
-        context.ngModules.push('ui.router');
-        requires.push('ui-router');
-    }
-    context.ngModules.push('ngSanitize');
 
     root.lux = lux;
     angular.element = $;
@@ -31,11 +24,6 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
             attrs = $.extend(attrs, lux.directiveOptions[attrs.options]);
         }
         return attrs;
-    };
-
-    // Add a new HTML5 route to the page router
-    lux.addRoute = function (url, data) {
-        routes.push([url, data]);
     };
 
     // Callbacks run after angular has finished bootstrapping

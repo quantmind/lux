@@ -1,5 +1,5 @@
 <ul class="media-list">
-    <li ng-repeat="post in posts" class="media" data-ng-controller='BlogEntry'>
+    <li ng-repeat="post in items" class="media" data-ng-controller='BlogEntry'>
         <a href="{{post.html_url}}" class="pull-left hidden-xs dir-entry-image">
           <img data-ng-if="post.image" src="{{post.image}}" alt="{{post.title}}">
           <img data-ng-if="!post.image" src="holder.js/120x90">

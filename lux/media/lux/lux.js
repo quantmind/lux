@@ -1,12 +1,12 @@
 //      Lux Library - v0.1.0
 
-//      Compiled 2014-09-26.
+//      Compiled 2014-10-01.
 //      Copyright (c) 2014 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
 //      http://quantmind.github.io/lux
 //
-define(['jquery', 'angular', 'angular-sanitize'], function ($) {
+define(['jquery', 'angular'], function ($) {
     "use strict";
 
     var root = window,
@@ -18,13 +18,6 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
         angular_bootstrapped = false,
         context = root.luxContext || {},
         requires = [];
-
-    // when in html5 mode add ngRoute to the list of required modules
-    if (context.html5mode) {
-        context.ngModules.push('ui.router');
-        requires.push('ui-router');
-    }
-    context.ngModules.push('ngSanitize');
 
     root.lux = lux;
     angular.element = $;
@@ -39,11 +32,6 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
             attrs = $.extend(attrs, lux.directiveOptions[attrs.options]);
         }
         return attrs;
-    };
-
-    // Add a new HTML5 route to the page router
-    lux.addRoute = function (url, data) {
-        routes.push([url, data]);
     };
 
     // Callbacks run after angular has finished bootstrapping
@@ -195,62 +183,43 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
     }(function() {}));
     //
     // Bootstrap the document
-    lux.bootstrap = function (modules) {
+    lux.bootstrap = function (name, modules) {
         //
         // actual bootstrapping function
-        function doit() {
+        function _bootstrap() {
             //
             // Resolve modules to load
             if (!$.isArray(modules))
                 modules = [];
             modules.push('lux');
+            // Add all modules from context
             forEach(context.ngModules, function (module) {
                 modules.push(module);
             });
-            //
-            // routes available, setup router
-            if (routes.length)
-                setup_routes(routes);
-            //
-            angular.bootstrap(document, modules);
+            luxAppModule(name, modules);
+            angular.bootstrap(document, [name]);
             //
             forEach(ready_callbacks, function (callback) {
                 callback();
             });
             ready_callbacks = true;
         }
-        //
-        function setup_routes (all) {
-            var routes = [];
-                //
-                angular.module('lux')
-                    .config(['$stateProvider', '$urlRouterProvider', function($stateProvider, $urlRouterProvider) {
-                        // setup
-                        $stateProvider.html5Mode(true);
-                    //
-                    //angular.forEach(all, function (route) {
-                    //    var url = route[0];
-                    //    var data = route[1];
-                    //    if ($.isFunction(data)) data = data();
-                    //    $routeProvider.when(url, data);
-                    //});
-                    // use the HTML5 History API
-                    //$locationProvider.html5Mode(true);
-                }]);
-        }
-        //
-        //
-        $(document).ready(function() {
-            if (requires) {
-                require(requires, function () {
-                    doit();
-                });
-            } else {
-                doit();
-            }
-        });
-    };
 
+        if (!angular_bootstrapped) {
+            angular_bootstrapped = true;
+            //
+            //
+            $(document).ready(function() {
+                if (requires) {
+                    require(requires, function () {
+                        _bootstrap();
+                    });
+                } else {
+                    _bootstrap();
+                }
+            });
+        }
+    };
 
     //
     // Object containing apis by name
@@ -287,7 +256,7 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
                 return $http.post(url, data, cfg);
             };
 
-            //  Create an api client
+            //  Create a client api
             //  -------------------------
             //
             //  context: an api name or an object containing, name, url and type.
@@ -299,7 +268,7 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
                 if (Object(context) !== context) {
                     context = {name: context};
                 }
-                var Api = ApiTypes[context.name || 'lux'];
+                var Api = ApiTypes[context.type || 'lux'];
                 if (!Api)
                     $lux.log.error('Api provider "' + context.name + '" is not available');
                 else
@@ -433,7 +402,7 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
         },
         //  Get a list of models
         //  -------------------------
-        getMany: function (options) {
+        getList: function (options) {
             return this.request('GET', null, options);
         },
         //
@@ -479,7 +448,7 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
             var options = this.httpOptions(request);
             //
             if (options.url) {
-                $lux.log.info('Executing HTTP ' + options.method + ' request to ' + options.url);
+                $lux.log.info('Executing HTTP ' + options.method + ' request @ ' + options.url);
                 $lux.http(options).success(request.success).error(request.error);
             }
             else
@@ -532,19 +501,35 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
     });
     //
     //  Lux Static JSON API
-    //  ----------------------
+    //  ------------------------
+    //
+    // Api used by static sites
     lux.createApi('static', {
         //
-        httpOptions: function (request) {
-            var options = request.options,
-                url = request.api.url,
-                path = request.urlparams.path;
-            if (path)
-                url += '/' + path;
+        url: function (urlparams) {
+            var name,
+                count = 0,
+                url = this._url;
+            if (url.substring(url.length-5) === '.json')
+                return url;
+            //
+            forEach(urlparams, function (n) {
+                name = n;
+                count += 1;
+            });
+            if (count === 1)
+                url += '/' + name;
+            else if (count) {
+                this.$lux.log.error('Could not understand url parameters for static api');
+                return;
+            }
+            else
+                url += '/index';
+            if (url.substring(url.length-1) === '/')
+                url += 'index';
             if (url.substring(url.length-5) !== '.json')
                 url += '.json';
-            options.url = url;
-            return options;
+            return url;
         }
     });
 
@@ -828,18 +813,16 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
             var scrollToHash = function (e, offset) {
                 // set the location.hash to the id of
                 // the element you wish to scroll to.
-                var target = $(e.currentTarget.hash);
+                var hash = e.currentTarget.hash,
+                    target = $(hash);
                 if (target.length) {
                     offset = offset ? offset : 0;
-                    e.preventDefault();
-                    e.stopPropagation();
+                    //e.preventDefault();
+                    //e.stopPropagation();
                     $lux.log.info('Scrolling to target');
                     $('html,body').animate({
                         scrollTop: target.offset().top + offset
                     }, 1000);
-                    //$lux.location.hash(hash);
-                    // call $anchorScroll()
-                    //$lux.anchorScroll();
                 } else
                     $lux.log.warning('Cannot scroll, target not found');
             };
@@ -853,66 +836,103 @@ define(['jquery', 'angular', 'angular-sanitize'], function ($) {
                     el.click(scrollToHash);
             });
 
-        }])
-        .controller('html5Page', ['$scope', '$lux', 'response',
-            function ($scope, $lux, response) {
-                var page = response.data;
-                if (response.status !== 200) {
-                    return;
-                }
-                $scope.page = page;
-                if (page.html_title) {
-                    document.title = page.html_title;
-                }
         }]);
 
-
-    //  ROUTING
-    //  -----------------
     //
-    //  Build an HTML5 sitemap when the ``context.sitemap`` variable is set.
-    function _load_sitemap (hrefs, pages) {
-        //
-        forEach(hrefs, function (href) {
-            var page = pages[href];
-            if (page && page.href && page.target !== '_self') {
-                lux.addRoute(page.href, route_config(page));
-            }
-        });
+    //  Lux Application Module
+    //  ==========================
+    function luxAppModule (name, modules) {
+        var module = angular.module(name, modules);
+        if (context.html5mode)
+            configRouter(module);
+        return module;
     }
+    //
+    // Configure ui-Router using lux routing object
+    function configRouter(module) {
+        module.config(['$locationProvider', '$stateProvider', '$urlRouterProvider',
+            function ($locationProvider, $stateProvider, $urlRouterProvider) {
 
-    // Configure a route for a given page
-    function route_config (page) {
+            var hrefs = context.hrefs,
+                pages = context.pages,
+                state_config = function (page) {
+                    return {
+                        //
+                        // template url for the page
+                        //templateUrl: page.templateUrl,
+                        //
+                        template: page.template,
+                        //
+                        url: '^' + page.url,
+                        //
+                        resolve: {
+                            // Fetch page information
+                            page: function ($lux, $stateParams) {
+                                if (page.api) {
+                                    var api = $lux.api(page.api);
+                                    if (api)
+                                        return api.get($stateParams);
+                                }
+                            },
+                            // Fetch items if needed
+                            items: function ($lux, $stateParams) {
+                                if (page.apiItems) {
+                                    var api = $lux.api(page.apiItems);
+                                    if (api)
+                                        return api.getList();
+                                }
+                            },
+                        },
+                        //
+                        controller: page.controller
+                    };
+                };
 
-        return {
-            //
-            // template url for the page
-            templateUrl: page.template_url,
-            //
-            template: '<div ng-bind-html="page.content"></div>',
-            //
-            controller: page.controller || 'html5Page',
-            //
-            resolve: {
-                response: function ($lux, $route) {
-                    if (page.api) {
-                        var api = $lux.api(page.api);
-                        return api.get($route.current.params);
+            $locationProvider.html5Mode(context.html5mode);
+
+            forEach(hrefs, function (href) {
+                var page = pages[href];
+                if (page.target !== '_self') {
+                    var name = page.name;
+                    if (!name) {
+                        name = 'home';
+                    }
+                    $stateProvider.state(name, state_config(page));
+                }
+            });
+        }])
+        .controller('Html5', ['$scope', '$state', '$compile', '$sce', '$lux', 'page', 'items',
+            function ($scope, $state, $compile, $sce, $lux, page, items) {
+                if (page && page.status === 200) {
+                    $scope.items = items ? items.data : null;
+                    page = $scope.page = page.data;
+                    if (page.head && page.head.title) {
+                        document.title = page.head.title;
                     }
                 }
-            }
-        };
+            }])
+        .directive('dynamicPage', ['$compile', '$log', function ($compile, $log) {
+            return {
+                link: function (scope, element, attrs) {
+                    scope.$on('$stateChangeSuccess', function () {
+                        var page = scope.page;
+                        if (page.html_main) {
+                            element.html(page.html_main);
+                            $compile(element.contents())(scope);
+                        }
+                    });
+                }
+            };
+        }]);
+
     }
-    //
-    // Load sitemap if available
-    _load_sitemap(context.hrefs, context.pages);
 
 angular.module('templates-blog', ['lux/blog/pagination.tpl.html']);
 
 angular.module("lux/blog/pagination.tpl.html", []).run(["$templateCache", function($templateCache) {
   $templateCache.put("lux/blog/pagination.tpl.html",
     "<ul class=\"media-list\">\n" +
-    "    <li ng-repeat=\"post in posts\" class=\"media\" data-ng-controller='BlogEntry'>\n" +
+    "    <li ng-repeat=\"post in items\" class=\"media\" data-ng-controller='BlogEntry'>\n" +
     "        <a href=\"{{post.html_url}}\" class=\"pull-left hidden-xs dir-entry-image\">\n" +
     "          <img data-ng-if=\"post.image\" src=\"{{post.image}}\" alt=\"{{post.title}}\">\n" +
     "          <img data-ng-if=\"!post.image\" src=\"holder.js/120x90\">\n" +
@@ -934,7 +954,7 @@ angular.module("lux/blog/pagination.tpl.html", []).run(["$templateCache", functi
     //  Blog Module
     //  ===============
     //
-    angular.module('blog', ['templates-blog', 'lux.services', 'highlight'])
+    angular.module('lux.blog', ['templates-blog', 'lux.services', 'highlight'])
         .controller('BlogEntry', ['$scope', 'dateFilter', '$lux', function ($scope, dateFilter, $lux) {
             var post = $scope.post;
             if (!post) {
@@ -962,7 +982,8 @@ angular.module("lux/blog/pagination.tpl.html", []).run(["$templateCache", functi
         }])
         .directive('blogPagination', function () {
             return {
-                templateUrl: "lux/blog/pagination.tpl.html"
+                templateUrl: "lux/blog/pagination.tpl.html",
+                restrict: 'AE'
             };
         });
 
@@ -1181,7 +1202,7 @@ angular.module("lux/blog/pagination.tpl.html", []).run(["$templateCache", functi
     };
 
 
-    angular.module('google', [])
+    angular.module('google.maps', [])
         .directive('googleMap', function () {
             return {
                 //

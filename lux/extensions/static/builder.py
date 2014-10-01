@@ -100,25 +100,39 @@ class Builder(BaseBuilder):
     include_subdirectories = True
     '''Include all subdirectories in the build'''
     _build_done = None
+    _building = False
 
-    def build(self, app, location=None):
+    @property
+    def building(self):
+        '''Check if this builder is building contents
+        '''
+        return self._building
+
+    def build(self, app, location=None, exclude=None):
         '''Build files managed by this :class:`.Builder`
         '''
         if location is None:
             location = os.path.abspath(app.config['STATIC_LOCATION'])
         if self.built is not None:
             return self.built
-        self.built = []
-        vars = self.route.ordered_variables
-        if self.route.ordered_variables:
-            for name, src, _ in self.all_files():
-                self.build_file(app, location, src, name)
-        else:
-            self.build_file(app, location)
-        if self._build_done:
-            for callback in self._build_done:
-                callback(app, location, self.built)
+        with self:
+            vars = self.route.ordered_variables
+            if self.route.ordered_variables:
+                for name, src, _ in self.all_files():
+                    self.build_file(app, location, src, name)
+            else:
+                self.build_file(app, location)
+            if self._build_done:
+                for callback in self._build_done:
+                    callback(app, location, self.built)
         return self.built
+
+    def __enter__(self):
+        self.built = []
+        self._building = True
+
+    def __exit__(self, type, value, traceback):
+        self._building = False
 
     def build_done(self, callback):
         '''Add callback invoked when :meth:`build` has finished

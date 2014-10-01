@@ -107,7 +107,7 @@ class Content(object):
         elif not meta.slug:
             meta.slug = self._name
         for name in self.mandatory_properties:
-            if not meta[name]:
+            if not meta.get(name):
                 raise BuildError("Property '%s' not available in %s"
                                  % (name, self))
 
@@ -233,9 +233,15 @@ class Content(object):
                     context[ct.key(key)] = ct.render(context)
             #
             key = self.key('main')
-            jd = self._to_json(self._meta)
-            jd[key] = self.render(context)
-            self._json_dict = jd
+            data = self._to_json(self._meta)
+            data[key] = self.render(context)
+            head = {'title': data.get('title'),
+                    'description': data.get('description'),
+                    'author': data.get('author')}
+            if 'head' in data:
+                head.update(data['head'])
+            data['head'] = head
+            self._json_dict = data
         return self._json_dict
 
     def html(self, request):
@@ -247,19 +253,14 @@ class Content(object):
             raise Unsupported
         data = self.json(request)
         doc = request.html_document
-        head = doc.head
         #
-        doc.meta.update({'title': data.get('title'),
-                         'description': data.get('description'),
-                         'author': data.get('author'),
-                         'og:image': data.get('image'),
+        doc.meta.update({'og:image': data.get('image'),
                          'og:published_time': data.get('date'),
                          'og:modified_time': data.get('modified')})
-        if 'head' in data:
-            doc.meta.update(data['head'])
+        doc.meta.update(data['head'])
         #
         for css in data.get('require_css') or ():
-            head.links.append(css)
+            doc.head.links.append(css)
         for js in data.get('require_js') or ():
             doc.body.scripts.require(js)
         #

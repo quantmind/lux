@@ -1,5 +1,5 @@
 
-    angular.module('google', [])
+    angular.module('google.maps', [])
         .directive('googleMap', function () {
             return {
                 //
