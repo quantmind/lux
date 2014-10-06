@@ -4,7 +4,7 @@
     function formData(ct) {
 
         return function (data, getHeaders ) {
-            angular.extend(data, context.csrf);
+            angular.extend(data, lux.context.csrf);
             if (ct === 'application/x-www-form-urlencoded')
                 return $.param(data);
             else if (ct === 'multipart/form-data') {

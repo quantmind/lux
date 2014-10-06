@@ -54,14 +54,6 @@ ALL_EVENTS = ('on_config',  # Config ready.
               )
 
 
-lux_require_callback = '''\
-function () {
-    var lux = window.lux;
-    if (lux)
-        lux.lux_require_callback();
-}'''
-
-
 def execute_from_config(config_file, argv=None, **params):
     '''Create and run an :class:`App` from a ``config_file``.
 
@@ -195,8 +187,19 @@ class Application(ConsoleParser, Extension):
                   'links *.js become *.min.js'),
         Parameter('HTML_LINKS', [],
                   'List of links to include in the html head tag.'),
+        Parameter('SCRIPTS', [],
+                  'List of scripts to load in the head tag'),
+        Parameter('REQUIREJS_CONFIG',
+                  'http://quantmind.github.io/require-config-js/require.config',
+                  'Configuration url for Requirejs'),
+        Parameter('REQUIREJS_URL',
+                  "//cdnjs.cloudflare.com/ajax/libs/require.js/2.1.14/require",
+                  'Default url for requirejs'),
         Parameter('REQUIREJS', ('require',),
                   'Default Required javascript. Loaded via requirejs.'),
+        Parameter('ASSET_PROTOCOL', '',
+                  ('Default protocol for scripts and links '
+                   '(could be http: or https:)')),
         Parameter('HTML_META',
                   [{'http-equiv': 'X-UA-Compatible',
                     'content': 'IE=edge'},
@@ -306,20 +309,22 @@ class Application(ConsoleParser, Extension):
                            media_path=media_path,
                            minified=cfg['MINIFIED_MEDIA'],
                            data_debug=self.debug,
-                           charset=cfg['ENCODING'])
+                           charset=cfg['ENCODING'],
+                           asset_protocol=cfg['ASSET_PROTOCOL'])
         doc.meta = HeadMeta(doc.head)
         # Locale
         lang = cfg['LOCALE'][:2]
         doc.attr('lang', lang)
         #
         head = doc.head
-        body = doc.body
-        body.scripts.known_libraries['lux'] = {'url': 'lux/lux',
-                                               'minify': False}
+        for script in cfg['SCRIPTS']:
+            head.scripts.append(script)
         #
         required = cfg['REQUIREJS']
         if required:
-            body.scripts.require(*required)
+            head.scripts.append(cfg['REQUIREJS_CONFIG'])
+            head.scripts.append(cfg['REQUIREJS_URL'])
+            head.scripts.require.extend(required)
         #
         for entry in cfg['HTML_META'] or ():
             head.add_meta(**entry)
@@ -520,7 +525,7 @@ class Application(ConsoleParser, Extension):
             jscontext = self.context(request, jscontext, 'js')
             if jscontext:
                 jscontext = json.dumps(jscontext)
-                doc.body.embedded_js.append('var luxContext = %s;' % jscontext)
+                doc.head.embedded_js.append('var luxContext = %s;' % jscontext)
             body = self.render_template(template_name, context)
             doc.body.append(body)
             return doc.http_response(request)

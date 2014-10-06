@@ -35,11 +35,7 @@ class FileRouter(wsgi.FileRouter):
 
 
 class MediaRouter(wsgi.MediaRouter):
-    '''A simple application for handling static files.
-
-    This application should be only used during development while
-    leaving the task of serving media files to other servers
-    in production.
+    '''A simple application for handling static files
     '''
     request_class = lux.WsgiRequest
     lux = True

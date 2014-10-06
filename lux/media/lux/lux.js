@@ -1,57 +1,51 @@
 //      Lux Library - v0.1.0
 
-//      Compiled 2014-10-01.
+//      Compiled 2014-10-06.
 //      Copyright (c) 2014 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
 //      http://quantmind.github.io/lux
 //
-define(['jquery', 'angular'], function ($) {
+(function (factory) {
+    var root;
+    if (typeof module === "object" && module.exports)
+        root = module.exports;
+    else
+        root = window;
+    //
+    if (typeof define === 'function' && define.amd) {
+        // Support AMD. Register as an anonymous module.
+        // NOTE: List all dependencies in AMD style
+        define(['angular'], function (angular) {
+            return factory(angular, root);
+        });
+    } else if (typeof module === "object" && module.exports) {
+        // No AMD. Set module as a global variable
+        // NOTE: Pass dependencies to factory function
+        // (assume that angular is also global.)
+        root.lux = factory(angular, root);
+    }
+}(
+function(angular, root) {
     "use strict";
 
-    var root = window,
-        lux = {version: '0.1.0'},
-        routes = [],
+    var lux = {version: '0.1.0'},
         ready_callbacks = [],
-        require_callbacks = [],
         forEach = angular.forEach,
+        extend = angular.extend,
         angular_bootstrapped = false,
-        context = root.luxContext || {},
-        requires = [];
-
-    root.lux = lux;
-    angular.element = $;
+        isArray = angular.isArray,
+        isString = angular.isString,
+        $ = angular.element;
+    //
     lux.$ = $;
     lux.forEach = angular.forEach;
-    lux.context = context;
-    lux.directiveOptions = root.luxDirectiveOptions || {};
-
-    // Get directive options from the ``directiveOptions`` object
-    lux.getDirectiveOptions = function (attrs) {
-        if (typeof attrs.options === 'string') {
-            attrs = $.extend(attrs, lux.directiveOptions[attrs.options]);
-        }
-        return attrs;
-    };
+    lux.context = root.luxContext || {};
 
     // Callbacks run after angular has finished bootstrapping
     lux.add_ready_callback = function (callback) {
         if (ready_callbacks === true) callback();
         else ready_callbacks.push(callback);
-    };
-
-    // Add a callback executed once all modules in the main page have been loaded
-    lux.add_require_callback = function (callback) {
-        require_callbacks.push(callback);
-    };
-
-    // Callback invoked by requirejs when all modules required in the main page have been loaded
-    lux.lux_require_callback = function () {
-        lux.add_ready_callback(function () {
-            forEach(require_callbacks, function (callback) {
-                callback();
-            });
-        });
     };
 
     //
@@ -74,6 +68,12 @@ define(['jquery', 'angular'], function ($) {
     };
 
     var isAbsolute = new RegExp('^([a-z]+://|//)');
+
+    var isTag = function (element, tag) {
+        element = $(element);
+        return element.length === 1 && element[0].tagName.toLowerCase() === tag.toLowerCase();
+    };
+
 
     var
     //
@@ -182,76 +182,38 @@ define(['jquery', 'angular'], function ($) {
         return c;
     }(function() {}));
     //
-    // Bootstrap the document
-    lux.bootstrap = function (name, modules) {
-        //
-        // actual bootstrapping function
-        function _bootstrap() {
-            //
-            // Resolve modules to load
-            if (!$.isArray(modules))
-                modules = [];
-            modules.push('lux');
-            // Add all modules from context
-            forEach(context.ngModules, function (module) {
-                modules.push(module);
-            });
-            luxAppModule(name, modules);
-            angular.bootstrap(document, [name]);
-            //
-            forEach(ready_callbacks, function (callback) {
-                callback();
-            });
-            ready_callbacks = true;
-        }
-
-        if (!angular_bootstrapped) {
-            angular_bootstrapped = true;
-            //
-            //
-            $(document).ready(function() {
-                if (requires) {
-                    require(requires, function () {
-                        _bootstrap();
-                    });
-                } else {
-                    _bootstrap();
-                }
-            });
-        }
-    };
-
-    //
     // Object containing apis by name
     var ApiTypes = lux.ApiTypes = {};
     //
     // If CSRF token is not available
     // try to obtain it from the meta tags
-    if (!context.csrf) {
-        var name = $("meta[name=csrf-param]").attr('content'),
-            token = $("meta[name=csrf-token]").attr('content');
-        if (name && token) {
-            context.csrf = {};
-            context.csrf[name] = token;
-        }
-    }
+    //if (!context.csrf) {
+    //    var name = $("meta[name=csrf-param]").attr('content'),
+    //        token = $("meta[name=csrf-token]").attr('content');
+    //    if (name && token) {
+    //        context.csrf = {};
+    //        context.csrf[name] = token;
+    //    }
+    //}
     //
     //  Lux Api service factory for angular
     //  ---------------------------------------
     angular.module('lux.services', [])
-        .service('$lux', function ($location, $q, $http, $log) {
+        .service('$lux', ['$location', '$q', '$http', '$log', '$timeout',
+                function ($location, $q, $http, $log, $timeout) {
             var $lux = this;
 
             this.location = $location;
             this.log = $log;
             this.http = $http;
             this.q = $q;
+            this.timeout = $timeout;
 
             // A post method with CSRF parameter
             this.post = function (url, data, cfg) {
-                if (context.csrf) {
+                if (lux.context.csrf) {
                     data || (data = {});
-                    angular.extend(data, context.csrf);
+                    angular.extend(data, lux.context.csrf);
                 }
                 return $http.post(url, data, cfg);
             };
@@ -274,8 +236,94 @@ define(['jquery', 'angular'], function ($) {
                 else
                     return new Api(context.name, context.url, context.options, $lux);
             };
+            //
+            //  ScrollToHash
+            this.scrollToHash = function (hash, offset) {
+                var e;
+                if (hash.currentTarget) {
+                    e = hash;
+                    hash = hash.currentTarget.hash;
+                }
+                // set the location.hash to the id of
+                // the element you wish to scroll to.
+                var target = document.getElementById(hash.substring(1));
+                if (target) {
+                    $lux.location.hash(hash);
+                    $lux.log.info('Scrolling to target');
+                    scrollTo(target);
+                } else
+                    $lux.log.warning('Cannot scroll, target not found');
+            };
 
-        });
+            function scrollTo (target) {
+                var i,
+                    startY = currentYPosition(),
+                    stopY = elmYPosition(target),
+                    distance = stopY > startY ? stopY - startY : startY - stopY;
+                if (distance < 100) {
+                    window.scrollTo(0, stopY);
+                    return;
+                }
+                var speed = Math.round(distance),
+                    step = Math.round(distance / 25),
+                    y = startY;
+                _nextScroll(startY, speed, step, stopY);
+            }
+
+            function _nextScroll (y, speed, stepY, stopY) {
+                var more = true,
+                    y2, d;
+                if (y < stopY) {
+                    y2 = y + stepY;
+                    if (y2 >= stopY) {
+                        more = false;
+                        y2 = stopY;
+                    }
+                    d = y2 - y;
+                } else {
+                    y2 = y - stepY;
+                    if (y2 <= stopY) {
+                        more = false;
+                        y2 = stopY;
+                    }
+                    d = y - y2;
+                }
+                var delay = 1000*d/speed;
+                $timeout(function () {
+                    window.scrollTo(0, y2);
+                    if (more)
+                        _nextScroll(y2, speed, stepY, stopY);
+                }, delay);
+            }
+
+            function currentYPosition() {
+                // Firefox, Chrome, Opera, Safari
+                if (window.pageYOffset) {
+                    return window.pageYOffset;
+                }
+                // Internet Explorer 6 - standards mode
+                if (document.documentElement && document.documentElement.scrollTop) {
+                    return document.documentElement.scrollTop;
+                }
+                // Internet Explorer 6, 7 and 8
+                if (document.body.scrollTop) {
+                    return document.body.scrollTop;
+                }
+                return 0;
+            }
+
+            /* scrollTo -
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+            function elmYPosition(node) {
+                var y = node.offsetTop;
+                while (node.offsetParent && node.offsetParent != document.body) {
+                    node = node.offsetParent;
+                    y += node.offsetTop;
+                }
+                return y;
+            }
+
+        }]);
     //
     function wrapPromise (promise) {
         promise.success = function(fn) {
@@ -300,7 +348,7 @@ define(['jquery', 'angular'], function ($) {
         //  Object containing the urls for the api.
         //  If not given, the object will be loaded via the ``context.apiUrl``
         //  variable.
-        apiUrls: context.apiUrls,
+        apiUrls: lux.context.apiUrls,
         //
         init: function (name, url, options, $lux) {
             this.name = name;
@@ -425,11 +473,11 @@ define(['jquery', 'angular'], function ($) {
                     if (!this.url)
                         return request.error('Could not find a valid url for ' + this.name);
                     //
-                } else if (context.apiUrl) {
+                } else if (lux.context.apiUrl) {
                     // Fetch the api urls
                     var self = this;
                     $lux.log.info('Fetching api info');
-                    return $lux.http.get(context.apiUrl).success(function (resp) {
+                    return $lux.http.get(lux.context.apiUrl).success(function (resp) {
                         self.apiUrls = resp;
                         self.call(request);
                     }).error(request.error);
@@ -473,7 +521,7 @@ define(['jquery', 'angular'], function ($) {
         authentication: function (request) {
             var self = this;
             //
-            if (context.user) {
+            if (lux.context.user) {
                 $lux.log.info('Fetching authentication token');
                 //
                 $lux.post('/_token').success(function (data) {
@@ -530,7 +578,7 @@ define(['jquery', 'angular'], function ($) {
     function formData(ct) {
 
         return function (data, getHeaders ) {
-            angular.extend(data, context.csrf);
+            angular.extend(data, lux.context.csrf);
             if (ct === 'application/x-www-form-urlencoded')
                 return $.param(data);
             else if (ct === 'multipart/form-data') {
@@ -728,8 +776,6 @@ define(['jquery', 'angular'], function ($) {
                 page.authors = page.author.join(', ');
             else
                 page.authors = page.author;
-        } else {
-            $lux.log.info('No author in page!');
         }
         var date;
         if (page.date) {
@@ -744,21 +790,23 @@ define(['jquery', 'angular'], function ($) {
         return page;
     }
 
-    // Lux main module
+    //  Lux angular
+    //  ==============
+    //  Lux main module for angular. Design to work with the ``lux.extension.angular``
     angular.module('lux', ['lux.services', 'lux.form'])
-        .controller('Page', ['$scope', '$lux', '$anchorScroll', function ($scope, $lux, $anchorScroll) {
+        .controller('Page', ['$scope', '$lux', 'dateFilter', '$anchorScroll',
+            function ($scope, $lux, dateFilter, $anchorScroll) {
             //
             $lux.log.info('Setting up angular page');
             //
             // Inject lux context into the scope of the page
-            angular.extend($scope, context);
+            angular.extend($scope, lux.context);
             //
             var page = $scope.page;
-            if (page && $scope.pages) {
-                $scope.page = page = $scope.pages[page];
-            } else {
-                $scope.page = page = {};
-            }
+            // If the page is a string, retrieve it from the pages object
+            if (typeof page === 'string')
+                page = $scope.pages ? $scope.pages[page] : null;
+            $scope.page = addPageInfo(page || {}, $scope, dateFilter, $lux);
             //
             $scope.windowHeight = function () {
                 return root.window.innerHeight > 0 ? root.window.innerHeight : root.screen.availHeight;
@@ -801,7 +849,7 @@ define(['jquery', 'angular'], function ($) {
 
             $scope.collapse = function () {
                 var width = root.window.innerWidth > 0 ? root.window.innerWidth : root.screen.width;
-                if (width < context.navbarCollapseWidth)
+                if (width < $scope.navbarCollapseWidth)
                     $scope.sidebarCollapse = 'collapse';
                 else
                     $scope.sidebarCollapse = '';
@@ -825,45 +873,10 @@ define(['jquery', 'angular'], function ($) {
                 return base === url && (folder || (rest === '' || rest.substring(0, 1) === '/'));
             };
 
-            var scrollToHash = function (e, offset) {
-                // set the location.hash to the id of
-                // the element you wish to scroll to.
-                var hash = e.currentTarget.hash,
-                    target = $(hash);
-                if (target.length) {
-                    //$lux.location.hash(hash);
-                    //$anchorScroll();
-                    offset = offset ? offset : 0;
-                    e.preventDefault();
-                    e.stopPropagation();
-                    $lux.log.info('Scrolling to target');
-                    $('html,body').animate({
-                        scrollTop: target.offset().top + offset
-                    }, 1000);
-                } else
-                    $lux.log.warning('Cannot scroll, target not found');
-            };
-
-            $scope.scrollToHash = scrollToHash;
-
-            $('.toc a').each(function () {
-                var el = $(this),
-                    href = el.attr('href');
-                if (href.substring(0, 1) === '#' && href.substring(0, 2) !== '##')
-                    el.click(scrollToHash);
-            });
+            $scope.scrollToHash = $lux.scrollToHash;
 
         }]);
 
-    //
-    //  Lux Application Module
-    //  ==========================
-    function luxAppModule (name, modules) {
-        var module = angular.module(name, modules);
-        if (context.html5mode)
-            configRouter(module);
-        return module;
-    }
     //
     //  UI-Routing
     //
@@ -874,8 +887,8 @@ define(['jquery', 'angular'], function ($) {
         module.config(['$locationProvider', '$stateProvider', '$urlRouterProvider',
             function ($locationProvider, $stateProvider, $urlRouterProvider) {
 
-            var hrefs = context.hrefs,
-                pages = context.pages,
+            var hrefs = lux.context.hrefs,
+                pages = lux.context.pages,
                 state_config = function (page) {
                     return {
                         //
@@ -909,7 +922,7 @@ define(['jquery', 'angular'], function ($) {
                     };
                 };
 
-            $locationProvider.html5Mode(context.html5mode);
+            $locationProvider.html5Mode(lux.context.html5mode);
 
             forEach(hrefs, function (href) {
                 var page = pages[href];
@@ -945,6 +958,41 @@ define(['jquery', 'angular'], function ($) {
 
     }
 
+    //
+    // Bootstrap the document
+    lux.bootstrap = function (name, modules) {
+        //
+        // actual bootstrapping function
+        function _bootstrap() {
+            //
+            // Resolve modules to load
+            if (!isArray(modules))
+                modules = [];
+            modules.push('lux');
+            // Add all modules from context
+            forEach(lux.context.ngModules, function (module) {
+                modules.push(module);
+            });
+            angular.module(name, modules);
+            if (lux.context.html5mode && configRouter)
+                configRouter(module);
+            angular.bootstrap(document, [name]);
+            //
+            forEach(ready_callbacks, function (callback) {
+                callback();
+            });
+            ready_callbacks = true;
+        }
+
+        if (!angular_bootstrapped) {
+            angular_bootstrapped = true;
+            //
+            $(document).ready(function() {
+                _bootstrap();
+            });
+        }
+    };
+
 angular.module('templates-blog', ['lux/blog/header.tpl.html', 'lux/blog/pagination.tpl.html']);
 
 angular.module("lux/blog/header.tpl.html", []).run(["$templateCache", function($templateCache) {
@@ -979,6 +1027,7 @@ angular.module("lux/blog/pagination.tpl.html", []).run(["$templateCache", functi
     //  Blog Module
     //  ===============
     //
+    //  Simple blog pagination directives and code highlight with highlight.js
     angular.module('lux.blog', ['templates-blog', 'lux.services', 'highlight'])
         .controller('BlogEntry', ['$scope', 'dateFilter', '$lux', function ($scope, dateFilter, $lux) {
             var post = $scope.post;
@@ -999,7 +1048,20 @@ angular.module("lux/blog/pagination.tpl.html", []).run(["$templateCache", functi
                 templateUrl: "lux/blog/header.tpl.html",
                 restrict: 'AE'
             };
-        });
+        })
+        .directive('toc', ['$lux', function ($lux) {
+            return {
+                link: function (scope, element, attrs) {
+                    //
+                    forEach(element[0].querySelectorAll('.toc a'), function (el) {
+                        el = $(el);
+                        var href = el.attr('href');
+                        if (href.substring(0, 1) === '#' && href.substring(0, 2) !== '##')
+                            el.on('click', $lux.scrollToHash);
+                    });
+                }
+            };
+        }]);
 
     //
     //  Code highlighting with highlight.js
@@ -1017,10 +1079,10 @@ angular.module("lux/blog/pagination.tpl.html", []).run(["$templateCache", functi
 
     var highlight = function (elem) {
         require(['highlight'], function () {
-            $(elem).find('code').each(function(i, block) {
+            forEach($(elem)[0].querySelectorAll('code'), function(block) {
                 var elem = $(block),
                     parent = elem.parent();
-                if (parent.is('pre')) {
+                if (isTag(parent, 'pre')) {
                     root.hljs.highlightBlock(block);
                     parent.addClass('hljs');
                 } else {
@@ -1034,7 +1096,7 @@ angular.module("lux/blog/pagination.tpl.html", []).run(["$templateCache", functi
     angular.module('users', ['lux.services'])
         .controller('userController', ['$scope', '$lux', function ($scope, $lux) {
             // Model for a user when updating
-            formController($scope, $lux, context.user);
+            formController($scope, $lux, lux.context.user);
 
             // Unlink account for a OAuth provider
             $scope.unlink = function(e, name) {
@@ -1252,8 +1314,10 @@ angular.module("lux/blog/pagination.tpl.html", []).run(["$templateCache", functi
             };
         });
     //
-    // Load d3 extensions into angular
-    lux.addD3ext = function (d3ext) {
+    // Load d3 extensions into angular 'd3viz' module
+    //  d3ext is the d3 extension object
+    //  name is the optional module name for angular (default to d3viz)
+    lux.addD3ext = function (d3, name) {
 
         function loadData ($lux) {
 
@@ -1266,27 +1330,44 @@ angular.module("lux/blog/pagination.tpl.html", []).run(["$templateCache", functi
                     if (api) {
                         var p = id ? api.get(id) : api.getList();
                         p.then(function (response) {
-                            self.attrs.data = response.data;
-                            callback();
+                            self.setData(response.data, callback);
                             return response;
                         });
                     }
                 } else if (src) {
-                    this.d3.json(src, function(error, json) {
+                    d3.json(src, function(error, json) {
                         if (!error) {
-                            self.attrs.data = json || {};
-                            return callback();
+                            self.setData(json, callback);
+                            return self.attrs.data;
                         }
                     });
                 }
             };
         }
+        //
+        // Obtain extra information from javascript objects
+        function getOptions(d3, attrs) {
+            if (typeof attrs.options === 'string') {
+                var obj = root,
+                    bits= attrs.options.split('.');
 
-        var app = angular.module('d3viz', ['lux.services']);
+                for (var i=0; i<bits.length; ++i) {
+                    obj = obj[bits[i]];
+                    if (!obj) break;
+                }
+                if (typeof obj === 'function')
+                    obj = obj(d3, attrs);
+                attrs = extend(attrs, obj);
+            }
+            return attrs;
+        }
 
-        angular.forEach(d3ext, function (VizClass, name) {
+        name = name || 'd3viz';
+        var app = angular.module(name, ['lux.services']);
 
-            if (VizClass instanceof d3ext.Viz) {
+        angular.forEach(d3.ext, function (VizClass, name) {
+
+            if (d3.ext.isviz(VizClass)) {
                 var dname = 'viz' + name.substring(0,1).toUpperCase() + name.substring(1);
 
                 app.directive(dname, ['$lux', function ($lux) {
@@ -1296,8 +1377,8 @@ angular.module("lux/blog/pagination.tpl.html", []).run(["$templateCache", functi
                             restrict: 'AE',
                             //
                             link: function (scope, element, attrs) {
-                                attrs = lux.getDirectiveOptions(attrs);
-                                var viz = new VizClass(element, attrs);
+                                var options = getOptions(d3, attrs);
+                                var viz = new VizClass(element[0], options);
                                 viz.loadData = loadData($lux);
                                 viz.build();
                             }
@@ -1309,4 +1390,4 @@ angular.module("lux/blog/pagination.tpl.html", []).run(["$templateCache", functi
 
 
 	return lux;
-});
+}));

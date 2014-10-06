@@ -512,7 +512,7 @@ class Css(CssBase):
     _app = None
     _css_libs = None
 
-    def __init__(self, tag=None, vars=None, app=None, known_libraries=None):
+    def __init__(self, tag=None, vars=None, app=None):
         self._tag = tag
         self._http = None
         self._parent = None
@@ -522,9 +522,7 @@ class Css(CssBase):
             assert tag is None, 'app should be passed to the root element only'
             self._app = app
         if self._tag is None:
-            known_libraries = known_libraries or wsgi.media_libraries
-            self._css_libs = wsgi.Links(self.config('MEDIA_URL', '/media/'),
-                                        known_libraries=known_libraries)
+            self._css_libs = wsgi.Links(self.config('MEDIA_URL', '/media/'))
             self.variables = Variables() if vars is None else vars
             self.classes = Variables()
             self.classes.hover = 'hover'

@@ -12,11 +12,7 @@ from pulsar.apps.wsgi import Json, MediaRouter, Html
 
 from .builder import (DirBuilder, FileBuilder, BuildError, SkipBuild,
                       Unsupported, normpath)
-from .contents import Article, parse_date
-
-
-SPECIAL_KEYS = ('html_url',)
-SKIP_KEYS = ('site', 'head')
+from .contents import Article, parse_date, page_info
 
 
 class ErrorRouter(lux.Router, DirBuilder):
@@ -199,15 +195,10 @@ class JsonFile(lux.Router, FileBuilder):
             if bool(data.get('priority')=='0') is not draft:
                 continue
             if not html:
-                data = dict(((key, data[key]) for key in data
-                             if not self.is_html(key)))
+                data = dict(page_info(data))
             all.append(data)
         key = lambda d: parse_date(d.get('date', d['modified']))
         return list(reversed(sorted(all, key=key)))
-
-    def is_html(self, key):
-        if key not in SPECIAL_KEYS:
-            return key.startswith('html_') or key in SKIP_KEYS
 
 
 class HtmlFile(HtmlRouter, FileBuilder):
@@ -215,7 +206,7 @@ class HtmlFile(HtmlRouter, FileBuilder):
     '''
     def build_main(self, request, context, jscontext):
         content = self.get_content(request)
-        return content.html(request)
+        return content.html(request, jscontext)
 
     def get_api_info(self, app):
         return self.parent.get_api_info(app)
@@ -248,7 +239,7 @@ class HtmlContent(HtmlRouter, DirBuilder):
             self.add_child(Drafts(self.drafts,
                                   name=self.childname('drafts'),
                                   index_template=self.drafts_template))
-        meta = copy(self.meta)
+        meta = copy(self.meta) if self.meta else {}
         if meta_children:
             meta.update(meta_children)
         #
@@ -297,10 +288,10 @@ class HtmlContent(HtmlRouter, DirBuilder):
                 jscontext['items'] = files.all(app, html=False)
             src = app.template_full_path(self.index_template)
             content = self.read_file(app, src, 'index')
-            return content.html(request)
+            return content.html(request, jscontext)
         elif self.src:
             content = self.read_file(request.app, self.src, 'index')
-            return content.html(request)
+            return content.html(request, jscontext)
         else:
             raise SkipBuild
 

@@ -18,3 +18,8 @@
     };
 
     var isAbsolute = new RegExp('^([a-z]+://|//)');
+
+    var isTag = function (element, tag) {
+        element = $(element);
+        return element.length === 1 && element[0].tagName.toLowerCase() === tag.toLowerCase();
+    };

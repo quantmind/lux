@@ -76,7 +76,7 @@ class Extension(lux.Extension):
         Parameter('CONTEXT_LOCATION', 'context',
                   'Directory where to find files to populate the context '
                   'dictionary'),
-        Parameter('MD_EXTENSIONS', ['extra', 'meta'],
+        Parameter('MD_EXTENSIONS', ['extra', 'meta', 'toc'],
                   'List/tuple of markdown extensions'),
         Parameter('STATIC_API', 'api',
                   'Build a JSON api, required when using router in Html5 '
@@ -136,13 +136,6 @@ class Extension(lux.Extension):
             if file404:
                 middleware.append(FileRouter('<path:path>', file404,
                                              status_code=404))
-
-    def on_html_document(self, app, request, doc):
-        # If the site url is not specified, force media libraries to have
-        # a scheme by using http if one is not available
-        if not app.config['SITE_URL']:
-            doc.head.links.set_default_scheme()
-            doc.head.scripts.set_default_scheme()
 
     def build(self, app):
         '''Build the static site

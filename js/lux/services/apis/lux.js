@@ -7,7 +7,7 @@
         authentication: function (request) {
             var self = this;
             //
-            if (context.user) {
+            if (lux.context.user) {
                 $lux.log.info('Fetching authentication token');
                 //
                 $lux.post('/_token').success(function (data) {

@@ -1,6 +1,7 @@
     //  Blog Module
     //  ===============
     //
+    //  Simple blog pagination directives and code highlight with highlight.js
     angular.module('lux.blog', ['templates-blog', 'lux.services', 'highlight'])
         .controller('BlogEntry', ['$scope', 'dateFilter', '$lux', function ($scope, dateFilter, $lux) {
             var post = $scope.post;
@@ -21,4 +22,17 @@
                 templateUrl: "lux/blog/header.tpl.html",
                 restrict: 'AE'
             };
-        });
+        })
+        .directive('toc', ['$lux', function ($lux) {
+            return {
+                link: function (scope, element, attrs) {
+                    //
+                    forEach(element[0].querySelectorAll('.toc a'), function (el) {
+                        el = $(el);
+                        var href = el.attr('href');
+                        if (href.substring(0, 1) === '#' && href.substring(0, 2) !== '##')
+                            el.on('click', $lux.scrollToHash);
+                    });
+                }
+            };
+        }]);

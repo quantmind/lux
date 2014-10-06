@@ -1,5 +1,10 @@
 '''
-HTML5 Router and utilities
+HTML5 Router and utilities for managing angular-python interaction.
+One of the most important use case of AngularJS_ is to develop
+single page applications (SPA).
+
+By setting the :setting:`HTML5_NAVIGATION` to ``True``, the angular
+``ui.router`` is enabled.
 '''
 import lux
 from lux import Parameter
@@ -11,12 +16,7 @@ from .ui import add_css
 
 
 class Extension(lux.Extension):
-    '''The sessions extensions provides wsgi middleware for managing sessions
-    and users.
 
-    In addition it provides utilities for managing Cross Site Request Forgery
-    protection and user permissions levels.
-    '''
     _config = [
         Parameter('HTML5_NAVIGATION', False, 'Enable Html5 navigation'),
         Parameter('NAVBAR_COLLAPSE_WIDTH', 768,
@@ -63,6 +63,7 @@ class Router(lux.Router, MediaMixin):
                        'ng-controller': 'Page'})
         jscontext = {}
         context = {}
+        main = self.build_main(request, context, jscontext)
         #
         # Using Angular Ui-Router
         if html5:
@@ -74,7 +75,6 @@ class Router(lux.Router, MediaMixin):
                 ngmodules.update(self.ngmodules)
             jscontext['ngModules'] = tuple(ngmodules)
 
-        main = self.build_main(request, context, jscontext)
         if html5:
             main = self.uiview(app, main)
 
@@ -93,7 +93,8 @@ class Router(lux.Router, MediaMixin):
         return div.render()
 
     def state_template(self, app):
-        '''Template for ui-router state associated with this router'''
+        '''Template for ui-router state associated with this router.
+        '''
         pass
 
     def get_controller(self, app):

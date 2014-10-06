@@ -14,10 +14,10 @@
 
     var highlight = function (elem) {
         require(['highlight'], function () {
-            $(elem).find('code').each(function(i, block) {
+            forEach($(elem)[0].querySelectorAll('code'), function(block) {
                 var elem = $(block),
                     parent = elem.parent();
-                if (parent.is('pre')) {
+                if (isTag(parent, 'pre')) {
                     root.hljs.highlightBlock(block);
                     parent.addClass('hljs');
                 } else {

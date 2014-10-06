@@ -72,6 +72,12 @@ def is_text(content_type):
     return content_type in CONTENT_EXTENSIONS
 
 
+def page_info(data):
+    for key, value in data.items():
+        if not isinstance(value, dict):
+            yield key, value
+
+
 class Content(object):
     template = None
     template_engine = None
@@ -214,7 +220,7 @@ class Content(object):
             context = self.context(context)
             content = self._engine(self._content, context)
             if self.template:
-                context['html_main'] = content
+                context[self.key('main')] = content
                 content = self._app.render_template(self.template,
                                                     context=context)
             return content
@@ -232,9 +238,11 @@ class Content(object):
                 for key, ct in self.additional_context.items():
                     context[ct.key(key)] = ct.render(context)
             #
-            key = self.key('main')
+            assert self.suffix
             data = self._to_json(self._meta)
-            data[key] = self.render(context)
+            text = data.get(self.suffix) or {}
+            data[self.suffix] = text
+            text['main'] = self.render(context)
             #
             head = {}
             for key in HEAD_META:
@@ -248,14 +256,17 @@ class Content(object):
             self._json_dict = data
         return self._json_dict
 
-    def html(self, request):
+    def html(self, request, jscontext=None):
         '''Build the ``html_main`` key for this content and set
         content specific values to the ``head`` tag of the
         HTML5 document.
         '''
         if not self.is_html:
             raise Unsupported
+        # The JSON data for this page
         data = self.json(request)
+        if jscontext is not None:
+            jscontext['page'] = dict(page_info(data))
         doc = request.html_document
         #
         doc.meta.update({'og:image': data.get('image'),
@@ -265,11 +276,10 @@ class Content(object):
         #
         for css in data.get('require_css') or ():
             doc.head.links.append(css)
-        for js in data.get('require_js') or ():
-            doc.body.scripts.require(js)
+        doc.head.scripts.require.extend(data.get('require_js') or ())
         #
         self.on_html(doc)
-        return data.get(self.key('main'))
+        return data[self.suffix]['main']
 
     def on_html(self, doc):
         pass

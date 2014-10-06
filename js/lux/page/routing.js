@@ -1,13 +1,4 @@
     //
-    //  Lux Application Module
-    //  ==========================
-    function luxAppModule (name, modules) {
-        var module = angular.module(name, modules);
-        if (context.html5mode)
-            configRouter(module);
-        return module;
-    }
-    //
     //  UI-Routing
     //
     //  Configure ui-Router using lux routing objects
@@ -17,8 +8,8 @@
         module.config(['$locationProvider', '$stateProvider', '$urlRouterProvider',
             function ($locationProvider, $stateProvider, $urlRouterProvider) {
 
-            var hrefs = context.hrefs,
-                pages = context.pages,
+            var hrefs = lux.context.hrefs,
+                pages = lux.context.pages,
                 state_config = function (page) {
                     return {
                         //
@@ -52,7 +43,7 @@
                     };
                 };
 
-            $locationProvider.html5Mode(context.html5mode);
+            $locationProvider.html5Mode(lux.context.html5mode);
 
             forEach(hrefs, function (href) {
                 var page = pages[href];

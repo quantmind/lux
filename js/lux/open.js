@@ -1,47 +1,41 @@
-define(['jquery', 'angular'], function ($) {
+(function (factory) {
+    var root;
+    if (typeof module === "object" && module.exports)
+        root = module.exports;
+    else
+        root = window;
+    //
+    if (typeof define === 'function' && define.amd) {
+        // Support AMD. Register as an anonymous module.
+        // NOTE: List all dependencies in AMD style
+        define(['angular'], function (angular) {
+            return factory(angular, root);
+        });
+    } else if (typeof module === "object" && module.exports) {
+        // No AMD. Set module as a global variable
+        // NOTE: Pass dependencies to factory function
+        // (assume that angular is also global.)
+        root.lux = factory(angular, root);
+    }
+}(
+function(angular, root) {
     "use strict";
 
-    var root = window,
-        lux = {version: '0.1.0'},
-        routes = [],
+    var lux = {version: '0.1.0'},
         ready_callbacks = [],
-        require_callbacks = [],
         forEach = angular.forEach,
+        extend = angular.extend,
         angular_bootstrapped = false,
-        context = root.luxContext || {},
-        requires = [];
-
-    root.lux = lux;
-    angular.element = $;
+        isArray = angular.isArray,
+        isString = angular.isString,
+        $ = angular.element;
+    //
     lux.$ = $;
     lux.forEach = angular.forEach;
-    lux.context = context;
-    lux.directiveOptions = root.luxDirectiveOptions || {};
-
-    // Get directive options from the ``directiveOptions`` object
-    lux.getDirectiveOptions = function (attrs) {
-        if (typeof attrs.options === 'string') {
-            attrs = $.extend(attrs, lux.directiveOptions[attrs.options]);
-        }
-        return attrs;
-    };
+    lux.context = root.luxContext || {};
 
     // Callbacks run after angular has finished bootstrapping
     lux.add_ready_callback = function (callback) {
         if (ready_callbacks === true) callback();
         else ready_callbacks.push(callback);
-    };
-
-    // Add a callback executed once all modules in the main page have been loaded
-    lux.add_require_callback = function (callback) {
-        require_callbacks.push(callback);
-    };
-
-    // Callback invoked by requirejs when all modules required in the main page have been loaded
-    lux.lux_require_callback = function () {
-        lux.add_ready_callback(function () {
-            forEach(require_callbacks, function (callback) {
-                callback();
-            });
-        });
     };

@@ -60,19 +60,18 @@ from .lib import *
 class Extension(lux.Extension):
 
     _config = [
-        Parameter('ICON_PROVIDER', 'fontawesome', 'Icons provider to use'),
-        Parameter('BOOTSTRAP', True, 'Set to true to use twitter bootstrap'),
+        Parameter('FONTAWESOME',
+            '//netdna.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome',
+            'FONTAWESOME url. Set to none to not use it.'),
+        Parameter('BOOTSTRAP',
+            '//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap',
+            'Twitter bootstrap url. Set to none to not use it.'),
         Parameter('EXCLUDE_EXTENSIONS_CSS', None,
                   'Optional list of extensions to exclude form the css')]
 
     def on_html_document(self, app, request, doc):
-        if doc.has_default_content_type:
-            if app.config['BOOTSTRAP']:
-                doc.head.links.append('bootstrap_css')
-            icon = app.config['ICON_PROVIDER']
-            if icon == 'fontawesome':
-                doc.head.links.append('fontawesome')
-            doc.data('icon', icon)
+        for name in ('BOOTSTRAP', 'FONTAWESOME'):
+            doc.head.links.append(app.config[name])
 
 
 def add_css(all):

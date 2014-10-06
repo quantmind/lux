@@ -7,8 +7,6 @@
                 page.authors = page.author.join(', ');
             else
                 page.authors = page.author;
-        } else {
-            $lux.log.info('No author in page!');
         }
         var date;
         if (page.date) {
@@ -23,21 +21,23 @@
         return page;
     }
 
-    // Lux main module
+    //  Lux angular
+    //  ==============
+    //  Lux main module for angular. Design to work with the ``lux.extension.angular``
     angular.module('lux', ['lux.services', 'lux.form'])
-        .controller('Page', ['$scope', '$lux', '$anchorScroll', function ($scope, $lux, $anchorScroll) {
+        .controller('Page', ['$scope', '$lux', 'dateFilter', '$anchorScroll',
+            function ($scope, $lux, dateFilter, $anchorScroll) {
             //
             $lux.log.info('Setting up angular page');
             //
             // Inject lux context into the scope of the page
-            angular.extend($scope, context);
+            angular.extend($scope, lux.context);
             //
             var page = $scope.page;
-            if (page && $scope.pages) {
-                $scope.page = page = $scope.pages[page];
-            } else {
-                $scope.page = page = {};
-            }
+            // If the page is a string, retrieve it from the pages object
+            if (typeof page === 'string')
+                page = $scope.pages ? $scope.pages[page] : null;
+            $scope.page = addPageInfo(page || {}, $scope, dateFilter, $lux);
             //
             $scope.windowHeight = function () {
                 return root.window.innerHeight > 0 ? root.window.innerHeight : root.screen.availHeight;
@@ -80,7 +80,7 @@
 
             $scope.collapse = function () {
                 var width = root.window.innerWidth > 0 ? root.window.innerWidth : root.screen.width;
-                if (width < context.navbarCollapseWidth)
+                if (width < $scope.navbarCollapseWidth)
                     $scope.sidebarCollapse = 'collapse';
                 else
                     $scope.sidebarCollapse = '';
@@ -104,32 +104,6 @@
                 return base === url && (folder || (rest === '' || rest.substring(0, 1) === '/'));
             };
 
-            var scrollToHash = function (e, offset) {
-                // set the location.hash to the id of
-                // the element you wish to scroll to.
-                var hash = e.currentTarget.hash,
-                    target = $(hash);
-                if (target.length) {
-                    //$lux.location.hash(hash);
-                    //$anchorScroll();
-                    offset = offset ? offset : 0;
-                    e.preventDefault();
-                    e.stopPropagation();
-                    $lux.log.info('Scrolling to target');
-                    $('html,body').animate({
-                        scrollTop: target.offset().top + offset
-                    }, 1000);
-                } else
-                    $lux.log.warning('Cannot scroll, target not found');
-            };
-
-            $scope.scrollToHash = scrollToHash;
-
-            $('.toc a').each(function () {
-                var el = $(this),
-                    href = el.attr('href');
-                if (href.substring(0, 1) === '#' && href.substring(0, 2) !== '##')
-                    el.click(scrollToHash);
-            });
+            $scope.scrollToHash = $lux.scrollToHash;
 
         }]);

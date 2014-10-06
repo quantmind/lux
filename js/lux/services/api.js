@@ -4,31 +4,33 @@
     //
     // If CSRF token is not available
     // try to obtain it from the meta tags
-    if (!context.csrf) {
-        var name = $("meta[name=csrf-param]").attr('content'),
-            token = $("meta[name=csrf-token]").attr('content');
-        if (name && token) {
-            context.csrf = {};
-            context.csrf[name] = token;
-        }
-    }
+    //if (!context.csrf) {
+    //    var name = $("meta[name=csrf-param]").attr('content'),
+    //        token = $("meta[name=csrf-token]").attr('content');
+    //    if (name && token) {
+    //        context.csrf = {};
+    //        context.csrf[name] = token;
+    //    }
+    //}
     //
     //  Lux Api service factory for angular
     //  ---------------------------------------
     angular.module('lux.services', [])
-        .service('$lux', function ($location, $q, $http, $log) {
+        .service('$lux', ['$location', '$q', '$http', '$log', '$timeout',
+                function ($location, $q, $http, $log, $timeout) {
             var $lux = this;
 
             this.location = $location;
             this.log = $log;
             this.http = $http;
             this.q = $q;
+            this.timeout = $timeout;
 
             // A post method with CSRF parameter
             this.post = function (url, data, cfg) {
-                if (context.csrf) {
+                if (lux.context.csrf) {
                     data || (data = {});
-                    angular.extend(data, context.csrf);
+                    angular.extend(data, lux.context.csrf);
                 }
                 return $http.post(url, data, cfg);
             };
@@ -51,8 +53,94 @@
                 else
                     return new Api(context.name, context.url, context.options, $lux);
             };
+            //
+            //  ScrollToHash
+            this.scrollToHash = function (hash, offset) {
+                var e;
+                if (hash.currentTarget) {
+                    e = hash;
+                    hash = hash.currentTarget.hash;
+                }
+                // set the location.hash to the id of
+                // the element you wish to scroll to.
+                var target = document.getElementById(hash.substring(1));
+                if (target) {
+                    $lux.location.hash(hash);
+                    $lux.log.info('Scrolling to target');
+                    scrollTo(target);
+                } else
+                    $lux.log.warning('Cannot scroll, target not found');
+            };
 
-        });
+            function scrollTo (target) {
+                var i,
+                    startY = currentYPosition(),
+                    stopY = elmYPosition(target),
+                    distance = stopY > startY ? stopY - startY : startY - stopY;
+                if (distance < 100) {
+                    window.scrollTo(0, stopY);
+                    return;
+                }
+                var speed = Math.round(distance),
+                    step = Math.round(distance / 25),
+                    y = startY;
+                _nextScroll(startY, speed, step, stopY);
+            }
+
+            function _nextScroll (y, speed, stepY, stopY) {
+                var more = true,
+                    y2, d;
+                if (y < stopY) {
+                    y2 = y + stepY;
+                    if (y2 >= stopY) {
+                        more = false;
+                        y2 = stopY;
+                    }
+                    d = y2 - y;
+                } else {
+                    y2 = y - stepY;
+                    if (y2 <= stopY) {
+                        more = false;
+                        y2 = stopY;
+                    }
+                    d = y - y2;
+                }
+                var delay = 1000*d/speed;
+                $timeout(function () {
+                    window.scrollTo(0, y2);
+                    if (more)
+                        _nextScroll(y2, speed, stepY, stopY);
+                }, delay);
+            }
+
+            function currentYPosition() {
+                // Firefox, Chrome, Opera, Safari
+                if (window.pageYOffset) {
+                    return window.pageYOffset;
+                }
+                // Internet Explorer 6 - standards mode
+                if (document.documentElement && document.documentElement.scrollTop) {
+                    return document.documentElement.scrollTop;
+                }
+                // Internet Explorer 6, 7 and 8
+                if (document.body.scrollTop) {
+                    return document.body.scrollTop;
+                }
+                return 0;
+            }
+
+            /* scrollTo -
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+            function elmYPosition(node) {
+                var y = node.offsetTop;
+                while (node.offsetParent && node.offsetParent != document.body) {
+                    node = node.offsetParent;
+                    y += node.offsetTop;
+                }
+                return y;
+            }
+
+        }]);
     //
     function wrapPromise (promise) {
         promise.success = function(fn) {
@@ -77,7 +165,7 @@
         //  Object containing the urls for the api.
         //  If not given, the object will be loaded via the ``context.apiUrl``
         //  variable.
-        apiUrls: context.apiUrls,
+        apiUrls: lux.context.apiUrls,
         //
         init: function (name, url, options, $lux) {
             this.name = name;
@@ -202,11 +290,11 @@
                     if (!this.url)
                         return request.error('Could not find a valid url for ' + this.name);
                     //
-                } else if (context.apiUrl) {
+                } else if (lux.context.apiUrl) {
                     // Fetch the api urls
                     var self = this;
                     $lux.log.info('Fetching api info');
-                    return $lux.http.get(context.apiUrl).success(function (resp) {
+                    return $lux.http.get(lux.context.apiUrl).success(function (resp) {
                         self.apiUrls = resp;
                         self.call(request);
                     }).error(request.error);
