@@ -85,6 +85,7 @@ def add_css(all):
     vars.line_height = 1.42857
     vars.font_style = 'normal'
     vars.color = color('#333')
+    vars.background = color('#fff')
     # Helper classes
     vars.push_bottom = '20px !important'
 
@@ -104,6 +105,7 @@ def add_css(all):
         font_size=vars.font_size,
         line_height=vars.line_height,
         font_style=vars.font_style,
+        background=vars.background,
         color=vars.color)
 
     css(('[ng\:cloak], [ng-cloak], [data-ng-cloak], '

@@ -1,25 +1,24 @@
 //      Lux Library - v0.1.0
 
-//      Compiled 2014-10-06.
+//      Compiled 2014-10-09.
 //      Copyright (c) 2014 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
 //      http://quantmind.github.io/lux
 //
 (function (factory) {
-    var root;
+    var root = this;
     if (typeof module === "object" && module.exports)
         root = module.exports;
-    else
-        root = window;
     //
     if (typeof define === 'function' && define.amd) {
         // Support AMD. Register as an anonymous module.
         // NOTE: List all dependencies in AMD style
         define(['angular'], function (angular) {
-            return factory(angular, root);
+            root.lux = factory(angular, root);
+            return root.lux;
         });
-    } else if (typeof module === "object" && module.exports) {
+    } else {
         // No AMD. Set module as a global variable
         // NOTE: Pass dependencies to factory function
         // (assume that angular is also global.)
@@ -48,23 +47,55 @@ function(angular, root) {
         else ready_callbacks.push(callback);
     };
 
+    // Extend lux context with additional data
+    lux.extend = function (context) {
+        lux.context = extend(lux.context, context);
+        return lux;
+    };
+
+    var generateResize = function () {
+        var resizeFunctions = [],
+            callResizeFunctions = function () {
+                resizeFunctions.forEach(function (f) {
+                    f();
+                });
+            };
+        //
+        callResizeFunctions.add = function (f) {
+            resizeFunctions.push(f);
+        };
+        return callResizeFunctions;
+    };
+
     //
     //  Utilities
     //
     var windowResize = lux.windowResize = function (callback, delay) {
         var handle;
-        delay = delay ? +delay : 500;
+        delay = delay ? +delay : 0;
 
         function execute () {
             handle = null;
             callback();
         }
 
-        $(window).resize(function() {
-            if (!handle) {
-                handle = setTimeout(execute, delay);
+        if (window.onresize === null) {
+            window.onresize = generateResize();
+        }
+        if (window.onresize.add) {
+            if (delay) {
+                window.onresize.add(function (e) {
+                    if (!handle)
+                        handle = setTimeout(execute, delay);
+                });
+            } else {
+                window.onresize.add(callback);
             }
-        });
+        }
+    };
+
+    var windowHeight = lux.windowHeight = function () {
+        return window.innerHeight > 0 ? window.innerHeight : screen.availHeight;
     };
 
     var isAbsolute = new RegExp('^([a-z]+://|//)');
@@ -198,7 +229,7 @@ function(angular, root) {
     //
     //  Lux Api service factory for angular
     //  ---------------------------------------
-    angular.module('lux.services', [])
+    angular.module('lux.services', [''])
         .service('$lux', ['$location', '$q', '$http', '$log', '$timeout',
                 function ($location, $q, $http, $log, $timeout) {
             var $lux = this;
@@ -236,93 +267,6 @@ function(angular, root) {
                 else
                     return new Api(context.name, context.url, context.options, $lux);
             };
-            //
-            //  ScrollToHash
-            this.scrollToHash = function (hash, offset) {
-                var e;
-                if (hash.currentTarget) {
-                    e = hash;
-                    hash = hash.currentTarget.hash;
-                }
-                // set the location.hash to the id of
-                // the element you wish to scroll to.
-                var target = document.getElementById(hash.substring(1));
-                if (target) {
-                    $lux.location.hash(hash);
-                    $lux.log.info('Scrolling to target');
-                    scrollTo(target);
-                } else
-                    $lux.log.warning('Cannot scroll, target not found');
-            };
-
-            function scrollTo (target) {
-                var i,
-                    startY = currentYPosition(),
-                    stopY = elmYPosition(target),
-                    distance = stopY > startY ? stopY - startY : startY - stopY;
-                if (distance < 100) {
-                    window.scrollTo(0, stopY);
-                    return;
-                }
-                var speed = Math.round(distance),
-                    step = Math.round(distance / 25),
-                    y = startY;
-                _nextScroll(startY, speed, step, stopY);
-            }
-
-            function _nextScroll (y, speed, stepY, stopY) {
-                var more = true,
-                    y2, d;
-                if (y < stopY) {
-                    y2 = y + stepY;
-                    if (y2 >= stopY) {
-                        more = false;
-                        y2 = stopY;
-                    }
-                    d = y2 - y;
-                } else {
-                    y2 = y - stepY;
-                    if (y2 <= stopY) {
-                        more = false;
-                        y2 = stopY;
-                    }
-                    d = y - y2;
-                }
-                var delay = 1000*d/speed;
-                $timeout(function () {
-                    window.scrollTo(0, y2);
-                    if (more)
-                        _nextScroll(y2, speed, stepY, stopY);
-                }, delay);
-            }
-
-            function currentYPosition() {
-                // Firefox, Chrome, Opera, Safari
-                if (window.pageYOffset) {
-                    return window.pageYOffset;
-                }
-                // Internet Explorer 6 - standards mode
-                if (document.documentElement && document.documentElement.scrollTop) {
-                    return document.documentElement.scrollTop;
-                }
-                // Internet Explorer 6, 7 and 8
-                if (document.body.scrollTop) {
-                    return document.body.scrollTop;
-                }
-                return 0;
-            }
-
-            /* scrollTo -
-            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
-            function elmYPosition(node) {
-                var y = node.offsetTop;
-                while (node.offsetParent && node.offsetParent != document.body) {
-                    node = node.offsetParent;
-                    y += node.offsetTop;
-                }
-                return y;
-            }
-
         }]);
     //
     function wrapPromise (promise) {
@@ -403,14 +347,14 @@ function(angular, root) {
                 request = {
                     deferred: d,
                     //
-                    options: $.extend({'method': method, 'data': data}, opts),
+                    options: extend({'method': method, 'data': data}, opts),
                     //
                     'urlparams': urlparams,
                     //
                     api: this,
                     //
                     error: function (data, status, headers) {
-                        if ($.isString(data)) {
+                        if (isString(data)) {
                             data = {error: true, message: data};
                         }
                         d.reject({
@@ -548,6 +492,97 @@ function(angular, root) {
             }
         }
     });
+
+    angular.module('lux.scroll', [])
+        .service('scroll', ['$location', '$log', '$timeout', function ($location, $log, $timeout) {
+            //
+            //  ScrollToHash
+            this.toHash = function (hash, offset) {
+                var e;
+                if (hash.currentTarget) {
+                    e = hash;
+                    hash = hash.currentTarget.hash;
+                }
+                // set the location.hash to the id of
+                // the element you wish to scroll to.
+                var target = document.getElementById(hash.substring(1));
+                if (target) {
+                    $location.hash(hash);
+                    $log.info('Scrolling to target');
+                    scrollTo(target);
+                } else
+                    $lux.log.warning('Cannot scroll, target not found');
+            };
+
+            function scrollTo (target) {
+                var i,
+                    startY = currentYPosition(),
+                    stopY = elmYPosition(target),
+                    distance = stopY > startY ? stopY - startY : startY - stopY;
+                if (distance < 100) {
+                    window.scrollTo(0, stopY);
+                    return;
+                }
+                var speed = Math.round(distance),
+                    step = Math.round(distance / 25),
+                    y = startY;
+                _nextScroll(startY, speed, step, stopY);
+            }
+
+            function _nextScroll (y, speed, stepY, stopY) {
+                var more = true,
+                    y2, d;
+                if (y < stopY) {
+                    y2 = y + stepY;
+                    if (y2 >= stopY) {
+                        more = false;
+                        y2 = stopY;
+                    }
+                    d = y2 - y;
+                } else {
+                    y2 = y - stepY;
+                    if (y2 <= stopY) {
+                        more = false;
+                        y2 = stopY;
+                    }
+                    d = y - y2;
+                }
+                var delay = 1000*d/speed;
+                $timeout(function () {
+                    window.scrollTo(0, y2);
+                    if (more)
+                        _nextScroll(y2, speed, stepY, stopY);
+                }, delay);
+            }
+
+            function currentYPosition() {
+                // Firefox, Chrome, Opera, Safari
+                if (window.pageYOffset) {
+                    return window.pageYOffset;
+                }
+                // Internet Explorer 6 - standards mode
+                if (document.documentElement && document.documentElement.scrollTop) {
+                    return document.documentElement.scrollTop;
+                }
+                // Internet Explorer 6, 7 and 8
+                if (document.body.scrollTop) {
+                    return document.body.scrollTop;
+                }
+                return 0;
+            }
+
+            /* scrollTo -
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+            function elmYPosition(node) {
+                var y = node.offsetTop;
+                while (node.offsetParent && node.offsetParent != document.body) {
+                    node = node.offsetParent;
+                    y += node.offsetTop;
+                }
+                return y;
+            }
+
+        }]);
     //
     //  Lux Static JSON API
     //  ------------------------
@@ -767,6 +802,132 @@ function(angular, root) {
             };
         });
 
+
+    //
+    //  Lux Navigation module
+    //
+    //  * Requires "angular-strap" for the collapsable directives
+    //
+    //  Include this module to render bootstrap navigation templates
+    //  The navigation should be available as the ``navbar`` object within
+    //  the ``luxContext`` object:
+    //
+    //      luxContext.navbar = {
+    //          items: [{href="/", value="Home"}]
+    //      };
+    //
+    var navBarDefaults = {
+        collapseWidth: 768,
+        theme: 'default',
+        search_text: '',
+        collapse: '',
+        search: false
+    };
+
+    angular.module('lux.nav', ['templates-page', 'lux.services', 'mgcrea.ngStrap.collapse'])
+        .controller('Navigation', ['$scope', '$lux', function ($scope, $lux) {
+            $lux.log.info('Setting up navigation on page');
+            //
+            var navbar = $scope.navbar = angular.extend({}, navBarDefaults, $scope.navbar),
+                maybeCollapse = function () {
+                    var width = window.innerWidth > 0 ? window.innerWidth : screen.width,
+                        c = navbar.collapse;
+                    if (width < navbar.collapseWidth)
+                        navbar.collapse = 'collapse';
+                    else
+                        navbar.collapse = '';
+                    return c !== navbar.collapse;
+                };
+            if (!navbar.themeTop)
+                navbar.themeTop = navbar.theme;
+
+            maybeCollapse();
+            //
+            windowResize(function () {
+                if (maybeCollapse())
+                    $scope.$apply();
+            });
+            //
+            // Search
+            $scope.search = function () {
+                if (scope.search_text) {
+                    window.location.href = '/search?' + $.param({q: $scope.search_text});
+                }
+            };
+
+        }])
+    //
+    //  Directive for the navbar with sidebar (nivebar2 template)
+    .directive('navbar2', function () {
+        return {
+            templateUrl: "lux/page/navbar2.tpl.html",
+            restrict: 'AE'
+        };
+    })
+    //
+    // Directive for the main page in the sidebar2 template
+    .directive('navbar2Page', function () {
+        return {
+            compile: function () {
+                return {
+                    pre: function (scope, element, attrs) {
+                        element.addClass('navbar2-page');
+                        attrs.$set('style', 'min-height: ' + windowHeight() + 'px');
+                    }
+                };
+            }
+        };
+    });
+angular.module('templates-page', ['lux/page/navbar2.tpl.html']);
+
+angular.module("lux/page/navbar2.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("lux/page/navbar2.tpl.html",
+    "<nav class=\"navbar navbar-{{navbar.themeTop}} navbar-fixed-top\" role=\"navigation\" ng-model=\"navbar.collapse\" bs-collapse>\n" +
+    "    <div class=\"navbar-header\">\n" +
+    "        <button type=\"button\" class=\"navbar-toggle\" bs-collapse-toggle>\n" +
+    "            <span class=\"sr-only\">Toggle navigation</span>\n" +
+    "            <span class=\"icon-bar\"></span>\n" +
+    "            <span class=\"icon-bar\"></span>\n" +
+    "            <span class=\"icon-bar\"></span>\n" +
+    "        </button>\n" +
+    "        <a href=\"/\" class=\"navbar-brand\" target=\"_self\">{{navbar.brand}}</a>\n" +
+    "    </div>\n" +
+    "    <ul class=\"nav navbar-top-links navbar-right\">\n" +
+    "        <li ng-repeat=\"item in navbar.items\">\n" +
+    "            <a href=\"{{item.href}}\" target=\"{{item.target}}\" title=\"{{item.title || item.value}}\">\n" +
+    "            <i ng-if=\"item.icon\" class=\"{{item.icon}}\"></i>{{item.value}}</a>\n" +
+    "        </li>\n" +
+    "    </ul>\n" +
+    "    <div class=\"navbar sidebar\" role=\"navigation\">\n" +
+    "        <div class=\"sidebar-collapse\" bs-collapse-target>\n" +
+    "            <ul id=\"side-menu\" class=\"nav nav-side\">\n" +
+    "                <li ng-if=\"navbar.search\" class=\"sidebar-search\">\n" +
+    "                    <div class=\"input-group custom-search-form\">\n" +
+    "                        <input class=\"form-control\" type=\"text\" placeholder=\"Search...\">\n" +
+    "                        <span class=\"input-group-btn\">\n" +
+    "                            <button class=\"btn btn-default\" type=\"button\" ng-click=\"search()\">\n" +
+    "                                <i class=\"fa fa-search\"></i>\n" +
+    "                            </button>\n" +
+    "                        </span>\n" +
+    "                    </div>\n" +
+    "                </li>\n" +
+    "                <li ng-repeat=\"link in navbar.items2\">\n" +
+    "                    <a ng-if=\"!link.links\" href=\"{{link.href}}\">{{link.name || link.href}}</a>\n" +
+    "                    <a ng-if=\"link.links\" href=\"{{link.href}}\" class=\"with-children\">{{link.name}}</a>\n" +
+    "                    <a ng-if=\"link.links\" href=\"#\" class=\"pull-right toggle\" ng-click=\"togglePage($event)\">\n" +
+    "                        <i class=\"fa\" ng-class=\"{'fa-chevron-left': !link.active, 'fa-chevron-down': link.active}\"></i></a>\n" +
+    "                    <ul ng-if=\"link.links\" class=\"nav nav-second-level collapse\" ng-class=\"{in: link.active}\">\n" +
+    "                        <li ng-repeat=\"link in link.links\">\n" +
+    "                            <a ng-if=\"!link.vars\" href=\"{{link.href}}\" ng-click=\"loadPage($event)\">{{link.name}}</a>\n" +
+    "                        </li>\n" +
+    "                    </ul>\n" +
+    "                </li>\n" +
+    "            </ul>\n" +
+    "        </div>\n" +
+    "    </div>\n" +
+    "</nav>");
+}]);
+
     function addPageInfo(page, $scope, dateFilter, $lux) {
         if (page.head && page.head.title) {
             document.title = page.head.title;
@@ -808,13 +969,6 @@ function(angular, root) {
                 page = $scope.pages ? $scope.pages[page] : null;
             $scope.page = addPageInfo(page || {}, $scope, dateFilter, $lux);
             //
-            $scope.windowHeight = function () {
-                return root.window.innerHeight > 0 ? root.window.innerHeight : root.screen.availHeight;
-            };
-
-            $scope.search_text = '';
-            $scope.sidebarCollapse = '';
-            //
             // logout via post method
             $scope.logout = function(e, url) {
                 e.preventDefault();
@@ -823,13 +977,6 @@ function(angular, root) {
                     if (data.redirect)
                         window.location.replace(data.redirect);
                 });
-            };
-            //
-            // Search
-            $scope.search = function () {
-                if ($scope.search_text) {
-                    window.location.href = '/search?' + $.param({q: $scope.search_text});
-                }
             };
 
             // Dismiss a message
@@ -846,20 +993,6 @@ function(angular, root) {
             $scope.loadPage = function ($event) {
                 $scope.page = this.link;
             };
-
-            $scope.collapse = function () {
-                var width = root.window.innerWidth > 0 ? root.window.innerWidth : root.screen.width;
-                if (width < $scope.navbarCollapseWidth)
-                    $scope.sidebarCollapse = 'collapse';
-                else
-                    $scope.sidebarCollapse = '';
-            };
-
-            $scope.collapse();
-            $(root).bind("resize", function () {
-                $scope.collapse();
-                $scope.$apply();
-            });
 
             $scope.activeLink = function (url) {
                 var loc;
@@ -883,8 +1016,8 @@ function(angular, root) {
     //  Configure ui-Router using lux routing objects
     //  Only when context.html5mode is true
     //  Python implementation in the lux.extensions.angular Extension
-    function configRouter(module) {
-        module.config(['$locationProvider', '$stateProvider', '$urlRouterProvider',
+    function configRouter(mod) {
+        mod.config(['$locationProvider', '$stateProvider', '$urlRouterProvider',
             function ($locationProvider, $stateProvider, $urlRouterProvider) {
 
             var hrefs = lux.context.hrefs,
@@ -970,12 +1103,12 @@ function(angular, root) {
                 modules = [];
             modules.push('lux');
             // Add all modules from context
-            forEach(lux.context.ngModules, function (module) {
-                modules.push(module);
+            forEach(lux.context.ngModules, function (mod) {
+                modules.push(mod);
             });
-            angular.module(name, modules);
+            var mod = angular.module(name, modules);
             if (lux.context.html5mode && configRouter)
-                configRouter(module);
+                configRouter(mod);
             angular.bootstrap(document, [name]);
             //
             forEach(ready_callbacks, function (callback) {
@@ -1028,8 +1161,8 @@ angular.module("lux/blog/pagination.tpl.html", []).run(["$templateCache", functi
     //  ===============
     //
     //  Simple blog pagination directives and code highlight with highlight.js
-    angular.module('lux.blog', ['templates-blog', 'lux.services', 'highlight'])
-        .controller('BlogEntry', ['$scope', 'dateFilter', '$lux', function ($scope, dateFilter, $lux) {
+    angular.module('lux.blog', ['templates-blog', 'lux.services', 'highlight', 'lux.scroll'])
+        .controller('BlogEntry', ['$scope', 'dateFilter', '$lux', 'scroll', function ($scope, dateFilter, $lux, scroll) {
             var post = $scope.post;
             if (!post) {
                 $lux.log.error('post not available in $scope, cannot use pagination controller!');
@@ -1057,7 +1190,7 @@ angular.module("lux/blog/pagination.tpl.html", []).run(["$templateCache", functi
                         el = $(el);
                         var href = el.attr('href');
                         if (href.substring(0, 1) === '#' && href.substring(0, 2) !== '##')
-                            el.on('click', $lux.scrollToHash);
+                            el.on('click', scroll.toHash);
                     });
                 }
             };
@@ -1386,6 +1519,8 @@ angular.module("lux/blog/pagination.tpl.html", []).run(["$templateCache", functi
                 }]);
             }
         });
+
+        return lux;
     };
 
 

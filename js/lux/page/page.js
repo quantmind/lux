@@ -39,13 +39,6 @@
                 page = $scope.pages ? $scope.pages[page] : null;
             $scope.page = addPageInfo(page || {}, $scope, dateFilter, $lux);
             //
-            $scope.windowHeight = function () {
-                return root.window.innerHeight > 0 ? root.window.innerHeight : root.screen.availHeight;
-            };
-
-            $scope.search_text = '';
-            $scope.sidebarCollapse = '';
-            //
             // logout via post method
             $scope.logout = function(e, url) {
                 e.preventDefault();
@@ -54,13 +47,6 @@
                     if (data.redirect)
                         window.location.replace(data.redirect);
                 });
-            };
-            //
-            // Search
-            $scope.search = function () {
-                if ($scope.search_text) {
-                    window.location.href = '/search?' + $.param({q: $scope.search_text});
-                }
             };
 
             // Dismiss a message
@@ -77,20 +63,6 @@
             $scope.loadPage = function ($event) {
                 $scope.page = this.link;
             };
-
-            $scope.collapse = function () {
-                var width = root.window.innerWidth > 0 ? root.window.innerWidth : root.screen.width;
-                if (width < $scope.navbarCollapseWidth)
-                    $scope.sidebarCollapse = 'collapse';
-                else
-                    $scope.sidebarCollapse = '';
-            };
-
-            $scope.collapse();
-            $(root).bind("resize", function () {
-                $scope.collapse();
-                $scope.$apply();
-            });
 
             $scope.activeLink = function (url) {
                 var loc;

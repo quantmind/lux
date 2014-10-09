@@ -1,5 +1,7 @@
 
     describe("Test google spreadsheet api", function() {
+
+        function a () {
         var $injector = luxInjector(),
             $httpBackend = $injector.get('$httpBackend'),
             $lux = $injector.get('$lux');
@@ -26,4 +28,5 @@
             //
             var d = api.getMany();
         });
+        }
     });

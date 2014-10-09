@@ -33,7 +33,7 @@ from pulsar.utils.pep import itervalues
 from pulsar.utils.log import lazyproperty
 
 from .commands import ConsoleParser, CommandError
-from .extension import Extension, Parameter
+from .extension import Extension, Parameter, EventHandler
 from .wrappers import wsgi_request, HeadMeta
 from .engines import template_engine
 
@@ -431,7 +431,12 @@ class Application(ConsoleParser, Extension):
         handlers = self.events.get(event)
         if handlers:
             for handler in handlers:
-                handler(self, *args)
+                try:
+                    handler(self, *args)
+                except Exception:
+                    self.logger.critical(
+                        'Unhandled exception while firing event %s', handler,
+                        exc_info=True)
 
     def setup_logger(self, config, opts):
         debug = opts.debug or self.callable._params.get('debug', False)
@@ -451,7 +456,7 @@ class Application(ConsoleParser, Extension):
                 events[name] = []
             handlers = events[name]
             if hasattr(extension, name):
-                handlers.append(getattr(extension, name))
+                handlers.append(EventHandler(extension, name))
 
     def format_date(self, dte):
         return dte.strftime(self.config['DATE_FORMAT'])

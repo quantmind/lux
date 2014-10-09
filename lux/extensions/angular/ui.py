@@ -3,28 +3,59 @@ from lux.extensions.ui.lib import *
 
 def add_css(all):
     css = all.css
-    collapse_width = all.app.config['NAVBAR_COLLAPSE_WIDTH']
+    cfg = all.app.config
+
+    add_navbar(all)
+
+
+def add_navbar(all):
+    '''
+    The navbar2 page layout should use the following template
+
+    <div class="navbar2-wrapper navbar-{{navbar.theme}}" ng-controller="Navigation">
+        <navbar2></navbar2>
+        <div class='navbar2-page'>
+            <div class='row'>
+                ...
+            </div>
+            <div class='row'>
+                ...
+            </div>
+        </div>
+    </div>
+    '''
+    css = all.css
+    cfg = all.app.config
     media = all.media
-    navbar = all.variables.navbar
-    sidebar = all.variables.sidebar
+    vars = all.variables
     #
-    skins = all.variables.skins
-
-    min_width_collapse = px(collapse_width)
-
-    sidebar.width = px(250)
+    # NAVBAR (TOP)
+    navbar = vars.navbar
     navbar.height = px(50)
+    #
+    # SIDEBAR
+    sidebar = vars.sidebar
+    sidebar.default.border = '#E7E7E7'
+    sidebar.width = px(250)
+    min_width_collapse = px(cfg['NAVBAR_COLLAPSE_WIDTH'])
 
-    media(min_width=min_width_collapse).css('.admin-nav',
+    # wraps the navbar2 and the main page
+    css('.navbar2-wrapper',
+        width=pc(100),
+        min_height=pc(100))
+
+    css('.navbar2-page',
+        background=vars.background,
+        padding=spacing(navbar.height+20, 15, 0))
+
+    media(min_width=min_width_collapse).css(
+        '.navbar2-page',
+        margin=spacing(0, 0, 0, sidebar.width)).css(
+        '.navbar2-wrapper.navbar-default .navbar2-page',
+        Border(color=sidebar.default.border, left=px(1)))
+
+    media(min_width=min_width_collapse).css('.sidebar',
         margin_top=navbar.height+1,
         position='absolute',
         width=sidebar.width,
         z_index=1)
-
-    media(max_height=px(600), max_width=px(767)).css('.sidebar-collapse',
-        max_height=px(300),
-        overflow_y='scroll')
-
-    media(max_height=px(400), max_width=px(767)).css('.sidebar-collapse',
-        max_height=px(200),
-        overflow_y='scroll')

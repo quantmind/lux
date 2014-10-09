@@ -53,13 +53,7 @@ class TestSize(test.TestCase):
         self.assertEqual(str(v.size), '5px')
         self.assertEqual(px(v.size), v.size)
 
-
-class TestSpacing(test.TestCase):
-
-    def make(self):
-        return spacing(px(5), px(2), px(10))
-
-    def testSimple(self):
+    def test_px_spacing(self):
         a = spacing(px(5))
         self.assertEqual(a.top, px(5))
         self.assertEqual(a.right, px(5))
@@ -86,7 +80,7 @@ class TestSpacing(test.TestCase):
         self.assertEqual(a.left, px(7))
         self.assertEqual(str(a), '5px 2px 10px 7px')
 
-    def testMixAndMatch(self):
+    def test_simple_spacing(self):
         a = spacing(5)
         self.assertEqual(a.top, px(5))
         self.assertEqual(a.right, px(5))
@@ -115,22 +109,32 @@ class TestSpacing(test.TestCase):
         sp = spacing(5)
         self.assertEqual(sp, '5px')
 
-    def testLazy(self):
+    def test_lazy_spacing(self):
         v = Symbol('bla', spacing(5))
         sp = v*2
         self.assertEqual(str(sp), '10px')
 
-    def testBadVariable(self):
+    def test_spacing_bad_variable(self):
         v = Variables()
         v.bla = spacing(5, 4)
-        self.assertRaises(TypeError, spacing, v.bla, px(3))
+        s = spacing(v.bla, px(3))
+        self.assertRaises(TypeError, str, s)
 
-    def testMultiply(self):
+    def test_spacing_multiply(self):
         a = spacing(5, 10)
         b = 0.5*a
         self.assertEqual(b.left, 0.5*a.left)
         self.assertEqual(b.top, 0.5*a.top)
 
-    def test_auto(self):
+    def test_spacing_auto(self):
         a = spacing(px(60), 'auto')
         self.assertEqual(str(a.left), 'auto')
+
+    def test_spacing_variable(self):
+        v = Variables()
+        v.space = px(250)
+        s = spacing(0, 0, 0, v.space)
+        self.assertIsInstance(s.left, Variable)
+        self.assertEqual(str(s), '0 0 0 250px')
+        v.space = px(200)
+        self.assertEqual(str(s), '0 0 0 200px')

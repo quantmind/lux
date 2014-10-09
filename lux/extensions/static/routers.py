@@ -220,6 +220,8 @@ class HtmlContent(HtmlRouter, DirBuilder):
     directory url.
     '''
     api = None
+    child_url = '<path:slug>'
+    '''The relative url of files within the directory'''
     drafts = 'drafts'
     '''Drafts url. If not provided drafts wont be rendered.
     '''

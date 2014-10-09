@@ -34,8 +34,7 @@ class Google(OAuth2):
         if key:
             sensor = 'true' if self.config.get('map_sensor') else 'false'
             url = google_map_url % (key, sensor)
-            doc.head.scripts.known_libraries['google-maps'] = {'url': url,
-                                                               'minify': False}
+            doc.head.scripts.paths['google-maps'] = {'url': url}
             doc.head.embedded_js.append(run_google_maps_callbacks)
 
 

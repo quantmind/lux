@@ -77,7 +77,7 @@ to and from HSL_ and HSV representations.
         r = tuple((2*v1-v2 for v1, v2 in zip(self, other)))
         return self.__class__(*r)
 
-    def __unicode__(self):
+    def __repr__(self):
         '''Convert to a css string representation.'''
         if self.alpha < 1.0:
             return 'rgba(' + ', '.join((str(v) for v in self)) + ')'

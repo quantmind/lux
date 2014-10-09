@@ -1,17 +1,16 @@
 (function (factory) {
-    var root;
+    var root = this;
     if (typeof module === "object" && module.exports)
         root = module.exports;
-    else
-        root = window;
     //
     if (typeof define === 'function' && define.amd) {
         // Support AMD. Register as an anonymous module.
         // NOTE: List all dependencies in AMD style
         define(['angular'], function (angular) {
-            return factory(angular, root);
+            root.lux = factory(angular, root);
+            return root.lux;
         });
-    } else if (typeof module === "object" && module.exports) {
+    } else {
         // No AMD. Set module as a global variable
         // NOTE: Pass dependencies to factory function
         // (assume that angular is also global.)
@@ -38,4 +37,10 @@ function(angular, root) {
     lux.add_ready_callback = function (callback) {
         if (ready_callbacks === true) callback();
         else ready_callbacks.push(callback);
+    };
+
+    // Extend lux context with additional data
+    lux.extend = function (context) {
+        lux.context = extend(lux.context, context);
+        return lux;
     };

@@ -238,3 +238,18 @@ class Extension(ExtensionType('ExtBase', (object,), {'abstract': True})):
 
     def __str__(self):
         return self.__repr__()
+
+
+class EventHandler:
+    __slots__ = ('extension', 'name')
+
+    def __init__(self, extension, name):
+        self.extension = extension
+        self.name = name
+
+    def __repr__(self):
+        return '%s.%s' % (self.extension, self.name)
+    __str__ = __repr__
+
+    def __call__(self, *args):
+        return getattr(self.extension, self.name)(*args)

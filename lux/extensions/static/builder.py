@@ -302,8 +302,6 @@ class FileBuilder(Builder):
 class DirBuilder(Builder):
     '''A builder for a directory of static content
     '''
-    child_url = '<slug>'
-    '''The relative url of files withing the directory'''
     src = None
 
     def valid_route(self, route, dir):

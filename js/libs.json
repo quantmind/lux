@@ -6,6 +6,10 @@
         "blog": {
             "src": "js/lux/blog/*.tpl.html",
             "dest": "js/lux/blog/blog-template.js"
+        },
+        "page": {
+            "src": "js/lux/page/*.tpl.html",
+            "dest": "js/lux/page/page-template.js"
         }
     },
     "lux": {
@@ -15,8 +19,8 @@
         "src": ["js/lux/open.js",
                 "js/lux/utils.js",
                 "js/lux/class.js",
-                "js/lux/services/api.js",
-                "js/lux/services/apis/*.js",
+                "js/lux/api.js",
+                "js/lux/services/*.js",
                 "js/lux/page/*.js",
                 "js/lux/bootstrap.js",
                 "js/lux/blog/*.js",
@@ -32,15 +36,5 @@
                 "js/lorem/core.js",
                 "js/lorem/close.js"],
         "dest": "lux/media/lux/lorem.js"
-    },
-    "tests": {
-        "src": ["js/tests/open.js",
-                "js/tests/boot.js",
-                "js/tests/class.js",
-                "js/tests/app.js",
-                "js/tests/google.js",
-                "js/tests/close.js"],
-        "dest": "tests/js/tests.js",
-        "minify": false
     }
 }

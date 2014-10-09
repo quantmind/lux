@@ -2,8 +2,8 @@
     //  ===============
     //
     //  Simple blog pagination directives and code highlight with highlight.js
-    angular.module('lux.blog', ['templates-blog', 'lux.services', 'highlight'])
-        .controller('BlogEntry', ['$scope', 'dateFilter', '$lux', function ($scope, dateFilter, $lux) {
+    angular.module('lux.blog', ['templates-blog', 'lux.services', 'highlight', 'lux.scroll'])
+        .controller('BlogEntry', ['$scope', 'dateFilter', '$lux', 'scroll', function ($scope, dateFilter, $lux, scroll) {
             var post = $scope.post;
             if (!post) {
                 $lux.log.error('post not available in $scope, cannot use pagination controller!');
@@ -31,7 +31,7 @@
                         el = $(el);
                         var href = el.attr('href');
                         if (href.substring(0, 1) === '#' && href.substring(0, 2) !== '##')
-                            el.on('click', $lux.scrollToHash);
+                            el.on('click', scroll.toHash);
                     });
                 }
             };

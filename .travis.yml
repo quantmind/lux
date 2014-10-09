@@ -3,21 +3,30 @@ language: python
 python:
   - "2.7"
   - "3.3"
+  - "3.4"
   - "pypy"
+
+before_install:
+  - npm install -g grunt-cli
 
 install:
   - pip install -r requirements_dev.txt --use-mirrors
   - git clone https://github.com/quantmind/pulsar.git
   - cd pulsar
+  - git checkout -b dev origin/dev
   - python setup.py install
   - cd ..
   - sudo rm -rf pulsar
   - python setup.py install
   - sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm
+
+before_script: grunt build
+
 script:
   - pep8 lux
   - sudo rm -rf lux
-  - python -m covrun
+  - python -m runtests
+  - grunt jasmine
 
 notifications:
   email: false
@@ -26,3 +35,4 @@ notifications:
 branches:
   only:
     - master
+    - dev

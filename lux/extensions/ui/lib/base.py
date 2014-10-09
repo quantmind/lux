@@ -56,7 +56,6 @@ from datetime import datetime
 from pulsar import asyncio
 from pulsar.utils.structures import OrderedDict, mapping_iterator
 from pulsar.utils.pep import itervalues, iteritems, ispy3k
-from pulsar.utils.html import UnicodeMixin
 from pulsar.apps.http import HttpClient
 from pulsar.apps import wsgi
 
@@ -123,9 +122,12 @@ division = lambda a, b: a/b
 floordivision = lambda a, b: a//b
 
 
-class Symbolic(UnicodeMixin):
+class Symbolic(object):
     '''Base class for :class:`Variable` and :class:`Unit`.
     '''
+    def __str__(self):
+        return self.__repr__()
+
     def __add__(self, other):
         return self._op(other, addition)
 
@@ -169,7 +171,7 @@ class Variable(Symbolic):
         '''The current value of this :class:`Variable`.'''
         raise NotImplementedError
 
-    def __unicode__(self):
+    def __repr__(self):
         v = self.value()
         return str(v) if v is not None else ''
 
@@ -252,7 +254,7 @@ class Size(Unit):
             self.unit = unit or 'px'
             self._value = smart_round(value, 0 if self.unit == 'px' else 4)
 
-    def __unicode__(self):
+    def __repr__(self):
         if self._value and self.unit == self.unit:
             return '%s%s' % (self._value, self.unit)
         else:
@@ -308,17 +310,20 @@ class Spacing(Unit):
     the form (top, right, bottom, left).'''
     def __init__(self, *top_right_bottom_left):
         if not top_right_bottom_left:
-            top_right_bottom_left = (px(0),)
-        self._value = tuple((size(v) for v in top_right_bottom_left))
+            raise TypeError('Spacing() takes at least 1 argument (0 given)')
+        elif len(top_right_bottom_left) > 4:
+            raise TypeError('Spacing() takes at most 4 argument (%d given)'
+                            % len(top_right_bottom_left))
+        self._value = top_right_bottom_left
 
-    def __unicode__(self):
-        return ' '.join((str(b) for b in self._value))
+    def __repr__(self):
+        return ' '.join((str(size(b)) for b in self._value))
 
     @property
     def unit(self):
-        unit = self._value[0].unit
+        unit = size(self.top).unit
         for v in self._value[1:]:
-            if v.unit != unit:
+            if size(v).unit != unit:
                 return nan
         return unit
 
@@ -414,24 +419,19 @@ def size(s, unit=None):
 
 def spacing(v, *vals):
     '''Create a :class:`Spacing` element.'''
-    if isinstance(v, Spacing) and not vals:
-        return v
-    elif len(vals) < 4:
-        return Spacing(v, *vals)
-    else:
-        raise TypeError('spacing() takes at most 4 arguments (%s given)' %
-                        (len(vals) + 1))
+    return v if isinstance(v, Spacing) and not vals else Spacing(v, *vals)
 
 
-class CssBase(UnicodeMixin):
+class CssBase(object):
     _spacings = ('top', 'right', 'bottom', 'left')
 
     @property
     def code(self):
         return '%s-%s' % (self.__class__.__name__, id(self))
 
-    def __unicode__(self):
+    def __repr__(self):
         return self.code
+    __str__ = __repr__
 
     def set_parent(self, parent):
         raise NotImplementedError

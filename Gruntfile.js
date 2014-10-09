@@ -7,10 +7,29 @@ module.exports = function (grunt) {
         // All libraries
         libs = grunt.file.readJSON('js/libs.json'),
         allHtml2js = {},
-        allTasks = ['concat', 'jshint', 'uglify'],
+        buildTasks = ['gruntfile', 'concat', 'jshint', 'uglify'],
         cfg = {
             pkg: grunt.file.readJSON('package.json'),
-            concat: libs
+            concat: libs,
+            jasmine: {
+                src : 'lux/media/lux/lux.min.js',
+                options : {
+                    specs : 'js/tests/*.js',
+                    template: require('grunt-template-jasmine-requirejs'),
+                    templateOptions: {
+                        requireConfig: {
+                            paths: {
+                                angular: "node_modules/angular/lib/angular.min"
+                            },
+                            shim: {
+                                angular: {
+                                    exports: "angular"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         };
     //
     // for_each function
@@ -28,7 +47,7 @@ module.exports = function (grunt) {
         delete libs.html2js;
         grunt.log.debug('Adding html2js task');
         grunt.loadNpmTasks('grunt-html2js');
-        allTasks.splice(0, 0, 'html2js');
+        buildTasks.splice(0, 0, 'html2js');
     }
     //
     // Preprocess libs
@@ -110,13 +129,15 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-contrib-uglify');
     grunt.loadNpmTasks('grunt-contrib-jshint');
     grunt.loadNpmTasks('grunt-contrib-concat');
+    grunt.loadNpmTasks('grunt-contrib-jasmine');
     //grunt.loadNpmTasks('grunt-contrib-nodeunit');
     //grunt.loadNpmTasks('grunt-contrib-watch');
     //grunt.loadNpmTasks('grunt-docco');
     //
     grunt.registerTask('gruntfile', 'jshint Gruntfile.js',
             ['jshint:gruntfile']);
-    grunt.registerTask('all', 'Compile and lint all Lux libraries', allTasks);
+    grunt.registerTask('build', 'Compile and lint all Lux libraries', buildTasks);
+    grunt.registerTask('all', 'Build and test', ['build', 'jasmine']);
     grunt.registerTask('default', ['all']);
     //
     for_each(libs, function (name) {

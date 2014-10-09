@@ -1,3 +1,5 @@
-pulsar
+coverage
+pep8
 python-dateutil
 oauthlibs
+unidecode

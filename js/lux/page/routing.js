@@ -4,8 +4,8 @@
     //  Configure ui-Router using lux routing objects
     //  Only when context.html5mode is true
     //  Python implementation in the lux.extensions.angular Extension
-    function configRouter(module) {
-        module.config(['$locationProvider', '$stateProvider', '$urlRouterProvider',
+    function configRouter(mod) {
+        mod.config(['$locationProvider', '$stateProvider', '$urlRouterProvider',
             function ($locationProvider, $stateProvider, $urlRouterProvider) {
 
             var hrefs = lux.context.hrefs,

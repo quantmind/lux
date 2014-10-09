@@ -1,15 +1,9 @@
 '''
-HTML5 Router and utilities for managing angular-python interaction.
-One of the most important use case of AngularJS_ is to develop
-single page applications (SPA).
-
-By setting the :setting:`HTML5_NAVIGATION` to ``True``, the angular
-``ui.router`` is enabled.
+This extension is required when using ``lux`` javascript module.
 '''
 import lux
 from lux import Parameter
 
-from pulsar import Http404
 from pulsar.apps.wsgi import MediaMixin, Html, route
 
 from .ui import add_css
@@ -25,8 +19,9 @@ class Extension(lux.Extension):
     ]
 
     def jscontext(self, request, context):
-        width = request.config['NAVBAR_COLLAPSE_WIDTH']
-        context['navbarCollapseWidth'] = width
+        cfg = request.config
+        navbar = context.get('navbar') or {}
+        navbar['collapseWidth'] = cfg['NAVBAR_COLLAPSE_WIDTH']
 
 
 class Router(lux.Router, MediaMixin):
