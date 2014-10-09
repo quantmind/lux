@@ -6,15 +6,16 @@ from distutils.core import setup
 from distutils.command.install_data import install_data
 from distutils.command.install import INSTALL_SCHEMES
 
-root_dir = os.path.dirname(os.path.abspath(__file__))
-
 def read(fname):
     with open(os.path.join(root_dir, fname)) as f:
         return f.read()
 
 
+os.environ['lux_setup_running'] = 'yes'
+package_name = 'lux'
+root_dir = os.path.dirname(os.path.abspath(__file__))
+package_dir = os.path.join(root_dir, package_name)
 pkg = json.loads(read('package.json'))
-package_dir = os.path.join(root_dir, pkg['name'])
 
 
 def requirements():
@@ -39,9 +40,6 @@ class osx_install_data(install_data):
 for scheme in INSTALL_SCHEMES.values():
     scheme['data'] = scheme['purelib']
 
-
-def read(fname):
-    return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 def fullsplit(path, result=None):
     """
@@ -85,7 +83,18 @@ for dirpath, _, filenames in os.walk(package_dir):
 def run(argv=None):
     if argv:
         sys.argv = list(argv)
-    setup(name=pkg['name'],
+    argv = sys.argv
+    command = argv[1] if len(argv) > 1 else None
+    params = {'cmdclass': {}}
+    if command != 'sdist':
+        params['install_requires'] = requirements()
+    if sys.platform == "darwin":
+        params['cmdclass']['install_data'] = osx_install_data
+    else:
+        params['cmdclass']['install_data'] = install_data
+
+
+    setup(name=package_name,
           version=pkg['version'],
           author=pkg['author']['name'],
           author_email=pkg['author']['email'],
@@ -96,7 +105,6 @@ def run(argv=None):
           packages=packages,
           data_files=data_files,
           package_data={pkg['name']: data_files},
-          install_requires=requirements(),
           scripts=['bin/luxmake.py'],
           classifiers=['Development Status :: 4 - Beta',
                        'Environment :: Web Environment',
@@ -108,8 +116,8 @@ def run(argv=None):
                        'Programming Language :: Python :: 2.7',
                        'Programming Language :: Python :: 3.3',
                        'Programming Language :: Python :: 3.4',
-                       'Topic :: Utilities']
-          )
+                       'Topic :: Utilities'],
+          **params)
 
 
 if __name__ == '__main__':
