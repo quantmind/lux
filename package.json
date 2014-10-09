@@ -4,9 +4,6 @@
             "type": "BSD"
         }
     ],
-    "dependencies": {
-        "angular": ""
-    },
     "homepage": "http://quantmind.github.io/lux",
     "name": "lux",
     "contributors": [],
@@ -31,8 +28,7 @@
         "benchmark": "",
         "grunt-contrib-jshint": "",
         "grunt-html2js": "",
-        "grunt-contrib-jasmine": "",
-        "grunt-template-jasmine-requirejs": ""
+        "grunt-contrib-jasmine": ""
     },
     "scripts": {
         "test": "grunt jasmine"

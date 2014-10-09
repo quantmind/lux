@@ -12,21 +12,13 @@ module.exports = function (grunt) {
             pkg: grunt.file.readJSON('package.json'),
             concat: libs,
             jasmine: {
-                src : 'lux/media/lux/lux.min.js',
+                // need to set it even if we don't use it
+                src : [],
                 options : {
                     specs : 'js/tests/*.js',
-                    template: require('grunt-template-jasmine-requirejs'),
+                    template: 'js/tests/test.tpl.html',
                     templateOptions: {
-                        requireConfig: {
-                            paths: {
-                                angular: "node_modules/angular/lib/angular.min"
-                            },
-                            shim: {
-                                angular: {
-                                    exports: "angular"
-                                }
-                            }
-                        }
+                        deps: ['lux/media/lux/lux.min.js', 'angular-strap', 'angular-mocks']
                     }
                 }
             }

@@ -15,7 +15,7 @@
     //
     //  Lux Api service factory for angular
     //  ---------------------------------------
-    angular.module('lux.services', [''])
+    angular.module('lux.services', [])
         .service('$lux', ['$location', '$q', '$http', '$log', '$timeout',
                 function ($location, $q, $http, $log, $timeout) {
             var $lux = this;
