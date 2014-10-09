@@ -5,10 +5,6 @@ include runtests.py
 include Gruntfile.js
 include package.json
 include requirements.txt
-include lux/libs.json
-recursive-include js *.js
-recursive-include examples *.py
-recursive-include examples *.js
 recursive-include tests *.py
 recursive-include lux/media *
 include docs/make.bat

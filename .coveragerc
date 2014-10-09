@@ -1,4 +1,4 @@
 [run]
 source =
     lux
-    examples/luxweb
+    tests
