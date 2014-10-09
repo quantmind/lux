@@ -19,14 +19,13 @@ install:
   - sudo rm -rf pulsar
   - python setup.py install
   - sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm
-
-before_script: grunt build
+  - npm install
 
 script:
+  - if [[ $TRAVIS_PYTHON_VERSION == '3.4' ]]; then grunt jasmine; fi
   - pep8 lux
   - sudo rm -rf lux
   - python -m runtests
-  - if [[ $TRAVIS_PYTHON_VERSION == '3.4' ]]; then grunt jasmine; fi
 
 notifications:
   email: false
