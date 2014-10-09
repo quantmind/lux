@@ -1,5 +1,6 @@
 coverage
 pep8
+markdown
 python-dateutil
 requests-oauthlib
 unidecode

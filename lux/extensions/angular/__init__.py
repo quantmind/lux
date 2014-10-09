@@ -156,9 +156,9 @@ def add_to_sitemap(sitemap, app, router, parent=None):
     if not isinstance(router, Router):
         return
     href = router_href(router.full_route)
-    #site_url = app.config['SITE_URL']
-    #if site_url:
-    #    href = site_url + href if href != '/' else site_url
+    # site_url = app.config['SITE_URL']
+    # if site_url:
+    #     href = site_url + href if href != '/' else site_url
     #
     # Target
     target = router.target

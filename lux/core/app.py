@@ -189,9 +189,10 @@ class Application(ConsoleParser, Extension):
                   'List of links to include in the html head tag.'),
         Parameter('SCRIPTS', [],
                   'List of scripts to load in the head tag'),
-        Parameter('REQUIREJS_CONFIG',
-                  'http://quantmind.github.io/require-config-js/require.config',
-                  'Configuration url for Requirejs'),
+        Parameter(
+            'REQUIREJS_CONFIG',
+            'http://quantmind.github.io/require-config-js/require.config',
+            'Configuration url for Requirejs'),
         Parameter('REQUIREJS_URL',
                   "//cdnjs.cloudflare.com/ajax/libs/require.js/2.1.14/require",
                   'Default url for requirejs'),
@@ -302,7 +303,7 @@ class Application(ConsoleParser, Extension):
             title = handler.parameters.get('title')
         cfg = self.config
         site_url = cfg['SITE_URL']
-        media_path=cfg['MEDIA_URL']
+        media_path = cfg['MEDIA_URL']
         if site_url:
             media_path = site_url + media_path
         doc = HtmlDocument(title=title or cfg['HTML_TITLE'],

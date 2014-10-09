@@ -33,22 +33,26 @@ def add_css(all):
         min_height=px(568)),
 
     # admin page on larger devices
-    media(min_width=min_width_collapse).css('.admin-page',
+    media(min_width=min_width_collapse).css(
+        '.admin-page',
         Border('solid', admin.sidebar.default.border, left=px(1)),
         margin=spacing(admin.nav_height+1, 0, 0, admin.size),
         min_height=px(1300))
 
-    media(min_width=min_width_collapse).css('.admin-nav',
+    media(min_width=min_width_collapse).css(
+        '.admin-nav',
         margin_top=admin.nav_height+1,
         position='absolute',
         width=admin.size,
         z_index=1)
 
-    media(max_height=px(600), max_width=px(767)).css('.sidebar-collapse',
+    media(max_height=px(600), max_width=px(767)).css(
+        '.sidebar-collapse',
         max_height=px(300),
         overflow_y='scroll')
 
-    media(max_height=px(400), max_width=px(767)).css('.sidebar-collapse',
+    media(max_height=px(400), max_width=px(767)).css(
+        '.sidebar-collapse',
         max_height=px(200),
         overflow_y='scroll')
 

@@ -23,7 +23,7 @@ install:
 
 script:
   - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then grunt jasmine; fi
-  - pep8 lux
+  # - pep8 lux
   - sudo rm -rf lux
   - python -m runtests
 

@@ -43,6 +43,7 @@ __all__ = ['Html', 'HtmlRouter',
 
 Html = wsgi.Html
 
+
 def frozen_set(*elems):
     def _():
         for elem in elems:

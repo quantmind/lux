@@ -109,13 +109,12 @@ class BaseReader(object):
         '''Default read method
         '''
         ct, encoding = mimetypes.guess_type(source_path)
+        with open(source_path, 'rb') as f:
+            body = f.read()
         if is_text(ct):
-            with open(source_path, 'r', encoding=encoding or 'utf-8') as f:
-                body = f.read()
+            body = body.decode(encoding=encoding or 'utf-8')
         else:
             ct = ct or 'application/octet-stream'
-            with open(source_path, 'rb') as f:
-                body = f.read()
             if self.ext and not name.endswith('.%s' % self.ext):
                 name = '%s.%s' % (name, self.ext)
         metadata = {'content_type': ct}
@@ -138,9 +137,10 @@ class MarkdownReader(BaseReader):
     def read(self, source_path, name, **params):
         """Parse content and metadata of markdown files"""
         self._md = md = Markdown(extensions=self.extensions)
-        with open(source_path, encoding='utf-8') as text:
-            raw = '%s\n\n%s' % (text.read(), self.links())
-            body = md.convert(raw)
+        with open(source_path, 'rb') as text:
+            raw = text.read().decode('utf-8')
+        raw = '%s\n\n%s' % (raw, self.links())
+        body = md.convert(raw)
         meta = self._md.Meta
         meta['content_type'] = 'text/html'
         return self.process(body, meta, source_path, name, **params)
