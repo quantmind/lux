@@ -226,24 +226,24 @@ class HtmlContent(HtmlRouter, DirBuilder):
     '''Drafts url. If not provided drafts wont be rendered.
     '''
     index_template = None
+    meta_children = None
     drafts_template = 'blogindex.html'
     '''The children render the children routes of this router
     '''
     '''Context for the body tag'''
     priority = 1
 
-    def __init__(self, route, *routes, dir=None, name=None,
-                 meta_children=None, **params):
-        route = self.valid_route(route, dir)
-        name = slugify(name or route or self.dir)
+    def __init__(self, route, *routes, **params):
+        route = self.valid_route(route, params.pop('dir', None))
+        name = slugify(params.pop('name', None) or route or self.dir)
         super(HtmlContent, self).__init__(route, *routes, name=name, **params)
         if self.drafts:
             self.add_child(Drafts(self.drafts,
                                   name=self.childname('drafts'),
                                   index_template=self.drafts_template))
         meta = copy(self.meta) if self.meta else {}
-        if meta_children:
-            meta.update(meta_children)
+        if self.meta_children:
+            meta.update(self.meta_children)
         #
         file = HtmlFile(self.child_url, dir=self.dir,
                         name=self.childname('view'),
