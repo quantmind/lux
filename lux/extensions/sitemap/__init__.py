@@ -1,3 +1,9 @@
+'''
+Lux comes with a high-level sitemap-generating framework that makes creating
+sitemap_ XML files easy.
+
+.. _sitemap: http://www.sitemaps.org/
+'''
 from datetime import date
 
 from pulsar.apps.wsgi import Router
