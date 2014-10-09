@@ -36,6 +36,8 @@ class Sitemap(Router):
     response_content_types = ('application/xml', 'text/xml')
 
     def items(self, request):
+        '''Generetors of items to include in the sitemap
+        '''
         return ()
 
     def get(self, request):
