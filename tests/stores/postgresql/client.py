@@ -2,7 +2,6 @@
 from pulsar.apps.data import create_store
 
 from lux.utils import test
-from lux.extensions.sessions.models import User
 
 from example.luxweb import settings
 
