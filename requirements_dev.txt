@@ -1,5 +1,5 @@
 coverage
 pep8
 python-dateutil
-oauthlibs
+requests-oauthlib
 unidecode
