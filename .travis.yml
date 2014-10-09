@@ -7,7 +7,7 @@ python:
   - "pypy"
 
 before_install:
-  - npm install -g grunt-cli
+  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then npm install -g grunt-cli; fi
 
 install:
   - pip install -r requirements_dev.txt --use-mirrors
@@ -19,10 +19,10 @@ install:
   - sudo rm -rf pulsar
   - python setup.py install
   - sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm
-  - npm install
+  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then npm install; fi
 
 script:
-  - if [[ $TRAVIS_PYTHON_VERSION == '3.4' ]]; then grunt jasmine; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then grunt jasmine; fi
   - pep8 lux
   - sudo rm -rf lux
   - python -m runtests

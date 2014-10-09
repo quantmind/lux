@@ -10,9 +10,9 @@ class Extension(lux.Extension):
         content = HtmlContent('/',
                               Sitemap('/sitemap.xml'),
                               meta={'template': 'main.html'},
-                              dir='contents/site',
+                              dir='luxsite/contents/site',
                               drafts=None)
         #docs = SphinxDocs('/', dir='docs',
         #                  meta={'template': 'doc.html'})
         #return [all, docs]
-        return [all]
+        return [content]

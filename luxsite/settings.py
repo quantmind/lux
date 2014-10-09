@@ -6,10 +6,10 @@ HTML_TITLE = 'Lux - web toolkit for python and angularJS'
 SITE_URL = 'http://quantmind.github.io/lux'
 EXTENSIONS = ('lux.extensions.base',
               'lux.extensions.ui',
-              'lux.extensions.html5',
+              'lux.extensions.angular',
               'lux.extensions.static')
 
-CONTEXT_LOCATION = 'contents/context'
+CONTEXT_LOCATION = 'luxsite/contents/context'
 STATIC_LOCATION = '../docs/luxsite'
 MD_EXTENSIONS = ['extra', 'meta', 'toc']
 
