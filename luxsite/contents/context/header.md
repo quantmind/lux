@@ -16,3 +16,6 @@ context_header: index
     <i class="fa fa-download fa-lg"></i> Download</a>
 </div>
 <p class="lead">Version $site_lux_version</p>
+<a href="https://travis-ci.org/quantmind/lux" title="Build Status">
+<img src="https://travis-ci.org/quantmind/lux.svg?branch=master" alt="Build Status">
+</a>

@@ -5,7 +5,7 @@ include runtests.py
 include Gruntfile.js
 include package.json
 include requirements.txt
-recursive-include tests *.py
+recursive-include tests *.py *.md *.html
 recursive-include lux/media *
 include docs/make.bat
 include docs/Makefile
