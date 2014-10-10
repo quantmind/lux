@@ -17,7 +17,8 @@
         theme: 'default',
         search_text: '',
         collapse: '',
-        search: false
+        search: false,
+        url: lux.context.url
     };
 
     angular.module('lux.nav', ['templates-nav', 'lux.services', 'mgcrea.ngStrap.collapse'])
@@ -34,6 +35,9 @@
                         navbar.collapse = '';
                     return c !== navbar.collapse;
                 };
+            // Fix defaults
+            if (!navbar.url)
+                navbar.url = lux.context.url || '/';
             if (!navbar.themeTop)
                 navbar.themeTop = navbar.theme;
 
@@ -52,6 +56,14 @@
             };
 
         }])
+    //
+    //  Directive for the navbar
+    .directive('navbar', function () {
+        return {
+            templateUrl: "lux/nav/navbar.tpl.html",
+            restrict: 'AE'
+        };
+    })
     //
     //  Directive for the navbar with sidebar (nivebar2 template)
     .directive('navbar2', function () {

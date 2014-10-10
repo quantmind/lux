@@ -16,7 +16,6 @@ CONTEXT_LOCATION = 'luxsite/context'
 STATIC_LOCATION = '../docs/luxsite'
 MD_EXTENSIONS = ['extra', 'meta', 'toc']
 
-REQUIREJS = ['lux']
 FAVICON = 'luxsite/favicon.ico'
 HTML_LINKS = ({'href': 'luxsite/lux-114.png',
                'sizes': '57x57',
@@ -41,7 +40,7 @@ class Extension(lux.Extension):
                               meta={'template': 'main.html'},
                               dir='luxsite/site',
                               drafts=None)
-        docs = SphinxDocs('/', dir='luxsite/docs',
+        docs = SphinxDocs('/docs/', dir='luxsite/docs',
                           meta={'template': 'doc.html'})
         #return [all, docs]
         return [content, docs]

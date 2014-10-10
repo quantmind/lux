@@ -1,0 +1,33 @@
+<nav id='top' class="navbar-static-top navbar-{{navbar.themeTop}}" ng-class="{'navbar-fixed-top':navbar.fixed}" role="navigation"
+ng-model="navbar.collapse" ng-controller="Navigation" bs-collapse>
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" bs-collapse-toggle>
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a ng-if="navbar.brandImage" href="{{navbar.url}}" class="navbar-brand" target="_self">
+                <img ng-src="{{navbar.brandImage}}" alt="{{navbar.brand || 'brand'}}">
+            </a>
+            <a ng-if="!navbar.brandImage && navbar.brand" href="{{navbar.url}}" class="navbar-brand" target="_self">
+                {{navbar.brand}}
+            </a>
+        </div>
+        <div class="navbar-collapse" bs-collapse-target>
+            <ul class="nav navbar-nav">
+                <li ng-repeat="link in navbar.items" ng-class="{active:link.active}">
+                    <a href="{{link.href}}" title="{{link.title || link.name}}">
+                    <i ng-if="link.icon" class="{{link.icon}}"></i> {{link.name}}</a>
+                </li>
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+                <li ng-repeat="link in navbar.itemsRight" ng-class="{active:link.active}">
+                    <a href="{{link.href}}" title="{{link.title || link.name}}">
+                    <i ng-if="link.icon" class="{{link.icon}}"></i> {{link.name}}</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>

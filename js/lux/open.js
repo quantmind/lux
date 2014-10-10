@@ -27,11 +27,15 @@ function(angular, root) {
         angular_bootstrapped = false,
         isArray = angular.isArray,
         isString = angular.isString,
-        $ = angular.element;
+        $ = angular.element,
+        defaults = {
+            url: '',    // base url for the web site
+            media: ''   // default url for media content
+        };
     //
     lux.$ = $;
     lux.forEach = angular.forEach;
-    lux.context = root.luxContext || {};
+    lux.context = extend({}, defaults, root.luxContext);
 
     // Callbacks run after angular has finished bootstrapping
     lux.add_ready_callback = function (callback) {
@@ -43,4 +47,14 @@ function(angular, root) {
     lux.extend = function (context) {
         lux.context = extend(lux.context, context);
         return lux;
+    };
+
+    lux.media = function (url) {
+        var base = this.context.media;
+        while (url.substring(0, 1) === '/')
+            url = url.substring(1);
+        if (url)
+            url = '/' + url;
+        base = base.substring(base.length) === '/' ? base.substring(0, base.length-1): base;
+        return base + url;
     };

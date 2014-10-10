@@ -212,9 +212,9 @@ class Builder(BaseBuilder):
 
     def write(self, request, location, response, content):
         app = request.app
-        url = request.uri
+        path = self.relative_path(request)
+        url = app.site_url(normpath(path))
         if response or content:
-            path = self.relative_path(request)
             if not path or path.endswith('/'):
                 path = '%sindex' % path if path else '/index'
             if response:

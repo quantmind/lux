@@ -36,6 +36,8 @@ class SphinxMixin(object):
         '''
         if self.built is not None:
             return self.built
+        if location is None:
+            location = os.path.abspath(app.config['STATIC_LOCATION'])
         data = getattr(self.html_router, '_doc_build', None)
         if data is None:
             data = self.build_sphinx(app, location)
@@ -59,8 +61,6 @@ class SphinxMixin(object):
     def build_sphinx(self, app, location):
         if not LuxSphinx:
             raise ImproperlyConfigured('Sphinx not installed')
-        if location is None:
-            location = os.path.abspath(app.config['STATIC_LOCATION'])
         path = self.html_router.path()[1:]
         if path:
             location = os.path.join(location, path)

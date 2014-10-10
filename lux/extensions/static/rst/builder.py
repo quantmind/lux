@@ -27,6 +27,11 @@ class LuxSphinx(Sphinx):
         self.builder = LuxBuilder(self)
         self.emit('builder-inited')
 
+    def setup_extension(self, extension):
+        if extension == 'sphinx.ext.viewcode':
+            extension = 'lux.extensions.static.rst.viewcode'
+        return super(LuxSphinx, self).setup_extension(extension)
+
 
 class LuxBuilder(StandaloneHTMLBuilder):
     name = 'lux'

@@ -1,8 +1,21 @@
+<div id="page" ng-cloak>
 $html_main
-$html_navbar_empty
-$html_footer
+<navbar></navbar>
+</div>
 <script>
-require(['lux'], function (lux) {
-    lux.bootstrap('luxsite');
+require(rcfg.min(['lux/lux', 'angular-ui-router', 'angular-strap']), function (lux) {
+    var url = lux.context.url;
+    lux.extend({
+        navbar: {
+            fixed: true,
+            brandImage: lux.media('luxsite/lux-banner.png'),
+            theme: 'inverse',
+            itemsRight: [
+                {href: url+'/docs/', name: 'docs', icon: 'fa fa-book fa-lg'},
+                {href: 'https://github.com/quantmind/lux', title: 'source code', icon: 'fa fa-github fa-lg'}
+                ]
+        }
+    });
+    lux.bootstrap('luxsite', ['lux.nav']);
 });
 </script>

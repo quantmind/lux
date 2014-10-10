@@ -35,11 +35,15 @@ function(angular, root) {
         angular_bootstrapped = false,
         isArray = angular.isArray,
         isString = angular.isString,
-        $ = angular.element;
+        $ = angular.element,
+        defaults = {
+            url: '',    // base url for the web site
+            media: ''   // default url for media content
+        };
     //
     lux.$ = $;
     lux.forEach = angular.forEach;
-    lux.context = root.luxContext || {};
+    lux.context = extend({}, defaults, root.luxContext);
 
     // Callbacks run after angular has finished bootstrapping
     lux.add_ready_callback = function (callback) {
@@ -51,6 +55,16 @@ function(angular, root) {
     lux.extend = function (context) {
         lux.context = extend(lux.context, context);
         return lux;
+    };
+
+    lux.media = function (url) {
+        var base = this.context.media;
+        while (url.substring(0, 1) === '/')
+            url = url.substring(1);
+        if (url)
+            url = '/' + url;
+        base = base.substring(base.length) === '/' ? base.substring(0, base.length-1): base;
+        return base + url;
     };
 
     var generateResize = function () {
@@ -1098,7 +1112,44 @@ angular.module("lux/blog/pagination.tpl.html", []).run(["$templateCache", functi
             });
         });
     };
-angular.module('templates-nav', ['lux/nav/navbar2.tpl.html']);
+angular.module('templates-nav', ['lux/nav/navbar.tpl.html', 'lux/nav/navbar2.tpl.html']);
+
+angular.module("lux/nav/navbar.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("lux/nav/navbar.tpl.html",
+    "<nav id='top' class=\"navbar-static-top navbar-{{navbar.themeTop}}\" ng-class=\"{'navbar-fixed-top':navbar.fixed}\" role=\"navigation\"\n" +
+    "ng-model=\"navbar.collapse\" ng-controller=\"Navigation\" bs-collapse>\n" +
+    "    <div class=\"container-fluid\">\n" +
+    "        <div class=\"navbar-header\">\n" +
+    "            <button type=\"button\" class=\"navbar-toggle\" bs-collapse-toggle>\n" +
+    "                <span class=\"sr-only\">Toggle navigation</span>\n" +
+    "                <span class=\"icon-bar\"></span>\n" +
+    "                <span class=\"icon-bar\"></span>\n" +
+    "                <span class=\"icon-bar\"></span>\n" +
+    "            </button>\n" +
+    "            <a ng-if=\"navbar.brandImage\" href=\"{{navbar.url}}\" class=\"navbar-brand\" target=\"_self\">\n" +
+    "                <img ng-src=\"{{navbar.brandImage}}\" alt=\"{{navbar.brand || 'brand'}}\">\n" +
+    "            </a>\n" +
+    "            <a ng-if=\"!navbar.brandImage && navbar.brand\" href=\"{{navbar.url}}\" class=\"navbar-brand\" target=\"_self\">\n" +
+    "                {{navbar.brand}}\n" +
+    "            </a>\n" +
+    "        </div>\n" +
+    "        <div class=\"navbar-collapse\" bs-collapse-target>\n" +
+    "            <ul class=\"nav navbar-nav\">\n" +
+    "                <li ng-repeat=\"link in navbar.items\" ng-class=\"{active:link.active}\">\n" +
+    "                    <a href=\"{{link.href}}\" title=\"{{link.title || link.name}}\">\n" +
+    "                    <i ng-if=\"link.icon\" class=\"{{link.icon}}\"></i> {{link.name}}</a>\n" +
+    "                </li>\n" +
+    "            </ul>\n" +
+    "            <ul class=\"nav navbar-nav navbar-right\">\n" +
+    "                <li ng-repeat=\"link in navbar.itemsRight\" ng-class=\"{active:link.active}\">\n" +
+    "                    <a href=\"{{link.href}}\" title=\"{{link.title || link.name}}\">\n" +
+    "                    <i ng-if=\"link.icon\" class=\"{{link.icon}}\"></i> {{link.name}}</a>\n" +
+    "                </li>\n" +
+    "            </ul>\n" +
+    "        </div>\n" +
+    "    </div>\n" +
+    "</nav>");
+}]);
 
 angular.module("lux/nav/navbar2.tpl.html", []).run(["$templateCache", function($templateCache) {
   $templateCache.put("lux/nav/navbar2.tpl.html",
@@ -1167,7 +1218,8 @@ angular.module("lux/nav/navbar2.tpl.html", []).run(["$templateCache", function($
         theme: 'default',
         search_text: '',
         collapse: '',
-        search: false
+        search: false,
+        url: lux.context.url
     };
 
     angular.module('lux.nav', ['templates-nav', 'lux.services', 'mgcrea.ngStrap.collapse'])
@@ -1184,6 +1236,9 @@ angular.module("lux/nav/navbar2.tpl.html", []).run(["$templateCache", function($
                         navbar.collapse = '';
                     return c !== navbar.collapse;
                 };
+            // Fix defaults
+            if (!navbar.url)
+                navbar.url = '/';
             if (!navbar.themeTop)
                 navbar.themeTop = navbar.theme;
 
@@ -1202,6 +1257,14 @@ angular.module("lux/nav/navbar2.tpl.html", []).run(["$templateCache", function($
             };
 
         }])
+    //
+    //  Directive for the navbar
+    .directive('navbar', function () {
+        return {
+            templateUrl: "lux/nav/navbar.tpl.html",
+            restrict: 'AE'
+        };
+    })
     //
     //  Directive for the navbar with sidebar (nivebar2 template)
     .directive('navbar2', function () {

@@ -4,3 +4,4 @@ markdown
 python-dateutil
 requests-oauthlib
 unidecode
+sphinx

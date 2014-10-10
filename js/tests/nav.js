@@ -26,6 +26,26 @@
             expect(scope.navbar.items2).toBe(undefined);
         });
 
+        it("navbar directive", function() {
+            var element = '<navbar></navbar>';
+
+            scope = $rootScope.$new();
+            scope.items = [
+                {href: '/', name: 'home'},
+                {href: '/foo'}];
+            controller = $controller('Navigation', {'$scope': scope});
+
+            expect(scope.navbar.items.length).toBe(2);
+            element = $compile(element)(scope);
+            var nav = element.find('nav');
+            //
+            expect(nav.parent()).toBe(element);
+            expect(nav.hasClass('navbar')).toBe(true);
+            expect(nav.hasClass('navbar-default')).toBe(true);
+
+            expect(scope.navbar.collapseWidth).toBe(768);
+        });
+
         it("navbar2 directive", function() {
             var element = '<navbar2></navbar2>';
 

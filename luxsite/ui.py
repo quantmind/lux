@@ -40,7 +40,7 @@ def add_css(all):
         ).css('#lux-logo',
               height=px(100))
 
-    css('a.brand',
+    css('a.navbar-brand',
         css(' img',
             height=px(vars.navbar_height),
             width='auto'),
