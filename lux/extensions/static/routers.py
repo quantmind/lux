@@ -87,79 +87,11 @@ class JsonRoot(lux.Router, FileBuilder):
         return Json(self.apis(request)).http_response(request)
 
 
-class JsonContent(lux.Router, DirBuilder):
-    '''Handle JSON contents in a directory
-    '''
-    html_router = lux.RouterParam(None)
-
-    def __init__(self, route, dir=None, name=None, html_router=None):
-        route = self.valid_route(route, dir)[:-1]
-        base = os.path.basename(self.dir)
-        route = route or base
-        name = slugify(name or route)
-        self.src = '%s.json' % route
-        assert html_router, 'html router required'
-        super(JsonContent, self).__init__(route, name=name,
-                                          html_router=html_router,
-                                          content=html_router.content,
-                                          meta=copy(html_router.meta))
-        # When the html router is a index template, add the index.json
-        # resource for rendering the index
-        if html_router.index_template:
-            self.add_child(JsonIndex('index.json',
-                                     dir=self.dir,
-                                     index_template=html_router.index_template))
-        #
-        # Add Drafts API if drafts are available
-        #drafts = html_router.get_route(html_router.childname('drafts'))
-        #if drafts:
-        #    self.add_child(JsonFile(drafts.route.rule,
-        #                            dir=self.dir,
-        #                            content=self.content))
-
-        child_router = html_router.get_route(html_router.childname('view'))
-        self.add_child(JsonFile('<path:id>',
-                                dir=self.dir,
-                                name='json_files',
-                                content=self.content,
-                                meta=copy(child_router.meta)))
-
-    def get(self, request):
-        '''Build all the contents
-        '''
-        files = self.get_route('json_files')
-        data = files.all(request.app, html=False)
-        return Json(data).http_response(request)
-
-
-class JsonIndex(lux.Router, FileBuilder):
-    index_template = None
-
-    def build_file(self, app, location):
-        src = app.template_full_path(self.index_template)
-        return super(JsonIndex, self).build_file(app, location, src, 'index')
-
-    def get(self, request):
-        app = request.app
-        response = request.response
-        content = self.get_content(request)
-        # Get the JSON representation of the resource
-        data = content.json(request)
-        if data:
-            html_router = self.html_router
-            data['api_url'] = app.site_url(self.relative_path(request))
-            urlparams = content.urlparams(html_router.route.variables)
-            path = html_router.path(**urlparams)
-            data['html_url'] = app.site_url(normpath(path))
-            return Json(data).http_response(request)
-        else:
-            raise Unsupported
-        return Json(data).http_response(request)
-
-
 class JsonFile(lux.Router, FileBuilder):
     '''Serve/build a json file
     '''
+    html_router = None
+
     def get(self, request):
         app = request.app
         response = request.response
@@ -201,9 +133,85 @@ class JsonFile(lux.Router, FileBuilder):
         return list(reversed(sorted(all, key=key)))
 
 
+class JsonContent(lux.Router, DirBuilder):
+    '''Handle JSON contents in a directory
+    '''
+    html_router = None
+    JsonFileRouter = JsonFile
+
+    def __init__(self, route, dir=None, name=None, html_router=None):
+        route = self.valid_route(route, dir)[:-1]
+        base = os.path.basename(self.dir)
+        route = route or base
+        name = slugify(name or route)
+        self.src = '%s.json' % route
+        assert html_router, 'html router required'
+        super(JsonContent, self).__init__(route, name=name,
+                                          html_router=html_router,
+                                          content=html_router.content,
+                                          meta=copy(html_router.meta))
+        # When the html router is a index template, add the index.json
+        # resource for rendering the index
+        if html_router.index_template:
+            self.add_child(JsonIndex('index.json',
+                                     dir=self.dir,
+                                     index_template=html_router.index_template))
+        #
+        # TODO! Add Drafts API if drafts are available
+        # drafts = html_router.get_route(html_router.childname('drafts'))
+        # if drafts:
+        #     self.add_child(JsonFile(drafts.route.rule,
+        #                             dir=self.dir,
+        #                             content=self.content))
+
+        child_router = html_router.get_route(html_router.childname('view'))
+        self.add_child(self.JsonFileRouter('<path:id>',
+                                           dir=self.dir,
+                                           name='json_files',
+                                           content=self.content,
+                                           html_router=html_router,
+                                           meta=copy(child_router.meta)))
+
+    def get(self, request):
+        '''Build all the contents
+        '''
+        files = self.get_route('json_files')
+        data = files.all(request.app, html=False)
+        return Json(data).http_response(request)
+
+
+class JsonIndex(lux.Router, FileBuilder):
+    index_template = None
+
+    def build_file(self, app, location):
+        src = app.template_full_path(self.index_template)
+        return super(JsonIndex, self).build_file(app, location, src, 'index')
+
+    def get(self, request):
+        app = request.app
+        response = request.response
+        content = self.get_content(request)
+        # Get the JSON representation of the resource
+        data = content.json(request)
+        if data:
+            html_router = self.html_router
+            data['api_url'] = app.site_url(self.relative_path(request))
+            urlparams = content.urlparams(html_router.route.variables)
+            path = html_router.path(**urlparams)
+            data['html_url'] = app.site_url(normpath(path))
+            return Json(data).http_response(request)
+        else:
+            raise Unsupported
+        return Json(data).http_response(request)
+
+
 class HtmlFile(HtmlRouter, FileBuilder):
     '''Serve an Html file.
     '''
+    @property
+    def html_router(self):
+        return self.parent
+
     def build_main(self, request, context, jscontext):
         content = self.get_content(request)
         return content.html(request, jscontext)
@@ -220,6 +228,8 @@ class HtmlContent(HtmlRouter, DirBuilder):
     directory url.
     '''
     api = None
+    '''The Json api router if available.
+    '''
     child_url = '<path:slug>'
     '''The relative url of files within the directory'''
     drafts = 'drafts'
@@ -232,6 +242,8 @@ class HtmlContent(HtmlRouter, DirBuilder):
     '''
     '''Context for the body tag'''
     priority = 1
+    JsonApiRouter = JsonContent
+    HtmlFileRouter = HtmlFile
 
     def __init__(self, route, *routes, **params):
         route = self.valid_route(route, params.pop('dir', None))
@@ -245,12 +257,12 @@ class HtmlContent(HtmlRouter, DirBuilder):
         if self.meta_children:
             meta.update(self.meta_children)
         #
-        file = HtmlFile(self.child_url, dir=self.dir,
-                        name=self.childname('view'),
-                        content=self.content,
-                        html_body_template=self.html_body_template,
-                        meta=meta,
-                        ngmodules=self.ngmodules)
+        file = self.HtmlFileRouter(self.child_url, dir=self.dir,
+                                   name=self.childname('view'),
+                                   content=self.content,
+                                   html_body_template=self.html_body_template,
+                                   meta=meta,
+                                   ngmodules=self.ngmodules)
         self.add_child(file)
         #
         for url_path, file_path, ext in self.all_files():
@@ -259,6 +271,11 @@ class HtmlContent(HtmlRouter, DirBuilder):
         if self.src and self.index_template:
             raise ImproperlyConfigured(
                 'Both index and index template specified')
+
+    def jsonApi(self):
+        return self.JsonApiRouter(self.route.path,
+                                  dir=self.dir,
+                                  html_router=self)
 
     def get_api_info(self, app):
         if self.api:

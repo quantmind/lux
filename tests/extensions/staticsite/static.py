@@ -7,8 +7,8 @@ from lux.utils import test
 from lux.extensions.static import HtmlContent
 
 
-class StaticSiteTests(test.TestCase):
-    config_file = 'tests.extensions.staticsite.config'
+class StaticSiteMixin(object):
+    config_file = 'tests.extensions.staticsite'
 
     def tearDown(self):
         if self.apps:
@@ -16,6 +16,9 @@ class StaticSiteTests(test.TestCase):
                 dir = os.path.abspath(app.config['STATIC_LOCATION'])
                 if os.path.isdir(dir):
                     shutil.rmtree(dir)
+
+
+class StaticSiteTests(StaticSiteMixin, test.TestCase):
 
     def test_middleware(self):
         app = self.application()

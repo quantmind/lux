@@ -95,7 +95,10 @@ class Content(object):
         self._src = src
         self._path = path or src
         self._meta = AttributeDictionary(params)
-        self._meta.modified = modified_datetime(src)
+        if src:
+            self._meta.modified = modified_datetime(src)
+        else:
+            self._meta.modified = datetime.now()
         # Get the site meta data dictionary.
         # Used to render Content metadata
         self._update_meta(metadata)

@@ -1,12 +1,24 @@
 /*
 ------------------------------------------------------------------
 ------------------------------------------------------------------
-Created by lux 2014-09-20 15:33:17 in 0.0 seconds.
+Created by lux 2014-10-10 10:26:25 in 0.0 seconds.
 ------------------------------------------------------------------
 ------------------------------------------------------------------ */
 
 .push-bottom {
     margin-bottom: 20px !important;
+}
+
+body {
+    font-family: "freight-text-pro",Georgia,Cambria,"Times New Roman",Times,serif;
+    line-height: 1.4;
+    background: #fff;
+    font-size: 16px;
+    font-style: normal;
+    color: rgba(0, 0, 0, 0.8);
+    min-height: 100%;
+    height: 100%;
+    min-height: 300px;
 }
 
 [ng\:cloak],
@@ -31,42 +43,48 @@ Created by lux 2014-09-20 15:33:17 in 0.0 seconds.
 }
 
 .absolute-full {
-    top: 0;
     position: absolute;
+    top: 0;
     bottom: 0;
 }
 
+.navbar2-wrapper {
+    min-height: 100%;
+    width: 100%;
+}
+
+.navbar2-page {
+    background: #fff;
+    padding: 70px 15px 0;
+}
+
 @media all and (min-width:768px) {
-    .admin-nav {
-        z-index: 1;
-        margin-top: 51px;
+    .navbar2-page {
+        margin: 0 0 0 250px;
+    }
+
+    .navbar2-wrapper.navbar-default .navbar2-page {
+        border-left: 1px solid #e7e7e7;
+    }
+
+}
+@media all and (min-width:768px) {
+    .sidebar {
         position: absolute;
+        margin-top: 51px;
         width: 250px;
-    }
-
-}
-@media all and (max-height:600px) and (max-width:767px) {
-    .sidebar-collapse {
-        max-height: 300px;
-        overflow-y: scroll;
-    }
-
-}
-@media all and (max-height:400px) and (max-width:767px) {
-    .sidebar-collapse {
-        max-height: 200px;
-        overflow-y: scroll;
+        z-index: 1;
     }
 
 }
 .dir-entry-image {
+    max-height: 120px;
     overflow: hidden;
-    max-height: 90px;
 }
 
 .dir-entry-image img {
-    height: auto;
     width: 120px;
+    height: auto;
 }
 
 h1:hover > a.headerlink,
@@ -80,10 +98,10 @@ dt:hover > a.headerlink {
 }
 
 a.headerlink {
-    color: #eee;
-    visibility: hidden;
-    text-decoration: none;
     padding: 0 4px;
+    visibility: hidden;
+    color: #eee;
+    text-decoration: none;
 }
 
 a.headerlink:hover {
@@ -95,8 +113,8 @@ a.headerlink:hover {
 }
 
 div.viewcode-block:target {
-    margin: -1px -10px;
     padding: 0 10px;
+    margin: -1px -10px;
 }
 
 .hover-opacity {
@@ -151,12 +169,6 @@ html {
     height: 100%;
 }
 
-body {
-    min-height: 100%;
-    height: 100%;
-    min-height: 300px;
-}
-
 #lux-logo {
     height: 300px;
 }
@@ -184,8 +196,8 @@ a.brand {
 }
 
 a.brand img {
-    width: auto;
     height: 50px;
+    width: auto;
 }
 
 #page-main {
@@ -195,8 +207,9 @@ a.brand img {
 }
 
 #page-footer {
-    min-height: 300px;
     background-color: #005a8a;
+    min-height: 300px;
+    padding-top: 20px;
     color: #e5c700;
 }
 
@@ -206,9 +219,9 @@ a.brand img {
 }
 
 .page-header.index-header {
-    width: 100%;
-    min-height: 300px;
     background-color: #005a8a;
-    color: #eee;
     height: 100%;
+    color: #eee;
+    min-height: 300px;
+    width: 100%;
 }

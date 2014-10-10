@@ -9,6 +9,11 @@ def add_css(all):
 
     add_classes(all)
 
+    vars.font_family = '"freight-text-pro",Georgia,Cambria,"Times New Roman",Times,serif'
+    vars.font_size = px(16)
+    vars.line_height = 1.4
+    vars.color = color(0,0,0,0.8)
+
     vars.navbar_height = 50
     vars.colors.lux_blue = color('#005A8A')
     vars.colors.lux_yellow = color('#E5C700')
@@ -49,6 +54,7 @@ def add_css(all):
     css('#page-footer',
         background_color=vars.colors.lux_blue,
         color=vars.colors.lux_yellow,
+        padding_top=px(20),
         min_height=px(300))
 
     css('.page-header',

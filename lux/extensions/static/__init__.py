@@ -51,7 +51,7 @@ from lux import Parameter, Router
 from .builder import Builder, DirBuilder, ContextBuilder
 from .contents import Content, Article
 from .routers import (MediaBuilder, HtmlContent, Blog, ErrorRouter,
-                      JsonRoot, JsonContent, JsonRedirect, Sitemap)
+                      JsonRoot, JsonRedirect, Sitemap)
 from .rst import SphinxDocs
 from .ui import add_css
 from . import slides
@@ -79,7 +79,7 @@ class Extension(lux.Extension):
         Parameter('MD_EXTENSIONS', ['extra', 'meta', 'toc'],
                   'List/tuple of markdown extensions'),
         Parameter('STATIC_API', 'api',
-                  'Build a JSON api, required when using router in Html5 '
+                  'Build a JSON api, required when using angular in Html5 '
                   ' navigation mode'),
         Parameter('STATIC_MEDIA', True, 'Add handler for media files'),
         Parameter('STATIC_SPECIALS', ('404',),
@@ -230,9 +230,7 @@ class Extension(lux.Extension):
 
     def add_api(self, app, router):
         if isinstance(router, HtmlContent) and app.api:
-            router.api = JsonContent(router.route.path,
-                                     dir=router.dir,
-                                     html_router=router)
+            router.api = router.jsonApi()
             app.api.add_child(router.api)
             app.handler.middleware.append(JsonRedirect(router.api.route))
             for route in router.routes:

@@ -111,12 +111,11 @@ class Builder(BaseBuilder):
     def build(self, app, location=None, exclude=None):
         '''Build files managed by this :class:`.Builder`
         '''
-        if location is None:
-            location = os.path.abspath(app.config['STATIC_LOCATION'])
         if self.built is not None:
             return self.built
+        if location is None:
+            location = os.path.abspath(app.config['STATIC_LOCATION'])
         with self:
-            vars = self.route.ordered_variables
             if self.route.ordered_variables:
                 for name, src, _ in self.all_files():
                     self.build_file(app, location, src, name)
@@ -209,6 +208,11 @@ class Builder(BaseBuilder):
             app.logger.exception('Unhandled exception while building "%s"',
                                  content or path)
             content = None
+        return self.write(request, location, response, content)
+
+    def write(self, request, location, response, content):
+        app = request.app
+        url = request.uri
         if response or content:
             path = self.relative_path(request)
             if not path or path.endswith('/'):

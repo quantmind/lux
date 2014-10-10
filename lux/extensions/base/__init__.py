@@ -17,25 +17,6 @@ When the :setting:`SERVE_STATIC_FILES` parameter is set to ``True``,
 this extension adds middleware for serving static files from
 :setting:`MEDIA_URL`.
 In addition, a :setting:`FAVICON` location can also be specified.
-
-
-API
-=========
-
-API Extension
-~~~~~~~~~~~~~~~~~~~~~
-
-.. autoclass:: Extension
-   :members:
-   :member-order: bysource
-
-
-Scripts
-~~~~~~~~~~~~~~~~~~~~~
-
-.. autoclass:: Scripts
-   :members:
-   :member-order: bysource
 '''
 import os
 import hashlib

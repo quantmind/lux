@@ -10,20 +10,6 @@ command.
 **Requires**: :mod:`lux.extensions.base`
 
 
-Parameters
-=============
-
-.. lux_extension:: lux.extensions.ui
-
-
-.. _ui-style:
-
-Styling
-=================
-
-.. automodule:: lux.extensions.ui.style
-
-
 .. _python-css-tools:
 
 Variables and Symbols
@@ -41,14 +27,6 @@ Mixins
 =========================
 
 .. automodule:: lux.extensions.ui.lib.mixins
-
-
-.. _ui-create-skin:
-
-Creating Skins
-=======================
-
-.. automodule:: lux.extensions.ui.lib.skins
 
 '''
 import lux

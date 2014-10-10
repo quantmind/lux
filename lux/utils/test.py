@@ -28,7 +28,10 @@ class TestCase(unittest.TestCase):
     It provides several utilities methods.
     '''
     config_file = 'tests.config'
+    '''THe config file to use when building an :meth:`application`'''
     config_params = {}
+    '''Dictionary of parameters to override the parameters from
+    :attr:`config_file`'''
     apps = None
 
     def application(self, config_file=None, argv=None, **params):
