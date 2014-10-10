@@ -20,7 +20,7 @@
         search: false
     };
 
-    angular.module('lux.nav', ['templates-page', 'lux.services', 'mgcrea.ngStrap.collapse'])
+    angular.module('lux.nav', ['templates-nav', 'lux.services', 'mgcrea.ngStrap.collapse'])
         .controller('Navigation', ['$scope', '$lux', function ($scope, $lux) {
             $lux.log.info('Setting up navigation on page');
             //
@@ -56,7 +56,7 @@
     //  Directive for the navbar with sidebar (nivebar2 template)
     .directive('navbar2', function () {
         return {
-            templateUrl: "lux/page/navbar2.tpl.html",
+            templateUrl: "lux/nav/navbar2.tpl.html",
             restrict: 'AE'
         };
     })

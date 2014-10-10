@@ -7,9 +7,9 @@
             "src": "js/lux/blog/*.tpl.html",
             "dest": "js/lux/blog/blog-template.js"
         },
-        "page": {
-            "src": "js/lux/page/*.tpl.html",
-            "dest": "js/lux/page/page-template.js"
+        "nav": {
+            "src": "js/lux/nav/*.tpl.html",
+            "dest": "js/lux/nav/nav-template.js"
         }
     },
     "lux": {
@@ -24,17 +24,12 @@
                 "js/lux/page/*.js",
                 "js/lux/bootstrap.js",
                 "js/lux/blog/*.js",
+                "js/lux/nav/*.js",
                 "js/lux/user/*.js",
-                "js/lux/photos/*.js",
+                "js/lux/misc/*.js",
                 "js/lux/google/*.js",
                 "js/lux/viz/*.js",
                 "js/lux/close.js"],
         "dest": "lux/media/lux/lux.js"
-    },
-    "lorem": {
-        "src": ["js/lorem/start.js",
-                "js/lorem/core.js",
-                "js/lorem/close.js"],
-        "dest": "lux/media/lux/lorem.js"
     }
 }

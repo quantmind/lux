@@ -1,7 +1,7 @@
-angular.module('templates-page', ['lux/page/navbar2.tpl.html']);
+angular.module('templates-nav', ['lux/nav/navbar2.tpl.html']);
 
-angular.module("lux/page/navbar2.tpl.html", []).run(["$templateCache", function($templateCache) {
-  $templateCache.put("lux/page/navbar2.tpl.html",
+angular.module("lux/nav/navbar2.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("lux/nav/navbar2.tpl.html",
     "<nav class=\"navbar navbar-{{navbar.themeTop}} navbar-fixed-top\" role=\"navigation\" ng-model=\"navbar.collapse\" bs-collapse>\n" +
     "    <div class=\"navbar-header\">\n" +
     "        <button type=\"button\" class=\"navbar-toggle\" bs-collapse-toggle>\n" +

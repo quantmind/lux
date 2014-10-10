@@ -1,6 +1,3 @@
-define(['jquery', 'lodash'], function ($, _) {
-    "use strict";
-    //
     var
     //
     lorem_defaults = {
@@ -21,46 +18,38 @@ define(['jquery', 'lodash'], function ($, _) {
          "Morbi leo mi, nonummy eget, tristique non, rhoncus non, leo. Nullam faucibus mi quis velit. Integer in sapien. Fusce tellus odio, dapibus id, fermentum quis, suscipit id, erat. Fusce aliquam vestibulum ipsum. Aliquam erat volutpat. Pellentesque sapien. Cras elementum. Nulla pulvinar eleifend sem. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Quisque porta. Vivamus porttitor turpis ac leo.",
          "Maecenas ipsum velit, consectetuer eu, lobortis ut, dictum at, dui. In rutrum. Sed ac dolor sit amet purus malesuada congue. In laoreet, magna id viverra tincidunt, sem odio bibendum justo, vel imperdiet sapien wisi sed libero. Suspendisse sagittis ultrices augue. Mauris metus. Nunc dapibus tortor vel mi dapibus sollicitudin. Etiam posuere lacus quis dolor. Praesent id justo in neque elementum ultrices. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos hymenaeos. In convallis. Fusce suscipit libero eget elit. Praesent vitae arcu tempor neque lacinia pretium. Morbi imperdiet, mauris ac auctor dictum, nisl ligula egestas nulla, et sollicitudin sem purus in lacus.",
          "Aenean placerat. In vulputate urna eu arcu. Aliquam erat volutpat. Suspendisse potenti. Morbi mattis felis at nunc. Duis viverra diam non justo. In nisl. Nullam sit amet magna in magna gravida vehicula. Mauris tincidunt sem sed arcu. Nunc posuere. Nullam lectus justo, vulputate eget, mollis sed, tempor sed, magna. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Etiam neque. Curabitur ligula sapien, pulvinar a, vestibulum quis, facilisis vel, sapien. Nullam eget nisl. Donec vitae arcu."
-    ],
-    //
-    // The function which creates lorem-ipsum paragraphs
-    lorem = function(options) {
-        var opts = _.extend({}, lorem_defaults, options),
-            howmany = parseInt( opts.paragraphs, 10 ),
-            paragraphs = [],
-            ipsum_text = "";
-        for (var i = 0; i < howmany; i++){
-            paragraphs.push(lorem_text[Math.floor(Math.random()*lorem_text.length)]);
-        }
-        if (opts.words) {
-            var numOfWords = parseInt( opts.words, 10 ),
-                oldparagraphs = paragraphs;
-            paragraphs = [];
-            _(oldparagraphs).forEach(function (paragraph) {
-                var words = paragraph.split( ' ' ).splice(0, numOfWords);
-                paragraphs.push(words.join(' '));
-            });
-        }
-        _(paragraphs).forEach(function (paragraph) {
-            if(opts.ptags === true){
-                ipsum_text += "<p>";
-            }
-            ipsum_text += paragraph;
-            if(opts.ptags === true){
-                ipsum_text += "</p>";
-            }
-            ipsum_text += "\n\n";
+    ];
+
+    angular.module('lux.lorem', [])
+        .directive('lorem', function () {
+            //
+            return {
+                restrict: 'AE',
+                //
+                link: function (scope, element, attrs) {
+                    var opts = extend({}, lorem_defaults, attrs),
+                        howmany = +opts.paragraphs,
+                        paragraphs = [],
+                        ipsum_text = "";
+                    //
+                    for (var i = 0; i < howmany; i++){
+                        paragraphs.push(lorem_text[Math.floor(Math.random()*lorem_text.length)]);
+                    }
+                    if (opts.words) {
+                        var numOfWords = +opts.words,
+                            oldparagraphs = paragraphs;
+                        paragraphs = [];
+                        oldparagraphs.forEach(function (paragraph) {
+                            var words = paragraph.split( ' ' ).splice(0, numOfWords);
+                            paragraphs.push(words.join(' '));
+                        });
+                    }
+                    paragraphs.forEach(function (paragraph) {
+                        if (opts.tags)
+                            element.append($('<p>'+paragraph+'</p>'));
+                        else
+                            element.append(paragraph+'\n\n');
+                    });
+                }
+            };
         });
-        return ipsum_text;
-    };
-
-
-    $.fn.lorem = function(options) {
-        return this.each(function() {
-            $(this).html(lorem(options));
-        });
-    };
-
-
-    return lorem;
-});
