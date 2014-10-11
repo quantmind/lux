@@ -10,6 +10,7 @@ Python Requirements
 * pulsar_
 * dateutil_
 
+Additionally, Lux can benefit form these python libraries
 
 Developing with lux.js
 ==========================
@@ -22,9 +23,9 @@ Subsequently install the development packages via::
 
     npm install
 
-To compile ``lux.js`` use grunt:
+To build lux.js_ use grunt::
 
-    grunt
+    grunt build
 
 
 Angular templates are compiled into javascript via the `grunt-html2js`_ package.
@@ -50,4 +51,5 @@ To run tests and the example site add a new ``settings.py`` file in the
 .. _nodejs: http://nodejs.org/
 .. _grunt: http://gruntjs.com/
 .. _`grunt-html2js`: https://github.com/karlgoldstein/grunt-html2js
+.. _lux.js: https://raw.githubusercontent.com/quantmind/lux/master/lux/media/lux/lux.js
 

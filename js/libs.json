@@ -3,6 +3,10 @@
         "options": {
             "base": "js"
         },
+        "page": {
+            "src": "js/lux/page/*.tpl.html",
+            "dest": "js/lux/page/page-template.js"
+        },
         "blog": {
             "src": "js/lux/blog/*.tpl.html",
             "dest": "js/lux/blog/blog-template.js"

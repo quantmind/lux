@@ -8,14 +8,15 @@
             // Resolve modules to load
             if (!isArray(modules))
                 modules = [];
-            modules.push('lux');
+            if (lux.context.uiRouter)
+                modules.push('lux.ui.router');
+            else
+                modules.push('lux.router');
             // Add all modules from context
             forEach(lux.context.ngModules, function (mod) {
                 modules.push(mod);
             });
-            var mod = angular.module(name, modules);
-            if (lux.context.html5mode && configRouter)
-                configRouter(mod);
+            angular.module(name, modules);
             angular.bootstrap(document, [name]);
             //
             forEach(ready_callbacks, function (callback) {

@@ -1,9 +1,9 @@
-<div id="page" ng-cloak>
+<div id="page" data-highlight ng-cloak>
 $html_main
 <navbar></navbar>
 </div>
 <script>
-require(rcfg.min(['lux/lux', 'angular-ui-router', 'angular-strap']), function (lux) {
+require(rcfg.min(['lux/lux', 'angular-strap']), function (lux) {
     var url = lux.context.url;
     lux.extend({
         navbar: {
@@ -11,11 +11,20 @@ require(rcfg.min(['lux/lux', 'angular-ui-router', 'angular-strap']), function (l
             brandImage: lux.media('luxsite/lux-banner.png'),
             theme: 'inverse',
             itemsRight: [
-                {href: url+'/docs/', name: 'docs', icon: 'fa fa-book fa-lg'},
-                {href: 'https://github.com/quantmind/lux', title: 'source code', icon: 'fa fa-github fa-lg'}
-                ]
+                {
+                    href: url+'/docs/',
+                    name: 'docs',
+                    icon: 'fa fa-book fa-lg'
+                },
+                {
+                    href: 'https://github.com/quantmind/lux',
+                    title: 'source code',
+                    name: 'code',
+                    icon: 'fa fa-github fa-lg'
+                }
+            ]
         }
     });
-    lux.bootstrap('luxsite', ['lux.nav']);
+    lux.bootstrap('luxsite', ['lux.nav', 'highlight', 'lux.scroll']);
 });
 </script>

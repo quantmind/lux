@@ -6,6 +6,7 @@
     ],
     "homepage": "http://quantmind.github.io/lux",
     "name": "lux",
+    "title": "Lux Javascript Library",
     "contributors": [],
     "author": {
         "name": "Luca Sbardella",

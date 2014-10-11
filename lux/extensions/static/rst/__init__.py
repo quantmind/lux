@@ -15,8 +15,8 @@ except ImportError:
 
 class SphinxContent(Content):
 
-    def __init__(self, app, ctx):
-        meta = ctx.get('meta') or {}
+    def __init__(self, app, meta, ctx):
+        meta.update(ctx.get('meta', ()))
         meta['content_type'] = 'text/html'
         content = ctx.get('body', '')
         super(SphinxContent, self).__init__(app, content, meta,
@@ -51,7 +51,7 @@ class SphinxMixin(object):
         urlparams = {self.route.ordered_variables[0]: ctx['pagename']}
         path = self.path(**urlparams)
         url = app.site_url(normpath(path))
-        content = SphinxContent(app, ctx)
+        content = SphinxContent(app, self.meta.copy(), ctx)
         request = app.wsgi_request(path=url, HTTP_ACCEPT='*/*')
         request.cache.building_static = True
         request.cache.content = content

@@ -773,26 +773,27 @@ class horizontal_navigation(Clickable):
 ################################################# INCLUDE CSS
 class CssInclude(Mixin):
     '''Include one or more css resources. The correct use of this
-:class:`Mixin` is with the *body* tag only::
+    :class:`.Mixin` is within the ``body`` tag only::
 
-    css('body', css_include(path))
+        css('body', CssInclude(path))
 
-path can be both an internett address as well as a local url.
+    path can be both an internet address as well as a file in the
+    local filesystem.
 
-.. attribute:: path
+    .. attribute:: path
 
-    A valid file location or a fully qualified internet address
+        A valid file location or a fully qualified internet address
 
-.. attribute:: location
+    .. attribute:: location
 
-    Optional relative location of imports. If specified ``url(...)``
-    entries in the css string will be modified.
+        Optional relative location of imports. If specified ``url(...)``
+        entries in the css string will be modified.
 
-.. attribute:: replace
+    .. attribute:: replace
 
-    Optional string to replace just after a ``url(`` element in the
-    css file.
-'''
+        Optional string to replace just after a ``url(`` element in the
+        css file.
+    '''
     def __init__(self, path, location=None, replace=None):
         self.path = path
         self.location = location

@@ -24,7 +24,8 @@
     //  Lux angular
     //  ==============
     //  Lux main module for angular. Design to work with the ``lux.extension.angular``
-    angular.module('lux', ['lux.services', 'lux.form'])
+    angular.module('lux.page', ['lux.services', 'lux.form', 'templates-page'])
+        //
         .controller('Page', ['$scope', '$lux', 'dateFilter', '$anchorScroll',
             function ($scope, $lux, dateFilter, $anchorScroll) {
             //
@@ -78,4 +79,56 @@
 
             $scope.scrollToHash = $lux.scrollToHash;
 
+        }])
+        .service('$breadcrumbs', [function () {
+
+            this.crumbs = function () {
+                var loc = window.location,
+                    path = loc.pathname,
+                    steps = [],
+                    last = {
+                        href: loc.origin
+                    };
+                if (last.href.length >= lux.context.url.length)
+                    steps.push(last);
+
+                path.split('/').forEach(function (name) {
+                    if (name) {
+                        last = {
+                            label: name,
+                            href: joinUrl(last.href, name+'/')
+                        };
+                        if (last.href.length >= lux.context.url.length)
+                            steps.push(last);
+                    }
+                });
+                if (steps.length) {
+                    last = steps[steps.length-1];
+                    if (path.substring(path.length-1) !== '/' && last.href.substring(last.href.length-1) === '/')
+                        last.href = last.href.substring(0, last.href.length-1);
+                    last.last = true;
+                    steps[0].label = 'Home';
+                }
+                return steps;
+            };
+        }])
+        .directive('breadcrumbs', ['$breadcrumbs', '$rootScope', function ($breadcrumbs, $rootScope) {
+            return {
+                restrict: 'AE',
+                replace: true,
+                templateUrl: "lux/page/breadcrumbs.tpl.html",
+                link: {
+                    post: function (scope) {
+                        var renderBreadcrumb = function() {
+                            scope.steps = $breadcrumbs.crumbs();
+                        };
+
+                        $rootScope.$on('$viewContentLoaded', function () {
+                            renderBreadcrumb();
+                        });
+
+                        renderBreadcrumb();
+                    }
+                }
+            };
         }]);

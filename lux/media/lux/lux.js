@@ -1,6 +1,6 @@
 //      Lux Library - v0.1.0
 
-//      Compiled 2014-10-10.
+//      Compiled 2014-10-11.
 //      Copyright (c) 2014 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -36,9 +36,12 @@ function(angular, root) {
         isArray = angular.isArray,
         isString = angular.isString,
         $ = angular.element,
+        slice = Array.prototype.slice,
         defaults = {
             url: '',    // base url for the web site
-            media: ''   // default url for media content
+            media: '',  // default url for media content
+            html5mode: true, //  html5mode for angular
+            hashPrefix: '!'
         };
     //
     lux.$ = $;
@@ -67,56 +70,55 @@ function(angular, root) {
         return base + url;
     };
 
-    var generateResize = function () {
-        var resizeFunctions = [],
-            callResizeFunctions = function () {
-                resizeFunctions.forEach(function (f) {
-                    f();
+    var
+    //
+    generateCallbacks = function () {
+        var callbackFunctions = [],
+            callFunctions = function () {
+                var self = this,
+                    args = slice.call(arguments, 0);
+                callbackFunctions.forEach(function (f) {
+                    f.apply(self, args);
                 });
             };
         //
-        callResizeFunctions.add = function (f) {
-            resizeFunctions.push(f);
+        callFunctions.add = function (f) {
+            callbackFunctions.push(f);
         };
-        return callResizeFunctions;
-    };
-
+        return callFunctions;
+    },
     //
-    //  Utilities
+    // Add a callback for an event to an element
+    addEvent = lux.addEvent = function (element, event, callback) {
+        var handler = element[event];
+        if (!handler)
+            element[event] = handler = generateCallbacks();
+        if (handler.add)
+            handler.add(callback);
+    },
     //
-    var windowResize = lux.windowResize = function (callback, delay) {
-        var handle;
-        delay = delay ? +delay : 0;
-
-        function execute () {
-            handle = null;
-            callback();
-        }
-
-        if (window.onresize === null) {
-            window.onresize = generateResize();
-        }
-        if (window.onresize.add) {
-            if (delay) {
-                window.onresize.add(function (e) {
-                    if (!handle)
-                        handle = setTimeout(execute, delay);
-                });
-            } else {
-                window.onresize.add(callback);
-            }
-        }
-    };
-
-    var windowHeight = lux.windowHeight = function () {
+    windowResize = lux.windowResize = function (callback) {
+        addEvent(window, 'onresize', callback);
+    },
+    //
+    windowHeight = lux.windowHeight = function () {
         return window.innerHeight > 0 ? window.innerHeight : screen.availHeight;
-    };
-
-    var isAbsolute = new RegExp('^([a-z]+://|//)');
-
-    var isTag = function (element, tag) {
+    },
+    //
+    isAbsolute = new RegExp('^([a-z]+://|//)'),
+    //
+    isTag = function (element, tag) {
         element = $(element);
         return element.length === 1 && element[0].tagName.toLowerCase() === tag.toLowerCase();
+    },
+    //
+    joinUrl = lux.joinUrl = function (base, url) {
+        while (url.substring(0, 1) === '/')
+            url = url.substring(1);
+        url = '/' + url;
+        while (base.substring(base.length-1) === '/')
+            base = base.substring(0, base.length-1);
+        return base + url;
     };
 
 
@@ -506,10 +508,16 @@ function(angular, root) {
             }
         }
     });
-
+    //
+    //  Hash scrolling service
     angular.module('lux.scroll', [])
-        .service('scroll', ['$location', '$log', '$timeout', function ($location, $log, $timeout) {
+        .run(function() {
             //
+            addEvent(window, 'onload', function (e) {
+                var a = 1;
+            });
+        })
+        .service('scroll', ['$location', '$log', '$timeout', function ($location, $log, $timeout) {
             //  ScrollToHash
             this.toHash = function (hash, offset) {
                 var e;
@@ -816,6 +824,18 @@ function(angular, root) {
             };
         });
 
+angular.module('templates-page', ['lux/page/breadcrumbs.tpl.html']);
+
+angular.module("lux/page/breadcrumbs.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("lux/page/breadcrumbs.tpl.html",
+    "<ol class=\"breadcrumb\">\n" +
+    "    <li ng-repeat=\"step in steps\" ng-class=\"{active: step.last}\">\n" +
+    "        <a ng-if=\"!step.last\" href=\"{{step.href}}\">{{step.label}}</a>\n" +
+    "        <span ng-if=\"step.last\">{{step.label}}</span>\n" +
+    "    </li>\n" +
+    "</ol>");
+}]);
+
     function addPageInfo(page, $scope, dateFilter, $lux) {
         if (page.head && page.head.title) {
             document.title = page.head.title;
@@ -842,7 +862,8 @@ function(angular, root) {
     //  Lux angular
     //  ==============
     //  Lux main module for angular. Design to work with the ``lux.extension.angular``
-    angular.module('lux', ['lux.services', 'lux.form'])
+    angular.module('lux.page', ['lux.services', 'lux.form', 'templates-page'])
+        //
         .controller('Page', ['$scope', '$lux', 'dateFilter', '$anchorScroll',
             function ($scope, $lux, dateFilter, $anchorScroll) {
             //
@@ -896,55 +917,137 @@ function(angular, root) {
 
             $scope.scrollToHash = $lux.scrollToHash;
 
+        }])
+        .service('$breadcrumbs', [function () {
+
+            this.crumbs = function () {
+                var loc = window.location,
+                    path = loc.pathname,
+                    steps = [],
+                    last = {
+                        href: loc.origin
+                    };
+                if (last.href.length >= lux.context.url.length)
+                    steps.push(last);
+
+                path.split('/').forEach(function (name) {
+                    if (name) {
+                        last = {
+                            label: name,
+                            href: joinUrl(last.href, name+'/')
+                        };
+                        if (last.href.length >= lux.context.url.length)
+                            steps.push(last);
+                    }
+                });
+                if (steps.length) {
+                    last = steps[steps.length-1];
+                    if (path.substring(path.length-1) !== '/' && last.href.substring(last.href.length-1) === '/')
+                        last.href = last.href.substring(0, last.href.length-1);
+                    last.last = true;
+                    steps[0].label = 'Home';
+                }
+                return steps;
+            };
+        }])
+        .directive('breadcrumbs', ['$breadcrumbs', '$rootScope', function ($breadcrumbs, $rootScope) {
+            return {
+                restrict: 'AE',
+                replace: true,
+                templateUrl: "lux/page/breadcrumbs.tpl.html",
+                link: {
+                    post: function (scope) {
+                        var renderBreadcrumb = function() {
+                            scope.steps = $breadcrumbs.crumbs();
+                        };
+
+                        $rootScope.$on('$viewContentLoaded', function () {
+                            renderBreadcrumb();
+                        });
+
+                        renderBreadcrumb();
+                    }
+                }
+            };
         }]);
 
+
+
+    angular.module('lux.router', ['lux.page'])
+        .config(['$provide', '$locationProvider', function ($provide, $locationProvider) {
+            if (lux.context.html5mode) {
+                $locationProvider.html5Mode(true);
+                lux.context.targetLinks = true;
+            }
+            $locationProvider.hashPrefix(lux.context.hashPrefix);
+        }])
+        //
+        //  Convert all internal links to have a target so that the page reload
+        .directive('page', ['$log', '$timeout', function (log, timer) {
+            return {
+                link: function (scope, element) {
+                    var toTarget = function () {
+                            log.info('Transforming all links into targets');
+                            forEach($(element)[0].querySelectorAll('a'), function(link) {
+                                link = $(link);
+                                if (!link.attr('target'))
+                                    link.attr('target', '_self');
+                            });
+                        };
+                    // Put the toTarget function into the queue so that it is
+                    // processed after all
+                    timer(toTarget, 0);
+                }
+            };
+        }]);
     //
     //  UI-Routing
     //
     //  Configure ui-Router using lux routing objects
     //  Only when context.html5mode is true
     //  Python implementation in the lux.extensions.angular Extension
-    function configRouter(mod) {
-        mod.config(['$locationProvider', '$stateProvider', '$urlRouterProvider',
+    angular.module('lux.ui.router', ['lux.page'])
+        .config(['$locationProvider', '$stateProvider', '$urlRouterProvider',
             function ($locationProvider, $stateProvider, $urlRouterProvider) {
 
-            var hrefs = lux.context.hrefs,
-                pages = lux.context.pages,
-                state_config = function (page) {
-                    return {
-                        //
-                        // template url for the page
-                        //templateUrl: page.templateUrl,
-                        //
-                        template: page.template,
-                        //
-                        url: page.url,
-                        //
-                        resolve: {
-                            // Fetch page information
-                            page: function ($lux, $stateParams) {
-                                if (page.api) {
-                                    var api = $lux.api(page.api);
-                                    if (api)
-                                        return api.get($stateParams);
-                                }
-                            },
-                            // Fetch items if needed
-                            items: function ($lux, $stateParams) {
-                                if (page.apiItems) {
-                                    var api = $lux.api(page.apiItems);
-                                    if (api)
-                                        return api.getList();
-                                }
-                            },
+            var
+            hrefs = lux.context.hrefs,
+            pages = lux.context.pages,
+            state_config = function (page) {
+                return {
+                    //
+                    // template url for the page
+                    //templateUrl: page.templateUrl,
+                    //
+                    template: page.template,
+                    //
+                    url: page.url,
+                    //
+                    resolve: {
+                        // Fetch page information
+                        page: function ($lux, $stateParams) {
+                            if (page.api) {
+                                var api = $lux.api(page.api);
+                                if (api)
+                                    return api.get($stateParams);
+                            }
                         },
-                        //
-                        controller: page.controller
-                    };
+                        // Fetch items if needed
+                        items: function ($lux, $stateParams) {
+                            if (page.apiItems) {
+                                var api = $lux.api(page.apiItems);
+                                if (api)
+                                    return api.getList();
+                            }
+                        },
+                    },
+                    //
+                    controller: page.controller
                 };
+            };
 
-            $locationProvider.html5Mode(lux.context.html5mode);
-
+            $locationProvider.html5Mode(lux.context.html5mode).hashPrefix(lux.context.hashPrefix);
+            //
             forEach(hrefs, function (href) {
                 var page = pages[href];
                 if (page.target !== '_self') {
@@ -977,8 +1080,6 @@ function(angular, root) {
             };
         }]);
 
-    }
-
     //
     // Bootstrap the document
     lux.bootstrap = function (name, modules) {
@@ -989,14 +1090,15 @@ function(angular, root) {
             // Resolve modules to load
             if (!isArray(modules))
                 modules = [];
-            modules.push('lux');
+            if (lux.context.uiRouter)
+                modules.push('lux.ui.router');
+            else
+                modules.push('lux.router');
             // Add all modules from context
             forEach(lux.context.ngModules, function (mod) {
                 modules.push(mod);
             });
-            var mod = angular.module(name, modules);
-            if (lux.context.html5mode && configRouter)
-                configRouter(mod);
+            angular.module(name, modules);
             angular.bootstrap(document, [name]);
             //
             forEach(ready_callbacks, function (callback) {
@@ -1088,7 +1190,12 @@ angular.module("lux/blog/pagination.tpl.html", []).run(["$templateCache", functi
     //  Code highlighting with highlight.js
     //
     //  This module is added to the blog module so that the highlight
-    //  directive can be used
+    //  directive can be used. Alternatively, include the module in the
+    //  module to be bootstrapped.
+    //
+    //  Note:
+    //      MAKE SURE THE lux.extensions.code EXTENSIONS IS INCLUDED IN
+    //      YOUR CONFIG FILE
     angular.module('highlight', [])
         .directive('highlight', function () {
             return {
@@ -1110,6 +1217,16 @@ angular.module("lux/blog/pagination.tpl.html", []).run(["$templateCache", functi
                     elem.addClass('hljs inline');
                 }
             });
+            // Handle sphinx highlight
+            forEach($(elem)[0].querySelectorAll('.highlight pre'), function(block) {
+                var elem = $(block).addClass('hljs'),
+                    div = elem.parent(),
+                    p = div.parent();
+                if (p.length && p[0].className.substring(0, 10) === 'highlight-')
+                    div[0].className = 'language-' + p[0].className.substring(10);
+                root.hljs.highlightBlock(block);
+            });
+
         });
     };
 angular.module('templates-nav', ['lux/nav/navbar.tpl.html', 'lux/nav/navbar2.tpl.html']);
@@ -1238,7 +1355,7 @@ angular.module("lux/nav/navbar2.tpl.html", []).run(["$templateCache", function($
                 };
             // Fix defaults
             if (!navbar.url)
-                navbar.url = '/';
+                navbar.url = lux.context.url || '/';
             if (!navbar.themeTop)
                 navbar.themeTop = navbar.theme;
 

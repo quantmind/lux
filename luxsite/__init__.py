@@ -10,12 +10,13 @@ SITE_URL = 'http://quantmind.github.io/lux'
 EXTENSIONS = ('lux.extensions.base',
               'lux.extensions.ui',
               'lux.extensions.angular',
+              'lux.extensions.code',
               'lux.extensions.static')
 
 CONTEXT_LOCATION = 'luxsite/context'
 STATIC_LOCATION = '../docs/luxsite'
 MD_EXTENSIONS = ['extra', 'meta', 'toc']
-
+CODE_HIGHLIGHT_THEME = 'railscasts'
 FAVICON = 'luxsite/favicon.ico'
 HTML_LINKS = ({'href': 'luxsite/lux-114.png',
                'sizes': '57x57',

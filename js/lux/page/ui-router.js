@@ -4,47 +4,48 @@
     //  Configure ui-Router using lux routing objects
     //  Only when context.html5mode is true
     //  Python implementation in the lux.extensions.angular Extension
-    function configRouter(mod) {
-        mod.config(['$locationProvider', '$stateProvider', '$urlRouterProvider',
+    angular.module('lux.ui.router', ['lux.page'])
+        .config(['$locationProvider', '$stateProvider', '$urlRouterProvider',
             function ($locationProvider, $stateProvider, $urlRouterProvider) {
 
-            var hrefs = lux.context.hrefs,
-                pages = lux.context.pages,
-                state_config = function (page) {
-                    return {
-                        //
-                        // template url for the page
-                        //templateUrl: page.templateUrl,
-                        //
-                        template: page.template,
-                        //
-                        url: page.url,
-                        //
-                        resolve: {
-                            // Fetch page information
-                            page: function ($lux, $stateParams) {
-                                if (page.api) {
-                                    var api = $lux.api(page.api);
-                                    if (api)
-                                        return api.get($stateParams);
-                                }
-                            },
-                            // Fetch items if needed
-                            items: function ($lux, $stateParams) {
-                                if (page.apiItems) {
-                                    var api = $lux.api(page.apiItems);
-                                    if (api)
-                                        return api.getList();
-                                }
-                            },
+            var
+            hrefs = lux.context.hrefs,
+            pages = lux.context.pages,
+            state_config = function (page) {
+                return {
+                    //
+                    // template url for the page
+                    //templateUrl: page.templateUrl,
+                    //
+                    template: page.template,
+                    //
+                    url: page.url,
+                    //
+                    resolve: {
+                        // Fetch page information
+                        page: function ($lux, $stateParams) {
+                            if (page.api) {
+                                var api = $lux.api(page.api);
+                                if (api)
+                                    return api.get($stateParams);
+                            }
                         },
-                        //
-                        controller: page.controller
-                    };
+                        // Fetch items if needed
+                        items: function ($lux, $stateParams) {
+                            if (page.apiItems) {
+                                var api = $lux.api(page.apiItems);
+                                if (api)
+                                    return api.getList();
+                            }
+                        },
+                    },
+                    //
+                    controller: page.controller
                 };
+            };
 
-            $locationProvider.html5Mode(lux.context.html5mode);
-
+            $locationProvider.html5Mode(lux.context.html5mode).hashPrefix(lux.context.hashPrefix);
+            //
             forEach(hrefs, function (href) {
                 var page = pages[href];
                 if (page.target !== '_self') {
@@ -76,5 +77,3 @@
                 }
             };
         }]);
-
-    }

@@ -28,9 +28,12 @@ function(angular, root) {
         isArray = angular.isArray,
         isString = angular.isString,
         $ = angular.element,
+        slice = Array.prototype.slice,
         defaults = {
             url: '',    // base url for the web site
-            media: ''   // default url for media content
+            media: '',  // default url for media content
+            html5mode: true, //  html5mode for angular
+            hashPrefix: '!'
         };
     //
     lux.$ = $;

@@ -5,10 +5,10 @@ Highlight code snippets with highlightjs_
 '''
 import lux
 from lux import Parameter
-from lux.extensions.ui import CssInclude, spacing
+from lux.extensions.ui import *
 
 
-highlight = '//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.2'
+highlight = '//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.3'
 
 
 class Extension(lux.Extension):
@@ -26,6 +26,9 @@ class Extension(lux.Extension):
 def add_css(all):
     theme = all.config('CODE_HIGHLIGHT_THEME')
     css = all.css
+    vars = all.variables
+
+    vars.code.descname.font_size = px(24)
 
     if theme:
         path = 'http:%s/styles/%s.min.css' % (highlight, theme)
@@ -35,3 +38,8 @@ def add_css(all):
     css('code.hljs.inline',
         display='inline',
         padding=spacing(2, 4))
+
+    css('dl.class',
+        css(' .property, .descclassname', display='none'),
+        css(' tt.descname',
+            font_size=vars.code.descname.font_size))

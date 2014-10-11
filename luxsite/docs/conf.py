@@ -27,7 +27,6 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.extlinks',
               'sphinx.ext.intersphinx',
               'sphinx.ext.viewcode',
-              'lux.utils.sphinxtogithub',
               'luxext']
 
 # Beta version is published in github pages
@@ -71,7 +70,7 @@ def linkcode_resolve(domain, info):
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'pulsar.tex', 'pulsar Documentation',
+  ('index', 'lux.tex', 'Lux Documentation',
    'Luca Sbardella', 'manual'),
 ]
 

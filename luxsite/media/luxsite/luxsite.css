@@ -1,7 +1,7 @@
 /*
 ------------------------------------------------------------------
 ------------------------------------------------------------------
-Created by lux 2014-10-10 21:54:10 in 0.0 seconds.
+Created by lux 2014-10-11 10:10:44 in 0.5 seconds.
 ------------------------------------------------------------------
 ------------------------------------------------------------------ */
 
@@ -9,15 +9,16 @@ Created by lux 2014-10-10 21:54:10 in 0.0 seconds.
     margin-bottom: 20px !important;
 }
 
+.hljs{display:block;overflow-x:auto;padding:0.5em;background:#232323;color:#e6e1dc;-webkit-text-size-adjust:none}.hljs-comment,.hljs-template_comment,.hljs-javadoc,.hljs-shebang{color:#bc9458;font-style:italic}.hljs-keyword,.ruby .hljs-function .hljs-keyword,.hljs-request,.hljs-status,.nginx .hljs-title,.method,.hljs-list .hljs-title{color:#c26230}.hljs-string,.hljs-number,.hljs-regexp,.hljs-tag .hljs-value,.hljs-cdata,.hljs-filter .hljs-argument,.hljs-attr_selector,.apache .hljs-cbracket,.hljs-date,.tex .hljs-command,.asciidoc .hljs-link_label,.markdown .hljs-link_label{color:#a5c261}.hljs-subst{color:#519f50}.hljs-tag,.hljs-tag .hljs-keyword,.hljs-tag .hljs-title,.hljs-doctype,.hljs-sub .hljs-identifier,.hljs-pi,.input_number{color:#e8bf6a}.hljs-identifier{color:#d0d0ff}.hljs-class .hljs-title,.hljs-type,.smalltalk .hljs-class,.hljs-javadoctag,.hljs-yardoctag,.hljs-phpdoc,.hljs-dartdoc{text-decoration:none}.hljs-constant{color:#da4939}.hljs-symbol,.hljs-built_in,.ruby .hljs-symbol .hljs-string,.ruby .hljs-symbol .hljs-identifier,.asciidoc .hljs-link_url,.markdown .hljs-link_url,.hljs-attribute{color:#6d9cbe}.asciidoc .hljs-link_url,.markdown .hljs-link_url{text-decoration:underline}.hljs-params,.hljs-variable,.clojure .hljs-attribute{color:#d0d0ff}.css .hljs-tag,.hljs-rules .hljs-property,.hljs-pseudo,.tex .hljs-special{color:#cda869}.css .hljs-class{color:#9b703f}.hljs-rules .hljs-keyword{color:#c5af75}.hljs-rules .hljs-value{color:#cf6a4c}.css .hljs-id{color:#8b98ab}.hljs-annotation,.apache .hljs-sqbracket,.nginx .hljs-built_in{color:#9b859d}.hljs-preprocessor,.hljs-preprocessor *,.hljs-pragma{color:#8996a8 !important}.hljs-hexcolor,.css .hljs-value .hljs-number{color:#a5c261}.hljs-title,.hljs-decorator,.css .hljs-function{color:#ffc66d}.diff .hljs-header,.hljs-chunk{background-color:#2f33ab;color:#e6e1dc;display:inline-block;width:100%}.diff .hljs-change{background-color:#4a410d;color:#f8f8f8;display:inline-block;width:100%}.hljs-addition{background-color:#144212;color:#e6e1dc;display:inline-block;width:100%}.hljs-deletion{background-color:#600;color:#e6e1dc;display:inline-block;width:100%}.coffeescript .javascript,.javascript .xml,.tex .hljs-formula,.xml .javascript,.xml .vbscript,.xml .css,.xml .hljs-cdata{opacity:0.7}
 body {
     line-height: 1.4;
-    background: #fff;
     color: rgba(0, 0, 0, 0.8);
-    font-style: normal;
     font-size: 16px;
+    background: #fff;
     font-family: "freight-text-pro",Georgia,Cambria,"Times New Roman",Times,serif;
-    height: 100%;
+    font-style: normal;
     min-height: 100%;
+    height: 100%;
     min-height: 300px;
 }
 
@@ -30,7 +31,9 @@ body {
     display: none !important;
 }
 
-.form-group .help-block {
+.form-group .help-block,
+dl.class .property,
+dl.class .descclassname {
     display: none;
 }
 
@@ -43,14 +46,14 @@ body {
 }
 
 .absolute-full {
-    bottom: 0;
     position: absolute;
+    bottom: 0;
     top: 0;
 }
 
 .navbar2-wrapper {
-    min-height: 100%;
     width: 100%;
+    min-height: 100%;
 }
 
 .navbar2-page {
@@ -70,21 +73,30 @@ body {
 }
 @media all and (min-width:768px) {
     .sidebar {
-        z-index: 1;
         position: absolute;
-        margin-top: 51px;
         width: 250px;
+        z-index: 1;
+        margin-top: 51px;
     }
 
 }
+code.hljs.inline {
+    display: inline;
+    padding: 2px 4px;
+}
+
+dl.class tt.descname {
+    font-size: 24px;
+}
+
 .dir-entry-image {
     max-height: 120px;
     overflow: hidden;
 }
 
 .dir-entry-image img {
-    height: auto;
     width: 120px;
+    height: auto;
 }
 
 h1:hover > a.headerlink,
@@ -98,10 +110,10 @@ dt:hover > a.headerlink {
 }
 
 a.headerlink {
-    padding: 0 4px;
-    text-decoration: none;
-    visibility: hidden;
     color: #eee;
+    visibility: hidden;
+    text-decoration: none;
+    padding: 0 4px;
 }
 
 a.headerlink:hover {
@@ -113,8 +125,8 @@ a.headerlink:hover {
 }
 
 div.viewcode-block:target {
-    padding: 0 10px;
     margin: -1px -10px;
+    padding: 0 10px;
 }
 
 .hover-opacity {
@@ -165,8 +177,8 @@ div.viewcode-block:target {
 
 .fullpage,
 html {
-    height: 100%;
     min-height: 100%;
+    height: 100%;
 }
 
 #lux-logo {
@@ -196,21 +208,25 @@ a.navbar-brand {
 }
 
 a.navbar-brand img {
-    height: 50px;
     width: auto;
+    height: 50px;
+}
+
+#page {
+    padding-top: 51px;
 }
 
 #page-main {
-    min-height: 500px;
     padding-top: 20px;
     padding-bottom: 50px;
+    min-height: 500px;
 }
 
 #page-footer {
-    background-color: #005a8a;
-    min-height: 300px;
     padding-top: 20px;
     color: #e5c700;
+    min-height: 300px;
+    background-color: #005a8a;
 }
 
 .page-header {
@@ -219,9 +235,9 @@ a.navbar-brand img {
 }
 
 .page-header.index-header {
-    background-color: #005a8a;
-    height: 100%;
-    width: 100%;
-    min-height: 300px;
     color: #eee;
+    min-height: 300px;
+    width: 100%;
+    height: 100%;
+    background-color: #005a8a;
 }

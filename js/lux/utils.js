@@ -1,51 +1,50 @@
-    var generateResize = function () {
-        var resizeFunctions = [],
-            callResizeFunctions = function () {
-                resizeFunctions.forEach(function (f) {
-                    f();
+    var
+    //
+    generateCallbacks = function () {
+        var callbackFunctions = [],
+            callFunctions = function () {
+                var self = this,
+                    args = slice.call(arguments, 0);
+                callbackFunctions.forEach(function (f) {
+                    f.apply(self, args);
                 });
             };
         //
-        callResizeFunctions.add = function (f) {
-            resizeFunctions.push(f);
+        callFunctions.add = function (f) {
+            callbackFunctions.push(f);
         };
-        return callResizeFunctions;
-    };
-
+        return callFunctions;
+    },
     //
-    //  Utilities
+    // Add a callback for an event to an element
+    addEvent = lux.addEvent = function (element, event, callback) {
+        var handler = element[event];
+        if (!handler)
+            element[event] = handler = generateCallbacks();
+        if (handler.add)
+            handler.add(callback);
+    },
     //
-    var windowResize = lux.windowResize = function (callback, delay) {
-        var handle;
-        delay = delay ? +delay : 0;
-
-        function execute () {
-            handle = null;
-            callback();
-        }
-
-        if (window.onresize === null) {
-            window.onresize = generateResize();
-        }
-        if (window.onresize.add) {
-            if (delay) {
-                window.onresize.add(function (e) {
-                    if (!handle)
-                        handle = setTimeout(execute, delay);
-                });
-            } else {
-                window.onresize.add(callback);
-            }
-        }
-    };
-
-    var windowHeight = lux.windowHeight = function () {
+    windowResize = lux.windowResize = function (callback) {
+        addEvent(window, 'onresize', callback);
+    },
+    //
+    windowHeight = lux.windowHeight = function () {
         return window.innerHeight > 0 ? window.innerHeight : screen.availHeight;
-    };
-
-    var isAbsolute = new RegExp('^([a-z]+://|//)');
-
-    var isTag = function (element, tag) {
+    },
+    //
+    isAbsolute = new RegExp('^([a-z]+://|//)'),
+    //
+    isTag = function (element, tag) {
         element = $(element);
         return element.length === 1 && element[0].tagName.toLowerCase() === tag.toLowerCase();
+    },
+    //
+    joinUrl = lux.joinUrl = function (base, url) {
+        while (url.substring(0, 1) === '/')
+            url = url.substring(1);
+        url = '/' + url;
+        while (base.substring(base.length-1) === '/')
+            base = base.substring(0, base.length-1);
+        return base + url;
     };

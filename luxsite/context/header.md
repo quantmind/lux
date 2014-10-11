@@ -2,7 +2,7 @@ context_header: index
 
 <img id="lux-logo" src="$site_url$site_media/luxsite/lux.svg" alt="Lux">
 <br>
-<p class="lead">Lux is library for building dynamic and static web sites using Python and AngularJS</p>
+<p class="lead">Lux is library for building super web sites using Python and AngularJS</p>
 <p class="lead hidden-xs">
     <a class="btn btn-success btn-lg width160" href="https://github.com/quantmind/lux">
     <i class="fa fa-github fa-lg"></i> Source Code</a>

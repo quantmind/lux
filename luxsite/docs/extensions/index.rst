@@ -9,11 +9,9 @@ Extensions
 .. toctree::
    :maxdepth: 1
 
-   app
    base
    sessions
    api
-   admin
    ui
+   angular
    static
-   google

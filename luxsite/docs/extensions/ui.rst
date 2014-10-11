@@ -1,7 +1,7 @@
 .. _extension-ui:
 
 =============================
-User Interface
+Cascading Style Sheets
 =============================
 
 .. automodule:: lux.extensions.ui

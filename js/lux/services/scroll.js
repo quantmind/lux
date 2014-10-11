@@ -1,7 +1,13 @@
-
+    //
+    //  Hash scrolling service
     angular.module('lux.scroll', [])
-        .service('scroll', ['$location', '$log', '$timeout', function ($location, $log, $timeout) {
+        .run(function() {
             //
+            addEvent(window, 'onload', function (e) {
+                var a = 1;
+            });
+        })
+        .service('scroll', ['$location', '$log', '$timeout', function ($location, $log, $timeout) {
             //  ScrollToHash
             this.toHash = function (hash, offset) {
                 var e;

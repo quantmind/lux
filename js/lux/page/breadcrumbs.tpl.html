@@ -1,0 +1,6 @@
+<ol class="breadcrumb">
+    <li ng-repeat="step in steps" ng-class="{active: step.last}">
+        <a ng-if="!step.last" href="{{step.href}}">{{step.label}}</a>
+        <span ng-if="step.last">{{step.label}}</span>
+    </li>
+</ol>

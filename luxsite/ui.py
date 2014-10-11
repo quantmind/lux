@@ -46,6 +46,9 @@ def add_css(all):
             width='auto'),
         padding=0)
 
+    css('#page',
+        padding_top=px(vars.navbar_height) + 1)
+
     css('#page-main',
         min_height=px(500),
         padding_top=px(20),

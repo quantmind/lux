@@ -12,7 +12,8 @@ from .ui import add_css
 class Extension(lux.Extension):
 
     _config = [
-        Parameter('HTML5_NAVIGATION', False, 'Enable Html5 navigation'),
+        Parameter('HTML5_NAVIGATION', True, 'Enable Html5 navigation'),
+        Parameter('ANGULAR_UI_ROUTER', False, 'Enable Angular ui-router'),
         Parameter('NAVBAR_COLLAPSE_WIDTH', 768,
                   'Width when to collapse the navbar'),
         Parameter('NGMODULES', [], 'Angular module to load')
@@ -52,16 +53,17 @@ class Router(lux.Router, MediaMixin):
 
     def get(self, request):
         app = request.app
-        html5 = app.config['HTML5_NAVIGATION']
+        uirouter = app.config['ANGULAR_UI_ROUTER']
         doc = request.html_document
         doc.body.data({'ng-model': 'page',
-                       'ng-controller': 'Page'})
-        jscontext = {}
+                       'ng-controller': 'Page',
+                       'page': ''})
+        jscontext = {'html5mode': app.config['HTML5_NAVIGATION']}
         context = {}
         main = self.build_main(request, context, jscontext)
         #
         # Using Angular Ui-Router
-        if html5:
+        if uirouter:
             jscontext.update(self.sitemap(app))
             jscontext['page'] = router_href(request.app_handler.full_route)
         else:
@@ -70,7 +72,7 @@ class Router(lux.Router, MediaMixin):
                 ngmodules.update(self.ngmodules)
             jscontext['ngModules'] = tuple(ngmodules)
 
-        if html5:
+        if uirouter:
             main = self.uiview(app, main)
 
         context['html_main'] = main
@@ -78,7 +80,7 @@ class Router(lux.Router, MediaMixin):
                                  jscontext=jscontext, context=context)
 
     def build_main(self, request, context, jscontext):
-        '''Build the context when not using html5 navigation
+        '''Build the context when not using ui-router navigation
         '''
         return {}
 
@@ -109,7 +111,7 @@ class Router(lux.Router, MediaMixin):
             ngmodues.add('ui.router')
             sitemap = {'hrefs': [],
                        'pages': {},
-                       'html5mode': True,
+                       'uiRouter': True,
                        'ngModules': ngmodues}
             add_to_sitemap(sitemap, app, root)
             sitemap['ngModules'] = tuple(ngmodues)

@@ -143,7 +143,7 @@ def collect_pages(app):
     if not modnames:
         return
 
-    app.builder.info(' _modules/index', nonl=True)
+    app.builder.info(' ' + modules_path + 'index', nonl=True)
     html = ['\n']
     # the stack logic is needed for using nested lists for submodules
     stack = ['']
@@ -175,5 +175,3 @@ def setup(app):
     app.connect('doctree-read', doctree_read)
     app.connect('html-collect-pages', collect_pages)
     app.connect('missing-reference', missing_reference)
-    #app.add_config_value('viewcode_include_modules', [], 'env')
-    #app.add_config_value('viewcode_exclude_modules', [], 'env')
