@@ -1,7 +1,7 @@
-angular.module('templates-nav', ['lux/nav/navbar.tpl.html', 'lux/nav/navbar2.tpl.html']);
+angular.module('templates-nav', ['nav/navbar.tpl.html', 'nav/navbar2.tpl.html']);
 
-angular.module("lux/nav/navbar.tpl.html", []).run(["$templateCache", function($templateCache) {
-  $templateCache.put("lux/nav/navbar.tpl.html",
+angular.module("nav/navbar.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("nav/navbar.tpl.html",
     "<nav id='top' class=\"navbar-static-top navbar-{{navbar.themeTop}}\" ng-class=\"{'navbar-fixed-top':navbar.fixed}\" role=\"navigation\"\n" +
     "ng-model=\"navbar.collapse\" ng-controller=\"Navigation\" bs-collapse>\n" +
     "    <div class=\"container-fluid\">\n" +
@@ -37,8 +37,8 @@ angular.module("lux/nav/navbar.tpl.html", []).run(["$templateCache", function($t
     "</nav>");
 }]);
 
-angular.module("lux/nav/navbar2.tpl.html", []).run(["$templateCache", function($templateCache) {
-  $templateCache.put("lux/nav/navbar2.tpl.html",
+angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("nav/navbar2.tpl.html",
     "<nav class=\"navbar navbar-{{navbar.themeTop}} navbar-fixed-top\" role=\"navigation\" ng-model=\"navbar.collapse\" bs-collapse>\n" +
     "    <div class=\"navbar-header\">\n" +
     "        <button type=\"button\" class=\"navbar-toggle\" bs-collapse-toggle>\n" +

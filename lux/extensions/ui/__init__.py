@@ -1,4 +1,4 @@
-'''User interface for styling HTML5 pages.
+'''Extension for creating style sheets using python.
 
 To use this extension, add the ``lux.extensions.ui`` entry into the
 :setting:`EXTENSIONS` list in your config file.

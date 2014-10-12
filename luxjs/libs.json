@@ -1,0 +1,39 @@
+{
+    "html2js": {
+        "options": {
+            "base": "luxjs"
+        },
+        "page": {
+            "src": "luxjs/page/*.tpl.html",
+            "dest": "luxjs/page/page-template.js"
+        },
+        "blog": {
+            "src": "luxjs/blog/*.tpl.html",
+            "dest": "luxjs/blog/blog-template.js"
+        },
+        "nav": {
+            "src": "luxjs/nav/*.tpl.html",
+            "dest": "luxjs/nav/nav-template.js"
+        }
+    },
+    "lux": {
+        "options": {
+            "banner": "luxjs/banner.js"
+        },
+        "src": ["luxjs/open.js",
+                "luxjs/utils.js",
+                "luxjs/class.js",
+                "luxjs/api.js",
+                "luxjs/services/*.js",
+                "luxjs/page/*.js",
+                "luxjs/bootstrap.js",
+                "luxjs/blog/*.js",
+                "luxjs/nav/*.js",
+                "luxjs/user/*.js",
+                "luxjs/misc/*.js",
+                "luxjs/google/*.js",
+                "luxjs/viz/*.js",
+                "luxjs/close.js"],
+        "dest": "lux/media/lux/lux.js"
+    }
+}

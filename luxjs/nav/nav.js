@@ -60,7 +60,7 @@
     //  Directive for the navbar
     .directive('navbar', function () {
         return {
-            templateUrl: "lux/nav/navbar.tpl.html",
+            templateUrl: "nav/navbar.tpl.html",
             restrict: 'AE'
         };
     })
@@ -68,7 +68,7 @@
     //  Directive for the navbar with sidebar (nivebar2 template)
     .directive('navbar2', function () {
         return {
-            templateUrl: "lux/nav/navbar2.tpl.html",
+            templateUrl: "nav/navbar2.tpl.html",
             restrict: 'AE'
         };
     })

@@ -20,7 +20,7 @@ def runtests(**params):
     import lux
     TestSuite(description='Lux Asynchronous test suite',
               version=lux.__version__,
-              modules=['tests'],
+              modules=['tests.luxpy'],
               plugins=(bench.BenchMark(),
                        profile.Profile()),
               **params).start()

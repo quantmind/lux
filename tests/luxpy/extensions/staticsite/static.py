@@ -3,14 +3,12 @@ from pulsar.apps.wsgi import WsgiHandler
 from lux.utils import test
 from lux.extensions.static import HtmlContent
 
-from .static import StaticSiteMixin
+from . import StaticSiteMixin
 
 
 class StaticSiteTests(StaticSiteMixin, test.TestCase):
-    config_params = {'TEST_DOCS': True,
-                     'STATIC_LOCATION': 'tests/extensions/staticsite/build2'}
 
-    def __test_middleware(self):
+    def test_middleware(self):
         app = self.application()
         wsgi = app.handler
         self.assertIsInstance(wsgi, WsgiHandler)
@@ -23,4 +21,17 @@ class StaticSiteTests(StaticSiteMixin, test.TestCase):
         self.assertIsInstance(site, HtmlContent)
         items = site.build(app)
         self.assertTrue(items)
-        self.assertEqual(len(items), 10)
+        self.assertEqual(len(items), 6)
+        #
+        # last file should be the index.html
+        item = items[-1]
+        self.assertTrue(item.file.endswith('/index.html'))
+
+    def test_blog_post(self):
+        app = self.application()
+        site = app.handler.middleware[-1]
+        items = site.build(app)
+        for item in items:
+            if item and item.file.endswith('/blog1.html'):
+                return
+        raise Exception('Could not fine blog1.html')

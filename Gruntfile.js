@@ -5,7 +5,7 @@ module.exports = function (grunt) {
     // Project configuration.
     var docco_output = '../docs/lux/html/docco',
         // All libraries
-        libs = grunt.file.readJSON('js/libs.json'),
+        libs = grunt.file.readJSON('luxjs/libs.json'),
         allHtml2js = {},
         buildTasks = ['gruntfile', 'concat', 'jshint', 'uglify'],
         cfg = {
@@ -15,8 +15,8 @@ module.exports = function (grunt) {
                 // need to set it even if we don't use it
                 src : [],
                 options : {
-                    specs : 'js/tests/*.js',
-                    template: 'js/tests/test.tpl.html',
+                    specs : 'tests/luxjs/*.js',
+                    template: 'tests/luxjs/test.tpl.html',
                     templateOptions: {
                         deps: ['lux/media/lux/lux.min.js', 'angular-strap', 'angular-mocks']
                     }

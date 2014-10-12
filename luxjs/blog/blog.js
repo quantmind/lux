@@ -13,13 +13,13 @@
         }])
         .directive('blogPagination', function () {
             return {
-                templateUrl: "lux/blog/pagination.tpl.html",
+                templateUrl: "blog/pagination.tpl.html",
                 restrict: 'AE'
             };
         })
         .directive('blogHeader', function () {
             return {
-                templateUrl: "lux/blog/header.tpl.html",
+                templateUrl: "blog/header.tpl.html",
                 restrict: 'AE'
             };
         })

@@ -1,3 +1,6 @@
+import os
+import shutil
+
 import lux
 from lux import Parameter
 from lux.extensions.static import HtmlContent, Blog, Sitemap, SphinxDocs
@@ -10,8 +13,21 @@ EXTENSIONS = ['lux.extensions.base',
               'lux.extensions.angular',
               'lux.extensions.static']
 
-STATIC_LOCATION = 'tests/extensions/staticsite/build'
-CONTEXT_LOCATION = 'tests/extensions/staticsite/content/context'
+
+base = 'tests/luxpy/extensions/staticsite/'
+STATIC_LOCATION = base + 'build'
+CONTEXT_LOCATION = base + 'content/context'
+
+
+class StaticSiteMixin(object):
+    config_file = base.replace('/', '.').strip('.')
+
+    def tearDown(self):
+        if self.apps:
+            for app in self.apps:
+                dir = os.path.abspath(app.config['STATIC_LOCATION'])
+                if os.path.isdir(dir):
+                    shutil.rmtree(dir)
 
 
 class Extension(lux.Extension):
@@ -24,12 +40,11 @@ class Extension(lux.Extension):
             Blog('blog',
                  child_url='<int:year>/<month2>/<slug>',
                  html_body_template='blog.html',
-                 dir='tests/extensions/staticsite/content/blog',
+                 dir=base+'content/blog',
                  meta_child={'og:type', 'article'}),
-            dir='tests/extensions/staticsite/content/site',
+            dir=base+'content/site',
             meta={'template': 'main.html'})
         if app.config['TEST_DOCS']:
-            doc = SphinxDocs('docs',
-                             dir='tests/extensions/staticsite/content/docs')
+            doc = SphinxDocs('docs', dir=base+'content/docs')
             content.add_child(doc)
         return [content]

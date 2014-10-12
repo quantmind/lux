@@ -1,6 +1,6 @@
 //      Lux Library - v0.1.0
 
-//      Compiled 2014-10-11.
+//      Compiled 2014-10-12.
 //      Copyright (c) 2014 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -824,10 +824,10 @@ function(angular, root) {
             };
         });
 
-angular.module('templates-page', ['lux/page/breadcrumbs.tpl.html']);
+angular.module('templates-page', ['page/breadcrumbs.tpl.html']);
 
-angular.module("lux/page/breadcrumbs.tpl.html", []).run(["$templateCache", function($templateCache) {
-  $templateCache.put("lux/page/breadcrumbs.tpl.html",
+angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("page/breadcrumbs.tpl.html",
     "<ol class=\"breadcrumb\">\n" +
     "    <li ng-repeat=\"step in steps\" ng-class=\"{active: step.last}\">\n" +
     "        <a ng-if=\"!step.last\" href=\"{{step.href}}\">{{step.label}}</a>\n" +
@@ -1116,17 +1116,17 @@ angular.module("lux/page/breadcrumbs.tpl.html", []).run(["$templateCache", funct
         }
     };
 
-angular.module('templates-blog', ['lux/blog/header.tpl.html', 'lux/blog/pagination.tpl.html']);
+angular.module('templates-blog', ['blog/header.tpl.html', 'blog/pagination.tpl.html']);
 
-angular.module("lux/blog/header.tpl.html", []).run(["$templateCache", function($templateCache) {
-  $templateCache.put("lux/blog/header.tpl.html",
+angular.module("blog/header.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("blog/header.tpl.html",
     "<h2 data-ng-bind=\"page.title\"></h2>\n" +
     "<p class=\"small\">by {{page.authors}} on {{page.dateText}}</p>\n" +
     "<p class=\"lead storyline\">{{page.description}}</p>");
 }]);
 
-angular.module("lux/blog/pagination.tpl.html", []).run(["$templateCache", function($templateCache) {
-  $templateCache.put("lux/blog/pagination.tpl.html",
+angular.module("blog/pagination.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("blog/pagination.tpl.html",
     "<ul class=\"media-list\">\n" +
     "    <li ng-repeat=\"post in items\" class=\"media\" data-ng-controller='BlogEntry'>\n" +
     "        <a href=\"{{post.html_url}}\" class=\"pull-left hidden-xs dir-entry-image\">\n" +
@@ -1162,13 +1162,13 @@ angular.module("lux/blog/pagination.tpl.html", []).run(["$templateCache", functi
         }])
         .directive('blogPagination', function () {
             return {
-                templateUrl: "lux/blog/pagination.tpl.html",
+                templateUrl: "blog/pagination.tpl.html",
                 restrict: 'AE'
             };
         })
         .directive('blogHeader', function () {
             return {
-                templateUrl: "lux/blog/header.tpl.html",
+                templateUrl: "blog/header.tpl.html",
                 restrict: 'AE'
             };
         })
@@ -1229,10 +1229,10 @@ angular.module("lux/blog/pagination.tpl.html", []).run(["$templateCache", functi
 
         });
     };
-angular.module('templates-nav', ['lux/nav/navbar.tpl.html', 'lux/nav/navbar2.tpl.html']);
+angular.module('templates-nav', ['nav/navbar.tpl.html', 'nav/navbar2.tpl.html']);
 
-angular.module("lux/nav/navbar.tpl.html", []).run(["$templateCache", function($templateCache) {
-  $templateCache.put("lux/nav/navbar.tpl.html",
+angular.module("nav/navbar.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("nav/navbar.tpl.html",
     "<nav id='top' class=\"navbar-static-top navbar-{{navbar.themeTop}}\" ng-class=\"{'navbar-fixed-top':navbar.fixed}\" role=\"navigation\"\n" +
     "ng-model=\"navbar.collapse\" ng-controller=\"Navigation\" bs-collapse>\n" +
     "    <div class=\"container-fluid\">\n" +
@@ -1268,8 +1268,8 @@ angular.module("lux/nav/navbar.tpl.html", []).run(["$templateCache", function($t
     "</nav>");
 }]);
 
-angular.module("lux/nav/navbar2.tpl.html", []).run(["$templateCache", function($templateCache) {
-  $templateCache.put("lux/nav/navbar2.tpl.html",
+angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("nav/navbar2.tpl.html",
     "<nav class=\"navbar navbar-{{navbar.themeTop}} navbar-fixed-top\" role=\"navigation\" ng-model=\"navbar.collapse\" bs-collapse>\n" +
     "    <div class=\"navbar-header\">\n" +
     "        <button type=\"button\" class=\"navbar-toggle\" bs-collapse-toggle>\n" +
@@ -1378,7 +1378,7 @@ angular.module("lux/nav/navbar2.tpl.html", []).run(["$templateCache", function($
     //  Directive for the navbar
     .directive('navbar', function () {
         return {
-            templateUrl: "lux/nav/navbar.tpl.html",
+            templateUrl: "nav/navbar.tpl.html",
             restrict: 'AE'
         };
     })
@@ -1386,7 +1386,7 @@ angular.module("lux/nav/navbar2.tpl.html", []).run(["$templateCache", function($
     //  Directive for the navbar with sidebar (nivebar2 template)
     .directive('navbar2', function () {
         return {
-            templateUrl: "lux/nav/navbar2.tpl.html",
+            templateUrl: "nav/navbar2.tpl.html",
             restrict: 'AE'
         };
     })
