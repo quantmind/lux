@@ -12,7 +12,7 @@ EXTENSIONS = ('lux.extensions.base',
               'lux.extensions.angular',
               'lux.extensions.code',
               'lux.extensions.static')
-
+STATIC_API = 'jsonapi'
 CONTEXT_LOCATION = 'luxsite/context'
 STATIC_LOCATION = '../docs/luxsite'
 MD_EXTENSIONS = ['extra', 'meta', 'toc']

@@ -40,11 +40,29 @@
         return element.length === 1 && element[0].tagName.toLowerCase() === tag.toLowerCase();
     },
     //
-    joinUrl = lux.joinUrl = function (base, url) {
-        while (url.substring(0, 1) === '/')
-            url = url.substring(1);
-        url = '/' + url;
-        while (base.substring(base.length-1) === '/')
-            base = base.substring(0, base.length-1);
-        return base + url;
+    joinUrl = lux.joinUrl = function () {
+        var bit, url = '';
+        for (var i=0; i<arguments.length; ++i) {
+            bit = arguments[i];
+            if (bit) {
+                var cbit = bit,
+                    slash = false;
+                // remove fron slashes if url has already some value
+                while (url && cbit.substring(0, 1) === '/')
+                    cbit = cbit.substring(1);
+                // remove end slashes
+                while (cbit.substring(cbit.length-1) === '/') {
+                    slash = true;
+                    cbit = cbit.substring(0, cbit.length-1);
+                }
+                if (cbit) {
+                    if (url && url.substring(url.length-1) !== '/')
+                        url += '/';
+                    url += cbit;
+                    if (slash)
+                        url += '/';
+                }
+            }
+        }
+        return url;
     };

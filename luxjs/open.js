@@ -54,12 +54,8 @@ function(angular, root) {
         return lux;
     };
 
-    lux.media = function (url) {
-        var base = this.context.media;
-        while (url.substring(0, 1) === '/')
-            url = url.substring(1);
-        if (url)
-            url = '/' + url;
-        base = base.substring(base.length) === '/' ? base.substring(0, base.length-1): base;
-        return base + url;
+    lux.media = function (url, ctx) {
+        if (!ctx)
+            ctx = lux.context;
+        return joinUrl(ctx.url, ctx.media, url);
     };

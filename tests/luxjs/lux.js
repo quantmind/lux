@@ -13,9 +13,11 @@
         });
 
         it("Check lux media function", function() {
-            expect(lux.media('foo')).toBe('/foo');
-            expect(lux.media('/foo')).toBe('/foo');
-            expect(lux.media('////foo')).toBe('/foo');
+            lux.context.media = '/media/'
+            expect(lux.media('foo')).toBe('/media/foo');
+            expect(lux.media('/foo')).toBe('/media/foo');
+            expect(lux.media('////foo')).toBe('/media/foo');
+            expect(lux.media('//foo/////')).toBe('/media/foo/');
         });
     });
 
@@ -26,7 +28,7 @@
         it("Check joinUrl", function() {
             expect(joinUrl('bla', 'foo')).toBe('bla/foo');
             expect(joinUrl('bla/', '/foo')).toBe('bla/foo');
-            expect(joinUrl('bla', '')).toBe('bla/');
+            expect(joinUrl('bla', '')).toBe('bla');
             expect(joinUrl('bla', '///foo')).toBe('bla/foo');
             expect(joinUrl('bla//////', '///foo')).toBe('bla/foo');
         });
