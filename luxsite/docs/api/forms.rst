@@ -1,15 +1,9 @@
 
 .. _api-forms:
 
-Forms
-=============================
+===============================
+Forms API
+===============================
 
 .. automodule:: lux.forms
 
-
-.. _api-templates:
-
-Templates
-=============================
-
-.. automodule:: lux.core.templates

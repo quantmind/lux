@@ -1,16 +1,12 @@
-.. _api:
+.. _jsapi:
 
 ===============================
-Python API
+Javascript API
 ===============================
 
 .. toctree::
    :maxdepth: 1
 
-   core
-   forms
-   params
-   base
-   ui
-   angular
-   static
+   nav
+   scroll
+   code

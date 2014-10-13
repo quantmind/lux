@@ -4,4 +4,5 @@
 AngularJS Integration
 =============================
 
-.. automodule:: lux.extensions.angular
+This extension is required when using :ref:`lux.js <jsapi>` javascript module.
+It provides the link between AngularJS and Python.

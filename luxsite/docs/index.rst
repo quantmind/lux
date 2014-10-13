@@ -8,6 +8,7 @@ Contents
    overview
    tutorials/index
    api/index
+   js/index
    changelog
 
 

@@ -1,7 +1,7 @@
 .. _middleware-base:
 
 =============================
-Base
+Base Extension
 =============================
 
 .. automodule:: lux.extensions.base

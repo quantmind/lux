@@ -1,6 +1,7 @@
-<nav id='top' class="navbar-static-top navbar-{{navbar.themeTop}}" ng-class="{'navbar-fixed-top':navbar.fixed}" role="navigation"
-ng-model="navbar.collapse" ng-controller="Navigation" bs-collapse>
-    <div class="container-fluid">
+<nav class="navbar-static-top navbar-{{navbar.themeTop}}"
+ng-class="{'navbar-fixed-top':navbar.fixed}" role="navigation"
+ng-model="navbar.collapse" bs-collapse>
+    <div ng-attr-id='{{navbar.id}}' class="container-fluid">
         <div class="navbar-header">
             <button type="button" class="navbar-toggle" bs-collapse-toggle>
                 <span class="sr-only">Toggle navigation</span>

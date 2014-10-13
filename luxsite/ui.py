@@ -8,19 +8,20 @@ def add_css(all):
     media_url = all.app.config['MEDIA_URL']
 
     vars.font_family = '"freight-text-pro",Georgia,Cambria,"Times New Roman",Times,serif'
-    vars.font_size = px(16)
-    vars.line_height = 1.4
+    vars.font_size = px(18)
+    vars.line_height = 1.5
     vars.color = color(0,0,0,0.8)
 
     vars.navbar_height = 50
     vars.colors.lux_blue = color('#005A8A')
     vars.colors.lux_yellow = color('#E5C700')
+    vars.scroll.background = vars.colors.lux_yellow
 
     add_classes(all)
 
-    css('.fullpage, body, html',
-        height=pc(100),
-        min_height=pc(100))
+    css('.fullpage, .angular-view, body, html',
+        height=pc(101),
+        min_height=pc(101))
 
     css('#lux-logo',
         height=px(300))
@@ -37,7 +38,7 @@ def add_css(all):
         ).css('#lux-logo',
               height=px(100))
 
-    css('a.navbar-brand',
+    css('#top a.navbar-brand',
         css(' img',
             height=px(vars.navbar_height),
             width='auto'),
@@ -80,10 +81,3 @@ def add_classes(all):
         d = 20*w
         css('.width%d' % d,
             width=px(d))
-
-    css(':target',
-        background=vars.colors.lux_yellow),
-
-    css('.ease-target:target',
-        Transition('all', '2s', 'ease'),
-        background='transparent')

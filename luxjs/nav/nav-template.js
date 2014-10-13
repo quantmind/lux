@@ -2,9 +2,10 @@ angular.module('templates-nav', ['nav/navbar.tpl.html', 'nav/navbar2.tpl.html'])
 
 angular.module("nav/navbar.tpl.html", []).run(["$templateCache", function($templateCache) {
   $templateCache.put("nav/navbar.tpl.html",
-    "<nav id='top' class=\"navbar-static-top navbar-{{navbar.themeTop}}\" ng-class=\"{'navbar-fixed-top':navbar.fixed}\" role=\"navigation\"\n" +
-    "ng-model=\"navbar.collapse\" ng-controller=\"Navigation\" bs-collapse>\n" +
-    "    <div class=\"container-fluid\">\n" +
+    "<nav class=\"navbar-static-top navbar-{{navbar.themeTop}}\"\n" +
+    "ng-class=\"{'navbar-fixed-top':navbar.fixed}\" role=\"navigation\"\n" +
+    "ng-model=\"navbar.collapse\" bs-collapse>\n" +
+    "    <div ng-attr-id='{{navbar.id}}' class=\"container-fluid\">\n" +
     "        <div class=\"navbar-header\">\n" +
     "            <button type=\"button\" class=\"navbar-toggle\" bs-collapse-toggle>\n" +
     "                <span class=\"sr-only\">Toggle navigation</span>\n" +

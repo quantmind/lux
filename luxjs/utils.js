@@ -35,9 +35,10 @@
     //
     isAbsolute = new RegExp('^([a-z]+://|//)'),
     //
+    // Check if element has tagName tag
     isTag = function (element, tag) {
         element = $(element);
-        return element.length === 1 && element[0].tagName.toLowerCase() === tag.toLowerCase();
+        return element.length === 1 && element[0].tagName === tag.toUpperCase();
     },
     //
     joinUrl = lux.joinUrl = function () {
@@ -65,4 +66,26 @@
             }
         }
         return url;
+    },
+    //
+    //  getOPtions
+    //  ===============
+    //
+    //  Retrive options for the ``options`` string in ``attrs`` if available.
+    //  Used by directive when needing to specify options in javascript rather
+    //  than html data attributes.
+    getOptions = function (attrs) {
+        if (attrs && typeof attrs.options === 'string') {
+            var obj = root,
+                bits= attrs.options.split('.');
+
+            for (var i=0; i<bits.length; ++i) {
+                obj = obj[bits[i]];
+                if (!obj) break;
+            }
+            if (typeof obj === 'function')
+                obj = obj();
+            attrs = extend(attrs, obj);
+        }
+        return attrs;
     };

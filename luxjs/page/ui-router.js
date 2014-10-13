@@ -4,7 +4,7 @@
     //  Configure ui-Router using lux routing objects
     //  Only when context.html5mode is true
     //  Python implementation in the lux.extensions.angular Extension
-    angular.module('lux.ui.router', ['lux.page'])
+    angular.module('lux.ui.router', ['lux.page', 'ui.router'])
         .config(['$locationProvider', '$stateProvider', '$urlRouterProvider',
             function ($locationProvider, $stateProvider, $urlRouterProvider) {
 
@@ -64,13 +64,14 @@
                     $scope.page = addPageInfo(page.data, $scope, dateFilter, $lux);
                 }
             }])
-        .directive('dynamicPage', ['$compile', '$log', function ($compile, $log) {
+        .directive('dynamicPage', ['$compile', '$log', function ($compile, log) {
             return {
                 link: function (scope, element, attrs) {
                     scope.$on('$stateChangeSuccess', function () {
                         var page = scope.page;
-                        if (page.html_main) {
-                            element.html(page.html_main);
+                        if (page.html && page.html.main) {
+                            element.html(page.html.main);
+                            log.info('Compiling new html content');
                             $compile(element.contents())(scope);
                         }
                     });

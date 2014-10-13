@@ -30,6 +30,7 @@
             var element = '<navbar></navbar>';
 
             scope = $rootScope.$new();
+            scope.url = '/foo'
             scope.items = [
                 {href: '/', name: 'home'},
                 {href: '/foo'}];

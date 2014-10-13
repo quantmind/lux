@@ -1,6 +1,3 @@
-'''
-This extension is required when using ``lux`` javascript module.
-'''
 import lux
 from lux import Parameter
 

@@ -6,6 +6,7 @@ def add_css(all):
     cfg = all.app.config
 
     add_navbar(all)
+    add_scroll(all)
 
 
 def add_navbar(all):
@@ -59,3 +60,15 @@ def add_navbar(all):
         position='absolute',
         width=sidebar.width,
         z_index=1)
+
+
+def add_scroll(all):
+    css = all.css
+    vars = all.variables
+    vars.scroll.background = 'inherit'
+
+    css('.scroll-target',
+        css('.finished',
+            Transition('all', '2s', 'ease'),
+            background='inherit'),
+        background=vars.scroll.background)

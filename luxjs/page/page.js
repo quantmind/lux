@@ -24,7 +24,7 @@
     //  Lux angular
     //  ==============
     //  Lux main module for angular. Design to work with the ``lux.extension.angular``
-    angular.module('lux.page', ['lux.services', 'lux.form', 'templates-page'])
+    angular.module('lux.page', ['lux.services', 'lux.form', 'lux.scroll', 'templates-page'])
         //
         .controller('Page', ['$scope', '$lux', 'dateFilter', function ($scope, $lux, dateFilter) {
             //
@@ -75,9 +75,6 @@
                     folder = url.substring(url.length-1) === '/';
                 return base === url && (folder || (rest === '' || rest.substring(0, 1) === '/'));
             };
-
-            $scope.scrollToHash = $lux.scrollToHash;
-
         }])
         .service('$breadcrumbs', [function () {
 

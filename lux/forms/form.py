@@ -128,11 +128,10 @@ class FormType(type):
 
 
 class Form(FormType('BaseForm', (UnicodeMixin,), {})):
-    '''Base class for forms with asynchronous validation.
+    '''Base class for forms.
 
     It can be used for browser based applications as well as remote procedure
     calls validation.
-
     If :attr:`data` is not ``None``, this :class:`Form` bind itself to the
     data, otherwise it remains unbounded.
 

@@ -12,6 +12,7 @@ EXTENSIONS = ('lux.extensions.base',
               'lux.extensions.angular',
               'lux.extensions.code',
               'lux.extensions.static')
+ANGULAR_UI_ROUTER = True
 STATIC_API = 'jsonapi'
 CONTEXT_LOCATION = 'luxsite/context'
 STATIC_LOCATION = '../docs/luxsite'
@@ -39,11 +40,10 @@ class Extension(lux.Extension):
     def middleware(self, app):
         content = HtmlContent('/',
                               Sitemap('/sitemap.xml'),
+                              SphinxDocs('/docs/', dir='luxsite/docs',
+                                         meta={'template': 'doc.html'}),
                               meta={'template': 'main.html'},
                               dir='luxsite/site',
                               drafts=None)
-        docs = SphinxDocs('/docs/', dir='luxsite/docs',
-                          meta={'template': 'doc.html'})
-        #return [all, docs]
-        return [content, docs]
+        return [content]
 

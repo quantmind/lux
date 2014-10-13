@@ -22,6 +22,29 @@
     };
 
     angular.module('lux.nav', ['templates-nav', 'lux.services', 'mgcrea.ngStrap.collapse'])
+        .service('navService', function () {
+
+            this.initScope = function (opts) {
+                var navbar = extend({}, navBarDefaults, getOptions(opts));
+                // Fix defaults
+                if (!navbar.url)
+                    navbar.url = lux.context.url || '/';
+                if (!navbar.themeTop)
+                    navbar.themeTop = navbar.theme;
+                this.maybeCollapse(navbar);
+                return navbar;
+            };
+
+            this.maybeCollapse = function (navbar) {
+                var width = window.innerWidth > 0 ? window.innerWidth : screen.width,
+                    c = navbar.collapse;
+                if (width < navbar.collapseWidth)
+                    navbar.collapse = 'collapse';
+                else
+                    navbar.collapse = '';
+                return c !== navbar.collapse;
+            };
+        })
         .controller('Navigation', ['$scope', '$lux', function ($scope, $lux) {
             $lux.log.info('Setting up navigation on page');
             //
@@ -58,12 +81,19 @@
         }])
     //
     //  Directive for the navbar
-    .directive('navbar', function () {
+    .directive('navbar', ['navService', function (navService) {
+        //
         return {
             templateUrl: "nav/navbar.tpl.html",
-            restrict: 'AE'
+            restrict: 'AE',
+            // Create an isolated scope
+            scope: {},
+            // Link function
+            link: function (scope, element, attrs) {
+                scope.navbar = navService.initScope(attrs);
+            }
         };
-    })
+    }])
     //
     //  Directive for the navbar with sidebar (nivebar2 template)
     .directive('navbar2', function () {

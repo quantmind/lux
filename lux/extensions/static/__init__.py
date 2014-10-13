@@ -26,14 +26,6 @@ a :class:`.Blog` and other routers:
   location of the template which render the html body tag of the Html5
   document. If not provided, the parent router value is used unless no parent
   is available and the :setting:`STATIC_TEMPLATE` is used instead.
-* :attr:`
-
-Templates
-=============
-Each :attr:`~lux.extensions.Html5.Router.html_body_template` is rendered
-using a ``context`` dictionary which is an instance of the
-:class:`.ContextBuilder` class.
-
 '''
 import os
 import sys

@@ -105,9 +105,10 @@ function(angular, root) {
     //
     isAbsolute = new RegExp('^([a-z]+://|//)'),
     //
+    // Check if element has tagName tag
     isTag = function (element, tag) {
         element = $(element);
-        return element.length === 1 && element[0].tagName.toLowerCase() === tag.toLowerCase();
+        return element.length === 1 && element[0].tagName === tag.toUpperCase();
     },
     //
     joinUrl = lux.joinUrl = function () {
@@ -135,6 +136,23 @@ function(angular, root) {
             }
         }
         return url;
+    },
+    //
+    // Retrive options for the ``options`` string in ``attrs`` if available
+    getOptions = function (attrs) {
+        if (attrs && typeof attrs.options === 'string') {
+            var obj = root,
+                bits= attrs.options.split('.');
+
+            for (var i=0; i<bits.length; ++i) {
+                obj = obj[bits[i]];
+                if (!obj) break;
+            }
+            if (typeof obj === 'function')
+                obj = obj();
+            attrs = extend(attrs, obj);
+        }
+        return attrs;
     };
 
 
@@ -527,15 +545,11 @@ function(angular, root) {
     //
     //  Hash scrolling service
     angular.module('lux.scroll', [])
-        .run(function () {
-            addEvent(window, 'onhashchange', function () {
-                var hash = window.location.hash;
-            });
-        })
         .service('scroll', ['$location', '$log', '$timeout', function ($location, log, timer) {
             //  ScrollToHash
             var defaultOffset = lux.context.scrollOffset,
-                targetClass = 'ease-target',
+                targetClass = 'scroll-target',
+                targetClassFinish = 'finished',
                 scrollTime = lux.context.scrollTime,
                 target = null;
             //
@@ -554,14 +568,21 @@ function(angular, root) {
                         hash = hash.substring(1);
                     target = document.getElementById(hash);
                     if (target) {
-                        target = $(target).removeClass(targetClass);
+                        _clearTargets();
+                        target = $(target).addClass(targetClass).removeClass(targetClassFinish);
                         $location.hash(hash);
                         log.info('Scrolling to target #' + hash);
                         _scrollTo(offset || defaultOffset, delay);
-                        return true;
+                        return target;
                     }
                 }
             };
+
+            function _clearTargets () {
+                forEach(document.querySelectorAll('.' + targetClass), function (el) {
+                    $(el).removeClass(targetClass);
+                });
+            }
 
             function _scrollTo (offset, delay) {
                 var i,
@@ -601,7 +622,7 @@ function(angular, root) {
                     if (more)
                         _nextScroll(y2, delay, stepY, stopY);
                     else {
-                        target.addClass(targetClass);
+                        target.addClass(targetClassFinish);
                         target = null;
                     }
                 }, delay);
@@ -635,6 +656,7 @@ function(angular, root) {
             }
 
         }])
+        // Directive for adding smooth scrolling to hash links
         .directive('hashScroll', ['$log', '$location', 'scroll', function (log, location, scroll) {
             var innerTags = ['IMG', 'I', 'SPAN', 'TT'];
             //
@@ -651,9 +673,10 @@ function(angular, root) {
                         var target = e.target;
                         while (target && innerTags.indexOf(target.tagName) > -1)
                             target = target.parentElement;
-                        if (target && target.hash)
+                        if (target && target.hash) {
                             if (scroll.toHash(target.hash))
                                 e.preventDefault();
+                        }
                     });
                 }
             };
@@ -915,7 +938,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
     //  Lux angular
     //  ==============
     //  Lux main module for angular. Design to work with the ``lux.extension.angular``
-    angular.module('lux.page', ['lux.services', 'lux.form', 'templates-page'])
+    angular.module('lux.page', ['lux.services', 'lux.form', 'lux.scroll', 'templates-page'])
         //
         .controller('Page', ['$scope', '$lux', 'dateFilter', function ($scope, $lux, dateFilter) {
             //
@@ -966,9 +989,6 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                     folder = url.substring(url.length-1) === '/';
                 return base === url && (folder || (rest === '' || rest.substring(0, 1) === '/'));
             };
-
-            $scope.scrollToHash = $lux.scrollToHash;
-
         }])
         .service('$breadcrumbs', [function () {
 
@@ -1058,7 +1078,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
     //  Configure ui-Router using lux routing objects
     //  Only when context.html5mode is true
     //  Python implementation in the lux.extensions.angular Extension
-    angular.module('lux.ui.router', ['lux.page'])
+    angular.module('lux.ui.router', ['lux.page', 'ui.router'])
         .config(['$locationProvider', '$stateProvider', '$urlRouterProvider',
             function ($locationProvider, $stateProvider, $urlRouterProvider) {
 
@@ -1118,13 +1138,14 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                     $scope.page = addPageInfo(page.data, $scope, dateFilter, $lux);
                 }
             }])
-        .directive('dynamicPage', ['$compile', '$log', function ($compile, $log) {
+        .directive('dynamicPage', ['$compile', '$log', function ($compile, log) {
             return {
                 link: function (scope, element, attrs) {
                     scope.$on('$stateChangeSuccess', function () {
                         var page = scope.page;
-                        if (page.html_main) {
-                            element.html(page.html_main);
+                        if (page.html && page.html.main) {
+                            element.html(page.html.main);
+                            log.info('Compiling new html content');
                             $compile(element.contents())(scope);
                         }
                     });
@@ -1236,13 +1257,13 @@ angular.module("blog/pagination.tpl.html", []).run(["$templateCache", function($
     //      MAKE SURE THE lux.extensions.code EXTENSIONS IS INCLUDED IN
     //      YOUR CONFIG FILE
     angular.module('highlight', [])
-        .directive('highlight', function () {
+        .directive('highlight', ['$rootScope', function ($rootScope) {
             return {
                 link: function link(scope, element, attrs) {
                     highlight(element);
                 }
             };
-        });
+        }]);
 
     var highlight = function (elem) {
         require(['highlight'], function () {
@@ -1272,9 +1293,10 @@ angular.module('templates-nav', ['nav/navbar.tpl.html', 'nav/navbar2.tpl.html'])
 
 angular.module("nav/navbar.tpl.html", []).run(["$templateCache", function($templateCache) {
   $templateCache.put("nav/navbar.tpl.html",
-    "<nav id='top' class=\"navbar-static-top navbar-{{navbar.themeTop}}\" ng-class=\"{'navbar-fixed-top':navbar.fixed}\" role=\"navigation\"\n" +
-    "ng-model=\"navbar.collapse\" ng-controller=\"Navigation\" bs-collapse>\n" +
-    "    <div class=\"container-fluid\">\n" +
+    "<nav class=\"navbar-static-top navbar-{{navbar.themeTop}}\"\n" +
+    "ng-class=\"{'navbar-fixed-top':navbar.fixed}\" role=\"navigation\"\n" +
+    "ng-model=\"navbar.collapse\" bs-collapse>\n" +
+    "    <div ng-attr-id='{{navbar.id}}' class=\"container-fluid\">\n" +
     "        <div class=\"navbar-header\">\n" +
     "            <button type=\"button\" class=\"navbar-toggle\" bs-collapse-toggle>\n" +
     "                <span class=\"sr-only\">Toggle navigation</span>\n" +
@@ -1379,6 +1401,29 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
     };
 
     angular.module('lux.nav', ['templates-nav', 'lux.services', 'mgcrea.ngStrap.collapse'])
+        .service('navService', function () {
+
+            this.initScope = function (opts) {
+                var navbar = extend({}, navBarDefaults, getOptions(opts));
+                // Fix defaults
+                if (!navbar.url)
+                    navbar.url = lux.context.url || '/';
+                if (!navbar.themeTop)
+                    navbar.themeTop = navbar.theme;
+                this.maybeCollapse(navbar);
+                return navbar;
+            };
+
+            this.maybeCollapse = function (navbar) {
+                var width = window.innerWidth > 0 ? window.innerWidth : screen.width,
+                    c = navbar.collapse;
+                if (width < navbar.collapseWidth)
+                    navbar.collapse = 'collapse';
+                else
+                    navbar.collapse = '';
+                return c !== navbar.collapse;
+            };
+        })
         .controller('Navigation', ['$scope', '$lux', function ($scope, $lux) {
             $lux.log.info('Setting up navigation on page');
             //
@@ -1415,12 +1460,18 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
         }])
     //
     //  Directive for the navbar
-    .directive('navbar', function () {
+    .directive('navbar', ['navService', function (navService) {
+        //
         return {
             templateUrl: "nav/navbar.tpl.html",
-            restrict: 'AE'
+            restrict: 'AE',
+            // Create an isolated scope
+            scope: {},
+            link: function (scope, element, attrs) {
+                scope.navbar = navService.initScope(attrs);
+            }
         };
-    })
+    }])
     //
     //  Directive for the navbar with sidebar (nivebar2 template)
     .directive('navbar2', function () {

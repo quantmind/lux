@@ -1,15 +1,11 @@
     //
     //  Hash scrolling service
     angular.module('lux.scroll', [])
-        .run(function () {
-            addEvent(window, 'onhashchange', function () {
-                var hash = window.location.hash;
-            });
-        })
         .service('scroll', ['$location', '$log', '$timeout', function ($location, log, timer) {
             //  ScrollToHash
             var defaultOffset = lux.context.scrollOffset,
-                targetClass = 'ease-target',
+                targetClass = 'scroll-target',
+                targetClassFinish = 'finished',
                 scrollTime = lux.context.scrollTime,
                 target = null;
             //
@@ -28,14 +24,21 @@
                         hash = hash.substring(1);
                     target = document.getElementById(hash);
                     if (target) {
-                        target = $(target).removeClass(targetClass);
+                        _clearTargets();
+                        target = $(target).addClass(targetClass).removeClass(targetClassFinish);
                         $location.hash(hash);
                         log.info('Scrolling to target #' + hash);
                         _scrollTo(offset || defaultOffset, delay);
-                        return true;
+                        return target;
                     }
                 }
             };
+
+            function _clearTargets () {
+                forEach(document.querySelectorAll('.' + targetClass), function (el) {
+                    $(el).removeClass(targetClass);
+                });
+            }
 
             function _scrollTo (offset, delay) {
                 var i,
@@ -75,7 +78,7 @@
                     if (more)
                         _nextScroll(y2, delay, stepY, stopY);
                     else {
-                        target.addClass(targetClass);
+                        target.addClass(targetClassFinish);
                         target = null;
                     }
                 }, delay);
@@ -109,6 +112,7 @@
             }
 
         }])
+        // Directive for adding smooth scrolling to hash links
         .directive('hashScroll', ['$log', '$location', 'scroll', function (log, location, scroll) {
             var innerTags = ['IMG', 'I', 'SPAN', 'TT'];
             //
@@ -125,9 +129,10 @@
                         var target = e.target;
                         while (target && innerTags.indexOf(target.tagName) > -1)
                             target = target.parentElement;
-                        if (target && target.hash)
+                        if (target && target.hash) {
                             if (scroll.toHash(target.hash))
                                 e.preventDefault();
+                        }
                     });
                 }
             };
