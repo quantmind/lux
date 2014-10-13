@@ -14,7 +14,7 @@
             return {
                 link: function (scope, element) {
                     var toTarget = function () {
-                            log.info('Transforming all links into targets');
+                            log.info('Transforming links into targets');
                             forEach($(element)[0].querySelectorAll('a'), function(link) {
                                 link = $(link);
                                 if (!link.attr('target'))

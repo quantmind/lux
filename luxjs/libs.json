@@ -35,5 +35,12 @@
                 "luxjs/viz/*.js",
                 "luxjs/close.js"],
         "dest": "lux/media/lux/lux.js"
+    },
+    "luxsite": {
+        "options": {
+            "banner": "luxjs/banner.js"
+        },
+        "src": ["luxsite/src.js"],
+        "dest": "luxsite/media/luxsite/luxsite.js"
     }
 }

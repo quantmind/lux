@@ -49,4 +49,6 @@ class LuxBuilder(StandaloneHTMLBuilder):
             ctx['src'] = os.path.join(self.srcdir, src)
         ctx['pagename'] = pagename
         ctx.update(addctx)
+        self.app.emit('html-page-context', pagename, 'page.html',
+                      ctx, None)
         self.app.data.append(ctx)

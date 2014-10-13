@@ -7,8 +7,6 @@ def add_css(all):
     vars = all.variables
     media_url = all.app.config['MEDIA_URL']
 
-    add_classes(all)
-
     vars.font_family = '"freight-text-pro",Georgia,Cambria,"Times New Roman",Times,serif'
     vars.font_size = px(16)
     vars.line_height = 1.4
@@ -18,12 +16,11 @@ def add_css(all):
     vars.colors.lux_blue = color('#005A8A')
     vars.colors.lux_yellow = color('#E5C700')
 
+    add_classes(all)
+
     css('.fullpage, body, html',
         height=pc(100),
         min_height=pc(100))
-
-    css('body',
-        min_height=px(300))
 
     css('#lux-logo',
         height=px(300))
@@ -46,8 +43,8 @@ def add_css(all):
             width='auto'),
         padding=0)
 
-    css('#page',
-        padding_top=px(vars.navbar_height) + 1)
+    css('#page-header',
+        padding_top=px(vars.navbar_height))
 
     css('#page-main',
         min_height=px(500),
@@ -73,6 +70,7 @@ def add_css(all):
 
 def add_classes(all):
     css = all.css
+    vars = all.variables
 
     css('.hover-opacity',
         Opacity(0.5),
@@ -82,3 +80,10 @@ def add_classes(all):
         d = 20*w
         css('.width%d' % d,
             width=px(d))
+
+    css(':target',
+        background=vars.colors.lux_yellow),
+
+    css('.ease-target:target',
+        Transition('all', '2s', 'ease'),
+        background='transparent')

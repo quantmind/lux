@@ -1,7 +1,7 @@
 /*
 ------------------------------------------------------------------
 ------------------------------------------------------------------
-Created by lux 2014-10-11 10:10:44 in 0.5 seconds.
+Created by lux 2014-10-13 12:05:11 in 0.09 seconds.
 ------------------------------------------------------------------
 ------------------------------------------------------------------ */
 
@@ -12,14 +12,13 @@ Created by lux 2014-10-11 10:10:44 in 0.5 seconds.
 .hljs{display:block;overflow-x:auto;padding:0.5em;background:#232323;color:#e6e1dc;-webkit-text-size-adjust:none}.hljs-comment,.hljs-template_comment,.hljs-javadoc,.hljs-shebang{color:#bc9458;font-style:italic}.hljs-keyword,.ruby .hljs-function .hljs-keyword,.hljs-request,.hljs-status,.nginx .hljs-title,.method,.hljs-list .hljs-title{color:#c26230}.hljs-string,.hljs-number,.hljs-regexp,.hljs-tag .hljs-value,.hljs-cdata,.hljs-filter .hljs-argument,.hljs-attr_selector,.apache .hljs-cbracket,.hljs-date,.tex .hljs-command,.asciidoc .hljs-link_label,.markdown .hljs-link_label{color:#a5c261}.hljs-subst{color:#519f50}.hljs-tag,.hljs-tag .hljs-keyword,.hljs-tag .hljs-title,.hljs-doctype,.hljs-sub .hljs-identifier,.hljs-pi,.input_number{color:#e8bf6a}.hljs-identifier{color:#d0d0ff}.hljs-class .hljs-title,.hljs-type,.smalltalk .hljs-class,.hljs-javadoctag,.hljs-yardoctag,.hljs-phpdoc,.hljs-dartdoc{text-decoration:none}.hljs-constant{color:#da4939}.hljs-symbol,.hljs-built_in,.ruby .hljs-symbol .hljs-string,.ruby .hljs-symbol .hljs-identifier,.asciidoc .hljs-link_url,.markdown .hljs-link_url,.hljs-attribute{color:#6d9cbe}.asciidoc .hljs-link_url,.markdown .hljs-link_url{text-decoration:underline}.hljs-params,.hljs-variable,.clojure .hljs-attribute{color:#d0d0ff}.css .hljs-tag,.hljs-rules .hljs-property,.hljs-pseudo,.tex .hljs-special{color:#cda869}.css .hljs-class{color:#9b703f}.hljs-rules .hljs-keyword{color:#c5af75}.hljs-rules .hljs-value{color:#cf6a4c}.css .hljs-id{color:#8b98ab}.hljs-annotation,.apache .hljs-sqbracket,.nginx .hljs-built_in{color:#9b859d}.hljs-preprocessor,.hljs-preprocessor *,.hljs-pragma{color:#8996a8 !important}.hljs-hexcolor,.css .hljs-value .hljs-number{color:#a5c261}.hljs-title,.hljs-decorator,.css .hljs-function{color:#ffc66d}.diff .hljs-header,.hljs-chunk{background-color:#2f33ab;color:#e6e1dc;display:inline-block;width:100%}.diff .hljs-change{background-color:#4a410d;color:#f8f8f8;display:inline-block;width:100%}.hljs-addition{background-color:#144212;color:#e6e1dc;display:inline-block;width:100%}.hljs-deletion{background-color:#600;color:#e6e1dc;display:inline-block;width:100%}.coffeescript .javascript,.javascript .xml,.tex .hljs-formula,.xml .javascript,.xml .vbscript,.xml .css,.xml .hljs-cdata{opacity:0.7}
 body {
     line-height: 1.4;
+    font-family: "freight-text-pro",Georgia,Cambria,"Times New Roman",Times,serif;
+    font-style: normal;
     color: rgba(0, 0, 0, 0.8);
     font-size: 16px;
     background: #fff;
-    font-family: "freight-text-pro",Georgia,Cambria,"Times New Roman",Times,serif;
-    font-style: normal;
     min-height: 100%;
     height: 100%;
-    min-height: 300px;
 }
 
 [ng\:cloak],
@@ -31,9 +30,7 @@ body {
     display: none !important;
 }
 
-.form-group .help-block,
-dl.class .property,
-dl.class .descclassname {
+.form-group .help-block {
     display: none;
 }
 
@@ -46,19 +43,19 @@ dl.class .descclassname {
 }
 
 .absolute-full {
+    top: 0;
     position: absolute;
     bottom: 0;
-    top: 0;
 }
 
 .navbar2-wrapper {
-    width: 100%;
     min-height: 100%;
+    width: 100%;
 }
 
 .navbar2-page {
-    padding: 70px 15px 0;
     background: #fff;
+    padding: 70px 15px 0;
 }
 
 @media all and (min-width:768px) {
@@ -73,10 +70,10 @@ dl.class .descclassname {
 }
 @media all and (min-width:768px) {
     .sidebar {
-        position: absolute;
-        width: 250px;
-        z-index: 1;
         margin-top: 51px;
+        width: 250px;
+        position: absolute;
+        z-index: 1;
     }
 
 }
@@ -85,8 +82,30 @@ code.hljs.inline {
     padding: 2px 4px;
 }
 
-dl.class tt.descname {
+dl dd {
+    margin-left: 30px;
+}
+
+dl.class dl.method {
+    color: rgba(0, 0, 0, 0.8);
+}
+
+dl.class > dt > tt.descname,
+dl.function > dt > tt.descname {
     font-size: 24px;
+}
+
+dl.class dt tt.descname,
+dl.function dt tt.descname {
+    color: rgba(0, 0, 0, 0.8);
+    font-weight: bold;
+}
+
+dl.class dt,
+dl.function dt {
+    color: #888;
+    font-weight: normal;
+    font-size: 16px;
 }
 
 .dir-entry-image {
@@ -175,6 +194,18 @@ div.viewcode-block:target {
     width: 180px;
 }
 
+:target {
+    background: #e5c700;
+}
+
+.ease-target:target {
+    background: transparent;
+    -webkit-transition: all 2s ease;
+       -moz-transition: all 2s ease;
+         -o-transition: all 2s ease;
+            transition: all 2s ease;
+}
+
 .fullpage,
 html {
     min-height: 100%;
@@ -212,32 +243,32 @@ a.navbar-brand img {
     height: 50px;
 }
 
-#page {
-    padding-top: 51px;
+#page-header {
+    padding-top: 50px;
 }
 
 #page-main {
+    min-height: 500px;
     padding-top: 20px;
     padding-bottom: 50px;
-    min-height: 500px;
 }
 
 #page-footer {
-    padding-top: 20px;
     color: #e5c700;
-    min-height: 300px;
+    padding-top: 20px;
     background-color: #005a8a;
+    min-height: 300px;
 }
 
 .page-header {
-    padding-top: 50px;
     margin: 0;
+    padding-top: 50px;
 }
 
 .page-header.index-header {
     color: #eee;
-    min-height: 300px;
     width: 100%;
     height: 100%;
     background-color: #005a8a;
+    min-height: 300px;
 }

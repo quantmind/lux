@@ -5,4 +5,5 @@
     <li><a href="$site_url/docs/changelog">Changelog</a></li>
     <li><a href="$site_url/docs/api/">API</a></li>
     <li><a href="$site_url/docs/EXTENSIONS/">Extensions</a></li>
+    <li><a href="$site_url/images">Images</a></li>
 </ul>

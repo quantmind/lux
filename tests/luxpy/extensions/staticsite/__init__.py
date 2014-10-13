@@ -14,13 +14,14 @@ EXTENSIONS = ['lux.extensions.base',
               'lux.extensions.static']
 
 
-base = 'tests/luxpy/extensions/staticsite/'
+cfgfile = 'luxpy/extensions/staticsite'
+base = 'tests/' + cfgfile + '/'
 STATIC_LOCATION = base + 'build'
 CONTEXT_LOCATION = base + 'content/context'
 
 
 class StaticSiteMixin(object):
-    config_file = base.replace('/', '.').strip('.')
+    config_file = cfgfile.replace('/', '.')
 
     def tearDown(self):
         if self.apps:

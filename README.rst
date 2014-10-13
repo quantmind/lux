@@ -1,6 +1,5 @@
 
-Lux is an asynchronous web framework highly extendible and customisable.
-Written in python and javascript.
+Lux is a library for developing web applications with Python and AngularJS.
 
 .. _requirements:
 
@@ -11,6 +10,9 @@ Python Requirements
 * dateutil_
 
 Additionally, Lux can benefit form these python libraries
+
+* markdown_
+* sphinx_
 
 Developing with lux.js
 ==========================
@@ -31,25 +33,13 @@ To build lux.js_ use grunt::
 Angular templates are compiled into javascript via the `grunt-html2js`_ package.
 
 
-Running Tests & example site
-===============================
-
-To run tests and the example site add a new ``settings.py`` file in the
-``example.luxweb`` module. The file can simple have the following code::
-
-    from .config *
-
-
-.. note::
-
-    Lux is the Latin name for ``light``
-
-
 .. _pulsar: https://github.com/quantmind/pulsar
 .. _dateutil: https://pypi.python.org/pypi/python-dateutil
 .. _gruntjs: http://gruntjs.com/
 .. _nodejs: http://nodejs.org/
 .. _grunt: http://gruntjs.com/
+.. _markdown: https://pypi.python.org/pypi/Markdown
+.. _sphinx: http://sphinx-doc.org/
 .. _`grunt-html2js`: https://github.com/karlgoldstein/grunt-html2js
 .. _lux.js: https://raw.githubusercontent.com/quantmind/lux/master/lux/media/lux/lux.js
 

@@ -4,7 +4,7 @@
 
 Usage
 =======
-Put the :mod:`lux.extensions.static` extension into your :settings:`EXTENSIONS`
+Put the :mod:`lux.extensions.static` extension into your :setting:`EXTENSIONS`
 list and build the static web site via the ``build_static`` option in the
 command line::
 
@@ -25,7 +25,7 @@ a :class:`.Blog` and other routers:
 * :attr:`~lux.extensions.Html5.Router.html_body_template` to specify the
   location of the template which render the html body tag of the Html5
   document. If not provided, the parent router value is used unless no parent
-  is available and the :settings:`STATIC_TEMPLATE` is used instead.
+  is available and the :setting:`STATIC_TEMPLATE` is used instead.
 * :attr:`
 
 Templates

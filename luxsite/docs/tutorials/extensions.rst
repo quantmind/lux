@@ -6,8 +6,7 @@
 Writing Extensions
 ====================================
 
-When writing a new extensions, one starts by subclassing the
-:class:`.Extension` class::
+Extension are implemented by subclassing the :class:`.Extension` class::
 
     import lux
 
@@ -19,18 +18,16 @@ When writing a new extensions, one starts by subclassing the
             ...
 
 
-Probably, the :meth:`.Extension.middleware` is the
-most important method an extensions can override. It is called once only
-by the :class:`.App` serving the web site, and it must return an iterable over
-WSGI_ middleware or ``None``. It is also a chance to perform
-custom initialisation of the extensions.
+The :meth:`.Extension.middleware` method is called once only
+by the :class:`.App` serving the web applications, and it must return an iterable over
+WSGI_ middleware or ``None``.
 
 
 Events
 ================
 
-An extension can register several handlers which are invoked at different
-points during the application live-span. These handlers receive as
+An :class:`.Extension` can register several callbacks which are invoked at different
+points during the application live-span. These callbacks receive as
 first positional argument, the :class:`.App` instance running the web site
 and are implemented by adding some of the following methods to your
 extension class:
@@ -42,7 +39,7 @@ on_config
 
 .. py:method:: Extension.on_config(self, app)
 
-This is the first event to be fired. It is executd once only after the
+This is the first event to be fired. It is executed once only after the
 :attr:`.App.config` dictionary has been loaded from
 the setting file. This is a chance to perform post processing on
 parameters before the wsgi :attr:`.App.handler` is loaded.
@@ -92,7 +89,7 @@ on_html_document
 .. py:method:: Extension.on_html_document(self, app, request, doc)
 
 Called the first time the ``request.html_document`` attribute is accessed.
-A chance to add static data for any other Html specific information.
+A chance to add static data or any other Html specific information.
 
 
 .. _event_on_form:

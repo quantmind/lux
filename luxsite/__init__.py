@@ -5,7 +5,7 @@ from .ui import add_css
 
 
 APP_NAME = 'Lux'
-HTML_TITLE = 'Lux - web toolkit for python and angularJS'
+HTML_TITLE = 'Lux - Crafting super web applications with Python and AngularJS'
 SITE_URL = 'http://quantmind.github.io/lux'
 EXTENSIONS = ('lux.extensions.base',
               'lux.extensions.ui',
@@ -18,6 +18,7 @@ STATIC_LOCATION = '../docs/luxsite'
 MD_EXTENSIONS = ['extra', 'meta', 'toc']
 CODE_HIGHLIGHT_THEME = 'railscasts'
 FAVICON = 'luxsite/favicon.ico'
+REQUIREJS = ('luxsite/luxsite',)
 HTML_LINKS = ({'href': 'luxsite/lux-114.png',
                'sizes': '57x57',
                'rel': 'apple-touch-icon'},

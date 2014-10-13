@@ -1,6 +1,6 @@
 //      Lux Library - v0.1.0
 
-//      Compiled 2014-10-12.
+//      Compiled 2014-10-13.
 //      Copyright (c) 2014 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -41,7 +41,9 @@ function(angular, root) {
             url: '',    // base url for the web site
             media: '',  // default url for media content
             html5mode: true, //  html5mode for angular
-            hashPrefix: '!'
+            hashPrefix: '!',
+            scrollOffset: 0,
+            scrollTime: 1
         };
     //
     lux.$ = $;
@@ -511,47 +513,58 @@ function(angular, root) {
     //
     //  Hash scrolling service
     angular.module('lux.scroll', [])
-        .run(function() {
-            //
-            addEvent(window, 'onload', function (e) {
-                var a = 1;
+        .run(function () {
+            addEvent(window, 'onhashchange', function () {
+                var hash = window.location.hash;
             });
         })
-        .service('scroll', ['$location', '$log', '$timeout', function ($location, $log, $timeout) {
+        .service('scroll', ['$location', '$log', '$timeout', function ($location, log, timer) {
             //  ScrollToHash
-            this.toHash = function (hash, offset) {
+            var defaultOffset = lux.context.scrollOffset,
+                targetClass = 'ease-target',
+                scrollTime = lux.context.scrollTime,
+                target = null;
+            //
+            this.toHash = function (hash, offset, delay) {
                 var e;
+                if (target || !hash)
+                    return;
                 if (hash.currentTarget) {
                     e = hash;
                     hash = hash.currentTarget.hash;
                 }
                 // set the location.hash to the id of
                 // the element you wish to scroll to.
-                var target = document.getElementById(hash.substring(1));
-                if (target) {
-                    $location.hash(hash);
-                    $log.info('Scrolling to target');
-                    scrollTo(target);
-                } else
-                    $lux.log.warning('Cannot scroll, target not found');
+                if (typeof(hash) === 'string') {
+                    if (hash.substring(0, 1) === '#')
+                        hash = hash.substring(1);
+                    target = document.getElementById(hash);
+                    if (target) {
+                        target = $(target).removeClass(targetClass);
+                        $location.hash(hash);
+                        log.info('Scrolling to target #' + hash);
+                        _scrollTo(offset || defaultOffset, delay);
+                        return true;
+                    }
+                }
             };
 
-            function scrollTo (target) {
+            function _scrollTo (offset, delay) {
                 var i,
                     startY = currentYPosition(),
-                    stopY = elmYPosition(target),
+                    stopY = elmYPosition(target[0]) - offset,
                     distance = stopY > startY ? stopY - startY : startY - stopY;
-                if (distance < 100) {
-                    window.scrollTo(0, stopY);
-                    return;
-                }
-                var speed = Math.round(distance),
-                    step = Math.round(distance / 25),
+                var step = Math.round(distance / 25),
                     y = startY;
-                _nextScroll(startY, speed, step, stopY);
+                if (delay === null || delay === undefined) {
+                    delay = 1000*scrollTime/25;
+                    if (distance < 200)
+                        delay = 0;
+                }
+                _nextScroll(startY, delay, step, stopY);
             }
 
-            function _nextScroll (y, speed, stepY, stopY) {
+            function _nextScroll (y, delay, stepY, stopY) {
                 var more = true,
                     y2, d;
                 if (y < stopY) {
@@ -569,11 +582,14 @@ function(angular, root) {
                     }
                     d = y - y2;
                 }
-                var delay = 1000*d/speed;
-                $timeout(function () {
+                timer(function () {
                     window.scrollTo(0, y2);
                     if (more)
-                        _nextScroll(y2, speed, stepY, stopY);
+                        _nextScroll(y2, delay, stepY, stopY);
+                    else {
+                        target.addClass(targetClass);
+                        target = null;
+                    }
                 }, delay);
             }
 
@@ -604,6 +620,29 @@ function(angular, root) {
                 return y;
             }
 
+        }])
+        .directive('hashScroll', ['$log', '$location', 'scroll', function (log, location, scroll) {
+            var innerTags = ['IMG', 'I', 'SPAN', 'TT'];
+            //
+            return {
+                link: function (scope, element, attrs) {
+                    //
+                    scope.location = location;
+                    scope.$watch('location.hash()', function(hash) {
+                        // Hash change (when a new page is loaded)
+                        scroll.toHash(hash, null, 0);
+                    });
+                    //
+                    element.bind('click', function (e) {
+                        var target = e.target;
+                        while (target && innerTags.indexOf(target.tagName) > -1)
+                            target = target.parentElement;
+                        if (target && target.hash)
+                            if (scroll.toHash(target.hash))
+                                e.preventDefault();
+                    });
+                }
+            };
         }]);
     //
     //  Lux Static JSON API
@@ -864,8 +903,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
     //  Lux main module for angular. Design to work with the ``lux.extension.angular``
     angular.module('lux.page', ['lux.services', 'lux.form', 'templates-page'])
         //
-        .controller('Page', ['$scope', '$lux', 'dateFilter', '$anchorScroll',
-            function ($scope, $lux, dateFilter, $anchorScroll) {
+        .controller('Page', ['$scope', '$lux', 'dateFilter', function ($scope, $lux, dateFilter) {
             //
             $lux.log.info('Setting up angular page');
             //
@@ -954,7 +992,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
             return {
                 restrict: 'AE',
                 replace: true,
-                templateUrl: "lux/page/breadcrumbs.tpl.html",
+                templateUrl: "page/breadcrumbs.tpl.html",
                 link: {
                     post: function (scope) {
                         var renderBreadcrumb = function() {
@@ -987,7 +1025,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
             return {
                 link: function (scope, element) {
                     var toTarget = function () {
-                            log.info('Transforming all links into targets');
+                            log.info('Transforming links into targets');
                             forEach($(element)[0].querySelectorAll('a'), function(link) {
                                 link = $(link);
                                 if (!link.attr('target'))
@@ -1171,20 +1209,7 @@ angular.module("blog/pagination.tpl.html", []).run(["$templateCache", function($
                 templateUrl: "blog/header.tpl.html",
                 restrict: 'AE'
             };
-        })
-        .directive('toc', ['$lux', function ($lux) {
-            return {
-                link: function (scope, element, attrs) {
-                    //
-                    forEach(element[0].querySelectorAll('.toc a'), function (el) {
-                        el = $(el);
-                        var href = el.attr('href');
-                        if (href.substring(0, 1) === '#' && href.substring(0, 2) !== '##')
-                            el.on('click', scroll.toHash);
-                    });
-                }
-            };
-        }]);
+        });
 
     //
     //  Code highlighting with highlight.js

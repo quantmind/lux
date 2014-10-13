@@ -26,8 +26,7 @@
     //  Lux main module for angular. Design to work with the ``lux.extension.angular``
     angular.module('lux.page', ['lux.services', 'lux.form', 'templates-page'])
         //
-        .controller('Page', ['$scope', '$lux', 'dateFilter', '$anchorScroll',
-            function ($scope, $lux, dateFilter, $anchorScroll) {
+        .controller('Page', ['$scope', '$lux', 'dateFilter', function ($scope, $lux, dateFilter) {
             //
             $lux.log.info('Setting up angular page');
             //
@@ -116,7 +115,7 @@
             return {
                 restrict: 'AE',
                 replace: true,
-                templateUrl: "lux/page/breadcrumbs.tpl.html",
+                templateUrl: "page/breadcrumbs.tpl.html",
                 link: {
                     post: function (scope) {
                         var renderBreadcrumb = function() {

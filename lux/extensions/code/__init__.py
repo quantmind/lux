@@ -39,7 +39,20 @@ def add_css(all):
         display='inline',
         padding=spacing(2, 4))
 
-    css('dl.class',
-        css(' .property, .descclassname', display='none'),
-        css(' tt.descname',
-            font_size=vars.code.descname.font_size))
+    # sphinx docs
+    css('dl dd',
+        margin_left=px(30))
+
+    css('dl.class dl.method',
+        color=vars.color)
+
+    css('dl.class, dl.function',
+        css(' > dt > tt.descname',
+            font_size=vars.code.descname.font_size),
+        css(' dt tt.descname',
+            color=vars.color,
+            font_weight='bold'),
+        css(' dt',
+            color='#888',
+            font_weight='normal',
+            font_size=vars.font_size))

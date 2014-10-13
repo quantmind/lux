@@ -22,17 +22,4 @@
                 templateUrl: "blog/header.tpl.html",
                 restrict: 'AE'
             };
-        })
-        .directive('toc', ['$lux', function ($lux) {
-            return {
-                link: function (scope, element, attrs) {
-                    //
-                    forEach(element[0].querySelectorAll('.toc a'), function (el) {
-                        el = $(el);
-                        var href = el.attr('href');
-                        if (href.substring(0, 1) === '#' && href.substring(0, 2) !== '##')
-                            el.on('click', scroll.toHash);
-                    });
-                }
-            };
-        }]);
+        });
