@@ -1095,30 +1095,27 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
             state_config = function (page) {
                 return {
                     //
-                    // template url for the page
-                    //templateUrl: page.templateUrl,
-                    //
                     template: page.template,
                     //
                     url: page.url,
                     //
                     resolve: {
                         // Fetch page information
-                        page: function ($lux, $stateParams) {
+                        page: ['$lux', '$stateParams', function ($lux, $stateParams) {
                             if (page.api) {
                                 var api = $lux.api(page.api);
                                 if (api)
                                     return api.get($stateParams);
                             }
-                        },
+                        }],
                         // Fetch items if needed
-                        items: function ($lux, $stateParams) {
+                        items: ['$lux', function ($lux) {
                             if (page.apiItems) {
                                 var api = $lux.api(page.apiItems);
                                 if (api)
                                     return api.getList();
                             }
-                        },
+                        }],
                     },
                     //
                     controller: page.controller
