@@ -9,9 +9,10 @@
     //      MAKE SURE THE lux.extensions.code EXTENSIONS IS INCLUDED IN
     //      YOUR CONFIG FILE
     angular.module('highlight', [])
-        .directive('highlight', ['$rootScope', function ($rootScope) {
+        .directive('highlight', ['$rootScope', '$log', function ($rootScope, log) {
             return {
                 link: function link(scope, element, attrs) {
+                    log.info('Highlighting code');
                     highlight(element);
                 }
             };

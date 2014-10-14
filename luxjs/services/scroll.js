@@ -1,6 +1,7 @@
     //
     //  Hash scrolling service
     angular.module('lux.scroll', [])
+        //
         .service('scroll', ['$location', '$log', '$timeout', function ($location, log, timer) {
             //  ScrollToHash
             var defaultOffset = lux.context.scrollOffset,
@@ -112,6 +113,7 @@
             }
 
         }])
+        //
         // Directive for adding smooth scrolling to hash links
         .directive('hashScroll', ['$log', '$location', 'scroll', function (log, location, scroll) {
             var innerTags = ['IMG', 'I', 'SPAN', 'TT'];
@@ -119,6 +121,7 @@
             return {
                 link: function (scope, element, attrs) {
                     //
+                    log.info('Apply smooth scrolling');
                     scope.location = location;
                     scope.$watch('location.hash()', function(hash) {
                         // Hash change (when a new page is loaded)

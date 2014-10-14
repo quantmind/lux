@@ -1,6 +1,6 @@
 //      Lux Library - v0.1.0
 
-//      Compiled 2014-10-13.
+//      Compiled 2014-10-14.
 //      Copyright (c) 2014 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -138,7 +138,12 @@ function(angular, root) {
         return url;
     },
     //
-    // Retrive options for the ``options`` string in ``attrs`` if available
+    //  getOPtions
+    //  ===============
+    //
+    //  Retrive options for the ``options`` string in ``attrs`` if available.
+    //  Used by directive when needing to specify options in javascript rather
+    //  than html data attributes.
     getOptions = function (attrs) {
         if (attrs && typeof attrs.options === 'string') {
             var obj = root,
@@ -154,7 +159,6 @@ function(angular, root) {
         }
         return attrs;
     };
-
 
     var
     //
@@ -545,6 +549,7 @@ function(angular, root) {
     //
     //  Hash scrolling service
     angular.module('lux.scroll', [])
+        //
         .service('scroll', ['$location', '$log', '$timeout', function ($location, log, timer) {
             //  ScrollToHash
             var defaultOffset = lux.context.scrollOffset,
@@ -656,6 +661,7 @@ function(angular, root) {
             }
 
         }])
+        //
         // Directive for adding smooth scrolling to hash links
         .directive('hashScroll', ['$log', '$location', 'scroll', function (log, location, scroll) {
             var innerTags = ['IMG', 'I', 'SPAN', 'TT'];
@@ -663,6 +669,7 @@ function(angular, root) {
             return {
                 link: function (scope, element, attrs) {
                     //
+                    log.info('Apply smooth scrolling');
                     scope.location = location;
                     scope.$watch('location.hash()', function(hash) {
                         // Hash change (when a new page is loaded)
@@ -1257,9 +1264,10 @@ angular.module("blog/pagination.tpl.html", []).run(["$templateCache", function($
     //      MAKE SURE THE lux.extensions.code EXTENSIONS IS INCLUDED IN
     //      YOUR CONFIG FILE
     angular.module('highlight', [])
-        .directive('highlight', ['$rootScope', function ($rootScope) {
+        .directive('highlight', ['$rootScope', '$log', function ($rootScope, log) {
             return {
                 link: function link(scope, element, attrs) {
+                    log.info('Highlighting code');
                     highlight(element);
                 }
             };
@@ -1467,6 +1475,7 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
             restrict: 'AE',
             // Create an isolated scope
             scope: {},
+            // Link function
             link: function (scope, element, attrs) {
                 scope.navbar = navService.initScope(attrs);
             }
