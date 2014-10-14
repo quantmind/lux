@@ -26,17 +26,21 @@ class Command(lux.Command):
     option_list = (Setting('luxname',
                            nargs=1,
                            desc='Name of the project.'),
-                   Setting('target', ['--target'],
-                           desc='directory containing the project.'))
+                   )
     help = ('Creates a Lux project directory structure for the given '
             'project name in the current directory or optionally in the '
             'given directory.')
 
     template_type = "project"
 
-    def run(self, options, name=None, target=None):
+    def run(self, options):
         name = options.luxname[0]
         validate_name(name, self.template_type)
+        target = path.join(os.getcwd(), '%s-project' % name)
+        if path.exists(target):
+            raise lux.CommandError("%r conflicts with an existing path"
+                                   % target)
+
         # Check that the name cannot be imported.
         try:
             import_module(name)
@@ -49,19 +53,12 @@ class Command(lux.Command):
                                    (name, self.template_type))
         #
         # if some directory is given, make sure it's nicely expanded
-        if target is None:
-            top_dir = path.join(os.getcwd(), name)
-            try:
-                os.makedirs(top_dir)
-            except OSError as e:
-                raise lux.CommandError(str(e))
-        else:
-            top_dir = path.abspath(path.expanduser(target))
-            if not path.exists(top_dir):
-                raise lux.CommandError(
-                    "Destination directory '%s' does not "
-                    "exist, please create it first." % top_dir)
-        self.build(name, top_dir)
+        try:
+            os.makedirs(target)
+        except OSError as e:
+            raise lux.CommandError(str(e))
+
+        self.build(name, target)
         self.write('%s "%s" created' % (self.template_type, name))
 
     def add_context(self, context):

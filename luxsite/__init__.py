@@ -7,6 +7,7 @@ from .ui import add_css
 APP_NAME = 'Lux'
 HTML_TITLE = 'Lux - Crafting super web applications with Python and AngularJS'
 SITE_URL = 'http://quantmind.github.io/lux'
+#SITE_URL = 'http://localhost:9031/lux'
 EXTENSIONS = ('lux.extensions.base',
               'lux.extensions.ui',
               'lux.extensions.angular',

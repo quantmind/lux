@@ -1,7 +1,7 @@
 /*
 ------------------------------------------------------------------
 ------------------------------------------------------------------
-Created by lux 2014-10-13 20:17:16 in 0.52 seconds.
+Created by lux 2014-10-14 08:42:37 in 0.14 seconds.
 ------------------------------------------------------------------
 ------------------------------------------------------------------ */
 
@@ -11,12 +11,12 @@ Created by lux 2014-10-13 20:17:16 in 0.52 seconds.
 
 .hljs{display:block;overflow-x:auto;padding:0.5em;background:#232323;color:#e6e1dc;-webkit-text-size-adjust:none}.hljs-comment,.hljs-template_comment,.hljs-javadoc,.hljs-shebang{color:#bc9458;font-style:italic}.hljs-keyword,.ruby .hljs-function .hljs-keyword,.hljs-request,.hljs-status,.nginx .hljs-title,.method,.hljs-list .hljs-title{color:#c26230}.hljs-string,.hljs-number,.hljs-regexp,.hljs-tag .hljs-value,.hljs-cdata,.hljs-filter .hljs-argument,.hljs-attr_selector,.apache .hljs-cbracket,.hljs-date,.tex .hljs-command,.asciidoc .hljs-link_label,.markdown .hljs-link_label{color:#a5c261}.hljs-subst{color:#519f50}.hljs-tag,.hljs-tag .hljs-keyword,.hljs-tag .hljs-title,.hljs-doctype,.hljs-sub .hljs-identifier,.hljs-pi,.input_number{color:#e8bf6a}.hljs-identifier{color:#d0d0ff}.hljs-class .hljs-title,.hljs-type,.smalltalk .hljs-class,.hljs-javadoctag,.hljs-yardoctag,.hljs-phpdoc,.hljs-dartdoc{text-decoration:none}.hljs-constant{color:#da4939}.hljs-symbol,.hljs-built_in,.ruby .hljs-symbol .hljs-string,.ruby .hljs-symbol .hljs-identifier,.asciidoc .hljs-link_url,.markdown .hljs-link_url,.hljs-attribute{color:#6d9cbe}.asciidoc .hljs-link_url,.markdown .hljs-link_url{text-decoration:underline}.hljs-params,.hljs-variable,.clojure .hljs-attribute{color:#d0d0ff}.css .hljs-tag,.hljs-rules .hljs-property,.hljs-pseudo,.tex .hljs-special{color:#cda869}.css .hljs-class{color:#9b703f}.hljs-rules .hljs-keyword{color:#c5af75}.hljs-rules .hljs-value{color:#cf6a4c}.css .hljs-id{color:#8b98ab}.hljs-annotation,.apache .hljs-sqbracket,.nginx .hljs-built_in{color:#9b859d}.hljs-preprocessor,.hljs-preprocessor *,.hljs-pragma{color:#8996a8 !important}.hljs-hexcolor,.css .hljs-value .hljs-number{color:#a5c261}.hljs-title,.hljs-decorator,.css .hljs-function{color:#ffc66d}.diff .hljs-header,.hljs-chunk{background-color:#2f33ab;color:#e6e1dc;display:inline-block;width:100%}.diff .hljs-change{background-color:#4a410d;color:#f8f8f8;display:inline-block;width:100%}.hljs-addition{background-color:#144212;color:#e6e1dc;display:inline-block;width:100%}.hljs-deletion{background-color:#600;color:#e6e1dc;display:inline-block;width:100%}.coffeescript .javascript,.javascript .xml,.tex .hljs-formula,.xml .javascript,.xml .vbscript,.xml .css,.xml .hljs-cdata{opacity:0.7}
 body {
-    font-size: 18px;
+    color: rgba(0, 0, 0, 0.8);
+    line-height: 1.5;
     background: #fff;
     font-style: normal;
-    line-height: 1.5;
-    color: rgba(0, 0, 0, 0.8);
     font-family: "freight-text-pro",Georgia,Cambria,"Times New Roman",Times,serif;
+    font-size: 18px;
     min-height: 101%;
     height: 101%;
 }
@@ -43,14 +43,14 @@ body {
 }
 
 .absolute-full {
-    position: absolute;
     bottom: 0;
     top: 0;
+    position: absolute;
 }
 
 .navbar2-wrapper {
-    width: 100%;
     min-height: 100%;
+    width: 100%;
 }
 
 .navbar2-page {
@@ -70,10 +70,10 @@ body {
 }
 @media all and (min-width:768px) {
     .sidebar {
-        position: absolute;
-        width: 250px;
         z-index: 1;
+        position: absolute;
         margin-top: 51px;
+        width: 250px;
     }
 
 }
@@ -109,14 +109,14 @@ dl.function > dt > tt.descname {
 
 dl.class dt tt.descname,
 dl.function dt tt.descname {
-    font-weight: bold;
     color: rgba(0, 0, 0, 0.8);
+    font-weight: bold;
 }
 
 dl.class dt,
 dl.function dt {
-    font-weight: normal;
     color: #888;
+    font-weight: normal;
     font-size: 18px;
 }
 
@@ -126,8 +126,8 @@ dl.function dt {
 }
 
 .dir-entry-image img {
-    width: 120px;
     height: auto;
+    width: 120px;
 }
 
 h1:hover > a.headerlink,
@@ -141,9 +141,9 @@ dt:hover > a.headerlink {
 }
 
 a.headerlink {
+    color: #eee;
     padding: 0 4px;
     text-decoration: none;
-    color: #eee;
     visibility: hidden;
 }
 
@@ -249,16 +249,16 @@ html {
 }
 
 #page-main {
-    min-height: 500px;
     padding-top: 20px;
     padding-bottom: 50px;
+    min-height: 500px;
 }
 
 #page-footer {
-    padding-top: 20px;
-    background-color: #005a8a;
     color: #e5c700;
+    padding-top: 20px;
     min-height: 300px;
+    background-color: #005a8a;
 }
 
 .page-header {
@@ -267,9 +267,9 @@ html {
 }
 
 .page-header.index-header {
-    width: 100%;
-    min-height: 300px;
-    background-color: #005a8a;
     color: #eee;
+    min-height: 300px;
+    width: 100%;
+    background-color: #005a8a;
     height: 100%;
 }

@@ -2,6 +2,7 @@ import lux
 from lux import Parameter
 
 from pulsar.apps.wsgi import MediaMixin, Html, route
+from pulsar.utils.httpurl import urlparse
 
 from .ui import add_css
 
@@ -62,7 +63,8 @@ class Router(lux.Router, MediaMixin):
         # Using Angular Ui-Router
         if uirouter:
             jscontext.update(self.sitemap(app))
-            jscontext['page'] = router_href(request.app_handler.full_route)
+            jscontext['page'] = router_href(app,
+                                            request.app_handler.full_route)
         else:
             ngmodules = set(app.config['NGMODULES'])
             if self.ngmodules:
@@ -131,12 +133,18 @@ class Router(lux.Router, MediaMixin):
                     cn='row').render(request)
 
 
-def router_href(route):
+def router_href(app, route):
     url = '/'.join(_angular_route(route))
     if url:
-        return '/%s' % url if route.is_leaf else '/%s/' % url
+        url = '/%s' % url if route.is_leaf else '/%s/' % url
     else:
-        return '/'
+        url = '/'
+    site_url = app.config['SITE_URL']
+    if site_url:
+        p = urlparse(site_url + url)
+        return p.path
+    else:
+        return url
 
 
 def _angular_route(route):
@@ -154,11 +162,7 @@ def add_to_sitemap(sitemap, app, router, parent=None):
     # Router variables
     if not isinstance(router, Router):
         return
-    href = router_href(router.full_route)
-    # site_url = app.config['SITE_URL']
-    # if site_url:
-    #     href = site_url + href if href != '/' else site_url
-    #
+    href = router_href(app, router.full_route)
     # Target
     target = router.target
     if not target and router.parent:

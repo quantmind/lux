@@ -35,6 +35,7 @@ from datetime import datetime
 
 from pulsar import ImproperlyConfigured
 from pulsar.apps.wsgi import FileRouter, WsgiHandler, MediaRouter
+from pulsar.utils.httpurl import urlparse
 from pulsar.utils.slugify import slugify
 
 import lux
@@ -82,10 +83,11 @@ class Extension(lux.Extension):
 
     def middleware(self, app):
         try:
-            html5 = app.config['HTML5_NAVIGATION']
+            html5 = app.config['ANGULAR_UI_ROUTER']
         except KeyError:
-            raise ImproperlyConfigured('"lux.extensions.static" requires '
-                                       '"lux.extensions.ngular" in EXTENSIONS')
+            raise ImproperlyConfigured(
+                '"lux.extensions.static" requires '
+                '"lux.extensions.angular" in EXTENSIONS')
         path = app.config['MEDIA_URL']
         api_url = app.config['STATIC_API'] or ''
         if api_url.startswith('/'):
@@ -122,7 +124,12 @@ class Extension(lux.Extension):
             file404 = os.path.join(path, '404.html')
             if not os.path.isfile(file404):
                 file404 = None
-            media = MediaRouter('', path, default_suffix='html',
+            site_url = app.config['SITE_URL']
+            base_url = ''
+            if site_url:
+                p = urlparse(site_url)
+                base_url = p.path
+            media = MediaRouter(base_url, path, default_suffix='html',
                                 raise_404=(not file404))
             middleware.append(media)
             if file404:

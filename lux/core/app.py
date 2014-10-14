@@ -1,15 +1,6 @@
 '''
-High level Functions
-=====================
-
 .. autofunction:: execute_from_config
 
-
-.. autofunction:: execute_app
-
-
-Application
-=====================
 
 .. autoclass:: App
    :members:
@@ -40,8 +31,7 @@ from .engines import template_engine
 
 __all__ = ['App',
            'Application',
-           'execute_from_config',
-           'execute_from_command_line']
+           'execute_from_config']
 
 
 # All events are fired with app as first positional argument
@@ -71,11 +61,6 @@ def execute_from_config(config_file, argv=None, **params):
         of the web site.
     '''
     execute_app(App(config_file, **params), argv=argv)
-
-
-def execute_from_command_line(argv=None):
-    '''Execute a command line command'''
-    execute_app(App('lux.core.app'))
 
 
 def execute_app(app, argv=None, **params):
@@ -376,7 +361,7 @@ class Application(ConsoleParser, Extension):
 
     def get_usage(self):
         '''Returns the script's main help text, as a string.'''
-        description = self.config['DESCRIPTION'] or 'Lux web-framework'
+        description = self.config['DESCRIPTION'] or 'Lux toolkit'
         usage = ['', '', description, '',
                  "Type '%s <command> --help' for help on a specific command." %
                  (self.meta.script or ''),
@@ -550,14 +535,15 @@ class Application(ConsoleParser, Extension):
     def _build_config(self, file):
         # Check if an extension module is available
         self.meta = self.meta.copy(file)
-        self.meta.path.add2python(self.meta.name, up=1)
-        extension = self.load_extension(self.meta.name)
-        if extension:   # extension available, get the version from it
-            self.meta.version = extension.meta.version
-        if not self.meta.has_module:
-            raise RuntimeError('Invalid project setup. The Application '
-                               'config module must be within a valid python '
-                               'module.')
+        if self.meta.name != 'lux':
+            self.meta.path.add2python(self.meta.name, up=1)
+            extension = self.load_extension(self.meta.name)
+            if extension:   # extension available, get the version from it
+                self.meta.version = extension.meta.version
+            if not self.meta.has_module:
+                raise RuntimeError('Invalid project setup. The Application '
+                                   'config module must be within a valid python '
+                                   'module.')
         params = self.callable._params
         parser = self.get_parser(with_commands=False, add_help=False)
         opts, _ = parser.parse_known_args(self.meta.argv)
