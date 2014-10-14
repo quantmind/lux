@@ -105,7 +105,7 @@ def run(argv=None):
           packages=packages,
           package_data={package_name: data_files},
           scripts=['bin/luxmake.py'],
-          classifiers=['Development Status :: 4 - Beta',
+          classifiers=['Development Status :: 2 - Pre-Alpha',
                        'Environment :: Web Environment',
                        'Intended Audience :: Developers',
                        'License :: OSI Approved :: BSD License',
