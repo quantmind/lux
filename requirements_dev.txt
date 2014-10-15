@@ -1,7 +1,8 @@
+pulsar
+python-dateutil
 coverage
 pep8
 markdown
-python-dateutil
 requests-oauthlib
 unidecode
 sphinx

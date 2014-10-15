@@ -11,12 +11,6 @@ before_install:
 
 install:
   - pip install -r requirements_dev.txt --use-mirrors
-  - git clone https://github.com/quantmind/pulsar.git
-  - cd pulsar
-  - git checkout -b dev origin/dev
-  - python setup.py install
-  - cd ..
-  - sudo rm -rf pulsar
   - python setup.py install
   - sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm
   - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then npm install; fi

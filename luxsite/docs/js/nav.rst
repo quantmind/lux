@@ -1,10 +1,14 @@
-.. highlight:: html
+.. highlight:: javascript
 
 lux.nav
 ================
 
-Angular module for site navigation.
+Angular module for site navigation directives. It must be included in the bootstrap array::
 
+    lux.bootstrap('myapp', [..., 'lux.nav', ...]);
+
+
+.. highlight:: html
 
 navbar
 ---------------

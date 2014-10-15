@@ -183,6 +183,7 @@ class Builder(BaseBuilder):
         '''
         if not self.should_build(app, name):
             return
+        request = None
         response = None
         content = None
         path = None
@@ -208,13 +209,12 @@ class Builder(BaseBuilder):
             app.logger.exception('Unhandled exception while building "%s"',
                                  content or path)
             content = None
-        return self.write(request, location, response, content)
+        return self.write(app, request, location, response, content)
 
-    def write(self, request, location, response, content):
-        app = request.app
-        path = self.relative_path(request)
-        url = app.site_url(normpath(path))
-        if response or content:
+    def write(self, app, request, location, response, content):
+        if request and (response or content):
+            path = self.relative_path(request)
+            url = app.site_url(normpath(path))
             if not path or path.endswith('/'):
                 path = '%sindex' % path if path else '/index'
             if response:

@@ -155,6 +155,7 @@ class JsonContent(lux.Router, DirBuilder):
         if html_router.index_template:
             self.add_child(JsonIndex('index.json',
                                      dir=self.dir,
+                                     html_router=html_router,
                                      index_template=html_router.index_template))
         #
         # TODO! Add Drafts API if drafts are available

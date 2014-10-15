@@ -56,7 +56,7 @@ class SphinxMixin(object):
         request.cache.building_static = True
         request.cache.content = content
         response = self.response(request.environ, urlparams)
-        self.write(request, location, response, content)
+        self.write(app, request, location, response, content)
 
     def build_sphinx(self, app, location):
         if not LuxSphinx:
