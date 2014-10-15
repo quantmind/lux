@@ -951,9 +951,6 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
             //
             $lux.log.info('Setting up angular page');
             //
-            // Inject lux context into the scope of the page
-            angular.extend($scope, lux.context);
-            //
             var page = $scope.page;
             // If the page is a string, retrieve it from the pages object
             if (typeof page === 'string')
@@ -1086,6 +1083,13 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
     //  Only when context.html5mode is true
     //  Python implementation in the lux.extensions.angular Extension
     angular.module('lux.ui.router', ['lux.page', 'ui.router'])
+        //
+        .run(['$rootScope', '$state', '$stateParams', function (scope, $state, $stateParams) {
+            //
+            // It's very handy to add references to $state and $stateParams to the $rootScope
+            scope.$state = $state;
+            scope.$stateParams = $stateParams;
+        }])
         .config(['$locationProvider', '$stateProvider', '$urlRouterProvider',
             function ($locationProvider, $stateProvider, $urlRouterProvider) {
 
@@ -1175,8 +1179,13 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
             forEach(lux.context.ngModules, function (mod) {
                 modules.push(mod);
             });
-            angular.module(name, modules);
-            angular.bootstrap(document, [name]);
+            angular.module('lux.scope.loader', [])
+                .run(['$rootScope', '$log', function (scope, log) {
+                    log.info('Extend root scope with lux context');
+                    extend(scope, lux.context);
+                }]);
+            modules.splice(0, 0, 'lux.scope.loader');
+            angular.bootstrap(document, modules);
             //
             forEach(ready_callbacks, function (callback) {
                 callback();
@@ -1742,8 +1751,31 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
         }
     };
 
+    //
+    //  Module for interacting with google API and services
+    angular.module('google', [])
+        .run(['$rootScope', '$log', '$location', function (scope, log, location) {
+            var analytics = scope.google ? scope.google.analytics : null;
 
-    angular.module('google.maps', [])
+            if (analytics && analytics.id) {
+                var ga = analytics.ga || 'ga';
+                if (typeof ga === 'string')
+                    ga = root[ga];
+                log.info('Register events for google analytics ' + analytics.id);
+                scope.$on('$stateChangeSuccess', function (event, toState, toParams, fromState, fromParams) {
+                    var state = scope.$state;
+                    //
+                    if (state) {
+                        var fromHref = state.href(fromState, fromParams),
+                            toHref = state.href(toState, toParams);
+                        if (fromHref !== 'null') {
+                            ga('send', 'fromState', fromHref, 5, true);
+                            ga('send', 'stateChange', toHref, 5, true);
+                        }
+                    }
+                });
+            }
+        }])
         .directive('googleMap', function () {
             return {
                 //

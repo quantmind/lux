@@ -2,7 +2,7 @@
 .. autofunction:: execute_from_config
 
 
-.. autoclass:: App
+.. autoclass:: Application
    :members:
    :member-order: bysource
 
@@ -121,14 +121,19 @@ class App(LazyWsgi):
 
 
 class Application(ConsoleParser, Extension):
-    '''A lux :class:`App` is the WSGI callable for serving lux applications.
+    '''The :class:`.Application` is the WSGI callable for serving
+    lux applications.
 
     It is a specialised :class:`~.Extension` which collects
     all extensions of your application and setup the wsgi middleware used by
     the web server.
     An :class:`App` is not usually initialised directly, the higher level
-    :func:`execute_from_config` is used instead.
+    :func:`.execute_from_config` is used instead.
 
+    .. attribute:: config
+
+        The configuration dictionary containing all patameters specified in
+        the :attr:`config_module`.
 
     .. attribute:: debug
 
@@ -298,6 +303,8 @@ class Application(ConsoleParser, Extension):
                            charset=cfg['ENCODING'],
                            asset_protocol=cfg['ASSET_PROTOCOL'])
         doc.meta = HeadMeta(doc.head)
+        doc.jscontext = {'dateFormat': cfg['DATE_FORMAT'],
+                         'datetimeFormat': cfg['DATETIME_FORMAT']}
         # Locale
         lang = cfg['LOCALE'][:2]
         doc.attr('lang', lang)
@@ -470,20 +477,13 @@ class Application(ConsoleParser, Extension):
                 return file.read()
         return ''
 
-    def context(self, request, context=None, js=None):
+    def context(self, request, context=None):
         '''Load the ``context`` dictionary for this ``request``
         '''
         context = context if context is not None else {}
-        if js:
-            method = 'jscontext'
-            cfg = self.config
-            context.update({'dateFormat': cfg['DATE_FORMAT'],
-                            'datetimeFormat': cfg['DATETIME_FORMAT']})
-        else:
-            method = 'context'
         for ext in self.extensions.values():
-            if hasattr(ext, method):
-                context = getattr(ext, method)(request, context) or context
+            if hasattr(ext, 'context'):
+                context = ext.context(request, context) or context
         return context
 
     def render_template(self, template_name, context=None, engine=None):
@@ -507,15 +507,17 @@ class Application(ConsoleParser, Extension):
         if 'text/html' in request.content_types:
             request.response.content_type = 'text/html'
             doc = request.html_document
+            if jscontext:
+                doc.jscontext.update(jscontext)
             head = doc.head
             if title:
                 head.title = title % head.title
             if status_code:
                 request.response.status_code = status_code
             context = self.context(request, context)
-            jscontext = self.context(request, jscontext, 'js')
-            if jscontext:
-                jscontext = json.dumps(jscontext)
+            cfg = self.config
+            if doc.jscontext:
+                jscontext = json.dumps(doc.jscontext)
                 doc.head.embedded_js.append('var luxContext = %s;' % jscontext)
             body = self.render_template(template_name, context)
             doc.body.append(body)

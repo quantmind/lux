@@ -1,18 +1,4 @@
-'''The :mod:`lux.core` module contains all the functionalities to run a
-web site or an rpc server using lux and pulsar_.
-
-
-ConsoleParser
-=====================
-
-.. autoclass:: ConsoleParser
-   :members:
-   :member-order: bysource
-
-
-Command
-==================
-
+'''
 .. autoclass:: Command
    :members:
    :member-order: bysource
@@ -86,10 +72,11 @@ class LuxApp(Application):
 
 
 class Command(ConsoleParser):
-    '''Signature class for lux commands. A :class:`.Command` is never
-    created directly, instead, the :meth:`.App.get_command` method is used.
+    '''Signature class for lux commands.
 
-    A command is executed via its callable method.
+    A :class:`.Command` is never initialised directly, instead,
+    the :meth:`.Application.get_command` method is used to retrieve it and
+    executed by its callable method.
 
     .. attribute:: name
 
@@ -97,7 +84,7 @@ class Command(ConsoleParser):
 
     .. attribute:: app
 
-        The :class:`.App` running this :class:`.Command`.
+        The :class:`.Application` running this :class:`.Command`.
 
     .. attribute:: stdout
 

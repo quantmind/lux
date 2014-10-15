@@ -1,7 +1,7 @@
 /*
 ------------------------------------------------------------------
 ------------------------------------------------------------------
-Created by lux 2014-10-14 08:42:37 in 0.14 seconds.
+Created by lux 2014-10-15 12:12:42 in 0.99 seconds.
 ------------------------------------------------------------------
 ------------------------------------------------------------------ */
 
@@ -9,16 +9,16 @@ Created by lux 2014-10-14 08:42:37 in 0.14 seconds.
     margin-bottom: 20px !important;
 }
 
-.hljs{display:block;overflow-x:auto;padding:0.5em;background:#232323;color:#e6e1dc;-webkit-text-size-adjust:none}.hljs-comment,.hljs-template_comment,.hljs-javadoc,.hljs-shebang{color:#bc9458;font-style:italic}.hljs-keyword,.ruby .hljs-function .hljs-keyword,.hljs-request,.hljs-status,.nginx .hljs-title,.method,.hljs-list .hljs-title{color:#c26230}.hljs-string,.hljs-number,.hljs-regexp,.hljs-tag .hljs-value,.hljs-cdata,.hljs-filter .hljs-argument,.hljs-attr_selector,.apache .hljs-cbracket,.hljs-date,.tex .hljs-command,.asciidoc .hljs-link_label,.markdown .hljs-link_label{color:#a5c261}.hljs-subst{color:#519f50}.hljs-tag,.hljs-tag .hljs-keyword,.hljs-tag .hljs-title,.hljs-doctype,.hljs-sub .hljs-identifier,.hljs-pi,.input_number{color:#e8bf6a}.hljs-identifier{color:#d0d0ff}.hljs-class .hljs-title,.hljs-type,.smalltalk .hljs-class,.hljs-javadoctag,.hljs-yardoctag,.hljs-phpdoc,.hljs-dartdoc{text-decoration:none}.hljs-constant{color:#da4939}.hljs-symbol,.hljs-built_in,.ruby .hljs-symbol .hljs-string,.ruby .hljs-symbol .hljs-identifier,.asciidoc .hljs-link_url,.markdown .hljs-link_url,.hljs-attribute{color:#6d9cbe}.asciidoc .hljs-link_url,.markdown .hljs-link_url{text-decoration:underline}.hljs-params,.hljs-variable,.clojure .hljs-attribute{color:#d0d0ff}.css .hljs-tag,.hljs-rules .hljs-property,.hljs-pseudo,.tex .hljs-special{color:#cda869}.css .hljs-class{color:#9b703f}.hljs-rules .hljs-keyword{color:#c5af75}.hljs-rules .hljs-value{color:#cf6a4c}.css .hljs-id{color:#8b98ab}.hljs-annotation,.apache .hljs-sqbracket,.nginx .hljs-built_in{color:#9b859d}.hljs-preprocessor,.hljs-preprocessor *,.hljs-pragma{color:#8996a8 !important}.hljs-hexcolor,.css .hljs-value .hljs-number{color:#a5c261}.hljs-title,.hljs-decorator,.css .hljs-function{color:#ffc66d}.diff .hljs-header,.hljs-chunk{background-color:#2f33ab;color:#e6e1dc;display:inline-block;width:100%}.diff .hljs-change{background-color:#4a410d;color:#f8f8f8;display:inline-block;width:100%}.hljs-addition{background-color:#144212;color:#e6e1dc;display:inline-block;width:100%}.hljs-deletion{background-color:#600;color:#e6e1dc;display:inline-block;width:100%}.coffeescript .javascript,.javascript .xml,.tex .hljs-formula,.xml .javascript,.xml .vbscript,.xml .css,.xml .hljs-cdata{opacity:0.7}
+.hljs{display:block;overflow-x:auto;padding:0.5em;background:#3f3f3f;color:#dcdcdc;-webkit-text-size-adjust:none}.hljs-keyword,.hljs-tag,.css .hljs-class,.css .hljs-id,.lisp .hljs-title,.nginx .hljs-title,.hljs-request,.hljs-status,.clojure .hljs-attribute{color:#e3ceab}.django .hljs-template_tag,.django .hljs-variable,.django .hljs-filter .hljs-argument{color:#dcdcdc}.hljs-number,.hljs-date{color:#8cd0d3}.dos .hljs-envvar,.dos .hljs-stream,.hljs-variable,.apache .hljs-sqbracket{color:#efdcbc}.dos .hljs-flow,.diff .hljs-change,.python .exception,.python .hljs-built_in,.hljs-literal,.tex .hljs-special{color:#efefaf}.diff .hljs-chunk,.hljs-subst{color:#8f8f8f}.dos .hljs-keyword,.hljs-decorator,.hljs-title,.hljs-type,.diff .hljs-header,.ruby .hljs-class .hljs-parent,.apache .hljs-tag,.nginx .hljs-built_in,.tex .hljs-command,.hljs-prompt{color:#efef8f}.dos .hljs-winutils,.ruby .hljs-symbol,.ruby .hljs-symbol .hljs-string,.ruby .hljs-string{color:#dca3a3}.diff .hljs-deletion,.hljs-string,.hljs-tag .hljs-value,.hljs-preprocessor,.hljs-pragma,.hljs-built_in,.hljs-javadoc,.smalltalk .hljs-class,.smalltalk .hljs-localvars,.smalltalk .hljs-array,.css .hljs-rules .hljs-value,.hljs-attr_selector,.hljs-pseudo,.apache .hljs-cbracket,.tex .hljs-formula,.coffeescript .hljs-attribute{color:#cc9393}.hljs-shebang,.diff .hljs-addition,.hljs-comment,.hljs-annotation,.hljs-template_comment,.hljs-pi,.hljs-doctype{color:#7f9f7f}.coffeescript .javascript,.javascript .xml,.tex .hljs-formula,.xml .javascript,.xml .vbscript,.xml .css,.xml .hljs-cdata{opacity:0.5}
 body {
-    color: rgba(0, 0, 0, 0.8);
+    font-family: "freight-text-pro",Georgia,Cambria,"Times New Roman",Times,serif;
+    font-style: normal;
     line-height: 1.5;
     background: #fff;
-    font-style: normal;
-    font-family: "freight-text-pro",Georgia,Cambria,"Times New Roman",Times,serif;
     font-size: 18px;
-    min-height: 101%;
+    color: rgba(0, 0, 0, 0.8);
     height: 101%;
+    min-height: 101%;
 }
 
 [ng\:cloak],
@@ -43,14 +43,14 @@ body {
 }
 
 .absolute-full {
-    bottom: 0;
     top: 0;
     position: absolute;
+    bottom: 0;
 }
 
 .navbar2-wrapper {
-    min-height: 100%;
     width: 100%;
+    min-height: 100%;
 }
 
 .navbar2-page {
@@ -70,10 +70,10 @@ body {
 }
 @media all and (min-width:768px) {
     .sidebar {
-        z-index: 1;
-        position: absolute;
-        margin-top: 51px;
         width: 250px;
+        z-index: 1;
+        margin-top: 51px;
+        position: absolute;
     }
 
 }
@@ -90,8 +90,8 @@ body {
 }
 
 code.hljs.inline {
-    padding: 2px 4px;
     display: inline;
+    padding: 2px 4px;
 }
 
 dl dd {
@@ -115,19 +115,19 @@ dl.function dt tt.descname {
 
 dl.class dt,
 dl.function dt {
+    font-size: 18px;
     color: #888;
     font-weight: normal;
-    font-size: 18px;
 }
 
 .dir-entry-image {
-    overflow: hidden;
     max-height: 120px;
+    overflow: hidden;
 }
 
 .dir-entry-image img {
-    height: auto;
     width: 120px;
+    height: auto;
 }
 
 h1:hover > a.headerlink,
@@ -141,9 +141,9 @@ dt:hover > a.headerlink {
 }
 
 a.headerlink {
-    color: #eee;
     padding: 0 4px;
     text-decoration: none;
+    color: #eee;
     visibility: hidden;
 }
 
@@ -209,8 +209,8 @@ div.viewcode-block:target {
 .fullpage,
 .angular-view,
 html {
-    min-height: 101%;
     height: 101%;
+    min-height: 101%;
 }
 
 #lux-logo {
@@ -240,8 +240,8 @@ html {
 }
 
 #top a.navbar-brand img {
-    width: auto;
     height: 50px;
+    width: auto;
 }
 
 #page-header {
@@ -249,16 +249,16 @@ html {
 }
 
 #page-main {
-    padding-top: 20px;
     padding-bottom: 50px;
+    padding-top: 20px;
     min-height: 500px;
 }
 
 #page-footer {
-    color: #e5c700;
-    padding-top: 20px;
     min-height: 300px;
     background-color: #005a8a;
+    color: #e5c700;
+    padding-top: 20px;
 }
 
 .page-header {
@@ -267,9 +267,9 @@ html {
 }
 
 .page-header.index-header {
-    color: #eee;
-    min-height: 300px;
+    height: 100%;
     width: 100%;
     background-color: #005a8a;
-    height: 100%;
+    color: #eee;
+    min-height: 300px;
 }

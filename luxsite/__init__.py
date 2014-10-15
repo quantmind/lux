@@ -11,6 +11,7 @@ SITE_URL = 'http://quantmind.github.io/lux'
 EXTENSIONS = ('lux.extensions.base',
               'lux.extensions.ui',
               'lux.extensions.angular',
+              'lux.extensions.oauth',
               'lux.extensions.code',
               'lux.extensions.static')
 ANGULAR_UI_ROUTER = True
@@ -18,7 +19,7 @@ STATIC_API = 'jsonapi'
 CONTEXT_LOCATION = 'luxsite/context'
 STATIC_LOCATION = '../docs/luxsite'
 MD_EXTENSIONS = ['extra', 'meta', 'toc']
-CODE_HIGHLIGHT_THEME = 'railscasts'
+CODE_HIGHLIGHT_THEME = 'zenburn'
 FAVICON = 'luxsite/favicon.ico'
 REQUIREJS = ('luxsite/luxsite',)
 HTML_LINKS = ({'href': 'luxsite/lux-114.png',
@@ -33,7 +34,20 @@ HTML_LINKS = ({'href': 'luxsite/lux-114.png',
               {'href': 'luxsite/lux-144.png',
                'sizes': '144x144',
                'rel': 'apple-touch-icon'},
-              'luxsite/luxsite.css')
+              'luxsite/luxsite')
+
+# OAUTH
+OAUTH_PROVIDERS = {'google': {'analytics': {'id': 'UA-54439804-2',
+                                            'ga': '_gaTrack'}}}
+
+LINKS = {'Python': 'https://www.python.org/',
+         'AngularJS': 'https://angularjs.org/',
+         'RequireJS': 'http://requirejs.org/',
+         'lux': 'https://github.com/quantmind/lux',
+         'pulsar': 'http://pythonhosted.org/pulsar',
+         'django': 'https://www.djangoproject.com/',
+         'd3': 'http://d3js.org/',
+         'bootstrap': 'http://getbootstrap.com/'}
 
 
 class Extension(lux.Extension):

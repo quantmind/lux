@@ -109,10 +109,9 @@ class Extension(lux.Extension):
             if csrf_token and param:
                 doc.head.add_meta(name="csrf-param", content=param)
                 doc.head.add_meta(name="csrf-token", content=csrf_token)
-
-    def jscontext(self, request, context):
-        session = request.cache.session
-        context['messages'] = session.get_messages()
+            session = request.cache.session
+            if session:
+                doc.jscontext['messages'] = session.get_messages()
 
     def on_form(self, app, form):
         '''Handle CSRF on form

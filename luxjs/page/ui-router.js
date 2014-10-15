@@ -5,6 +5,13 @@
     //  Only when context.html5mode is true
     //  Python implementation in the lux.extensions.angular Extension
     angular.module('lux.ui.router', ['lux.page', 'ui.router'])
+        //
+        .run(['$rootScope', '$state', '$stateParams', function (scope, $state, $stateParams) {
+            //
+            // It's very handy to add references to $state and $stateParams to the $rootScope
+            scope.$state = $state;
+            scope.$stateParams = $stateParams;
+        }])
         .config(['$locationProvider', '$stateProvider', '$urlRouterProvider',
             function ($locationProvider, $stateProvider, $urlRouterProvider) {
 

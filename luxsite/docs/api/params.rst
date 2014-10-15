@@ -4,11 +4,14 @@
 Parameters
 ===============================
 
+A full list of available :class:`.Parameter` from all :class:`.Extension`
+available in the standard lux distribution.
+
 Core
 =====================
 
 .. lux_extension:: lux.core.app
-   :classname: App
+   :classname: Application
 
 
 Base

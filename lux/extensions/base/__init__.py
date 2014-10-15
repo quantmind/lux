@@ -37,13 +37,13 @@ class Extension(lux.Extension):
                   'that it encodes the response via the gzip algorithm.'),
         Parameter('USE_ETAGS', False, ''),
         Parameter('CLEAN_URL', False,
-                  'When ``True``, requests on url with consecutive slashes '
+                  'When ``True``, requests on urls with consecutive slashes '
                   'are converted to valid url and redirected.'),
         Parameter('SERVE_STATIC_FILES', False,
                   'if ``True`` add middleware to serve static files.'),
         Parameter('FAVICON', None,
-                  'Adds wsgi middleware to handle favicon url ``/favicon.ico``'
-                  'served from ``MEDIA_URL/FAVICON``')]
+                  'Adds tag of type ``image/x-icon`` in the head section of'
+                  ' the Html document')]
 
     def middleware(self, app):
         '''Add two middleware handlers if configured to do so.'''
@@ -52,13 +52,6 @@ class Extension(lux.Extension):
             middleware.append(wsgi.clean_path_middleware)
         if app.config['SERVE_STATIC_FILES']:
             path = app.config['MEDIA_URL']
-            # Check if node modules are available
-            # node_modules = os.path.join(os.path.dirname(app.meta.path),
-            #                             'node_modules')
-            # if os.path.isdir(node_modules):
-            #     node = '%snode_modules/' % path
-            #     middleware.append(wsgi.MediaRouter(node, node_modules,
-            #                                        show_indexes=app.debug))
             middleware.append(MediaRouter(path, app.meta.media_dir,
                                           show_indexes=app.debug))
         return middleware

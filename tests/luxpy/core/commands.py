@@ -9,6 +9,7 @@ from lux.utils import test
 
 
 class CommandTests(test.TestCase):
+    config_file = 'luxpy.config'
 
     def test_startproject(self):
         command = self.fetch_command('startproject')

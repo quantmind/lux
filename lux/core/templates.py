@@ -1,55 +1,8 @@
 '''
-The :class:`.Template` defines a family of classes which can be used to
-build HTML elements in a pythonic fashion. No template specific language is
-required, instead a template for an html element is created by adding children
-:class:`.Template` to a parent one.
-
-
-Template
-~~~~~~~~~~~~~~~~~~~~
-
 .. autoclass:: Template
    :members:
    :member-order: bysource
 
-
-Context
-~~~~~~~~~~~~~~~~~~~~
-
-.. autoclass:: Context
-   :members:
-   :member-order: bysource
-
-
-Page Template
-~~~~~~~~~~~~~~~~~~~~
-
-.. autoclass:: PageTemplate
-   :members:
-   :member-order: bysource
-
-
-Grid Template
-~~~~~~~~~~~~~~~~~~~~
-
-.. autoclass:: GridTemplate
-   :members:
-   :member-order: bysource
-
-
-Row Template
-~~~~~~~~~~~~~~~~~~~~
-
-.. autoclass:: RowTemplate
-   :members:
-   :member-order: bysource
-
-Column Template
-~~~~~~~~~~~~~~~~~~~~
-
-.. autoclass:: ColumnTemplate
-   :members:
-   :member-order: bysource
 '''
 from itertools import chain
 
@@ -59,14 +12,17 @@ from pulsar.utils.structures import AttributeDictionary
 from .wrappers import Html
 
 
-__all__ = ['Template', 'Context', 'ColumnTemplate', 'RowTemplate',
-           'GridTemplate', 'PageTemplate']
+__all__ = ['Template']
 
 
 class Template(object):
     '''A factory of :class:`.Html` objects.
 
-    ::
+    The :class:`.Template` defines a family of classes which can be used to
+    build HTML elements in a pythonic fashion.
+    No template specific language is
+    required, instead a template for an html element is created
+    by adding children :class:`.Template` to a parent one.::
 
         >>> simple = Template(Context('foo', tag='span'), tag='div')
         >>> html = simple(cn='test', context={'foo': 'bla'})
@@ -200,146 +156,3 @@ class Template(object):
         '''Called just before adding ``child`` to ``html``
         '''
         return child
-
-
-class Context(Template):
-    '''A :class:`Template` which enforces the :attr:`~.Template.key`
-    attribute.
-
-    Fore example::
-
-        >>> from lux import Context
-        >>> template = Context('foo', tag='div')
-        >>> template.key
-        'foo'
-        >>> html = template(context={'foo': 'pippo'})
-        >>> html.render()
-        <div>pippo</div>
-    '''
-    def __init__(self, key, *children, **params):
-        params['key'] = key
-        super(Context, self).__init__(*children, **params)
-
-
-class ColumnTemplate(Template):
-    '''A template to place inside a :class:`.RowTemplate`.
-
-    :param span=1: fraction indicating how much this template extend across
-        its row container. For example ``0.5`` is half span. Must be between
-        0 and 1.
-
-    :param device='md': The device which render the column with the correct
-        ``span``. Valid options are
-
-        * ``xs`` extra small (phones)
-        * ``sm`` small (tablets)
-        * ``md`` medium (desktops)
-        * ``lg`` large (desktops)
-    '''
-    tag = 'div'
-
-    def __init__(self, *children, **params):
-        self.span = params.pop('span', 1)
-        self.device = params.pop('device', 'md')
-        super(ColumnTemplate, self).__init__(*children, **params)
-        if self.span > 1:
-            raise ValueError('Column span "%s" greater than one!' % self.span)
-
-
-class RowTemplate(Template):
-    '''A :class:`.RowTemplate` is a container of :class:`.ColumnTemplate`
-    elements. It should be placed inside a :class:`.GridTemplate` for
-    better rendering.
-
-    :param column: Optional parameter which set the :attr:`column` attribute.
-
-    .. attribute:: column
-
-        It can be either 12 or 24 and it indicates the number of column
-        spans available.
-
-        Default: 12
-    '''
-    grid_child = True
-    tag = 'div'
-    classes = 'row'
-    columns = 12
-
-    def __init__(self, *children, **params):
-        self.columns = params.pop('columns', self.columns)
-        # self.classes = 'grid%s row' % self.columns
-        super(RowTemplate, self).__init__(*children, **params)
-
-    def child_template(self, child=None):
-        if not isinstance(child, ColumnTemplate):
-            child = ColumnTemplate(child)
-        span = round(child.span * self.columns)
-        child.classes = 'col-%s-%s' % (child.device, span)
-        return child
-
-
-class GridTemplate(Template):
-    '''A container of :class:`.RowTemplate` or other templates.
-
-    :parameter fixed: optional boolean flag to indicate if the grid is
-        fixed (html class ``grid fixed``) or fluid (html class ``grid fluid``).
-        If not specified the grid is considered fluid (it changes width when
-        the browser window changes width).
-
-    '''
-    tag = 'div'
-
-    def __init__(self, *children, **params):
-        self.fixed = params.pop('fixed', True)
-        self.classes = 'container' if self.fixed else 'container-fluid'
-        super().__init__(*children, **params)
-
-    def child_template(self, child=None):
-        if not getattr(child, 'grid_child', False):
-            child = RowTemplate(child)
-        return child
-
-
-class PageTemplate(Template):
-    '''A :class:`.Template` to render the inner part of the HTML ``body`` tag.
-
-    A page template is created by including the page components during
-    initialisation, for example::
-
-        from lux.extensions.cms.grid import PageTemplate
-
-        head_body_foot = PageTemplate(
-            Template(...),
-            GridTemplate(...),
-            ...)
-    '''
-    tag = 'div'
-    classes = 'cms-page'
-
-    def __init__(self, *children, **params):
-        params['role'] = 'page'
-        super(PageTemplate, self).__init__(*children, **params)
-
-    def html(self, request, context, children, **kwargs):
-        html = super(PageTemplate, self).html(request, context, children,
-                                              **kwargs)
-        if request:
-            ids = context.get('content_ids')
-            if ids:
-                contents = yield request.models.content.filter(
-                    id=ids).all()
-                for content in contents:
-                    for elem in ids.get(content.id, ()):
-                        self.apply_content(elem, content)
-        content = yield html(request)
-        coroutine_return(content)
-
-    def apply_content(self, elem, content):
-        elem.data({'id': content.id, 'content_type': content.content_type})
-        for name, value in chain((('title', content.title),
-                                  ('keywords', content.keywords)),
-                                 content.data.items()):
-            if isinstance(value, str):
-                elem.append(Html('div', value, field=name))
-            else:
-                elem.data(name, value)

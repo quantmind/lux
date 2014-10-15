@@ -44,9 +44,7 @@ class Extension(lux.Extension):
                 for provider in oauths.values():
                     provider.on_html_document(request, doc)
                 doc.before_render(self.meta_add_tags)
-
-    def jscontext(self, request, context):
-        context['oauths'] = oauth_context(request)
+        doc.jscontext['oauths'] = oauth_context(request)
 
     def meta_add_tags(self, request, doc):
         with OGP(doc) as ogp:

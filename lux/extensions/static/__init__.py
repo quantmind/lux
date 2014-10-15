@@ -151,17 +151,18 @@ class Extension(lux.Extension):
         #
         self.copy_redirects(app, location)
 
-    def jscontext(self, request, context):
+    def on_html_document(self, app, request, doc):
         '''Add api Urls
         '''
         app = request.app
-        context.update(self.build_info(app))
+        jscontext = doc.jscontext
+        jscontext.update(self.build_info(app))
         if request.config['STATIC_API']:
-            apiUrls = context.get('apiUrls', {})
+            apiUrls = jscontext.get('apiUrls', {})
             for middleware in app.handler.middleware:
                 if isinstance(middleware, Router):
                     middleware.add_api_urls(request, apiUrls)
-            context['apiUrls'] = apiUrls
+            jscontext['apiUrls'] = apiUrls
 
     def context(self, request, context):
         if request.cache.building_static:

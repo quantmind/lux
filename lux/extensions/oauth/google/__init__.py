@@ -21,15 +21,8 @@ class Google(OAuth2):
     default_scope = ['profile', 'email']
 
     def on_html_document(self, request, doc):
-        aid = self.config.get('analytics_id')
-        if aid:
-            site = request.config['SITE_URL']
-            if not site:
-                request.logger.warning(
-                    'SITE_URL is required for google analytics')
-            p = urlparse(site)
-            txt = GOOGLE_ANALYTICS.substitute({'id': aid, 'domain': p.netloc})
-            doc.head.append(txt)
+        self.google_context(doc)
+        self.add_analytics(doc)
         key = self.config.get('simple_key')
         if key:
             sensor = 'true' if self.config.get('map_sensor') else 'false'
@@ -37,16 +30,36 @@ class Google(OAuth2):
             doc.head.scripts.paths['google-maps'] = {'url': url}
             doc.head.embedded_js.append(run_google_maps_callbacks)
 
+    def google_context(self, doc):
+        ngmodules = doc.jscontext.get('ngModules')
+        if ngmodules is None:
+            ngModules = []
+            doc.jscontext['ngModules'] = ngModules
+        ngModules.append('google')
+        google = doc.jscontext.get('google')
+        if google is None:
+            doc.jscontext['google'] = {}
+
+    def add_analytics(self, doc):
+        google = doc.jscontext['google']
+        analytics = self.config.get('analytics')
+        if analytics and 'id' in analytics:
+            google['analytics'] = analytics
+            if 'ga' not in analytics:
+                analytics['ga'] = 'ga'
+            txt = GOOGLE_ANALYTICS.substitute(analytics)
+            doc.head.append(txt)
+
 
 GOOGLE_ANALYTICS = Template('''\
 <script>
   (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
   (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
   m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+  })(window,document,'script','//www.google-analytics.com/analytics.js','$ga');
 
-  ga('create', '$id', '$domain');
-  ga('send', 'pageview');
+  $ga('create', '$id', 'auto');
+  $ga('send', 'pageview');
 
 </script>''')
 

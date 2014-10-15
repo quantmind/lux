@@ -1,5 +1,28 @@
+    //
+    //  Module for interacting with google API and services
+    angular.module('google', [])
+        .run(['$rootScope', '$log', '$location', function (scope, log, location) {
+            var analytics = scope.google ? scope.google.analytics : null;
 
-    angular.module('google.maps', [])
+            if (analytics && analytics.id) {
+                var ga = analytics.ga || 'ga';
+                if (typeof ga === 'string')
+                    ga = root[ga];
+                log.info('Register events for google analytics ' + analytics.id);
+                scope.$on('$stateChangeSuccess', function (event, toState, toParams, fromState, fromParams) {
+                    var state = scope.$state;
+                    //
+                    if (state) {
+                        var fromHref = state.href(fromState, fromParams),
+                            toHref = state.href(toState, toParams);
+                        if (fromHref !== 'null') {
+                            ga('send', 'fromState', fromHref, 5, true);
+                            ga('send', 'stateChange', toHref, 5, true);
+                        }
+                    }
+                });
+            }
+        }])
         .directive('googleMap', function () {
             return {
                 //

@@ -30,9 +30,6 @@
             //
             $lux.log.info('Setting up angular page');
             //
-            // Inject lux context into the scope of the page
-            angular.extend($scope, lux.context);
-            //
             var page = $scope.page;
             // If the page is a string, retrieve it from the pages object
             if (typeof page === 'string')

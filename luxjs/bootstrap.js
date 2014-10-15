@@ -16,8 +16,13 @@
             forEach(lux.context.ngModules, function (mod) {
                 modules.push(mod);
             });
-            angular.module(name, modules);
-            angular.bootstrap(document, [name]);
+            angular.module('lux.scope.loader', [])
+                .run(['$rootScope', '$log', function (scope, log) {
+                    log.info('Extend root scope with lux context');
+                    extend(scope, lux.context);
+                }]);
+            modules.splice(0, 0, 'lux.scope.loader');
+            angular.bootstrap(document, modules);
             //
             forEach(ready_callbacks, function (callback) {
                 callback();

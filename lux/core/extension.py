@@ -1,21 +1,11 @@
 '''
-
-Extension
-=====================
-
 .. autoclass:: Extension
    :members:
    :member-order: bysource
 
-Extension Meta
-=====================
-
 .. autoclass:: ExtensionMeta
    :members:
    :member-order: bysource
-
-Parameter
-=====================
 
 .. autoclass:: Parameter
    :members:
@@ -37,17 +27,23 @@ __all__ = ['Extension', 'Parameter']
 
 
 class Parameter(object):
-    '''Class for defining a lux :ref:`parameter <parameter>` within
+    '''Class for defining a lux :ref:`parameter <parameters>` within
     a lux :class:`.Extension`.
 
-    Parameters are specified when creating an :class:`.Extension` in a
-    declarative style (as class attributes of the extension). For example::
+    Parameters are specified in the ``_config`` list of an :class:`.Extension`.
+    For example::
 
         from lux import Extension, Parameter
 
         class MyExtension(Extension):
-            title = Parameter('Hello', 'The title to use in the home page')
 
+            _config = [
+                Parameter('MYPARAM', 'Hello',
+                          'A parameter for my great extension')
+                ]
+
+    :parameter name: unique name identifying the parameter which is used
+        to retrieve it from the :class:`.Application.config` dictionary.
     :parameter default: the default value of the parameter. This is the value
         used by the framework when the parameter is not found in the config
         file.
@@ -67,7 +63,7 @@ class Parameter(object):
 
 
 class ExtensionMeta(object):
-    '''Contains metadata for an :class:`Extension`.
+    '''Contains metadata for an :class:`.Extension`.
 
     .. attribute:: config
 
@@ -162,8 +158,7 @@ class ExtensionType(type):
 
 
 class Extension(ExtensionType('ExtBase', (object,), {'abstract': True})):
-    '''Base class for :ref:`lux extensions <extensions>`
-    including :class:`.App`.
+    '''Base class for extensions including the :class:`.Application` class.
 
     .. attribute:: meta
 

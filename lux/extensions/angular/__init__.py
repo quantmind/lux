@@ -17,11 +17,6 @@ class Extension(lux.Extension):
         Parameter('NGMODULES', [], 'Angular module to load')
     ]
 
-    def jscontext(self, request, context):
-        cfg = request.config
-        navbar = context.get('navbar') or {}
-        navbar['collapseWidth'] = cfg['NAVBAR_COLLAPSE_WIDTH']
-
 
 class Router(lux.Router, MediaMixin):
     '''A :class:`.Router` for Angular Html5 navigation
@@ -56,29 +51,37 @@ class Router(lux.Router, MediaMixin):
         doc.body.data({'ng-model': 'page',
                        'ng-controller': 'Page',
                        'page': ''})
-        jscontext = {'html5mode': app.config['HTML5_NAVIGATION']}
+        #
+        # Add info to jscontext
+        jscontext = doc.jscontext
+        jscontext['html5mode'] = app.config['HTML5_NAVIGATION']
+        navbar = doc.jscontext.get('navbar') or {}
+        navbar['collapseWidth'] = app.config['NAVBAR_COLLAPSE_WIDTH']
+        jscontext['navbar'] = navbar
+
         context = {}
         main = self.build_main(request, context, jscontext)
         #
+        ngmodules = jscontext['ngModules'] = set(jscontext.get('ngModules', ()))
+        ngmodules.update(app.config['NGMODULES'])
+        #
         # Using Angular Ui-Router
         if uirouter:
-            jscontext.update(self.sitemap(app))
+            jscontext.update(self.sitemap(app, ngmodules))
             jscontext['page'] = router_href(app,
                                             request.app_handler.full_route)
-        else:
-            ngmodules = set(app.config['NGMODULES'])
-            if self.ngmodules:
-                ngmodules.update(self.ngmodules)
-            jscontext['ngModules'] = tuple(ngmodules)
+        elif self.ngmodules:
+            ngmodules.update(self.ngmodules)
 
+        jscontext['ngModules'] = list(jscontext['ngModules'])
         if uirouter:
             main = self.uiview(app, main)
 
         context['html_main'] = main
         return app.html_response(request, self.html_body_template,
-                                 jscontext=jscontext, context=context)
+                                 context=context)
 
-    def build_main(self, request, context, jscontext):
+    def build_main(self, request, context):
         '''Build the context when not using ui-router navigation
         '''
         return {}
@@ -101,19 +104,17 @@ class Router(lux.Router, MediaMixin):
         '''
         pass
 
-    def sitemap(self, app):
+    def sitemap(self, app, ngmodules):
         '''Build the sitemap used by angular ui-router
         '''
         root = self.root
         if root._sitemap is None:
-            ngmodues = set(app.config['NGMODULES'])
-            ngmodues.add('ui.router')
+            ngmodules.add('ui.router')
             sitemap = {'hrefs': [],
                        'pages': {},
                        'uiRouter': True,
-                       'ngModules': ngmodues}
+                       'ngModules': ngmodules}
             add_to_sitemap(sitemap, app, root)
-            sitemap['ngModules'] = tuple(ngmodues)
             root._sitemap = sitemap
         return root._sitemap
 
