@@ -14,7 +14,7 @@ EXTENSIONS = ('lux.extensions.base',
               'lux.extensions.oauth',
               'lux.extensions.code',
               'lux.extensions.static')
-ANGULAR_UI_ROUTER = True
+
 STATIC_API = 'jsonapi'
 CONTEXT_LOCATION = 'luxsite/context'
 STATIC_LOCATION = '../docs/luxsite'
@@ -48,6 +48,11 @@ LINKS = {'Python': 'https://www.python.org/',
          'django': 'https://www.djangoproject.com/',
          'd3': 'http://d3js.org/',
          'bootstrap': 'http://getbootstrap.com/'}
+
+
+# ANGULARJS CONFIGURATION
+ANGULAR_UI_ROUTER = True
+ANGULAR_VIEW_ANIMATE = 'animate-fade'
 
 
 class Extension(lux.Extension):

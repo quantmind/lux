@@ -12,6 +12,8 @@ class Extension(lux.Extension):
     _config = [
         Parameter('HTML5_NAVIGATION', True, 'Enable Html5 navigation'),
         Parameter('ANGULAR_UI_ROUTER', False, 'Enable Angular ui-router'),
+        Parameter('ANGULAR_VIEW_ANIMATE', False,
+                  'Enable Animation of ui-router views.'),
         Parameter('NAVBAR_COLLAPSE_WIDTH', 768,
                   'Width when to collapse the navbar'),
         Parameter('NGMODULES', [], 'Angular module to load')
@@ -73,10 +75,10 @@ class Router(lux.Router, MediaMixin):
         elif self.ngmodules:
             ngmodules.update(self.ngmodules)
 
-        jscontext['ngModules'] = list(jscontext['ngModules'])
         if uirouter:
-            main = self.uiview(app, main)
+            main = self.uiview(app, main, jscontext)
 
+        jscontext['ngModules'] = list(jscontext['ngModules'])
         context['html_main'] = main
         return app.html_response(request, self.html_body_template,
                                  context=context)
@@ -86,9 +88,16 @@ class Router(lux.Router, MediaMixin):
         '''
         return {}
 
-    def uiview(self, app, main):
+    def uiview(self, app, main, jscontext):
+        '''Wrap the ``main`` html with angulat ``ui-view`` container.
+        Add animation class if specified in :setting:`ANGULAR_VIEW_ANIMATE`.
+        '''
+        main = Html('div', main, cn='hidden')
         div = Html('div', main, cn=self.angular_view_class)
-        div.data('ui-view', '')
+        animate = app.config['ANGULAR_VIEW_ANIMATE']
+        if animate:
+            div.addClass(animate)
+        div.data('ui-view', 'main')
         return div.render()
 
     def state_template(self, app):

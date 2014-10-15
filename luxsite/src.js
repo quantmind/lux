@@ -1,7 +1,9 @@
-require(rcfg.min(['lux/lux', 'angular-ui-router', 'angular-strap']), function (lux) {
+require(rcfg.min(['lux/lux', 'angular-ui-router', 'angular-strap', 'angular-animate']), function (lux) {
     var url = lux.context.url;
     lux.extend({
-        scrollOffset: 60,
+        scroll: {
+            offset: 60
+        },
         navbar: {
             id: 'top',
             fixed: true,
@@ -24,5 +26,5 @@ require(rcfg.min(['lux/lux', 'angular-ui-router', 'angular-strap']), function (l
     });
     //
     // Angular Bootstrap via lux
-    lux.bootstrap('luxsite', ['lux.nav', 'highlight', 'lux.scroll']);
+    lux.bootstrap('luxsite', ['lux.nav', 'highlight', 'lux.scroll', 'ngAnimate']);
 });

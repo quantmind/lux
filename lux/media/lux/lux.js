@@ -41,9 +41,7 @@ function(angular, root) {
             url: '',    // base url for the web site
             media: '',  // default url for media content
             html5mode: true, //  html5mode for angular
-            hashPrefix: '!',
-            scrollOffset: 0,
-            scrollTime: 1
+            hashPrefix: '!'
         };
     //
     lux.$ = $;
@@ -550,12 +548,19 @@ function(angular, root) {
     //  Hash scrolling service
     angular.module('lux.scroll', [])
         //
-        .service('scroll', ['$location', '$log', '$timeout', function ($location, log, timer) {
+        .run(['$rootScope', function (scope) {
+            scope.scroll = extend({
+                time: 1,
+                offset: 0,
+                frames: 25
+            }, scope.scroll);
+        }])
+        //
+        .service('scroll', ['$rootScope', '$location', '$log', '$timeout', function (scope, $location, log, timer) {
             //  ScrollToHash
-            var defaultOffset = lux.context.scrollOffset,
-                targetClass = 'scroll-target',
+            var targetClass = 'scroll-target',
                 targetClassFinish = 'finished',
-                scrollTime = lux.context.scrollTime,
+                luxScroll = scope.scroll,
                 target = null;
             //
             this.toHash = function (hash, offset, delay) {
@@ -577,7 +582,7 @@ function(angular, root) {
                         target = $(target).addClass(targetClass).removeClass(targetClassFinish);
                         $location.hash(hash);
                         log.info('Scrolling to target #' + hash);
-                        _scrollTo(offset || defaultOffset, delay);
+                        _scrollTo(offset || luxScroll.offset, delay);
                         return target;
                     }
                 }
@@ -594,10 +599,10 @@ function(angular, root) {
                     startY = currentYPosition(),
                     stopY = elmYPosition(target[0]) - offset,
                     distance = stopY > startY ? stopY - startY : startY - stopY;
-                var step = Math.round(distance / 25),
+                var step = Math.round(distance / luxScroll.frames),
                     y = startY;
                 if (delay === null || delay === undefined) {
-                    delay = 1000*scrollTime/25;
+                    delay = 1000*luxScroll.time/luxScroll.frames;
                     if (distance < 200)
                         delay = 0;
                 }
@@ -939,6 +944,10 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
             page.date = date;
             page.dateText = dateFilter(date, $scope.dateFormat);
         }
+        page.toString = function () {
+            return this.name || this.url || '<noname>';
+        };
+
         return page;
     }
 
@@ -947,7 +956,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
     //  Lux main module for angular. Design to work with the ``lux.extension.angular``
     angular.module('lux.page', ['lux.services', 'lux.form', 'lux.scroll', 'templates-page'])
         //
-        .controller('Page', ['$scope', '$lux', 'dateFilter', function ($scope, $lux, dateFilter) {
+        .controller('Page', ['$scope', '$log', '$lux', 'dateFilter', function ($scope, log, $lux, dateFilter) {
             //
             $lux.log.info('Setting up angular page');
             //
@@ -993,6 +1002,14 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                     folder = url.substring(url.length-1) === '/';
                 return base === url && (folder || (rest === '' || rest.substring(0, 1) === '/'));
             };
+
+            //
+            $scope.$on('animIn', function() {
+                log.info('Page ' + page.toString() + ' animation in');
+            });
+            $scope.$on('animOut', function() {
+                log.info('Page ' + page.toString() + ' animation out');
+            });
         }])
         .service('$breadcrumbs', [function () {
 
@@ -1098,31 +1115,34 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
             pages = lux.context.pages,
             state_config = function (page) {
                 return {
-                    //
-                    template: page.template,
-                    //
                     url: page.url,
                     //
-                    resolve: {
-                        // Fetch page information
-                        page: ['$lux', '$stateParams', function ($lux, $stateParams) {
-                            if (page.api) {
-                                var api = $lux.api(page.api);
-                                if (api)
-                                    return api.get($stateParams);
-                            }
-                        }],
-                        // Fetch items if needed
-                        items: ['$lux', function ($lux) {
-                            if (page.apiItems) {
-                                var api = $lux.api(page.apiItems);
-                                if (api)
-                                    return api.getList();
-                            }
-                        }],
-                    },
-                    //
-                    controller: page.controller
+                    views: {
+                        main: {
+                            template: page.template,
+                            //
+                            resolve: {
+                                // Fetch page information
+                                page: ['$lux', '$stateParams', function ($lux, $stateParams) {
+                                    if (page.api) {
+                                        var api = $lux.api(page.api);
+                                        if (api)
+                                            return api.get($stateParams);
+                                    }
+                                }],
+                                // Fetch items if needed
+                                items: ['$lux', function ($lux) {
+                                    if (page.apiItems) {
+                                        var api = $lux.api(page.apiItems);
+                                        if (api)
+                                            return api.getList();
+                                    }
+                                }],
+                            },
+                            //
+                            controller: page.controller
+                        }
+                    }
                 };
             };
 
@@ -1146,6 +1166,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                     $scope.page = addPageInfo(page.data, $scope, dateFilter, $lux);
                 }
             }])
+        //
         .directive('dynamicPage', ['$compile', '$log', function ($compile, log) {
             return {
                 link: function (scope, element, attrs) {
@@ -1185,7 +1206,8 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                     extend(scope, lux.context);
                 }]);
             modules.splice(0, 0, 'lux.scope.loader');
-            angular.bootstrap(document, modules);
+            angular.module(name, modules);
+            angular.bootstrap(document, [name]);
             //
             forEach(ready_callbacks, function (callback) {
                 callback();
@@ -1307,10 +1329,10 @@ angular.module('templates-nav', ['nav/navbar.tpl.html', 'nav/navbar2.tpl.html'])
 
 angular.module("nav/navbar.tpl.html", []).run(["$templateCache", function($templateCache) {
   $templateCache.put("nav/navbar.tpl.html",
-    "<nav class=\"navbar-static-top navbar-{{navbar.themeTop}}\"\n" +
-    "ng-class=\"{'navbar-fixed-top':navbar.fixed}\" role=\"navigation\"\n" +
+    "<nav class=\"navbar-{{navbar.themeTop}}\"\n" +
+    "ng-class=\"{'navbar-fixed-top':navbar.fixed, 'navbar-static-top':navbar.top}\" role=\"navigation\"\n" +
     "ng-model=\"navbar.collapse\" bs-collapse>\n" +
-    "    <div ng-attr-id='{{navbar.id}}' class=\"container-fluid\">\n" +
+    "    <div ng-attr-id='{{navbar.id}}' class=\"{{navbar.container}}\">\n" +
     "        <div class=\"navbar-header\">\n" +
     "            <button type=\"button\" class=\"navbar-toggle\" bs-collapse-toggle>\n" +
     "                <span class=\"sr-only\">Toggle navigation</span>\n" +
@@ -1318,10 +1340,10 @@ angular.module("nav/navbar.tpl.html", []).run(["$templateCache", function($templ
     "                <span class=\"icon-bar\"></span>\n" +
     "                <span class=\"icon-bar\"></span>\n" +
     "            </button>\n" +
-    "            <a ng-if=\"navbar.brandImage\" href=\"{{navbar.url}}\" class=\"navbar-brand\" target=\"_self\">\n" +
+    "            <a ng-if=\"navbar.brandImage\" href=\"{{navbar.url}}\" class=\"navbar-brand\" target=\"{{navbar.target}}\">\n" +
     "                <img ng-src=\"{{navbar.brandImage}}\" alt=\"{{navbar.brand || 'brand'}}\">\n" +
     "            </a>\n" +
-    "            <a ng-if=\"!navbar.brandImage && navbar.brand\" href=\"{{navbar.url}}\" class=\"navbar-brand\" target=\"_self\">\n" +
+    "            <a ng-if=\"!navbar.brandImage && navbar.brand\" href=\"{{navbar.url}}\" class=\"navbar-brand\" target=\"{{navbar.target}}\">\n" +
     "                {{navbar.brand}}\n" +
     "            </a>\n" +
     "        </div>\n" +
@@ -1410,20 +1432,24 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
         theme: 'default',
         search_text: '',
         collapse: '',
+        top: true,
         search: false,
-        url: lux.context.url
+        url: lux.context.url,
+        target: '',
+        fluid: true
     };
 
     angular.module('lux.nav', ['templates-nav', 'lux.services', 'mgcrea.ngStrap.collapse'])
+        //
         .service('navService', function () {
 
             this.initScope = function (opts) {
                 var navbar = extend({}, navBarDefaults, getOptions(opts));
-                // Fix defaults
                 if (!navbar.url)
-                    navbar.url = lux.context.url || '/';
+                    navbar.url = '/';
                 if (!navbar.themeTop)
                     navbar.themeTop = navbar.theme;
+                navbar.container = navbar.fluid ? 'container-fluid' : 'container';
                 this.maybeCollapse(navbar);
                 return navbar;
             };
@@ -1438,6 +1464,7 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
                 return c !== navbar.collapse;
             };
         })
+        //
         .controller('Navigation', ['$scope', '$lux', function ($scope, $lux) {
             $lux.log.info('Setting up navigation on page');
             //
@@ -1484,6 +1511,11 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
             // Link function
             link: function (scope, element, attrs) {
                 scope.navbar = navService.initScope(attrs);
+                //
+                windowResize(function () {
+                    if (navService.maybeCollapse(scope.navbar))
+                        scope.$apply();
+                });
             }
         };
     }])
@@ -1544,6 +1576,107 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
             };
 
         }]);
+
+    var animationDefaults = {
+        sync: false,
+        speed: 1000,
+        inSpeed: null,
+        outSpeed: null
+    };
+
+    angular.module('lux.animate', ['ngAnimate'])
+        .animation('.lux-animate', ['$rootScope', '$timeout', '$window', function(scope, timer, $window) {
+
+            // Get defaults animation parameters
+            var defaults = extend({}, animationDefaults, scope.animation);
+            if (defaults.inSpeed === null)
+                defaults.inSpeed = defaults.speed;
+            if (defaults.outSpeed === null)
+                defaults.outSpeed = defaults.speed;
+
+            function o(element, name, defvalue) {
+                var v = element.attr('data-anim-'+name);
+                return v === undefined ? defvalue : scope.$eval(v);
+            }
+
+            return {
+                enter: function(element, done) {
+                    element = angular.element(element);
+                    var sync = o(element, 'sync', defaults.sync),
+                        speed = o(element, 'speed', defaults.speed),
+                        inSpeed = o(element, 'in-speed', defaults.inSpeed),
+                        outSpeed = o(element, 'out-speed', defaults.outSpeed);
+
+                    element.addClass('anim-in-setup');
+
+                    try {
+                        var observer = new MutationObserver(function(mutations) {
+                            observer.disconnect();
+                            timer(done, sync ? 0 : outSpeed);
+                        });
+
+                        observer.observe(element[0], {
+                            attributes: true,
+                            childList: false,
+                            characterData: false
+                        });
+
+                    } catch (e) {
+                        timer(done, Math.max(100, sync ? 0 : outSpeed));
+                    }
+
+                    return function(cancelled) {
+                        element.removeClass('anim-in-setup').addClass('anim-in');
+
+                        if (!cancelled) {
+                            if (element.scope())
+                                element.scope().$broadcast('animIn', element, inSpeed);
+
+                            timer(function() {
+                                scope.$broadcast('animEnd', element, inSpeed);
+                                element.removeClass('anim-in');
+                            }, inSpeed);
+                        }
+                    };
+                },
+                leave: function(element, done) {
+                    element = angular.element(element);
+                    var speed = o(element, 'speed', defaults.speed),
+                        outSpeed = o(element, 'out-speed', defaults.outSpeed);
+
+                    scope.$broadcast('animStart', element, outSpeed);
+
+                    if (element.scope()) {
+                        element.scope().$broadcast('animOut', element, outSpeed);
+                    }
+
+                    element.addClass('anim-out-setup');
+
+                    try {
+                        var observer = new MutationObserver(function(mutations) {
+                            observer.disconnect();
+
+                            $window.requestAnimationFrame(function() {
+                                element.removeClass('anim-out-setup')
+                                       .addClass('anim-out');
+                                timer(done, outSpeed);
+                            });
+                        });
+
+                        observer.observe(element[0], {
+                            attributes: true,
+                            childList: false,
+                            characterData: false
+                        });
+
+                    } catch (e) {
+                        element.removeClass('anim-out-setup').addClass('anim-out');
+                        timer(done, Math.max(100, outSpeed));
+                    }
+                }
+            };
+        }
+    ]);
     //
     //  Angular module for photos
     //  ============================

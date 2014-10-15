@@ -1,55 +1,30 @@
 '''
-Bcd
-~~~~~
 .. autoclass:: Bcd
 
-Border
-~~~~~~~~~
 .. autoclass:: Border
 
-BoxSizing
-~~~~~~~~~~~~~~~
 .. autoclass:: BoxSizing
 
-Clearfix
-~~~~~~~~~
 .. autoclass:: Clearfix
 
-Clickable
-~~~~~~~~~~~~
 .. autoclass:: Clickable
 
-CssInclude
-~~~~~~~~~~~~~
 .. autoclass:: CssInclude
 
-Fontface
-~~~~~~~~~~~~~~
 .. autoclass:: Fontface
 
-Gradient
-~~~~~~~~~~~~~~~
 .. autoclass:: Gradient
 
-
-Opacity
-~~~~~~~~~
 .. autoclass:: Opacity
 
-Radius
-~~~~~~~~~
 .. autoclass:: Radius
 
-Shadow
-~~~~~~~~
 .. autoclass:: Shadow
 
-Stack
-~~~~~~~
 .. autoclass:: Stack
 
-Transition
-~~~~~~~~~~~~~~~~~
+.. autoclass:: Transform
+
 .. autoclass:: Transition
 '''
 import os
@@ -57,7 +32,9 @@ import os
 from .base import *
 from .colorvar import *
 
-__all__ = ['Opacity',
+__all__ = ['CssLibraries',
+           'Animation',
+           'Opacity',
            'Clearfix',
            'InlineBlock',
            'Textoverflow',
@@ -75,6 +52,7 @@ __all__ = ['Opacity',
            'Bcd',
            'bcd',
            'Clickable',
+           'Transform',
            'Transition',
            'horizontal_navigation',
            # generators
@@ -84,9 +62,37 @@ __all__ = ['Opacity',
            'FontSmoothing',
            'Stack']
 
+
+############################################################################
+##    USEFUL CSS LIBRARIES
+############################################################################
+CssLibraries = {
+    'bootstrap': '//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap',
+    'fontawesome': '//netdna.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome',
+    'animate': '//cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate',
+    'weather-icons': '//cdnjs.cloudflare.com/ajax/libs/weather-icons/1.2/css/weather-icons'
+}
+
 ############################################################################
 ##    BATTERY INCLUDED MIXINS
 ############################################################################
+
+
+################################################# ANIMATION
+class Animation(Mixin):
+
+    def __init__(self, name, duration):
+        self.name = name
+        self.duration = duration
+
+    def __call__(self, elem):
+        name = as_value(self.name)
+        duration = as_value(self.duration)
+        animation = '%s %s' % (name, duration)
+        elem['-webkit-animation'] = animation
+        elem['   -moz-animation'] = animation
+        elem['    -ms-animation'] = animation
+        elem['        animation'] = animation
 
 
 ################################################# OPACITY
@@ -325,9 +331,9 @@ The only parameter is ``value`` which can be one of:
 ################################################# CSS3 RADIUS
 class Radius(Mixin):
     '''css3 border radius. The optional location parameter specifies the
-location where to apply the radius. For example, 'top', 'bottom', 'left',
-'right', 'top-left', 'top-right' and so on.
-'''
+    location where to apply the radius. For example, 'top', 'bottom', 'left',
+    'right', 'top-left', 'top-right' and so on.
+    '''
     def __init__(self, radius, location=None):
         if isinstance(radius, Radius):
             radius = radius.radius
@@ -559,6 +565,59 @@ class Clickable(Mixin):
             elem.css(':hover,.%s' % classes.hover, self.hover)
         if self.active:
             elem.css(':active,.%s' % classes.active, self.active)
+
+
+################################################# TRANSLATE
+class Transform(Mixin):
+    '''Defines a 2D transform.
+
+    A transition is controlled via the following parameters:
+
+    .. attribute:: x
+
+        Movement along the X-axis
+
+    .. attribute:: y
+
+        Movement along the Y-axis
+
+    .. attribute:: scale
+
+        Increases or decreases the size
+    '''
+    def __init__(self, x=None, y=None, scale=None, scalex=None, scaley=None):
+        self.x = x
+        self.y = y
+        self.scale = scale
+        self.scalex = scalex
+        self.scaley = scaley
+
+    def __call__(self, elem):
+        x = as_value(self.x)
+        y = as_value(self.y)
+        if x is not None or y is not None:
+            if y is None:
+                translate = 'translateX(%s)' % x
+            elif x is None:
+                translate = 'translateY(%s)' % y
+            else:
+                translate = 'translate(%s,%s)' % (x, y)
+            self._add(elem, translate)
+        scale = as_value(self.scale)
+        scalex = as_value(self.scalex)
+        scaley = as_value(self.scaley)
+        if scale is not None:
+            self._add(elem, 'scale(%s)' % scale)
+        else:
+            if scalex is not None:
+                self._add(elem, 'scaleX(%s)' % scalex)
+            if scaley is not None:
+                self._add(elem, 'scaleY(%s)' % scaley)
+
+    def _add(self, elem, value):
+        elem['-webkit-transform'] = value
+        elem['    -ms-transform'] = value
+        elem['        transform'] = value
 
 
 ################################################# TRANSITION
@@ -801,6 +860,12 @@ class CssInclude(Mixin):
 
     def __call__(self, elem):
         path = self.path
+        if path in CssLibraries:
+            path = CssLibraries[path]
+            if not path.endswith('.css'):
+                path = '%s.css' % path
+            if path.startswith('//'):
+                path = 'http:%s' % path
         if not path.startswith('http'):
             if os.path.isfile(path):
                 with open(path, 'r') as f:
@@ -816,6 +881,8 @@ class CssInclude(Mixin):
         root = elem.root
         if self.location:
             stream = '\n'.join(self.correct(root, stream))
+        if stream.startswith('@charset'):
+            stream = ';'.join(stream.split(';')[1:])
         return stream
 
     def correct(self, root, stream):

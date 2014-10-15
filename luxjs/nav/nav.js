@@ -17,20 +17,24 @@
         theme: 'default',
         search_text: '',
         collapse: '',
+        top: true,
         search: false,
-        url: lux.context.url
+        url: lux.context.url,
+        target: '',
+        fluid: true
     };
 
     angular.module('lux.nav', ['templates-nav', 'lux.services', 'mgcrea.ngStrap.collapse'])
+        //
         .service('navService', function () {
 
             this.initScope = function (opts) {
                 var navbar = extend({}, navBarDefaults, getOptions(opts));
-                // Fix defaults
                 if (!navbar.url)
-                    navbar.url = lux.context.url || '/';
+                    navbar.url = '/';
                 if (!navbar.themeTop)
                     navbar.themeTop = navbar.theme;
+                navbar.container = navbar.fluid ? 'container-fluid' : 'container';
                 this.maybeCollapse(navbar);
                 return navbar;
             };
@@ -45,6 +49,7 @@
                 return c !== navbar.collapse;
             };
         })
+        //
         .controller('Navigation', ['$scope', '$lux', function ($scope, $lux) {
             $lux.log.info('Setting up navigation on page');
             //
@@ -91,6 +96,11 @@
             // Link function
             link: function (scope, element, attrs) {
                 scope.navbar = navService.initScope(attrs);
+                //
+                windowResize(function () {
+                    if (navService.maybeCollapse(scope.navbar))
+                        scope.$apply();
+                });
             }
         };
     }])

@@ -5,8 +5,15 @@ def add_css(all):
     css = all.css
     cfg = all.app.config
 
+    css(('[ng\:cloak], [ng-cloak], [data-ng-cloak], '
+         '[x-ng-cloak], .ng-cloak, .x-ng-cloak'),
+        display='none !important')
+
     add_navbar(all)
     add_scroll(all)
+    #
+    if cfg['ANGULAR_VIEW_ANIMATE']:
+        add_animate(all)
 
 
 def add_navbar(all):
@@ -72,3 +79,21 @@ def add_scroll(all):
             Transition('all', '2s', 'ease'),
             background='inherit'),
         background=vars.scroll.background)
+
+
+def add_animate(all):
+    css = all.css
+    vars = all.variables
+
+    css('body',
+        CssInclude('animate'))
+
+    css('.animate-fade',
+        css('.ng-enter,.ng-leave',
+            position='absolute',
+            left=0,
+            right=0),
+        css('.ng-enter',
+            Animation('fadeIn', '1s')),
+        css('.ng-leave',
+            Animation('fadeOut', '1s')))

@@ -2,10 +2,10 @@ angular.module('templates-nav', ['nav/navbar.tpl.html', 'nav/navbar2.tpl.html'])
 
 angular.module("nav/navbar.tpl.html", []).run(["$templateCache", function($templateCache) {
   $templateCache.put("nav/navbar.tpl.html",
-    "<nav class=\"navbar-static-top navbar-{{navbar.themeTop}}\"\n" +
-    "ng-class=\"{'navbar-fixed-top':navbar.fixed}\" role=\"navigation\"\n" +
+    "<nav class=\"navbar-{{navbar.themeTop}}\"\n" +
+    "ng-class=\"{'navbar-fixed-top':navbar.fixed, 'navbar-static-top':navbar.top}\" role=\"navigation\"\n" +
     "ng-model=\"navbar.collapse\" bs-collapse>\n" +
-    "    <div ng-attr-id='{{navbar.id}}' class=\"container-fluid\">\n" +
+    "    <div ng-attr-id='{{navbar.id}}' class=\"{{navbar.container}}\">\n" +
     "        <div class=\"navbar-header\">\n" +
     "            <button type=\"button\" class=\"navbar-toggle\" bs-collapse-toggle>\n" +
     "                <span class=\"sr-only\">Toggle navigation</span>\n" +
@@ -13,10 +13,10 @@ angular.module("nav/navbar.tpl.html", []).run(["$templateCache", function($templ
     "                <span class=\"icon-bar\"></span>\n" +
     "                <span class=\"icon-bar\"></span>\n" +
     "            </button>\n" +
-    "            <a ng-if=\"navbar.brandImage\" href=\"{{navbar.url}}\" class=\"navbar-brand\" target=\"_self\">\n" +
+    "            <a ng-if=\"navbar.brandImage\" href=\"{{navbar.url}}\" class=\"navbar-brand\" target=\"{{navbar.target}}\">\n" +
     "                <img ng-src=\"{{navbar.brandImage}}\" alt=\"{{navbar.brand || 'brand'}}\">\n" +
     "            </a>\n" +
-    "            <a ng-if=\"!navbar.brandImage && navbar.brand\" href=\"{{navbar.url}}\" class=\"navbar-brand\" target=\"_self\">\n" +
+    "            <a ng-if=\"!navbar.brandImage && navbar.brand\" href=\"{{navbar.url}}\" class=\"navbar-brand\" target=\"{{navbar.target}}\">\n" +
     "                {{navbar.brand}}\n" +
     "            </a>\n" +
     "        </div>\n" +

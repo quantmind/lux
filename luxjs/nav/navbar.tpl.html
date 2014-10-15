@@ -1,7 +1,7 @@
-<nav class="navbar-static-top navbar-{{navbar.themeTop}}"
-ng-class="{'navbar-fixed-top':navbar.fixed}" role="navigation"
+<nav class="navbar-{{navbar.themeTop}}"
+ng-class="{'navbar-fixed-top':navbar.fixed, 'navbar-static-top':navbar.top}" role="navigation"
 ng-model="navbar.collapse" bs-collapse>
-    <div ng-attr-id='{{navbar.id}}' class="container-fluid">
+    <div ng-attr-id='{{navbar.id}}' class="{{navbar.container}}">
         <div class="navbar-header">
             <button type="button" class="navbar-toggle" bs-collapse-toggle>
                 <span class="sr-only">Toggle navigation</span>
@@ -9,10 +9,10 @@ ng-model="navbar.collapse" bs-collapse>
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
             </button>
-            <a ng-if="navbar.brandImage" href="{{navbar.url}}" class="navbar-brand" target="_self">
+            <a ng-if="navbar.brandImage" href="{{navbar.url}}" class="navbar-brand" target="{{navbar.target}}">
                 <img ng-src="{{navbar.brandImage}}" alt="{{navbar.brand || 'brand'}}">
             </a>
-            <a ng-if="!navbar.brandImage && navbar.brand" href="{{navbar.url}}" class="navbar-brand" target="_self">
+            <a ng-if="!navbar.brandImage && navbar.brand" href="{{navbar.url}}" class="navbar-brand" target="{{navbar.target}}">
                 {{navbar.brand}}
             </a>
         </div>

@@ -33,9 +33,7 @@ function(angular, root) {
             url: '',    // base url for the web site
             media: '',  // default url for media content
             html5mode: true, //  html5mode for angular
-            hashPrefix: '!',
-            scrollOffset: 0,
-            scrollTime: 1
+            hashPrefix: '!'
         };
     //
     lux.$ = $;

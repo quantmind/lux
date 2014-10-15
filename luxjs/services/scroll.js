@@ -2,12 +2,19 @@
     //  Hash scrolling service
     angular.module('lux.scroll', [])
         //
-        .service('scroll', ['$location', '$log', '$timeout', function ($location, log, timer) {
+        .run(['$rootScope', function (scope) {
+            scope.scroll = extend({
+                time: 1,
+                offset: 0,
+                frames: 25
+            }, scope.scroll);
+        }])
+        //
+        .service('scroll', ['$rootScope', '$location', '$log', '$timeout', function (scope, $location, log, timer) {
             //  ScrollToHash
-            var defaultOffset = lux.context.scrollOffset,
-                targetClass = 'scroll-target',
+            var targetClass = 'scroll-target',
                 targetClassFinish = 'finished',
-                scrollTime = lux.context.scrollTime,
+                luxScroll = scope.scroll,
                 target = null;
             //
             this.toHash = function (hash, offset, delay) {
@@ -29,7 +36,7 @@
                         target = $(target).addClass(targetClass).removeClass(targetClassFinish);
                         $location.hash(hash);
                         log.info('Scrolling to target #' + hash);
-                        _scrollTo(offset || defaultOffset, delay);
+                        _scrollTo(offset || luxScroll.offset, delay);
                         return target;
                     }
                 }
@@ -46,10 +53,10 @@
                     startY = currentYPosition(),
                     stopY = elmYPosition(target[0]) - offset,
                     distance = stopY > startY ? stopY - startY : startY - stopY;
-                var step = Math.round(distance / 25),
+                var step = Math.round(distance / luxScroll.frames),
                     y = startY;
                 if (delay === null || delay === undefined) {
-                    delay = 1000*scrollTime/25;
+                    delay = 1000*luxScroll.time/luxScroll.frames;
                     if (distance < 200)
                         delay = 0;
                 }

@@ -22,7 +22,8 @@
                     extend(scope, lux.context);
                 }]);
             modules.splice(0, 0, 'lux.scope.loader');
-            angular.bootstrap(document, modules);
+            angular.module(name, modules);
+            angular.bootstrap(document, [name]);
             //
             forEach(ready_callbacks, function (callback) {
                 callback();

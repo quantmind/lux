@@ -20,31 +20,34 @@
             pages = lux.context.pages,
             state_config = function (page) {
                 return {
-                    //
-                    template: page.template,
-                    //
                     url: page.url,
                     //
-                    resolve: {
-                        // Fetch page information
-                        page: ['$lux', '$stateParams', function ($lux, $stateParams) {
-                            if (page.api) {
-                                var api = $lux.api(page.api);
-                                if (api)
-                                    return api.get($stateParams);
-                            }
-                        }],
-                        // Fetch items if needed
-                        items: ['$lux', function ($lux) {
-                            if (page.apiItems) {
-                                var api = $lux.api(page.apiItems);
-                                if (api)
-                                    return api.getList();
-                            }
-                        }],
-                    },
-                    //
-                    controller: page.controller
+                    views: {
+                        main: {
+                            template: page.template,
+                            //
+                            resolve: {
+                                // Fetch page information
+                                page: ['$lux', '$stateParams', function ($lux, $stateParams) {
+                                    if (page.api) {
+                                        var api = $lux.api(page.api);
+                                        if (api)
+                                            return api.get($stateParams);
+                                    }
+                                }],
+                                // Fetch items if needed
+                                items: ['$lux', function ($lux) {
+                                    if (page.apiItems) {
+                                        var api = $lux.api(page.apiItems);
+                                        if (api)
+                                            return api.getList();
+                                    }
+                                }],
+                            },
+                            //
+                            controller: page.controller
+                        }
+                    }
                 };
             };
 
@@ -68,6 +71,7 @@
                     $scope.page = addPageInfo(page.data, $scope, dateFilter, $lux);
                 }
             }])
+        //
         .directive('dynamicPage', ['$compile', '$log', function ($compile, log) {
             return {
                 link: function (scope, element, attrs) {

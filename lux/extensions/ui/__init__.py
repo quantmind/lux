@@ -86,10 +86,6 @@ def add_css(all):
         background=vars.background,
         color=vars.color)
 
-    css(('[ng\:cloak], [ng-cloak], [data-ng-cloak], '
-         '[x-ng-cloak], .ng-cloak, .x-ng-cloak'),
-        display='none !important')
-
     css('.form-group .help-block',
         display='none')
 

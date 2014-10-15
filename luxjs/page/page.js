@@ -18,6 +18,10 @@
             page.date = date;
             page.dateText = dateFilter(date, $scope.dateFormat);
         }
+        page.toString = function () {
+            return this.name || this.url || '<noname>';
+        };
+
         return page;
     }
 
@@ -26,7 +30,7 @@
     //  Lux main module for angular. Design to work with the ``lux.extension.angular``
     angular.module('lux.page', ['lux.services', 'lux.form', 'lux.scroll', 'templates-page'])
         //
-        .controller('Page', ['$scope', '$lux', 'dateFilter', function ($scope, $lux, dateFilter) {
+        .controller('Page', ['$scope', '$log', '$lux', 'dateFilter', function ($scope, log, $lux, dateFilter) {
             //
             $lux.log.info('Setting up angular page');
             //
@@ -72,6 +76,14 @@
                     folder = url.substring(url.length-1) === '/';
                 return base === url && (folder || (rest === '' || rest.substring(0, 1) === '/'));
             };
+
+            //
+            $scope.$on('animIn', function() {
+                log.info('Page ' + page.toString() + ' animation in');
+            });
+            $scope.$on('animOut', function() {
+                log.info('Page ' + page.toString() + ' animation out');
+            });
         }])
         .service('$breadcrumbs', [function () {
 

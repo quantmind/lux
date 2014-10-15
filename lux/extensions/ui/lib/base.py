@@ -760,12 +760,13 @@ class Css(CssBase):
         body = root.render()
         created = datetime.fromtimestamp(int(start))
         nice_dt = round(time.time() - start, 2)
-        intro = '''\
+        intro = '''@charset "UTF-8";
 /*
 ------------------------------------------------------------------
-------------------------------------------------------------------
-Created by lux {0} in {1} seconds.
-------------------------------------------------------------------
+Created by lux in {1} seconds
+Date: {0}
+
+http://quantmind.github.io/lux/
 ------------------------------------------------------------------ */
 
 '''.format(created.isoformat(' '), nice_dt)
