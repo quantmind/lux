@@ -2,29 +2,31 @@
 import sys
 import os
 
-from pulsar.apps.test import TestSuite, pep8_run
+from pulsar.apps.test import TestSuite
 from pulsar.apps.test.plugins import bench, profile
 
 
-def run(**params):
-    args = params.get('argv', sys.argv)
-    if '--coverage' in args or params.get('coverage'):
-        import coverage
-        p = current_process()
-        p._coverage = coverage.coverage(data_suffix=True)
-        p._coverage.start()
-    runtests(**params)
+def runtests():
+    args = sys.argv
+    if '--coveralls' in args:
+        import pulsar
+        from pulsar.utils.path import Path
+        from pulsar.apps.test.cov import coveralls
 
-
-def runtests(**params):
-    import lux
+        path = Path(__file__)
+        repo_token = None
+        strip_dirs = [Path(pulsar.__file__).parent.parent, os.getcwd()]
+        if os.path.isfile('.coveralls-repo-token'):
+            with open('.coveralls-repo-token') as f:
+                repo_token = f.read().strip()
+        code = coveralls(strip_dirs=strip_dirs, repo_token=repo_token)
+        sys.exit(0)
+    #
     TestSuite(description='Lux Asynchronous test suite',
-              version=lux.__version__,
               modules=['tests.luxpy'],
               plugins=(bench.BenchMark(),
-                       profile.Profile()),
-              **params).start()
+                       profile.Profile())).start()
 
 
 if __name__ == '__main__':
-    run()
+    runtests()

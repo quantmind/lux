@@ -1,8 +1,26 @@
-'''Third party Authentication providers and APIs.
+'''\
+This extension facilitates login via third party authentication providers
+using either the OAuth1 or OAuth2_ protocol.
+In addition, it allows the use of the Open Graph Protocol (OGP_) for social
+graphs and twitter cards and  additional APIs a provider may have
+(google analytics, google map for example).
 
-THis extension facilitates the login via OAuth providers,
-Open Graph Protocol for social graphs and twitter cards (for example),
-additional api a provider can have (google analytics for example).
+Usage
+==========
+
+Add :mod:`lux.extensions.oauth` to the :setting:`EXTENSIONS` list of your
+project and include the :setting:`OAUTH_PROVIDERS` dictionary::
+
+    OAUTH_PROVIDERS = {
+        'google': ...,
+        'twitter': ...,
+    }
+
+This extension adds open graph meta tags when the :setting:`DEFAULT_OG_TYPE`
+is not ``None`` (it is set to ``website`` by default).
+
+.. _OAuth2: http://oauth.net/2/
+.. _OGP: http://ogp.me/
 '''
 from functools import partial
 

@@ -14,3 +14,5 @@ Python API
    ui
    angular
    static
+   oauth/index
+   code

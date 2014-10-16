@@ -1,3 +1,55 @@
+'''\
+This module integrates Google OAuth2_ services and APIs with lux.
+
+When the ``google`` dictionary is included into the :setting:`OAUTH_PROVIDERS`
+dictionary, the :ref:`google angular module <lux-google>` is added to the
+:ref:`javascript context object` which can be used by AngularJS if the
+:mod:`lux.extensions.angular` module is included in the list of
+:setting:`EXTENSIONS` of your application.
+
+Google analytics
+====================
+To use google analytics add the ``analytics`` dictionary to the
+``google`` dictionary in :setting:`OAUTH_PROVIDERS`::
+
+    OAUTH_PROVIDERS = {
+        ...,
+        'google': {
+            ...,
+            'analytics': {
+                'id': 'UA-54439804-2',
+                ...
+            }
+        }
+    }
+
+When using google analytics integration with :mod:`lux.extensions.angular`
+in `ui.router`_ mode (:setting:`ANGULAR_UI_ROUTER` set to ``True``) one
+must be aware that **pageview** events are not triggered anymore.
+
+To handle this situation the :ref:`google angular module <lux-google>`
+interacts with google analytics to register pageviews and custom events
+by listening for the `$stateChangeSuccess` event.
+
+Google maps
+===============
+To use google map, a ``simple_key`` entry in ``google`` config dictionary must
+be specified. The simple key is used by google to identify your project when
+you do not need to access user data::
+
+    OAUTH_PROVIDERS = {
+        ...,
+        'google': {
+            'simple_key': '...'
+            'map_sensor': True,
+            ...
+        }
+    }
+
+.. _OAuth2: https://developers.google.com/accounts/docs/OAuth2
+.. _`ui.router`: http://angular-ui.github.io/ui-router/site
+.. _`google analytics`: https://developers.google.com/analytics/devguides/collection/analyticsjs/
+'''
 from string import Template
 
 from pulsar.utils.httpurl import urlparse
@@ -7,15 +59,6 @@ from ..oauth import OAuth2, register_oauth
 
 @register_oauth
 class Google(OAuth2):
-    '''Googke integration and API
-
-    Additional field to the OAuth2
-
-    * ``analytics_id``    token for google analytics
-    * ``simple_key`` to identify your project when you do not need to
-      access user data (google map for example)
-    * ``map_sensor``
-    '''
     auth_uri = "https://accounts.google.com/o/oauth2/auth"
     token_uri = "https://accounts.google.com/o/oauth2/token"
     default_scope = ['profile', 'email']
@@ -35,7 +78,7 @@ class Google(OAuth2):
         if ngmodules is None:
             ngModules = []
             doc.jscontext['ngModules'] = ngModules
-        ngModules.append('google')
+        ngModules.append('lux.google')
         google = doc.jscontext.get('google')
         if google is None:
             doc.jscontext['google'] = {}

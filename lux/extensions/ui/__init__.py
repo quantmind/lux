@@ -7,8 +7,6 @@ To add additional ``css`` rules, a user extension module must provide the
 The ``add_css`` function is called when building the css file via the ``style``
 command.
 
-**Requires**: :mod:`lux.extensions.base`
-
 
 .. _python-css-tools:
 
@@ -16,17 +14,22 @@ Variables and Symbols
 =========================
 
 .. automodule:: lux.extensions.ui.lib.base
+   :members:
+   :member-order: bysource
 
 Colours
 ===========
 
 .. automodule:: lux.extensions.ui.lib.colorvar
-
+   :members:
+   :member-order: bysource
 
 Mixins
 =========================
 
 .. automodule:: lux.extensions.ui.lib.mixins
+   :members:
+   :member-order: bysource
 
 '''
 import lux

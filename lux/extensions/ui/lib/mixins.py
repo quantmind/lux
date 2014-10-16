@@ -1,32 +1,3 @@
-'''
-.. autoclass:: Bcd
-
-.. autoclass:: Border
-
-.. autoclass:: BoxSizing
-
-.. autoclass:: Clearfix
-
-.. autoclass:: Clickable
-
-.. autoclass:: CssInclude
-
-.. autoclass:: Fontface
-
-.. autoclass:: Gradient
-
-.. autoclass:: Opacity
-
-.. autoclass:: Radius
-
-.. autoclass:: Shadow
-
-.. autoclass:: Stack
-
-.. autoclass:: Transform
-
-.. autoclass:: Transition
-'''
 import os
 
 from .base import *
@@ -54,7 +25,6 @@ __all__ = ['CssLibraries',
            'Clickable',
            'Transform',
            'Transition',
-           'horizontal_navigation',
            # generators
            'CssInclude',
            'Image',
@@ -80,7 +50,23 @@ CssLibraries = {
 
 ################################################# ANIMATION
 class Animation(Mixin):
+    '''Bind the animation to a selector (element) by specifying at least
+    these two properties:
 
+    .. attribute:: name
+
+        the name of the animation
+
+    .. attribute:: duration
+
+        the duration of the animation
+
+
+    **Usage**::
+
+        css('.myelement',
+            Animation('fade', '1s'))
+    '''
     def __init__(self, name, duration):
         self.name = name
         self.duration = duration
@@ -99,8 +85,15 @@ class Animation(Mixin):
 class Opacity(Mixin):
     '''Add opacity to an element.
 
-param o: a number between 0 and 1.
-'''
+    .. attribute:: o
+
+        a number between 0 and 1
+
+    **Usage**::
+
+        css('.myelem',
+            Opacity(0.6))
+    '''
     def __init__(self, o):
         self.o = o
 
@@ -571,7 +564,7 @@ class Clickable(Mixin):
 class Transform(Mixin):
     '''Defines a 2D transform.
 
-    A transition is controlled via the following parameters:
+    A transform is controlled via the following parameters:
 
     .. attribute:: x
 
@@ -584,6 +577,24 @@ class Transform(Mixin):
     .. attribute:: scale
 
         Increases or decreases the size
+
+    .. attribute:: scalex
+
+        Increases or decreases the size in the X-axis (not used if
+        :attr:`scale` is defined)
+
+    .. attribute:: scaley
+
+        Increases or decreases the size in the Y-axis (not used if
+        :attr:`scale` is defined)
+
+    **Usage**::
+
+        css('.myelement',
+            Transform(x=pc(100)))
+
+        css('.myelement',
+            Transform(x=pc(100), scale=1.1))
     '''
     def __init__(self, x=None, y=None, scale=None, scalex=None, scaley=None):
         self.x = x
@@ -687,146 +698,6 @@ class Transition(Mixin):
         elem['   -moz-transition'] = transition
         elem['     -o-transition'] = transition
         elem['        transition'] = transition
-
-
-################################################# HORIZONTAL NAVIGATION
-class horizontal_navigation(Clickable):
-    '''Horizontal navigation with ul and li tags.
-
-:parameter padding: the padding for the navigation anchors.'''
-    def __init__(self,
-                 float='left',
-                 margin=0,
-                 height=None,
-                 padding=None,
-                 secondary_default=None,
-                 secondary_hover=None,
-                 secondary_active=None,
-                 secondary_padding=None,
-                 secondary_width=None,
-                 radius=None,
-                 box_shadow=None,
-                 display_all=False,
-                 z_index=None,
-                 **kwargs):
-        super(horizontal_navigation, self).__init__(**kwargs)
-        if float not in ('left', 'right'):
-            float = 'left'
-        self.float = float
-        self.margin = margin
-        self.height = height
-        self.secondary_default = secondary_default
-        self.secondary_hover = secondary_hover
-        self.secondary_active = secondary_active
-        self.secondary_width = secondary_width or px(120)
-        self.radius = Radius(radius)
-        self.box_shadow = Shadow(box_shadow)
-        self.display_all = display_all
-        # padding
-        self.padding = padding or secondary_padding
-        self.secondary_padding = secondary_padding or px(0)
-        # Z index for subnavigations
-        self.z_index = z_index or 1000
-
-    def list(self, tag, parent, default, hover, active):
-        return css(tag,
-                   default.background,
-                   css('> a',
-                       bcd(background='transparent',
-                           color=default.color,
-                           text_decoration=default.text_decoration,
-                           text_shadow=default.text_shadow)),
-                   css(':hover',
-                       hover.background,
-                       css('> a',
-                           bcd(color=hover.color,
-                               text_decoration=hover.text_decoration,
-                               text_shadow=hover.text_shadow)),
-                       css('> ul', display='block')),
-                   css(':active, .%s' % classes.state_active,
-                       active.background,
-                       css('> a',
-                           bcd(color=active.color,
-                               text_decoration=active.text_decoration,
-                               text_shadow=active.text_shadow))),
-                   cursor='pointer',
-                   parent=parent)
-
-    def __call__(self, elem):
-        elem['display'] = 'block'
-        elem['float'] = self.float
-        elem['position'] = 'relative'
-        elem['padding'] = 0
-        if self.margin:
-            if self.float == 'left':
-                elem['margin'] = spacing(0, self.margin, 0, 0)
-            else:
-                elem['margin'] = spacing(0, 0, 0, self.margin)
-        self.box_shadow(elem)
-        padding = (spacing(self.padding) if self.padding else
-                   spacing(px(10), px(10)))
-        #
-        default = self.default or bcd()
-        hover = self.hover or bcd()
-        active = self.active or bcd()
-        # li elements in the main navigation ( > li)
-        li = self.list('> li', elem, default, hover, active)
-        li['display'] = 'block'
-        li['float'] = 'left'
-
-        if self.height:
-            line_height = self.height - padding.top - padding.bottom
-            if line_height.value <= 0:
-                raise ValueError('Nav has height to low compared to paddings')
-        else:
-            line_height = None
-
-        # subnavigations
-        default = self.secondary_default or default
-        hover = self.secondary_hover or hover
-        active = self.secondary_active or active
-        ul = css('ul',
-                 self.radius,
-                 gradient(default.background, 100),
-                 parent=elem,
-                 cursor='default',
-                 position='absolute',
-                 margin=0,
-                 padding=self.secondary_padding,
-                 top=self.height,
-                 width=self.secondary_width,
-                 list_style='none',
-                 list_style_image='none',
-                 z_index=self.z_index)
-        if not self.display_all:
-            ul['display'] = 'none'
-        # The sub lists li
-        li = self.list('li', ul, default, hover, active)
-        li['padding'] = 0
-        li['margin'] = 0
-        li['position'] = 'relative'
-        li['border'] = 'none'
-        li['width'] = 'auto'
-        # the sub sub lists
-        ulul = css('ul',
-                   gradient(default.background, 100),
-                   parent=li,
-                   top=0,
-                   position='absolute')
-        if self.float == 'right':
-            ul['right'] = 0
-            ulul['left'] = 'auto'
-            ulul['right'] = self.secondary_width
-        else:
-            ulul['left'] = self.secondary_width
-            ulul['right'] = 'auto'
-        # The anchor
-        css('a',
-            parent=elem,
-            display='inline-block',
-            float='none',
-            line_height=line_height,
-            padding=self.padding)
 
 
 ################################################# INCLUDE CSS

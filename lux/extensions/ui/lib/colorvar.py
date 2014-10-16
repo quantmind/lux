@@ -1,17 +1,3 @@
-'''
-RGBA
-~~~~~
-
-.. autoclass:: RGBA
-   :members:
-   :member-order: bysource
-
-color
-~~~~~~~~~~~
-
-.. autofunction:: color
-
-'''
 import colorsys
 from collections import namedtuple
 

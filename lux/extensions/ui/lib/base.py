@@ -1,50 +1,3 @@
-'''
-Symbolic
-~~~~~~~~~~~~~~~~~~~~
-.. autoclass:: Symbolic
-   :members:
-   :member-order: bysource
-
-Variable
-~~~~~~~~~~~~~~~~~~~~
-.. autoclass:: Variable
-   :members:
-   :member-order: bysource
-
-Symbol
-~~~~~~~~~~~~~~
-.. autoclass:: Symbol
-   :members:
-   :member-order: bysource
-
-Lazy
-~~~~~~~~~~~~~~
-.. autoclass:: Lazy
-   :members:
-   :member-order: bysource
-
-Variables
-~~~~~~~~~~~~~~
-.. autoclass:: Variables
-   :members:
-   :member-order: bysource
-
-Spacing
-~~~~~~~~~~~~~
-.. autoclass:: Spacing
-   :members:
-   :member-order: bysource
-
-.. autofunction:: spacing
-
-Mixin
-~~~~~~~~~~~~~
-
-.. autoclass:: Mixin
-   :members:
-   :member-order: bysource
-
-'''
 import os
 import json
 import time
@@ -93,11 +46,13 @@ def alltags(tags):
                 yield ' %s' % tag
 
 
-def as_value(v):
-    if hasattr(v, 'value'):
-        return v.value()
+def as_value(value):
+    '''Internal function used to convert any ``value`` into a suitable
+    string to include into the css rules.'''
+    if hasattr(value, 'value'):
+        return value.value()
     else:
-        return v
+        return value
 
 
 def as_params(value, default_name=None):

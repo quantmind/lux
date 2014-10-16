@@ -1,3 +1,9 @@
+'''\
+This extension is required when using :ref:`lux.js <jsapi>` javascript module.
+It provides the link between AngularJS and Python.
+
+**Required extensions**: :mod:`lux.extensions.ui`
+'''
 import lux
 from lux import Parameter
 

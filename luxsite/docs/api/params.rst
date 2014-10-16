@@ -38,9 +38,33 @@ Web design
 .. lux_extension:: lux.extensions.ui
 
 
+.. _parameters-angular:
+
+AngularJS Integration
+========================
+
+.. lux_extension:: lux.extensions.angular
+
+
 .. _parameters-static:
 
 Static Site
 ================
 
 .. lux_extension:: lux.extensions.static
+
+
+.. _parameters-oauth:
+
+OAuth and OGP
+================
+
+.. lux_extension:: lux.extensions.oauth
+
+
+.. _parameters-code:
+
+Code Highlight
+================
+
+.. lux_extension:: lux.extensions.code

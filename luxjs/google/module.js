@@ -1,6 +1,6 @@
     //
     //  Module for interacting with google API and services
-    angular.module('google', [])
+    angular.module('lux.google', [])
         .run(['$rootScope', '$log', '$location', function (scope, log, location) {
             var analytics = scope.google ? scope.google.analytics : null;
 
@@ -13,11 +13,14 @@
                     var state = scope.$state;
                     //
                     if (state) {
-                        var fromHref = state.href(fromState, fromParams),
-                            toHref = state.href(toState, toParams);
+                        var fromHref = stateHref(state, fromState, fromParams),
+                            toHref = stateHref(state, toState, toParams);
                         if (fromHref !== 'null') {
-                            ga('send', 'fromState', fromHref, 5, true);
-                            ga('send', 'stateChange', toHref, 5, true);
+                            if (fromHref !== toHref)
+                                ga('send', 'pageview', {page: toHref});
+                            else
+                                ga('send', 'event', 'stateChange', toHref);
+                            ga('send', 'event', 'fromState', fromHref, toHref);
                         }
                     }
                 });

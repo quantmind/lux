@@ -2,3 +2,9 @@
 source =
     lux
     tests
+
+[report]
+# Regexes for lines to exclude from consideration
+exclude_lines =
+    (?i)# *pragma[: ]*no *cover
+    raise NotImplementedError

@@ -1,6 +1,6 @@
 //      Lux Library - v0.1.0
 
-//      Compiled 2014-10-15.
+//      Compiled 2014-10-16.
 //      Copyright (c) 2014 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -1099,6 +1099,21 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
     //  Configure ui-Router using lux routing objects
     //  Only when context.html5mode is true
     //  Python implementation in the lux.extensions.angular Extension
+    //
+
+    // Hack for delaing with ui-router state.href
+    // TODO: fix this!
+    var stateHref = function (state, State, Params) {
+        var url = state.href(State);
+        if (Params) {
+            var n = url.length,
+                url2 = state.href(State, Params);
+            url = encodeURIComponent(url) + url2.substring(n);
+            url = decodeURIComponent(url);
+        }
+        return url;
+    };
+
     angular.module('lux.ui.router', ['lux.page', 'ui.router'])
         //
         .run(['$rootScope', '$state', '$stateParams', function (scope, $state, $stateParams) {
@@ -1576,107 +1591,6 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
             };
 
         }]);
-
-    var animationDefaults = {
-        sync: false,
-        speed: 1000,
-        inSpeed: null,
-        outSpeed: null
-    };
-
-    angular.module('lux.animate', ['ngAnimate'])
-        .animation('.lux-animate', ['$rootScope', '$timeout', '$window', function(scope, timer, $window) {
-
-            // Get defaults animation parameters
-            var defaults = extend({}, animationDefaults, scope.animation);
-            if (defaults.inSpeed === null)
-                defaults.inSpeed = defaults.speed;
-            if (defaults.outSpeed === null)
-                defaults.outSpeed = defaults.speed;
-
-            function o(element, name, defvalue) {
-                var v = element.attr('data-anim-'+name);
-                return v === undefined ? defvalue : scope.$eval(v);
-            }
-
-            return {
-                enter: function(element, done) {
-                    element = angular.element(element);
-                    var sync = o(element, 'sync', defaults.sync),
-                        speed = o(element, 'speed', defaults.speed),
-                        inSpeed = o(element, 'in-speed', defaults.inSpeed),
-                        outSpeed = o(element, 'out-speed', defaults.outSpeed);
-
-                    element.addClass('anim-in-setup');
-
-                    try {
-                        var observer = new MutationObserver(function(mutations) {
-                            observer.disconnect();
-                            timer(done, sync ? 0 : outSpeed);
-                        });
-
-                        observer.observe(element[0], {
-                            attributes: true,
-                            childList: false,
-                            characterData: false
-                        });
-
-                    } catch (e) {
-                        timer(done, Math.max(100, sync ? 0 : outSpeed));
-                    }
-
-                    return function(cancelled) {
-                        element.removeClass('anim-in-setup').addClass('anim-in');
-
-                        if (!cancelled) {
-                            if (element.scope())
-                                element.scope().$broadcast('animIn', element, inSpeed);
-
-                            timer(function() {
-                                scope.$broadcast('animEnd', element, inSpeed);
-                                element.removeClass('anim-in');
-                            }, inSpeed);
-                        }
-                    };
-                },
-                leave: function(element, done) {
-                    element = angular.element(element);
-                    var speed = o(element, 'speed', defaults.speed),
-                        outSpeed = o(element, 'out-speed', defaults.outSpeed);
-
-                    scope.$broadcast('animStart', element, outSpeed);
-
-                    if (element.scope()) {
-                        element.scope().$broadcast('animOut', element, outSpeed);
-                    }
-
-                    element.addClass('anim-out-setup');
-
-                    try {
-                        var observer = new MutationObserver(function(mutations) {
-                            observer.disconnect();
-
-                            $window.requestAnimationFrame(function() {
-                                element.removeClass('anim-out-setup')
-                                       .addClass('anim-out');
-                                timer(done, outSpeed);
-                            });
-                        });
-
-                        observer.observe(element[0], {
-                            attributes: true,
-                            childList: false,
-                            characterData: false
-                        });
-
-                    } catch (e) {
-                        element.removeClass('anim-out-setup').addClass('anim-out');
-                        timer(done, Math.max(100, outSpeed));
-                    }
-                }
-            };
-        }
-    ]);
     //
     //  Angular module for photos
     //  ============================
@@ -1886,7 +1800,7 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
 
     //
     //  Module for interacting with google API and services
-    angular.module('google', [])
+    angular.module('lux.google', [])
         .run(['$rootScope', '$log', '$location', function (scope, log, location) {
             var analytics = scope.google ? scope.google.analytics : null;
 
@@ -1899,11 +1813,14 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
                     var state = scope.$state;
                     //
                     if (state) {
-                        var fromHref = state.href(fromState, fromParams),
-                            toHref = state.href(toState, toParams);
+                        var fromHref = stateHref(state, fromState, fromParams),
+                            toHref = stateHref(state, toState, toParams);
                         if (fromHref !== 'null') {
-                            ga('send', 'fromState', fromHref, 5, true);
-                            ga('send', 'stateChange', toHref, 5, true);
+                            if (fromHref !== toHref)
+                                ga('send', 'pageview', {page: toHref});
+                            else
+                                ga('send', 'event', 'stateChange', toHref);
+                            ga('send', 'event', 'fromState', fromHref, toHref);
                         }
                     }
                 });

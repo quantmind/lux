@@ -249,7 +249,7 @@ class Application(ConsoleParser, Extension):
         '''Ordered dictionary of :class:`.Extension` available.
 
         The order is the same as in the
-        :ref:`EXTENSIONS config <configuration>` parameter.
+        :setting:`EXTENSIONS` config parameter.
         '''
         return self.config['EXTENSION_HANDLERS']
 
@@ -260,7 +260,7 @@ class Application(ConsoleParser, Extension):
 
     def wsgi_request(self, environ=None, loop=None, path=None,
                      app_handler=None, urlargs=None, **kw):
-        '''Create a :class:`WsgiRequest` from a wsgi ``environ`` and set the
+        '''Create a :class:`.WsgiRequest` from a wsgi ``environ`` and set the
         ``app`` attribute in the cache.
         Additional keyed-valued parameters can be inserted.
         '''

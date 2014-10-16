@@ -1,5 +1,7 @@
 '''
-Highlight code snippets with highlightjs_
+Highlight code snippets with highlightjs_.
+
+**Required extensions**: :mod:`lux.extensions.ui`
 
 .. _highlightjs: https://highlightjs.org/
 '''

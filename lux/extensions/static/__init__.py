@@ -1,5 +1,7 @@
 '''Static site generator
 
+**Required extensions**: :mod:`lux.extensions.ui`, :mod:`lux.extensions.angular`
+**Optional third-party**: markdown_, sphinx_
 
 
 Usage
@@ -26,6 +28,9 @@ a :class:`.Blog` and other routers:
   location of the template which render the html body tag of the Html5
   document. If not provided, the parent router value is used unless no parent
   is available and the :setting:`STATIC_TEMPLATE` is used instead.
+
+.. _markdown:: https://pythonhosted.org/Markdown/
+.. _ sphinx: http://sphinx-doc.org/
 '''
 import os
 import sys

@@ -4,6 +4,21 @@
     //  Configure ui-Router using lux routing objects
     //  Only when context.html5mode is true
     //  Python implementation in the lux.extensions.angular Extension
+    //
+
+    // Hack for delaing with ui-router state.href
+    // TODO: fix this!
+    var stateHref = function (state, State, Params) {
+        var url = state.href(State);
+        if (Params) {
+            var n = url.length,
+                url2 = state.href(State, Params);
+            url = encodeURIComponent(url) + url2.substring(n);
+            url = decodeURIComponent(url);
+        }
+        return url;
+    };
+
     angular.module('lux.ui.router', ['lux.page', 'ui.router'])
         //
         .run(['$rootScope', '$state', '$stateParams', function (scope, $state, $stateParams) {
