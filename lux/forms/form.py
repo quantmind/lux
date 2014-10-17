@@ -1,8 +1,3 @@
-'''
-.. autoclass:: Form
-   :members:
-   :member-order: bysource
-'''
 import json
 from collections import Mapping
 from functools import partial
@@ -44,21 +39,21 @@ def smart_redirect(request, url=None, status=None):
 
 class FieldList(list):
     '''A list of :class:`Field` and :class:`FieldList`.
- It can be used to specify fields using a declarative list in a
- :class:`Form` class.
- For example::
+     It can be used to specify fields using a declarative list in a
+     :class:`Form` class.
+     For example::
 
-     from djpcms import forms
+         from djpcms import forms
 
-     class MyForm(forms.Form):
-         some_fields = forms.FieldList(('name',forms.CharField()),
-                                       ('description',forms.CharField()))
+         class MyForm(forms.Form):
+             some_fields = forms.FieldList(('name',forms.CharField()),
+                                           ('description',forms.CharField()))
 
-.. attribute:: withprefix
+    .. attribute:: withprefix
 
-    if ``True`` the :class:`Fieldlist` attribute name in the form is
-    prefixed to the field names.
-'''
+        if ``True`` the :class:`Fieldlist` attribute name in the form is
+        prefixed to the field names.
+    '''
     def __init__(self, data=None, withprefix=True):
         self.withprefix = withprefix
         super(FieldList, self).__init__(data or ())
@@ -112,16 +107,13 @@ def get_form_meta_data(bases, attrs, with_base_fields=True):
 
 
 class FormType(type):
-    """
-    Metaclass that converts Field attributes to a dictionary called
-    'base_fields', taking into account parent class 'base_fields' as well.
-    """
+
     def __new__(cls, name, bases, attrs):
         layout = attrs.pop('layout', None)
         fields, inlines = get_form_meta_data(bases, attrs)
         attrs['base_fields'] = fields
         attrs['base_inlines'] = inlines
-        if not isinstance(layout, Layout):
+        if layout is None:
             layout = Layout()
         attrs['layout'] = layout
         return super(FormType, cls).__new__(cls, name, bases, attrs)

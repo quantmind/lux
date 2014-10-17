@@ -1,72 +1,3 @@
-'''
-Field
-~~~~~~~~~~~~~~~
-
-.. autoclass:: Field
-   :members:
-   :member-order: bysource
-
-CharField
-~~~~~~~~~~~~~~~
-
-.. autoclass:: CharField
-   :members:
-   :member-order: bysource
-
-IntegerField
-~~~~~~~~~~~~~~~
-
-.. autoclass:: IntegerField
-   :members:
-   :member-order: bysource
-
-FloatField
-~~~~~~~~~~~~~~~
-
-.. autoclass:: FloatField
-   :members:
-   :member-order: bysource
-
-DateField
-~~~~~~~~~~~~~~~
-
-.. autoclass:: DateField
-   :members:
-   :member-order: bysource
-
-DateTimeField
-~~~~~~~~~~~~~~~
-
-.. autoclass:: DateTimeField
-   :members:
-   :member-order: bysource
-
-BooleanField
-~~~~~~~~~~~~~~~
-
-.. autoclass:: BooleanField
-   :members:
-   :member-order: bysource
-
-HiddenField
-~~~~~~~~~~~~~~~~
-
-.. autoclass:: HiddenField
-   :members:
-   :member-order: bysource
-
-ValidationError
-~~~~~~~~~~~~~~~
-
-.. autoclass:: ValidationError
-   :members:
-   :member-order: bysource
-
-field_widget
-~~~~~~~~~~~~~~~
-
-.. autofunction:: field_widget
-'''
 from inspect import isclass
 from datetime import datetime, date
 from collections import Mapping
@@ -195,74 +126,74 @@ class ChoiceGroup(Choice):
 
 class Field(object):
     '''Base class for all :class:`Form` fields.
-Field are specified as attribute of a form, for example::
+    Field are specified as attribute of a form, for example::
 
-    from lux import forms
+        from lux import forms
 
-    class MyForm(forms.Form):
-        name = forms.CharField()
-        age = forms.IntegerField()
+        class MyForm(forms.Form):
+            name = forms.CharField()
+            age = forms.IntegerField()
 
 
-:parameter required: set the :attr:`required` attribute.
-:parameter default: set the :attr:`default` attribute.
-:parameter initial: set the :attr:`initial` attribute.
-:parameter widget: Optional callable to override the :attr:`widget` attribute.
-    If supplied it must accept this field as first parameter.
-    Check the :func:`field_widget` factory for an example signature.
-:parameter wrong_value_message: callable which receive the field and the field
-    value when to produce a message when the ``value`` did not validate.
+    :parameter default: set the :attr:`default` attribute.
+    :parameter initial: set the :attr:`initial` attribute.
+    :parameter widget: Optional callable to override the :attr:`widget`
+        attribute. If supplied it must accept this field as first parameter.
+        Check the :func:`field_widget` factory for an example signature.
+    :parameter wrong_value_message: callable which receive the field and
+        the field value when to produce a message when the ``value``
+        did not validate.
 
-.. attribute:: required
+    .. attribute:: required
 
-    boolean specifying if the field is required or not.
-    If a field is required and
-    it is not available or empty it will fail validation.
+        boolean specifying if the field is required or not.
+        If a field is required and
+        it is not available or empty it will fail validation.
 
-    Default: ``True``.
+        Default: ``True``.
 
-.. attribute:: default
+    .. attribute:: default
 
-    Default value for this field. It can be a callable accepting
-    a :class:`BoundField` instance for the field as only parameter.
+        Default value for this field. It can be a callable accepting
+        a :class:`BoundField` instance for the field as only parameter.
 
-    Default: ``None``.
+        Default: ``None``.
 
-.. attribute:: initial
+    .. attribute:: initial
 
-    Initial value for field. If Provided, the field will display
-    the value when rendering the form without bound data.
-    It can be a callable which receive a :class:`Form`
-    instance as argument.
+        Initial value for field. If Provided, the field will display
+        the value when rendering the form without bound data.
+        It can be a callable which receive a :class:`Form`
+        instance as argument.
 
-    Default: ``None``.
+        Default: ``None``.
 
-    .. seealso::
+        .. seealso::
 
-        Inital is used by :class:`Form` and
-        by :class:`HtmlForm` instances to render
-        an unbounded form. The :func:`Form.initials`
-        method return a dictionary of initial values for fields
-        providing one.
+            Inital is used by :class:`Form` and
+            by :class:`HtmlForm` instances to render
+            an unbounded form. The :func:`Form.initials`
+            method return a dictionary of initial values for fields
+            providing one.
 
-.. attribute:: widget
+    .. attribute:: widget
 
-    The :class:`djpcms.html.WidgetMaker` for this field.
+        The :class:`djpcms.html.WidgetMaker` for this field.
 
-    Default: ``None``.
+        Default: ``None``.
 
-.. attribute:: widget_attrs
+    .. attribute:: widget_attrs
 
-    dictionary of widget attributes used for setting the widget
-    html attributes. For example::
+        dictionary of widget attributes used for setting the widget
+        html attributes. For example::
 
-        widget_attrs = {'title':'my title'}
+            widget_attrs = {'title':'my title'}
 
-    It can also be a callable which accept a :class:`BoundField` as the
-    only parameter.
+        It can also be a callable which accept a :class:`BoundField` as the
+        only parameter.
 
-    Default: ``None``.
-'''
+        Default: ``None``.
+    '''
     default = None
     widget = None
     required = True
@@ -279,7 +210,6 @@ Field are specified as attribute of a form, for example::
                  label=None,
                  widget=None,
                  widget_attrs=None,
-                 disabled=None,
                  attrname=None,
                  wrong_value_message=None,
                  **kwargs):
@@ -296,8 +226,7 @@ Field are specified as attribute of a form, for example::
         if widget:
             self.widget = lambda *args, **kwargs: widget(self, *args, **kwargs)
         self.widget_attrs = widget_attrs or {}
-        if disabled:
-            self.widget_attrs['disabled'] = 'disabled'
+        self.widget_attrs['required'] = self.required
         self.handle_params(**kwargs)
         # Increase the creation counter, and save our local copy.
         self.creation_counter = Field.creation_counter
@@ -314,19 +243,18 @@ Field are specified as attribute of a form, for example::
 
     def handle_params(self, **kwargs):
         '''Called during initialization for handling extra key-valued
-parameters. By default it will raise an error if extra parameters
-are available. Override for customized behaviour.'''
-        self._raise_error(kwargs)
+        parameters.'''
+        self.widget_attrs.update(kwargs)
 
     def value_from_datadict(self, data, files, key):
         """Given a dictionary of data this field name, returns the value
-of this field. Returns None if it's not provided.
+        of this field. Returns None if it's not provided.
 
-:parameter data: multi dictionary of data.
-:parameter files: multi dictionary of files.
-:parameter files: key for this field.
-:return: the value for this field
-"""
+        :parameter data: multi dictionary of data.
+        :parameter files: multi dictionary of files.
+        :parameter files: key for this field.
+        :return: the value for this field
+        """
         if key in data:
             return data[key]
 
@@ -335,11 +263,6 @@ of this field. Returns None if it's not provided.
         ValueError so that the :meth:`Form.value_from_instance` is used.
         '''
         raise ValueError
-
-    def _raise_error(self, kwargs):
-        keys = list(kwargs)
-        if keys:
-            raise ValueError('Parameter {0} not recognized'.format(keys[0]))
 
     def clean(self, value, bfield):
         '''Clean the field value'''
@@ -425,7 +348,7 @@ class CharField(Field):
     default = ''
     widget = field_widget('input', type='text')
 
-    def handle_params(self, max_length=50, min_length=None,
+    def handle_params(self, type='text', max_length=50, min_length=None,
                       char_transform=None, toslug=None, **kwargs):
         if not max_length:
             raise ValueError('max_length must be provided for {0}'
@@ -434,16 +357,17 @@ class CharField(Field):
         self.max_length = int(max_length)
         if self.max_length <= 0:
             raise ValueError('max_length must be positive')
-        self.widget_attrs['data-max-length'] = self.max_length
-        if self.min_length:
-            self.widget_attrs['data-min-length'] = self.min_length
         self.char_transform = char_transform
         if toslug:
             if toslug is True:
                 toslug = '-'
             toslug = slugify(toslug)
         self.toslug = toslug
-        self._raise_error(kwargs)
+        self.widget_attrs.update(kwargs)
+        self.widget_attrs['type'] = type
+        self.widget_attrs['maxlength'] = self.max_length
+        if self.min_length:
+            self.widget_attrs['data-min-length'] = self.min_length
 
     def _clean(self, value, bfield):
         try:
@@ -464,13 +388,20 @@ class CharField(Field):
 
 
 class IntegerField(Field):
-    default = None
     widget = field_widget('input', type='number')
     convert_error = '"{0}" is not a valid integer.'
 
-    def handle_params(self, validator=None, **kwargs):
+    def handle_params(self, validator=None, min_value=None, max_value=None,
+                      type='number', **kwargs):
+        self.min_value = min_value
+        self.max_value = max_value
         self.validator = validator
-        self._raise_error(kwargs)
+        self.widget_attrs['type'] = type
+        self.widget_attrs.update(kwargs)
+        if min_value is not None:
+            self.widget_attrs['min'] = min_value
+        if max_value is not None:
+            self.widget_attrs['max'] = max_value
 
     def clean(self, value, bfield):
         try:
@@ -504,9 +435,12 @@ class FloatField(IntegerField):
             raise ValidationError(self.validation_error.format(bfield, value))
 
 
-class DateField(Field):
+class DateField(IntegerField):
     widget = field_widget('input', type='date')
     validation_error = '{1} is not a valid date.'
+
+    def handle_params(self, type='date', **kwargs):
+        super(DateField, self).handle_params(type=type, **kwargs)
 
     def _clean(self, value, bfield):
         if not isinstance(value, date):
@@ -526,6 +460,9 @@ class DateField(Field):
 class DateTimeField(DateField):
     widget = field_widget('input', type='datetime')
 
+    def handle_params(self, type='datetime', **kwargs):
+        super(DateField, self).handle_params(type=type, **kwargs)
+
     def todate(self, value):
         if not hasattr(value, 'date'):
             value = datetime(value.year, value.month, value.day)
@@ -536,6 +473,10 @@ class BooleanField(Field):
     default = False
     required = False
     widget = field_widget('input', type='checkbox')
+
+    def handle_params(self, type='checkbox', **kwargs):
+        self.widget_attrs[type] = type
+        self.widget_attrs.update(kwargs)
 
     def clean(self, value, bfield):
         '''Clean the field value'''
@@ -549,9 +490,9 @@ class MultipleMixin(Field):
 
     def handle_params(self, multiple=None, **kwargs):
         self.multiple = multiple or False
+        self.widget_attrs.update(kwargs)
         if self.multiple:
             self.widget_attrs['multiple'] = 'multiple'
-        self._raise_error(kwargs)
 
     def html_name(self, name):
         return name if not self.multiple else '%s[]' % name

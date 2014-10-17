@@ -4,13 +4,6 @@ middleware utilities. If used, it should be the first extension in your
 don't provide any wsgi middleware such as :mod:`lux.extensions.sitemap`
 for example).
 
-
-Parameters
-================
-
-.. lux_extension:: lux.extensions.base
-
-
 Media Handling
 ======================
 When the :setting:`SERVE_STATIC_FILES` parameter is set to ``True``,

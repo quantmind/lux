@@ -85,7 +85,20 @@
             }
             if (typeof obj === 'function')
                 obj = obj();
+            delete attrs.options;
             attrs = extend(attrs, obj);
         }
-        return attrs;
+        var options = {};
+        forEach(attrs, function (value, name) {
+            if (name.substring(0, 1) !== '$')
+                options[name] = value;
+        });
+        return options;
+    },
+    //
+    // random generated numbers for a uuid
+    s4 = function () {
+        return Math.floor((1 + Math.random()) * 0x10000)
+                   .toString(16)
+                   .substring(1);
     };

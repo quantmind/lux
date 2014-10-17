@@ -336,6 +336,8 @@ class ContextBuilder(dict, BaseBuilder):
         if location and os.path.isdir(location):
             for dirpath, _, filenames in os.walk(location):
                 rel_dir = get_rel_dir(dirpath, location)
+                if rel_dir and rel_dir[0] in ('.', '_'):
+                    continue
                 for filename in filenames:
                     if filename.startswith('.'):
                         continue

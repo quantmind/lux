@@ -26,6 +26,7 @@
                 "luxjs/api.js",
                 "luxjs/services/*.js",
                 "luxjs/page/*.js",
+                "luxjs/forms/*.js",
                 "luxjs/bootstrap.js",
                 "luxjs/blog/*.js",
                 "luxjs/nav/*.js",

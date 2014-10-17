@@ -50,6 +50,8 @@
         name = name || 'd3viz';
         var app = angular.module(name, ['lux.services']);
 
+        // Loop through d3 extensions and create directives
+        // for each Visualization class
         angular.forEach(d3.ext, function (VizClass, name) {
 
             if (d3.ext.isviz(VizClass)) {

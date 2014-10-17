@@ -1,7 +1,8 @@
 '''Static site generator
 
 **Required extensions**: :mod:`lux.extensions.ui`, :mod:`lux.extensions.angular`
-**Optional third-party**: markdown_, sphinx_
+
+**Optional third-party libraries**: markdown_, sphinx_
 
 
 Usage
@@ -15,7 +16,7 @@ command line::
 There are several :ref:`parameters <parameters-static>` which can be modified
 in order to customise the site.
 
-The first step is to create a new project via the :command:`create_project`
+The first step is to create a new project via the :command:`startproject` command.
 
 
 When creating the middleware for the static site one can pass the following
@@ -29,8 +30,8 @@ a :class:`.Blog` and other routers:
   document. If not provided, the parent router value is used unless no parent
   is available and the :setting:`STATIC_TEMPLATE` is used instead.
 
-.. _markdown:: https://pythonhosted.org/Markdown/
-.. _ sphinx: http://sphinx-doc.org/
+.. _markdown: https://pythonhosted.org/Markdown/
+.. _sphinx: http://sphinx-doc.org/
 '''
 import os
 import sys

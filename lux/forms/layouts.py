@@ -1,28 +1,10 @@
-'''
-Layout
-~~~~~~~~~~~~~~~~~~~
-
-.. autoclass:: Layout
-   :members:
-   :member-order: bysource
-
-Layout style
-~~~~~~~~~~~~~~~~~~~
-
-.. autoclass:: LayoutStyle
-   :members:
-   :member-order: bysource
-
-Registering layouts
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autofunction:: register_layout_style
-'''
+import json
 from inspect import isclass
 from functools import partial, reduce
 
 import lux
 from lux import Html, Template
+from lux.utils.crypt import get_random_string
 
 
 __all__ = ['Layout', 'Fieldset', 'register_layout_style', 'LayoutStyle',
@@ -167,20 +149,10 @@ class Fieldset(FieldTemplate):
 
 
 class Layout(Template):
-    '''A :class:`Layout` renders the form into HTML.
+    '''A :class:`Layout` renders the a :class:`.Form` into HTML.
 
-    :param style: Optional style name.
-        A style handler must be registered via the
-        :func:`register_layout_style` function. It sets the :attr:style:
-        attribute
-
-    .. attribute:: style
-
-        The name of the :class:`LayoutStyle` for this :class:`Layout`.
-
-    .. attribute:: ngmodel
-
-        If ``True``, render the form so that it can be managed by angular.
+    Each :class:`.Form` has a default :class:`.Layout`  available at the
+    :attr:`~.Form.layout` class attribute.
     '''
     tag = 'form'
     default_element = Fieldset
@@ -194,6 +166,8 @@ class Layout(Template):
 
     @property
     def style(self):
+        '''The :class:`LayoutStyle` for this :class:`.Layout`
+        '''
         return LAYOUT_HANDLERS.get(self._style)
 
     def init_parameters(self, style='', labels=True, submits=True,
@@ -208,7 +182,7 @@ class Layout(Template):
         self._style = style
         self.ngmodel = ngmodel
         self.labels = labels
-        self.controller = ngcontroller or 'formController'
+        self.controller = ngcontroller or 'FormCtrl'
         #parameters['enctype'] = enctype or 'multipart/form-data'
         #parameters['method'] = method or 'post'
         if ngmodel:
@@ -230,7 +204,7 @@ class Layout(Template):
             return self.__class__.__name__
     __str__ = __repr__
 
-    def __get__(self, form, instance_type=None):
+    def __get__(self, form, instance_type):
         if form is None:
             return self
         else:

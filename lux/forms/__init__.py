@@ -32,16 +32,22 @@ Form
 =========================
 
 .. automodule:: lux.forms.form
+   :members:
+   :member-order: bysource
 
 Fields
 =========================
 
 .. automodule:: lux.forms.fields
+   :members:
+   :member-order: bysource
 
 Layout
 =========================
 
 .. automodule:: lux.forms.layouts
+   :members:
+   :member-order: bysource
 
 
 .. _django: https://www.djangoproject.com/
@@ -50,3 +56,4 @@ from .fields import *
 from .formsets import *
 from .layouts import *
 from .form import *
+from .angular import *
