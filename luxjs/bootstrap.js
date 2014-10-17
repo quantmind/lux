@@ -1,3 +1,11 @@
+    angular.module('lux.scope.loader', [])
+        //
+        .value('context', lux.context)
+        //
+        .run(['$rootScope', '$log', 'context', function (scope, log, context) {
+            log.info('Extend root scope with context');
+            extend(scope, context);
+        }]);
     //
     // Bootstrap the document
     lux.bootstrap = function (name, modules) {
@@ -16,11 +24,6 @@
             forEach(lux.context.ngModules, function (mod) {
                 modules.push(mod);
             });
-            angular.module('lux.scope.loader', [])
-                .run(['$rootScope', '$log', function (scope, log) {
-                    log.info('Extend root scope with lux context');
-                    extend(scope, lux.context);
-                }]);
             modules.splice(0, 0, 'lux.scope.loader');
             angular.module(name, modules);
             angular.bootstrap(document, [name]);

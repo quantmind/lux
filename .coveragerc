@@ -1,7 +1,6 @@
 [run]
 source =
     lux
-    tests
 
 [report]
 # Regexes for lines to exclude from consideration

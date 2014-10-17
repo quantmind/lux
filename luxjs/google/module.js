@@ -1,6 +1,7 @@
     //
     //  Module for interacting with google API and services
     angular.module('lux.google', [])
+        //
         .run(['$rootScope', '$log', '$location', function (scope, log, location) {
             var analytics = scope.google ? scope.google.analytics : null;
 
@@ -26,6 +27,7 @@
                 });
             }
         }])
+        //
         .directive('googleMap', function () {
             return {
                 //

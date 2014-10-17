@@ -3,14 +3,27 @@ Highlight code snippets with highlightjs_.
 
 **Required extensions**: :mod:`lux.extensions.ui`
 
+Usage
+=========
+
+Include ``lux.extensions.code`` into the :setting:`EXTENSIONS` list in your
+:ref:`config file <parameters>`::
+
+    EXTENSIONS = [
+        ...
+        'lux.extensions.ui',
+        'lux.extensions.code'
+        ...
+        ]
+
+check the :ref:`code hightlight <jsapi-code>` angular module for more
+information.
+
 .. _highlightjs: https://highlightjs.org/
 '''
 import lux
 from lux import Parameter
 from lux.extensions.ui import *
-
-
-highlight = '//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.3'
 
 
 class Extension(lux.Extension):
@@ -24,6 +37,11 @@ class Extension(lux.Extension):
         Parameter('CODE_HIGHLIGHT_THEME', 'tomorrow',
                   'highlight.js theme')]
 
+    def on_html_document(self, app, request, doc):
+        ngmodules = set(doc.jscontext.get('ngModules', ()))
+        ngmodules.add('highlight')
+        doc.jscontext['ngModules'] = list(ngmodules)
+
 
 def add_css(all):
     theme = all.config('CODE_HIGHLIGHT_THEME')
@@ -33,7 +51,7 @@ def add_css(all):
     vars.code.descname.font_size = px(24)
 
     if theme:
-        path = 'http:%s/styles/%s.min.css' % (highlight, theme)
+        path = 'http:%s/styles/%s.min.css' % (CssLibraries['highlight'], theme)
         css('body',
             CssInclude(path))
 

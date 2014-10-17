@@ -6,7 +6,8 @@ lux.scroll
 **Included in**: :ref:`lux.page <lux-page>`
 
 Angular module which provides utilities for smooth scrolling with hash tag links.
-To configure the scrolling bahaviour, one can use the ``scroll`` object in :ref:`lux.context <lux-context>`::
+To configure the scrolling bahaviour, one can use the ``scroll`` object
+in :ref:`lux.context <lux-context>`::
 
     lux.extend({
         scroll: {

@@ -1,10 +1,16 @@
 .. _parameters:
 
 ===============================
-Parameters
+Configuration Parameters
 ===============================
 
-A full list of available :class:`.Parameter` from all :class:`.Extension`
+The configuration file is a python file containing several
+:class:`.Parameter` which customise your applications. The configuration file
+is located in the directory of the main application (extension)
+of the site. Check :ref:`project layout <project-layout>` for more
+informations.
+
+This is the full list of available :class:`.Parameter` from all :class:`.Extension`
 available in the standard lux distribution.
 
 Core

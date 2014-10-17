@@ -102,6 +102,7 @@ class Router(lux.Router, MediaMixin):
         div = Html('div', main, cn=self.angular_view_class)
         animate = app.config['ANGULAR_VIEW_ANIMATE']
         if animate:
+            jscontext['ngModules'].add('ngAnimate')
             div.addClass(animate)
         div.data('ui-view', 'main')
         return div.render()

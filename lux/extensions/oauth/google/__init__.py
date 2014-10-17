@@ -74,11 +74,9 @@ class Google(OAuth2):
             doc.head.embedded_js.append(run_google_maps_callbacks)
 
     def google_context(self, doc):
-        ngmodules = doc.jscontext.get('ngModules')
-        if ngmodules is None:
-            ngModules = []
-            doc.jscontext['ngModules'] = ngModules
-        ngModules.append('lux.google')
+        ngmodules = set(doc.jscontext.get('ngModules', ()))
+        ngmodules.add('lux.google')
+        doc.jscontext['ngModules'] = list(ngmodules)
         google = doc.jscontext.get('google')
         if google is None:
             doc.jscontext['google'] = {}

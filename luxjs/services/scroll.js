@@ -21,9 +21,9 @@
                 var e;
                 if (target || !hash)
                     return;
-                if (hash.currentTarget) {
-                    e = hash;
-                    hash = hash.currentTarget.hash;
+                if (hash.e) {
+                    e = hash.e;
+                    hash = hash.hash;
                 }
                 // set the location.hash to the id of
                 // the element you wish to scroll to.
@@ -34,7 +34,10 @@
                     if (target) {
                         _clearTargets();
                         target = $(target).addClass(targetClass).removeClass(targetClassFinish);
-                        $location.hash(hash);
+                        if (e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                        }
                         log.info('Scrolling to target #' + hash);
                         _scrollTo(offset || luxScroll.offset, delay);
                         return target;
@@ -86,6 +89,7 @@
                     if (more)
                         _nextScroll(y2, delay, stepY, stopY);
                     else {
+                        $location.hash(target.attr('id'));
                         target.addClass(targetClassFinish);
                         target = null;
                     }
@@ -140,8 +144,7 @@
                         while (target && innerTags.indexOf(target.tagName) > -1)
                             target = target.parentElement;
                         if (target && target.hash) {
-                            if (scroll.toHash(target.hash))
-                                e.preventDefault();
+                            scroll.toHash({hash: target.hash, e: e});
                         }
                     });
                 }

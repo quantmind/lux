@@ -1,7 +1,7 @@
-<nav class="navbar-{{navbar.themeTop}}"
+<nav ng-attr-id="{{navbar.id}}" class="navbar navbar-{{navbar.themeTop}}"
 ng-class="{'navbar-fixed-top':navbar.fixed, 'navbar-static-top':navbar.top}" role="navigation"
 ng-model="navbar.collapse" bs-collapse>
-    <div ng-attr-id='{{navbar.id}}' class="{{navbar.container}}">
+    <div class="{{navbar.container}}">
         <div class="navbar-header">
             <button type="button" class="navbar-toggle" bs-collapse-toggle>
                 <span class="sr-only">Toggle navigation</span>
@@ -18,13 +18,13 @@ ng-model="navbar.collapse" bs-collapse>
         </div>
         <div class="navbar-collapse" bs-collapse-target>
             <ul class="nav navbar-nav">
-                <li ng-repeat="link in navbar.items" ng-class="{active:link.active}">
+                <li ng-repeat="link in navbar.items" ng-class="{active:activeLink(link)}">
                     <a href="{{link.href}}" title="{{link.title || link.name}}">
                     <i ng-if="link.icon" class="{{link.icon}}"></i> {{link.name}}</a>
                 </li>
             </ul>
             <ul class="nav navbar-nav navbar-right">
-                <li ng-repeat="link in navbar.itemsRight" ng-class="{active:link.active}">
+                <li ng-repeat="link in navbar.itemsRight" ng-class="{active:activeLink(link)}">
                     <a href="{{link.href}}" title="{{link.title || link.name}}">
                     <i ng-if="link.icon" class="{{link.icon}}"></i> {{link.name}}</a>
                 </li>

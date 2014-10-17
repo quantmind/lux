@@ -12,12 +12,10 @@ angular.module("blog/pagination.tpl.html", []).run(["$templateCache", function($
     "<ul class=\"media-list\">\n" +
     "    <li ng-repeat=\"post in items\" class=\"media\" data-ng-controller='BlogEntry'>\n" +
     "        <a href=\"{{post.html_url}}\" class=\"pull-left hidden-xs dir-entry-image\">\n" +
-    "          <img data-ng-if=\"post.image\" src=\"{{post.image}}\" alt=\"{{post.title}}\">\n" +
-    "          <img data-ng-if=\"!post.image\" src=\"holder.js/120x90\">\n" +
+    "          <img ng-src=\"{{post.image}}\" alt=\"{{post.title}}\">\n" +
     "        </a>\n" +
     "        <a href=\"{{post.html_url}}\" class=\"visible-xs\">\n" +
-    "            <img data-ng-if=\"post.image\" src=\"{{post.image}}\" alt=\"{{post.title}}\" class=\"dir-entry-image\">\n" +
-    "            <img data-ng-if=\"!post.image\" src=\"holder.js/120x90\">\n" +
+    "            <img ng-src=\"{{post.image}}\" alt=\"{{post.title}}\" class=\"dir-entry-image\">\n" +
     "        </a>\n" +
     "        <p class=\"visible-xs\"></p>\n" +
     "        <div class=\"media-body\">\n" +

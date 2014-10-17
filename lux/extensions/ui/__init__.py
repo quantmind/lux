@@ -1,4 +1,5 @@
-'''Extension for creating style sheets using python.
+'''Extension for creating style sheets using python. It provides
+the :ref:`style command <style-command>` but no WSGI middleware.
 
 To use this extension, add the ``lux.extensions.ui`` entry into the
 :setting:`EXTENSIONS` list in your config file.
@@ -6,6 +7,42 @@ To add additional ``css`` rules, a user extension module must provide the
 ``add_css`` function which accept one parameter only, the ``css`` container.
 The ``add_css`` function is called when building the css file via the ``style``
 command.
+
+Usage
+=======
+
+The API is quite simple::
+
+    from lux.extensions.ui import *
+
+    def add_css(root):
+        css = root.css
+
+        css('.myelement',
+            Border(color='#333', width=px(1)),
+            max_width=px(400))
+
+The ``root`` element is the container of all css rules (effectively it
+is the css file) and it is an instance of the :class:`.Css` class::
+
+    from lux.extensions.ui import Css
+
+    root = Css()
+
+The :class:`.Border` in the example is a :class:`.Mixin` which generate
+css border rules for the css element where it is declared. The ``max_width``
+key-valued pair is added to the css rules too. When the python code
+is converted into stylesheets, all underscore (``_``) are converted into dashes (``-``).
+
+.. _style-command:
+
+The style Command
+=====================
+
+This extension provide the ``style`` command for creating the css file of your
+web application::
+
+    python manage.py style --minify
 
 
 .. _python-css-tools:

@@ -1,3 +1,5 @@
+.. _jsapi-code:
+
 .. highlight:: python
 
 highlight
@@ -27,8 +29,9 @@ element containing code to highlight::
     ...
     </div>
 
-The ``highlight`` module containing the directive is added to lux modules to include in
-the bootstrapping process by the :mod:`lux.extensions.code` extension.
+The ``highlight`` module containing the directive is added to lux modules
+to include in the bootstrapping process by the :mod:`lux.extensions.code`
+extension.
 
 
 .. _highlightjs: https://highlightjs.org/
