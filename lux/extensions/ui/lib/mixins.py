@@ -225,37 +225,37 @@ class Border(Mixin):
 ################################################# CSS3 BOX SHADOW
 class Shadow(Mixin):
     '''The box-shadow css3 property attaches one or more drop-shadows to the
-box. The property is a comma-separated list of shadows, each specified by
-2-4 length values, an optional color, and an optional inset keyword.
-Omitted lengths are 0::
+    box. The property is a comma-separated list of shadows, each specified by
+    2-4 length values, an optional color, and an optional inset keyword.
+    Omitted lengths are 0::
 
-    Shadow(hshadow, vshadow, blur, spread, color, inset)
+        Shadow(hshadow, vshadow, blur, spread, color, inset)
 
-.. attribute:: hshadow
+    .. attribute:: hshadow
 
-    The position of the horizontal shadow. Negative values are allowed.
+        The position of the horizontal shadow. Negative values are allowed.
 
-.. attribute:: vshadow
+    .. attribute:: vshadow
 
-    The position of the vertical shadow. Negative values are allowed.
+        The position of the vertical shadow. Negative values are allowed.
 
-.. attribute:: blur
+    .. attribute:: blur
 
-    Optional blur distance.
+        Optional blur distance.
 
-.. attribute:: spread
+    .. attribute:: spread
 
-    The size of shadow.
+        The size of shadow.
 
-.. attribute:: color
+    .. attribute:: color
 
-    Optional color of the shadow.
+        Optional color of the shadow.
 
-.. attribute:: inset
+    .. attribute:: inset
 
-    Optional boolean to changes the shadow from an outer shadow (outset)
-    to an inner shadow.
-'''
+        Optional boolean to changes the shadow from an outer shadow (outset)
+        to an inner shadow.
+    '''
     def __init__(self, hshadow=None, vshadow=None, blur=None, spread=None,
                  color=None, inset=None):
         self.hshadow = hshadow

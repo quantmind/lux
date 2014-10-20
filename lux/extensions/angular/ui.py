@@ -85,6 +85,9 @@ def add_animate(all):
     css = all.css
     vars = all.variables
 
+    vars.animate.fadein ='1s'
+    vars.animate.fadeout ='1s'
+
     css('body',
         CssInclude('animate'))
 
@@ -94,6 +97,6 @@ def add_animate(all):
             left=0,
             right=0),
         css('.ng-enter',
-            Animation('fadeIn', '1s')),
+            Animation('fadeIn', vars.animate.fadein)),
         css('.ng-leave',
-            Animation('fadeOut', '1s')))
+            Animation('fadeOut', vars.animate.fadeout)))

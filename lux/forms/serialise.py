@@ -25,12 +25,16 @@ def angular_fields(form_class, fields, missings):
             raise ValueError(field)
 
 
-def as_angular_dict(field, form=None):
+def as_angular_dict(field, form):
     if isinstance(field, AngularFormElement):
         return field.as_dict(form)
     else:
         data = field.widget_attrs.copy()
         data['name'] = field.name
+        if form.is_bound:
+            pass
+        elif field.name in form.initial:
+            data['value'] = form.initial[field.name]
         return {'field': data}
 
 
@@ -77,7 +81,7 @@ class AngularFieldset(AngularFormElement):
         children = self.children
         self.children = []
         if self.all:
-            children = missings
+            children = missings[:]
         for field in angular_fields(form_class, children, missings):
             self.children.append(field)
 
@@ -126,9 +130,8 @@ class AngularForm(object):
         code = '%s_%s' % (self.form.__class__.__name__.lower(),
                           get_random_string(5))
         data['field']['id'] = code
-        return Html(None,
-                    Html(tag).data('options', 'luxforms.%s' % code),
-                    form_script % (code, json.dumps(data)))
+        script = form_script % (code, json.dumps(data))
+        return Html(tag, script).data('options', 'luxforms.%s' % code)
 
 
 form_script = ('<script>if (!this.luxforms) {this.luxforms = {};} '

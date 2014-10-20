@@ -68,6 +68,17 @@
         return url;
     },
     //
+    getRootAttribute = function (name) {
+        var obj = root,
+            bits= name.split('.');
+
+        for (var i=0; i<bits.length; ++i) {
+            obj = obj[bits[i]];
+            if (!obj) break;
+        }
+        return obj;
+    },
+    //
     //  getOPtions
     //  ===============
     //
@@ -76,13 +87,7 @@
     //  than html data attributes.
     getOptions = function (attrs) {
         if (attrs && typeof attrs.options === 'string') {
-            var obj = root,
-                bits= attrs.options.split('.');
-
-            for (var i=0; i<bits.length; ++i) {
-                obj = obj[bits[i]];
-                if (!obj) break;
-            }
+            var obj = getRootAttribute(attrs.options);
             if (typeof obj === 'function')
                 obj = obj();
             delete attrs.options;
@@ -101,4 +106,18 @@
         return Math.floor((1 + Math.random()) * 0x10000)
                    .toString(16)
                    .substring(1);
+    },
+    //
+    // Extend the initial array with values for other arrays
+    extendArray = lux.extendArray = function () {
+        if (!arguments.length) return;
+        var value = arguments[0],
+            push = function (v) {
+                value.push(v);
+            };
+        if (typeof(value.push) === 'function') {
+            for (var i=1; i<arguments.length; ++i)
+                forEach(arguments[i], push);
+        }
+        return value;
     };

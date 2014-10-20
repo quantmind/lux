@@ -86,7 +86,7 @@ class BaseReader(object):
                     if bits[0] == 'head':
                         head_meta[k] = guess(as_list(values, cfg))
                         continue
-                    if bits[0] == 'og' or bits[1] == 'twitter':
+                    if bits[0] == 'og' or bits[0] == 'twitter':
                         k = ':'.join(bits)
                         head_meta[k] = guess(as_list(values, cfg))
                         continue

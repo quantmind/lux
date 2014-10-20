@@ -126,6 +126,9 @@ def add_css(all):
         background=vars.background,
         color=vars.color)
 
+    css('p.form-error',
+        margin=0)
+
     css('.form-group .help-block',
         display='none')
 

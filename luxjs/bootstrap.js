@@ -16,8 +16,11 @@
             // Resolve modules to load
             if (!isArray(modules))
                 modules = [];
-            if (lux.context.uiRouter)
+            if (lux.context.uiRouter) {
                 modules.push('lux.ui.router');
+                // Remove seo view, we don't want to bootstrap it
+                $(document.querySelector('#seo-view')).remove();
+            }
             else
                 modules.push('lux.router');
             // Add all modules from context

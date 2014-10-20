@@ -31,8 +31,8 @@ class FormAngularLayoutTests(test.TestCase):
     def test_render_form(self):
         form = TestAForm1()
         html = form.angular.as_form()
-        self.assertEqual(html.tag, None)
-        self.assertEqual(len(html.children), 2)
+        self.assertEqual(html.tag, 'lux-form')
+        self.assertEqual(len(html.children), 1)
 
     def test_render_form_width_button(self):
         form = TestAForm1()

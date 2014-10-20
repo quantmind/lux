@@ -98,7 +98,7 @@ class Router(lux.Router, MediaMixin):
         '''Wrap the ``main`` html with angulat ``ui-view`` container.
         Add animation class if specified in :setting:`ANGULAR_VIEW_ANIMATE`.
         '''
-        main = Html('div', main, cn='hidden')
+        main = Html('div', main, cn='hidden', id="seo-view")
         div = Html('div', main, cn=self.angular_view_class)
         animate = app.config['ANGULAR_VIEW_ANIMATE']
         if animate:

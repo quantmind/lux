@@ -64,10 +64,14 @@
                             restrict: 'AE',
                             //
                             link: function (scope, element, attrs) {
-                                var options = getOptions(d3, attrs);
-                                var viz = new VizClass(element[0], options);
-                                viz.loadData = loadData($lux);
-                                viz.build();
+                                var viz = element.data(dname);
+                                if (!viz) {
+                                    var options = getOptions(d3, attrs);
+                                    viz = new VizClass(element[0], options);
+                                    element.data(viz);
+                                    viz.loadData = loadData($lux);
+                                    viz.build();
+                                }
                             }
                         };
                 }]);

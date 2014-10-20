@@ -31,6 +31,9 @@ class Twitter(OAuth1):
         site = self.config.get('site')
         if 'card' in self.config:
             card = self.config['card']
+        twitter = doc.meta.namespaces.get('twitter')
+        if twitter:
+            card = twitter.get('card', card)
         if card and site:
             Card = twitter_cards.get(card)
             if Card:

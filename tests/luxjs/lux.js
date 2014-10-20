@@ -50,4 +50,21 @@
             expect(c.args[0]).toBe('ciao');
             expect(c.args[1]).toBe('luca');
         });
+
+        it("Test extendArray", function() {
+            var extendArray = lux.extendArray;
+
+            expect(extendArray()).toBe(undefined);
+            expect(extendArray(1)).toBe(1);
+            var a = ['bla'];
+            expect(extendArray(a, ['foo', 4])).toBe(a);
+            expect(a.length).toBe(3);
+            expect(a[0]).toBe('bla');
+            expect(a[1]).toBe('foo');
+            expect(a[2]).toBe(4);
+            a = [];
+            expect(extendArray(a, ['foo', 4], null, ['pippo', 'j'])).toBe(a);
+            expect(a.length).toBe(4);
+
+        });
     });

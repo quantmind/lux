@@ -227,6 +227,8 @@ class Field(object):
             self.widget = lambda *args, **kwargs: widget(self, *args, **kwargs)
         self.widget_attrs = widget_attrs or {}
         self.widget_attrs['required'] = self.required
+        if label:
+            self.widget_attrs['label'] = label
         self.handle_params(**kwargs)
         # Increase the creation counter, and save our local copy.
         self.creation_counter = Field.creation_counter
