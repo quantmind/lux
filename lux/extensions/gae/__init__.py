@@ -31,6 +31,8 @@ def role_name(model):
 
 
 class GaeBackend(sessions.AuthBackend):
+    '''A :class:`.AuthBackend` for the google app engine
+    '''
     model = User
 
     def has_permission(self, request, level, model):
@@ -224,7 +226,7 @@ class AuthBackend(GaeBackend):
 
 
 class JwtBackend(GaeBackend):
-    '''Authentication backend based on JWT
+    '''A :class:`.GaeBackend` for authentication based on JWT
     '''
 
     def middleware(self, app):

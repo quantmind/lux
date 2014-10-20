@@ -2,7 +2,6 @@ from pulsar.apps.wsgi import Json
 from pulsar.utils.pep import iteritems
 
 import lux
-from lux import Column
 from lux.extensions import api
 
 
@@ -54,23 +53,6 @@ class ModelManager(api.ModelManager):
                 setattr(instance, name, value)
         instance.put()
         return instance
-
-    def column(self, code):
-        return Column.get(code)
-
-    def _setup(self, columns):
-        model = self.model
-        if not columns:
-            new_columns = [self.column('id')]
-            for field in model._properties:
-                new_columns.append(self.column(field))
-        else:
-            new_columns = []
-            for col in columns:
-                if not isinstance(col, Column):
-                    col = Column.get(col)
-                new_columns.append(col)
-        self.columns = new_columns
 
 
 class CRUD(api.CRUD):

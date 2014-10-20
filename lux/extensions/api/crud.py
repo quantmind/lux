@@ -19,10 +19,10 @@ class ModelManager(object):
 
         The model managed by this manager
     '''
-    def __init__(self, model=None, columns=None, form=None):
+    def __init__(self, model=None, form=None, edit_form=None):
         self.model = model
         self.form = form
-        self._setup(columns)
+        self.edit_form = edit_form or form
 
     def collection(self, limit, offset=0, text=None):
         '''Retrieve a collection of models
