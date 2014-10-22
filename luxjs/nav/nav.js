@@ -123,17 +123,24 @@
                 templateUrl: "nav/navbar2.tpl.html",
                 restrict: 'A',
                 link: function (scope, element, attrs) {
+                    var navbar = scope.navbar;
                     element.addClass('navbar2-wrapper');
-                    if (scope.theme)
-                        element.addClass('navbar-' + scope.theme);
-                    var height = windowHeight(),
-                        inner = $($document[0].createElement('div')).addClass('navbar2-page')
-                                    .append(scope.navbar2Content)
-                                    .attr('style', 'height: ' + height + 'px');
+                    if (navbar && navbar.theme)
+                        element.addClass('navbar-' + navbar.theme);
+                    var inner = $($document[0].createElement('div')).addClass('navbar2-page')
+                                    .append(scope.navbar2Content);
                     // compile
                     $compile(inner)(scope);
                     // and append
                     element.append(inner);
+                    //
+                    function resize() {
+                        inner.attr('style', 'min-height: ' + windowHeight() + 'px');
+                    }
+                    //
+                    windowResize(resize);
+                    //
+                    resize();
                 }
             };
         }]);

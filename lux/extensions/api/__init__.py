@@ -200,11 +200,3 @@ class Extension(lux.Extension):
             if api_sections:
                 for router in api_sections(app):
                     api.add_child(router)
-        return [self.api, api404]
-
-    def on_config(self, app):
-        '''Create a pulsar mapper with all models registered.
-        '''
-        odm = app.config['ODM']
-        if odm:
-            app.local.models = odm(app)

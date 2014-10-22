@@ -55,14 +55,14 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
     "            {{navbar.brand}}\n" +
     "        </a>\n" +
     "    </div>\n" +
-    "    <ul class=\"nav navbar-top-links navbar-right\">\n" +
+    "    <ul class=\"nav navbar-nav navbar-right\">\n" +
     "        <li ng-repeat=\"item in navbar.items\">\n" +
     "            <a href=\"{{item.href}}\" target=\"{{item.target}}\" title=\"{{item.title || item.value}}\">\n" +
-    "            <i ng-if=\"item.icon\" class=\"{{item.icon}}\"></i>{{item.value}}</a>\n" +
+    "            <i ng-if=\"item.icon\" class=\"{{item.icon}}\"></i> {{item.value}}</a>\n" +
     "        </li>\n" +
     "    </ul>\n" +
     "    <div class=\"sidebar navbar-{{navbar.theme}}\" role=\"navigation\">\n" +
-    "        <div class=\"sidebar-collapse\" bs-collapse-target>\n" +
+    "        <div class=\"sidebar-nav sidebar-collapse\" bs-collapse-target>\n" +
     "            <ul id=\"side-menu\" class=\"nav nav-side\">\n" +
     "                <li ng-if=\"navbar.search\" class=\"sidebar-search\">\n" +
     "                    <div class=\"input-group custom-search-form\">\n" +

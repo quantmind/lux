@@ -13,14 +13,14 @@
             {{navbar.brand}}
         </a>
     </div>
-    <ul class="nav navbar-top-links navbar-right">
+    <ul class="nav navbar-nav navbar-right">
         <li ng-repeat="item in navbar.items">
             <a href="{{item.href}}" target="{{item.target}}" title="{{item.title || item.value}}">
-            <i ng-if="item.icon" class="{{item.icon}}"></i>{{item.value}}</a>
+            <i ng-if="item.icon" class="{{item.icon}}"></i> {{item.value}}</a>
         </li>
     </ul>
     <div class="sidebar navbar-{{navbar.theme}}" role="navigation">
-        <div class="sidebar-collapse" bs-collapse-target>
+        <div class="sidebar-nav sidebar-collapse" bs-collapse-target>
             <ul id="side-menu" class="nav nav-side">
                 <li ng-if="navbar.search" class="sidebar-search">
                     <div class="input-group custom-search-form">

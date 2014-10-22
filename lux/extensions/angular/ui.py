@@ -18,27 +18,22 @@ def add_css(all):
 
 def add_navbar(all):
     '''
-    The navbar2 page layout should use the following template
+    The navbar2 page layout should use the following template::
 
-    <div class="navbar2-wrapper navbar-{{navbar.theme}}" ng-controller="Navigation">
-        <navbar2></navbar2>
-        <div class='navbar2-page'>
-            <div class='row'>
-                ...
-            </div>
-            <div class='row'>
-                ...
-            </div>
-        </div>
-    </div>
+        <navbar2>
+            ...
+        </navbar2>
     '''
     css = all.css
     cfg = all.app.config
     media = all.media
     vars = all.variables
     #
-    # NAVBAR (TOP)
+    # STYLING
     navbar = vars.navbar
+    navbar.default.background = '#f8f8f8'
+    #
+    # NAVBAR (TOP)
     navbar.height = px(50)
     #
     # SIDEBAR
@@ -49,6 +44,8 @@ def add_navbar(all):
 
     # wraps the navbar2 and the main page
     css('.navbar2-wrapper',
+        css('.navbar-default',
+            background=navbar.default.background),
         width=pc(100),
         min_height=pc(100))
 
