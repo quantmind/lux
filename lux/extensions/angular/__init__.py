@@ -128,6 +128,8 @@ class Router(lux.Router, MediaMixin):
 
         if uirouter:
             main = self.uiview(app, main, jscontext)
+        elif isinstance(main, Html):
+            main = main.render()
 
         jscontext['ngModules'] = list(jscontext['ngModules'])
         context = {'html_main': main}

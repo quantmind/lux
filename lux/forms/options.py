@@ -4,8 +4,8 @@ __all__ = ['Options', 'OptionGroup']
 
 class Options(object):
 
-    def __init__(self, choices):
-        self._choices = choices or ()
+    def __init__(self, options):
+        self._choices = options or ()
 
     def all(self):
         choices = self._choices
@@ -52,9 +52,9 @@ class Options(object):
 
 class OptionGroup(Options):
 
-    def __init__(self, name, choices):
+    def __init__(self, name, options):
         self.name = name
-        self._choices = choices
+        self._choices = options
 
     def html(self, html, value=None):
         group = Html('optgroup', label=self.name)

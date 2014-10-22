@@ -91,29 +91,34 @@
         .directive('navbar2', ['navService', '$compile', function (navService, $compile) {
             return {
                 restrict: 'AE',
-                // Link function
-                controller: ['$scope', '$element', function(scope, element){
-                    scope.navbar2Classes = element[0].className;
-                    scope.navbar2Content = element.html();
-                    element.html('');
-                    scope.activeLink = navService.activeLink;
-                }],
-                //
-                link: function (scope, element, attrs) {
-                    scope.navbar = navService.initScope(attrs);
-                    var inner = $compile('<div data-nav-side-bar></div>')(scope);
-                    element.replaceWith(inner.addClass(scope.navbar2Classes));
+                // We need to use the compile function so that we remove the
+                // before it is included in the bootstraping algorithm
+                compile: function compile(element) {
+                    var inner = element.html(),
+                        className = element[0].className;
                     //
-                    windowResize(function () {
-                        if (navService.maybeCollapse(scope.navbar))
-                            scope.$apply();
-                    });
+                    element.html('');
+
+                    return {
+                        post: function (scope, element, attrs) {
+                            scope.navbar2Content = inner;
+                            scope.activeLink = navService.activeLink;
+                            scope.navbar = navService.initScope(attrs);
+                            inner = $compile('<div data-nav-side-bar></div>')(scope);
+                            element.replaceWith(inner.addClass(className));
+                            //
+                            windowResize(function () {
+                                if (navService.maybeCollapse(scope.navbar))
+                                    scope.$apply();
+                            });
+                        }
+                    };
                 }
             };
         }])
         //
         //  Directive for the navbar with sidebar (nivebar2 template)
-        .directive('navSideBar', ['$document', function ($document) {
+        .directive('navSideBar', ['$compile', '$document', function ($compile, $document) {
             return {
                 templateUrl: "nav/navbar2.tpl.html",
                 restrict: 'A',
@@ -121,24 +126,14 @@
                     element.addClass('navbar2-wrapper');
                     if (scope.theme)
                         element.addClass('navbar-' + scope.theme);
-                    var inner = $($document[0].createElement('div')).addClass('navbar2-page'),
-                        height = windowHeight();
-                    inner.append(scope.navbar2Content).attr('style', 'height: ' + height + 'px');
+                    var height = windowHeight(),
+                        inner = $($document[0].createElement('div')).addClass('navbar2-page')
+                                    .append(scope.navbar2Content)
+                                    .attr('style', 'height: ' + height + 'px');
+                    // compile
+                    $compile(inner)(scope);
+                    // and append
                     element.append(inner);
                 }
             };
-        }])
-        //
-        // Directive for the main page in the sidebar2 template
-        .directive('navbar2Page', function () {
-            return {
-                compile: function () {
-                    return {
-                        pre: function (scope, element, attrs) {
-                            element.append(scope.navbar2Content);
-                            attrs.$set('style', 'min-height: ' + windowHeight() + 'px');
-                        }
-                    };
-                }
-            };
-        });
+        }]);

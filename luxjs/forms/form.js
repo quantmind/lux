@@ -347,7 +347,8 @@
 
                     if (field.value !== undefined) {
                         scope[scope.formModelName][field.name] = field.value;
-                        input.attr('value', field.value);
+                        if (info.textBased)
+                            input.attr('value', field.value);
                     }
 
                     if (this.inputGroupClass) {
@@ -357,6 +358,27 @@
                         element = [label, input];
                     }
                     return this.inputError(scope, element);
+                },
+                //
+                textarea: function (scope) {
+                    return this.input(scope);
+                },
+                //
+                // Create a select element
+                select: function (scope) {
+                    var field = scope.field,
+                        info = scope.info,
+                        element = this.input(scope),
+                        select = this._select(info.element, element);
+                    forEach(field.options, function (opt) {
+                        if (typeof(opt) === 'string') {
+                            opt = {'value': opt};
+                        }
+                        opt = $($document[0].createElement('option'))
+                                .attr('value', opt.value).html(opt.repr || opt.value);
+                        select.append(opt);
+                    });
+                    return element;
                 },
                 //
                 button: function (scope) {
@@ -437,6 +459,17 @@
                 //
                 requiredErrorMessage: function (scope) {
                     return "This field is required";
+                },
+                //
+                _select: function (tag, element) {
+                    if (isArray(element)) {
+                        for (var i=0; i<element.length; ++i) {
+                            if (element[0].tagName === tag)
+                                return element;
+                        }
+                    } else {
+                        return $(element[0].querySelector(tag));
+                    }
                 }
             });
         }])
