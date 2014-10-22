@@ -124,12 +124,6 @@ class Router(wsgi.Router):
         if self.content_manager:
             self.content_manager = self.content_manager._clone(self)
 
-    def get_controller(self):
-        if self.controller:
-            return self.controller
-        elif self.form:
-            return self.form.layout.controller
-
     def template_response(self, request, template):
         '''A text/html response with an angular template
         '''
@@ -138,11 +132,11 @@ class Router(wsgi.Router):
         response.content = template
         return response
 
-    def make_router(self, rule, cls=None, **params):
+    def make_router(self, rule, **params):
         '''Create a new :class:`.Router` form rule and parameters
         '''
-        cls = cls or Router
-        return cls(rule, **params)
+        params.setdefault('cls', Router)
+        return super(Router, self).make_router(rule, **params)
 
     def add_api_urls(self, request, api):
         for r in self.routes:

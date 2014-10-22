@@ -1,8 +1,41 @@
 '''\
-This extension is required when using :ref:`lux.js <jsapi>` javascript module.
-It provides the link between AngularJS and Python.
+THis extension does not provide any middleware but it is required
+when using :ref:`lux.js <jsapi>` javascript module and
+provides the link between AngularJS_ and Python.
 
 **Required extensions**: :mod:`lux.extensions.ui`
+
+Usage
+=========
+
+Include ``lux.extensions.angular`` into the :setting:`EXTENSIONS` list in your
+:ref:`config file <parameters>`::
+
+    EXTENSIONS = [
+        ...
+        'lux.extensions.ui',
+        'lux.extensions.angular'
+        ...
+        ]
+
+     ANGULAR_UI_ROUTER = True
+
+There are two different ways to serve html. The default way is to serve without
+the use of angular `ui-router`_, in which case urls load the whole html5
+document each time they are accessed.
+
+.. _spa-router:
+
+UI-Router
+=============
+
+When switching :setting:`ANGULAR_UI_ROUTER` to ``True``, each page served by
+an angular :class:`.Router` is managed, in javascript, by the `ui-router`_ as
+a single page application.
+
+
+.. _AngularJS: https://angularjs.org/
+.. _`ui-router`: https://github.com/angular-ui/ui-router
 '''
 import lux
 from lux import Parameter
@@ -27,34 +60,48 @@ class Extension(lux.Extension):
 
 
 class Router(lux.Router, MediaMixin):
-    '''A :class:`.Router` for Angular Html5 navigation
-
-    When the :setting:`HTML5_NAVIGATION` is ``True``, this router
-    does not build the ``$main`` key for the context dictionary, insteady
-    it places the
-
-        <div ng-view></div>
-
-    tag and populate the javascript context dictionary with a sitemap
-    and the ``html5mode`` flag set to ``True``.
+    '''A :class:`.Router` for Angular navigation.
     '''
     in_nav = True
-    target = None
     title = None
     api = None
     has_content = True
     angular_view_class = 'angular-view'
     html_body_template = 'home.html'
-    '''The template for the body part of the Html5 document
+    '''The template for the body part of the Html5 document. In most cases it
+    is as simple as::
+
+        $html_main
+
+    where the ``$html_main`` is replaced by the string created by the
+    :meth:`build_main` method.
     '''
     ngmodules = None
-    '''List of angular modules to include
+    '''Optional list of angular modules to include
     '''
+    uirouter = True
+    '''Override the :setting:`ANGULAR_UI_ROUTER` setting for this
+    :class:`.Router`. If set to ``False`` the `ui-router`_ won't be used
+    and the whole html5 document is loaded when accessed.'''
     _sitemap = None
 
     def get(self, request):
+        '''This is the only http method implemented.
+
+        If this :class:`.Router` is operating in :ref:`ui mode <spa-router>`,
+        this method performs the following tasks:
+
+        * Collets children routers operating in :ref:`ui mode <spa-router>`
+          and build the sitemap used by angular `ui-router`_.
+        * The ``$html_main`` content, rendered by the :meth:`build_main` method is
+          wrapped by a ``div`` element::
+
+            <div id="seo-view" data-ui-main="main" class="hidden">
+                $html_main
+            </div>
+        '''
         app = request.app
-        uirouter = app.config['ANGULAR_UI_ROUTER']
+        uirouter = app.config['ANGULAR_UI_ROUTER'] and self.uirouter
         doc = request.html_document
         doc.body.data({'ng-model': 'page',
                        'ng-controller': 'Page',
@@ -66,9 +113,9 @@ class Router(lux.Router, MediaMixin):
         navbar = doc.jscontext.get('navbar') or {}
         navbar['collapseWidth'] = app.config['NAVBAR_COLLAPSE_WIDTH']
         jscontext['navbar'] = navbar
-
-        context = {}
-        main = self.build_main(request, context, jscontext)
+        #
+        # Build the ui-view main
+        main = self.build_main(request)
         #
         ngmodules = jscontext['ngModules'] = set(jscontext.get('ngModules', ()))
         ngmodules.update(app.config['NGMODULES'])
@@ -85,17 +132,17 @@ class Router(lux.Router, MediaMixin):
             main = self.uiview(app, main, jscontext)
 
         jscontext['ngModules'] = list(jscontext['ngModules'])
-        context['html_main'] = main
+        context = {'html_main': main}
         return app.html_response(request, self.html_body_template,
                                  context=context)
 
-    def build_main(self, request, context):
-        '''Build the context when not using ui-router navigation
+    def build_main(self, request):
+        '''Build the main view for this router
         '''
-        return {}
+        return ''
 
     def uiview(self, app, main, jscontext):
-        '''Wrap the ``main`` html with angulat ``ui-view`` container.
+        '''Wrap the ``main`` html with a ``ui-view`` container.
         Add animation class if specified in :setting:`ANGULAR_VIEW_ANIMATE`.
         '''
         main = Html('div', main, cn='hidden', id="seo-view")
@@ -121,7 +168,7 @@ class Router(lux.Router, MediaMixin):
         pass
 
     def sitemap(self, app, ngmodules):
-        '''Build the sitemap used by angular ui-router
+        '''Build the sitemap used by angular `ui-router`_
         '''
         root = self.root
         if root._sitemap is None:
@@ -142,12 +189,11 @@ class Router(lux.Router, MediaMixin):
         '''
         pass
 
-    def wrap_html(self, request, html, span=12):
-        '''Default wrapper for html loaded via angular
-        '''
-        return Html('div',
-                    Html('div', html, cn='col-sm-%d' % span),
-                    cn='row').render(request)
+    def make_router(self, rule, method=None, handler=None, cls=None, **params):
+        cls = cls or Router
+        if cls is Router and method == 'get':
+            method = 'build_main'
+        return super(Router, self).make_router(rule, method=method, handler=handler, cls=cls, **params)
 
 
 def router_href(app, route):
@@ -174,21 +220,19 @@ def _angular_route(route):
 
 
 def add_to_sitemap(sitemap, app, router, parent=None):
-    '''Add router and its children to the Html5 sitemap
-    '''
     # Router variables
     if not isinstance(router, Router):
         return
+    uirouter = app.config['ANGULAR_UI_ROUTER'] and router.uirouter
+    if (not uirouter or 
+            (router.parent and
+             router.parent.html_body_template != router.html_body_template)):
+        return
+    
     href = router_href(app, router.full_route)
-    # Target
-    target = router.target
-    if not target and router.parent:
-        if router.parent.html_body_template != router.html_body_template:
-            target = '_self'
     #
     page = {'url': href,
             'name': router.name,
-            'target': target,
             'template': router.state_template(app),
             'api': router.get_api_info(app),
             'controller': router.get_controller(app),
@@ -206,6 +250,4 @@ def add_to_sitemap(sitemap, app, router, parent=None):
         if not parent:
             getmany = True
             apiname = router.name
-        # In navigation
-        if getattr(router, 'in_nav', False):
-            add_to_sitemap(sitemap, app, child, href)
+        add_to_sitemap(sitemap, app, child, href)

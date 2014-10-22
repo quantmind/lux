@@ -12,7 +12,7 @@ from lux.utils import JSON_CONTENT_TYPES
 
 from .formsets import FormSet
 from .fields import Field, ValidationError, FormError
-from .layouts import Layout, FORMKEY
+from .serialise import Layout, FORMKEY
 
 
 __all__ = ['FormType',

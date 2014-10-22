@@ -3,12 +3,13 @@ from inspect import isclass
 from functools import partial, reduce
 
 import lux
-from lux import Html, Template
+from lux import Html
 from lux.utils.crypt import get_random_string
 
 
-__all__ = ['AngularFieldset', 'AngularSubmit', 'AngularLayout']
+__all__ = ['AngularFieldset', 'AngularSubmit', 'AngularLayout', 'Layout']
 
+FORMKEY = 'm__form'
 
 def angular_fields(form_class, fields, missings):
     '''Utility function for checking fields in layouts'''
@@ -136,3 +137,5 @@ class AngularForm(object):
 
 form_script = ('<script>if (!this.luxforms) {this.luxforms = {};} '
                'this.luxforms.%s = %s;</script>')
+
+Layout = AngularLayout

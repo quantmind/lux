@@ -259,7 +259,7 @@ class Content(object):
             self._json_dict = data
         return self._json_dict
 
-    def html(self, request, jscontext=None):
+    def html(self, request):
         '''Build the ``html_main`` key for this content and set
         content specific values to the ``head`` tag of the
         HTML5 document.
@@ -268,9 +268,8 @@ class Content(object):
             raise Unsupported
         # The JSON data for this page
         data = self.json(request)
-        if jscontext is not None:
-            jscontext['page'] = dict(page_info(data))
         doc = request.html_document
+        doc.jscontext['page'] = dict(page_info(data))
         #
         doc.meta.update({'og:image': data.get('image'),
                          'og:published_time': data.get('date'),

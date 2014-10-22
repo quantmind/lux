@@ -1,6 +1,6 @@
 //      Lux Library - v0.1.0
 
-//      Compiled 2014-10-20.
+//      Compiled 2014-10-22.
 //      Copyright (c) 2014 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -13,6 +13,7 @@ require(rcfg.min(['lux/lux', 'angular-ui-router', 'angular-strap', 'angular-anim
             offset: 60
         },
         navbar: {
+            url: url,
             id: 'top',
             fixed: true,
             brandImage: lux.media('luxsite/lux-banner.png'),

@@ -1,4 +1,3 @@
-from pulsar.apps.wsgi import Json
 from pulsar.utils.pep import iteritems
 
 import lux

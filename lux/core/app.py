@@ -532,6 +532,16 @@ class Application(ConsoleParser, Extension):
             return base if path == '/' else '%s%s' % (base, path)
         else:
             return path
+        
+    def media_url(self, path=None):
+        '''Build the media url from an optional ``path``
+        '''
+        base = self.config['SITE_URL'] + self.config['MEDIA_URL']
+        path = path or '/'
+        if base:
+            return '%s%s' % (base, path) if path else base
+        else:
+            return path or '/'
 
     # INTERNALS
     def _build_config(self, file):

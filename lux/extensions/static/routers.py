@@ -213,9 +213,9 @@ class HtmlFile(HtmlRouter, FileBuilder):
     def html_router(self):
         return self.parent
 
-    def build_main(self, request, context, jscontext):
+    def build_main(self, request):
         content = self.get_content(request)
-        return content.html(request, jscontext)
+        return content.html(request)
 
     def get_api_info(self, app):
         return self.parent.get_api_info(app)
@@ -292,9 +292,7 @@ class HtmlContent(HtmlRouter, DirBuilder):
                                 'url': '%s.json' % url,
                                 'type': 'static'}
 
-    def build_main(self, request, context, jscontext):
-        '''Build the ``main`` key for the ``context`` dictionary
-        '''
+    def build_main(self, request):
         if self.src and request.cache.building_static:
             raise SkipBuild     # it will be built by the file handler
         if self.index_template:
@@ -302,16 +300,17 @@ class HtmlContent(HtmlRouter, DirBuilder):
             self.content = None
             if self.meta:
                 self.meta.pop('template', None)
+            doc = request.html_document
             app = request.app
             files = self.api.get_route('json_files') if self.api else None
             if files:
-                jscontext['items'] = files.all(app, html=False)
+                doc.jscontext['items'] = files.all(app, html=False)
             src = app.template_full_path(self.index_template)
             content = self.read_file(app, src, 'index')
-            return content.html(request, jscontext)
+            return content.html(request)
         elif self.src:
             content = self.read_file(request.app, self.src, 'index')
-            return content.html(request, jscontext)
+            return content.html(request)
         else:
             raise SkipBuild
 
@@ -320,9 +319,10 @@ class Drafts(HtmlRouter, FileBuilder):
     '''A page collecting all drafts
     '''
     priority = 0
+    uirouter = False
     ngmodules = ['lux.blog']
 
-    def build_main(self, request, context, jscontext):
+    def build_main(self, request):
         if self.index_template and self.parent:
             app = request.app
             api = self.parent.api
@@ -330,8 +330,10 @@ class Drafts(HtmlRouter, FileBuilder):
             doc.head.replace_meta('robots', 'noindex, nofollow')
             files = api.get_route('json_files') if api else None
             if files:
-                jscontext['posts'] = files.all(app, html=False, draft=True)
-            return app.render_template(self.index_template, context)
+                doc.jscontext['items'] = files.all(app, html=False, draft=True)
+            src = app.template_full_path(self.index_template)
+            content = self.read_file(app, src, 'index')
+            return content.html(request)
         else:
             raise SkipBuild
 

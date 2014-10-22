@@ -5,6 +5,7 @@ require(rcfg.min(['lux/lux', 'angular-ui-router', 'angular-strap', 'angular-anim
             offset: 60
         },
         navbar: {
+            url: url,
             id: 'top',
             fixed: true,
             brandImage: lux.media('luxsite/lux-banner.png'),

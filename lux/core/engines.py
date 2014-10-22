@@ -22,7 +22,7 @@ def register_template_engine(name, engine):
 
 
 def render(text, context):
-    return Template(text).safe_substitute(context)
+    return Template(text).safe_substitute(context) if context else text
 
 
 register_template_engine(default_engine, render)

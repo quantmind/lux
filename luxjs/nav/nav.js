@@ -92,12 +92,17 @@
             return {
                 restrict: 'AE',
                 // Link function
-                link: function (scope, element, attrs) {
-                    scope.navbar2Content = element.children();
-                    scope.navbar = navService.initScope(attrs);
+                controller: ['$scope', '$element', function(scope, element){
+                    scope.navbar2Classes = element[0].className;
+                    scope.navbar2Content = element.html();
+                    element.html('');
                     scope.activeLink = navService.activeLink;
-                    var inner = $compile('<nav-side-bar></nav-side-bar>')(scope);
-                    element.append(inner);
+                }],
+                //
+                link: function (scope, element, attrs) {
+                    scope.navbar = navService.initScope(attrs);
+                    var inner = $compile('<div data-nav-side-bar></div>')(scope);
+                    element.replaceWith(inner.addClass(scope.navbar2Classes));
                     //
                     windowResize(function () {
                         if (navService.maybeCollapse(scope.navbar))
@@ -108,12 +113,21 @@
         }])
         //
         //  Directive for the navbar with sidebar (nivebar2 template)
-        .directive('navSideBar', function () {
+        .directive('navSideBar', ['$document', function ($document) {
             return {
                 templateUrl: "nav/navbar2.tpl.html",
-                restrict: 'E'
+                restrict: 'A',
+                link: function (scope, element, attrs) {
+                    element.addClass('navbar2-wrapper');
+                    if (scope.theme)
+                        element.addClass('navbar-' + scope.theme);
+                    var inner = $($document[0].createElement('div')).addClass('navbar2-page'),
+                        height = windowHeight();
+                    inner.append(scope.navbar2Content).attr('style', 'height: ' + height + 'px');
+                    element.append(inner);
+                }
             };
-        })
+        }])
         //
         // Directive for the main page in the sidebar2 template
         .directive('navbar2Page', function () {
