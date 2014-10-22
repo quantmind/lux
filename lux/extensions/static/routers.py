@@ -70,7 +70,7 @@ class JsonRedirect(lux.Router):
 class JsonRoot(lux.Router, FileBuilder):
     '''The root for :class:`.JsonContent`
     '''
-    response_content_types = lux.RouterParam(JSON_CONTENT_TYPES)
+    response_content_types = JSON_CONTENT_TYPES
 
     def apis(self, request):
         routes = {}

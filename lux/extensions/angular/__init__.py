@@ -38,7 +38,7 @@ a single page application.
 .. _`ui-router`: https://github.com/angular-ui/ui-router
 '''
 import lux
-from lux import Parameter
+from lux import Parameter, RouterParam
 
 from pulsar.apps.wsgi import MediaMixin, Html, route
 from pulsar.utils.httpurl import urlparse
@@ -65,9 +65,8 @@ class Router(lux.Router, MediaMixin):
     in_nav = True
     title = None
     api = None
-    has_content = True
-    angular_view_class = 'angular-view'
-    html_body_template = 'home.html'
+    angular_view_class = RouterParam('angular-view')
+    html_body_template = RouterParam('home.html')
     '''The template for the body part of the Html5 document. In most cases it
     is as simple as::
 
@@ -123,8 +122,7 @@ class Router(lux.Router, MediaMixin):
         # Using Angular Ui-Router
         if uirouter:
             jscontext.update(self.sitemap(app, ngmodules))
-            jscontext['page'] = router_href(app,
-                                            request.app_handler.full_route)
+            jscontext['page'] = router_href(app, self.full_route)
         elif self.ngmodules:
             ngmodules.update(self.ngmodules)
 
@@ -170,7 +168,9 @@ class Router(lux.Router, MediaMixin):
     def sitemap(self, app, ngmodules):
         '''Build the sitemap used by angular `ui-router`_
         '''
-        root = self.root
+        root = self
+        while isinstance(root.parent, Router):
+            root = root.parent
         if root._sitemap is None:
             ngmodules.add('ui.router')
             sitemap = {'hrefs': [],
@@ -193,7 +193,8 @@ class Router(lux.Router, MediaMixin):
         cls = cls or Router
         if cls is Router and method == 'get':
             method = 'build_main'
-        return super(Router, self).make_router(rule, method=method, handler=handler, cls=cls, **params)
+        return super(Router, self).make_router(
+            rule, method=method, handler=handler, cls=cls, **params)
 
 
 def router_href(app, route):
@@ -224,22 +225,23 @@ def add_to_sitemap(sitemap, app, router, parent=None):
     if not isinstance(router, Router):
         return
     uirouter = app.config['ANGULAR_UI_ROUTER'] and router.uirouter
-    if (not uirouter or 
+    if (not uirouter or
             (router.parent and
              router.parent.html_body_template != router.html_body_template)):
         return
-    
-    href = router_href(app, router.full_route)
+
+    # path for the current router
+    path = router_href(app, router.full_route)
     #
-    page = {'url': href,
+    page = {'url': path,
             'name': router.name,
             'template': router.state_template(app),
             'api': router.get_api_info(app),
             'controller': router.get_controller(app),
             'parent': parent}
     router.angular_page(app, page)
-    sitemap['hrefs'].append(href)
-    sitemap['pages'][href] = page
+    sitemap['hrefs'].append(path)
+    sitemap['pages'][path] = page
     if router.ngmodules:
         sitemap['ngModules'].update(router.ngmodules)
     #
@@ -250,4 +252,13 @@ def add_to_sitemap(sitemap, app, router, parent=None):
         if not parent:
             getmany = True
             apiname = router.name
-        add_to_sitemap(sitemap, app, child, href)
+        add_to_sitemap(sitemap, app, child, path)
+
+    # Add redirect to folder page if required
+    if path.endswith('/') and path != '/':
+        rpath = path[:-1]
+        if rpath not in sitemap['pages']:
+            page = {'url': rpath,
+                    'redirectTo': path}
+            sitemap['hrefs'].append(rpath)
+            sitemap['pages'][rpath] = page

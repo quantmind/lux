@@ -12,6 +12,12 @@ class TestAForm1(forms.Form):
         forms.AngularSubmit('done'))
 
 
+class PageForm(forms.Form):
+    url = forms.CharField()
+    markup = forms.ChoiceField(options=('bla', 'foo'))
+    body = forms.CharField(type='textarea', required=False)
+
+
 class FormAngularLayoutTests(test.TestCase):
 
     def test_layout_class(self):
@@ -38,6 +44,18 @@ class FormAngularLayoutTests(test.TestCase):
         form = TestAForm1()
         data = form.angular2.as_dict()
         self.assertEqual(len(data['children']), 2)
+
+    def test_textarea(self):
+        form = PageForm()
+        data = form.layout.as_dict()
+        self.assertEqual(len(data['children']), 1)
+        data = data['children'][0]
+        self.assertEqual(data['field']['type'], 'fieldset')
+        self.assertEqual(len(data['children']), 3)
+        textarea = data['children'][2]
+        self.assertEqual(textarea['field']['type'], 'textarea')
+        choice = data['children'][1]
+        self.assertEqual(choice['field']['type'], 'select')
 
     def __test_layout_create(self):
         class TestForm(forms.Form):

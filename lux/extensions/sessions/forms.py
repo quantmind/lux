@@ -13,7 +13,7 @@ class LoginForm(forms.Form):
     password = forms.PasswordField(max_length=128)
 
     layout = forms.Layout(
-        submits=forms.Submit('Login', classes='btn btn-primary btn-block'),
+        forms.Submit('Login', classes='btn btn-primary btn-block'),
         labels=False,
         ngmodel=True,
         ngcontroller='userController')

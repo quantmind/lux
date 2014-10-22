@@ -287,16 +287,12 @@ class Application(ConsoleParser, Extension):
         Usually there is no need to call directly this method.
         Instead one can use the :attr:`.WsgiRequest.html_document`.
         '''
-        handler = request.app_handler
-        title = None
-        if handler:
-            title = handler.parameters.get('title')
         cfg = self.config
         site_url = cfg['SITE_URL']
         media_path = cfg['MEDIA_URL']
         if site_url:
             media_path = site_url + media_path
-        doc = HtmlDocument(title=title or cfg['HTML_TITLE'],
+        doc = HtmlDocument(title=cfg['HTML_TITLE'],
                            media_path=media_path,
                            minified=cfg['MINIFIED_MEDIA'],
                            data_debug=self.debug,
@@ -532,7 +528,7 @@ class Application(ConsoleParser, Extension):
             return base if path == '/' else '%s%s' % (base, path)
         else:
             return path
-        
+
     def media_url(self, path=None):
         '''Build the media url from an optional ``path``
         '''

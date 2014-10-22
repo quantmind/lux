@@ -7,7 +7,8 @@ from lux import Html
 from lux.utils.crypt import get_random_string
 
 
-__all__ = ['AngularFieldset', 'AngularSubmit', 'AngularLayout', 'Layout']
+__all__ = ['AngularFieldset', 'AngularSubmit', 'AngularLayout',
+           'Fieldset', 'Submit', 'Layout', 'Row']
 
 FORMKEY = 'm__form'
 
@@ -30,7 +31,7 @@ def as_angular_dict(field, form):
     if isinstance(field, AngularFormElement):
         return field.as_dict(form)
     else:
-        data = field.widget_attrs.copy()
+        data = field.getattrs()
         data['name'] = field.name
         if form.is_bound:
             pass
@@ -87,6 +88,11 @@ class AngularFieldset(AngularFormElement):
             self.children.append(field)
 
 
+class Row(AngularFieldset):
+    type = 'div'
+
+
+
 class AngularLayout(AngularFieldset):
     type = 'form'
     form_class = None
@@ -139,3 +145,5 @@ form_script = ('<script>if (!this.luxforms) {this.luxforms = {};} '
                'this.luxforms.%s = %s;</script>')
 
 Layout = AngularLayout
+Fieldset = AngularFieldset
+Submit = AngularSubmit

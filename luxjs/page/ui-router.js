@@ -70,7 +70,10 @@
             //
             forEach(hrefs, function (href) {
                 var page = pages[href];
-                if (page.target !== '_self') {
+                // Redirection
+                if (page.redirectTo)
+                    $urlRouterProvider.when(page.url, page.redirectTo);
+                else {
                     var name = page.name;
                     if (!name) {
                         name = 'home';
