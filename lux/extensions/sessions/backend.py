@@ -1,3 +1,11 @@
+'''
+.. autoclass:: AuthBackend
+   :members:
+   :member-order: bysource
+
+'''
+import time
+
 from importlib import import_module
 from datetime import datetime, timedelta
 
@@ -6,15 +14,22 @@ from pulsar.utils.pep import to_bytes, to_string
 from pulsar.utils.importer import module_attribute
 
 import lux
-from lux import Parameter
+from lux import Parameter, Router
 from lux.utils.crypt import get_random_string, digest
 
+from .jwtmixin import jwt
 
-__all__ = ['AuthBackend', 'AuthenticationError', 'LoginError', 'LogoutError',
-           'SessionMixin', 'UserMixin', 'Anonymous']
+
+__all__ = ['AuthBackend', 'SessionMixin', 'AuthenticationError',
+           'LoginError', 'LogoutError', 'MessageMixin', 'UserMixin',
+           'Anonymous', 'REASON_NO_REFERER', 'REASON_BAD_REFERER',
+           'REASON_BAD_TOKEN']
 
 
 UNUSABLE_PASSWORD = '!'
+REASON_NO_REFERER = "Referer checking failed - no Referer"
+REASON_BAD_REFERER = "Referer checking failed - %s does not match %s"
+REASON_BAD_TOKEN = "CSRF token missing or incorrect"
 
 
 class AuthenticationError(ValueError):
@@ -29,8 +44,8 @@ class LogoutError(RuntimeError):
     pass
 
 
-class SessionMixin(object):
-    '''Mixin for a session class
+class MessageMixin(object):
+    '''Mixin for a messages
     '''
     def success(self, message):
         '''Store a ``success`` message to show to the web user
@@ -137,30 +152,198 @@ class AuthBackend(object):
     several other activities which are required for managing users of
     a web site.
     '''
+    def __init__(self, app):
+        self.app = app
+
+    @property
+    def config(self):
+        return self.app.config
+
+    def __call__(self, environ, start_response):
+        request = self.app.wsgi_request(environ)
+        # Inject self as the authentication backend
+        request.cache.auth_backend = self
+        return self.request(request)
+
+    def response_middleware(self, environ, response):
+        request = self.app.wsgi_request(environ)
+        # Inject self as the authentication backend
+        request.cache.auth_backend = self
+        return self.response(request, response)
+
+    def request(self, request):
+        '''Handle an incoming request'''
+        pass
+
+    def response(self, request, response):
+        '''Handle an incoming ``response`` from a ``request``'''
+        pass
+
+    def get_user(self, request, **kwargs):
+        '''Retrieve a user.
+        Return ``None`` if the user could not be found'''
+        pass
+
+    def csrf_token(self, request):
+        '''Create a CSRF token for a given request'''
+        pass
+
+    def validate_csrf_token(self, request, token):
+        '''Validate CSRF
+        '''
+        pass
+
+    def anonymous(self):
+        '''An anonymous user'''
+        return Anonymous()
+
+    def create_user(self, request, **kwargs):
+        '''Create a standard user.'''
+        pass
+
+    def create_superuser(self, request, *args, **kwargs):
+        '''Create a user with *superuser* permissions.'''
+        pass
+
+    def has_permission(self, request, level, model):
+        '''Check for permission on a model.'''
+        return False
+
+    def password(self, raw_password=None):
+        if raw_password:
+            return self._encript(raw_password)
+        else:
+            return UNUSABLE_PASSWORD
+
+    def set_password(self, user, password):
+        '''Set the password for ``user``.
+        This method should commit changes.'''
+        pass
+
+    def normalise_email(self, email):
+        """
+        Normalise the address by lowercasing the domain part of the email
+        address.
+        """
+        email = email or ''
+        try:
+            email_name, domain_part = email.strip().rsplit('@', 1)
+        except ValueError:
+            pass
+        else:
+            email = '@'.join([email_name, domain_part.lower()])
+        return email
+
+    def authenticate(self, request, **params):
+        '''Authenticate user'''
+        raise NotImplementedError
+
+
+class SessionMixin(object):
+    '''Mixin for authentication via sessions.
+
+    An Authentication backend manage authentication, login, logout and
+    several other activities which are required for managing users of
+    a web site.
+    '''
     model = None
-    ForgotPasswordRouter = None
     READ = 10
     UPDATE = 20
     CREATE = 30
     REMOVE = 40
 
     def __init__(self, app):
-        self.encoding = app.config['ENCODING']
-        self.secret_key = app.config['SECRET_KEY'].encode()
-        self.session_cookie_name = app.config['SESSION_COOKIE_NAME']
-        self.session_expiry = app.config['SESSION_EXPIRY']
-        self.salt_size = app.config['AUTH_SALT_SIZE']
-        self.check_username = app.config['CHECK_USERNAME']
-        algorithm = app.config['CRYPT_ALGORITHM']
+        self.app = app
+        cfg = self.config
+        self.encoding = cfg['ENCODING']
+        self.secret_key = cfg['SECRET_KEY'].encode()
+        self.session_cookie_name = cfg['SESSION_COOKIE_NAME']
+        self.session_expiry = cfg['SESSION_EXPIRY']
+        self.salt_size = cfg['AUTH_SALT_SIZE']
+        self.check_username = cfg['CHECK_USERNAME']
+        self.csrf_expiry = cfg['CSRF_EXPIRY']
+        algorithm = cfg['CRYPT_ALGORITHM']
         self.crypt_module = import_module(algorithm)
+        self.jwt = jwt
+        #
+        if cfg['SESSION_MESSAGES']:
+            middleware.append(Router('_dismiss_message',
+                                post=self._dismiss_message))
+            reset = app.config['RESET_PASSWORD_URL']
+            if reset:
+                router = backend.ForgotPasswordRouter or ForgotPassword
+                middleware.append(router(reset))
+
+    def request(self, request):
+        key = self.config['SESSION_COOKIE_NAME']
+        session_key = request.cookies.get(key)
+        session = None
+        if session_key:
+            session = self.get_session(session_key.value)
+        if not session:
+            session = self.create_session(request)
+        request.cache.session = session
+        if session.user:
+            request.cache.user = session.user.get()
+        if not request.cache.user:
+            request.cache.user = self.anonymous()
+
+    def response(self, request, response):
+        session = request.cache.session
+        if session:
+            if response.can_set_cookies():
+                key = request.app.config['SESSION_COOKIE_NAME']
+                session_key = request.cookies.get(key)
+                id = str(session.key.id())
+                if not session_key or session_key.value != id:
+                    response.set_cookie(key, value=str(id), httponly=True,
+                                        expires=session.expiry)
+
+            session.put()
+        return response
+
+    def csrf_token(self, request):
+        session = request.cache.session
+        if session:
+            assert self.jwt, 'Requires jwt package'
+            return self.jwt.encode({'session': self.session_key(session),
+                                    'exp': time.time() + self.csrf_expiry},
+                                   self.secret_key)
+
+    def validate_csrf_token(self, request, token):
+        if not token:
+            raise PermissionDenied(REASON_BAD_TOKEN)
+        try:
+            assert self.jwt, 'Requires jwt package'
+            token = self.jwt.decode(token, self.secret_key)
+        except jwt.ExpiredSignature:
+            raise PermissionDenied('Expired token')
+        except Exception:
+            raise PermissionDenied(REASON_BAD_TOKEN)
+        else:
+            if token['session'] != self.session_key(request.cache.session):
+                raise PermissionDenied(REASON_BAD_TOKEN)
+
+    def create_session_id(self):
+        while True:
+            session_key = get_random_string(32)
+            if not self.get_session(session_key):
+                break
+        return session_key
+
+    def get_session(self, key):
+        '''Retrieve a session from its key
+        '''
+        raise NotImplementedError
+
+    def session_key(self, session):
+        '''Session key from session object
+        '''
+        raise NotImplementedError
 
     def create_registration(self, request, user, expiry):
         '''Create a registration entry for a user.
         This method should return the registration/activation key.'''
-        raise NotImplementedError
-
-    def authenticate(self, request, **params):
-        '''Authenticate user'''
         raise NotImplementedError
 
     def confirm_registration(self, request, **params):
@@ -170,26 +353,6 @@ class AuthBackend(object):
     def create_session(self, request, user=None, expiry=None):
         '''Create a new session
         '''
-        raise NotImplementedError
-
-    def csrf_token(self, session):
-        '''Create a token for CSRF
-        '''
-        pass
-
-    def validate_csrf_token(self, request, token):
-        '''Validate CSRF
-        '''
-        pass
-
-    def get_user(self, request, **kwargs):
-        '''Retrieve a user.
-        Return ``None`` if the user could not be found'''
-        pass
-
-    def set_password(self, user, password):
-        '''Set the password for ``user``.
-        This method should commit changes.'''
         raise NotImplementedError
 
     def auth_key_used(self, key):
@@ -255,44 +418,6 @@ class AuthBackend(object):
                 email_message='password_email.txt',
                 message='password_message.txt'):
             raise AuthenticationError("Can't find that email, sorry")
-
-    def create_user(self, request, **kwargs):
-        '''Create a standard user.'''
-        pass
-
-    def create_superuser(self, request, *args, **kwargs):
-        '''Create a user with *superuser* permissions.'''
-        pass
-
-    def middleware(self, app):
-        return ()
-
-    def response_middleware(self, app):
-        return ()
-
-    def has_permission(self, request, level, model):
-        '''Check for permission on a model.'''
-        return False
-
-    def password(self, raw_password=None):
-        if raw_password:
-            return self._encript(raw_password)
-        else:
-            return UNUSABLE_PASSWORD
-
-    def normalise_email(self, email):
-        """
-        Normalise the address by lowercasing the domain part of the email
-        address.
-        """
-        email = email or ''
-        try:
-            email_name, domain_part = email.strip().rsplit('@', 1)
-        except ValueError:
-            pass
-        else:
-            email = '@'.join([email_name, domain_part.lower()])
-        return email
 
     def send_email_confirmation(self, request, user, auth_key,
                                 email_subject=None, email_message=None,

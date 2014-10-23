@@ -3,8 +3,12 @@ and permissions. The extension is added by inserting
 ``lux.extensions.sessions`` into the
 list of :setting:`EXTENSIONS` of your application.
 
-Messages
-==============
+There are several :ref:`parameters <parameters-auth>` which can be used
+to customise authorisation.
+
+.. automodule:: backend
+   :members:
+   :member-order: bysource
 
 
 '''
@@ -26,12 +30,8 @@ from lux.utils.http import same_origin
 
 from .views import *
 from .backend import *
+from .jwtmixin import *
 from .forms import *
-
-
-REASON_NO_REFERER = "Referer checking failed - no Referer"
-REASON_BAD_REFERER = "Referer checking failed - %s does not match %s"
-REASON_BAD_TOKEN = "CSRF token missing or incorrect"
 
 
 class Extension(lux.Extension):
@@ -43,7 +43,7 @@ class Extension(lux.Extension):
     '''
     _config = [
         Parameter('AUTHENTICATION_BACKEND',
-                  'lux.extensions.sessions.permissions.AuthBackend',
+                  'lux.extensions.sessions.AuthBackend',
                   'Python dotted path to a class used to provide '
                   'a backend for authentication.'),
         Parameter('CRYPT_ALGORITHM',
@@ -59,6 +59,7 @@ class Extension(lux.Extension):
                   'Salt size for encription algorithm'),
         Parameter('SESSION_COOKIE_NAME', 'LUX',
                   'Name of the cookie which stores session id'),
+        Parameter('SESSION_MESSAGES', False, 'Handle session messages'),
         Parameter('SESSION_EXPIRY', 7*24*60*60,
                   'Expiry for a session in seconds.'),
         Parameter('CHECK_USERNAME', lambda u: True,
@@ -76,36 +77,27 @@ class Extension(lux.Extension):
                   'Number of days the activation code is valid'),
         Parameter('RESET_PASSWORD_URL', '',
                   'If given, add the router to handle password resets'),
+        Parameter('CSRF_EXPIRY', 60*60,
+                  'Cross Site Request Forgery token expiry in seconds.'),
         Parameter('CSRF_PARAM', 'authenticity_token',
                   'CSRF parameter name in forms')]
 
-    def middleware(self, app):
-        self._response_middleware = []
-        middleware = []
-        dotted_path = app.config['AUTHENTICATION_BACKEND']
+    backend = None
 
+    def middleware(self, app):
+        dotted_path = app.config['AUTHENTICATION_BACKEND']
         if dotted_path:
-            backend = module_attribute(dotted_path)(app)
-            app.auth_backend = backend
-            middleware.extend(backend.middleware(app))
-            self._response_middleware.extend(backend.response_middleware(app))
-        else:
-            raise RuntimeError('AUTHENTICATION_BACKEND not available')
-        middleware.append(Router('_dismiss_message',
-                                 post=self._dismiss_message))
-        reset = app.config['RESET_PASSWORD_URL']
-        if reset:
-            router = backend.ForgotPasswordRouter or ForgotPassword
-            middleware.append(router(reset))
-        return middleware
+            self.backend = module_attribute(dotted_path)(app)
+            return [self.backend]
 
     def response_middleware(self, app):
-        return self._response_middleware
+        return [self.backend.response_middleware]
 
     def on_html_document(self, app, request, doc):
-        if request.method in ('GET', 'HEAD', 'OPTIONS', 'TRACE'):
+        backend = self.backend
+        if backend and request.method in ('GET', 'HEAD', 'OPTIONS', 'TRACE'):
             param = app.config['CSRF_PARAM']
-            csrf_token = app.auth_backend.csrf_token(request)
+            csrf_token = backend.csrf_token(request)
             if csrf_token and param:
                 doc.head.add_meta(name="csrf-param", content=param)
                 doc.head.add_meta(name="csrf-token", content=csrf_token)
@@ -116,10 +108,12 @@ class Extension(lux.Extension):
     def on_form(self, app, form):
         '''Handle CSRF on form
         '''
+        backend = self.backend
         param = app.config['CSRF_PARAM']
-        if form.request.method == 'POST' and form.is_bound and param:
+        if (backend and form.request.method == 'POST'
+                and form.is_bound and param):
             token = form.rawdata.get(param)
-            app.auth_backend.validate_csrf_token(form.request, token)
+            backend.validate_csrf_token(form.request, token)
 
     def _dismiss_message(self, request):
         response = request.response

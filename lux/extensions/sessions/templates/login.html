@@ -1,21 +1,14 @@
-<div class="login" ng-controller="page" ng-cloak>
-    <div id="page-header">
-        <a href="/" class="navbar-brand" target="_self">Sipnote</a>
-    </div>
-
-    <hr>
-
-    <div class="oauth">
-        <a class="btn btn-primary btn-block" href="{{oauth.href}}" target="_self" ng-repeat="oauth in oauths">
-        <i class="fa fa-{{oauth.fa}}"></i> Log in with {{oauth.name}}</a>
-    </div>
-
-    <hr>
-
-    $form
-
-    <hr>
-
-    <p class="text-center">Don't have an account? <a href="/signup" target="_self">Create one</a></p>
-    <p class="text-center"><a href="/forgot-password" target="_self">Forgot your username or password?</a></p>
+<div class="oauth">
+    <a class="btn btn-primary btn-block" href="{{oauth.href}}" target="_self" ng-repeat="oauth in oauths">
+    <i class="fa fa-{{oauth.fa}}"></i> Log in with {{oauth.name}}</a>
 </div>
+
+<hr>
+
+$form
+
+<hr>
+
+<p class="text-center">Don't have an account? <a href="/signup" target="_self">Create one</a></p>
+<p class="text-center"><a href="/forgot-password" target="_self">Forgot your username or password?</a></p>
+

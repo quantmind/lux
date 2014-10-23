@@ -187,7 +187,7 @@ class Extension(lux.Extension):
                   ('Maximum number of items returned when user is '
                    'not authenticated'))]
 
-    def middleware(self, app):
+    def on_config(self, app):
         '''Build the API middleware.
 
         If :setting:`API_URL` is defined, it loops through all extensions

@@ -1,6 +1,6 @@
 //      Lux Library - v0.1.0
 
-//      Compiled 2014-10-22.
+//      Compiled 2014-10-23.
 //      Copyright (c) 2014 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -296,26 +296,14 @@ function(angular, root) {
         //
         return c;
     }(function() {}));
-    //
-    // Object containing apis by name
-    var ApiTypes = lux.ApiTypes = {};
-    //
-    // If CSRF token is not available
-    // try to obtain it from the meta tags
-    //if (!context.csrf) {
-    //    var name = $("meta[name=csrf-param]").attr('content'),
-    //        token = $("meta[name=csrf-token]").attr('content');
-    //    if (name && token) {
-    //        context.csrf = {};
-    //        context.csrf[name] = token;
-    //    }
-    //}
-    //
     //  Lux Api service factory for angular
     //  ---------------------------------------
-    angular.module('lux.services', [])
-        .service('$lux', ['$location', '$q', '$http', '$log', '$timeout',
-                function ($location, $q, $http, $log, $timeout) {
+    angular.module('lux.api', [])
+        //
+        .value('ApiTypes', {})
+        //
+        .service('$lux', ['$location', '$q', '$http', '$log', '$timeout', 'ApiTypes',
+                function ($location, $q, $http, $log, $timeout, ApiTypes) {
             var $lux = this;
 
             this.location = $location;
@@ -350,6 +338,11 @@ function(angular, root) {
                     $lux.log.error('Api provider "' + context.name + '" is not available');
                 else
                     return new Api(context.name, context.url, context.options, $lux);
+            };
+            //
+            this.registerApi = function (name, object) {
+                ApiTypes[name] = ApiClient.extend(object);
+                return ApiTypes[name];
             };
         }]);
     //
@@ -531,51 +524,75 @@ function(angular, root) {
                 request.error('Api url not available');
         }
     });
-    //
-    //
-    lux.createApi = function (name, object) {
-        //
-        ApiTypes[name] = ApiClient.extend(object);
-        //
-        return ApiTypes[name];
-    };
 
     //
-    //  Lux Default API
+    //  Lux web and api handler
     //  ----------------------
-    //
-    lux.createApi('lux', {
-        //
-        authentication: function (request) {
-            var self = this;
-            //
-            if (lux.context.user) {
-                $lux.log.info('Fetching authentication token');
-                //
-                $lux.post('/_token').success(function (data) {
-                    self.auth = {user_token: data.token};
-                    self.call(request);
-                }).error(request.error);
-                //
-                return request.deferred.promise;
-            } else {
-                self.auth = {};
-                self.call(request);
-            }
-        },
-        //
-        addAuth: function (api, options) {
-            //
-                    // Add authentication token
-            if (this.user_token) {
-                var headers = options.headers;
-                if (!headers)
-                    options.headers = headers = {};
+    angular.module('lux.web.api', ['lux.api'])
 
-                headers.Authorization = 'Bearer ' + this.user_token;
-            }
-        }
-    });
+        .run(['$lux', function ($lux) {
+            //
+            var csrf = {},
+                name = $(document.querySelector("meta[name=csrf-param]")).attr('content'),
+                token = $(document.querySelector("meta[name=csrf-token]")).attr('content');
+
+            if (name && token)
+                csrf[name] = token;
+
+            //
+            // Change the form data depending on content type
+            $lux.formData = function (contentType) {
+
+                return function (data, getHeaders ) {
+                    extend(data, csrf);
+                    if (contentType === 'application/x-www-form-urlencoded')
+                        return $.param(data);
+                    else if (contentType === 'multipart/form-data') {
+                        var fd = new FormData();
+                        forEach(data, function (value, key) {
+                            fd.append(key, value);
+                        });
+                        return fd;
+                    } else {
+                        return data;
+                    }
+                };
+            };
+            //
+            $lux.registerApi('lux', {
+                //
+                authentication: function (request) {
+                    var self = this;
+                    //
+                    if (lux.context.user) {
+                        $lux.log.info('Fetching authentication token');
+                        //
+                        $lux.post('/_token').success(function (data) {
+                            self.auth = {user_token: data.token};
+                            self.call(request);
+                        }).error(request.error);
+                        //
+                        return request.deferred.promise;
+                    } else {
+                        self.auth = {};
+                        self.call(request);
+                    }
+                },
+                //
+                addAuth: function (api, options) {
+                    //
+                            // Add authentication token
+                    if (this.user_token) {
+                        var headers = options.headers;
+                        if (!headers)
+                            options.headers = headers = {};
+
+                        headers.Authorization = 'Bearer ' + this.user_token;
+                    }
+                },
+            });
+        }]);
+
     //
     //  Hash scrolling service
     angular.module('lux.scroll', [])
@@ -733,25 +750,31 @@ function(angular, root) {
     //  ------------------------
     //
     //  Api used by static sites
-    lux.createApi('static', {
-        //
-        url: function (urlparams) {
-            var url = this._url,
-                name = urlparams ? urlparams.slug : null;
-            if (url.substring(url.length-5) === '.json')
-                return url;
-            if (url.substring(url.length-1) !== '/')
-                url += '/';
-            url += name || 'index';
-            if (url.substring(url.length-5) === '.html')
-                url = url.substring(0, url.length-5);
-            else if (url.substring(url.length-1) === '/')
-                url += 'index';
-            if (url.substring(url.length-5) !== '.json')
-                url += '.json';
-            return url;
-        }
-    });
+    angular.module('lux.static.api', ['lux.api'])
+
+        .run(['$lux', function ($lux) {
+
+            $lux.registerApi('static', {
+                //
+                url: function (urlparams) {
+                    var url = this._url,
+                        name = urlparams ? urlparams.slug : null;
+                    if (url.substring(url.length-5) === '.json')
+                        return url;
+                    if (url.substring(url.length-1) !== '/')
+                        url += '/';
+                    url += name || 'index';
+                    if (url.substring(url.length-5) === '.html')
+                        url = url.substring(0, url.length-5);
+                    else if (url.substring(url.length-1) === '/')
+                        url += 'index';
+                    if (url.substring(url.length-5) !== '.json')
+                        url += '.json';
+                    return url;
+                }
+            });
+        }]);
+
 angular.module('templates-page', ['page/breadcrumbs.tpl.html']);
 
 angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function($templateCache) {
@@ -1040,48 +1063,24 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
             };
         }]);
 
-    var FORMKEY = 'm__form',
-        formDefaults = {
-            layout: 'default',
-            // for horizontal layout
-            labelSpan: 2,
-            showLabels: true,
-            novalidate: true
-        };
-    //
-    // Change the form data depending on content type
-    function formData(ct) {
-
-        return function (data, getHeaders ) {
-            angular.extend(data, lux.context.csrf);
-            if (ct === 'application/x-www-form-urlencoded')
-                return $.param(data);
-            else if (ct === 'multipart/form-data') {
-                var fd = new FormData();
-                angular.forEach(data, function (value, key) {
-                    fd.append(key, value);
-                });
-                return fd;
-            } else {
-                return data;
-            }
-        };
-    }
-
+    // Default Form processing function
+    // If a submit element (input.submit or button) does not specify
+    // a ``click`` entry, this function is used
     lux.processForm = function (e) {
         e.preventDefault();
         e.stopPropagation();
-        var form = this[this.formName];
-
-        var $element = angular.element($event.target),
-            apiname = $element.attr('data-api'),
-            target = $element.attr('action'),
-            promise,
-            api;
+        var form = this[this.formName],
+            model = this[this.formModelName],
+            attrs = this.formAttrs,
+            target = attrs.action,
+            apiname = attrs.apiname,
+            scope = this,
+            FORMKEY = scope.FORMKEY,
+            $lux = this.$lux,
+            promise;
         //
-        if ($scope.form.$invalid) {
-            return $scope.showErrors();
-        }
+        if (form.$invalid)
+            return this.showErrors();
 
         // Get the api information
         if (!target && apiname) {
@@ -1090,16 +1089,16 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                 $lux.log.error('Could not find api url for ' + apiname);
         }
 
-        $scope.formMessages = {};
+        this.formMessages = {};
         //
         if (target) {
-            var enctype = $element.attr('enctype') || '',
+            var enctype = attrs.enctype || '',
                 ct = enctype.split(';')[0],
                 options = {
                     url: target,
-                    method: $element.attr('method') || 'POST',
-                    data: $scope.formModel,
-                    transformRequest: formData(ct),
+                    method: attrs.method || 'POST',
+                    data: model,
+                    transformRequest: $lux.formData(ct),
                 };
             // Let the browser choose the content type
             if (ct === 'application/x-www-form-urlencoded' || ct === 'multipart/form-data') {
@@ -1117,15 +1116,13 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
         //
         promise.success(function(data, status) {
             if (data.messages) {
-                angular.forEach(data.messages, function (messages, field) {
-                    $scope.formMessages[field] = messages;
-                });
+                scope.addMessages(data.messages);
             } else if (api) {
                 // Created
                 if (status === 201) {
-                    $scope.formMessages[FORMKEY] = [{message: 'Succesfully created'}];
+                    scope.formMessages[FORMKEY] = [{message: 'Succesfully created'}];
                 } else {
-                    $scope.formMessages[FORMKEY] = [{message: 'Succesfully updated'}];
+                    scope.formMessages[FORMKEY] = [{message: 'Succesfully updated'}];
                 }
             } else {
                 window.location.href = data.redirect || '/';
@@ -1153,47 +1150,26 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
         });
     };
 
-    // A general from controller factory
-    var formController = lux.formController = function ($scope, $lux, model) {
-        model || (model = {});
-
-        var page = $scope.$parent ? $scope.$parent.page : {};
-
-        if (model)
-            $scope.formModel = model.data || model;
-        $scope.formClasses = {};
-        $scope.formErrors = {};
-        $scope.formMessages = {};
-
-        if ($scope.formModel.name) {
-            page.title = 'Update ' + $scope.formModel.name;
-        }
-
-        function formMessages (messages) {
-            angular.forEach(messages, function (messages, field) {
-                $scope.formMessages[field] = messages;
-            });
-        }
-
-        // display field errors
-        $scope.showErrors = function () {
-            var error = $scope.form.$error;
-            angular.forEach(error.required, function (e) {
-                $scope.formClasses[e.$name] = 'has-error';
-            });
-        };
-
-        // process form
-        $scope.processForm = lux.processForm;
-    };
-
 
     // Default form module for lux
     angular.module('lux.form', ['lux.services'])
         //
+        .constant('formDefaults', {
+            // Default form processing function
+            processForm: lux.processForm,
+            // Default layout
+            layout: 'default',
+            // for horizontal layout
+            labelSpan: 2,
+            showLabels: true,
+            novalidate: true,
+            //
+            FORMKEY: 'm__form'
+        })
+        //
         // The formService is a reusable component for redering form fields
-        .service('standardForm', ['$log', '$http', '$document', '$templateCache',
-                function (log, $http, $document, $templateCache) {
+        .service('standardForm', ['$log', '$http', '$document', '$templateCache', 'formDefaults',
+                function (log, $http, $document, $templateCache, formDefaults) {
 
             var supported = {
                     //  Text-based elements
@@ -1337,6 +1313,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                         form = $($document[0].createElement(info.element))
                                     .attr('role', 'form').addClass(this.className)
                                     .attr('ng-model', field.model);
+                    this.formMessages(scope, form);
                     return this.addAttrs(scope, form, formAttributes);
                 },
                 //
@@ -1386,11 +1363,15 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                         element;
 
                     input.attr('ng-model', scope.formModelName + '.' + field.name);
-                    this.addAttrs(scope, input, inputAttributes);
 
-                    if (!field.showLabels)
+                    if (!field.showLabels) {
                         label.addClass('sr-only');
+                        // Add placeholder if not defined
+                        if (field.placeholder === undefined)
+                            field.placeholder = field.label;
+                    }
 
+                    this.addAttrs(scope, input, inputAttributes);
                     if (field.value !== undefined) {
                         scope[scope.formModelName][field.name] = field.value;
                         if (info.textBased)
@@ -1431,8 +1412,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                     var field = scope.field,
                         info = scope.info,
                         element = $($document[0].createElement(info.element)).addClass(this.buttonClass);
-                    if (!field.name)
-                        field.name = field.label || info.element;
+                    field.name = field.name || info.element;
                     field.label = field.label || field.name;
                     element.html(field.label);
                     this.addAttrs(scope, element, buttonAttributes);
@@ -1440,23 +1420,30 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                 },
                 //
                 onClick: function (scope, element) {
-                    if (scope.field.click) {
-                        var name = element.attr('name'),
-                            clickname = name + 'Click';
+                    var name = element.attr('name'),
+                        field = scope.field,
+                        clickname = name + 'Click';
+                    //
+                    // scope function
+                    scope[clickname] = function (e) {
+                        var callback = formDefaults.processForm;
                         //
-                        // scope function
-                        scope[clickname] = function (e) {
-                            var callback = getRootAttribute(this.field.click);
-                            if (angular.isFunction(callback)) {
-                                callback.call(this, e);
-                            } else
+                        if (field.click) {
+                            callback = getRootAttribute(field.click);
+                            if (!angular.isFunction(callback)) {
                                 log.error('Could not locate click function "' + field.click + '" for button');
-                        };
-                        element.attr('ng-click', clickname + '($event)');
-                    }
+                                return;
+                            }
+                        }
+                        callback.call(this, e);
+                    };
+                    element.attr('ng-click', clickname + '($event)');
                     return element;
                 },
                 //
+                // Add input error elements to the input element.
+                // Each input element may have one or more error handler depending
+                // on its type and attributes
                 inputError: function (scope, element) {
                     var field = scope.field,
                         self = this,
@@ -1470,6 +1457,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                                 .html('{{formErrors.' + field.name + '}}'),
                         value,
                         attrname;
+                    // Loop through validation attributes
                     forEach(validationAttributes, function (attr) {
                         value = field[attr];
                         attrname = attr;
@@ -1481,7 +1469,23 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                                          .html(self.errorMessage(scope, attr)));
                         }
                     });
+                    // Add invalid handler if not available
+                    if (p.children().length === (field.required ? 1 : 0)) {
+                        p.append($($document[0].createElement('span'))
+                                         .attr('ng-show', invalid)
+                                         .html(self.errorMessage(scope, 'invalid')));
+                    }
                     return element.append(p);
+                },
+                //
+                // Add element which containes form messages and errors
+                formMessages: function (scope, form) {
+                    var messages = $($document[0].createElement('p')),
+                        a = scope.formAttrs;
+                    messages.attr('ng-repeat', 'message in formMessages.' + a.FORMKEY)
+                            .attr('ng-bind', 'message.message')
+                            .attr('ng-class', "message.error ? 'text-danger' : 'text-info'");
+                    return form.append(messages);
                 },
                 //
                 errorMessage: function (scope, attr) {
@@ -1491,8 +1495,10 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                     return field[message] || handler.call(this, scope);
                 },
                 //
+                // Default error Message when the field is invalid
                 defaultErrorMesage: function (scope) {
-                    return 'Not a valid value';
+                    var type = scope.field.type;
+                    return 'Not a valid ' + type;
                 },
                 //
                 minErrorMessage: function (scope) {
@@ -1501,6 +1507,14 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                 //
                 maxErrorMessage: function (scope) {
                     return 'Must be less than ' + scope.field.max;
+                },
+                //
+                maxlengthErrorMessage: function (scope) {
+                    return 'Too long, must be less than ' + scope.field.maxlength;
+                },
+                //
+                minlengthErrorMessage: function (scope) {
+                    return 'Too short, must be more than ' + scope.field.minlength;
                 },
                 //
                 requiredErrorMessage: function (scope) {
@@ -1565,7 +1579,8 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
             });
         }])
         //
-        .service('formBaseRenderer', ['$log', '$compile', function (log, $compile) {
+        .service('formBaseRenderer', ['$lux', '$compile', 'formDefaults',
+                function ($lux, $compile, formDefaults) {
             //
             // Internal function for compiling a scope
             this.createElement = function (scope) {
@@ -1574,10 +1589,10 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                 if (this[field.layout])
                     return this[field.layout].createElement(this, scope);
                 else
-                    log.error('Layout "' + field.layout + '" not available, cannot render form');
+                    $lux.log.error('Layout "' + field.layout + '" not available, cannot render form');
             };
             //
-            this.createForm = function (scope, element, attrs) {
+            this.initScope = function (scope, element, attrs) {
                 var data = getOptions(attrs),
                     form = data.field;
                 if (form) {
@@ -1594,22 +1609,37 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                     scope.formModelName = form.model;
                     //
                     scope[scope.formModelName] = {};
+                    scope.formAttrs = form;
                     scope.formClasses = {};
                     scope.formErrors = {};
                     scope.formMessages = {};
+                    scope.$lux = $lux;
                     if (!form.id)
                         form.id = 'f' + s4();
                     scope.formid = form.id;
                     scope.formCount = 0;
-                    form = this.createElement(scope);
 
-                    //  Compile and update DOM
-                    if (form) {
-                        $compile(form)(scope);
-                        element.replaceWith(form);
-                    }
+                    scope.addMessages = function (messages) {
+                        forEach(messages, function (messages, field) {
+                            scope.formMessages[field] = messages;
+                        });
+                    };
                 } else {
-                    log.error('Form data does not contain field entry');
+                    $lux.log.error('Form data does not contain field entry');
+                }
+            };
+            //
+            this.createForm = function (scope, element) {
+                var form = scope.field;
+                if (form) {
+                    var formElement = this.createElement(scope);
+                    // field has changed during the built
+                    scope.field = form;
+                    //  Compile and update DOM
+                    if (formElement) {
+                        $compile(formElement)(scope);
+                        element.replaceWith(formElement);
+                    }
                 }
             };
 
@@ -1640,25 +1670,39 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
         // Default form Renderer, roll your own if you like
         .service('formRenderer', ['formBaseRenderer', 'standardForm', 'horizontalForm', 'inlineForm',
             function (base, stdForm, horForm, inlForm) {
-                extend(this, base);
+                var renderer = extend(this, base);
                 this[stdForm.name] = stdForm;
                 this[horForm.name] = horForm;
                 this[inlForm.name] = inlForm;
-        }])
+
+                // Create the directive
+                this.directive = function () {
+
+                    return {
+                        restrict: "AE",
+                        //
+                        scope: {},
+                        //
+                        compile: function () {
+                            return {
+                                pre: function (scope, element, attr) {
+                                    // Initialise the scope from the attributes
+                                    renderer.initScope(scope, element, attr);
+                                },
+                                post: function (scope, element) {
+                                    // create the form
+                                    renderer.createForm(scope, element);
+                                }
+                            };
+                        }
+                    };
+                };
+            }
+        ])
         //
         // Lux form
-        .directive('luxForm', ['formRenderer', function (renderer) {
-
-            return {
-                restrict: "AE",
-                //
-                scope: {},
-                //
-                link: function (scope, element, attrs) {
-                    // Initialise the scope from the attributes
-                    renderer.createForm(scope, element, attrs);
-                }
-            };
+        .directive('luxForm', ['formRenderer', function (formRenderer) {
+            return formRenderer.directive();
         }])
         //
         // A directive which add keyup and change event callaback
@@ -1682,6 +1726,50 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
             };
         });
 
+
+    // Controller for User.
+    // This controller can be used by eny element, including forms
+    angular.module('lux.users', ['lux.form'])
+        //
+        .directive('userForm', ['formRenderer', function (formRenderer) {
+            //
+            var directive = formRenderer.directive();
+            //
+            directive.controller = ['$scope', function (scope) {
+                // Check if password is correct
+                scope.check_password_repeat = function () {
+                    var form = this[this.formName];
+                    var field = this.form.password_repeat,
+                        psw1 = form.password,
+                        psw2 = form.password_repeat;
+                    if (psw1 !== psw2 && field.$dirty) {
+                        this.formErrors.password_repeat = "passwords don't match";
+                        field.$error.password_repeat = true;
+                        this.formClasses.password_repeat = 'has-error';
+                    } else if (field.$dirty) {
+                        this.formClasses.password_repeat = 'has-success';
+                        delete this.form.$error.password_repeat;
+                    }
+                };
+            }];
+
+            return directive;
+        }])
+
+        .controller('UserController', ['$scope', '$lux', function (scope, lux) {
+            // Model for a user when updating
+
+            // Unlink account for a OAuth provider
+            scope.unlink = function(e, name) {
+                e.preventDefault();
+                e.stopPropagation();
+                var url = '/oauth/' + name + '/remove';
+                $.post(url).success(function (data) {
+                    if (data.success)
+                        $route.reload();
+                });
+            };
+        }]);
     angular.module('lux.scope.loader', [])
         //
         .value('context', lux.context)
@@ -1941,6 +2029,8 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
         theme: 'default',
         search_text: '',
         collapse: '',
+        // Navigation place on top of the page (add navbar-static-top class to navbar)
+        // nabar2 it is always placed on top
         top: false,
         search: false,
         url: lux.context.url,
@@ -2044,8 +2134,12 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
         //  Directive for the navbar with sidebar (nivebar2 template)
         .directive('navSideBar', ['$compile', '$document', function ($compile, $document) {
             return {
+                require: 'navbar2',
+
                 templateUrl: "nav/navbar2.tpl.html",
+
                 restrict: 'A',
+
                 link: function (scope, element, attrs) {
                     var navbar = scope.navbar;
                     element.addClass('navbar2-wrapper');
@@ -2067,41 +2161,6 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
                     resize();
                 }
             };
-        }]);
-
-    // Controller for User
-    angular.module('users', ['lux.services'])
-        .controller('userController', ['$scope', '$lux', function ($scope, $lux) {
-            // Model for a user when updating
-            formController($scope, $lux, lux.context.user);
-
-            // Unlink account for a OAuth provider
-            $scope.unlink = function(e, name) {
-                e.preventDefault();
-                e.stopPropagation();
-                var url = '/oauth/' + name + '/remove';
-                $.post(url).success(function (data) {
-                    if (data.success)
-                        $route.reload();
-                });
-            };
-
-            // Check if password is correct
-            $scope.check_password_repeat = function () {
-                var u = this.formModel,
-                    field = this.form.password_repeat,
-                    psw1 = u.password,
-                    psw2 = u.password_repeat;
-                if (psw1 !== psw2 && field.$dirty) {
-                    this.formErrors.password_repeat = "passwords don't match";
-                    field.$error.password_repeat = true;
-                    this.formClasses.password_repeat = 'has-error';
-                } else if (field.$dirty) {
-                    this.formClasses.password_repeat = 'has-success';
-                    delete this.form.$error.password_repeat;
-                }
-            };
-
         }]);
     //
     //  Angular module for photos
@@ -2195,43 +2254,7 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
     //
     //      var api = $lux.api({name: 'googlesheets', url: sheetkey});
     //
-    lux.createApi('googlesheets', {
-        //
-        endpoint: "https://spreadsheets.google.com",
-        //
-        url: function (urlparams) {
-            // when given the url is of the form key/worksheet where
-            // key is the key of the spreadsheet you want to retrieve,
-            // worksheet is the positional or unique identifier of the worksheet
-            if (this._url) {
-                if (urlparams) {
-                    return this.endpoint + '/feeds/list/' + this._url + '/' + urlparams.id + '/public/values?alt=json';
-                } else {
-                    return null;
-                }
-            }
-        },
-        //
-        getList: function (options) {
-            var Model = this.Model,
-                opts = this.options,
-                $lux = this.$lux;
-            return this.request('GET', null, options).then(function (response) {
-                return response;
-            });
-        },
-        //
-        get: function (urlparams, options) {
-            var Model = this.Model,
-                opts = this.options,
-                $lux = this.$lux;
-            return this.request('GET', urlparams, options).then(function (response) {
-                response.data = opts.orientation === 'columns' ? new GoogleSeries(
-                    $lux, response.data) : new GoogleModel($lux, response.data);
-                return response;
-            });
-        }
-    });
+
     //
     //
     var GoogleModel = function ($lux, data, opts) {
@@ -2312,9 +2335,9 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
 
     //
     //  Module for interacting with google API and services
-    angular.module('lux.google', [])
+    angular.module('lux.google', ['lux.api'])
         //
-        .run(['$rootScope', '$log', '$location', function (scope, log, location) {
+        .run(['$rootScope', '$lux', '$log', '$location', function (scope, $lux, log, location) {
             var analytics = scope.google ? scope.google.analytics : null;
 
             if (analytics && analytics.id) {
@@ -2338,6 +2361,46 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
                     }
                 });
             }
+
+            // Googlesheet api
+            $lux.registerApi('googlesheets', {
+                //
+                endpoint: "https://spreadsheets.google.com",
+                //
+                url: function (urlparams) {
+                    // when given the url is of the form key/worksheet where
+                    // key is the key of the spreadsheet you want to retrieve,
+                    // worksheet is the positional or unique identifier of the worksheet
+                    if (this._url) {
+                        if (urlparams) {
+                            return this.endpoint + '/feeds/list/' + this._url + '/' + urlparams.id + '/public/values?alt=json';
+                        } else {
+                            return null;
+                        }
+                    }
+                },
+                //
+                getList: function (options) {
+                    var Model = this.Model,
+                        opts = this.options,
+                        $lux = this.$lux;
+                    return this.request('GET', null, options).then(function (response) {
+                        return response;
+                    });
+                },
+                //
+                get: function (urlparams, options) {
+                    var Model = this.Model,
+                        opts = this.options,
+                        $lux = this.$lux;
+                    return this.request('GET', urlparams, options).then(function (response) {
+                        response.data = opts.orientation === 'columns' ? new GoogleSeries(
+                            $lux, response.data) : new GoogleModel($lux, response.data);
+                        return response;
+                    });
+                }
+            });
+
         }])
         //
         .directive('googleMap', function () {
@@ -2457,6 +2520,7 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
         return lux;
     };
 
+    angular.module('lux.services', ['lux.api', 'lux.web.api', 'lux.static.api']);
 
 	return lux;
 }));

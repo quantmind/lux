@@ -1,23 +1,11 @@
-    //
-    // Object containing apis by name
-    var ApiTypes = lux.ApiTypes = {};
-    //
-    // If CSRF token is not available
-    // try to obtain it from the meta tags
-    //if (!context.csrf) {
-    //    var name = $("meta[name=csrf-param]").attr('content'),
-    //        token = $("meta[name=csrf-token]").attr('content');
-    //    if (name && token) {
-    //        context.csrf = {};
-    //        context.csrf[name] = token;
-    //    }
-    //}
-    //
     //  Lux Api service factory for angular
     //  ---------------------------------------
-    angular.module('lux.services', [])
-        .service('$lux', ['$location', '$q', '$http', '$log', '$timeout',
-                function ($location, $q, $http, $log, $timeout) {
+    angular.module('lux.api', [])
+        //
+        .value('ApiTypes', {})
+        //
+        .service('$lux', ['$location', '$q', '$http', '$log', '$timeout', 'ApiTypes',
+                function ($location, $q, $http, $log, $timeout, ApiTypes) {
             var $lux = this;
 
             this.location = $location;
@@ -52,6 +40,11 @@
                     $lux.log.error('Api provider "' + context.name + '" is not available');
                 else
                     return new Api(context.name, context.url, context.options, $lux);
+            };
+            //
+            this.registerApi = function (name, object) {
+                ApiTypes[name] = ApiClient.extend(object);
+                return ApiTypes[name];
             };
         }]);
     //
@@ -233,11 +226,3 @@
                 request.error('Api url not available');
         }
     });
-    //
-    //
-    lux.createApi = function (name, object) {
-        //
-        ApiTypes[name] = ApiClient.extend(object);
-        //
-        return ApiTypes[name];
-    };

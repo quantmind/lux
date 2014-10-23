@@ -2,6 +2,8 @@ import json
 from inspect import isclass
 from functools import partial, reduce
 
+from pulsar.utils.slugify import slugify
+
 import lux
 from lux import Html
 from lux.utils.crypt import get_random_string
@@ -53,9 +55,10 @@ class AngularFormElement(object):
 class AngularSubmit(AngularFormElement):
     type = 'button'
 
-    def __init__(self, name, **attrs):
+    def __init__(self, label, name=None, **attrs):
         self.attrs = attrs
-        self.attrs['name'] = name
+        self.attrs['label'] = label
+        self.attrs['name'] = slugify(name or label)
         if not self.attrs.get('type'):
             self.attrs['type'] = self.type
 
@@ -128,17 +131,29 @@ class AngularForm(object):
         self.layout = layout
         self.form = form
 
-    def as_dict(self):
-        return self.layout.as_dict(self.form)
+    def as_dict(self, id=None, **attrs):
+        data = self.layout.as_dict(self.form)
+        form = data['field']
+        if id is None and not form.get('id'):
+            id = '%s_%s' % (self.form.__class__.__name__.lower(),
+                            get_random_string(5))
+        if id:
+            form['id'] = id
+        form.update(attrs)
+        return data
 
-    def as_form(self, tag=None):
+    def as_form(self, tag=None, ng_controller=None, **attrs):
         tag = tag or 'lux-form'
-        data = self.as_dict()
-        code = '%s_%s' % (self.form.__class__.__name__.lower(),
-                          get_random_string(5))
-        data['field']['id'] = code
-        script = form_script % (code, json.dumps(data))
-        return Html(tag, script).data('options', 'luxforms.%s' % code)
+        data = self.as_dict(**attrs)
+        form = data['field']
+        id = form['id']
+        script = form_script % (id, json.dumps(data))
+        html = Html(tag, script).data('options', 'luxforms.%s' % id)
+        ng_controller = ng_controller or form.pop('ng_controller', None)
+        # add controller if required
+        if ng_controller:
+            html.data('ng-controller', ng_controller)
+        return html
 
 
 form_script = ('<script>if (!this.luxforms) {this.luxforms = {};} '

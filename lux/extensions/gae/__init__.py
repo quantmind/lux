@@ -9,13 +9,9 @@ from pulsar.apps.wsgi import wsgi_request
 
 import lux
 from lux.extensions import sessions
-from lux.utils.crypt import digest, get_random_string
-from lux.extensions.sessions import AuthenticationError, REASON_BAD_TOKEN
-
-try:
-    import jwt
-except ImportError:
-    jwt = None
+from lux.utils.crypt import digest
+from lux.extensions.sessions import (SessionMixin, JWTMixin,
+                                     AuthenticationError)
 
 from .models import ndb, User, Session, Registration, UserRole
 from .api import *
@@ -30,7 +26,7 @@ def role_name(model):
     return model.__name__.lower()
 
 
-class GaeBackend(sessions.AuthBackend):
+class AuthBackend(sessions.AuthBackend):
     '''A :class:`.AuthBackend` for the google app engine
     '''
     model = User
@@ -51,41 +47,6 @@ class GaeBackend(sessions.AuthBackend):
                     return True
         return False
 
-    def decode_jwt(self, token):
-        data = jwt.decode(token, self.secret_key)
-        expiry = data.get('expiry')
-        if expiry and time.time() > expiry:
-            raise PermissionDenied('Session expired, try reloading the page')
-        return data
-
-
-class AuthBackend(GaeBackend):
-    '''Authentication backend for Google app-engine
-    '''
-    model = User
-    csrf_expiry = 12*60*60
-
-    def middleware(self, app):
-        return [self._load]
-
-    def response_middleware(self, app):
-        return [self._save]
-
-    def csrf_token(self, request):
-        session = request.cache.session
-        if session:
-            assert jwt, 'Requires jwt package'
-            return jwt.encode({'session': session.key.id(),
-                               'expiry': time.time() + self.csrf_expiry},
-                              self.secret_key)
-
-    def validate_csrf_token(self, request, token):
-        if not token:
-            raise PermissionDenied(REASON_BAD_TOKEN)
-        token = self.decode_jwt(token)
-        if token['session'] != request.cache.session.key.id():
-            raise PermissionDenied(REASON_BAD_TOKEN)
-
     def create_registration(self, request, user, expiry):
         auth_key = digest(user.username)
         reg = Registration(id=auth_key, user=user.key,
@@ -102,31 +63,6 @@ class AuthBackend(GaeBackend):
         if reg:
             reg.confirmed = True
             reg.put()
-
-    def confirm_registration(self, request, key=None, **params):
-        reg = None
-        if key:
-            reg = Registration.get_by_id(key)
-            if reg:
-                user = reg.user.get()
-                session = request.cache.session
-                if reg.confirmed:
-                    session.warning('Registration already confirmed')
-                    return user
-                # the registration key has expired
-                if reg.expiry < datetime.now():
-                    session.warning('The confirmation link has expired')
-                else:
-                    reg.confirmed = True
-                    user.active = True
-                    user.put()
-                    reg.put()
-                    session.success('Your email has been confirmed! You can '
-                                    'now login')
-                    return user
-        else:
-            user = self.get_user(**params)
-            self.get_or_create_registration(request, user)
 
     def authenticate(self, request, username=None, email=None, password=None):
         user = None
@@ -158,22 +94,8 @@ class AuthBackend(GaeBackend):
         self.get_or_create_registration(request, user)
         return user
 
-    def create_session(self, request, user=None, expiry=None):
-        session = request.cache.session
-        if session:
-            session.expiry = datetime.now()
-            session.put()
-        if not expiry:
-            expiry = datetime.now() + timedelta(seconds=self.session_expiry)
-        session = Session(id=self._create_session_id(user),
-                          user=user.key if user else None,
-                          expiry=expiry,
-                          client_address=request.get_client_address(),
-                          agent=request.get('HTTP_USER_AGENT', ''))
-        session.put()
-        return session
-
-    def get_user(self, request, username=None, email=None, auth_key=None):
+    def get_user(self, request, username=None, email=None, auth_key=None,
+                 **kw):
         if username:
             assert email is None, 'get_user by username or email'
             assert auth_key is None
@@ -187,74 +109,56 @@ class AuthBackend(GaeBackend):
                 reg.check_valid()
                 return reg.user.get()
 
-    def _load(self, environ, start_response):
-        request = wsgi_request(environ)
-        key = request.app.config['SESSION_COOKIE_NAME']
-        session_key = request.cookies.get(key)
-        session = None
-        if session_key:
-            session = Session.get_by_id(session_key.value)
-        if not session:
-            session = self.create_session(request)
-        request.cache.session = session
-        if session.user:
-            request.cache.user = session.user.get()
-        if not request.cache.user:
-            request.cache.user = sessions.Anonymous()
 
-    def _save(self, environ, response):
-        request = wsgi_request(environ)
+class SessionBackend(SessionMixin, AuthBackend):
+
+    def get_session(self, id):
+        return Session.get_by_id(id)
+
+    def session_key(self, session):
+        return session.key.id() if session else None
+
+    def create_session(self, request, user=None, expiry=None):
         session = request.cache.session
         if session:
-            if response.can_set_cookies():
-                key = request.app.config['SESSION_COOKIE_NAME']
-                session_key = request.cookies.get(key)
-                id = str(session.key.id())
-                if not session_key or session_key.value != id:
-                    response.set_cookie(key, value=str(id), httponly=True,
-                                        expires=session.expiry)
-
+            session.expiry = datetime.now()
             session.put()
-        return response
+        if not expiry:
+            expiry = datetime.now() + timedelta(seconds=self.session_expiry)
+        session = Session(id=self.create_session_id(),
+                          user=user.key if user else None,
+                          expiry=expiry,
+                          client_address=request.get_client_address(),
+                          agent=request.get('HTTP_USER_AGENT', ''))
+        session.put()
+        return session
 
-    def _create_session_id(self, user):
-        while True:
-            session_key = get_random_string(32)
-            if not Session.get_by_id(session_key):
-                break
-        return session_key
+    def confirm_registration(self, request, key=None, **params):
+        reg = None
+        if key:
+            reg = Registration.get_by_id(key)
+            if reg:
+                user = reg.user.get()
+                session = request.cache.session
+                if reg.confirmed:
+                    session.warning('Registration already confirmed')
+                    return user
+                # the registration key has expired
+                if reg.expiry < datetime.now():
+                    session.warning('The confirmation link has expired')
+                else:
+                    reg.confirmed = True
+                    user.active = True
+                    user.put()
+                    reg.put()
+                    session.success('Your email has been confirmed! You can '
+                                    'now login')
+                    return user
+        else:
+            user = self.get_user(**params)
+            self.get_or_create_registration(request, user)
 
 
-class JwtBackend(GaeBackend):
-    '''A :class:`.GaeBackend` for authentication based on JWT
-    '''
+class JWTBackend(JWTMixin, AuthBackend):
+    pass
 
-    def middleware(self, app):
-        return [self._load]
-
-    def get_user(self, request, username=None, email=None, auth_key=None):
-        if username:
-            assert email is None, 'get_user by username or email'
-            assert auth_key is None
-            return self.model.get_by_username(username)
-        elif email:
-            assert auth_key is None
-            return self.model.get_by_email(email)
-        elif auth_key:
-            assert jwt, 'jwt library required'
-            data = jwt.decode(auth_key, self.secret_key)
-            return self.model.get_by_username(data['username'])
-
-    def _load(self, environ, start_response):
-        request = wsgi_request(environ)
-        auth = request.get('HTTP_AUTHORIZATION')
-        user = None
-        if auth:
-            auth_type, key = auth.split(None, 1)
-            auth_type = auth_type.lower()
-            if auth_type == 'bearer':
-                try:
-                    user = self.get_user(request, auth_key=key)
-                except Exception:
-                    request.app.logger.exception('Could not load user')
-        request.cache.user = user or sessions.Anonymous()

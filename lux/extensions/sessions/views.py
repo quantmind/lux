@@ -1,23 +1,26 @@
-try:
-    import jwt
-except ImportError:
-    jwt = None
-
 import lux
+from lux import route
 from lux.forms import Form
+from lux.extensions.angular import Router as WebRouter
+
 from pulsar import Http404, PermissionDenied
-from pulsar.apps.wsgi import Router, Json, route
+from pulsar.apps.wsgi import Json
 
 from .forms import (LoginForm, CreateUserForm, ChangePassword,
                     ForgotPasswordForm, ChangePassword2)
 from .backend import AuthenticationError
+from .jwtmixin import jwt
 
 
-__all__ = ['Login', 'SignUp', 'Logout', 'Token', 'ForgotPassword']
+__all__ = ['Login', 'SignUp', 'Logout', 'Token', 'ForgotPassword', 'csrf']
 
 
 def csrf(method):
+    '''Decorator which makes sure the CSRF token is checked
 
+    This decorator should be applied to all view handling POST data
+    without using a :class:`.Form`.
+    '''
     def _(self, request):
         # make sure CSRF is checked
         data, files = request.data_and_files()
@@ -27,21 +30,31 @@ def csrf(method):
     return _
 
 
-class Login(Router):
-    '''Adds login get ("text/html") and post handlers
-    '''
+class WebFormRouter(WebRouter):
+    template = None
+    form = None
+
     @property
     def fclass(self):
-        return self.parameters.form or LoginForm
+        return self.form or self.default_form
 
-    def get(self, request):
+    def build_main(self, request):
         '''Handle the HTML page for login
         '''
-        html = self.fclass(request).layout(request, action=request.full_path())
-        context = {'form': html.render(request),
-                   'site_name': request.config['APP_NAME']}
-        return request.app.html_response(request, 'login.html',
-                                         context=context)
+        form = self.fclass(request).layout
+        html = form.as_form(action=request.full_path(),
+                            enctype='multipart/form-data',
+                            method='post')
+        context = {'form': html.render(request)}
+        return request.app.render_template(self.template, context,
+                                           request=request)
+
+
+class Login(WebFormRouter):
+    '''Adds login get ("text/html") and post handlers
+    '''
+    default_form = LoginForm
+    template = 'login.html'
 
     def post(self, request):
         '''Handle login post data
@@ -51,7 +64,7 @@ class Login(Router):
             raise MethodNotAllowed
         form = self.fclass(request, data=request.body_data())
         if form.is_valid():
-            auth = request.app.auth_backend
+            auth = request.cache.auth_backend
             try:
                 user = auth.authenticate(request, **form.cleaned_data)
                 auth.login(request, user)
@@ -60,18 +73,9 @@ class Login(Router):
         return Json(form.tojson()).http_response(request)
 
 
-class SignUp(Router):
-
-    @property
-    def fclass(self):
-        return self.parameters.form or CreateUserForm
-
-    def get(self, request):
-        html = self.fclass(request).layout(request, action=request.full_path())
-        context = {'form': html.render(request),
-                   'site_name': request.config['APP_NAME']}
-        return request.app.html_response(request, 'signup.html',
-                                         context=context)
+class SignUp(WebFormRouter):
+    template = 'signup.html'
+    default_form = CreateUserForm
 
     def post(self, request):
         '''Handle login post data
@@ -103,21 +107,11 @@ class SignUp(Router):
         return request.redirect('/')
 
 
-class ForgotPassword(Router):
+class ForgotPassword(WebFormRouter):
     '''Adds login get ("text/html") and post handlers
     '''
-    @property
-    def fclass(self):
-        return self.parameters.form or ForgotPasswordForm
-
-    def get(self, request):
-        '''Handle the HTML page for login
-        '''
-        html = self.fclass(request).layout(request, action=request.full_path())
-        context = {'form': html.render(request),
-                   'site_name': request.config['APP_NAME']}
-        return request.app.html_response(request, 'forgot.html',
-                                         context=context)
+    default_form = ForgotPasswordForm
+    template = 'forgot.html'
 
     @route('<key>')
     def get_reset_form(self, request):
@@ -179,7 +173,7 @@ class ForgotPassword(Router):
         return Json(result).http_response(request)
 
 
-class Logout(Router):
+class Logout(lux.Router):
     '''Logout handler, post view only
     '''
     @csrf
@@ -196,7 +190,7 @@ class Logout(Router):
             return Json({'success': False}).http_response(request)
 
 
-class Token(Router):
+class Token(lux.Router):
 
     @csrf
     def post(self, request):

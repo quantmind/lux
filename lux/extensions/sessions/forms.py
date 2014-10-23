@@ -9,27 +9,34 @@ __all__ = ['LoginForm', 'CreateUserForm', 'ChangePassword',
 class LoginForm(forms.Form):
     '''The Standard login form'''
     error_message = 'Incorrect username or password'
-    username = forms.CharField(max_length=30)
-    password = forms.PasswordField(max_length=128)
+    username = forms.CharField(maxlength=30)
+    password = forms.PasswordField(maxlength=128)
 
     layout = forms.Layout(
-        forms.Submit('Login', classes='btn btn-primary btn-block'),
-        labels=False,
-        ngmodel=True,
-        ngcontroller='userController')
+        forms.Fieldset(all=True),
+        forms.Submit(
+            'Login',
+            classes='btn btn-primary btn-block',
+            disabled="form.$invalid"),
+        showLabels=False,
+        directive='user-form')
 
 
 class CreateUserForm(forms.Form):
-    username = forms.CharField(min_length=6, max_length=30)
+    username = forms.CharField(minlength=6, maxlength=30,
+                               helpText='between 6 and 30 characters')
     email = forms.EmailField()
-    password = forms.PasswordField(min_length=6, max_length=60)
-    password_repeat = forms.PasswordField()
+    password = forms.PasswordField(minlength=6, maxlength=60)
+    password_repeat = forms.PasswordField(label='confirm password')
 
     layout = forms.Layout(
-        submits=forms.Submit('Sign up', classes='btn btn-primary btn-block'),
-        labels=False,
-        ngmodel=True,
-        ngcontroller='userController')
+        forms.Fieldset(all=True),
+        forms.Submit(
+            'Sign up',
+            classes='btn btn-primary btn-block',
+            disabled="form.$invalid"),
+        showLabels=False,
+        directive='user-form')
 
 
 class ChangePassword(forms.Form):
@@ -40,11 +47,10 @@ class ChangePassword(forms.Form):
     password_repeat = forms.PasswordField(label='Confirm new password')
 
     layout = forms.Layout(
-        submits=forms.Submit('Update password',
-                             classes='btn btn-primary'),
-        labels=False,
-        ngmodel=True,
-        ngcontroller='userController')
+        forms.Fieldset(all=True),
+        forms.Submit('Update password', classes='btn btn-primary'),
+        showLabels=False,
+        ng_controller='UserController')
 
 
 class ChangePassword2(forms.Form):
@@ -53,18 +59,17 @@ class ChangePassword2(forms.Form):
     password_repeat = forms.PasswordField(label='Confirm new password')
 
     layout = forms.Layout(
-        submits=forms.Submit('Reset password',
-                             classes='btn btn-primary'),
-        labels=False,
-        ngmodel=True,
-        ngcontroller='userController')
+        forms.Fieldset(all=True),
+        forms.Submit('Reset password', classes='btn btn-primary'),
+        showLabels=False,
+        ng_controller='UserController')
 
 
 class ForgotPasswordForm(forms.Form):
     email = forms.EmailField()
 
     layout = forms.Layout(
-        submits=forms.Submit('Submit', classes='btn btn-primary'),
-        labels=False,
-        ngmodel=True,
-        ngcontroller='userController')
+        forms.Fieldset(all=True),
+        forms.Submit('Submit', classes='btn btn-primary'),
+        showLabels=False,
+        ng_controller='userController')

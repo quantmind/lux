@@ -1,45 +1,21 @@
-    var FORMKEY = 'm__form',
-        formDefaults = {
-            layout: 'default',
-            // for horizontal layout
-            labelSpan: 2,
-            showLabels: true,
-            novalidate: true
-        };
-    //
-    // Change the form data depending on content type
-    function formData(ct) {
-
-        return function (data, getHeaders ) {
-            angular.extend(data, lux.context.csrf);
-            if (ct === 'application/x-www-form-urlencoded')
-                return $.param(data);
-            else if (ct === 'multipart/form-data') {
-                var fd = new FormData();
-                angular.forEach(data, function (value, key) {
-                    fd.append(key, value);
-                });
-                return fd;
-            } else {
-                return data;
-            }
-        };
-    }
-
+    // Default Form processing function
+    // If a submit element (input.submit or button) does not specify
+    // a ``click`` entry, this function is used
     lux.processForm = function (e) {
         e.preventDefault();
         e.stopPropagation();
-        var form = this[this.formName];
-
-        var $element = angular.element($event.target),
-            apiname = $element.attr('data-api'),
-            target = $element.attr('action'),
-            promise,
-            api;
+        var form = this[this.formName],
+            model = this[this.formModelName],
+            attrs = this.formAttrs,
+            target = attrs.action,
+            apiname = attrs.apiname,
+            scope = this,
+            FORMKEY = scope.FORMKEY,
+            $lux = this.$lux,
+            promise;
         //
-        if ($scope.form.$invalid) {
-            return $scope.showErrors();
-        }
+        if (form.$invalid)
+            return this.showErrors();
 
         // Get the api information
         if (!target && apiname) {
@@ -48,16 +24,16 @@
                 $lux.log.error('Could not find api url for ' + apiname);
         }
 
-        $scope.formMessages = {};
+        this.formMessages = {};
         //
         if (target) {
-            var enctype = $element.attr('enctype') || '',
+            var enctype = attrs.enctype || '',
                 ct = enctype.split(';')[0],
                 options = {
                     url: target,
-                    method: $element.attr('method') || 'POST',
-                    data: $scope.formModel,
-                    transformRequest: formData(ct),
+                    method: attrs.method || 'POST',
+                    data: model,
+                    transformRequest: $lux.formData(ct),
                 };
             // Let the browser choose the content type
             if (ct === 'application/x-www-form-urlencoded' || ct === 'multipart/form-data') {
@@ -75,15 +51,13 @@
         //
         promise.success(function(data, status) {
             if (data.messages) {
-                angular.forEach(data.messages, function (messages, field) {
-                    $scope.formMessages[field] = messages;
-                });
+                scope.addMessages(data.messages);
             } else if (api) {
                 // Created
                 if (status === 201) {
-                    $scope.formMessages[FORMKEY] = [{message: 'Succesfully created'}];
+                    scope.formMessages[FORMKEY] = [{message: 'Succesfully created'}];
                 } else {
-                    $scope.formMessages[FORMKEY] = [{message: 'Succesfully updated'}];
+                    scope.formMessages[FORMKEY] = [{message: 'Succesfully updated'}];
                 }
             } else {
                 window.location.href = data.redirect || '/';
@@ -111,47 +85,26 @@
         });
     };
 
-    // A general from controller factory
-    var formController = lux.formController = function ($scope, $lux, model) {
-        model || (model = {});
-
-        var page = $scope.$parent ? $scope.$parent.page : {};
-
-        if (model)
-            $scope.formModel = model.data || model;
-        $scope.formClasses = {};
-        $scope.formErrors = {};
-        $scope.formMessages = {};
-
-        if ($scope.formModel.name) {
-            page.title = 'Update ' + $scope.formModel.name;
-        }
-
-        function formMessages (messages) {
-            angular.forEach(messages, function (messages, field) {
-                $scope.formMessages[field] = messages;
-            });
-        }
-
-        // display field errors
-        $scope.showErrors = function () {
-            var error = $scope.form.$error;
-            angular.forEach(error.required, function (e) {
-                $scope.formClasses[e.$name] = 'has-error';
-            });
-        };
-
-        // process form
-        $scope.processForm = lux.processForm;
-    };
-
 
     // Default form module for lux
     angular.module('lux.form', ['lux.services'])
         //
+        .constant('formDefaults', {
+            // Default form processing function
+            processForm: lux.processForm,
+            // Default layout
+            layout: 'default',
+            // for horizontal layout
+            labelSpan: 2,
+            showLabels: true,
+            novalidate: true,
+            //
+            FORMKEY: 'm__form'
+        })
+        //
         // The formService is a reusable component for redering form fields
-        .service('standardForm', ['$log', '$http', '$document', '$templateCache',
-                function (log, $http, $document, $templateCache) {
+        .service('standardForm', ['$log', '$http', '$document', '$templateCache', 'formDefaults',
+                function (log, $http, $document, $templateCache, formDefaults) {
 
             var supported = {
                     //  Text-based elements
@@ -295,6 +248,7 @@
                         form = $($document[0].createElement(info.element))
                                     .attr('role', 'form').addClass(this.className)
                                     .attr('ng-model', field.model);
+                    this.formMessages(scope, form);
                     return this.addAttrs(scope, form, formAttributes);
                 },
                 //
@@ -344,11 +298,15 @@
                         element;
 
                     input.attr('ng-model', scope.formModelName + '.' + field.name);
-                    this.addAttrs(scope, input, inputAttributes);
 
-                    if (!field.showLabels)
+                    if (!field.showLabels) {
                         label.addClass('sr-only');
+                        // Add placeholder if not defined
+                        if (field.placeholder === undefined)
+                            field.placeholder = field.label;
+                    }
 
+                    this.addAttrs(scope, input, inputAttributes);
                     if (field.value !== undefined) {
                         scope[scope.formModelName][field.name] = field.value;
                         if (info.textBased)
@@ -389,8 +347,7 @@
                     var field = scope.field,
                         info = scope.info,
                         element = $($document[0].createElement(info.element)).addClass(this.buttonClass);
-                    if (!field.name)
-                        field.name = field.label || info.element;
+                    field.name = field.name || info.element;
                     field.label = field.label || field.name;
                     element.html(field.label);
                     this.addAttrs(scope, element, buttonAttributes);
@@ -398,23 +355,30 @@
                 },
                 //
                 onClick: function (scope, element) {
-                    if (scope.field.click) {
-                        var name = element.attr('name'),
-                            clickname = name + 'Click';
+                    var name = element.attr('name'),
+                        field = scope.field,
+                        clickname = name + 'Click';
+                    //
+                    // scope function
+                    scope[clickname] = function (e) {
+                        var callback = formDefaults.processForm;
                         //
-                        // scope function
-                        scope[clickname] = function (e) {
-                            var callback = getRootAttribute(this.field.click);
-                            if (angular.isFunction(callback)) {
-                                callback.call(this, e);
-                            } else
+                        if (field.click) {
+                            callback = getRootAttribute(field.click);
+                            if (!angular.isFunction(callback)) {
                                 log.error('Could not locate click function "' + field.click + '" for button');
-                        };
-                        element.attr('ng-click', clickname + '($event)');
-                    }
+                                return;
+                            }
+                        }
+                        callback.call(this, e);
+                    };
+                    element.attr('ng-click', clickname + '($event)');
                     return element;
                 },
                 //
+                // Add input error elements to the input element.
+                // Each input element may have one or more error handler depending
+                // on its type and attributes
                 inputError: function (scope, element) {
                     var field = scope.field,
                         self = this,
@@ -428,6 +392,7 @@
                                 .html('{{formErrors.' + field.name + '}}'),
                         value,
                         attrname;
+                    // Loop through validation attributes
                     forEach(validationAttributes, function (attr) {
                         value = field[attr];
                         attrname = attr;
@@ -439,7 +404,23 @@
                                          .html(self.errorMessage(scope, attr)));
                         }
                     });
+                    // Add invalid handler if not available
+                    if (p.children().length === (field.required ? 1 : 0)) {
+                        p.append($($document[0].createElement('span'))
+                                         .attr('ng-show', invalid)
+                                         .html(self.errorMessage(scope, 'invalid')));
+                    }
                     return element.append(p);
+                },
+                //
+                // Add element which containes form messages and errors
+                formMessages: function (scope, form) {
+                    var messages = $($document[0].createElement('p')),
+                        a = scope.formAttrs;
+                    messages.attr('ng-repeat', 'message in formMessages.' + a.FORMKEY)
+                            .attr('ng-bind', 'message.message')
+                            .attr('ng-class', "message.error ? 'text-danger' : 'text-info'");
+                    return form.append(messages);
                 },
                 //
                 errorMessage: function (scope, attr) {
@@ -449,8 +430,10 @@
                     return field[message] || handler.call(this, scope);
                 },
                 //
+                // Default error Message when the field is invalid
                 defaultErrorMesage: function (scope) {
-                    return 'Not a valid value';
+                    var type = scope.field.type;
+                    return 'Not a valid ' + type;
                 },
                 //
                 minErrorMessage: function (scope) {
@@ -459,6 +442,14 @@
                 //
                 maxErrorMessage: function (scope) {
                     return 'Must be less than ' + scope.field.max;
+                },
+                //
+                maxlengthErrorMessage: function (scope) {
+                    return 'Too long, must be less than ' + scope.field.maxlength;
+                },
+                //
+                minlengthErrorMessage: function (scope) {
+                    return 'Too short, must be more than ' + scope.field.minlength;
                 },
                 //
                 requiredErrorMessage: function (scope) {
@@ -523,7 +514,8 @@
             });
         }])
         //
-        .service('formBaseRenderer', ['$log', '$compile', function (log, $compile) {
+        .service('formBaseRenderer', ['$lux', '$compile', 'formDefaults',
+                function ($lux, $compile, formDefaults) {
             //
             // Internal function for compiling a scope
             this.createElement = function (scope) {
@@ -532,10 +524,10 @@
                 if (this[field.layout])
                     return this[field.layout].createElement(this, scope);
                 else
-                    log.error('Layout "' + field.layout + '" not available, cannot render form');
+                    $lux.log.error('Layout "' + field.layout + '" not available, cannot render form');
             };
             //
-            this.createForm = function (scope, element, attrs) {
+            this.initScope = function (scope, element, attrs) {
                 var data = getOptions(attrs),
                     form = data.field;
                 if (form) {
@@ -552,22 +544,37 @@
                     scope.formModelName = form.model;
                     //
                     scope[scope.formModelName] = {};
+                    scope.formAttrs = form;
                     scope.formClasses = {};
                     scope.formErrors = {};
                     scope.formMessages = {};
+                    scope.$lux = $lux;
                     if (!form.id)
                         form.id = 'f' + s4();
                     scope.formid = form.id;
                     scope.formCount = 0;
-                    form = this.createElement(scope);
 
-                    //  Compile and update DOM
-                    if (form) {
-                        $compile(form)(scope);
-                        element.replaceWith(form);
-                    }
+                    scope.addMessages = function (messages) {
+                        forEach(messages, function (messages, field) {
+                            scope.formMessages[field] = messages;
+                        });
+                    };
                 } else {
-                    log.error('Form data does not contain field entry');
+                    $lux.log.error('Form data does not contain field entry');
+                }
+            };
+            //
+            this.createForm = function (scope, element) {
+                var form = scope.field;
+                if (form) {
+                    var formElement = this.createElement(scope);
+                    // field has changed during the built
+                    scope.field = form;
+                    //  Compile and update DOM
+                    if (formElement) {
+                        $compile(formElement)(scope);
+                        element.replaceWith(formElement);
+                    }
                 }
             };
 
@@ -598,25 +605,39 @@
         // Default form Renderer, roll your own if you like
         .service('formRenderer', ['formBaseRenderer', 'standardForm', 'horizontalForm', 'inlineForm',
             function (base, stdForm, horForm, inlForm) {
-                extend(this, base);
+                var renderer = extend(this, base);
                 this[stdForm.name] = stdForm;
                 this[horForm.name] = horForm;
                 this[inlForm.name] = inlForm;
-        }])
+
+                // Create the directive
+                this.directive = function () {
+
+                    return {
+                        restrict: "AE",
+                        //
+                        scope: {},
+                        //
+                        compile: function () {
+                            return {
+                                pre: function (scope, element, attr) {
+                                    // Initialise the scope from the attributes
+                                    renderer.initScope(scope, element, attr);
+                                },
+                                post: function (scope, element) {
+                                    // create the form
+                                    renderer.createForm(scope, element);
+                                }
+                            };
+                        }
+                    };
+                };
+            }
+        ])
         //
         // Lux form
-        .directive('luxForm', ['formRenderer', function (renderer) {
-
-            return {
-                restrict: "AE",
-                //
-                scope: {},
-                //
-                link: function (scope, element, attrs) {
-                    // Initialise the scope from the attributes
-                    renderer.createForm(scope, element, attrs);
-                }
-            };
+        .directive('luxForm', ['formRenderer', function (formRenderer) {
+            return formRenderer.directive();
         }])
         //
         // A directive which add keyup and change event callaback

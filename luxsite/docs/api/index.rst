@@ -14,5 +14,6 @@ Python API
    ui
    angular
    static
+   sessions
    oauth/index
    code

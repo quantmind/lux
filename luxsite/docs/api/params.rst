@@ -26,12 +26,6 @@ Base
 .. lux_extension:: lux.extensions.base
 
 
-Sessions
-=====================
-
-.. lux_extension:: lux.extensions.sessions
-
-
 API
 ================
 
@@ -58,6 +52,14 @@ Static Site
 ================
 
 .. lux_extension:: lux.extensions.static
+
+
+.. _parameters-auth:
+
+Authentication
+=====================
+
+.. lux_extension:: lux.extensions.sessions
 
 
 .. _parameters-oauth:

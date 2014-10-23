@@ -17,6 +17,8 @@
         theme: 'default',
         search_text: '',
         collapse: '',
+        // Navigation place on top of the page (add navbar-static-top class to navbar)
+        // nabar2 it is always placed on top
         top: false,
         search: false,
         url: lux.context.url,
@@ -120,8 +122,12 @@
         //  Directive for the navbar with sidebar (nivebar2 template)
         .directive('navSideBar', ['$compile', '$document', function ($compile, $document) {
             return {
+                require: 'navbar2',
+
                 templateUrl: "nav/navbar2.tpl.html",
+
                 restrict: 'A',
+
                 link: function (scope, element, attrs) {
                     var navbar = scope.navbar;
                     element.addClass('navbar2-wrapper');

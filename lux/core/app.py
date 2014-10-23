@@ -16,7 +16,7 @@ from collections import OrderedDict
 from importlib import import_module
 
 import pulsar
-from pulsar import ImproperlyConfigured
+from pulsar import HttpException, ImproperlyConfigured
 from pulsar.utils.httpurl import urljoin, remove_double_slash
 from pulsar.apps.wsgi import (WsgiHandler, HtmlDocument, test_wsgi_environ,
                               LazyWsgi)
@@ -300,7 +300,8 @@ class Application(ConsoleParser, Extension):
                            asset_protocol=cfg['ASSET_PROTOCOL'])
         doc.meta = HeadMeta(doc.head)
         doc.jscontext = {'dateFormat': cfg['DATE_FORMAT'],
-                         'datetimeFormat': cfg['DATETIME_FORMAT']}
+                         'datetimeFormat': cfg['DATETIME_FORMAT'],
+                         'media': cfg['MEDIA_URL']}
         # Locale
         lang = cfg['LOCALE'][:2]
         doc.attr('lang', lang)
@@ -422,6 +423,8 @@ class Application(ConsoleParser, Extension):
             for handler in handlers:
                 try:
                     handler(self, *args)
+                except HttpException:
+                    raise
                 except Exception:
                     self.logger.critical(
                         'Unhandled exception while firing event %s', handler,
@@ -453,6 +456,7 @@ class Application(ConsoleParser, Extension):
     def format_datetime(self, dte):
         return dte.strftime(self.config['DATETIME_FORMAT'])
 
+    # Template redering
     def template_full_path(self, name):
         '''Return the template full path or None.
 
@@ -463,9 +467,17 @@ class Application(ConsoleParser, Extension):
             filename = os.path.join(ext.meta.path, 'templates', name)
             if os.path.exists(filename):
                 return filename
+        self.logger.error('Template %s not found' % name)
 
     def template(self, name):
-        '''Load a template from the file system
+        '''Load a template from the file system.
+
+        The template is must be located in a ``templates`` directory
+        of at least one of the extensions included in the :setting:EXTENSIONS`
+        list. The location of the template file is obtained via
+        the :meth:`template_full_path` method.
+
+        If the file is not found an empty string is returned.
         '''
         filename = self.template_full_path(name)
         if filename:
@@ -474,7 +486,14 @@ class Application(ConsoleParser, Extension):
         return ''
 
     def context(self, request, context=None):
-        '''Load the ``context`` dictionary for this ``request``
+        '''Load the ``context`` dictionary for a ``request``.
+
+        This function is called every time a template is rendered via the
+        :meth:`render_template` method is used and a the wsgi ``request``
+        is passed as key-valued parameter.
+
+        The initial ``context`` is updated with contribution from
+        all :setting:`EXTENSIONS` which expose the ``context`` method.
         '''
         context = context if context is not None else {}
         for ext in self.extensions.values():
@@ -482,9 +501,12 @@ class Application(ConsoleParser, Extension):
                 context = ext.context(request, context) or context
         return context
 
-    def render_template(self, template_name, context=None, engine=None):
-        '''Render a template'''
-        template = self.template(template_name)
+    def render_template(self, name, context=None, request=None, engine=None):
+        '''Render a template file ``name`` with ``context``
+        '''
+        if request:
+            context = self.context(request, context)
+        template = self.template(name)
         rnd = self.template_engine(engine)
         return rnd(template, context)
 
