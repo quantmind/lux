@@ -2,30 +2,29 @@
     // Controller for User.
     // This controller can be used by eny element, including forms
     angular.module('lux.users', ['lux.form'])
-        //
-        .directive('userForm', ['formRenderer', function (formRenderer) {
-            //
-            var directive = formRenderer.directive();
-            //
-            directive.controller = ['$scope', function (scope) {
-                // Check if password is correct
-                scope.check_password_repeat = function () {
-                    var form = this[this.formName];
-                    var field = this.form.password_repeat,
-                        psw1 = form.password,
-                        psw2 = form.password_repeat;
-                    if (psw1 !== psw2 && field.$dirty) {
-                        this.formErrors.password_repeat = "passwords don't match";
-                        field.$error.password_repeat = true;
-                        this.formClasses.password_repeat = 'has-error';
-                    } else if (field.$dirty) {
-                        this.formClasses.password_repeat = 'has-success';
-                        delete this.form.$error.password_repeat;
-                    }
-                };
-            }];
 
-            return directive;
+        .directive('userForm', ['formRenderer', function (renderer) {
+            //
+            renderer._createElement = renderer.createElement;
+
+            // Override createElement to add passwordVerify directive in the password_repead input
+            renderer.createElement = function (scope) {
+
+                var element = this._createElement(scope),
+                    field = scope.field,
+                    other = field['data-check-repeat'] || field['check-repeat'];
+
+                if (other) {
+                    var msg = field.errorMessage || (other + " doesn't match"),
+                        errors = $(element[0].querySelector('.' + scope.formErrorClass));
+                    if (errors.length)
+                        errors.html('').append(renderer[field.layout].fieldErrorElement(
+                            scope, '$error.repeat', msg));
+                }
+                return element;
+            };
+
+            return renderer.directive();
         }])
 
         .controller('UserController', ['$scope', '$lux', function (scope, lux) {

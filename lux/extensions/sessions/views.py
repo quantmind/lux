@@ -30,13 +30,30 @@ def csrf(method):
     return _
 
 
-class WebFormRouter(WebRouter):
-    template = None
+class FormMixin(object):
+    default_form = Form
     form = None
+    redirect_to = None
 
     @property
     def fclass(self):
         return self.form or self.default_form
+
+    def maybe_redirect_to(self, request, form, **kw):
+        redirect_to = self.redirect_to
+        if self.redirect_to:
+            if hasattr(redirect_to, '__call__'):
+                redirect_to = redirect_to(request, **kw)
+        if redirect_to:
+            return Json({'success': True,
+                         'redirect': request.absolute_uri(redirect_to)}
+                        ).http_response(request)
+        else:
+            Json(form.tojson()).http_response(request)
+
+
+class WebFormRouter(WebRouter, FormMixin):
+    template = None
 
     def build_main(self, request):
         '''Handle the HTML page for login
@@ -55,6 +72,7 @@ class Login(WebFormRouter):
     '''
     default_form = LoginForm
     template = 'login.html'
+    redirect_to = '/'
 
     def post(self, request):
         '''Handle login post data
@@ -70,12 +88,15 @@ class Login(WebFormRouter):
                 auth.login(request, user)
             except AuthenticationError as e:
                 form.add_error_message(str(e))
+            else:
+                return self.maybe_redirect_to(request, form, user=user)
         return Json(form.tojson()).http_response(request)
 
 
 class SignUp(WebFormRouter):
     template = 'signup.html'
     default_form = CreateUserForm
+    redirect_to = '/'
 
     def post(self, request):
         '''Handle login post data
@@ -87,10 +108,13 @@ class SignUp(WebFormRouter):
         form = self.fclass(request, data=data)
         if form.is_valid():
             data = form.cleaned_data
+            auth_backend = request.cache.auth_backend
             try:
-                user = request.app.auth_backend.create_user(request, **data)
+                user = auth_backend.create_user(request, **data)
             except AuthenticationError as e:
                 form.add_error_message(str(e))
+            else:
+                return self.maybe_redirect_to(request, form, user=user)
         return Json(form.tojson()).http_response(request)
 
     @route('confirmation/<username>')
@@ -145,6 +169,8 @@ class ForgotPassword(WebFormRouter):
                 auth.password_recovery(request, email)
             except AuthenticationError as e:
                 form.add_error_message(str(e))
+            else:
+                return self.maybe_redirect_to(request, form, user=user)
         return Json(form.tojson()).http_response(request)
 
     @route('<key>/reset', method='post',
@@ -173,19 +199,16 @@ class ForgotPassword(WebFormRouter):
         return Json(result).http_response(request)
 
 
-class Logout(lux.Router):
+class Logout(lux.Router, FormMixin):
     '''Logout handler, post view only
     '''
-    @csrf
     def post(self, request):
         '''Logout via post method
         '''
         user = request.cache.user
+        form = self.fclass(request, data=request.body_data())
         if user:
-            request.app.auth_backend.logout(request)
-            return Json({'success': True,
-                         'redirect': request.absolute_uri('/')}
-                        ).http_response(request)
+            return self.maybe_redirect_to(request, form, user=user)
         else:
             return Json({'success': False}).http_response(request)
 

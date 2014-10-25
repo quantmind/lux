@@ -47,13 +47,6 @@ class AuthBackend(sessions.AuthBackend):
                     return True
         return False
 
-    def create_registration(self, request, user, expiry):
-        auth_key = digest(user.username)
-        reg = Registration(id=auth_key, user=user.key,
-                           expiry=expiry, confirmed=False)
-        reg.put()
-        return auth_key
-
     def set_password(self, user, raw_password):
         user.password = self.password(raw_password)
         user.put()
@@ -132,6 +125,21 @@ class SessionBackend(SessionMixin, AuthBackend):
                           agent=request.get('HTTP_USER_AGENT', ''))
         session.put()
         return session
+
+    def password_recovery(self, request, email):
+        user = self.model.get_by_email(email)
+        if not self.get_or_create_registration(
+                request, user, email_subject='password_email_subject.txt',
+                email_message='password_email.txt',
+                message='password_message.txt'):
+            raise AuthenticationError("Can't find that email, sorry")
+
+    def create_registration(self, request, user, expiry):
+        auth_key = digest(user.username)
+        reg = Registration(id=auth_key, user=user.key,
+                           expiry=expiry, confirmed=False)
+        reg.put()
+        return auth_key
 
     def confirm_registration(self, request, key=None, **params):
         reg = None

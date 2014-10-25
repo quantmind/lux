@@ -12,7 +12,6 @@ to customise authorisation.
 
 
 '''
-import json
 from datetime import datetime, timedelta
 from importlib import import_module
 from functools import wraps
@@ -24,13 +23,12 @@ from pulsar.apps.wsgi import wsgi_request
 
 import lux
 from lux import Parameter, Router
-from lux.forms import Form
-from lux.utils.crypt import get_random_string
 from lux.utils.http import same_origin
 
 from .views import *
 from .backend import *
 from .jwtmixin import *
+from .sessionmixin import *
 from .forms import *
 
 
@@ -59,7 +57,7 @@ class Extension(lux.Extension):
                   'Salt size for encription algorithm'),
         Parameter('SESSION_COOKIE_NAME', 'LUX',
                   'Name of the cookie which stores session id'),
-        Parameter('SESSION_MESSAGES', False, 'Handle session messages'),
+        Parameter('SESSION_MESSAGES', True, 'Handle session messages'),
         Parameter('SESSION_EXPIRY', 7*24*60*60,
                   'Expiry for a session in seconds.'),
         Parameter('CHECK_USERNAME', lambda u: True,
@@ -88,7 +86,7 @@ class Extension(lux.Extension):
         dotted_path = app.config['AUTHENTICATION_BACKEND']
         if dotted_path:
             self.backend = module_attribute(dotted_path)(app)
-            return [self.backend]
+            return self.backend.request_middleware()
 
     def response_middleware(self, app):
         return [self.backend.response_middleware]
@@ -114,16 +112,6 @@ class Extension(lux.Extension):
                 and form.is_bound and param):
             token = form.rawdata.get(param)
             backend.validate_csrf_token(form.request, token)
-
-    def _dismiss_message(self, request):
-        response = request.response
-        if response.content_type in lux.JSON_CONTENT_TYPES:
-            session = request.cache.session
-            form = Form(request, data=request.body_data())
-            data = form.rawdata['message']
-            body = {'success': session.remove_message(data)}
-            response.content = json.dumps(body)
-            return response
 
     def _check_referer(self, request):
         referer = request.get('HTTP_REFERER')

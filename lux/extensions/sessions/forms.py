@@ -18,8 +18,7 @@ class LoginForm(forms.Form):
             'Login',
             classes='btn btn-primary btn-block',
             disabled="form.$invalid"),
-        showLabels=False,
-        directive='user-form')
+        showLabels=False)
 
 
 class CreateUserForm(forms.Form):
@@ -27,7 +26,8 @@ class CreateUserForm(forms.Form):
                                helpText='between 6 and 30 characters')
     email = forms.EmailField()
     password = forms.PasswordField(minlength=6, maxlength=60)
-    password_repeat = forms.PasswordField(label='confirm password')
+    password_repeat = forms.PasswordField(label='confirm password',
+        data_check_repeat='password')
 
     layout = forms.Layout(
         forms.Fieldset(all=True),
@@ -44,13 +44,14 @@ class ChangePassword(forms.Form):
     old_password = forms.PasswordField(required=False)
     password = forms.PasswordField(label='New password',
                                    min_length=6, max_length=60)
-    password_repeat = forms.PasswordField(label='Confirm new password')
+    password_repeat = forms.PasswordField(
+        label='Confirm new password',
+        data_check_repeat='ChangePassword.password')
 
     layout = forms.Layout(
         forms.Fieldset(all=True),
         forms.Submit('Update password', classes='btn btn-primary'),
-        showLabels=False,
-        ng_controller='UserController')
+        showLabels=False)
 
 
 class ChangePassword2(forms.Form):

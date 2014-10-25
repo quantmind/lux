@@ -1,6 +1,6 @@
 //      Lux Library - v0.1.0
 
-//      Compiled 2014-10-23.
+//      Compiled 2014-10-25.
 //      Copyright (c) 2014 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -188,7 +188,32 @@ function(angular, root) {
                 forEach(arguments[i], push);
         }
         return value;
+    },
+    //
+    //  querySelector
+    //  ===================
+    //
+    //  Simple wrapper for a querySelector
+    querySelector = function (elem, query) {
+        elem = $(elem);
+        if (elem.length)
+            return $(elem[0].querySelector(query));
+        else
+            return elem;
+    },
+    //
+    //    LoadCss
+    //  =======================
+    //
+    //  Load a style sheet link
+    loadCss = function (filename) {
+        var fileref = document.createElement("link");
+        fileref.setAttribute("rel", "stylesheet");
+        fileref.setAttribute("type", "text/css");
+        fileref.setAttribute("href", filename);
+        document.getElementsByTagName("head")[0].appendChild(fileref);
     };
+
 
     var
     //
@@ -630,8 +655,8 @@ function(angular, root) {
                         _clearTargets();
                         target = $(target).addClass(targetClass).removeClass(targetClassFinish);
                         if (e) {
-                            e.preventDefault();
-                            e.stopPropagation();
+                            //e.preventDefault();
+                            //e.stopPropagation();
                         }
                         log.info('Scrolling to target #' + hash);
                         _scrollTo(offset || luxScroll.offset, delay);
@@ -775,7 +800,7 @@ function(angular, root) {
             });
         }]);
 
-angular.module('templates-page', ['page/breadcrumbs.tpl.html']);
+angular.module('templates-page', ['page/breadcrumbs.tpl.html', 'page/messages.tpl.html']);
 
 angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function($templateCache) {
   $templateCache.put("page/breadcrumbs.tpl.html",
@@ -785,6 +810,18 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
     "        <span ng-if=\"step.last\">{{step.label}}</span>\n" +
     "    </li>\n" +
     "</ol>");
+}]);
+
+angular.module("page/messages.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("page/messages.tpl.html",
+    "<div ng-repeat=\"message in messages\" class=\"alert alert-dismissible\"\n" +
+    "ng-class=\"messageClass[message.level]\">\n" +
+    "<button type=\"button\" class=\"close\" data-dismiss=\"alert\" ng-click=\"dismiss($event, message)\">\n" +
+    "    <span aria-hidden=\"true\">&times;</span>\n" +
+    "    <span class=\"sr-only\">Close</span>\n" +
+    "</button>\n" +
+    "<span ng-bind-html=\"message.body\"></span>\n" +
+    "</div>");
 }]);
 
     function addPageInfo(page, $scope, dateFilter, $lux) {
@@ -837,11 +874,6 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                     if (data.redirect)
                         window.location.replace(data.redirect);
                 });
-            };
-
-            // Dismiss a message
-            $scope.dismiss = function (m) {
-                $lux.post('/_dismiss_message', {message: m});
             };
 
             $scope.togglePage = function ($event) {
@@ -925,6 +957,50 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                     }
                 }
             };
+        }])
+        //
+        // Directive for displaying page messages
+        //
+        //  <div data-options='sitemessages' data-page-messages></div>
+        //  <script>
+        //      sitemessages = {
+        //          messages: [...],
+        //          dismissUrl: (Optional url to use when dismissing a message)
+        //      };
+        //  </script>
+        .directive('pageMessages', ['$lux', '$sce', function ($lux, $sce) {
+
+            return {
+                restrict: 'AE',
+                templateUrl: "page/messages.tpl.html",
+                scope: {},
+                link: function (scope, element, attrs) {
+                    scope.messageClass = {
+                        info: 'alert-info',
+                        success: 'alert-success',
+                        warning: 'alert-warning',
+                        danger: 'alert-danger',
+                        error: 'alert-danger'
+                    };
+                    scope.dismiss = function (e, m) {
+                        var target = e.target;
+                        while (target && target.tagName !== 'DIV')
+                            target = target.parentNode;
+                        $(target).remove();
+                        $lux.post('/_dismiss_message', {message: m});
+                    };
+                    var messages = getOptions(attrs);
+                    scope.messages = [];
+                    forEach(messages, function (message) {
+                        if (message) {
+                            if (typeof(message) === 'string')
+                                message = {body: message};
+                            message.body = $sce.trustAsHtml(message.body);
+                        }
+                        scope.messages.push(message);
+                    });
+                }
+            };
         }]);
 
 
@@ -967,14 +1043,15 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
     // Hack for delaing with ui-router state.href
     // TODO: fix this!
     var stateHref = function (state, State, Params) {
-        var url = state.href(State);
         if (Params) {
-            var n = url.length,
-                url2 = state.href(State, Params);
-            url = encodeURIComponent(url) + url2.substring(n);
-            url = decodeURIComponent(url);
+            return state.href(State, Params);
+            //var n = url.length,
+            //    url2 = state.href(State, Params);
+            //url = encodeURIComponent(url) + url2.substring(n);
+            //url = decodeURIComponent(url);
+        } else {
+            return state.href(State);
         }
-        return url;
     };
 
     angular.module('lux.ui.router', ['lux.page', 'ui.router'])
@@ -991,6 +1068,9 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
             var
             hrefs = lux.context.hrefs,
             pages = lux.context.pages,
+            //
+            pageCache = {},
+            //
             state_config = function (page) {
                 return {
                     url: page.url,
@@ -1001,11 +1081,24 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                             //
                             resolve: {
                                 // Fetch page information
-                                page: ['$lux', '$stateParams', function ($lux, $stateParams) {
+                                page: ['$lux', '$state', '$stateParams', function ($lux, state, stateParams) {
                                     if (page.api) {
                                         var api = $lux.api(page.api);
-                                        if (api)
-                                            return api.get($stateParams);
+                                        if (api) {
+                                            var href = stateHref(state, page.name, stateParams),
+                                                data = pageCache[href];
+                                            return data ? data : api.get(stateParams).success(function (data) {
+                                                pageCache[href] = data;
+                                                forEach(data.require_css, function (css) {
+                                                    loadCss(css);
+                                                });
+                                                if (data.require_js)
+                                                    require(data.require_js, function () {
+
+                                                    });
+                                                return data;
+                                            });
+                                        }
                                     }
                                 }],
                                 // Fetch items if needed
@@ -1042,10 +1135,8 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
         }])
         .controller('Html5', ['$scope', '$state', 'dateFilter', '$lux', 'page', 'items',
             function ($scope, $state, dateFilter, $lux, page, items) {
-                if (page && page.status === 200) {
-                    $scope.items = items ? items.data : null;
-                    $scope.page = addPageInfo(page.data, $scope, dateFilter, $lux);
-                }
+                $scope.items = items ? items.data : null;
+                $scope.page = addPageInfo(page, $scope, dateFilter, $lux);
             }])
         //
         .directive('dynamicPage', ['$compile', '$log', function ($compile, log) {
@@ -1075,9 +1166,10 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
             target = attrs.action,
             apiname = attrs.apiname,
             scope = this,
-            FORMKEY = scope.FORMKEY,
+            FORMKEY = scope.formAttrs.FORMKEY,
             $lux = this.$lux,
-            promise;
+            promise,
+            api;
         //
         if (form.$invalid)
             return this.showErrors();
@@ -1138,15 +1230,14 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                         msg = 'Server error (' + data.status + ')';
                     }
                     messages = {};
-                    messages[FORMKEY] = [{message: msg, error: true}];
+                    scope.formMessages[FORMKEY] = [{message: msg, error: true}];
                 }
             } else {
                 status = status || 501;
                 msg = 'Server error (' + data.status + ')';
                 messages = {};
-                messages[FORMKEY] = [{message: msg, error: true}];
+                scope.formMessages[FORMKEY] = [{message: msg, error: true}];
             }
-            formMessages(messages);
         });
     };
 
@@ -1164,6 +1255,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
             showLabels: true,
             novalidate: true,
             //
+            formErrorClass: 'form-error',
             FORMKEY: 'm__form'
         })
         //
@@ -1232,10 +1324,12 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                     });
                 },
                 //
+                // Create a form element
                 createElement: function (driver, scope) {
                     var self = this,
-                        field = scope.field,
-                        info = supported[field.type],
+                        thisField = scope.field,
+                        info = supported[thisField.type],
+
                         renderer;
 
                     scope.info = info;
@@ -1249,7 +1343,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                     var element = renderer.call(this, scope);
 
                     forEach(scope.children, function (child) {
-                        field = child.field;
+                        var field = child.field;
 
                         if (field) {
 
@@ -1274,22 +1368,22 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                             log.error('form child without field');
                         }
                     });
-                    extend(scope, field);
+                    // Reinstate the field
+                    scope.field = thisField;
                     return element;
                 },
                 //
                 addAttrs: function (scope, element, attributes) {
-                    var field = scope.field,
-                        value;
-                    forEach(attributes, function (name) {
-                        value = field[name];
-                        if (value !== undefined && value !== false) {
+                    forEach(scope.field, function (value, name) {
+                        if (attributes.indexOf(name) > -1) {
                             if (ngAttributes.indexOf(name) > -1)
                                 element.attr('ng-' + name, value);
                             else {
                                 if (value === true) value = '';
                                 element.attr(name, value);
                             }
+                        } else if (name.substring(0, 5) === 'data-') {
+                            element.attr(name, value);
                         }
                     });
                     return element;
@@ -1362,6 +1456,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                         label = angular.element($document[0].createElement('label')).attr('for', field.id).html(field.label),
                         element;
 
+                    // Add model attribute
                     input.attr('ng-model', scope.formModelName + '.' + field.name);
 
                     if (!field.showLabels) {
@@ -1453,7 +1548,8 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                         input = $(element[0].querySelector(scope.info.element)),
                         p = $($document[0].createElement('p'))
                                 .attr('ng-show', dirty + ' && ' + invalid)
-                                .addClass('text-danger form-error')
+                                .addClass('text-danger')
+                                .addClass(scope.formErrorClass)
                                 .html('{{formErrors.' + field.name + '}}'),
                         value,
                         attrname;
@@ -1469,13 +1565,25 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                                          .html(self.errorMessage(scope, attr)));
                         }
                     });
-                    // Add invalid handler if not available
-                    if (p.children().length === (field.required ? 1 : 0)) {
-                        p.append($($document[0].createElement('span'))
-                                         .attr('ng-show', invalid)
-                                         .html(self.errorMessage(scope, 'invalid')));
+
+                    // Add the invalid handler if not available
+                    var errors = p.children().length;
+                    if (errors === (field.required ? 1 : 0)) {
+                        var name = '$invalid';
+                        if (errors)
+                            name += ' && !' + [scope.formName, field.name, '$error.required'].join('.');
+                        p.append(this.fieldErrorElement(scope, name, self.errorMessage(scope, 'invalid')));
                     }
                     return element.append(p);
+                },
+                //
+                fieldErrorElement: function (scope, name, msg) {
+                    var field = scope.field,
+                        value = [scope.formName, field.name, name].join('.');
+
+                    return $($document[0].createElement('span'))
+                                .attr('ng-show', value)
+                                .html(msg);
                 },
                 //
                 // Add element which containes form messages and errors
@@ -1518,7 +1626,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                 },
                 //
                 requiredErrorMessage: function (scope) {
-                    return "This field is required";
+                    return scope.field.label + " is required";
                 },
                 //
                 _select: function (tag, element) {
@@ -1633,15 +1741,19 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                 var form = scope.field;
                 if (form) {
                     var formElement = this.createElement(scope);
-                    // field has changed during the built
-                    scope.field = form;
                     //  Compile and update DOM
                     if (formElement) {
+                        this.preCompile(scope, formElement);
                         $compile(formElement)(scope);
                         element.replaceWith(formElement);
+                        this.postCompile(scope, formElement);
                     }
                 }
             };
+
+            this.preCompile = function () {};
+
+            this.postCompile = function () {};
 
             this.checkField = function (name) {
                 var checker = this['check_' + name];
@@ -1705,6 +1817,34 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
             return formRenderer.directive();
         }])
         //
+        .directive("checkRepeat", ['$log', function (log) {
+            return {
+                require: "ngModel",
+
+                restrict: 'A',
+
+                link: function(scope, element, attrs, ctrl) {
+                    var other = element.inheritedData("$formController")[attrs.checkRepeat];
+                    if (other) {
+                        ctrl.$parsers.push(function(value) {
+                            if(value === other.$viewValue) {
+                                ctrl.$setValidity("repeat", true);
+                                return value;
+                            }
+                            ctrl.$setValidity("repeat", false);
+                        });
+
+                        other.$parsers.push(function(value) {
+                            ctrl.$setValidity("repeat", value === ctrl.$viewValue);
+                            return value;
+                        });
+                    } else {
+                        log.error('Check repeat directive could not find ' + attrs.checkRepeat);
+                    }
+                 }
+            };
+        }])
+        //
         // A directive which add keyup and change event callaback
         .directive('watchChange', function() {
             return {
@@ -1730,30 +1870,29 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
     // Controller for User.
     // This controller can be used by eny element, including forms
     angular.module('lux.users', ['lux.form'])
-        //
-        .directive('userForm', ['formRenderer', function (formRenderer) {
-            //
-            var directive = formRenderer.directive();
-            //
-            directive.controller = ['$scope', function (scope) {
-                // Check if password is correct
-                scope.check_password_repeat = function () {
-                    var form = this[this.formName];
-                    var field = this.form.password_repeat,
-                        psw1 = form.password,
-                        psw2 = form.password_repeat;
-                    if (psw1 !== psw2 && field.$dirty) {
-                        this.formErrors.password_repeat = "passwords don't match";
-                        field.$error.password_repeat = true;
-                        this.formClasses.password_repeat = 'has-error';
-                    } else if (field.$dirty) {
-                        this.formClasses.password_repeat = 'has-success';
-                        delete this.form.$error.password_repeat;
-                    }
-                };
-            }];
 
-            return directive;
+        .directive('userForm', ['formRenderer', function (renderer) {
+            //
+            renderer._createElement = renderer.createElement;
+
+            // Override createElement to add passwordVerify directive in the password_repead input
+            renderer.createElement = function (scope) {
+
+                var element = this._createElement(scope),
+                    field = scope.field,
+                    other = field['data-check-repeat'] || field['check-repeat'];
+
+                if (other) {
+                    var msg = field.errorMessage || (other + " doesn't match"),
+                        errors = $(element[0].querySelector('.' + scope.formErrorClass));
+                    if (errors.length)
+                        errors.html('').append(renderer[field.layout].fieldErrorElement(
+                            scope, '$error.repeat', msg));
+                }
+                return element;
+            };
+
+            return renderer.directive();
         }])
 
         .controller('UserController', ['$scope', '$lux', function (scope, lux) {

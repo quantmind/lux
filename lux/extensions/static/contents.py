@@ -12,9 +12,11 @@ from pulsar import HttpException, Http404
 from pulsar.utils.slugify import slugify
 from pulsar.utils.structures import AttributeDictionary, mapping_iterator
 from pulsar.utils.pep import to_string
+from pulsar.apps.wsgi import Links
 
 from lux import JSON_CONTENT_TYPES
 from lux.utils import iso8601
+from lux.extensions.ui import CssLibraries
 
 from .urlwrappers import Processor, MultiValue, Tag, Author, Category
 
@@ -253,8 +255,27 @@ class Content(object):
                 if value:
                     head[key] = value
             #
+            require_css = data.get('require_css')
+            if require_css:
+                data['require_css'] = []
+                cfg = request.config
+                links = Links(cfg['MEDIA_URL'],
+                              minified=cfg['MINIFIED_MEDIA'])
+                for css in require_css:
+                    css = CssLibraries.get(css, css)
+                    links.append(css)
+                for link in links.children:
+                    link = link.split("href=")
+                    if len(link) == 2:
+                        href = link[1]
+                        c = href[0]
+                        href = href[1:]
+                        link = href[:href.find(c)]
+                        data['require_css'].append(link)
+            #
             if 'head' in data:
                 head.update(data['head'])
+
             data['head'] = head
             self._json_dict = data
         return self._json_dict
@@ -276,10 +297,10 @@ class Content(object):
                          'og:modified_time': data.get('modified')})
         doc.meta.update(data['head'])
         #
-        for css in data.get('require_css') or ():
-            doc.head.links.append(css)
-        doc.head.scripts.require.extend(data.get('require_js') or ())
-        #
+        if not request.config['ANGULAR_UI_ROUTER']:
+            for css in data.get('require_css') or ():
+                doc.head.links.append(css)
+            doc.head.scripts.require.extend(data.get('require_js') or ())
         self.on_html(doc)
         return data[self.suffix]['main']
 

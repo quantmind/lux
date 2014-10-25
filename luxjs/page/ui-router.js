@@ -9,14 +9,15 @@
     // Hack for delaing with ui-router state.href
     // TODO: fix this!
     var stateHref = function (state, State, Params) {
-        var url = state.href(State);
         if (Params) {
-            var n = url.length,
-                url2 = state.href(State, Params);
-            url = encodeURIComponent(url) + url2.substring(n);
-            url = decodeURIComponent(url);
+            return state.href(State, Params);
+            //var n = url.length,
+            //    url2 = state.href(State, Params);
+            //url = encodeURIComponent(url) + url2.substring(n);
+            //url = decodeURIComponent(url);
+        } else {
+            return state.href(State);
         }
-        return url;
     };
 
     angular.module('lux.ui.router', ['lux.page', 'ui.router'])
@@ -33,6 +34,9 @@
             var
             hrefs = lux.context.hrefs,
             pages = lux.context.pages,
+            //
+            pageCache = {},
+            //
             state_config = function (page) {
                 return {
                     url: page.url,
@@ -43,11 +47,24 @@
                             //
                             resolve: {
                                 // Fetch page information
-                                page: ['$lux', '$stateParams', function ($lux, $stateParams) {
+                                page: ['$lux', '$state', '$stateParams', function ($lux, state, stateParams) {
                                     if (page.api) {
                                         var api = $lux.api(page.api);
-                                        if (api)
-                                            return api.get($stateParams);
+                                        if (api) {
+                                            var href = stateHref(state, page.name, stateParams),
+                                                data = pageCache[href];
+                                            return data ? data : api.get(stateParams).success(function (data) {
+                                                pageCache[href] = data;
+                                                forEach(data.require_css, function (css) {
+                                                    loadCss(css);
+                                                });
+                                                if (data.require_js)
+                                                    require(data.require_js, function () {
+
+                                                    });
+                                                return data;
+                                            });
+                                        }
                                     }
                                 }],
                                 // Fetch items if needed
@@ -84,10 +101,8 @@
         }])
         .controller('Html5', ['$scope', '$state', 'dateFilter', '$lux', 'page', 'items',
             function ($scope, $state, dateFilter, $lux, page, items) {
-                if (page && page.status === 200) {
-                    $scope.items = items ? items.data : null;
-                    $scope.page = addPageInfo(page.data, $scope, dateFilter, $lux);
-                }
+                $scope.items = items ? items.data : null;
+                $scope.page = addPageInfo(page, $scope, dateFilter, $lux);
             }])
         //
         .directive('dynamicPage', ['$compile', '$log', function ($compile, log) {

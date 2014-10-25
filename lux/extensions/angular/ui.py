@@ -11,6 +11,7 @@ def add_css(all):
 
     add_navbar(all)
     add_scroll(all)
+    add_forms(all)
     #
     if cfg['ANGULAR_VIEW_ANIMATE']:
         add_animate(all)
@@ -97,3 +98,12 @@ def add_animate(all):
             Animation('fadeIn', vars.animate.fadein)),
         css('.ng-leave',
             Animation('fadeOut', vars.animate.fadeout)))
+
+
+def add_forms(all):
+    css = all.css
+    vars = all.variables
+
+    css('.form-error',
+        css(' span', display='block'))
+

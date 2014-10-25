@@ -50,11 +50,6 @@
                 });
             };
 
-            // Dismiss a message
-            $scope.dismiss = function (m) {
-                $lux.post('/_dismiss_message', {message: m});
-            };
-
             $scope.togglePage = function ($event) {
                 $event.preventDefault();
                 $event.stopPropagation();
@@ -134,6 +129,50 @@
 
                         renderBreadcrumb();
                     }
+                }
+            };
+        }])
+        //
+        // Directive for displaying page messages
+        //
+        //  <div data-options='sitemessages' data-page-messages></div>
+        //  <script>
+        //      sitemessages = {
+        //          messages: [...],
+        //          dismissUrl: (Optional url to use when dismissing a message)
+        //      };
+        //  </script>
+        .directive('pageMessages', ['$lux', '$sce', function ($lux, $sce) {
+
+            return {
+                restrict: 'AE',
+                templateUrl: "page/messages.tpl.html",
+                scope: {},
+                link: function (scope, element, attrs) {
+                    scope.messageClass = {
+                        info: 'alert-info',
+                        success: 'alert-success',
+                        warning: 'alert-warning',
+                        danger: 'alert-danger',
+                        error: 'alert-danger'
+                    };
+                    scope.dismiss = function (e, m) {
+                        var target = e.target;
+                        while (target && target.tagName !== 'DIV')
+                            target = target.parentNode;
+                        $(target).remove();
+                        $lux.post('/_dismiss_message', {message: m});
+                    };
+                    var messages = getOptions(attrs);
+                    scope.messages = [];
+                    forEach(messages, function (message) {
+                        if (message) {
+                            if (typeof(message) === 'string')
+                                message = {body: message};
+                            message.body = $sce.trustAsHtml(message.body);
+                        }
+                        scope.messages.push(message);
+                    });
                 }
             };
         }]);

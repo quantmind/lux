@@ -39,6 +39,10 @@ def as_angular_dict(field, form):
             pass
         elif field.name in form.initial:
             data['value'] = form.initial[field.name]
+        for name in tuple(data):
+            if name.startswith('data_'):
+                value = data.pop(name)
+                data[name.replace('_', '-')] = value
         return {'field': data}
 
 
@@ -58,7 +62,7 @@ class AngularSubmit(AngularFormElement):
     def __init__(self, label, name=None, **attrs):
         self.attrs = attrs
         self.attrs['label'] = label
-        self.attrs['name'] = slugify(name or label)
+        self.attrs['name'] = slugify(name or label, separator='')
         if not self.attrs.get('type'):
             self.attrs['type'] = self.type
 
@@ -75,10 +79,11 @@ class AngularFieldset(AngularFormElement):
         self.all = attrs.pop('all', False)
         if not self.attrs.get('type'):
             self.attrs['type'] = self.type
+        self.type = self.attrs['type']
 
     def as_dict(self, form=None):
         return {
-            'field': self.attrs,
+            'field': self.attrs.copy(),
             'children': [as_angular_dict(c, form) for c in self.children]
             }
 
@@ -134,6 +139,8 @@ class AngularForm(object):
     def as_dict(self, id=None, **attrs):
         data = self.layout.as_dict(self.form)
         form = data['field']
+        if not 'model' in form:
+            form['model'] = self.form.__class__.__name__
         if id is None and not form.get('id'):
             id = '%s_%s' % (self.form.__class__.__name__.lower(),
                             get_random_string(5))
@@ -142,13 +149,13 @@ class AngularForm(object):
         form.update(attrs)
         return data
 
-    def as_form(self, tag=None, ng_controller=None, **attrs):
-        tag = tag or 'lux-form'
+    def as_form(self, ng_controller=None, **attrs):
         data = self.as_dict(**attrs)
         form = data['field']
+        directive = form.pop('directive', 'lux-form')
         id = form['id']
         script = form_script % (id, json.dumps(data))
-        html = Html(tag, script).data('options', 'luxforms.%s' % id)
+        html = Html(directive, script).data('options', 'luxforms.%s' % id)
         ng_controller = ng_controller or form.pop('ng_controller', None)
         # add controller if required
         if ng_controller:

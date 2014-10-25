@@ -35,8 +35,8 @@
                         _clearTargets();
                         target = $(target).addClass(targetClass).removeClass(targetClassFinish);
                         if (e) {
-                            e.preventDefault();
-                            e.stopPropagation();
+                            //e.preventDefault();
+                            //e.stopPropagation();
                         }
                         log.info('Scrolling to target #' + hash);
                         _scrollTo(offset || luxScroll.offset, delay);

@@ -120,4 +120,28 @@
                 forEach(arguments[i], push);
         }
         return value;
+    },
+    //
+    //  querySelector
+    //  ===================
+    //
+    //  Simple wrapper for a querySelector
+    querySelector = function (elem, query) {
+        elem = $(elem);
+        if (elem.length)
+            return $(elem[0].querySelector(query));
+        else
+            return elem;
+    },
+    //
+    //    LoadCss
+    //  =======================
+    //
+    //  Load a style sheet link
+    loadCss = function (filename) {
+        var fileref = document.createElement("link");
+        fileref.setAttribute("rel", "stylesheet");
+        fileref.setAttribute("type", "text/css");
+        fileref.setAttribute("href", filename);
+        document.getElementsByTagName("head")[0].appendChild(fileref);
     };

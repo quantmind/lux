@@ -22,6 +22,12 @@ class Oauth(ndb.Model):
         return d
 
 
+class Message(ndb.Model):
+    level = ndb.StringProperty()
+    body = ndb.TextProperty()
+    date = ndb.DateTimeProperty()
+
+
 class User(ndb.Model, sessions.UserMixin):
     '''Model for users
     '''
@@ -36,6 +42,7 @@ class User(ndb.Model, sessions.UserMixin):
     joined = ndb.DateTimeProperty(auto_now_add=True)
     #
     oauths = ndb.StructuredProperty(Oauth, repeated=True)
+    messages = ndb.StructuredProperty(Message, repeated=True)
 
     def is_active(self):
         return self.active
@@ -118,12 +125,7 @@ class User(ndb.Model, sessions.UserMixin):
         return username
 
 
-class Message(ndb.Model):
-    level = ndb.StringProperty()
-    body = ndb.TextProperty()
-
-
-class Session(ndb.Model, sessions.SessionMixin):
+class Session(ndb.Model, sessions.MessageMixin):
     expiry = ndb.DateTimeProperty()
     user = ndb.KeyProperty(User)
     agent = ndb.TextProperty()

@@ -10,9 +10,10 @@
             target = attrs.action,
             apiname = attrs.apiname,
             scope = this,
-            FORMKEY = scope.FORMKEY,
+            FORMKEY = scope.formAttrs.FORMKEY,
             $lux = this.$lux,
-            promise;
+            promise,
+            api;
         //
         if (form.$invalid)
             return this.showErrors();
@@ -73,15 +74,14 @@
                         msg = 'Server error (' + data.status + ')';
                     }
                     messages = {};
-                    messages[FORMKEY] = [{message: msg, error: true}];
+                    scope.formMessages[FORMKEY] = [{message: msg, error: true}];
                 }
             } else {
                 status = status || 501;
                 msg = 'Server error (' + data.status + ')';
                 messages = {};
-                messages[FORMKEY] = [{message: msg, error: true}];
+                scope.formMessages[FORMKEY] = [{message: msg, error: true}];
             }
-            formMessages(messages);
         });
     };
 
@@ -99,6 +99,7 @@
             showLabels: true,
             novalidate: true,
             //
+            formErrorClass: 'form-error',
             FORMKEY: 'm__form'
         })
         //
@@ -167,10 +168,12 @@
                     });
                 },
                 //
+                // Create a form element
                 createElement: function (driver, scope) {
                     var self = this,
-                        field = scope.field,
-                        info = supported[field.type],
+                        thisField = scope.field,
+                        info = supported[thisField.type],
+
                         renderer;
 
                     scope.info = info;
@@ -184,7 +187,7 @@
                     var element = renderer.call(this, scope);
 
                     forEach(scope.children, function (child) {
-                        field = child.field;
+                        var field = child.field;
 
                         if (field) {
 
@@ -209,22 +212,22 @@
                             log.error('form child without field');
                         }
                     });
-                    extend(scope, field);
+                    // Reinstate the field
+                    scope.field = thisField;
                     return element;
                 },
                 //
                 addAttrs: function (scope, element, attributes) {
-                    var field = scope.field,
-                        value;
-                    forEach(attributes, function (name) {
-                        value = field[name];
-                        if (value !== undefined && value !== false) {
+                    forEach(scope.field, function (value, name) {
+                        if (attributes.indexOf(name) > -1) {
                             if (ngAttributes.indexOf(name) > -1)
                                 element.attr('ng-' + name, value);
                             else {
                                 if (value === true) value = '';
                                 element.attr(name, value);
                             }
+                        } else if (name.substring(0, 5) === 'data-') {
+                            element.attr(name, value);
                         }
                     });
                     return element;
@@ -297,6 +300,7 @@
                         label = angular.element($document[0].createElement('label')).attr('for', field.id).html(field.label),
                         element;
 
+                    // Add model attribute
                     input.attr('ng-model', scope.formModelName + '.' + field.name);
 
                     if (!field.showLabels) {
@@ -388,7 +392,8 @@
                         input = $(element[0].querySelector(scope.info.element)),
                         p = $($document[0].createElement('p'))
                                 .attr('ng-show', dirty + ' && ' + invalid)
-                                .addClass('text-danger form-error')
+                                .addClass('text-danger')
+                                .addClass(scope.formErrorClass)
                                 .html('{{formErrors.' + field.name + '}}'),
                         value,
                         attrname;
@@ -404,13 +409,25 @@
                                          .html(self.errorMessage(scope, attr)));
                         }
                     });
-                    // Add invalid handler if not available
-                    if (p.children().length === (field.required ? 1 : 0)) {
-                        p.append($($document[0].createElement('span'))
-                                         .attr('ng-show', invalid)
-                                         .html(self.errorMessage(scope, 'invalid')));
+
+                    // Add the invalid handler if not available
+                    var errors = p.children().length;
+                    if (errors === (field.required ? 1 : 0)) {
+                        var name = '$invalid';
+                        if (errors)
+                            name += ' && !' + [scope.formName, field.name, '$error.required'].join('.');
+                        p.append(this.fieldErrorElement(scope, name, self.errorMessage(scope, 'invalid')));
                     }
                     return element.append(p);
+                },
+                //
+                fieldErrorElement: function (scope, name, msg) {
+                    var field = scope.field,
+                        value = [scope.formName, field.name, name].join('.');
+
+                    return $($document[0].createElement('span'))
+                                .attr('ng-show', value)
+                                .html(msg);
                 },
                 //
                 // Add element which containes form messages and errors
@@ -453,7 +470,7 @@
                 },
                 //
                 requiredErrorMessage: function (scope) {
-                    return "This field is required";
+                    return scope.field.label + " is required";
                 },
                 //
                 _select: function (tag, element) {
@@ -568,15 +585,19 @@
                 var form = scope.field;
                 if (form) {
                     var formElement = this.createElement(scope);
-                    // field has changed during the built
-                    scope.field = form;
                     //  Compile and update DOM
                     if (formElement) {
+                        this.preCompile(scope, formElement);
                         $compile(formElement)(scope);
                         element.replaceWith(formElement);
+                        this.postCompile(scope, formElement);
                     }
                 }
             };
+
+            this.preCompile = function () {};
+
+            this.postCompile = function () {};
 
             this.checkField = function (name) {
                 var checker = this['check_' + name];
@@ -638,6 +659,34 @@
         // Lux form
         .directive('luxForm', ['formRenderer', function (formRenderer) {
             return formRenderer.directive();
+        }])
+        //
+        .directive("checkRepeat", ['$log', function (log) {
+            return {
+                require: "ngModel",
+
+                restrict: 'A',
+
+                link: function(scope, element, attrs, ctrl) {
+                    var other = element.inheritedData("$formController")[attrs.checkRepeat];
+                    if (other) {
+                        ctrl.$parsers.push(function(value) {
+                            if(value === other.$viewValue) {
+                                ctrl.$setValidity("repeat", true);
+                                return value;
+                            }
+                            ctrl.$setValidity("repeat", false);
+                        });
+
+                        other.$parsers.push(function(value) {
+                            ctrl.$setValidity("repeat", value === ctrl.$viewValue);
+                            return value;
+                        });
+                    } else {
+                        log.error('Check repeat directive could not find ' + attrs.checkRepeat);
+                    }
+                 }
+            };
         }])
         //
         // A directive which add keyup and change event callaback
