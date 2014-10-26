@@ -11,15 +11,29 @@
             }
             addPageInfo(post, $scope, dateFilter, $lux);
         }])
+        //
         .directive('blogPagination', function () {
             return {
                 templateUrl: "blog/pagination.tpl.html",
                 restrict: 'AE'
             };
         })
+        //
         .directive('blogHeader', function () {
             return {
                 templateUrl: "blog/header.tpl.html",
                 restrict: 'AE'
+            };
+        })
+        //
+        .directive('katex', function () {
+            return {
+                link: function (scope, element, attrs) {
+                    var text = element.html();
+                    element.addClass('katex-outer').html();
+                    require(['katex'], function (katex) {
+                        katex.render(text, element[0]);
+                    });
+                }
             };
         });

@@ -138,7 +138,7 @@
     //  =======================
     //
     //  Load a style sheet link
-    loadCss = function (filename) {
+    loadCss = lux.loadCss = function (filename) {
         var fileref = document.createElement("link");
         fileref.setAttribute("rel", "stylesheet");
         fileref.setAttribute("type", "text/css");

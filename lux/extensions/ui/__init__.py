@@ -81,6 +81,7 @@ CssLibraries = {
     'animate': '//cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate',
     'weather-icons': '//cdnjs.cloudflare.com/ajax/libs/weather-icons/1.2/css/weather-icons',
     'highlight': '//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.3',
+    'katex': '//cdnjs.cloudflare.com/ajax/libs/KaTeX/0.1.1/katex.min.css',
     'leaflet': 'http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css'
 }
 
@@ -168,3 +169,4 @@ def colors(all):
     vars.colors.gray = lighten(black, 50)
     vars.colors.gray_light = lighten(black, 70)
     vars.colors.gray_lighter = lighten(black, 93.5)
+

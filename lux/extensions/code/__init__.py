@@ -50,6 +50,8 @@ def add_css(all):
 
     vars.code.descname.font_size = px(24)
 
+    katex(all)
+
     if theme:
         path = 'http:%s/styles/%s.min.css' % (CssLibraries['highlight'], theme)
         css('body',
@@ -76,3 +78,14 @@ def add_css(all):
             color='#888',
             font_weight='normal',
             font_size=vars.font_size))
+
+
+
+def katex(all):
+    css = all.css
+
+    css('.katex-outer',
+        display='block',
+        margin_left='auto',
+        margin_right='auto',
+        margin_bottom=px(10))
