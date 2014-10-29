@@ -301,7 +301,8 @@ class Application(ConsoleParser, Extension):
         doc.meta = HeadMeta(doc.head)
         doc.jscontext = {'dateFormat': cfg['DATE_FORMAT'],
                          'datetimeFormat': cfg['DATETIME_FORMAT'],
-                         'media': cfg['MEDIA_URL']}
+                         'media': cfg['MEDIA_URL'],
+                         'brand': cfg['APP_NAME']}
         # Locale
         lang = cfg['LOCALE'][:2]
         doc.attr('lang', lang)
@@ -536,7 +537,8 @@ class Application(ConsoleParser, Extension):
             cfg = self.config
             if doc.jscontext:
                 jscontext = json.dumps(doc.jscontext)
-                doc.head.embedded_js.append('var luxContext = %s;' % jscontext)
+                doc.head.embedded_js.insert(
+                    0, 'var lux = {context: %s};' % jscontext)
             body = self.render_template(template_name, context)
             doc.body.append(body)
             return doc.http_response(request)

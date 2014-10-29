@@ -2,68 +2,132 @@
     //  Hash scrolling service
     angular.module('lux.scroll', [])
         //
-        .run(['$rootScope', function (scope) {
-            scope.scroll = extend({
-                time: 1,
-                offset: 0,
-                frames: 25
-            }, scope.scroll);
+        // Switch off scrolling managed by angular
+        //.value('$anchorScroll', angular.noop)
+        //
+        .value('scrollDefaults', {
+            // Time to complete the scrolling (seconds)
+            time: 1,
+            // Offset relative to hash links
+            offset: 0,
+            // Number of frames to use in the scroll transition
+            frames: 25,
+            //
+            topPage: true,
+            //
+            scrollTargetClass: 'scroll-target',
+            //
+            scrollTargetClassFinish: 'finished'
+        })
+        //
+        // Switch off scrolling managed by angular
+        .config(['$anchorScrollProvider', function ($anchorScrollProvider) {
+            $anchorScrollProvider.disableAutoScrolling();
         }])
         //
-        .service('scroll', ['$rootScope', '$location', '$log', '$timeout', function (scope, $location, log, timer) {
-            //  ScrollToHash
-            var targetClass = 'scroll-target',
-                targetClassFinish = 'finished',
-                luxScroll = scope.scroll,
-                target = null;
+        .run(['$rootScope', '$location', '$log', '$timeout', 'scrollDefaults',
+                function(scope, location, log, timer, scrollDefaults) {
             //
-            this.toHash = function (hash, offset, delay) {
-                var e;
-                if (target || !hash)
-                    return;
-                if (hash.e) {
-                    e = hash.e;
-                    hash = hash.hash;
+            var target = null,
+                scroll = scope.scroll = extend({}, scrollDefaults, scope.scroll);
+            //
+            scroll.browser = true;
+            scroll.path = false;
+            //
+            // This is the first event triggered when the path location changes
+            scope.$on('$locationChangeSuccess', function() {
+                if (!scope.scroll.path) {
+                    scope.scroll.browser = true;
+                    _clear(100);
                 }
+            });
+
+            // Watch for path changes and check if back browser button was used
+            scope.$watch(function () {
+                return location.path();
+            }, function (newLocation, oldLocation) {
+                if (!scope.scroll.browser) {
+                    scope.scroll.path = newLocation !== oldLocation;
+                    if (!scope.scroll.path)
+                        scope.scroll.browser = true;
+                } else
+                    scope.scroll.path = false;
+            });
+
+            // Watch for hash changes
+            scope.$watch(function () {
+                return location.hash();
+            }, function (hash) {
+                if (!(scope.scroll.path || scope.scroll.browser))
+                    toHash(hash);
+            });
+
+            scope.$on('$viewContentLoaded', function () {
+                var hash = location.hash();
+                if (!scope.scroll.browser)
+                    toHash(hash, 0);
+            });
+            //
+            function toHash (hash, delay) {
+                timer(function () {
+                    _toHash(hash, delay);
+                });
+            }
+            //
+            function _toHash (hash, delay) {
+                if (target)
+                    return;
+                if (!hash && !scroll.topPage)
+                    return;
                 // set the location.hash to the id of
                 // the element you wish to scroll to.
                 if (typeof(hash) === 'string') {
+                    var highlight = true;
                     if (hash.substring(0, 1) === '#')
                         hash = hash.substring(1);
-                    target = document.getElementById(hash);
+                    if (hash)
+                        target = document.getElementById(hash);
+                    else {
+                        highlight = false;
+                        target = document.getElementsByTagName('body');
+                        target = target.length ? target[0] : null;
+                    }
                     if (target) {
                         _clearTargets();
-                        target = $(target).addClass(targetClass).removeClass(targetClassFinish);
-                        if (e) {
-                            //e.preventDefault();
-                            //e.stopPropagation();
-                        }
+                        target = $(target);
+                        if (highlight)
+                            target.addClass(scope.scrollTargetClass)
+                                  .removeClass(scope.scrollTargetClassFinish);
                         log.info('Scrolling to target #' + hash);
-                        _scrollTo(offset || luxScroll.offset, delay);
-                        return target;
+                        _scrollTo(delay);
                     }
                 }
-            };
+            }
 
             function _clearTargets () {
-                forEach(document.querySelectorAll('.' + targetClass), function (el) {
-                    $(el).removeClass(targetClass);
+                forEach(document.querySelectorAll('.' + scope.scrollTargetClass), function (el) {
+                    $(el).removeClass(scope.scrollTargetClass);
                 });
             }
 
-            function _scrollTo (offset, delay) {
-                var i,
-                    startY = currentYPosition(),
-                    stopY = elmYPosition(target[0]) - offset,
-                    distance = stopY > startY ? stopY - startY : startY - stopY;
-                var step = Math.round(distance / luxScroll.frames),
-                    y = startY;
-                if (delay === null || delay === undefined) {
-                    delay = 1000*luxScroll.time/luxScroll.frames;
-                    if (distance < 200)
-                        delay = 0;
+            function _scrollTo (delay) {
+                var stopY = elmYPosition(target[0]) - scroll.offset;
+
+                if (delay === 0) {
+                    window.scrollTo(0, stopY);
+                    _finished();
+                } else {
+                    var startY = currentYPosition(),
+                        distance = stopY > startY ? stopY - startY : startY - stopY,
+                        step = Math.round(distance / scroll.frames);
+
+                    if (delay === null || delay === undefined) {
+                        delay = 1000*scroll.time/scroll.frames;
+                        if (distance < 200)
+                            delay = 0;
+                    }
+                    _nextScroll(startY, delay, step, stopY);
                 }
-                _nextScroll(startY, delay, step, stopY);
             }
 
             function _nextScroll (y, delay, stepY, stopY) {
@@ -89,10 +153,27 @@
                     if (more)
                         _nextScroll(y2, delay, stepY, stopY);
                     else {
-                        $location.hash(target.attr('id'));
-                        target.addClass(targetClassFinish);
-                        target = null;
+                        _finished();
                     }
+                }, delay);
+            }
+
+            function _finished () {
+                // Done with it - set the hash in the location
+                // location.hash(target.attr('id'));
+                if (target.hasClass(scope.scrollTargetClass))
+                    target.addClass(scope.scrollTargetClassFinish);
+                target = null;
+                _clear(0);
+            }
+
+            function _clear (delay) {
+                if (delay === undefined) delay = 0;
+                timer(function () {
+                    log.info('Reset scrolling');
+                    scope.scroll.browser = false;
+                    scope.scroll.path = false;
+                    scope.scroll.hash = false;
                 }, delay);
             }
 
@@ -123,30 +204,4 @@
                 return y;
             }
 
-        }])
-        //
-        // Directive for adding smooth scrolling to hash links
-        .directive('hashScroll', ['$log', '$location', 'scroll', function (log, location, scroll) {
-            var innerTags = ['IMG', 'I', 'SPAN', 'TT'];
-            //
-            return {
-                link: function (scope, element, attrs) {
-                    //
-                    log.info('Apply smooth scrolling');
-                    scope.location = location;
-                    scope.$watch('location.hash()', function(hash) {
-                        // Hash change (when a new page is loaded)
-                        scroll.toHash(hash, null, 0);
-                    });
-                    //
-                    element.bind('click', function (e) {
-                        var target = e.target;
-                        while (target && innerTags.indexOf(target.tagName) > -1)
-                            target = target.parentElement;
-                        if (target && target.hash) {
-                            scroll.toHash({hash: target.hash, e: e});
-                        }
-                    });
-                }
-            };
         }]);

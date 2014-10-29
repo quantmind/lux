@@ -110,6 +110,7 @@ def add_css(all):
     vars = all.variables
 
     colors(all)
+    lazyContainer(all)
 
     vars.font_family = '"Helvetica Neue",Helvetica,Arial,sans-serif'
     vars.font_size = px(14)
@@ -170,3 +171,10 @@ def colors(all):
     vars.colors.gray_light = lighten(black, 70)
     vars.colors.gray_lighter = lighten(black, 93.5)
 
+
+def lazyContainer(all):
+    css = all.css
+
+    css('.lazyContainer',
+        width=pc(100),
+        position='relative')

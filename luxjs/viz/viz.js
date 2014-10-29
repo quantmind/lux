@@ -1,8 +1,9 @@
-    //
-    // Load d3 extensions into angular 'd3viz' module
-    //  d3ext is the d3 extension object
-    //  name is the optional module name for angular (default to d3viz)
-    lux.addD3ext = function (d3, name) {
+
+    lux.d3Directive = function (name, VizClass, moduleName) {
+
+        moduleName = moduleName || 'd3viz';
+
+        var dname = 'viz' + name.substring(0,1).toUpperCase() + name.substring(1);
 
         function loadData ($lux) {
 
@@ -29,7 +30,7 @@
                 }
             };
         }
-        //
+
         // Obtain extra information from javascript objects
         function getOptions(d3, attrs) {
             if (typeof attrs.options === 'string') {
@@ -47,34 +48,40 @@
             return attrs;
         }
 
-        name = name || 'd3viz';
-        var app = angular.module(name, ['lux.services']);
+        angular.module(moduleName)
+            .directive(dname, ['$lux', function ($lux) {
+                return {
+                        //
+                        // Create via element tag or attribute
+                        restrict: 'AE',
+                        //
+                        link: function (scope, element, attrs) {
+                            var viz = element.data(dname);
+                            if (!viz) {
+                                var options = getOptions(d3, attrs);
+                                viz = new VizClass(element[0], options);
+                                element.data(viz);
+                                viz.loadData = loadData($lux);
+                                viz.build();
+                            }
+                        }
+                    };
+            }]);
+    };
+    //
+    // Load d3 extensions into angular 'd3viz' module
+    //  d3ext is the d3 extension object
+    //  name is the optional module name for angular (default to d3viz)
+    lux.addD3ext = function (d3, moduleName) {
+        //
+        moduleName = moduleName || 'd3viz';
+        angular.module(moduleName, ['lux.services']);
 
         // Loop through d3 extensions and create directives
         // for each Visualization class
         angular.forEach(d3.ext, function (VizClass, name) {
-
             if (d3.ext.isviz(VizClass)) {
-                var dname = 'viz' + name.substring(0,1).toUpperCase() + name.substring(1);
-
-                app.directive(dname, ['$lux', function ($lux) {
-                    return {
-                            //
-                            // Create via element tag or attribute
-                            restrict: 'AE',
-                            //
-                            link: function (scope, element, attrs) {
-                                var viz = element.data(dname);
-                                if (!viz) {
-                                    var options = getOptions(d3, attrs);
-                                    viz = new VizClass(element[0], options);
-                                    element.data(viz);
-                                    viz.loadData = loadData($lux);
-                                    viz.build();
-                                }
-                            }
-                        };
-                }]);
+                lux.d3Directive(name, VizClass, moduleName);
             }
         });
 

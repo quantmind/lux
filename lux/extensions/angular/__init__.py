@@ -58,6 +58,11 @@ class Extension(lux.Extension):
         Parameter('NGMODULES', [], 'Angular module to load')
     ]
 
+    def on_html_document(self, app, request, doc):
+        min = '.min' if app.config['MINIFIED_MEDIA'] else ''
+        js = app.template('lux.require%s.js' % min)
+        doc.head.embedded_js.append(js)
+
 
 class Router(lux.Router, MediaMixin):
     '''A :class:`.Router` for Angular navigation.

@@ -20,31 +20,32 @@
 function(angular, root) {
     "use strict";
 
-    var lux = {version: '0.1.0'},
-        ready_callbacks = [],
-        forEach = angular.forEach,
+    var lux = root.lux || {};
+    lux.version = '0.1.0';
+
+    var forEach = angular.forEach,
         extend = angular.extend,
         angular_bootstrapped = false,
         isArray = angular.isArray,
         isString = angular.isString,
         $ = angular.element,
         slice = Array.prototype.slice,
+        lazyApplications = {},
         defaults = {
             url: '',    // base url for the web site
             media: '',  // default url for media content
             html5mode: true, //  html5mode for angular
-            hashPrefix: '!'
+            hashPrefix: '!',
+            ngModules: [],
+            loadRequire: function (callback) {
+                callback();
+            }
         };
     //
     lux.$ = $;
+    lux.angular = angular;
     lux.forEach = angular.forEach;
-    lux.context = extend({}, defaults, root.luxContext);
-
-    // Callbacks run after angular has finished bootstrapping
-    lux.add_ready_callback = function (callback) {
-        if (ready_callbacks === true) callback();
-        else ready_callbacks.push(callback);
-    };
+    lux.context = extend({}, defaults, lux.context);
 
     // Extend lux context with additional data
     lux.extend = function (context) {
@@ -57,3 +58,34 @@ function(angular, root) {
             ctx = lux.context;
         return joinUrl(ctx.url, ctx.media, url);
     };
+
+    lux.luxApp = function (name, App) {
+        lazyApplications[name] = App;
+    };
+
+    angular.module('lux.applications', ['lux.services'])
+
+        .directive('luxApp', ['$lux', function ($lux) {
+            return {
+                restrict: 'AE',
+                //
+                link: function (scope, element, attrs) {
+                    var options = getOptions(attrs),
+                        appName = options.luxApp;
+                    if (appName) {
+                        var App = lazyApplications[appName];
+                        if (App) {
+                            options.scope = scope;
+                            var app = new App(element[0], options);
+                            app.build();
+                        } else {
+                            $lux.log.error('Application ' + appName + ' not registered');
+                        }
+                    } else {
+                        $lux.log.error('Application name not available');
+                    }
+                }
+            };
+        }]);
+
+    lux.context.ngModules.push('lux.applications');

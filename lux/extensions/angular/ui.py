@@ -83,21 +83,34 @@ def add_animate(all):
     css = all.css
     vars = all.variables
 
-    vars.animate.fadein ='1s'
-    vars.animate.fadeout ='1s'
+    fade = vars.animate.fade
+    fade.top = 0
+    fade.left = 0
+    fade.fadein ='1s'
+    fade.fadeout ='1s'
 
     css('body',
         CssInclude('animate'))
 
     css('.animate-fade',
-        css('.ng-enter,.ng-leave',
-            position='absolute',
-            left=0,
-            right=0),
         css('.ng-enter',
-            Animation('fadeIn', vars.animate.fadein)),
+            #css('.ng-enter-active',
+            #    Opacity(1)),
+            #Opacity(0),
+            Animation('fadeIn', vars.animate.fade.fadein),
+            position='absolute',
+            width=pc(100),
+            top=fade.top,
+            left=fade.left),
         css('.ng-leave',
-            Animation('fadeOut', vars.animate.fadeout)))
+            #css('.ng-leave-active',
+            #    Opacity(1)),
+            #Opacity(0),
+            Animation('fadeOut', vars.animate.fade.fadeout),
+            position='absolute',
+            width=pc(100),
+            top=fade.top,
+            left=fade.left))
 
 
 def add_forms(all):

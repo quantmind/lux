@@ -35,6 +35,10 @@
                 "luxjs/close.js"],
         "dest": "lux/media/lux/lux.js"
     },
+    "luxRequire": {
+        "src": "luxjs/require.js",
+        "dest": "lux/extensions/angular/templates/lux.require.js"
+    },
     "luxsite": {
         "options": {
             "banner": "luxjs/banner.js"

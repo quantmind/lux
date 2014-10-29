@@ -1,19 +1,17 @@
 
     describe("Test lux.scroll module", function() {
-        angular.module('lux.scroll.test', ['lux.scope.loader', 'lux.scroll']);
+        angular.module('lux.scroll.test', ['lux.loader', 'lux.scroll']);
 
         beforeEach(function () {
             module('lux.scroll.test');
         });
 
-        it("Scroll scope defaults", inject(['$rootScope', function ($rootScope) {
+        it("Scroll scope defaults", inject(['scroll', function (scroll) {
 
-            var scope = $rootScope.$new();
-
-            expect(typeof(scope.scroll)).toBe('object');
-            expect(scope.scroll.time).toBe(1);
-            expect(scope.scroll.offset).toBe(0);
-            expect(scope.scroll.frames).toBe(25);
+            expect(typeof(scroll.cfg)).toBe('object');
+            expect(scroll.cfg.time).toBe(1);
+            expect(scroll.cfg.offset).toBe(0);
+            expect(scroll.cfg.frames).toBe(25);
         }]));
 
         it("Scroll scope overrides", function () {

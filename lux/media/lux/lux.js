@@ -1,6 +1,6 @@
 //      Lux Library - v0.1.0
 
-//      Compiled 2014-10-26.
+//      Compiled 2014-10-29.
 //      Copyright (c) 2014 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -28,31 +28,32 @@
 function(angular, root) {
     "use strict";
 
-    var lux = {version: '0.1.0'},
-        ready_callbacks = [],
-        forEach = angular.forEach,
+    var lux = root.lux || {};
+    lux.version = '0.1.0';
+
+    var forEach = angular.forEach,
         extend = angular.extend,
         angular_bootstrapped = false,
         isArray = angular.isArray,
         isString = angular.isString,
         $ = angular.element,
         slice = Array.prototype.slice,
+        lazyApplications = {},
         defaults = {
             url: '',    // base url for the web site
             media: '',  // default url for media content
             html5mode: true, //  html5mode for angular
-            hashPrefix: '!'
+            hashPrefix: '!',
+            ngModules: [],
+            loadRequire: function (callback) {
+                callback();
+            }
         };
     //
     lux.$ = $;
+    lux.angular = angular;
     lux.forEach = angular.forEach;
-    lux.context = extend({}, defaults, root.luxContext);
-
-    // Callbacks run after angular has finished bootstrapping
-    lux.add_ready_callback = function (callback) {
-        if (ready_callbacks === true) callback();
-        else ready_callbacks.push(callback);
-    };
+    lux.context = extend({}, defaults, lux.context);
 
     // Extend lux context with additional data
     lux.extend = function (context) {
@@ -66,6 +67,36 @@ function(angular, root) {
         return joinUrl(ctx.url, ctx.media, url);
     };
 
+    lux.luxApp = function (name, App) {
+        lazyApplications[name] = App;
+    };
+
+    angular.module('lux.applications', ['lux.services'])
+
+        .directive('luxApp', ['$lux', function ($lux) {
+            return {
+                restrict: 'AE',
+                //
+                link: function (scope, element, attrs) {
+                    var options = getOptions(attrs),
+                        appName = options.luxApp;
+                    if (appName) {
+                        var App = lazyApplications[appName];
+                        if (App) {
+                            options.scope = scope;
+                            var app = new App(element[0], options);
+                            app.build();
+                        } else {
+                            $lux.log.error('Application ' + appName + ' not registered');
+                        }
+                    } else {
+                        $lux.log.error('Application name not available');
+                    }
+                }
+            };
+        }]);
+
+    lux.context.ngModules.push('lux.applications');
     var
     //
     generateCallbacks = function () {
@@ -212,6 +243,18 @@ function(angular, root) {
         fileref.setAttribute("type", "text/css");
         fileref.setAttribute("href", filename);
         document.getElementsByTagName("head")[0].appendChild(fileref);
+    },
+    //
+    //
+    globalEval = lux.globalEval = function(data) {
+        if (data) {
+            // We use execScript on Internet Explorer
+            // We use an anonymous function so that context is window
+            // rather than jQuery in Firefox
+            (root.execScript || function(data) {
+                root["eval"].call(root, data );
+            })(data);
+        }
     };
 
 
@@ -622,68 +665,132 @@ function(angular, root) {
     //  Hash scrolling service
     angular.module('lux.scroll', [])
         //
-        .run(['$rootScope', function (scope) {
-            scope.scroll = extend({
-                time: 1,
-                offset: 0,
-                frames: 25
-            }, scope.scroll);
+        // Switch off scrolling managed by angular
+        //.value('$anchorScroll', angular.noop)
+        //
+        .value('scrollDefaults', {
+            // Time to complete the scrolling (seconds)
+            time: 1,
+            // Offset relative to hash links
+            offset: 0,
+            // Number of frames to use in the scroll transition
+            frames: 25,
+            //
+            topPage: true,
+            //
+            scrollTargetClass: 'scroll-target',
+            //
+            scrollTargetClassFinish: 'finished'
+        })
+        //
+        // Switch off scrolling managed by angular
+        .config(['$anchorScrollProvider', function ($anchorScrollProvider) {
+            $anchorScrollProvider.disableAutoScrolling();
         }])
         //
-        .service('scroll', ['$rootScope', '$location', '$log', '$timeout', function (scope, $location, log, timer) {
-            //  ScrollToHash
-            var targetClass = 'scroll-target',
-                targetClassFinish = 'finished',
-                luxScroll = scope.scroll,
-                target = null;
+        .run(['$rootScope', '$location', '$log', '$timeout', 'scrollDefaults',
+                function(scope, location, log, timer, scrollDefaults) {
             //
-            this.toHash = function (hash, offset, delay) {
-                var e;
-                if (target || !hash)
-                    return;
-                if (hash.e) {
-                    e = hash.e;
-                    hash = hash.hash;
+            var target = null,
+                scroll = scope.scroll = extend({}, scrollDefaults, scope.scroll);
+            //
+            scroll.browser = true;
+            scroll.path = false;
+            //
+            // This is the first event triggered when the path location changes
+            scope.$on('$locationChangeSuccess', function() {
+                if (!scope.scroll.path) {
+                    scope.scroll.browser = true;
+                    _clear(100);
                 }
+            });
+
+            // Watch for path changes and check if back browser button was used
+            scope.$watch(function () {
+                return location.path();
+            }, function (newLocation, oldLocation) {
+                if (!scope.scroll.browser) {
+                    scope.scroll.path = newLocation !== oldLocation;
+                    if (!scope.scroll.path)
+                        scope.scroll.browser = true;
+                } else
+                    scope.scroll.path = false;
+            });
+
+            // Watch for hash changes
+            scope.$watch(function () {
+                return location.hash();
+            }, function (hash) {
+                if (!(scope.scroll.path || scope.scroll.browser))
+                    toHash(hash);
+            });
+
+            scope.$on('$viewContentLoaded', function () {
+                var hash = location.hash();
+                if (!scope.scroll.browser)
+                    toHash(hash, 0);
+            });
+            //
+            function toHash (hash, delay) {
+                timer(function () {
+                    _toHash(hash, delay);
+                });
+            }
+            //
+            function _toHash (hash, delay) {
+                if (target)
+                    return;
+                if (!hash && !scroll.topPage)
+                    return;
                 // set the location.hash to the id of
                 // the element you wish to scroll to.
                 if (typeof(hash) === 'string') {
+                    var highlight = true;
                     if (hash.substring(0, 1) === '#')
                         hash = hash.substring(1);
-                    target = document.getElementById(hash);
+                    if (hash)
+                        target = document.getElementById(hash);
+                    else {
+                        highlight = false;
+                        target = document.getElementsByTagName('body');
+                        target = target.length ? target[0] : null;
+                    }
                     if (target) {
                         _clearTargets();
-                        target = $(target).addClass(targetClass).removeClass(targetClassFinish);
-                        if (e) {
-                            //e.preventDefault();
-                            //e.stopPropagation();
-                        }
+                        target = $(target);
+                        if (highlight)
+                            target.addClass(scope.scrollTargetClass)
+                                  .removeClass(scope.scrollTargetClassFinish);
                         log.info('Scrolling to target #' + hash);
-                        _scrollTo(offset || luxScroll.offset, delay);
-                        return target;
+                        _scrollTo(delay);
                     }
                 }
-            };
+            }
 
             function _clearTargets () {
-                forEach(document.querySelectorAll('.' + targetClass), function (el) {
-                    $(el).removeClass(targetClass);
+                forEach(document.querySelectorAll('.' + scope.scrollTargetClass), function (el) {
+                    $(el).removeClass(scope.scrollTargetClass);
                 });
             }
 
-            function _scrollTo (offset, delay) {
-                var i,
-                    startY = currentYPosition(),
-                    stopY = elmYPosition(target[0]) - offset,
-                    distance = stopY > startY ? stopY - startY : startY - stopY;
-                var step = Math.round(distance / luxScroll.frames),
-                    y = startY;
-                if (delay === null || delay === undefined) {
-                    delay = 1000*luxScroll.time/luxScroll.frames;
-                    if (distance < 200)
-                        delay = 0;
+            function _scrollTo (delay) {
+                var stopY = elmYPosition(target[0]) - scroll.offset;
+
+                if (delay === 0) {
+                    window.scrollTo(0, stopY);
+                    _finished();
+                } else {
+                    var startY = currentYPosition(),
+                        distance = stopY > startY ? stopY - startY : startY - stopY,
+                        step = Math.round(distance / scroll.frames);
+
+                    if (delay === null || delay === undefined) {
+                        delay = 1000*scroll.time/scroll.frames;
+                        if (distance < 200)
+                            delay = 0;
+                    }
+                    _nextScroll(startY, delay, step, stopY);
                 }
-                _nextScroll(startY, delay, step, stopY);
             }
 
             function _nextScroll (y, delay, stepY, stopY) {
@@ -709,10 +816,27 @@ function(angular, root) {
                     if (more)
                         _nextScroll(y2, delay, stepY, stopY);
                     else {
-                        $location.hash(target.attr('id'));
-                        target.addClass(targetClassFinish);
-                        target = null;
+                        _finished();
                     }
+                }, delay);
+            }
+
+            function _finished () {
+                // Done with it - set the hash in the location
+                // location.hash(target.attr('id'));
+                if (target.hasClass(scope.scrollTargetClass))
+                    target.addClass(scope.scrollTargetClassFinish);
+                target = null;
+                _clear(0);
+            }
+
+            function _clear (delay) {
+                if (delay === undefined) delay = 0;
+                timer(function () {
+                    log.info('Reset scrolling');
+                    scope.scroll.browser = false;
+                    scope.scroll.path = false;
+                    scope.scroll.hash = false;
                 }, delay);
             }
 
@@ -743,32 +867,6 @@ function(angular, root) {
                 return y;
             }
 
-        }])
-        //
-        // Directive for adding smooth scrolling to hash links
-        .directive('hashScroll', ['$log', '$location', 'scroll', function (log, location, scroll) {
-            var innerTags = ['IMG', 'I', 'SPAN', 'TT'];
-            //
-            return {
-                link: function (scope, element, attrs) {
-                    //
-                    log.info('Apply smooth scrolling');
-                    scope.location = location;
-                    scope.$watch('location.hash()', function(hash) {
-                        // Hash change (when a new page is loaded)
-                        scroll.toHash(hash, null, 0);
-                    });
-                    //
-                    element.bind('click', function (e) {
-                        var target = e.target;
-                        while (target && innerTags.indexOf(target.tagName) > -1)
-                            target = target.parentElement;
-                        if (target && target.hash) {
-                            scroll.toHash({hash: target.hash, e: e});
-                        }
-                    });
-                }
-            };
         }]);
     //
     //  Lux Static JSON API
@@ -1044,11 +1142,8 @@ angular.module("page/messages.tpl.html", []).run(["$templateCache", function($te
     // TODO: fix this!
     var stateHref = function (state, State, Params) {
         if (Params) {
-            return state.href(State, Params);
-            //var n = url.length,
-            //    url2 = state.href(State, Params);
-            //url = encodeURIComponent(url) + url2.substring(n);
-            //url = decodeURIComponent(url);
+            var url = state.href(State, Params);
+            return url.replace(/%2F/g, '/');
         } else {
             return state.href(State);
         }
@@ -1062,8 +1157,9 @@ angular.module("page/messages.tpl.html", []).run(["$templateCache", function($te
             scope.$state = $state;
             scope.$stateParams = $stateParams;
         }])
-        .config(['$locationProvider', '$stateProvider', '$urlRouterProvider',
-            function ($locationProvider, $stateProvider, $urlRouterProvider) {
+        //
+        .config(['$locationProvider', '$stateProvider', '$urlRouterProvider', '$anchorScrollProvider',
+            function ($locationProvider, $stateProvider, $urlRouterProvider, $anchorScrollProvider) {
 
             var
             hrefs = lux.context.hrefs,
@@ -1092,11 +1188,14 @@ angular.module("page/messages.tpl.html", []).run(["$templateCache", function($te
                                                 forEach(data.require_css, function (css) {
                                                     loadCss(css);
                                                 });
-                                                if (data.require_js)
+                                                if (data.require_js) {
+                                                    var defer = $lux.q.defer();
                                                     require(data.require_js, function () {
-
+                                                        defer.resolve(data);
                                                     });
-                                                return data;
+                                                    return defer.promise;
+                                                } else
+                                                    return data;
                                             });
                                         }
                                     }
@@ -1133,6 +1232,7 @@ angular.module("page/messages.tpl.html", []).run(["$templateCache", function($te
                 }
             });
         }])
+        //
         .controller('Html5', ['$scope', '$state', 'dateFilter', '$lux', 'page', 'items',
             function ($scope, $state, dateFilter, $lux, page, items) {
                 $scope.items = items ? items.data : null;
@@ -1145,9 +1245,16 @@ angular.module("page/messages.tpl.html", []).run(["$templateCache", function($te
                     scope.$on('$stateChangeSuccess', function () {
                         var page = scope.page;
                         if (page.html && page.html.main) {
-                            element.html(page.html.main);
+                            element[0].innerHTML = page.html.main;
+                            var scripts= element[0].getElementsByTagName('script');
+                            // Execute scripts in the loaded html
+                            forEach(scripts, function (js) {
+                                globalEval(js.innerText);
+                            });
                             log.info('Compiling new html content');
                             $compile(element.contents())(scope);
+                            // load required scripts if necessary
+                            lux.loadRequire();
                         }
                     });
                 }
@@ -1909,9 +2016,14 @@ angular.module("page/messages.tpl.html", []).run(["$templateCache", function($te
                 });
             };
         }]);
-    angular.module('lux.scope.loader', [])
-        //
+    lux.loader = angular.module('lux.loader', []);
+
+    lux.loader
         .value('context', lux.context)
+        //
+        .config(['$compileProvider', function (compiler) {
+            lux.loader.directive = compiler.directive;
+        }])
         //
         .run(['$rootScope', '$log', 'context', function (scope, log, context) {
             log.info('Extend root scope with context');
@@ -1932,20 +2044,19 @@ angular.module("page/messages.tpl.html", []).run(["$templateCache", function($te
                 // Remove seo view, we don't want to bootstrap it
                 $(document.querySelector('#seo-view')).remove();
             }
-            else
+            else {
                 modules.push('lux.router');
+            }
             // Add all modules from context
             forEach(lux.context.ngModules, function (mod) {
                 modules.push(mod);
             });
-            modules.splice(0, 0, 'lux.scope.loader');
+            modules.splice(0, 0, 'lux.loader');
             angular.module(name, modules);
             angular.bootstrap(document, [name]);
             //
-            forEach(ready_callbacks, function (callback) {
-                callback();
-            });
-            ready_callbacks = true;
+            if (!lux.context.uiRouter)
+                lux.loadRequire();
         }
 
         if (!angular_bootstrapped) {
@@ -1991,7 +2102,7 @@ angular.module("blog/pagination.tpl.html", []).run(["$templateCache", function($
     //
     //  Simple blog pagination directives and code highlight with highlight.js
     angular.module('lux.blog', ['templates-blog', 'lux.services', 'highlight', 'lux.scroll'])
-        .controller('BlogEntry', ['$scope', 'dateFilter', '$lux', 'scroll', function ($scope, dateFilter, $lux, scroll) {
+        .controller('BlogEntry', ['$scope', 'dateFilter', '$lux', function ($scope, dateFilter, $lux) {
             var post = $scope.post;
             if (!post) {
                 $lux.log.error('post not available in $scope, cannot use pagination controller!');
@@ -2590,11 +2701,12 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
                 }
             };
         });
-    //
-    // Load d3 extensions into angular 'd3viz' module
-    //  d3ext is the d3 extension object
-    //  name is the optional module name for angular (default to d3viz)
-    lux.addD3ext = function (d3, name) {
+
+    lux.d3Directive = function (name, VizClass, moduleName) {
+
+        moduleName = moduleName || 'd3viz';
+
+        var dname = 'viz' + name.substring(0,1).toUpperCase() + name.substring(1);
 
         function loadData ($lux) {
 
@@ -2621,7 +2733,7 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
                 }
             };
         }
-        //
+
         // Obtain extra information from javascript objects
         function getOptions(d3, attrs) {
             if (typeof attrs.options === 'string') {
@@ -2639,34 +2751,40 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
             return attrs;
         }
 
-        name = name || 'd3viz';
-        var app = angular.module(name, ['lux.services']);
+        angular.module(moduleName)
+            .directive(dname, ['$lux', function ($lux) {
+                return {
+                        //
+                        // Create via element tag or attribute
+                        restrict: 'AE',
+                        //
+                        link: function (scope, element, attrs) {
+                            var viz = element.data(dname);
+                            if (!viz) {
+                                var options = getOptions(d3, attrs);
+                                viz = new VizClass(element[0], options);
+                                element.data(viz);
+                                viz.loadData = loadData($lux);
+                                viz.build();
+                            }
+                        }
+                    };
+            }]);
+    };
+    //
+    // Load d3 extensions into angular 'd3viz' module
+    //  d3ext is the d3 extension object
+    //  name is the optional module name for angular (default to d3viz)
+    lux.addD3ext = function (d3, moduleName) {
+        //
+        moduleName = moduleName || 'd3viz';
+        angular.module(moduleName, ['lux.services']);
 
         // Loop through d3 extensions and create directives
         // for each Visualization class
         angular.forEach(d3.ext, function (VizClass, name) {
-
             if (d3.ext.isviz(VizClass)) {
-                var dname = 'viz' + name.substring(0,1).toUpperCase() + name.substring(1);
-
-                app.directive(dname, ['$lux', function ($lux) {
-                    return {
-                            //
-                            // Create via element tag or attribute
-                            restrict: 'AE',
-                            //
-                            link: function (scope, element, attrs) {
-                                var viz = element.data(dname);
-                                if (!viz) {
-                                    var options = getOptions(d3, attrs);
-                                    viz = new VizClass(element[0], options);
-                                    element.data(viz);
-                                    viz.loadData = loadData($lux);
-                                    viz.build();
-                                }
-                            }
-                        };
-                }]);
+                lux.d3Directive(name, VizClass, moduleName);
             }
         });
 

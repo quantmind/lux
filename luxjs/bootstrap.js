@@ -1,6 +1,11 @@
-    angular.module('lux.scope.loader', [])
-        //
+    lux.loader = angular.module('lux.loader', []);
+
+    lux.loader
         .value('context', lux.context)
+        //
+        .config(['$compileProvider', function (compiler) {
+            lux.loader.directive = compiler.directive;
+        }])
         //
         .run(['$rootScope', '$log', 'context', function (scope, log, context) {
             log.info('Extend root scope with context');
@@ -21,20 +26,19 @@
                 // Remove seo view, we don't want to bootstrap it
                 $(document.querySelector('#seo-view')).remove();
             }
-            else
+            else {
                 modules.push('lux.router');
+            }
             // Add all modules from context
             forEach(lux.context.ngModules, function (mod) {
                 modules.push(mod);
             });
-            modules.splice(0, 0, 'lux.scope.loader');
+            modules.splice(0, 0, 'lux.loader');
             angular.module(name, modules);
             angular.bootstrap(document, [name]);
             //
-            forEach(ready_callbacks, function (callback) {
-                callback();
-            });
-            ready_callbacks = true;
+            if (!lux.context.uiRouter)
+                lux.loadRequire();
         }
 
         if (!angular_bootstrapped) {

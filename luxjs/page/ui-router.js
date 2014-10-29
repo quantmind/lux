@@ -10,11 +10,8 @@
     // TODO: fix this!
     var stateHref = function (state, State, Params) {
         if (Params) {
-            return state.href(State, Params);
-            //var n = url.length,
-            //    url2 = state.href(State, Params);
-            //url = encodeURIComponent(url) + url2.substring(n);
-            //url = decodeURIComponent(url);
+            var url = state.href(State, Params);
+            return url.replace(/%2F/g, '/');
         } else {
             return state.href(State);
         }
@@ -28,8 +25,9 @@
             scope.$state = $state;
             scope.$stateParams = $stateParams;
         }])
-        .config(['$locationProvider', '$stateProvider', '$urlRouterProvider',
-            function ($locationProvider, $stateProvider, $urlRouterProvider) {
+        //
+        .config(['$locationProvider', '$stateProvider', '$urlRouterProvider', '$anchorScrollProvider',
+            function ($locationProvider, $stateProvider, $urlRouterProvider, $anchorScrollProvider) {
 
             var
             hrefs = lux.context.hrefs,
@@ -58,11 +56,14 @@
                                                 forEach(data.require_css, function (css) {
                                                     loadCss(css);
                                                 });
-                                                if (data.require_js)
+                                                if (data.require_js) {
+                                                    var defer = $lux.q.defer();
                                                     require(data.require_js, function () {
-
+                                                        defer.resolve(data);
                                                     });
-                                                return data;
+                                                    return defer.promise;
+                                                } else
+                                                    return data;
                                             });
                                         }
                                     }
@@ -99,6 +100,7 @@
                 }
             });
         }])
+        //
         .controller('Html5', ['$scope', '$state', 'dateFilter', '$lux', 'page', 'items',
             function ($scope, $state, dateFilter, $lux, page, items) {
                 $scope.items = items ? items.data : null;
@@ -111,9 +113,16 @@
                     scope.$on('$stateChangeSuccess', function () {
                         var page = scope.page;
                         if (page.html && page.html.main) {
-                            element.html(page.html.main);
+                            element[0].innerHTML = page.html.main;
+                            var scripts= element[0].getElementsByTagName('script');
+                            // Execute scripts in the loaded html
+                            forEach(scripts, function (js) {
+                                globalEval(js.innerText);
+                            });
                             log.info('Compiling new html content');
                             $compile(element.contents())(scope);
+                            // load required scripts if necessary
+                            lux.loadRequire();
                         }
                     });
                 }

@@ -144,4 +144,16 @@
         fileref.setAttribute("type", "text/css");
         fileref.setAttribute("href", filename);
         document.getElementsByTagName("head")[0].appendChild(fileref);
+    },
+    //
+    //
+    globalEval = lux.globalEval = function(data) {
+        if (data) {
+            // We use execScript on Internet Explorer
+            // We use an anonymous function so that context is window
+            // rather than jQuery in Firefox
+            (root.execScript || function(data) {
+                root["eval"].call(root, data );
+            })(data);
+        }
     };
