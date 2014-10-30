@@ -160,6 +160,9 @@ def add_css(all):
         position='absolute',
         top=0, bottom=0)
 
+    css('.nav.navbar-nav > li > a',
+        outline='none')
+
 
 def colors(all):
     vars = all.variables
