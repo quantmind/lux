@@ -6,7 +6,10 @@
     if (typeof define === 'function' && define.amd) {
         // Support AMD. Register as an anonymous module.
         // NOTE: List all dependencies in AMD style
-        define(['angular'], function (angular) {
+        var deps = ['angular'];
+        if (typeof rcfg === 'object')
+            deps = rcfg.min(deps);
+        define(deps, function (angular) {
             root.lux = factory(angular, root);
             return root.lux;
         });
@@ -77,7 +80,6 @@ function(angular, root) {
                         if (App) {
                             options.scope = scope;
                             var app = new App(element[0], options);
-                            app.build();
                         } else {
                             $lux.log.error('Application ' + appName + ' not registered');
                         }

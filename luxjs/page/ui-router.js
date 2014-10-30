@@ -58,7 +58,7 @@
                                                 });
                                                 if (data.require_js) {
                                                     var defer = $lux.q.defer();
-                                                    require(data.require_js, function () {
+                                                    require(rcfg.min(data.require_js), function () {
                                                         defer.resolve(data);
                                                     });
                                                     return defer.promise;

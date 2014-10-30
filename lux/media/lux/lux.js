@@ -1,6 +1,6 @@
 //      Lux Library - v0.1.0
 
-//      Compiled 2014-10-29.
+//      Compiled 2014-10-30.
 //      Copyright (c) 2014 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -14,7 +14,10 @@
     if (typeof define === 'function' && define.amd) {
         // Support AMD. Register as an anonymous module.
         // NOTE: List all dependencies in AMD style
-        define(['angular'], function (angular) {
+        var deps = ['angular'];
+        if (typeof rcfg === 'object')
+            deps = rcfg.min(deps);
+        define(deps, function (angular) {
             root.lux = factory(angular, root);
             return root.lux;
         });
@@ -85,7 +88,6 @@ function(angular, root) {
                         if (App) {
                             options.scope = scope;
                             var app = new App(element[0], options);
-                            app.build();
                         } else {
                             $lux.log.error('Application ' + appName + ' not registered');
                         }
@@ -675,7 +677,7 @@ function(angular, root) {
             offset: 0,
             // Number of frames to use in the scroll transition
             frames: 25,
-            //
+            // If true, scroll to top of the page when hash is empty
             topPage: true,
             //
             scrollTargetClass: 'scroll-target',
@@ -699,8 +701,8 @@ function(angular, root) {
             //
             // This is the first event triggered when the path location changes
             scope.$on('$locationChangeSuccess', function() {
-                if (!scope.scroll.path) {
-                    scope.scroll.browser = true;
+                if (!scroll.path) {
+                    scroll.browser = true;
                     _clear(100);
                 }
             });
@@ -709,25 +711,25 @@ function(angular, root) {
             scope.$watch(function () {
                 return location.path();
             }, function (newLocation, oldLocation) {
-                if (!scope.scroll.browser) {
-                    scope.scroll.path = newLocation !== oldLocation;
-                    if (!scope.scroll.path)
-                        scope.scroll.browser = true;
+                if (!scroll.browser) {
+                    scroll.path = newLocation !== oldLocation;
+                    if (!scroll.path)
+                        scroll.browser = true;
                 } else
-                    scope.scroll.path = false;
+                    scroll.path = false;
             });
 
             // Watch for hash changes
             scope.$watch(function () {
                 return location.hash();
             }, function (hash) {
-                if (!(scope.scroll.path || scope.scroll.browser))
+                if (!(scroll.path || scroll.browser))
                     toHash(hash);
             });
 
             scope.$on('$viewContentLoaded', function () {
                 var hash = location.hash();
-                if (!scope.scroll.browser)
+                if (!scroll.browser)
                     toHash(hash, 0);
             });
             //
@@ -759,8 +761,8 @@ function(angular, root) {
                         _clearTargets();
                         target = $(target);
                         if (highlight)
-                            target.addClass(scope.scrollTargetClass)
-                                  .removeClass(scope.scrollTargetClassFinish);
+                            target.addClass(scroll.scrollTargetClass)
+                                  .removeClass(scroll.scrollTargetClassFinish);
                         log.info('Scrolling to target #' + hash);
                         _scrollTo(delay);
                     }
@@ -768,8 +770,8 @@ function(angular, root) {
             }
 
             function _clearTargets () {
-                forEach(document.querySelectorAll('.' + scope.scrollTargetClass), function (el) {
-                    $(el).removeClass(scope.scrollTargetClass);
+                forEach(document.querySelectorAll('.' + scroll.scrollTargetClass), function (el) {
+                    $(el).removeClass(scroll.scrollTargetClass);
                 });
             }
 
@@ -824,8 +826,8 @@ function(angular, root) {
             function _finished () {
                 // Done with it - set the hash in the location
                 // location.hash(target.attr('id'));
-                if (target.hasClass(scope.scrollTargetClass))
-                    target.addClass(scope.scrollTargetClassFinish);
+                if (target.hasClass(scroll.scrollTargetClass))
+                    target.addClass(scroll.scrollTargetClassFinish);
                 target = null;
                 _clear(0);
             }
@@ -834,9 +836,8 @@ function(angular, root) {
                 if (delay === undefined) delay = 0;
                 timer(function () {
                     log.info('Reset scrolling');
-                    scope.scroll.browser = false;
-                    scope.scroll.path = false;
-                    scope.scroll.hash = false;
+                    scroll.browser = false;
+                    scroll.path = false;
                 }, delay);
             }
 
@@ -1036,6 +1037,8 @@ angular.module("page/messages.tpl.html", []).run(["$templateCache", function($te
                 return steps;
             };
         }])
+        //
+        //  Directive for displaying breadcrumbs navigation
         .directive('breadcrumbs', ['$breadcrumbs', '$rootScope', function ($breadcrumbs, $rootScope) {
             return {
                 restrict: 'AE',
@@ -1190,7 +1193,7 @@ angular.module("page/messages.tpl.html", []).run(["$templateCache", function($te
                                                 });
                                                 if (data.require_js) {
                                                     var defer = $lux.q.defer();
-                                                    require(data.require_js, function () {
+                                                    require(rcfg.min(data.require_js), function () {
                                                         defer.resolve(data);
                                                     });
                                                     return defer.promise;
@@ -1809,21 +1812,27 @@ angular.module("page/messages.tpl.html", []).run(["$templateCache", function($te
             //
             this.initScope = function (scope, element, attrs) {
                 var data = getOptions(attrs),
-                    form = data.field;
+                    form = data.field,
+                    formmodel = {};
+
                 if (form) {
                     // extend with form defaults
                     data.field = extend({}, formDefaults, form);
                     extend(scope, data);
                     form = scope.field;
-                    if (!form.name)
-                        form.name = 'form';
-                    form.model = form.model ? form.model : form.name;
-                    if (form.model === form.name)
-                        form.model = form.model + 'Model';
+                    if (form.model) {
+                        if (!form.name)
+                            form.name = form.model + 'form';
+                        scope.$parent[form.model] = formmodel;
+                    } else {
+                        if (!form.name)
+                            form.name = 'form';
+                        form.model = form.name + 'Model';
+                    }
                     scope.formName = form.name;
                     scope.formModelName = form.model;
                     //
-                    scope[scope.formModelName] = {};
+                    scope[scope.formModelName] = formmodel;
                     scope.formAttrs = form;
                     scope.formClasses = {};
                     scope.formErrors = {};
@@ -2021,13 +2030,11 @@ angular.module("page/messages.tpl.html", []).run(["$templateCache", function($te
     lux.loader
         .value('context', lux.context)
         //
-        .config(['$compileProvider', function (compiler) {
-            lux.loader.directive = compiler.directive;
-        }])
-        //
-        .run(['$rootScope', '$log', 'context', function (scope, log, context) {
-            log.info('Extend root scope with context');
+        .run(['$rootScope', '$log', '$timeout', 'context', function (scope, $log, $timeout, context) {
+            $log.info('Extend root scope with context');
             extend(scope, context);
+            scope.$timeout = $timeout;
+            scope.$log = $log;
         }]);
     //
     // Bootstrap the document
@@ -2761,11 +2768,14 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
                         link: function (scope, element, attrs) {
                             var viz = element.data(dname);
                             if (!viz) {
-                                var options = getOptions(d3, attrs);
+                                var options = getOptions(d3, attrs),
+                                    autoBuild = options.autoBuild;
+                                options.autoBuild = false;
                                 viz = new VizClass(element[0], options);
                                 element.data(viz);
                                 viz.loadData = loadData($lux);
-                                viz.build();
+                                if (autoBuild === undefined || autoBuild)
+                                    viz.build();
                             }
                         }
                     };
@@ -2775,10 +2785,9 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
     // Load d3 extensions into angular 'd3viz' module
     //  d3ext is the d3 extension object
     //  name is the optional module name for angular (default to d3viz)
-    lux.addD3ext = function (d3, moduleName) {
+    lux.addD3ext = function (d3) {
         //
-        moduleName = moduleName || 'd3viz';
-        angular.module(moduleName, ['lux.services']);
+        var moduleName = 'd3viz';
 
         // Loop through d3 extensions and create directives
         // for each Visualization class
@@ -2790,6 +2799,21 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
 
         return lux;
     };
+
+    angular.module('d3viz', ['lux.services'])
+        .directive('jstats', function () {
+            return {
+                link: function (scope, element, attrs) {
+                    var mode = attrs.mode ? +attrs.mode : 1;
+                    require(rcfg.min(['stats']), function () {
+                        var stats = new Stats();
+                        stats.setMode(mode);
+                        scope.stats = stats;
+                        element.append($(stats.domElement));
+                    });
+                }
+            };
+        });
 
     angular.module('lux.services', ['lux.api', 'lux.web.api', 'lux.static.api']);
 

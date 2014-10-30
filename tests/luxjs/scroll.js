@@ -6,12 +6,12 @@
             module('lux.scroll.test');
         });
 
-        it("Scroll scope defaults", inject(['scroll', function (scroll) {
-
-            expect(typeof(scroll.cfg)).toBe('object');
-            expect(scroll.cfg.time).toBe(1);
-            expect(scroll.cfg.offset).toBe(0);
-            expect(scroll.cfg.frames).toBe(25);
+        it("Scroll scope defaults", inject(['$rootScope', function (scope) {
+            var scroll = scope.scroll;
+            expect(typeof(scroll)).toBe('object');
+            expect(scroll.time).toBe(1);
+            expect(scroll.offset).toBe(0);
+            expect(scroll.frames).toBe(25);
         }]));
 
         it("Scroll scope overrides", function () {

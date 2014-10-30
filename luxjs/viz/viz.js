@@ -58,11 +58,14 @@
                         link: function (scope, element, attrs) {
                             var viz = element.data(dname);
                             if (!viz) {
-                                var options = getOptions(d3, attrs);
+                                var options = getOptions(d3, attrs),
+                                    autoBuild = options.autoBuild;
+                                options.autoBuild = false;
                                 viz = new VizClass(element[0], options);
                                 element.data(viz);
                                 viz.loadData = loadData($lux);
-                                viz.build();
+                                if (autoBuild === undefined || autoBuild)
+                                    viz.build();
                             }
                         }
                     };
@@ -72,10 +75,9 @@
     // Load d3 extensions into angular 'd3viz' module
     //  d3ext is the d3 extension object
     //  name is the optional module name for angular (default to d3viz)
-    lux.addD3ext = function (d3, moduleName) {
+    lux.addD3ext = function (d3) {
         //
-        moduleName = moduleName || 'd3viz';
-        angular.module(moduleName, ['lux.services']);
+        var moduleName = 'd3viz';
 
         // Loop through d3 extensions and create directives
         // for each Visualization class
@@ -87,3 +89,18 @@
 
         return lux;
     };
+
+    angular.module('d3viz', ['lux.services'])
+        .directive('jstats', function () {
+            return {
+                link: function (scope, element, attrs) {
+                    var mode = attrs.mode ? +attrs.mode : 1;
+                    require(rcfg.min(['stats']), function () {
+                        var stats = new Stats();
+                        stats.setMode(mode);
+                        scope.stats = stats;
+                        element.append($(stats.domElement));
+                    });
+                }
+            };
+        });

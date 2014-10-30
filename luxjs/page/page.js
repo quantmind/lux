@@ -112,6 +112,8 @@
                 return steps;
             };
         }])
+        //
+        //  Directive for displaying breadcrumbs navigation
         .directive('breadcrumbs', ['$breadcrumbs', '$rootScope', function ($breadcrumbs, $rootScope) {
             return {
                 restrict: 'AE',

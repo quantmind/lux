@@ -12,7 +12,7 @@
             offset: 0,
             // Number of frames to use in the scroll transition
             frames: 25,
-            //
+            // If true, scroll to top of the page when hash is empty
             topPage: true,
             //
             scrollTargetClass: 'scroll-target',
@@ -36,8 +36,8 @@
             //
             // This is the first event triggered when the path location changes
             scope.$on('$locationChangeSuccess', function() {
-                if (!scope.scroll.path) {
-                    scope.scroll.browser = true;
+                if (!scroll.path) {
+                    scroll.browser = true;
                     _clear(100);
                 }
             });
@@ -46,25 +46,25 @@
             scope.$watch(function () {
                 return location.path();
             }, function (newLocation, oldLocation) {
-                if (!scope.scroll.browser) {
-                    scope.scroll.path = newLocation !== oldLocation;
-                    if (!scope.scroll.path)
-                        scope.scroll.browser = true;
+                if (!scroll.browser) {
+                    scroll.path = newLocation !== oldLocation;
+                    if (!scroll.path)
+                        scroll.browser = true;
                 } else
-                    scope.scroll.path = false;
+                    scroll.path = false;
             });
 
             // Watch for hash changes
             scope.$watch(function () {
                 return location.hash();
             }, function (hash) {
-                if (!(scope.scroll.path || scope.scroll.browser))
+                if (!(scroll.path || scroll.browser))
                     toHash(hash);
             });
 
             scope.$on('$viewContentLoaded', function () {
                 var hash = location.hash();
-                if (!scope.scroll.browser)
+                if (!scroll.browser)
                     toHash(hash, 0);
             });
             //
@@ -96,8 +96,8 @@
                         _clearTargets();
                         target = $(target);
                         if (highlight)
-                            target.addClass(scope.scrollTargetClass)
-                                  .removeClass(scope.scrollTargetClassFinish);
+                            target.addClass(scroll.scrollTargetClass)
+                                  .removeClass(scroll.scrollTargetClassFinish);
                         log.info('Scrolling to target #' + hash);
                         _scrollTo(delay);
                     }
@@ -105,8 +105,8 @@
             }
 
             function _clearTargets () {
-                forEach(document.querySelectorAll('.' + scope.scrollTargetClass), function (el) {
-                    $(el).removeClass(scope.scrollTargetClass);
+                forEach(document.querySelectorAll('.' + scroll.scrollTargetClass), function (el) {
+                    $(el).removeClass(scroll.scrollTargetClass);
                 });
             }
 
@@ -161,8 +161,8 @@
             function _finished () {
                 // Done with it - set the hash in the location
                 // location.hash(target.attr('id'));
-                if (target.hasClass(scope.scrollTargetClass))
-                    target.addClass(scope.scrollTargetClassFinish);
+                if (target.hasClass(scroll.scrollTargetClass))
+                    target.addClass(scroll.scrollTargetClassFinish);
                 target = null;
                 _clear(0);
             }
@@ -171,9 +171,8 @@
                 if (delay === undefined) delay = 0;
                 timer(function () {
                     log.info('Reset scrolling');
-                    scope.scroll.browser = false;
-                    scope.scroll.path = false;
-                    scope.scroll.hash = false;
+                    scroll.browser = false;
+                    scroll.path = false;
                 }, delay);
             }
 

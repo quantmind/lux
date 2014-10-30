@@ -3,13 +3,11 @@
     lux.loader
         .value('context', lux.context)
         //
-        .config(['$compileProvider', function (compiler) {
-            lux.loader.directive = compiler.directive;
-        }])
-        //
-        .run(['$rootScope', '$log', 'context', function (scope, log, context) {
-            log.info('Extend root scope with context');
+        .run(['$rootScope', '$log', '$timeout', 'context', function (scope, $log, $timeout, context) {
+            $log.info('Extend root scope with context');
             extend(scope, context);
+            scope.$timeout = $timeout;
+            scope.$log = $log;
         }]);
     //
     // Bootstrap the document

@@ -546,21 +546,27 @@
             //
             this.initScope = function (scope, element, attrs) {
                 var data = getOptions(attrs),
-                    form = data.field;
+                    form = data.field,
+                    formmodel = {};
+
                 if (form) {
                     // extend with form defaults
                     data.field = extend({}, formDefaults, form);
                     extend(scope, data);
                     form = scope.field;
-                    if (!form.name)
-                        form.name = 'form';
-                    form.model = form.model ? form.model : form.name;
-                    if (form.model === form.name)
-                        form.model = form.model + 'Model';
+                    if (form.model) {
+                        if (!form.name)
+                            form.name = form.model + 'form';
+                        scope.$parent[form.model] = formmodel;
+                    } else {
+                        if (!form.name)
+                            form.name = 'form';
+                        form.model = form.name + 'Model';
+                    }
                     scope.formName = form.name;
                     scope.formModelName = form.model;
                     //
-                    scope[scope.formModelName] = {};
+                    scope[scope.formModelName] = formmodel;
                     scope.formAttrs = form;
                     scope.formClasses = {};
                     scope.formErrors = {};
