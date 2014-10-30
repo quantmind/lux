@@ -348,25 +348,34 @@ class Radius(Mixin):
 
 ################################################# CSS3 BACKGROUNd
 class Background(Mixin):
-
-    def __init__(self, url=None, size=None, repeat=None, position=None):
+    '''Set the background property of an element
+    '''
+    def __init__(self, url=None, size=None, repeat=None, position=None,
+                 attachment=None):
         self.url = url
         self.size = size
         self.repeat = repeat
         self.position = position
+        self.attachment = attachment
 
     def __call__(self, elem):
+        size = as_value(self.size)
+        repeat = as_value(self.repeat)
+        position = as_value(self.position)
+        attachment = as_value(self.attachment)
         if self.url:
             elem['background-image'] = "url(%s)" % self.url
-        if self.size:
-            elem['-webkit-background-size'] = self.size
-            elem['   -moz-background-size'] = self.size
-            elem['     -o-background-size'] = self.size
-            elem['        background-size'] = self.size
-        if self.repeat:
-            elem['background-repeat'] = self.repeat
-        if self.position:
-            elem['background-position'] = self.position
+        if size:
+            elem['-webkit-background-size'] = size
+            elem['   -moz-background-size'] = size
+            elem['     -o-background-size'] = size
+            elem['        background-size'] = size
+        if repeat:
+            elem['background-repeat'] = repeat
+        if position:
+            elem['background-position'] = position
+        if attachment:
+            elem['background-attachment'] = attachment
 
 
 ################################################# CSS3 GRADIENT
