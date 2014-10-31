@@ -85,6 +85,13 @@
                         if (navService.maybeCollapse(scope.navbar))
                             scope.$apply();
                     });
+                    //
+                    // When using ui-router, and a view changes collapse the
+                    //  navigation if needed
+                    scope.$on('$locationChangeSuccess', function () {
+                        navService.maybeCollapse(scope.navbar);
+                        //scope.$apply();
+                    });
                 }
             };
         }])
