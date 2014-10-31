@@ -1,6 +1,6 @@
 //      Lux Library - v0.1.0
 
-//      Compiled 2014-10-30.
+//      Compiled 2014-10-31.
 //      Copyright (c) 2014 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -1252,7 +1252,7 @@ angular.module("page/messages.tpl.html", []).run(["$templateCache", function($te
                             var scripts= element[0].getElementsByTagName('script');
                             // Execute scripts in the loaded html
                             forEach(scripts, function (js) {
-                                globalEval(js.innerText);
+                                globalEval(js.innerHTML);
                             });
                             log.info('Compiling new html content');
                             $compile(element.contents())(scope);

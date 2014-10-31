@@ -117,7 +117,7 @@
                             var scripts= element[0].getElementsByTagName('script');
                             // Execute scripts in the loaded html
                             forEach(scripts, function (js) {
-                                globalEval(js.innerText);
+                                globalEval(js.innerHTML);
                             });
                             log.info('Compiling new html content');
                             $compile(element.contents())(scope);
