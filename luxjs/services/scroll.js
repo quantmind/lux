@@ -34,11 +34,13 @@
             scroll.browser = true;
             scroll.path = false;
             //
+            scope.$location = location;
+            //
             // This is the first event triggered when the path location changes
             scope.$on('$locationChangeSuccess', function() {
                 if (!scroll.path) {
                     scroll.browser = true;
-                    _clear(100);
+                    _clear();
                 }
             });
 
@@ -164,7 +166,7 @@
                 if (target.hasClass(scroll.scrollTargetClass))
                     target.addClass(scroll.scrollTargetClassFinish);
                 target = null;
-                _clear(0);
+                _clear();
             }
 
             function _clear (delay) {

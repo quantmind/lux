@@ -61,6 +61,8 @@
                                 var options = getOptions(d3, attrs),
                                     autoBuild = options.autoBuild;
                                 options.autoBuild = false;
+                                // add scope to the options
+                                options.scope = scope;
                                 viz = new VizClass(element[0], options);
                                 element.data(viz);
                                 viz.loadData = loadData($lux);

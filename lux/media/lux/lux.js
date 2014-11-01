@@ -1,6 +1,6 @@
 //      Lux Library - v0.1.0
 
-//      Compiled 2014-10-31.
+//      Compiled 2014-11-01.
 //      Copyright (c) 2014 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -257,6 +257,25 @@ function(angular, root) {
                 root["eval"].call(root, data );
             })(data);
         }
+    },
+    //
+    // Simple Slugify function
+    slugify = lux.slugify = function (str) {
+        str = str.replace(/^\s+|\s+$/g, ''); // trim
+        str = str.toLowerCase();
+
+        // remove accents, swap ñ for n, etc
+        var from = "àáäâèéëêìíïîòóöôùúüûñç·/_,:;";
+        var to   = "aaaaeeeeiiiioooouuuunc------";
+        for (var i=0, l=from.length ; i<l ; i++) {
+            str = str.replace(new RegExp(from.charAt(i), 'g'), to.charAt(i));
+        }
+
+        str = str.replace(/[^a-z0-9 -]/g, '') // remove invalid chars
+            .replace(/\s+/g, '-') // collapse whitespace and replace by -
+            .replace(/-+/g, '-'); // collapse dashes
+
+        return str;
     };
 
 
@@ -699,11 +718,13 @@ function(angular, root) {
             scroll.browser = true;
             scroll.path = false;
             //
+            scope.$location = location;
+            //
             // This is the first event triggered when the path location changes
             scope.$on('$locationChangeSuccess', function() {
                 if (!scroll.path) {
                     scroll.browser = true;
-                    _clear(100);
+                    _clear();
                 }
             });
 
@@ -829,7 +850,7 @@ function(angular, root) {
                 if (target.hasClass(scroll.scrollTargetClass))
                     target.addClass(scroll.scrollTargetClassFinish);
                 target = null;
-                _clear(0);
+                _clear();
             }
 
             function _clear (delay) {
@@ -2778,6 +2799,8 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
                                 var options = getOptions(d3, attrs),
                                     autoBuild = options.autoBuild;
                                 options.autoBuild = false;
+                                // add scope to the options
+                                options.scope = scope;
                                 viz = new VizClass(element[0], options);
                                 element.data(viz);
                                 viz.loadData = loadData($lux);
