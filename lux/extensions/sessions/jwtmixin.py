@@ -1,6 +1,3 @@
-'''
-.. _JWT: http://self-issued.info/docs/draft-ietf-oauth-json-web-token.html
-'''
 try:
     import jwt
 except ImportError:
@@ -10,7 +7,12 @@ __all__ = ['JWTMixin']
 
 
 class JWTMixin(object):
-    '''Mixin for a :class:`.AuthBackend` based on JWT_
+    '''Mixin for :class:`.AuthBackend` based on JWT_
+
+    Requires pyjwt_ package.
+
+    .. _pyjwt: https://pypi.python.org/pypi/PyJWT
+    .. _JWT: http://self-issued.info/docs/draft-ietf-oauth-json-web-token.html
     '''
 
     def __init__(self, app):
@@ -34,6 +36,3 @@ class JWTMixin(object):
                 else:
                     user = self.get_user(request, **data)
                     request.cache.user = user or self.anonymous()
-
-    def response(self, request, response):
-        pass

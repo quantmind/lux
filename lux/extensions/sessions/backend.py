@@ -1,9 +1,3 @@
-'''
-.. autoclass:: AuthBackend
-   :members:
-   :member-order: bysource
-
-'''
 import time
 
 from importlib import import_module
@@ -85,6 +79,8 @@ class UserMixin(object):
         return False
 
     def is_authenticated(self):
+        '''Return ``True`` if the user is is_authenticated
+        '''
         return True
 
     def is_active(self):
@@ -112,6 +108,9 @@ class UserMixin(object):
     def email_user(self, subject, message, from_email, **kwargs):
         '''Sends an email to this User'''
         send_mail(subject, message, from_email, [self.email], **kwargs)
+
+    def todict(self):
+        '''Return a dictionary with information about the user'''
 
     @classmethod
     def get_by_username(cls, username):
@@ -145,9 +144,14 @@ class Anonymous(UserMixin):
 class AuthBackend(object):
     '''Interface for authentication backends.
 
-    An Authentication backend manage authentication, login, logout and
+    An authentication backend manage authentication, login, logout and
     several other activities which are required for managing users of
     a web site.
+
+    During a client ``request``, the instance of the authentication backend
+    can be accessed from the ``request`` cache dictionary::
+
+        backend = request.cache.auth_backend
     '''
     def __init__(self, app):
         self.app = app
@@ -172,11 +176,12 @@ class AuthBackend(object):
         return self.response(request, response)
 
     def request(self, request):
-        '''Handle an incoming request'''
+        '''Handle an incoming request and should be implemented.'''
         pass
 
     def response(self, request, response):
-        '''Handle an incoming ``response`` from a ``request``'''
+        '''Handle an outgoing ``response`` from a ``request``.
+        By default it does nothing.'''
         pass
 
     def get_user(self, request, **kwargs):
@@ -185,7 +190,7 @@ class AuthBackend(object):
         pass
 
     def csrf_token(self, request):
-        '''Create a CSRF token for a given request'''
+        '''Create a CSRF token for a given request.'''
         pass
 
     def validate_csrf_token(self, request, token):
@@ -236,5 +241,9 @@ class AuthBackend(object):
 
     def authenticate(self, request, **params):
         '''Authenticate user'''
+        raise NotImplementedError
+
+    def logout(self, request, user=None):
+        ''''Logout a user'''
         raise NotImplementedError
 

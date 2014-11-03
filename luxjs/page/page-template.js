@@ -1,4 +1,4 @@
-angular.module('templates-page', ['page/breadcrumbs.tpl.html', 'page/messages.tpl.html']);
+angular.module('templates-page', ['page/breadcrumbs.tpl.html', 'page/tooltip.tpl.html']);
 
 angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function($templateCache) {
   $templateCache.put("page/breadcrumbs.tpl.html",
@@ -10,14 +10,10 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
     "</ol>");
 }]);
 
-angular.module("page/messages.tpl.html", []).run(["$templateCache", function($templateCache) {
-  $templateCache.put("page/messages.tpl.html",
-    "<div ng-repeat=\"message in messages\" class=\"alert alert-dismissible\"\n" +
-    "ng-class=\"messageClass[message.level]\">\n" +
-    "<button type=\"button\" class=\"close\" data-dismiss=\"alert\" ng-click=\"dismiss($event, message)\">\n" +
-    "    <span aria-hidden=\"true\">&times;</span>\n" +
-    "    <span class=\"sr-only\">Close</span>\n" +
-    "</button>\n" +
-    "<span ng-bind-html=\"message.body\"></span>\n" +
+angular.module("page/tooltip.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("page/tooltip.tpl.html",
+    "<div class=\"tooltip in\" ng-show=\"title\">\n" +
+    "    <div class=\"tooltip-arrow\"></div>\n" +
+    "    <div class=\"tooltip-inner\" ng-bind=\"title\"></div>\n" +
     "</div>");
 }]);

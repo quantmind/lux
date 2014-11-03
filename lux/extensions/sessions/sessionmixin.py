@@ -20,12 +20,9 @@ from .backend import REASON_BAD_TOKEN
 
 __all__ = ['SessionMixin']
 
-class SessionMixin(object):
-    '''Mixin for authentication via sessions.
 
-    An Authentication backend manage authentication, login, logout and
-    several other activities which are required for managing users of
-    a web site.
+class SessionMixin(object):
+    '''Mixin for :class:`.AuthBackend` via sessions.
     '''
     READ = 10
     UPDATE = 20
@@ -183,7 +180,7 @@ class SessionMixin(object):
         user = user or request.cache.user
         if user and user.is_authenticated():
             request.cache.session = self.create_session(request)
-            request.cache.user = Anonymous()
+            request.cache.user = self.anonymous()
 
     def get_or_create_registration(self, request, user, **kw):
         '''Create a registration profile for ``user``.

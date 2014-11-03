@@ -67,4 +67,16 @@
             expect(a.length).toBe(4);
 
         });
+
+        it("Test getOptions", function () {
+            var a = [];
+            lux.testing = {'v': a};
+            expect(lux.getOptions({options: 'lux.testing.v', b: 4})).toBe(a);
+            a = 'ciao';
+            lux.testing.v = a;
+            expect(lux.getOptions({options: 'lux.testing.v', b: 4})).toBe(a);
+            a = {}
+            lux.testing.v = a;
+            expect(lux.getOptions({options: 'lux.testing.v', b: 4}).b).toBe(4);
+        });
     });

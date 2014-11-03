@@ -1,5 +1,7 @@
     var
     //
+    ostring = Object.prototype.toString,
+    //
     generateCallbacks = function () {
         var callbackFunctions = [],
             callFunctions = function () {
@@ -68,6 +70,10 @@
         return url;
     },
     //
+    isObject = function (o) {
+        return ostring.call(o) === '[object Object]';
+    },
+    //
     getRootAttribute = function (name) {
         var obj = root,
             bits= name.split('.');
@@ -85,13 +91,16 @@
     //  Retrive options for the ``options`` string in ``attrs`` if available.
     //  Used by directive when needing to specify options in javascript rather
     //  than html data attributes.
-    getOptions = function (attrs) {
+    getOptions = lux.getOptions = function (attrs) {
         if (attrs && typeof attrs.options === 'string') {
             var obj = getRootAttribute(attrs.options);
             if (typeof obj === 'function')
                 obj = obj();
             delete attrs.options;
-            attrs = extend(attrs, obj);
+            if (isObject(obj))
+                attrs = extend(attrs, obj);
+            else if (obj !== undefined)
+                return obj;
         }
         var options = {};
         forEach(attrs, function (value, name) {

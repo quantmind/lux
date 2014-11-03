@@ -14,6 +14,10 @@
         "nav": {
             "src": "luxjs/nav/*.tpl.html",
             "dest": "luxjs/nav/nav-template.js"
+        },
+        "users": {
+            "src": "luxjs/users/*.tpl.html",
+            "dest": "luxjs/users/templates.js"
         }
     },
     "lux": {
@@ -26,6 +30,7 @@
                 "luxjs/services/*.js",
                 "luxjs/page/*.js",
                 "luxjs/forms/*.js",
+                "luxjs/users/*.js",
                 "luxjs/bootstrap.js",
                 "luxjs/blog/*.js",
                 "luxjs/nav/*.js",

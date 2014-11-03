@@ -35,8 +35,7 @@ from pulsar.utils.structures import mapping_iterator
 
 from lux.utils import unique_tuple
 
-__all__ = ['Html', 'HtmlRouter',
-           'WsgiRequest', 'Router', 'route', 'wsgi_request', 'as_tag',
+__all__ = ['Html', 'WsgiRequest', 'Router', 'route', 'wsgi_request', 'as_tag',
            'cached_property', 'EnvironMixin', 'html_factory',
            'get_event_loop', 'RouterParam', 'JSON_CONTENT_TYPES',
            'DEFAULT_CONTENT_TYPES']
@@ -146,21 +145,6 @@ class Router(wsgi.Router):
     def get_api_info(self, app):
         '''The api name for this :class:`.Router`
         '''
-
-
-class HtmlRouter(Router):
-    '''A pulsar Router for html content.
-
-It introduces the following:
-
-.. attribute:: in_sitemap
-
-    Boolean indicating if the route served by the Router can be included in
-    the site-map.
-    '''
-    response_content_types = RouterParam(DEFAULT_CONTENT_TYPES)
-    in_sitemap = RouterParam(True)
-    icon = None
 
 
 class HeadMeta(object):

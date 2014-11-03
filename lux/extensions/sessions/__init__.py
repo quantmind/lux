@@ -6,11 +6,20 @@ list of :setting:`EXTENSIONS` of your application.
 There are several :ref:`parameters <parameters-auth>` which can be used
 to customise authorisation.
 
-.. automodule:: backend
+Authentication Backend
+========================
+
+.. automodule:: lux.extensions.sessions.backend
    :members:
    :member-order: bysource
 
+.. automodule:: lux.extensions.sessions.sessionmixin
+   :members:
+   :member-order: bysource
 
+.. automodule:: lux.extensions.sessions.jwtmixin
+   :members:
+   :member-order: bysource
 '''
 from datetime import datetime, timedelta
 from importlib import import_module
@@ -96,12 +105,17 @@ class Extension(lux.Extension):
         if backend and request.method in ('GET', 'HEAD', 'OPTIONS', 'TRACE'):
             param = app.config['CSRF_PARAM']
             csrf_token = backend.csrf_token(request)
-            if csrf_token and param:
+            if param:
+                if not csrf_token:
+                    raise PermissionDenied(REASON_BAD_TOKEN)
                 doc.head.add_meta(name="csrf-param", content=param)
                 doc.head.add_meta(name="csrf-token", content=csrf_token)
             session = request.cache.session
             if session:
                 doc.jscontext['messages'] = session.get_messages()
+            user = request.cache.user
+            if user:
+                doc.jscontext['user'] = user.todict()
 
     def on_form(self, app, form):
         '''Handle CSRF on form

@@ -120,14 +120,15 @@ class SignUp(WebFormRouter):
     @route('confirmation/<username>')
     def new_confirmation(self, request):
         username = request.urlargs['username']
-        user = request.app.auth_backend.confirm_registration(request,
-                                                             username=username)
+        backend = request.cache.auth_backend
+        user = backend.confirm_registration(request, username=username)
         return request.redirect('/')
 
     @route('<key>')
     def confirmation(self, request):
         key = request.urlargs['key']
-        user = request.app.auth_backend.confirm_registration(request, key)
+        backend = request.cache.auth_backend
+        user = backend.confirm_registration(request, key)
         return request.redirect('/')
 
 
@@ -202,15 +203,16 @@ class ForgotPassword(WebFormRouter):
 class Logout(lux.Router, FormMixin):
     '''Logout handler, post view only
     '''
+    redirect_to = '/'
+
     def post(self, request):
         '''Logout via post method
         '''
-        user = request.cache.user
+        # validate CSRF
         form = self.fclass(request, data=request.body_data())
-        if user:
-            return self.maybe_redirect_to(request, form, user=user)
-        else:
-            return Json({'success': False}).http_response(request)
+        backend = request.cache.auth_backend
+        backend.logout(request)
+        return self.maybe_redirect_to(request, form)
 
 
 class Token(lux.Router):

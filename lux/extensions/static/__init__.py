@@ -130,11 +130,11 @@ class Extension(lux.Extension):
             file404 = os.path.join(path, '404.html')
             if not os.path.isfile(file404):
                 file404 = None
-            site_url = app.config['SITE_URL']
+            #site_url = app.config['SITE_URL']
             base_url = ''
-            if site_url:
-                p = urlparse(site_url)
-                base_url = p.path
+            #if site_url:
+            #    p = urlparse(site_url)
+            #    base_url = p.path
             media = MediaRouter(base_url, path, default_suffix='html',
                                 raise_404=(not file404))
             middleware.append(media)

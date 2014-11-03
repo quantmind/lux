@@ -1,4 +1,13 @@
-angular.module('templates-nav', ['nav/navbar.tpl.html', 'nav/navbar2.tpl.html']);
+angular.module('templates-nav', ['nav/link.tpl.html', 'nav/navbar.tpl.html', 'nav/navbar2.tpl.html']);
+
+angular.module("nav/link.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("nav/link.tpl.html",
+    "<a ng-if=\"link.title\" ng-href=\"{{link.href}}\" data-title=\"{{link.title}}\" ng-click=\"clickLink($event, link)\"\n" +
+    "data-template=\"page/tooltip.tpl.html\" bs-tooltip=\"tooltip\">\n" +
+    "<i ng-if=\"link.icon\" class=\"{{link.icon}}\"></i> {{link.name}}</a>\n" +
+    "<a ng-if=\"!link.title\" ng-href=\"{{link.href}}\">\n" +
+    "<i ng-if=\"link.icon\" class=\"{{link.icon}}\"></i> {{link.name}}</a>");
+}]);
 
 angular.module("nav/navbar.tpl.html", []).run(["$templateCache", function($templateCache) {
   $templateCache.put("nav/navbar.tpl.html",
@@ -22,15 +31,11 @@ angular.module("nav/navbar.tpl.html", []).run(["$templateCache", function($templ
     "        </div>\n" +
     "        <div class=\"navbar-collapse\" bs-collapse-target>\n" +
     "            <ul class=\"nav navbar-nav\">\n" +
-    "                <li ng-repeat=\"link in navbar.items\" ng-class=\"{active:activeLink(link)}\">\n" +
-    "                    <a href=\"{{link.href}}\" title=\"{{link.title || link.name}}\">\n" +
-    "                    <i ng-if=\"link.icon\" class=\"{{link.icon}}\"></i> {{link.name}}</a>\n" +
+    "                <li ng-repeat=\"link in navbar.items\" ng-class=\"{active:activeLink(link)}\" navbar-link>\n" +
     "                </li>\n" +
     "            </ul>\n" +
     "            <ul class=\"nav navbar-nav navbar-right\">\n" +
-    "                <li ng-repeat=\"link in navbar.itemsRight\" ng-class=\"{active:activeLink(link)}\">\n" +
-    "                    <a href=\"{{link.href}}\" title=\"{{link.title || link.name}}\">\n" +
-    "                    <i ng-if=\"link.icon\" class=\"{{link.icon}}\"></i> {{link.name}}</a>\n" +
+    "                <li ng-repeat=\"link in navbar.itemsRight\" ng-class=\"{active:activeLink(link)}\" navbar-link>\n" +
     "                </li>\n" +
     "            </ul>\n" +
     "        </div>\n" +

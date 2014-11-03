@@ -18,15 +18,11 @@ ng-model="navbar.collapse" bs-collapse>
         </div>
         <div class="navbar-collapse" bs-collapse-target>
             <ul class="nav navbar-nav">
-                <li ng-repeat="link in navbar.items" ng-class="{active:activeLink(link)}">
-                    <a href="{{link.href}}" title="{{link.title || link.name}}">
-                    <i ng-if="link.icon" class="{{link.icon}}"></i> {{link.name}}</a>
+                <li ng-repeat="link in navbar.items" ng-class="{active:activeLink(link)}" navbar-link>
                 </li>
             </ul>
             <ul class="nav navbar-nav navbar-right">
-                <li ng-repeat="link in navbar.itemsRight" ng-class="{active:activeLink(link)}">
-                    <a href="{{link.href}}" title="{{link.title || link.name}}">
-                    <i ng-if="link.icon" class="{{link.icon}}"></i> {{link.name}}</a>
+                <li ng-repeat="link in navbar.itemsRight" ng-class="{active:activeLink(link)}" navbar-link>
                 </li>
             </ul>
         </div>

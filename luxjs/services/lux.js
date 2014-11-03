@@ -12,12 +12,19 @@
             if (name && token)
                 csrf[name] = token;
 
+            // A post method with CSRF parameter
+            $lux.post = function (url, data, cfg) {
+                var ct = cfg ? cfg.contentType : null,
+                    fd = this.formData(ct);
+                return this.http.post(url, fd(data), cfg);
+            };
+
             //
             // Change the form data depending on content type
             $lux.formData = function (contentType) {
 
-                return function (data, getHeaders ) {
-                    extend(data, csrf);
+                return function (data) {
+                    data = extend(data || {}, csrf);
                     if (contentType === 'application/x-www-form-urlencoded')
                         return $.param(data);
                     else if (contentType === 'multipart/form-data') {

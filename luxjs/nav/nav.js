@@ -26,7 +26,7 @@
         fluid: true
     };
 
-    angular.module('lux.nav', ['templates-nav', 'lux.services', 'mgcrea.ngStrap.collapse'])
+    angular.module('lux.nav', ['templates-nav', 'templates-page', 'lux.services', 'mgcrea.ngStrap'])
         //
         .service('navService', ['$location', function ($location) {
 
@@ -67,6 +67,13 @@
             };
         }])
         //
+        .directive('navbarLink', function () {
+            return {
+                templateUrl: "nav/link.tpl.html",
+                restrict: 'A'
+            };
+        })
+        //
         //  Directive for the simple navbar
         //  This directive does not require the Navigation controller
         .directive('navbar', ['navService', function (navService) {
@@ -74,12 +81,17 @@
             return {
                 templateUrl: "nav/navbar.tpl.html",
                 restrict: 'AE',
-                // Create an isolated scope
-                scope: {},
                 // Link function
                 link: function (scope, element, attrs) {
                     scope.navbar = navService.initScope(attrs);
                     scope.activeLink = navService.activeLink;
+                    scope.clickLink = function (e, link) {
+                        if (link.click) {
+                            var func = scope[link.click];
+                            if (func)
+                                func(e, link.href, link);
+                        }
+                    };
                     //
                     windowResize(function () {
                         if (navService.maybeCollapse(scope.navbar))

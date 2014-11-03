@@ -13,16 +13,6 @@
             this.http = $http;
             this.q = $q;
             this.timeout = $timeout;
-
-            // A post method with CSRF parameter
-            this.post = function (url, data, cfg) {
-                if (lux.context.csrf) {
-                    data || (data = {});
-                    angular.extend(data, lux.context.csrf);
-                }
-                return $http.post(url, data, cfg);
-            };
-
             //  Create a client api
             //  -------------------------
             //

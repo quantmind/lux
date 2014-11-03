@@ -13,7 +13,12 @@ Usage
 
 The API is quite simple::
 
+    import lux
     from lux.extensions.ui import *
+
+    class Extension(lux.Extension):
+        "An extension class must be defined"
+
 
     def add_css(root):
         css = root.css
