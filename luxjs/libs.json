@@ -1,5 +1,9 @@
 {
     "html2js": {
+        "bs": {
+            "src": "luxjs/bs/*.tpl.html",
+            "dest": "luxjs/bs/templates.js"
+        },
         "options": {
             "base": "luxjs"
         },
@@ -33,6 +37,7 @@
                 "luxjs/users/*.js",
                 "luxjs/bootstrap.js",
                 "luxjs/blog/*.js",
+                "luxjs/bs/*.js",
                 "luxjs/nav/*.js",
                 "luxjs/misc/*.js",
                 "luxjs/google/*.js",

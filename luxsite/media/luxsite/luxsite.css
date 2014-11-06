@@ -1,8 +1,8 @@
 @charset "UTF-8";
 /*
 ------------------------------------------------------------------
-Created by lux in 0.54 seconds
-Date: 2014-11-03 09:51:32
+Created by lux in 0.1 seconds
+Date: 2014-11-03 14:56:26
 
 http://quantmind.github.io/lux/
 ------------------------------------------------------------------ */
@@ -3321,12 +3321,12 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 }
 .hljs{display:block;overflow-x:auto;padding:0.5em;background:#3f3f3f;color:#dcdcdc;-webkit-text-size-adjust:none}.hljs-keyword,.hljs-tag,.css .hljs-class,.css .hljs-id,.lisp .hljs-title,.nginx .hljs-title,.hljs-request,.hljs-status,.clojure .hljs-attribute{color:#e3ceab}.django .hljs-template_tag,.django .hljs-variable,.django .hljs-filter .hljs-argument{color:#dcdcdc}.hljs-number,.hljs-date{color:#8cd0d3}.dos .hljs-envvar,.dos .hljs-stream,.hljs-variable,.apache .hljs-sqbracket{color:#efdcbc}.dos .hljs-flow,.diff .hljs-change,.python .exception,.python .hljs-built_in,.hljs-literal,.tex .hljs-special{color:#efefaf}.diff .hljs-chunk,.hljs-subst{color:#8f8f8f}.dos .hljs-keyword,.hljs-decorator,.hljs-title,.hljs-type,.diff .hljs-header,.ruby .hljs-class .hljs-parent,.apache .hljs-tag,.nginx .hljs-built_in,.tex .hljs-command,.hljs-prompt{color:#efef8f}.dos .hljs-winutils,.ruby .hljs-symbol,.ruby .hljs-symbol .hljs-string,.ruby .hljs-string{color:#dca3a3}.diff .hljs-deletion,.hljs-string,.hljs-tag .hljs-value,.hljs-preprocessor,.hljs-pragma,.hljs-built_in,.hljs-javadoc,.smalltalk .hljs-class,.smalltalk .hljs-localvars,.smalltalk .hljs-array,.css .hljs-rules .hljs-value,.hljs-attr_selector,.hljs-pseudo,.apache .hljs-cbracket,.tex .hljs-formula,.coffeescript .hljs-attribute{color:#cc9393}.hljs-shebang,.diff .hljs-addition,.hljs-comment,.hljs-annotation,.hljs-template_comment,.hljs-pi,.hljs-doctype{color:#7f9f7f}.coffeescript .javascript,.javascript .xml,.tex .hljs-formula,.xml .javascript,.xml .vbscript,.xml .css,.xml .hljs-cdata{opacity:0.5}
 body {
-    background: #fff;
-    font-family: "freight-text-pro",Georgia,Cambria,"Times New Roman",Times,serif;
     color: rgba(0, 0, 0, 0.8);
-    line-height: 1.5;
+    background: #fff;
     font-size: 18px;
+    font-family: "freight-text-pro",Georgia,Cambria,"Times New Roman",Times,serif;
     font-style: normal;
+    line-height: 1.5;
     height: 101%;
     min-height: 101%;
 }
@@ -3350,8 +3350,8 @@ p.form-error {
 
 .absolute-full {
     top: 0;
-    position: absolute;
     bottom: 0;
+    position: absolute;
 }
 
 .nav.navbar-nav > li > a {
@@ -3377,8 +3377,8 @@ p.form-error {
 }
 
 .navbar2-page {
-    padding: 70px 15px 0;
     background: #fff;
+    padding: 70px 15px 0;
 }
 
 @media all and (min-width:768px) {
@@ -3394,9 +3394,9 @@ p.form-error {
 @media all and (min-width:768px) {
     .sidebar {
         width: 250px;
-        position: absolute;
         z-index: 1;
         margin-top: 51px;
+        position: absolute;
     }
 
 }
@@ -3435,15 +3435,15 @@ p.form-error {
 }
 
 .katex-outer {
-    margin-right: auto;
-    display: block;
     margin-left: auto;
     margin-bottom: 10px;
+    display: block;
+    margin-right: auto;
 }
 
 code.hljs.inline {
-    padding: 2px 4px;
     display: inline;
+    padding: 2px 4px;
 }
 
 dl dd {
@@ -3467,14 +3467,14 @@ dl.function dt tt.descname {
 
 dl.class dt,
 dl.function dt {
+    font-size: 18px;
     color: #888;
     font-weight: normal;
-    font-size: 18px;
 }
 
 .dir-entry-image {
-    overflow: hidden;
     max-height: 120px;
+    overflow: hidden;
 }
 
 .dir-entry-image img {
@@ -3493,10 +3493,10 @@ dt:hover > a.headerlink {
 }
 
 a.headerlink {
-    padding: 0 4px;
-    color: #eee;
     text-decoration: none;
+    color: #eee;
     visibility: hidden;
+    padding: 0 4px;
 }
 
 a.headerlink:hover {
@@ -3508,8 +3508,8 @@ a.headerlink:hover {
 }
 
 div.viewcode-block:target {
-    padding: 0 10px;
     margin: -1px -10px;
+    padding: 0 10px;
 }
 
 .hover-opacity {
@@ -3601,27 +3601,27 @@ html {
 }
 
 #page-main {
-    padding-top: 20px;
     padding-bottom: 50px;
     min-height: 500px;
+    padding-top: 20px;
 }
 
 #page-footer {
-    padding-top: 20px;
-    color: #e5c700;
     background-color: #005a8a;
     min-height: 300px;
+    color: #e5c700;
+    padding-top: 20px;
 }
 
 .page-header {
-    padding-top: 50px;
     margin: 0;
+    padding-top: 50px;
 }
 
 .page-header.index-header {
     width: 100%;
-    color: #eee;
     background-color: #005a8a;
-    min-height: 300px;
     height: 100%;
+    color: #eee;
+    min-height: 300px;
 }

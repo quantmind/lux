@@ -9,6 +9,11 @@ from pulsar.utils.httpurl import *
 from pulsar.utils.pep import range, ispy3k, to_string
 from pulsar.utils.version import get_version
 
+if ispy3k:
+    from itertools import zip_longest
+else:
+    from itertools import izip_longest as zip_longest
+
 
 def unique_tuple(*iterables):
     vals = []
@@ -71,6 +76,12 @@ def update_dict(d1, d2):
     d = d1.copy()
     d.update(d2)
     return d
+
+
+def grouper(n, iterable, padvalue=None):
+    '''grouper(3, 'abcdefg', 'x') --> ('a','b','c'), ('d','e','f'),
+    ('g','x','x')'''
+    return zip_longest(*[iter(iterable)]*n, fillvalue=padvalue)
 
 
 def iso8601(dt):

@@ -1,4 +1,4 @@
-angular.module('templates-page', ['page/breadcrumbs.tpl.html', 'page/tooltip.tpl.html']);
+angular.module('templates-page', ['page/breadcrumbs.tpl.html']);
 
 angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function($templateCache) {
   $templateCache.put("page/breadcrumbs.tpl.html",
@@ -8,12 +8,4 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
     "        <span ng-if=\"step.last\">{{step.label}}</span>\n" +
     "    </li>\n" +
     "</ol>");
-}]);
-
-angular.module("page/tooltip.tpl.html", []).run(["$templateCache", function($templateCache) {
-  $templateCache.put("page/tooltip.tpl.html",
-    "<div class=\"tooltip in\" ng-show=\"title\">\n" +
-    "    <div class=\"tooltip-arrow\"></div>\n" +
-    "    <div class=\"tooltip-inner\" ng-bind=\"title\"></div>\n" +
-    "</div>");
 }]);

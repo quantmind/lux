@@ -1,16 +1,20 @@
 <ul class="media-list">
     <li ng-repeat="post in items" class="media" data-ng-controller='BlogEntry'>
-        <a href="{{post.html_url}}" class="pull-left hidden-xs dir-entry-image">
-          <img ng-src="{{post.image}}" alt="{{post.title}}">
+        <a href="{{post.html_url}}">
+            <img ng-src="{{post.image}}" class="hidden-xs post-image" alt="{{post.title}}">
+            <img ng-src="{{post.image}}" alt="{{post.title}}" class="visible-xs post-image-xs center-block">
+            <div class="post-body hidden-xs">
+                <h3 class="media-heading">{{post.title}}</h3>
+                <p data-ng-if="post.description">{{post.description}}</p>
+                <p class="text-info small">by {{post.authors}} on {{post.dateText}}</p>
+            </div>
+            <div class="visible-xs">
+                <br>
+                <h3 class="media-heading text-center">{{post.title}}</h3>
+                <p data-ng-if="post.description">{{post.description}}</p>
+                <p class="text-info small">by {{post.authors}} on {{post.dateText}}</p>
+            </div>
         </a>
-        <a href="{{post.html_url}}" class="visible-xs">
-            <img ng-src="{{post.image}}" alt="{{post.title}}" class="dir-entry-image">
-        </a>
-        <p class="visible-xs"></p>
-        <div class="media-body">
-            <h4 class="media-heading"><a href="{{post.html_url}}">{{post.title}}</a></h4>
-            <p data-ng-if="post.description">{{post.description}}</p>
-            <p class="text-info small">by {{post.authors}} on {{post.dateText}}</p>
-        </div>
+        <hr>
     </li>
 </ul>

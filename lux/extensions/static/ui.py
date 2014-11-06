@@ -4,14 +4,29 @@ from lux.extensions.ui import *
 def add_css(all):
     css = all.css
     vars = all.variables
-    vars.list_image_width = 120
+    vars.list_image_width = 140
+    vars.list_image_xs_height = 150
 
-    css('.dir-entry-image',
-        css(' img',
-            width=px(vars.list_image_width),
-            height='auto'),
-        overflow='hidden',
-        max_height=px(vars.list_image_width))
+    css('.media-list > .media',
+        css(' > a',
+            css(' .post-body',
+                margin_left=px(vars.list_image_width+20)),
+            css(' h3',
+                font_weight='normal',
+                color=vars.colors.gray_dark),
+            text_decoration='none',
+            color=vars.colors.gray))
+
+    css('.post-image',
+        width=px(vars.list_image_width),
+        max_height=px(vars.list_image_width),
+        float='left',
+        height='auto')
+
+    css('.post-image-xs',
+        max_height=px(vars.list_image_xs_height),
+        max_width=pc(90),
+        width='auto')
 
     sphinx(all)
 

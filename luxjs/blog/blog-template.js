@@ -11,18 +11,22 @@ angular.module("blog/pagination.tpl.html", []).run(["$templateCache", function($
   $templateCache.put("blog/pagination.tpl.html",
     "<ul class=\"media-list\">\n" +
     "    <li ng-repeat=\"post in items\" class=\"media\" data-ng-controller='BlogEntry'>\n" +
-    "        <a href=\"{{post.html_url}}\" class=\"pull-left hidden-xs dir-entry-image\">\n" +
-    "          <img ng-src=\"{{post.image}}\" alt=\"{{post.title}}\">\n" +
+    "        <a href=\"{{post.html_url}}\">\n" +
+    "            <img ng-src=\"{{post.image}}\" class=\"hidden-xs post-image\" alt=\"{{post.title}}\">\n" +
+    "            <img ng-src=\"{{post.image}}\" alt=\"{{post.title}}\" class=\"visible-xs post-image-xs center-block\">\n" +
+    "            <div class=\"post-body hidden-xs\">\n" +
+    "                <h3 class=\"media-heading\">{{post.title}}</h3>\n" +
+    "                <p data-ng-if=\"post.description\">{{post.description}}</p>\n" +
+    "                <p class=\"text-info small\">by {{post.authors}} on {{post.dateText}}</p>\n" +
+    "            </div>\n" +
+    "            <div class=\"visible-xs\">\n" +
+    "                <br>\n" +
+    "                <h3 class=\"media-heading text-center\">{{post.title}}</h3>\n" +
+    "                <p data-ng-if=\"post.description\">{{post.description}}</p>\n" +
+    "                <p class=\"text-info small\">by {{post.authors}} on {{post.dateText}}</p>\n" +
+    "            </div>\n" +
     "        </a>\n" +
-    "        <a href=\"{{post.html_url}}\" class=\"visible-xs\">\n" +
-    "            <img ng-src=\"{{post.image}}\" alt=\"{{post.title}}\" class=\"dir-entry-image\">\n" +
-    "        </a>\n" +
-    "        <p class=\"visible-xs\"></p>\n" +
-    "        <div class=\"media-body\">\n" +
-    "            <h4 class=\"media-heading\"><a href=\"{{post.html_url}}\">{{post.title}}</a></h4>\n" +
-    "            <p data-ng-if=\"post.description\">{{post.description}}</p>\n" +
-    "            <p class=\"text-info small\">by {{post.authors}} on {{post.dateText}}</p>\n" +
-    "        </div>\n" +
+    "        <hr>\n" +
     "    </li>\n" +
     "</ul>");
 }]);

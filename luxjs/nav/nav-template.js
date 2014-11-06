@@ -3,7 +3,7 @@ angular.module('templates-nav', ['nav/link.tpl.html', 'nav/navbar.tpl.html', 'na
 angular.module("nav/link.tpl.html", []).run(["$templateCache", function($templateCache) {
   $templateCache.put("nav/link.tpl.html",
     "<a ng-if=\"link.title\" ng-href=\"{{link.href}}\" data-title=\"{{link.title}}\" ng-click=\"clickLink($event, link)\"\n" +
-    "data-template=\"page/tooltip.tpl.html\" bs-tooltip=\"tooltip\">\n" +
+    "bs-tooltip=\"tooltip\">\n" +
     "<i ng-if=\"link.icon\" class=\"{{link.icon}}\"></i> {{link.name}}</a>\n" +
     "<a ng-if=\"!link.title\" ng-href=\"{{link.href}}\">\n" +
     "<i ng-if=\"link.icon\" class=\"{{link.icon}}\"></i> {{link.name}}</a>");

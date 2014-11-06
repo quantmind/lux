@@ -50,7 +50,7 @@ parameters before the wsgi :attr:`.App.handler` is loaded.
 on_loaded
 ~~~~~~~~~~~~~~~~~~
 
-.. py:method:: Extension.on_loaded(self, app, handler)
+.. py:method:: Extension.on_loaded(self, app)
 
 Called once only when all :class:`.Extension` have loaded their
 :meth:`~.Extension.middleware` into

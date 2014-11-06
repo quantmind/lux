@@ -41,7 +41,7 @@ class FormMixin(object):
 
     def maybe_redirect_to(self, request, form, **kw):
         redirect_to = self.redirect_to
-        if self.redirect_to:
+        if redirect_to:
             if hasattr(redirect_to, '__call__'):
                 redirect_to = redirect_to(request, **kw)
         if redirect_to:
