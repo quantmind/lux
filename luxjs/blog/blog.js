@@ -5,6 +5,7 @@
     angular.module('lux.blog', ['templates-blog', 'lux.services', 'highlight', 'lux.scroll'])
         .value('blogDefaults', {
             centerMath: true,
+            fallback: true
         })
         //
         .controller('BlogEntry', ['$scope', 'dateFilter', '$lux', function ($scope, dateFilter, $lux) {
@@ -32,12 +33,26 @@
         //
         .directive('katex', ['blogDefaults', function (blogDefaults) {
 
+            function error (element, err) {
+                element.html("<div class='alert alert-danger' role='alert'>" + err + "</div>");
+            }
+
             function render(katex, text, element) {
                 try {
                     katex.render(text, element[0]);
                 }
                 catch(err) {
-                    element.html("<div class='alert alert-danger' role='alert'>" + err + "</div>");
+                    if (blogDefaults.fallback) {
+                        require(['mathjax'], function (mathjax) {
+                            try {
+                                element.append(text);
+                                mathjax.Hub.Queue(["Typeset", mathjax.Hub, element[0]]);
+                            } catch (e) {
+                                error(element, err += ' - ' + e);
+                            }
+                        });
+                    } else
+                        error(element, err);
                 }
             }
 

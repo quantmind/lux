@@ -1,6 +1,6 @@
 //      Lux Library - v0.1.0
 
-//      Compiled 2014-11-06.
+//      Compiled 2014-11-07.
 //      Copyright (c) 2014 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -2152,6 +2152,7 @@ angular.module("blog/pagination.tpl.html", []).run(["$templateCache", function($
     angular.module('lux.blog', ['templates-blog', 'lux.services', 'highlight', 'lux.scroll'])
         .value('blogDefaults', {
             centerMath: true,
+            fallback: true
         })
         //
         .controller('BlogEntry', ['$scope', 'dateFilter', '$lux', function ($scope, dateFilter, $lux) {
@@ -2179,12 +2180,26 @@ angular.module("blog/pagination.tpl.html", []).run(["$templateCache", function($
         //
         .directive('katex', ['blogDefaults', function (blogDefaults) {
 
+            function error (element, err) {
+                element.html("<div class='alert alert-danger' role='alert'>" + err + "</div>");
+            }
+
             function render(katex, text, element) {
                 try {
                     katex.render(text, element[0]);
                 }
                 catch(err) {
-                    element.html("<div class='alert alert-danger' role='alert'>" + err + "</div>");
+                    if (blogDefaults.fallback) {
+                        require(['mathjax'], function (mathjax) {
+                            try {
+                                element.append(text);
+                                mathjax.Hub.Queue(["Typeset", mathjax.Hub, element[0]]);
+                            } catch (e) {
+                                error(element, err += ' - ' + e);
+                            }
+                        });
+                    } else
+                        error(element, err);
                 }
             }
 
