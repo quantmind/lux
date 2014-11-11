@@ -1,6 +1,6 @@
 //      Lux Library - v0.1.0
 
-//      Compiled 2014-11-07.
+//      Compiled 2014-11-11.
 //      Copyright (c) 2014 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -1242,8 +1242,11 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
             promise,
             api;
         //
-        if (form.$invalid)
-            return this.showErrors();
+        // Flag the form as submitted
+        form.submitted = true;
+        if (form.$invalid) {
+            return;
+        }
 
         // Get the api information
         if (!target && apiname) {
@@ -1566,6 +1569,8 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                     forEach(field.options, function (opt) {
                         if (typeof(opt) === 'string') {
                             opt = {'value': opt};
+                        } else if (isArray(opt)) {
+                            opt = {'value': opt[0], 'repr': opt[1] || opt[0]};
                         }
                         opt = $($document[0].createElement('option'))
                                 .attr('value', opt.value).html(opt.repr || opt.value);
@@ -1613,12 +1618,15 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                 inputError: function (scope, element) {
                     var field = scope.field,
                         self = this,
+                        // True when the form is submitted
+                        submitted = scope.formName + '.submitted',
+                        // True if the field is dirty
                         dirty = [scope.formName, field.name, '$dirty'].join('.'),
                         invalid = [scope.formName, field.name, '$invalid'].join('.'),
                         error = [scope.formName, field.name, '$error'].join('.') + '.',
                         input = $(element[0].querySelector(scope.info.element)),
                         p = $($document[0].createElement('p'))
-                                .attr('ng-show', dirty + ' && ' + invalid)
+                                .attr('ng-show', '(' + submitted + ' || ' + dirty + ') && ' + invalid)
                                 .addClass('text-danger')
                                 .addClass(scope.formErrorClass)
                                 .html('{{formErrors.' + field.name + '}}'),
@@ -2192,6 +2200,8 @@ angular.module("blog/pagination.tpl.html", []).run(["$templateCache", function($
                     if (blogDefaults.fallback) {
                         require(['mathjax'], function (mathjax) {
                             try {
+                                if (text.substring(0, 15) === '\\displaystyle {')
+                                    text = text.substring(15, text.length-1);
                                 element.append(text);
                                 mathjax.Hub.Queue(["Typeset", mathjax.Hub, element[0]]);
                             } catch (e) {
@@ -2211,7 +2221,8 @@ angular.module("blog/pagination.tpl.html", []).run(["$templateCache", function($
                     if (element[0].tagName === 'DIV') {
                         if (blogDefaults.centerMath)
                             element.addClass('text-center');
-                        element.addClass('katex-outer').html();
+                        text = '\\displaystyle {' + text + '}';
+                        element.addClass('katex-outer');
                     }
                     if (typeof(katex) === 'undefined')
                         require(['katex'], function (katex) {

@@ -45,6 +45,8 @@
                     if (blogDefaults.fallback) {
                         require(['mathjax'], function (mathjax) {
                             try {
+                                if (text.substring(0, 15) === '\\displaystyle {')
+                                    text = text.substring(15, text.length-1);
                                 element.append(text);
                                 mathjax.Hub.Queue(["Typeset", mathjax.Hub, element[0]]);
                             } catch (e) {
@@ -64,7 +66,8 @@
                     if (element[0].tagName === 'DIV') {
                         if (blogDefaults.centerMath)
                             element.addClass('text-center');
-                        element.addClass('katex-outer').html();
+                        text = '\\displaystyle {' + text + '}';
+                        element.addClass('katex-outer');
                     }
                     if (typeof(katex) === 'undefined')
                         require(['katex'], function (katex) {

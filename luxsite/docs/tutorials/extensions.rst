@@ -19,7 +19,7 @@ Extension are implemented by subclassing the :class:`.Extension` class::
 
 
 The :meth:`.Extension.middleware` method is called once only
-by the :class:`.App` serving the web applications, and it must return an iterable over
+by the :class:`.Application` serving the web applications, and it must return an iterable over
 WSGI_ middleware or ``None``.
 
 
@@ -28,7 +28,7 @@ Events
 
 An :class:`.Extension` can register several callbacks which are invoked at different
 points during the application live-span. These callbacks receive as
-first positional argument, the :class:`.App` instance running the web site
+first positional argument, the :class:`.Application` instance running the web site
 and are implemented by adding some of the following methods to your
 extension class:
 
@@ -40,9 +40,9 @@ on_config
 .. py:method:: Extension.on_config(self, app)
 
 This is the first event to be fired. It is executed once only after the
-:attr:`.App.config` dictionary has been loaded from
+:attr:`.Application.config` dictionary has been loaded from
 the setting file. This is a chance to perform post processing on
-parameters before the wsgi :attr:`.App.handler` is loaded.
+parameters before the wsgi :attr:`.Application.handler` is loaded.
 
 
 .. _event_on_loaded:
@@ -76,7 +76,7 @@ on_request
 
 .. py:method:: Extension.on_request(self, app, request)
 
-Called when a new ``request`` is received by the :class:`App` instance. This
+Called when a new ``request`` is received by the :class:`.Application` instance. This
 event occurs before the application loops through the WSGI middleware
 to produce the response.
 

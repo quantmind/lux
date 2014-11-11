@@ -171,8 +171,6 @@ class AuthBackend(object):
 
     def response_middleware(self, environ, response):
         request = self.app.wsgi_request(environ)
-        # Inject self as the authentication backend
-        request.cache.auth_backend = self
         return self.response(request, response)
 
     def request(self, request):
@@ -181,8 +179,9 @@ class AuthBackend(object):
 
     def response(self, request, response):
         '''Handle an outgoing ``response`` from a ``request``.
-        By default it does nothing.'''
-        pass
+        By default it returns ``response`` without performing any operations.
+        '''
+        return response
 
     def get_user(self, request, **kwargs):
         '''Retrieve a user.

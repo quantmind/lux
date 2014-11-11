@@ -57,3 +57,6 @@ def sphinx(all):
     css('div.viewcode-block:target',
         margin=spacing(-1, -10),
         padding=spacing(0, 10))
+
+    css('table.docutils.field-list th',
+        padding=spacing(0, 20, 0, 0))

@@ -21,6 +21,10 @@ class JWTMixin(object):
         self.secret_key = cfg['SECRET_KEY'].encode()
 
     def request(self, request):
+        '''Check for ``HTTP_AUTHORIZATION`` header and if it is available
+        and the authentication type if ``bearer`` try to perform
+        authentication using JWT_.
+        '''
         auth = request.get('HTTP_AUTHORIZATION')
         user = None
         if auth:
@@ -35,4 +39,4 @@ class JWTMixin(object):
                     request.app.logger.exception('Could not load user')
                 else:
                     user = self.get_user(request, **data)
-                    request.cache.user = user or self.anonymous()
+        request.cache.user = user or self.anonymous()

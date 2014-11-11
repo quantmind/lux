@@ -1,16 +1,3 @@
-'''
-.. autoclass:: Extension
-   :members:
-   :member-order: bysource
-
-.. autoclass:: ExtensionMeta
-   :members:
-   :member-order: bysource
-
-.. autoclass:: Parameter
-   :members:
-   :member-order: bysource
-'''
 import os
 import sys
 import logging

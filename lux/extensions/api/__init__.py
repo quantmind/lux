@@ -1,30 +1,31 @@
-'''A :ref:`lux extension <extensions>` for managing data models and
+'''A :ref:`lux extension <writing-extensions>` for managing data models and
 RESTful web API.
-To use it, simply add it to the list of :ref:`EXTENSIONS <config-extensions>`
+
+Usage
+================
+
+Add ``lux.extensions.api`` to the list of :setting:`EXTENSIONS`
 of your application::
 
     EXTENSIONS = [...,
                   'lux.extensions.api',
                   ...]
 
-:setting:`DATASTORE` is the most important :class:`.Parameter` of
-this extension. It defines a dictionary for mapping
-models to backend data-stores.
+    API_URL = '/api/'
 
-If :setting:`API_URL` is defined, the extension include a middleware for
-serving the restful api url. The middleware collects :class:`.Crud` routers
-from all extensions which provides the ``api_sections`` method.
+If :setting:`API_URL` is defined, the extension creates a WSGI
+middleware which can be used for serving the restful api.
+The middleware is available as the ``api`` attribute of the
+:class:`.Application` but it is not added to the list of middlewares.
 
-Usage
-================
-
-The base url for the web API is defined by the :setting:`API_URL` setting.
+The middleware collects :class:`.Crud` routers
+from all :class:`.Extension` providing the ``api_sections`` method.
 
 Adding Handlers
 ~~~~~~~~~~~~~~~~
 
 To add API handlers for a model, or group of models, one starts by creating
-a new :ref:`lux Extension <extensions>` and implement the :meth:`api_sections`
+a new :class:`.Extension` and implement the :meth:`api_sections`
 method::
 
     import lux
@@ -35,6 +36,7 @@ method::
         def api_sections(self, app):
             yield 'Blog', [Crud('blog', Blog)]
 
+
 The ``api_sections`` method returns an iterable over two-elements tuples.
 The first element in the tuple is a string representing the name of a Section
 in the ``Api`` documentation. The second element is an iterable
@@ -43,79 +45,6 @@ The Routers will be appended to the :class:`Api` Router.
 
 The example above adds one single :class:`.Crud` router to the :class:`Api`
 router. The router serves requests at the ``/api/blog/`` url.
-
-
-Object Data Mapper
-======================
-
-The object data mapper must provide the following:
-
-* ``Mapper`` class for managing models
-* ``search_engine`` to create a full text search engine handler
-
-The mapper object must expose the following methods:
-
-* ``register_applications``
-
-
-API
-=====
-
-API Extension
-~~~~~~~~~~~~~~~~~~~~~
-
-.. autoclass:: Extension
-   :members:
-   :member-order: bysource
-
-
-API Router
-~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autoclass:: Api
-   :members:
-   :member-order: bysource
-
-
-.. _crud-content-manager:
-
-.. module:: lux.extensions.api.content
-
-CRUD ContentManager
-~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autoclass:: ContentManager
-   :members:
-   :member-order: bysource
-
-
-.. _crud-router:
-
-.. module:: lux.extensions.api.crud
-
-CRUD Router
-~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autoclass:: Crud
-   :members:
-   :member-order: bysource
-
-
-.. _crud-websocket:
-
-.. module:: lux.extensions.api.websocket
-
-CRUD Websocket
-~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autoclass:: CrudWebSocket
-   :members:
-   :member-order: bysource
-
-.. _crud-message:
-
-CRUD message
-~~~~~~~~~~~~~~~~~~~~~~~
 
 '''
 from pulsar import HttpException, Http404, ImproperlyConfigured
@@ -156,16 +85,7 @@ def api404(environ, start_response):
 
 
 class Extension(lux.Extension):
-    '''A RESTful API :ref:`lux extension`.
 
-    .. attribute:: html_crud_routers
-
-        Dictionary of Routers serving a models for Html requests
-
-    .. attribute:: api_crud_routers
-
-        Dictionary of Routers serving a model for Api requests
-    '''
     _config = [
         Parameter('DATASTORE', None,
                   'Dictionary for mapping models to their back-ends database'),
@@ -194,7 +114,7 @@ class Extension(lux.Extension):
         and checks if the ``api_sections`` method is available.
         '''
         url = app.config['API_URL']
-        self.api = api = ApiRoot(url)
+        app.api = api = ApiRoot(url)
         for extension in itervalues(app.extensions):
             api_sections = getattr(extension, 'api_sections', None)
             if api_sections:

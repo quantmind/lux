@@ -13,6 +13,7 @@ Python API
    base
    ui
    angular
+   api
    static
    sessions
    oauth/index

@@ -1,30 +1,3 @@
-'''
-.. _router:
-
-Router
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autoclass:: Router
-   :members:
-   :member-order: bysource
-
-
-.. _htmlrouter:
-
-Html Router
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autoclass:: HtmlRouter
-   :members:
-   :member-order: bysource
-
-Wsgi Request
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autoclass:: WsgiRequest
-   :members:
-   :member-order: bysource
-'''
 from pulsar import get_event_loop
 from pulsar.apps.wsgi import (route, wsgi_request, cached_property,
                               EnvironMixin, html_factory)
@@ -65,17 +38,17 @@ DEFAULT_CONTENT_TYPES = unique_tuple(('text/html', 'text/plain', 'text/csv'),
 
 
 class WsgiRequest(wsgi.WsgiRequest):
-    '''Extend :class:`~pulsar.apps.wsgi.WsgiRequest` with additional
-    methods and attributes.
+    '''Extend pulsar :class:`~pulsar.apps.wsgi.wrappers.WsgiRequest` with
+    additional methods and attributes.
     '''
     @property
     def app(self):
-        '''The :class:`.App` running the website.'''
+        '''The :class:`.Application` running the website.'''
         return self.cache.app
 
     @property
     def config(self):
-        '''The configuration dictionary'''
+        '''The :attr:`.Application.config` dictionary'''
         return self.cache.app.config
 
     @property

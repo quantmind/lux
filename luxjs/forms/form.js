@@ -15,8 +15,11 @@
             promise,
             api;
         //
-        if (form.$invalid)
-            return this.showErrors();
+        // Flag the form as submitted
+        form.submitted = true;
+        if (form.$invalid) {
+            return;
+        }
 
         // Get the api information
         if (!target && apiname) {
@@ -339,6 +342,8 @@
                     forEach(field.options, function (opt) {
                         if (typeof(opt) === 'string') {
                             opt = {'value': opt};
+                        } else if (isArray(opt)) {
+                            opt = {'value': opt[0], 'repr': opt[1] || opt[0]};
                         }
                         opt = $($document[0].createElement('option'))
                                 .attr('value', opt.value).html(opt.repr || opt.value);
@@ -386,12 +391,15 @@
                 inputError: function (scope, element) {
                     var field = scope.field,
                         self = this,
+                        // True when the form is submitted
+                        submitted = scope.formName + '.submitted',
+                        // True if the field is dirty
                         dirty = [scope.formName, field.name, '$dirty'].join('.'),
                         invalid = [scope.formName, field.name, '$invalid'].join('.'),
                         error = [scope.formName, field.name, '$error'].join('.') + '.',
                         input = $(element[0].querySelector(scope.info.element)),
                         p = $($document[0].createElement('p'))
-                                .attr('ng-show', dirty + ' && ' + invalid)
+                                .attr('ng-show', '(' + submitted + ' || ' + dirty + ') && ' + invalid)
                                 .addClass('text-danger')
                                 .addClass(scope.formErrorClass)
                                 .html('{{formErrors.' + field.name + '}}'),

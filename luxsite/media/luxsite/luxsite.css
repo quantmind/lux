@@ -1,15 +1,15 @@
 @charset "UTF-8";
 /*
 ------------------------------------------------------------------
-Created by lux in 0.1 seconds
-Date: 2014-11-03 14:56:26
+Created by lux in 0.08 seconds
+Date: 2014-11-11 17:10:51
 
 http://quantmind.github.io/lux/
 ------------------------------------------------------------------ */
 
 .lazyContainer {
-    width: 100%;
     position: relative;
+    width: 100%;
 }
 
 .push-bottom {
@@ -3321,12 +3321,12 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 }
 .hljs{display:block;overflow-x:auto;padding:0.5em;background:#3f3f3f;color:#dcdcdc;-webkit-text-size-adjust:none}.hljs-keyword,.hljs-tag,.css .hljs-class,.css .hljs-id,.lisp .hljs-title,.nginx .hljs-title,.hljs-request,.hljs-status,.clojure .hljs-attribute{color:#e3ceab}.django .hljs-template_tag,.django .hljs-variable,.django .hljs-filter .hljs-argument{color:#dcdcdc}.hljs-number,.hljs-date{color:#8cd0d3}.dos .hljs-envvar,.dos .hljs-stream,.hljs-variable,.apache .hljs-sqbracket{color:#efdcbc}.dos .hljs-flow,.diff .hljs-change,.python .exception,.python .hljs-built_in,.hljs-literal,.tex .hljs-special{color:#efefaf}.diff .hljs-chunk,.hljs-subst{color:#8f8f8f}.dos .hljs-keyword,.hljs-decorator,.hljs-title,.hljs-type,.diff .hljs-header,.ruby .hljs-class .hljs-parent,.apache .hljs-tag,.nginx .hljs-built_in,.tex .hljs-command,.hljs-prompt{color:#efef8f}.dos .hljs-winutils,.ruby .hljs-symbol,.ruby .hljs-symbol .hljs-string,.ruby .hljs-string{color:#dca3a3}.diff .hljs-deletion,.hljs-string,.hljs-tag .hljs-value,.hljs-preprocessor,.hljs-pragma,.hljs-built_in,.hljs-javadoc,.smalltalk .hljs-class,.smalltalk .hljs-localvars,.smalltalk .hljs-array,.css .hljs-rules .hljs-value,.hljs-attr_selector,.hljs-pseudo,.apache .hljs-cbracket,.tex .hljs-formula,.coffeescript .hljs-attribute{color:#cc9393}.hljs-shebang,.diff .hljs-addition,.hljs-comment,.hljs-annotation,.hljs-template_comment,.hljs-pi,.hljs-doctype{color:#7f9f7f}.coffeescript .javascript,.javascript .xml,.tex .hljs-formula,.xml .javascript,.xml .vbscript,.xml .css,.xml .hljs-cdata{opacity:0.5}
 body {
+    font-style: normal;
     color: rgba(0, 0, 0, 0.8);
+    font-family: "freight-text-pro",Georgia,Cambria,"Times New Roman",Times,serif;
+    line-height: 1.5;
     background: #fff;
     font-size: 18px;
-    font-family: "freight-text-pro",Georgia,Cambria,"Times New Roman",Times,serif;
-    font-style: normal;
-    line-height: 1.5;
     height: 101%;
     min-height: 101%;
 }
@@ -3349,9 +3349,9 @@ p.form-error {
 }
 
 .absolute-full {
-    top: 0;
-    bottom: 0;
     position: absolute;
+    bottom: 0;
+    top: 0;
 }
 
 .nav.navbar-nav > li > a {
@@ -3377,8 +3377,8 @@ p.form-error {
 }
 
 .navbar2-page {
-    background: #fff;
     padding: 70px 15px 0;
+    background: #fff;
 }
 
 @media all and (min-width:768px) {
@@ -3393,10 +3393,10 @@ p.form-error {
 }
 @media all and (min-width:768px) {
     .sidebar {
-        width: 250px;
-        z-index: 1;
-        margin-top: 51px;
         position: absolute;
+        z-index: 1;
+        width: 250px;
+        margin-top: 51px;
     }
 
 }
@@ -3413,9 +3413,9 @@ p.form-error {
 }
 
 .animate-fade.ng-enter {
+    position: absolute;
     width: 100%;
     top: 0;
-    position: absolute;
     left: 0;
     -webkit-animation: fadeIn 1s;
        -moz-animation: fadeIn 1s;
@@ -3424,9 +3424,9 @@ p.form-error {
 }
 
 .animate-fade.ng-leave {
+    position: absolute;
     width: 100%;
     top: 0;
-    position: absolute;
     left: 0;
     -webkit-animation: fadeOut 1s;
        -moz-animation: fadeOut 1s;
@@ -3435,15 +3435,15 @@ p.form-error {
 }
 
 .katex-outer {
-    margin-left: auto;
     margin-bottom: 10px;
     display: block;
+    margin-left: auto;
     margin-right: auto;
 }
 
 code.hljs.inline {
-    display: inline;
     padding: 2px 4px;
+    display: inline;
 }
 
 dl dd {
@@ -3461,25 +3461,42 @@ dl.function > dt > tt.descname {
 
 dl.class dt tt.descname,
 dl.function dt tt.descname {
-    color: rgba(0, 0, 0, 0.8);
     font-weight: bold;
+    color: rgba(0, 0, 0, 0.8);
 }
 
 dl.class dt,
 dl.function dt {
-    font-size: 18px;
-    color: #888;
     font-weight: normal;
+    color: #888;
+    font-size: 18px;
 }
 
-.dir-entry-image {
-    max-height: 120px;
-    overflow: hidden;
+.media-list > .media > a {
+    text-decoration: none;
+    color: #808080;
 }
 
-.dir-entry-image img {
-    width: 120px;
+.media-list > .media > a .post-body {
+    margin-left: 160px;
+}
+
+.media-list > .media > a h3 {
+    font-weight: normal;
+    color: #333;
+}
+
+.post-image {
     height: auto;
+    width: 140px;
+    max-height: 140px;
+    float: left;
+}
+
+.post-image-xs {
+    max-width: 90%;
+    width: auto;
+    max-height: 150px;
 }
 
 h1:hover > a.headerlink,
@@ -3493,10 +3510,10 @@ dt:hover > a.headerlink {
 }
 
 a.headerlink {
+    padding: 0 4px;
     text-decoration: none;
     color: #eee;
     visibility: hidden;
-    padding: 0 4px;
 }
 
 a.headerlink:hover {
@@ -3510,6 +3527,10 @@ a.headerlink:hover {
 div.viewcode-block:target {
     margin: -1px -10px;
     padding: 0 10px;
+}
+
+table.docutils.field-list th {
+    padding: 0 20px 0 0;
 }
 
 .hover-opacity {
@@ -3592,8 +3613,8 @@ html {
 }
 
 #top a.navbar-brand img {
-    width: auto;
     height: 50px;
+    width: auto;
 }
 
 #page-header {
@@ -3602,14 +3623,14 @@ html {
 
 #page-main {
     padding-bottom: 50px;
-    min-height: 500px;
     padding-top: 20px;
+    min-height: 500px;
 }
 
 #page-footer {
+    color: #e5c700;
     background-color: #005a8a;
     min-height: 300px;
-    color: #e5c700;
     padding-top: 20px;
 }
 
@@ -3619,9 +3640,9 @@ html {
 }
 
 .page-header.index-header {
-    width: 100%;
-    background-color: #005a8a;
     height: 100%;
     color: #eee;
+    width: 100%;
+    background-color: #005a8a;
     min-height: 300px;
 }

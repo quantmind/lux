@@ -76,7 +76,7 @@ latex_documents = [
 
 intersphinx_mapping = {
     'python': ('http://python.readthedocs.org/en/latest/', None),
-    'pulsar': ('http://pythonhosted.org/pulsar/', None)
+    'pulsar': ('http://quantmind.github.io/pulsar/', None)
 }
 
 extlinks = {'django': ('https://www.djangoproject.com/', None),

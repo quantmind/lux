@@ -1,12 +1,3 @@
-'''
-.. autofunction:: execute_from_config
-
-
-.. autoclass:: Application
-   :members:
-   :member-order: bysource
-
-'''
 import sys
 import os
 import logging
@@ -45,7 +36,7 @@ ALL_EVENTS = ('on_config',  # Config ready.
 
 
 def execute_from_config(config_file, argv=None, **params):
-    '''Create and run an :class:`App` from a ``config_file``.
+    '''Create and run an :class:`.Application` from a ``config_file``.
 
     This is the function to use when creating the script which runs your
     web applications::
@@ -140,6 +131,13 @@ class Application(ConsoleParser, Extension):
         debug flag set at runtime via the ``debug`` flag::
 
             python myappscript.py serve --debug
+
+    .. attribute:: handler
+
+        The :class:`~pulsar.apps.wsgi.handlers.WsgiHandler` for this
+        application. It is created the first time the callable
+        method of this :class:`.Application` is accessed by the WSGI
+        server.
 
     .. attribute:: auth_backend
 
@@ -630,7 +628,6 @@ class Application(ConsoleParser, Extension):
 
 
 def add_app(apps, name, pos=None):
-    '''Insert a name to the list'''
     try:
         apps.remove(name)
     except ValueError:
