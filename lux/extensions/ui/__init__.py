@@ -184,5 +184,9 @@ def lazyContainer(all):
     css = all.css
 
     css('.lazyContainer',
+        css(' > .content',
+            top=0,
+            position='absolute',
+            min_height=pc(100)),
         width=pc(100),
         position='relative')

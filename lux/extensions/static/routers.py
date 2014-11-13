@@ -8,7 +8,7 @@ from lux.extensions import angular, base, sitemap
 
 from pulsar import ImproperlyConfigured
 from pulsar.utils.slugify import slugify
-from pulsar.apps.wsgi import Json, MediaRouter, Html
+from pulsar.apps.wsgi import Json, Html
 
 from .builder import (DirBuilder, FileBuilder, BuildError, SkipBuild,
                       Unsupported, normpath)

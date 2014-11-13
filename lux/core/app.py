@@ -536,7 +536,7 @@ class Application(ConsoleParser, Extension):
             if doc.jscontext:
                 jscontext = json.dumps(doc.jscontext)
                 doc.head.embedded_js.insert(
-                    0, 'var lux = {context: %s};' % jscontext)
+                    0, 'var lux = {context: %s};\n' % jscontext)
             body = self.render_template(template_name, context)
             doc.body.append(body)
             return doc.http_response(request)

@@ -15,8 +15,8 @@
     </div>
     <ul class="nav navbar-nav navbar-right">
         <li ng-repeat="item in navbar.items">
-            <a href="{{item.href}}" target="{{item.target}}" title="{{item.title || item.value}}">
-            <i ng-if="item.icon" class="{{item.icon}}"></i> {{item.value}}</a>
+            <a href="{{item.href}}" target="{{item.target}}" title="{{item.title || item.label || item.value}}">
+            <i ng-if="item.icon" class="{{item.icon}}"></i> {{item.label || item.value}}</a>
         </li>
     </ul>
     <div class="sidebar navbar-{{navbar.theme}}" role="navigation">
@@ -33,13 +33,13 @@
                     </div>
                 </li>
                 <li ng-repeat="link in navbar.items2">
-                    <a ng-if="!link.links" href="{{link.href}}">{{link.value || link.href}}</a>
-                    <a ng-if="link.links" href="{{link.href}}" class="with-children">{{link.value}}</a>
+                    <a ng-if="!link.links" href="{{link.href}}">{{link.label || link.value || link.href}}</a>
+                    <a ng-if="link.links" href="{{link.href}}" class="with-children">{{link.label || link.value}}</a>
                     <a ng-if="link.links" href="#" class="pull-right toggle" ng-click="togglePage($event)">
                         <i class="fa" ng-class="{'fa-chevron-left': !link.active, 'fa-chevron-down': link.active}"></i></a>
                     <ul ng-if="link.links" class="nav nav-second-level collapse" ng-class="{in: link.active}">
                         <li ng-repeat="link in link.links">
-                            <a ng-if="!link.vars" href="{{link.href}}" ng-click="loadPage($event)">{{link.value}}</a>
+                            <a ng-if="!link.vars" href="{{link.href}}" ng-click="loadPage($event)">{{link.label || link.value}}</a>
                         </li>
                     </ul>
                 </li>

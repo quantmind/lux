@@ -62,8 +62,8 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
     "    </div>\n" +
     "    <ul class=\"nav navbar-nav navbar-right\">\n" +
     "        <li ng-repeat=\"item in navbar.items\">\n" +
-    "            <a href=\"{{item.href}}\" target=\"{{item.target}}\" title=\"{{item.title || item.value}}\">\n" +
-    "            <i ng-if=\"item.icon\" class=\"{{item.icon}}\"></i> {{item.value}}</a>\n" +
+    "            <a href=\"{{item.href}}\" target=\"{{item.target}}\" title=\"{{item.title || item.label || item.value}}\">\n" +
+    "            <i ng-if=\"item.icon\" class=\"{{item.icon}}\"></i> {{item.label || item.value}}</a>\n" +
     "        </li>\n" +
     "    </ul>\n" +
     "    <div class=\"sidebar navbar-{{navbar.theme}}\" role=\"navigation\">\n" +
@@ -80,13 +80,13 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
     "                    </div>\n" +
     "                </li>\n" +
     "                <li ng-repeat=\"link in navbar.items2\">\n" +
-    "                    <a ng-if=\"!link.links\" href=\"{{link.href}}\">{{link.value || link.href}}</a>\n" +
-    "                    <a ng-if=\"link.links\" href=\"{{link.href}}\" class=\"with-children\">{{link.value}}</a>\n" +
+    "                    <a ng-if=\"!link.links\" href=\"{{link.href}}\">{{link.label || link.value || link.href}}</a>\n" +
+    "                    <a ng-if=\"link.links\" href=\"{{link.href}}\" class=\"with-children\">{{link.label || link.value}}</a>\n" +
     "                    <a ng-if=\"link.links\" href=\"#\" class=\"pull-right toggle\" ng-click=\"togglePage($event)\">\n" +
     "                        <i class=\"fa\" ng-class=\"{'fa-chevron-left': !link.active, 'fa-chevron-down': link.active}\"></i></a>\n" +
     "                    <ul ng-if=\"link.links\" class=\"nav nav-second-level collapse\" ng-class=\"{in: link.active}\">\n" +
     "                        <li ng-repeat=\"link in link.links\">\n" +
-    "                            <a ng-if=\"!link.vars\" href=\"{{link.href}}\" ng-click=\"loadPage($event)\">{{link.value}}</a>\n" +
+    "                            <a ng-if=\"!link.vars\" href=\"{{link.href}}\" ng-click=\"loadPage($event)\">{{link.label || link.value}}</a>\n" +
     "                        </li>\n" +
     "                    </ul>\n" +
     "                </li>\n" +

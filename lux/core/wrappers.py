@@ -1,4 +1,3 @@
-from pulsar import get_event_loop
 from pulsar.apps.wsgi import (route, wsgi_request, cached_property,
                               EnvironMixin, html_factory)
 from pulsar.apps import wsgi
@@ -10,7 +9,7 @@ from lux.utils import unique_tuple
 
 __all__ = ['Html', 'WsgiRequest', 'Router', 'route', 'wsgi_request', 'as_tag',
            'cached_property', 'EnvironMixin', 'html_factory',
-           'get_event_loop', 'RouterParam', 'JSON_CONTENT_TYPES',
+           'RouterParam', 'JSON_CONTENT_TYPES',
            'DEFAULT_CONTENT_TYPES']
 
 Html = wsgi.Html
