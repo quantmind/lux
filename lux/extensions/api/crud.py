@@ -80,7 +80,7 @@ class CRUD(lux.Router):
         form_class = manager.form
         if not form_class:
             raise MethodNotAllowed
-        auth = request.app.auth_backend
+        auth = request.cache.auth_backend
         if auth and auth.has_permission(request, auth.CREATE, manager.model):
             data, files = request.data_and_files()
             form = form_class(request, data=data, files=files)
@@ -113,7 +113,7 @@ class CRUD(lux.Router):
         form_class = manager.form
         if not form_class:
             raise MethodNotAllowed
-        auth = request.app.auth_backend
+        auth = request.cache.auth_backend
         if auth.has_permission(request, auth.UPDATE, instance):
             data, files = request.data_and_files()
             form = form_class(request, data=data, files=files)

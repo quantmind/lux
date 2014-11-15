@@ -33,6 +33,7 @@ from pulsar.apps.wsgi import wsgi_request
 import lux
 from lux import Parameter, Router
 from lux.utils.http import same_origin
+from lux.extensions.angular import add_ng_modules
 
 from .views import *
 from .backend import *
@@ -90,18 +91,21 @@ class Extension(lux.Extension):
                   'CSRF parameter name in forms')]
 
     backend = None
+    ngModules = ['lux.users']
 
     def middleware(self, app):
         dotted_path = app.config['AUTHENTICATION_BACKEND']
         if dotted_path:
             self.backend = module_attribute(dotted_path)(app)
-            return self.backend.request_middleware()
+            if self.backend.wsgi:
+                return [self.backend.wsgi]
 
     def response_middleware(self, app):
         return [self.backend.response_middleware]
 
     def on_html_document(self, app, request, doc):
-        backend = self.backend
+        add_ng_modules(doc, self.ngModules)
+        backend = request.cache.auth_backend
         if backend and request.method in ('GET', 'HEAD', 'OPTIONS', 'TRACE'):
             param = app.config['CSRF_PARAM']
             csrf_token = backend.csrf_token(request)
@@ -111,16 +115,21 @@ class Extension(lux.Extension):
                 doc.head.add_meta(name="csrf-param", content=param)
                 doc.head.add_meta(name="csrf-token", content=csrf_token)
             session = request.cache.session
+            messages = []
             if session:
-                doc.jscontext['messages'] = session.get_messages()
+                messages.extend(session.get_messages())
             user = request.cache.user
             if user:
+                messages.extend(user.get_messages())
                 doc.jscontext['user'] = user.todict()
+            if messages:
+                doc.jscontext['messages'] = messages
 
     def on_form(self, app, form):
         '''Handle CSRF on form
         '''
-        backend = self.backend
+        request = form.request
+        backend = request.cache.auth_backend if request else None
         param = app.config['CSRF_PARAM']
         if (backend and form.request.method == 'POST'
                 and form.is_bound and param):

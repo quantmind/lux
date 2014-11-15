@@ -8,7 +8,7 @@ from pulsar.utils.structures import mapping_iterator
 from lux.utils import unique_tuple
 
 __all__ = ['Html', 'WsgiRequest', 'Router', 'route', 'wsgi_request', 'as_tag',
-           'cached_property', 'EnvironMixin', 'html_factory',
+           'cached_property', 'EnvironMixin', 'html_factory', 'RedirectRouter',
            'RouterParam', 'JSON_CONTENT_TYPES',
            'DEFAULT_CONTENT_TYPES']
 
@@ -80,6 +80,15 @@ class WsgiRequest(wsgi.WsgiRequest):
 
 
 wsgi.set_wsgi_request_class(WsgiRequest)
+
+
+class RedirectRouter(wsgi.Router):
+
+    def __init__(self, routefrom, routeto):
+        super(RedirectRouter, self).__init__(routefrom, routeto=routeto)
+
+    def get(self, request):
+        return request.redirect(self.routeto)
 
 
 class Router(wsgi.Router):

@@ -6,6 +6,16 @@ from google.appengine.api import mail
 from .. import sessions
 
 
+def role_name(model):
+    id = ''
+    if isinstance(model, ndb.Model):
+        id = model.key.id()
+        if id:
+            id = '.%s' % id
+        model = model.__class__
+    return model.__name__.lower() + id
+
+
 class Oauth(ndb.Model):
     name = ndb.StringProperty()
     identifier = ndb.StringProperty()
@@ -25,10 +35,34 @@ class Oauth(ndb.Model):
 class Message(ndb.Model):
     level = ndb.StringProperty()
     body = ndb.TextProperty()
-    date = ndb.DateTimeProperty()
+    userid = ndb.StringProperty()
 
 
-class User(ndb.Model, sessions.UserMixin):
+class MessageMixin(sessions.MessageMixin):
+
+    def message(self, level, message):
+        msg = Message(level=level, body=message)
+        self.messages.append(msg)
+
+    def get_messages(self):
+        return [m.to_dict() for m in self.messages]
+
+    def remove_message(self, data):
+        body = data.get('body')
+        userid = data.get('userid')
+        for idx, msg in tuple(enumerate(self.messages)):
+            if body == msg.body and userid == msg.userid:
+                self.messages.pop(idx)
+                return True
+        return False
+
+
+class Role(ndb.Model):
+    name = ndb.StringProperty()
+    level = ndb.IntegerProperty()
+
+
+class User(ndb.Model, sessions.UserMixin, MessageMixin):
     '''Model for users
     '''
     username = ndb.StringProperty()
@@ -43,6 +77,13 @@ class User(ndb.Model, sessions.UserMixin):
     #
     oauths = ndb.StructuredProperty(Oauth, repeated=True)
     messages = ndb.StructuredProperty(Message, repeated=True)
+    #
+    # user roles
+    roles = ndb.StructuredProperty(Role, repeated=True)
+
+    def message(self, level, message):
+        msg = Message(level=level, body=message, userid=self.key().id())
+        self.messages.append(msg)
 
     def is_active(self):
         return self.active
@@ -75,6 +116,11 @@ class User(ndb.Model, sessions.UserMixin):
                        to=self.email,
                        subject=subject,
                        body=message)
+
+    def add_role(self, model, level):
+        role = Role(name=role_name(model), level=level)
+        self.roles.append(role)
+        return role
 
     @classmethod
     def create_from_oauth(cls, data, provider, token):
@@ -125,27 +171,12 @@ class User(ndb.Model, sessions.UserMixin):
         return username
 
 
-class Session(ndb.Model, sessions.MessageMixin):
+class Session(ndb.Model, MessageMixin):
     expiry = ndb.DateTimeProperty()
     user = ndb.KeyProperty(User)
     agent = ndb.TextProperty()
     client_address = ndb.TextProperty()
     messages = ndb.StructuredProperty(Message, repeated=True)
-
-    def message(self, level, message):
-        msg = Message(level=level, body=message)
-        self.messages.append(msg)
-
-    def get_messages(self):
-        return [m.to_dict() for m in self.messages]
-
-    def remove_message(self, data):
-        body = data.get('body')
-        for idx, msg in enumerate(self.messages):
-            if body == msg.body:
-                self.messages.pop(idx)
-                return True
-        return False
 
 
 class Registration(ndb.Model):
@@ -159,20 +190,3 @@ class Registration(ndb.Model):
             raise sessions.AuthenticationError('already used')
         elif self.expiry < datetime.now():
             raise sessions.AuthenticationError('expired')
-
-
-class Role(ndb.Model):
-    name = ndb.StringProperty()
-    level = ndb.IntegerProperty()
-
-
-class UserRole(ndb.Model):
-    user = ndb.KeyProperty(User)
-    roles = ndb.StructuredProperty(Role, repeated=True)
-
-    @classmethod
-    def get_by_user(cls, user):
-        q = cls.query(cls.user == user.key())
-        roles = q.fetch(1)
-        return users[0].roles if roles else []
-

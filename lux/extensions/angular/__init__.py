@@ -1,5 +1,5 @@
 '''\
-THis extension does not provide any middleware but it is required
+This extension does not provide any middleware but it is required
 when using :ref:`lux.js <jsapi>` javascript module and
 provides the link between AngularJS_ and Python.
 
@@ -44,6 +44,13 @@ from pulsar.apps.wsgi import MediaMixin, Html, route
 from pulsar.utils.httpurl import urlparse
 
 from .ui import add_css
+
+
+def add_ng_modules(doc, modules):
+    ngmodules = set(doc.jscontext.get('ngModules', ()))
+    ngmodules.update(modules)
+    doc.jscontext['ngModules'] = ngmodules
+    return ngmodules
 
 
 class Extension(lux.Extension):
@@ -121,8 +128,7 @@ class Router(lux.Router, MediaMixin):
         # Build the ui-view main
         main = self.build_main(request)
         #
-        ngmodules = jscontext['ngModules'] = set(jscontext.get('ngModules', ()))
-        ngmodules.update(app.config['NGMODULES'])
+        ngmodules = add_ng_modules(doc, app.config['NGMODULES'])
         #
         # Using Angular Ui-Router
         if uirouter:

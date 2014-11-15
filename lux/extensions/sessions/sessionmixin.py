@@ -24,14 +24,11 @@ __all__ = ['SessionMixin']
 class SessionMixin(object):
     '''Mixin for :class:`.AuthBackend` via sessions.
     '''
-    READ = 10
-    UPDATE = 20
-    CREATE = 30
-    REMOVE = 40
     ForgotPasswordRouter = None
+    dismiss_message = None
 
     def __init__(self, app):
-        self.app = app
+        wsgi = self.init_wsgi(app)
         cfg = self.config
         self.encoding = cfg['ENCODING']
         self.secret_key = cfg['SECRET_KEY'].encode()
@@ -43,18 +40,13 @@ class SessionMixin(object):
         algorithm = cfg['CRYPT_ALGORITHM']
         self.crypt_module = import_module(algorithm)
         self.jwt = jwt
-
-    def request_middleware(self):
-        cfg = self.config
-        middleware = [self]
         if cfg['SESSION_MESSAGES']:
-            middleware.append(Router('_dismiss_message',
-                                     post=self._dismiss_message))
+            wsgi.middleware.append(Router('_dismiss_message',
+                                          post=self._dismiss_message))
             reset = cfg['RESET_PASSWORD_URL']
             if reset:
                 router = self.ForgotPasswordRouter or ForgotPassword
-                middleware.append(router(reset))
-        return middleware
+                wsgi.middleware.append(router(reset))
 
     def request(self, request):
         key = self.config['SESSION_COOKIE_NAME']
@@ -69,7 +61,6 @@ class SessionMixin(object):
             request.cache.user = session.user.get()
         if not request.cache.user:
             request.cache.user = self.anonymous()
-
 
     def response(self, request, response):
         session = request.cache.session

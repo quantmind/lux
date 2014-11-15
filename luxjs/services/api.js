@@ -74,9 +74,9 @@
         // Can be used to manipulate the url
         url: function (urlparams) {
             if (urlparams)
-                return self._url + '/' + urlparams.id;
+                return this._url + '/' + urlparams.id;
             else
-                return self._url;
+                return this._url;
         },
         //
         //  Handle authentication

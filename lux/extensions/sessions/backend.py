@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from pulsar import PermissionDenied, Http404
 from pulsar.utils.pep import to_bytes, to_string
 from pulsar.utils.importer import module_attribute
+from pulsar.apps.wsgi import WsgiHandler
 
 import lux
 from lux.utils.crypt import get_random_string, digest
@@ -36,7 +37,7 @@ class LogoutError(RuntimeError):
 
 
 class MessageMixin(object):
-    '''Mixin for a messages
+    '''Mixin for models which support messages
     '''
     def success(self, message):
         '''Store a ``success`` message to show to the web user
@@ -69,8 +70,13 @@ class MessageMixin(object):
         '''Remove a message from the list of messages'''
         raise NotImplementedError
 
+    def get_messages(self):
+        '''Retrieve messages
+        '''
+        return ()
 
-class UserMixin(object):
+
+class UserMixin(MessageMixin):
     '''Mixin for a User model
     '''
     email = None
@@ -153,8 +159,16 @@ class AuthBackend(object):
 
         backend = request.cache.auth_backend
     '''
-    def __init__(self, app):
+    READ = 10
+    UPDATE = 20
+    CREATE = 30
+    REMOVE = 40
+    wsgi = None
+
+    def init_wsgi(self, app):
         self.app = app
+        self.wsgi = WsgiHandler([self], response_middleware=False)
+        return self.wsgi
 
     @property
     def config(self):
@@ -165,9 +179,6 @@ class AuthBackend(object):
         # Inject self as the authentication backend
         request.cache.auth_backend = self
         return self.request(request)
-
-    def request_middleware(self):
-        return [self]
 
     def response_middleware(self, environ, response):
         request = self.app.wsgi_request(environ)
@@ -245,4 +256,3 @@ class AuthBackend(object):
     def logout(self, request, user=None):
         ''''Logout a user'''
         raise NotImplementedError
-

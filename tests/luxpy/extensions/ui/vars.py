@@ -69,3 +69,18 @@ class TestVariables(test.TestCase):
         v2 = 30 - vars.v
         self.assertEqual(str(v2), '22px')
         self.assertIsInstance(v2, Variable)
+
+    def test_unspecified(self):
+        all = Css()
+        vars = all.variables
+        vars.color = None
+        s = all.css('a', color=vars.color)
+        text = s.render()
+        self.assertFalse(text)
+        s = all.css('a', color=vars.color)
+        vars.color=color('#333')
+        text = s.render()
+        self.assertEqual(text, '''a {
+    color: #333;
+}
+''')

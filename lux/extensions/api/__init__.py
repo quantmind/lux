@@ -93,7 +93,7 @@ class Extension(lux.Extension):
                   'Search engine for models'),
         Parameter('ODM', None, 'Optional Object Data Mapper.'),
         Parameter('DUMPDB_EXTENSIONS', None, ''),
-        Parameter('API_URL', 'api', ''),
+        Parameter('API_URL', 'api/', ''),
         Parameter('API_DOCS_URL', 'api/docs', ''),
         Parameter('API_SEARCH_KEY', 'q',
                   'The query key for full text search'),
@@ -115,6 +115,7 @@ class Extension(lux.Extension):
         '''
         url = app.config['API_URL']
         app.api = api = ApiRoot(url)
+        app.config['API_URL'] = str(api.route)
         for extension in itervalues(app.extensions):
             api_sections = getattr(extension, 'api_sections', None)
             if api_sections:

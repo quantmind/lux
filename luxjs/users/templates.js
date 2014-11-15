@@ -8,6 +8,6 @@ angular.module("users/messages.tpl.html", []).run(["$templateCache", function($t
     "    <span aria-hidden=\"true\">&times;</span>\n" +
     "    <span class=\"sr-only\">Close</span>\n" +
     "</button>\n" +
-    "<span ng-bind-html=\"message.body\"></span>\n" +
+    "<span ng-bind-html=\"message.html\"></span>\n" +
     "</div>");
 }]);

@@ -55,7 +55,7 @@
                         if (message) {
                             if (typeof(message) === 'string')
                                 message = {body: message};
-                            message.body = $sce.trustAsHtml(message.body);
+                            message.html = $sce.trustAsHtml(message.body);
                         }
                         scope.messages.push(message);
                     });

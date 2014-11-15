@@ -23,6 +23,7 @@
         search: false,
         url: lux.context.url,
         target: '',
+        toggle: true,
         fluid: true
     };
 

@@ -3,7 +3,7 @@ from lux import route
 from lux.forms import Form
 from lux.extensions.angular import Router as WebRouter
 
-from pulsar import Http404, PermissionDenied
+from pulsar import Http404, PermissionDenied, HttpRedirect
 from pulsar.apps.wsgi import Json
 
 from .forms import (LoginForm, CreateUserForm, ChangePassword,
@@ -40,16 +40,20 @@ class FormMixin(object):
         return self.form or self.default_form
 
     def maybe_redirect_to(self, request, form, **kw):
-        redirect_to = self.redirect_to
-        if redirect_to:
-            if hasattr(redirect_to, '__call__'):
-                redirect_to = redirect_to(request, **kw)
+        redirect_to = self.redirect_url(request)
         if redirect_to:
             return Json({'success': True,
-                         'redirect': request.absolute_uri(redirect_to)}
+                         'redirect': redirect_to}
                         ).http_response(request)
         else:
             Json(form.tojson()).http_response(request)
+
+    def redirect_url(self, request):
+        redirect_to = self.redirect_to
+        if hasattr(redirect_to, '__call__'):
+            redirect_to = redirect_to(request, **kw)
+        if redirect_to:
+            return request.absolute_uri(redirect_to)
 
 
 class WebFormRouter(WebRouter, FormMixin):
@@ -122,14 +126,14 @@ class SignUp(WebFormRouter):
         username = request.urlargs['username']
         backend = request.cache.auth_backend
         user = backend.confirm_registration(request, username=username)
-        return request.redirect('/')
+        raise HttpRedirect(self.redirect_url(request))
 
     @route('<key>')
     def confirmation(self, request):
         key = request.urlargs['key']
         backend = request.cache.auth_backend
         user = backend.confirm_registration(request, key)
-        return request.redirect('/')
+        raise HttpRedirect(self.redirect_url(request))
 
 
 class ForgotPassword(WebFormRouter):

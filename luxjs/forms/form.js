@@ -148,6 +148,7 @@
                 //
                 baseAttributes = ['id', 'name', 'title', 'style'],
                 inputAttributes = extendArray([], baseAttributes, ['disabled', 'type', 'value', 'placeholder']),
+                textareaAttributes = extendArray([], baseAttributes, ['disabled', 'placeholder', 'rows', 'cols']),
                 buttonAttributes = extendArray([], baseAttributes, ['disabled']),
                 formAttributes = extendArray([], baseAttributes, ['accept-charset', 'action', 'autocomplete',
                                                                   'enctype', 'method', 'novalidate', 'target']),
@@ -287,14 +288,14 @@
                         if (field[name]) input.attr(name, field[name]);
                     });
 
-                    return element.append(label.append(input));
+                    return this.onChange(scope, element.append(label.append(input)));
                 },
                 //
                 checkbox: function (scope) {
                     return this.radio(scope);
                 },
                 //
-                input: function (scope) {
+                input: function (scope, attributes) {
                     this.fillDefaults(scope);
 
                     var field = scope.field,
@@ -313,7 +314,7 @@
                             field.placeholder = field.label;
                     }
 
-                    this.addAttrs(scope, input, inputAttributes);
+                    this.addAttrs(scope, input, attributes || inputAttributes);
                     if (field.value !== undefined) {
                         scope[scope.formModelName][field.name] = field.value;
                         if (info.textBased)
@@ -326,11 +327,11 @@
                     } else {
                         element = [label, input];
                     }
-                    return this.inputError(scope, element);
+                    return this.onChange(scope, this.inputError(scope, element));
                 },
                 //
                 textarea: function (scope) {
-                    return this.input(scope);
+                    return this.input(scope, textareaAttributes);
                 },
                 //
                 // Create a select element
@@ -349,7 +350,7 @@
                                 .attr('value', opt.value).html(opt.repr || opt.value);
                         select.append(opt);
                     });
-                    return element;
+                    return this.onChange(scope, element);
                 },
                 //
                 button: function (scope) {
@@ -382,6 +383,14 @@
                         callback.call(this, e);
                     };
                     element.attr('ng-click', clickname + '($event)');
+                    return element;
+                },
+                //
+                //  Add change event
+                onChange: function (scope, element) {
+                    var field = scope.field,
+                        input = $(element[0].querySelector(scope.info.element));
+                    input.attr('ng-change', 'fireFieldChange("' + field.name + '")');
                     return element;
                 },
                 //
@@ -589,6 +598,16 @@
                         forEach(messages, function (messages, field) {
                             scope.formMessages[field] = messages;
                         });
+                    };
+
+                    scope.fireFieldChange = function (name) {
+                        var obj = {
+                            form: formmodel,
+                            field: name
+                        };
+                        // Triggered wvery time a form field changes
+                        scope.$broadcast('fieldChange', obj);
+                        scope.$emit('formFieldChange', obj);
                     };
                 } else {
                     $lux.log.error('Form data does not contain field entry');

@@ -7,6 +7,7 @@ from .. import CssLibraries
 __all__ = ['Animation',
            'Opacity',
            'Clearfix',
+           'CenterBlock',
            'InlineBlock',
            'Textoverflow',
            'clear_anchor',
@@ -118,6 +119,15 @@ http://foohack.com/2007/11/cross-browser-support-for-inline-block-styling/'''
         elem['display'] = 'inline-block'
         elem['zoom'] = '1'
         elem['*display'] = 'inline'
+
+
+################################################# CenterBlock
+class CenterBlock(Mixin):
+    '''Center block a-la bootstrap'''
+    def __call__(self, elem):
+        elem['display'] = 'block'
+        elem['margin-left'] = 'auto'
+        elem['margin-right'] = 'auto'
 
 
 ################################################# TEXT OVERFLOW

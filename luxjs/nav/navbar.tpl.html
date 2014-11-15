@@ -3,7 +3,7 @@ ng-class="{'navbar-fixed-top':navbar.fixed, 'navbar-static-top':navbar.top}" rol
 ng-model="navbar.collapse" bs-collapse>
     <div class="{{navbar.container}}">
         <div class="navbar-header">
-            <button type="button" class="navbar-toggle" bs-collapse-toggle>
+            <button ng-if="navbar.toggle" type="button" class="navbar-toggle" bs-collapse-toggle>
                 <span class="sr-only">Toggle navigation</span>
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>

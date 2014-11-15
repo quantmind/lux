@@ -30,14 +30,15 @@ class ModelManager(api.ModelManager):
             return []
 
     def instance(self, instance):
-        d = {}
-        for c in self.columns:
-            if c.code == 'id':
-                value = instance.key.id()
-            else:
-                value = getattr(instance, c.code, None)
-            d[c.code] = value
-        return d
+        data = {}
+        for prop in instance._properties.itervalues():
+            name = prop._code_name
+            value = prop._get_for_dict(instance)
+            if value is None:
+                continue
+            data[name] = value
+        data['id'] = instance.key.id()
+        return data
 
     def create_model(self, data):
         m = self.model(**data)

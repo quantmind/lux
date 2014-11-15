@@ -1,6 +1,6 @@
 //      Lux Library - v0.1.0
 
-//      Compiled 2014-11-13.
+//      Compiled 2014-11-15.
 //      Copyright (c) 2014 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -193,21 +193,20 @@ function(angular, root) {
     //  Used by directive when needing to specify options in javascript rather
     //  than html data attributes.
     getOptions = lux.getOptions = function (attrs) {
+        var options;
         if (attrs && typeof attrs.options === 'string') {
-            var obj = getRootAttribute(attrs.options);
-            if (typeof obj === 'function')
-                obj = obj();
+            options = getRootAttribute(attrs.options);
+            if (typeof options === 'function')
+                options = options();
             delete attrs.options;
-            if (isObject(obj))
-                attrs = extend(attrs, obj);
-            else if (obj !== undefined)
-                return obj;
+        } else {
+            options = {};
         }
-        var options = {};
-        forEach(attrs, function (value, name) {
-            if (name.substring(0, 1) !== '$')
-                options[name] = value;
-        });
+        if (isObject(options))
+            forEach(attrs, function (value, name) {
+                if (name.substring(0, 1) !== '$')
+                    options[name] = value;
+            });
         return options;
     },
     //
@@ -285,6 +284,10 @@ function(angular, root) {
             .replace(/-+/g, '-'); // collapse dashes
 
         return str;
+    },
+    //
+    now = lux.now = function () {
+        return Date.now ? Date.now() : new Date().getTime();
     };
 
 
@@ -470,9 +473,9 @@ function(angular, root) {
         // Can be used to manipulate the url
         url: function (urlparams) {
             if (urlparams)
-                return self._url + '/' + urlparams.id;
+                return this._url + '/' + urlparams.id;
             else
-                return self._url;
+                return this._url;
         },
         //
         //  Handle authentication
@@ -622,10 +625,10 @@ function(angular, root) {
             //
             var csrf = {},
                 name = $(document.querySelector("meta[name=csrf-param]")).attr('content'),
-                token = $(document.querySelector("meta[name=csrf-token]")).attr('content');
+                csrf_token = $(document.querySelector("meta[name=csrf-token]")).attr('content');
 
-            if (name && token)
-                csrf[name] = token;
+            if (name && csrf_token)
+                csrf[name] = csrf_token;
 
             // A post method with CSRF parameter
             $lux.post = function (url, data, cfg) {
@@ -674,15 +677,15 @@ function(angular, root) {
                     }
                 },
                 //
-                addAuth: function (api, options) {
+                addAuth: function (request) {
                     //
                             // Add authentication token
-                    if (this.user_token) {
-                        var headers = options.headers;
+                    if (this.auth.user_token) {
+                        var headers = request.options.headers;
                         if (!headers)
-                            options.headers = headers = {};
+                            request.options.headers = headers = {};
 
-                        headers.Authorization = 'Bearer ' + this.user_token;
+                        headers.Authorization = 'Bearer ' + this.auth.user_token;
                     }
                 },
             });
@@ -1375,6 +1378,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                 //
                 baseAttributes = ['id', 'name', 'title', 'style'],
                 inputAttributes = extendArray([], baseAttributes, ['disabled', 'type', 'value', 'placeholder']),
+                textareaAttributes = extendArray([], baseAttributes, ['disabled', 'placeholder', 'rows', 'cols']),
                 buttonAttributes = extendArray([], baseAttributes, ['disabled']),
                 formAttributes = extendArray([], baseAttributes, ['accept-charset', 'action', 'autocomplete',
                                                                   'enctype', 'method', 'novalidate', 'target']),
@@ -1514,14 +1518,14 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                         if (field[name]) input.attr(name, field[name]);
                     });
 
-                    return element.append(label.append(input));
+                    return this.onChange(scope, element.append(label.append(input)));
                 },
                 //
                 checkbox: function (scope) {
                     return this.radio(scope);
                 },
                 //
-                input: function (scope) {
+                input: function (scope, attributes) {
                     this.fillDefaults(scope);
 
                     var field = scope.field,
@@ -1540,7 +1544,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                             field.placeholder = field.label;
                     }
 
-                    this.addAttrs(scope, input, inputAttributes);
+                    this.addAttrs(scope, input, attributes || inputAttributes);
                     if (field.value !== undefined) {
                         scope[scope.formModelName][field.name] = field.value;
                         if (info.textBased)
@@ -1553,11 +1557,11 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                     } else {
                         element = [label, input];
                     }
-                    return this.inputError(scope, element);
+                    return this.onChange(scope, this.inputError(scope, element));
                 },
                 //
                 textarea: function (scope) {
-                    return this.input(scope);
+                    return this.input(scope, textareaAttributes);
                 },
                 //
                 // Create a select element
@@ -1576,7 +1580,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                                 .attr('value', opt.value).html(opt.repr || opt.value);
                         select.append(opt);
                     });
-                    return element;
+                    return this.onChange(scope, element);
                 },
                 //
                 button: function (scope) {
@@ -1609,6 +1613,14 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                         callback.call(this, e);
                     };
                     element.attr('ng-click', clickname + '($event)');
+                    return element;
+                },
+                //
+                //  Add change event
+                onChange: function (scope, element) {
+                    var field = scope.field,
+                        input = $(element[0].querySelector(scope.info.element));
+                    input.attr('ng-change', 'fireFieldChange("' + field.name + '")');
                     return element;
                 },
                 //
@@ -1817,6 +1829,16 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                             scope.formMessages[field] = messages;
                         });
                     };
+
+                    scope.fireFieldChange = function (name) {
+                        var obj = {
+                            form: formmodel,
+                            field: name
+                        };
+                        // Triggered wvery time a form field changes
+                        scope.$broadcast('fieldChange', obj);
+                        scope.$emit('formFieldChange', obj);
+                    };
                 } else {
                     $lux.log.error('Form data does not contain field entry');
                 }
@@ -1961,7 +1983,7 @@ angular.module("users/messages.tpl.html", []).run(["$templateCache", function($t
     "    <span aria-hidden=\"true\">&times;</span>\n" +
     "    <span class=\"sr-only\">Close</span>\n" +
     "</button>\n" +
-    "<span ng-bind-html=\"message.body\"></span>\n" +
+    "<span ng-bind-html=\"message.html\"></span>\n" +
     "</div>");
 }]);
 
@@ -2022,7 +2044,7 @@ angular.module("users/messages.tpl.html", []).run(["$templateCache", function($t
                         if (message) {
                             if (typeof(message) === 'string')
                                 message = {body: message};
-                            message.body = $sce.trustAsHtml(message.body);
+                            message.html = $sce.trustAsHtml(message.body);
                         }
                         scope.messages.push(message);
                     });
@@ -2316,7 +2338,7 @@ angular.module("nav/navbar.tpl.html", []).run(["$templateCache", function($templ
     "ng-model=\"navbar.collapse\" bs-collapse>\n" +
     "    <div class=\"{{navbar.container}}\">\n" +
     "        <div class=\"navbar-header\">\n" +
-    "            <button type=\"button\" class=\"navbar-toggle\" bs-collapse-toggle>\n" +
+    "            <button ng-if=\"navbar.toggle\" type=\"button\" class=\"navbar-toggle\" bs-collapse-toggle>\n" +
     "                <span class=\"sr-only\">Toggle navigation</span>\n" +
     "                <span class=\"icon-bar\"></span>\n" +
     "                <span class=\"icon-bar\"></span>\n" +
@@ -2347,7 +2369,7 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
   $templateCache.put("nav/navbar2.tpl.html",
     "<nav class=\"navbar navbar-{{navbar.themeTop}} navbar-fixed-top navbar-static-top\" role=\"navigation\" ng-model=\"navbar.collapse\" bs-collapse>\n" +
     "    <div class=\"navbar-header\">\n" +
-    "        <button type=\"button\" class=\"navbar-toggle\" bs-collapse-toggle>\n" +
+    "        <button ng-if=\"navbar.toggle\" type=\"button\" class=\"navbar-toggle\" bs-collapse-toggle>\n" +
     "            <span class=\"sr-only\">Toggle navigation</span>\n" +
     "            <span class=\"icon-bar\"></span>\n" +
     "            <span class=\"icon-bar\"></span>\n" +
@@ -2421,6 +2443,7 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
         search: false,
         url: lux.context.url,
         target: '',
+        toggle: true,
         fluid: true
     };
 

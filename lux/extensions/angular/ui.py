@@ -43,10 +43,11 @@ def add_navbar(all):
     sidebar.width = px(250)
     min_width_collapse = px(cfg['NAVBAR_COLLAPSE_WIDTH'])
 
+    css('.navbar-default',
+        background=navbar.default.background)
+
     # wraps the navbar2 and the main page
     css('.navbar2-wrapper',
-        css('.navbar-default',
-            background=navbar.default.background),
         width=pc(100),
         min_height=pc(100))
 

@@ -16,7 +16,7 @@ angular.module("nav/navbar.tpl.html", []).run(["$templateCache", function($templ
     "ng-model=\"navbar.collapse\" bs-collapse>\n" +
     "    <div class=\"{{navbar.container}}\">\n" +
     "        <div class=\"navbar-header\">\n" +
-    "            <button type=\"button\" class=\"navbar-toggle\" bs-collapse-toggle>\n" +
+    "            <button ng-if=\"navbar.toggle\" type=\"button\" class=\"navbar-toggle\" bs-collapse-toggle>\n" +
     "                <span class=\"sr-only\">Toggle navigation</span>\n" +
     "                <span class=\"icon-bar\"></span>\n" +
     "                <span class=\"icon-bar\"></span>\n" +
@@ -47,7 +47,7 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
   $templateCache.put("nav/navbar2.tpl.html",
     "<nav class=\"navbar navbar-{{navbar.themeTop}} navbar-fixed-top navbar-static-top\" role=\"navigation\" ng-model=\"navbar.collapse\" bs-collapse>\n" +
     "    <div class=\"navbar-header\">\n" +
-    "        <button type=\"button\" class=\"navbar-toggle\" bs-collapse-toggle>\n" +
+    "        <button ng-if=\"navbar.toggle\" type=\"button\" class=\"navbar-toggle\" bs-collapse-toggle>\n" +
     "            <span class=\"sr-only\">Toggle navigation</span>\n" +
     "            <span class=\"icon-bar\"></span>\n" +
     "            <span class=\"icon-bar\"></span>\n" +

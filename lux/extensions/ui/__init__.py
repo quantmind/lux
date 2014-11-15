@@ -116,6 +116,7 @@ def add_css(all):
 
     colors(all)
     lazyContainer(all)
+    anchor(all)
 
     vars.font_family = '"Helvetica Neue",Helvetica,Arial,sans-serif'
     vars.font_size = px(14)
@@ -190,3 +191,20 @@ def lazyContainer(all):
             min_height=pc(100)),
         width=pc(100),
         position='relative')
+
+
+def anchor(all):
+    '''Both ``anchor.color`` and ``anchor.color_hover`` variables are
+    left unspecified so that this rule only apply when an set their
+    values
+    '''
+    css = all.css
+    vars = all.variables
+
+    vars.anchor.color = None
+    vars.anchor.color_hover = None
+
+    css('a',
+        css(':hover',
+            color=vars.anchor.color_hover),
+        color=vars.anchor.color)

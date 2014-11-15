@@ -92,21 +92,20 @@
     //  Used by directive when needing to specify options in javascript rather
     //  than html data attributes.
     getOptions = lux.getOptions = function (attrs) {
+        var options;
         if (attrs && typeof attrs.options === 'string') {
-            var obj = getRootAttribute(attrs.options);
-            if (typeof obj === 'function')
-                obj = obj();
+            options = getRootAttribute(attrs.options);
+            if (typeof options === 'function')
+                options = options();
             delete attrs.options;
-            if (isObject(obj))
-                attrs = extend(attrs, obj);
-            else if (obj !== undefined)
-                return obj;
+        } else {
+            options = {};
         }
-        var options = {};
-        forEach(attrs, function (value, name) {
-            if (name.substring(0, 1) !== '$')
-                options[name] = value;
-        });
+        if (isObject(options))
+            forEach(attrs, function (value, name) {
+                if (name.substring(0, 1) !== '$')
+                    options[name] = value;
+            });
         return options;
     },
     //
@@ -184,4 +183,8 @@
             .replace(/-+/g, '-'); // collapse dashes
 
         return str;
+    },
+    //
+    now = lux.now = function () {
+        return Date.now ? Date.now() : new Date().getTime();
     };

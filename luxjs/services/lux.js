@@ -7,10 +7,10 @@
             //
             var csrf = {},
                 name = $(document.querySelector("meta[name=csrf-param]")).attr('content'),
-                token = $(document.querySelector("meta[name=csrf-token]")).attr('content');
+                csrf_token = $(document.querySelector("meta[name=csrf-token]")).attr('content');
 
-            if (name && token)
-                csrf[name] = token;
+            if (name && csrf_token)
+                csrf[name] = csrf_token;
 
             // A post method with CSRF parameter
             $lux.post = function (url, data, cfg) {
@@ -59,15 +59,15 @@
                     }
                 },
                 //
-                addAuth: function (api, options) {
+                addAuth: function (request) {
                     //
                             // Add authentication token
-                    if (this.user_token) {
-                        var headers = options.headers;
+                    if (this.auth.user_token) {
+                        var headers = request.options.headers;
                         if (!headers)
-                            options.headers = headers = {};
+                            request.options.headers = headers = {};
 
-                        headers.Authorization = 'Bearer ' + this.user_token;
+                        headers.Authorization = 'Bearer ' + this.auth.user_token;
                     }
                 },
             });

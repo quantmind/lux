@@ -8,6 +8,5 @@ Tutorials
    :maxdepth: 1
 
    layout
-   parameter
-   application
    extensions
+   forms

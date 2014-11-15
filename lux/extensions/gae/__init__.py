@@ -4,7 +4,7 @@ import os
 import time
 from datetime import datetime, timedelta
 
-from pulsar import PermissionDenied
+from pulsar import PermissionDenied, Http404
 from pulsar.apps.wsgi import wsgi_request
 
 import lux
@@ -13,24 +13,17 @@ from lux.utils.crypt import digest
 from lux.extensions.sessions import (SessionMixin, JWTMixin,
                                      AuthenticationError)
 
-from .models import ndb, User, Session, Registration, UserRole
+from .models import ndb, User, Session, Registration, role_name
 from .api import *
 
 
 isdev = lambda: os.environ.get('SERVER_SOFTWARE', '').startswith('Development')
 
 
-def role_name(model):
-    if isinstance(model, ndb.Model):
-        model = model.__class__
-    return model.__name__.lower()
-
 
 class AuthBackend(sessions.AuthBackend):
     '''A :class:`.AuthBackend` for the google app engine
     '''
-    model = User
-
     def has_permission(self, request, level, model):
         user = request.cache.user
         if user.is_superuser():
@@ -40,11 +33,11 @@ class AuthBackend(sessions.AuthBackend):
         elif user.is_authenticated():
             roles = request.cache.user_roles
             if roles is None:
-                request.cache.user_roles = roles = UserRole.get_by_user(user)
-            name = role_name(model)
-            for role in roles:
-                if role.name == name and role.level >= level:
-                    return True
+                request.cache.user_roles = roles = dict(((r.name, r) for r
+                                                         in user.roles))
+            role = roles.get(role_name(model))
+            if role and role.level >= level:
+                return True
         return False
 
     def set_password(self, user, raw_password):
@@ -60,9 +53,9 @@ class AuthBackend(sessions.AuthBackend):
     def authenticate(self, request, username=None, email=None, password=None):
         user = None
         if username:
-            user = User.get_by_username(username)
+            user = self.User.get_by_username(username)
         elif email:
-            user = User.get_by_email(self.normalise_email(email))
+            user = self.User.get_by_email(self.normalise_email(email))
         else:
             raise AuthenticationError('Invalid credentials')
         if user and self.decript(user.password) == password:
@@ -77,12 +70,13 @@ class AuthBackend(sessions.AuthBackend):
                     name=None, surname=None, active=False, **kwargs):
         assert username
         email = self.normalise_email(email)
-        if self.model.get_by_username(username):
+        if self.User.get_by_username(username):
             raise sessions.AuthenticationError('%s already used' % username)
-        if email and self.model.get_by_email(email):
+        if email and self.User.get_by_email(email):
             raise sessions.AuthenticationError('%s already used' % email)
-        user = User(username=username, password=self.password(password),
-                    email=email, name=name, surname=surname, active=active)
+        user = self.User(username=username, password=self.password(password),
+                         email=email, name=name, surname=surname,
+                         active=active)
         user.put()
         self.get_or_create_registration(request, user)
         return user
@@ -92,10 +86,10 @@ class AuthBackend(sessions.AuthBackend):
         if username:
             assert email is None, 'get_user by username or email'
             assert auth_key is None
-            return User.get_by_username(username)
+            return self.User.get_by_username(username)
         elif email:
             assert auth_key is None
-            return User.get_by_email(email)
+            return self.User.get_by_email(email)
         elif auth_key:
             reg = Registration.get_by_id(auth_key)
             if reg:
@@ -105,8 +99,13 @@ class AuthBackend(sessions.AuthBackend):
 
 class SessionBackend(SessionMixin, AuthBackend):
 
+    def __init__(self, app, user_class=None, session_class=None):
+        super(SessionBackend, self).__init__(app)
+        self.User = user_class or User
+        self.Session = session_class or Session
+
     def get_session(self, id):
-        return Session.get_by_id(id)
+        return self.Session.get_by_id(id)
 
     def session_key(self, session):
         return session.key.id() if session else None
@@ -118,16 +117,16 @@ class SessionBackend(SessionMixin, AuthBackend):
             session.put()
         if not expiry:
             expiry = datetime.now() + timedelta(seconds=self.session_expiry)
-        session = Session(id=self.create_session_id(),
-                          user=user.key if user else None,
-                          expiry=expiry,
-                          client_address=request.get_client_address(),
-                          agent=request.get('HTTP_USER_AGENT', ''))
+        session = self.Session(id=self.create_session_id(),
+                               user=user.key if user else None,
+                               expiry=expiry,
+                               client_address=request.get_client_address(),
+                               agent=request.get('HTTP_USER_AGENT', ''))
         session.put()
         return session
 
     def password_recovery(self, request, email):
-        user = self.model.get_by_email(email)
+        user = self.User.get_by_email(email)
         if not self.get_or_create_registration(
                 request, user, email_subject='password_email_subject.txt',
                 email_message='password_email.txt',
@@ -162,11 +161,15 @@ class SessionBackend(SessionMixin, AuthBackend):
                     session.success('Your email has been confirmed! You can '
                                     'now login')
                     return user
+            else:
+                raise Http404
         else:
             user = self.get_user(**params)
             self.get_or_create_registration(request, user)
 
 
 class JWTBackend(JWTMixin, AuthBackend):
-    pass
 
+    def __init__(self, app, user_class=None):
+        super(JWTBackend, self).__init__(app)
+        self.User = user_class or User

@@ -16,7 +16,7 @@ class JWTMixin(object):
     '''
 
     def __init__(self, app):
-        self.app = app
+        self.init_wsgi(app)
         cfg = self.config
         self.secret_key = cfg['SECRET_KEY'].encode()
 
