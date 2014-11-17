@@ -159,10 +159,10 @@ class AuthBackend(object):
 
         backend = request.cache.auth_backend
     '''
-    READ = 10
-    UPDATE = 20
-    CREATE = 30
-    REMOVE = 40
+    CREATE = 30     # C
+    READ = 10       # R
+    UPDATE = 20     # U
+    DELETE = 40     # D
     wsgi = None
 
     def init_wsgi(self, app):

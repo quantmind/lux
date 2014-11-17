@@ -1,4 +1,4 @@
-'''\
+'''
 This extension does not provide any middleware but it is required
 when using :ref:`lux.js <jsapi>` javascript module and
 provides the link between AngularJS_ and Python.
@@ -42,6 +42,7 @@ from lux import Parameter, RouterParam
 
 from pulsar.apps.wsgi import MediaMixin, Html, route
 from pulsar.utils.httpurl import urlparse
+from pulsar.utils.html import escape
 
 from .ui import add_css
 
@@ -90,7 +91,7 @@ class Router(lux.Router, MediaMixin):
     ngmodules = None
     '''Optional list of angular modules to include
     '''
-    uirouter = True
+    uirouter = 'lux.ui.router'
     '''Override the :setting:`ANGULAR_UI_ROUTER` setting for this
     :class:`.Router`. If set to ``False`` the `ui-router`_ won't be used
     and the whole html5 document is loaded when accessed.'''
@@ -132,7 +133,7 @@ class Router(lux.Router, MediaMixin):
         #
         # Using Angular Ui-Router
         if uirouter:
-            jscontext.update(self.sitemap(app, ngmodules))
+            jscontext.update(self.sitemap(app, ngmodules, uirouter))
             jscontext['page'] = router_href(app, self.full_route)
         elif self.ngmodules:
             ngmodules.update(self.ngmodules)
@@ -170,6 +171,9 @@ class Router(lux.Router, MediaMixin):
         '''
         pass
 
+    def state_template_url(self, app):
+        pass
+
     def get_controller(self, app):
         return 'Html5'
 
@@ -178,7 +182,7 @@ class Router(lux.Router, MediaMixin):
         '''
         pass
 
-    def sitemap(self, app, ngmodules):
+    def sitemap(self, app, ngmodules, uirouter):
         '''Build the sitemap used by angular `ui-router`_
         '''
         root = self
@@ -188,7 +192,7 @@ class Router(lux.Router, MediaMixin):
             ngmodules.add('ui.router')
             sitemap = {'hrefs': [],
                        'pages': {},
-                       'uiRouter': True,
+                       'uiRouter': uirouter,
                        'ngModules': ngmodules}
             add_to_sitemap(sitemap, app, root)
             root._sitemap = sitemap
@@ -203,9 +207,12 @@ class Router(lux.Router, MediaMixin):
         pass
 
     def make_router(self, rule, method=None, handler=None, cls=None, **params):
-        cls = cls or Router
-        if cls is Router and method == 'get':
-            method = 'build_main'
+        if not cls:
+            cls = self.__class__
+            if cls != Router:
+                cls = cls.copy()
+            if method == 'get':
+                method = 'build_main'
         return super(Router, self).make_router(
             rule, method=method, handler=handler, cls=cls, **params)
 
@@ -249,6 +256,7 @@ def add_to_sitemap(sitemap, app, router, parent=None):
     page = {'url': path,
             'name': router.name,
             'template': router.state_template(app),
+            'templateUrl': router.state_template_url(app),
             'api': router.get_api_info(app),
             'controller': router.get_controller(app),
             'parent': parent}

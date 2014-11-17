@@ -13,11 +13,19 @@ def html_form(request, Form, name):
 
 
 class ModelManager(object):
-    '''Model-based :ref:`ContentManager <api-content>`
+    '''A manager for creating, updating and deleting a model via a restful api
 
     .. attribute:: model
 
         The model managed by this manager
+
+    .. attribute:: form
+
+        The :class:`.Form` used to create models
+
+    .. attribute:: edit_form
+
+        The :class:`.Form` used to update models
     '''
     def __init__(self, model=None, form=None, edit_form=None):
         self.model = model
@@ -29,7 +37,7 @@ class ModelManager(object):
         '''
         raise NotImplementedError
 
-    def get(self, id):
+    def get(self, request, id):
         '''Fetch an instance by its id
         '''
         raise NotImplementedError
@@ -53,14 +61,20 @@ class ModelManager(object):
         cfg = request.config
         return request.body_data().get(cfg['API_OFFSET_KEY'], 0)
 
-    def create_model(self, data):
+    def create_model(self, request, data):
         raise NotImplementedError
 
-    def has_permission(self, user, level, instance=None):
+    def update_model(self, request, data):
         raise NotImplementedError
 
-    def _setup(self, columns):
-        pass
+    def instance_data(self, request, instance, url=None):
+        data = self.instance(instance)
+        data['api_url'] = url or request.absolute_uri('%s' % data['id'])
+        return data
+
+    def collection_data(self, request, collection):
+        d = self.instance_data
+        return [d(request, instance) for instance in collection]
 
 
 class CRUD(lux.Router):
@@ -70,7 +84,7 @@ class CRUD(lux.Router):
         limit = self.manager.limit(request)
         offset = self.manager.offset(request)
         collection = self.manager.collection(limit, offset)
-        data = self.collection_data(request, collection)
+        data = self.manager.collection_data(request, collection)
         return Json(data).http_response(request)
 
     def post(self, request):
@@ -85,8 +99,8 @@ class CRUD(lux.Router):
             data, files = request.data_and_files()
             form = form_class(request, data=data, files=files)
             if form.is_valid():
-                instance = manager.create_model(form.cleaned_data)
-                data = self.instance_data(request, instance)
+                instance = manager.create_model(request, form.cleaned_data)
+                data = self.manager.instance_data(request, instance)
                 request.response.status_code = 201
             else:
                 data = form.tojson()
@@ -97,11 +111,11 @@ class CRUD(lux.Router):
     def read(self, request):
         '''Read an instance
         '''
-        instance = self.manager.get(request.urlargs['id'])
+        instance = self.manager.get(request, request.urlargs['id'])
         if not instance:
             raise Http404
         url = request.absolute_uri()
-        data = self.instance_data(request, instance, url=url)
+        data = self.manager.instance_data(request, instance, url=url)
         return Json(data).http_response(request)
 
     @route('<id>')
@@ -124,14 +138,3 @@ class CRUD(lux.Router):
                 data = form.tojson()
             return Json(data).http_response(request)
         raise PermissionDenied
-
-    def instance_data(self, request, instance, url=None):
-        data = self.manager.instance(instance)
-        url = url or request.absolute_uri('%s' % data['id'])
-        data['api_url'] = url
-        return data
-
-    def collection_data(self, request, collection):
-        d = self.instance_data
-        return [d(request, instance) for instance in collection]
-

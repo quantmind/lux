@@ -1,6 +1,6 @@
 //      Lux Library - v0.1.0
 
-//      Compiled 2014-11-15.
+//      Compiled 2014-11-17.
 //      Copyright (c) 2014 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -198,13 +198,12 @@ function(angular, root) {
             options = getRootAttribute(attrs.options);
             if (typeof options === 'function')
                 options = options();
-            delete attrs.options;
         } else {
             options = {};
         }
         if (isObject(options))
             forEach(attrs, function (value, name) {
-                if (name.substring(0, 1) !== '$')
+                if (name.substring(0, 1) !== '$' && name !== 'options')
                     options[name] = value;
             });
         return options;
@@ -288,6 +287,16 @@ function(angular, root) {
     //
     now = lux.now = function () {
         return Date.now ? Date.now() : new Date().getTime();
+    },
+    //
+    size = lux.size = function (o) {
+        if (!o) return 0;
+        if (o.length !== undefined) return o.length;
+        var n = 0;
+        forEach(o, function () {
+            ++n;
+        });
+        return n;
     };
 
 
@@ -431,8 +440,9 @@ function(angular, root) {
                     return new Api(context.name, context.url, context.options, $lux);
             };
             //
-            this.registerApi = function (name, object) {
-                ApiTypes[name] = ApiClient.extend(object);
+            this.registerApi = function (name, object, inheritFrom) {
+                var Base = inheritFrom ? ApiTypes[inheritFrom] : ApiClient;
+                ApiTypes[name] = Base.extend(object);
                 return ApiTypes[name];
             };
         }]);
@@ -472,7 +482,7 @@ function(angular, root) {
         //
         // Can be used to manipulate the url
         url: function (urlparams) {
-            if (urlparams)
+            if (urlparams && urlparams.id)
                 return this._url + '/' + urlparams.id;
             else
                 return this._url;
@@ -564,6 +574,15 @@ function(angular, root) {
         //  -------------------------
         getList: function (options) {
             return this.request('GET', null, options);
+        },
+        //
+        getPage: function (page, state, stateParams) {
+            return page;
+        },
+        //
+        getItems: function (page, state, stateParams) {
+            if (!lux.size(stateParams))
+                return this.getList();
         },
         //
         //  Execute an API call for a given request
@@ -662,30 +681,33 @@ function(angular, root) {
                 authentication: function (request) {
                     var self = this;
                     //
-                    if (lux.context.user) {
+                    if (lux.context.user_token) {
+                        self.auth = {user_token: lux.context.user_token};
+                    } else if (lux.context.user) {
                         $lux.log.info('Fetching authentication token');
                         //
                         $lux.post('/_token').success(function (data) {
-                            self.auth = {user_token: data.token};
+                            lux.context.user_token = data.token;
+                            self.auth = {user_token: lux.context.user_token};
                             self.call(request);
                         }).error(request.error);
                         //
                         return request.deferred.promise;
                     } else {
                         self.auth = {};
-                        self.call(request);
                     }
+                    self.call(request);
                 },
                 //
                 addAuth: function (request) {
                     //
-                            // Add authentication token
-                    if (this.auth.user_token) {
+                    // Add authentication token
+                    if (lux.context.user_token) {
                         var headers = request.options.headers;
                         if (!headers)
                             request.options.headers = headers = {};
 
-                        headers.Authorization = 'Bearer ' + this.auth.user_token;
+                        headers.Authorization = 'Bearer ' + lux.context.user_token;
                     }
                 },
             });
@@ -907,6 +929,7 @@ function(angular, root) {
     angular.module('lux.static.api', ['lux.api'])
 
         .run(['$lux', function ($lux) {
+            var pageCache = {};
 
             $lux.registerApi('static', {
                 //
@@ -925,6 +948,33 @@ function(angular, root) {
                     if (url.substring(url.length-5) !== '.json')
                         url += '.json';
                     return url;
+                },
+                //
+                getPage: function (page, state, stateParams) {
+                    var href = lux.stateHref(state, page.name, stateParams),
+                        data = pageCache[href];
+                    if (data)
+                        return data;
+                    //
+                    return this.get(stateParams).success(function (data) {
+                        pageCache[href] = data;
+                        forEach(data.require_css, function (css) {
+                            loadCss(css);
+                        });
+                        if (data.require_js) {
+                            var defer = $lux.q.defer();
+                            require(rcfg.min(data.require_js), function () {
+                                defer.resolve(data);
+                            });
+                            return defer.promise;
+                        } else
+                            return data;
+                    });
+                },
+                //
+                getItems: function (page, state, stateParams) {
+                    if (page.apiItems)
+                        return this.getList();
                 }
             });
         }]);
@@ -941,39 +991,45 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
     "</ol>");
 }]);
 
-    function addPageInfo(page, $scope, dateFilter, $lux) {
-        if (page.head && page.head.title) {
-            document.title = page.head.title;
-        }
-        if (page.author) {
-            if (page.author instanceof Array)
-                page.authors = page.author.join(', ');
-            else
-                page.authors = page.author;
-        }
-        var date;
-        if (page.date) {
-            try {
-                date = new Date(page.date);
-            } catch (e) {
-                $lux.log.error('Could not parse date');
-            }
-            page.date = date;
-            page.dateText = dateFilter(date, $scope.dateFormat);
-        }
-        page.toString = function () {
-            return this.name || this.url || '<noname>';
-        };
-
-        return page;
-    }
-
-    //  Lux angular
+    //  Lux Page
     //  ==============
-    //  Lux main module for angular. Design to work with the ``lux.extension.angular``
+    //
+    //  Design to work with the ``lux.extension.angular``
     angular.module('lux.page', ['lux.services', 'lux.form', 'lux.scroll', 'templates-page'])
         //
-        .controller('Page', ['$scope', '$log', '$lux', 'dateFilter', function ($scope, log, $lux, dateFilter) {
+        .service('pageService', ['$lux', 'dateFilter', function ($lux, dateFilter) {
+
+            this.addInfo = function (page, $scope) {
+                if (!page)
+                    return $lux.log.error('No page, cannot add page information');
+                if (page.head && page.head.title) {
+                    document.title = page.head.title;
+                }
+                if (page.author) {
+                    if (page.author instanceof Array)
+                        page.authors = page.author.join(', ');
+                    else
+                        page.authors = page.author;
+                }
+                var date;
+                if (page.date) {
+                    try {
+                        date = new Date(page.date);
+                    } catch (e) {
+                        $lux.log.error('Could not parse date');
+                    }
+                    page.date = date;
+                    page.dateText = dateFilter(date, $scope.dateFormat);
+                }
+                page.toString = function () {
+                    return this.name || this.url || '<noname>';
+                };
+
+                return page;
+            };
+        }])
+        //
+        .controller('Page', ['$scope', '$log', '$lux', 'pageService', function ($scope, log, $lux, pageService) {
             //
             $lux.log.info('Setting up angular page');
             //
@@ -981,7 +1037,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
             // If the page is a string, retrieve it from the pages object
             if (typeof page === 'string')
                 page = $scope.pages ? $scope.pages[page] : null;
-            $scope.page = addPageInfo(page || {}, $scope, dateFilter, $lux);
+            $scope.page = pageService.addInfo(page, $scope);
             //
             $scope.togglePage = function ($event) {
                 $event.preventDefault();
@@ -1107,7 +1163,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
 
     // Hack for delaing with ui-router state.href
     // TODO: fix this!
-    var stateHref = function (state, State, Params) {
+    var stateHref = lux.stateHref = function (state, State, Params) {
         if (Params) {
             var url = state.href(State, Params);
             return url.replace(/%2F/g, '/');
@@ -1131,54 +1187,44 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
             var
             hrefs = lux.context.hrefs,
             pages = lux.context.pages,
-            //
-            pageCache = {},
+            pageCache = lux.context.cachePages ? {} : null,
             //
             state_config = function (page) {
+                var main = {
+                    //
+                    resolve: {
+                        // Fetch page information
+                        page: ['$lux', '$state', '$stateParams', function ($lux, state, stateParams) {
+                            if (page.api) {
+                                var api = $lux.api(page.api);
+                                if (api)
+                                    return api.getPage(page, state, stateParams);
+                            }
+                            return page;
+                        }],
+                        // Fetch items if needed
+                        items: ['$lux', '$state', '$stateParams', function ($lux, state, stateParams) {
+                            if (page.api) {
+                                var api = $lux.api(page.api);
+                                if (api)
+                                    return api.getItems(page, state, stateParams);
+                            }
+                        }],
+                    },
+                    //
+                    controller: page.controller
+                };
+
+                if (page.template)
+                    main.template = page.template;
+                else if (page.templateUrl)
+                    main.templateUrl = page.templateUrl;
+
                 return {
                     url: page.url,
                     //
                     views: {
-                        main: {
-                            template: page.template,
-                            //
-                            resolve: {
-                                // Fetch page information
-                                page: ['$lux', '$state', '$stateParams', function ($lux, state, stateParams) {
-                                    if (page.api) {
-                                        var api = $lux.api(page.api);
-                                        if (api) {
-                                            var href = stateHref(state, page.name, stateParams),
-                                                data = pageCache[href];
-                                            return data ? data : api.get(stateParams).success(function (data) {
-                                                pageCache[href] = data;
-                                                forEach(data.require_css, function (css) {
-                                                    loadCss(css);
-                                                });
-                                                if (data.require_js) {
-                                                    var defer = $lux.q.defer();
-                                                    require(rcfg.min(data.require_js), function () {
-                                                        defer.resolve(data);
-                                                    });
-                                                    return defer.promise;
-                                                } else
-                                                    return data;
-                                            });
-                                        }
-                                    }
-                                }],
-                                // Fetch items if needed
-                                items: ['$lux', function ($lux) {
-                                    if (page.apiItems) {
-                                        var api = $lux.api(page.apiItems);
-                                        if (api)
-                                            return api.getList();
-                                    }
-                                }],
-                            },
-                            //
-                            controller: page.controller
-                        }
+                        main: main
                     }
                 };
             };
@@ -1200,10 +1246,10 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
             });
         }])
         //
-        .controller('Html5', ['$scope', '$state', 'dateFilter', '$lux', 'page', 'items',
-            function ($scope, $state, dateFilter, $lux, page, items) {
+        .controller('Html5', ['$scope', '$state', 'pageService', 'page', 'items',
+            function ($scope, $state, pageService, page, items) {
                 $scope.items = items ? items.data : null;
-                $scope.page = addPageInfo(page, $scope, dateFilter, $lux);
+                $scope.page = pageService.addInfo(page, $scope);
             }])
         //
         .directive('dynamicPage', ['$compile', '$log', function ($compile, log) {
@@ -1792,11 +1838,22 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
             };
             //
             this.initScope = function (scope, element, attrs) {
-                var data = getOptions(attrs),
-                    form = data.field,
-                    formmodel = {};
+                var data = getOptions(attrs);
 
-                if (form) {
+                // No data, maybe this form was loaded via angular ui router
+                // try to evaluate internal scripts
+                if (!data) {
+                    var scripts= element[0].getElementsByTagName('script');
+                    forEach(scripts, function (js) {
+                        globalEval(js.innerHTML);
+                    });
+                    data = getOptions(attrs);
+                }
+
+                if (data && data.field) {
+                    var form = data.field,
+                        formmodel = {};
+
                     // extend with form defaults
                     data.field = extend({}, formDefaults, form);
                     extend(scope, data);
@@ -2112,7 +2169,7 @@ angular.module("users/messages.tpl.html", []).run(["$templateCache", function($t
             if (!isArray(modules))
                 modules = [];
             if (lux.context.uiRouter) {
-                modules.push('lux.ui.router');
+                modules.push(lux.context.uiRouter);
                 // Remove seo view, we don't want to bootstrap it
                 $(document.querySelector('#seo-view')).remove();
             }
@@ -2158,7 +2215,7 @@ angular.module("blog/pagination.tpl.html", []).run(["$templateCache", function($
     "                <img ng-src=\"{{post.image}}\" class=\"hidden-xs post-image\" alt=\"{{post.title}}\">\n" +
     "                <img ng-src=\"{{post.image}}\" alt=\"{{post.title}}\" class=\"visible-xs post-image-xs center-block\">\n" +
     "                <div class=\"post-body hidden-xs\">\n" +
-    "                    <h3 class=\"media-heading\">{{post.title}}</h3>\n" +
+    "                    <h3 class=\"media-heading\">{{post.title || \"Untitled\"}}</h3>\n" +
     "                    <p data-ng-if=\"post.description\">{{post.description}}</p>\n" +
     "                    <p class=\"text-info small\">by {{post.authors}} on {{post.dateText}}</p>\n" +
     "                </div>\n" +
@@ -2179,19 +2236,18 @@ angular.module("blog/pagination.tpl.html", []).run(["$templateCache", function($
     //  ===============
     //
     //  Simple blog pagination directives and code highlight with highlight.js
-    angular.module('lux.blog', ['templates-blog', 'lux.services', 'highlight', 'lux.scroll'])
+    angular.module('lux.blog', ['lux.page', 'templates-blog', 'highlight'])
         .value('blogDefaults', {
             centerMath: true,
             fallback: true
         })
         //
-        .controller('BlogEntry', ['$scope', 'dateFilter', '$lux', function ($scope, dateFilter, $lux) {
+        .controller('BlogEntry', ['$scope', 'pageService', '$lux', function ($scope, pageService, $lux) {
             var post = $scope.post;
-            if (!post) {
+            if (!post)
                 $lux.log.error('post not available in $scope, cannot use pagination controller!');
-                return;
-            }
-            addPageInfo(post, $scope, dateFilter, $lux);
+            else
+                pageService.addInfo(post, $scope);
         }])
         //
         .directive('blogPagination', function () {

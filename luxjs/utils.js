@@ -97,13 +97,12 @@
             options = getRootAttribute(attrs.options);
             if (typeof options === 'function')
                 options = options();
-            delete attrs.options;
         } else {
             options = {};
         }
         if (isObject(options))
             forEach(attrs, function (value, name) {
-                if (name.substring(0, 1) !== '$')
+                if (name.substring(0, 1) !== '$' && name !== 'options')
                     options[name] = value;
             });
         return options;
@@ -187,4 +186,14 @@
     //
     now = lux.now = function () {
         return Date.now ? Date.now() : new Date().getTime();
+    },
+    //
+    size = lux.size = function (o) {
+        if (!o) return 0;
+        if (o.length !== undefined) return o.length;
+        var n = 0;
+        forEach(o, function () {
+            ++n;
+        });
+        return n;
     };

@@ -1,3 +1,7 @@
+from datetime import date
+
+from google.appengine.ext import ndb
+
 from pulsar.utils.pep import iteritems
 
 import lux
@@ -16,7 +20,7 @@ __all__ = ['ModelManager', 'CRUD', 'ndbid']
 
 class ModelManager(api.ModelManager):
 
-    def get(self, id):
+    def get(self, request, id):
         return self.model.get_by_id(ndbid(id))
 
     def collection(self, limit, offset=0, text=None):
@@ -36,11 +40,15 @@ class ModelManager(api.ModelManager):
             value = prop._get_for_dict(instance)
             if value is None:
                 continue
+            if hasattr(value, 'id'):
+                value = value.id()
+            elif isinstance(value, date):
+                value = time.mktime(value.timetuple())
             data[name] = value
         data['id'] = instance.key.id()
         return data
 
-    def create_model(self, data):
+    def create_model(self, request, data):
         m = self.model(**data)
         m.put()
         return m

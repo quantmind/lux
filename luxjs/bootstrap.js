@@ -20,7 +20,7 @@
             if (!isArray(modules))
                 modules = [];
             if (lux.context.uiRouter) {
-                modules.push('lux.ui.router');
+                modules.push(lux.context.uiRouter);
                 // Remove seo view, we don't want to bootstrap it
                 $(document.querySelector('#seo-view')).remove();
             }

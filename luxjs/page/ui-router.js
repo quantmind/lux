@@ -8,7 +8,7 @@
 
     // Hack for delaing with ui-router state.href
     // TODO: fix this!
-    var stateHref = function (state, State, Params) {
+    var stateHref = lux.stateHref = function (state, State, Params) {
         if (Params) {
             var url = state.href(State, Params);
             return url.replace(/%2F/g, '/');
@@ -32,54 +32,44 @@
             var
             hrefs = lux.context.hrefs,
             pages = lux.context.pages,
-            //
-            pageCache = {},
+            pageCache = lux.context.cachePages ? {} : null,
             //
             state_config = function (page) {
+                var main = {
+                    //
+                    resolve: {
+                        // Fetch page information
+                        page: ['$lux', '$state', '$stateParams', function ($lux, state, stateParams) {
+                            if (page.api) {
+                                var api = $lux.api(page.api);
+                                if (api)
+                                    return api.getPage(page, state, stateParams);
+                            }
+                            return page;
+                        }],
+                        // Fetch items if needed
+                        items: ['$lux', '$state', '$stateParams', function ($lux, state, stateParams) {
+                            if (page.api) {
+                                var api = $lux.api(page.api);
+                                if (api)
+                                    return api.getItems(page, state, stateParams);
+                            }
+                        }],
+                    },
+                    //
+                    controller: page.controller
+                };
+
+                if (page.template)
+                    main.template = page.template;
+                else if (page.templateUrl)
+                    main.templateUrl = page.templateUrl;
+
                 return {
                     url: page.url,
                     //
                     views: {
-                        main: {
-                            template: page.template,
-                            //
-                            resolve: {
-                                // Fetch page information
-                                page: ['$lux', '$state', '$stateParams', function ($lux, state, stateParams) {
-                                    if (page.api) {
-                                        var api = $lux.api(page.api);
-                                        if (api) {
-                                            var href = stateHref(state, page.name, stateParams),
-                                                data = pageCache[href];
-                                            return data ? data : api.get(stateParams).success(function (data) {
-                                                pageCache[href] = data;
-                                                forEach(data.require_css, function (css) {
-                                                    loadCss(css);
-                                                });
-                                                if (data.require_js) {
-                                                    var defer = $lux.q.defer();
-                                                    require(rcfg.min(data.require_js), function () {
-                                                        defer.resolve(data);
-                                                    });
-                                                    return defer.promise;
-                                                } else
-                                                    return data;
-                                            });
-                                        }
-                                    }
-                                }],
-                                // Fetch items if needed
-                                items: ['$lux', function ($lux) {
-                                    if (page.apiItems) {
-                                        var api = $lux.api(page.apiItems);
-                                        if (api)
-                                            return api.getList();
-                                    }
-                                }],
-                            },
-                            //
-                            controller: page.controller
-                        }
+                        main: main
                     }
                 };
             };
@@ -101,10 +91,10 @@
             });
         }])
         //
-        .controller('Html5', ['$scope', '$state', 'dateFilter', '$lux', 'page', 'items',
-            function ($scope, $state, dateFilter, $lux, page, items) {
+        .controller('Html5', ['$scope', '$state', 'pageService', 'page', 'items',
+            function ($scope, $state, pageService, page, items) {
                 $scope.items = items ? items.data : null;
-                $scope.page = addPageInfo(page, $scope, dateFilter, $lux);
+                $scope.page = pageService.addInfo(page, $scope);
             }])
         //
         .directive('dynamicPage', ['$compile', '$log', function ($compile, log) {

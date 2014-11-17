@@ -32,8 +32,9 @@
                     return new Api(context.name, context.url, context.options, $lux);
             };
             //
-            this.registerApi = function (name, object) {
-                ApiTypes[name] = ApiClient.extend(object);
+            this.registerApi = function (name, object, inheritFrom) {
+                var Base = inheritFrom ? ApiTypes[inheritFrom] : ApiClient;
+                ApiTypes[name] = Base.extend(object);
                 return ApiTypes[name];
             };
         }]);
@@ -73,7 +74,7 @@
         //
         // Can be used to manipulate the url
         url: function (urlparams) {
-            if (urlparams)
+            if (urlparams && urlparams.id)
                 return this._url + '/' + urlparams.id;
             else
                 return this._url;
@@ -165,6 +166,15 @@
         //  -------------------------
         getList: function (options) {
             return this.request('GET', null, options);
+        },
+        //
+        getPage: function (page, state, stateParams) {
+            return page;
+        },
+        //
+        getItems: function (page, state, stateParams) {
+            if (!lux.size(stateParams))
+                return this.getList();
         },
         //
         //  Execute an API call for a given request

@@ -562,11 +562,22 @@
             };
             //
             this.initScope = function (scope, element, attrs) {
-                var data = getOptions(attrs),
-                    form = data.field,
-                    formmodel = {};
+                var data = getOptions(attrs);
 
-                if (form) {
+                // No data, maybe this form was loaded via angular ui router
+                // try to evaluate internal scripts
+                if (!data) {
+                    var scripts= element[0].getElementsByTagName('script');
+                    forEach(scripts, function (js) {
+                        globalEval(js.innerHTML);
+                    });
+                    data = getOptions(attrs);
+                }
+
+                if (data && data.field) {
+                    var form = data.field,
+                        formmodel = {};
+
                     // extend with form defaults
                     data.field = extend({}, formDefaults, form);
                     extend(scope, data);

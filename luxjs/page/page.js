@@ -1,36 +1,42 @@
-    function addPageInfo(page, $scope, dateFilter, $lux) {
-        if (page.head && page.head.title) {
-            document.title = page.head.title;
-        }
-        if (page.author) {
-            if (page.author instanceof Array)
-                page.authors = page.author.join(', ');
-            else
-                page.authors = page.author;
-        }
-        var date;
-        if (page.date) {
-            try {
-                date = new Date(page.date);
-            } catch (e) {
-                $lux.log.error('Could not parse date');
-            }
-            page.date = date;
-            page.dateText = dateFilter(date, $scope.dateFormat);
-        }
-        page.toString = function () {
-            return this.name || this.url || '<noname>';
-        };
-
-        return page;
-    }
-
-    //  Lux angular
+    //  Lux Page
     //  ==============
-    //  Lux main module for angular. Design to work with the ``lux.extension.angular``
+    //
+    //  Design to work with the ``lux.extension.angular``
     angular.module('lux.page', ['lux.services', 'lux.form', 'lux.scroll', 'templates-page'])
         //
-        .controller('Page', ['$scope', '$log', '$lux', 'dateFilter', function ($scope, log, $lux, dateFilter) {
+        .service('pageService', ['$lux', 'dateFilter', function ($lux, dateFilter) {
+
+            this.addInfo = function (page, $scope) {
+                if (!page)
+                    return $lux.log.error('No page, cannot add page information');
+                if (page.head && page.head.title) {
+                    document.title = page.head.title;
+                }
+                if (page.author) {
+                    if (page.author instanceof Array)
+                        page.authors = page.author.join(', ');
+                    else
+                        page.authors = page.author;
+                }
+                var date;
+                if (page.date) {
+                    try {
+                        date = new Date(page.date);
+                    } catch (e) {
+                        $lux.log.error('Could not parse date');
+                    }
+                    page.date = date;
+                    page.dateText = dateFilter(date, $scope.dateFormat);
+                }
+                page.toString = function () {
+                    return this.name || this.url || '<noname>';
+                };
+
+                return page;
+            };
+        }])
+        //
+        .controller('Page', ['$scope', '$log', '$lux', 'pageService', function ($scope, log, $lux, pageService) {
             //
             $lux.log.info('Setting up angular page');
             //
@@ -38,7 +44,7 @@
             // If the page is a string, retrieve it from the pages object
             if (typeof page === 'string')
                 page = $scope.pages ? $scope.pages[page] : null;
-            $scope.page = addPageInfo(page || {}, $scope, dateFilter, $lux);
+            $scope.page = pageService.addInfo(page, $scope);
             //
             $scope.togglePage = function ($event) {
                 $event.preventDefault();

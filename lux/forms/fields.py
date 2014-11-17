@@ -16,6 +16,7 @@ __all__ = ['FormError',
            'field_widget',
            'Field',
            'CharField',
+           'TextField',
            'BooleanField',
            'DateField',
            'DateTimeField',
@@ -289,6 +290,21 @@ class CharField(Field):
         Default ``None``
     '''
     attrs = {'type': 'text', 'maxlength': 50}
+    default = ''
+
+    def _clean(self, value, bfield):
+        try:
+            value = to_string(value)
+        except Exception:
+            raise ValidationError
+        if self.required and not value:
+            raise ValidationError(
+                self.validation_error.format(bfield.name, value))
+        return value
+
+
+class TextField(Field):
+    attrs = {'type': 'textarea'}
     default = ''
 
     def _clean(self, value, bfield):

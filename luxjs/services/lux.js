@@ -44,30 +44,33 @@
                 authentication: function (request) {
                     var self = this;
                     //
-                    if (lux.context.user) {
+                    if (lux.context.user_token) {
+                        self.auth = {user_token: lux.context.user_token};
+                    } else if (lux.context.user) {
                         $lux.log.info('Fetching authentication token');
                         //
                         $lux.post('/_token').success(function (data) {
-                            self.auth = {user_token: data.token};
+                            lux.context.user_token = data.token;
+                            self.auth = {user_token: lux.context.user_token};
                             self.call(request);
                         }).error(request.error);
                         //
                         return request.deferred.promise;
                     } else {
                         self.auth = {};
-                        self.call(request);
                     }
+                    self.call(request);
                 },
                 //
                 addAuth: function (request) {
                     //
-                            // Add authentication token
-                    if (this.auth.user_token) {
+                    // Add authentication token
+                    if (lux.context.user_token) {
                         var headers = request.options.headers;
                         if (!headers)
                             request.options.headers = headers = {};
 
-                        headers.Authorization = 'Bearer ' + this.auth.user_token;
+                        headers.Authorization = 'Bearer ' + lux.context.user_token;
                     }
                 },
             });
