@@ -29,6 +29,7 @@
             "banner": "luxjs/banner.js"
         },
         "src": ["luxjs/open.js",
+                "luxjs/underscore.js",
                 "luxjs/utils.js",
                 "luxjs/class.js",
                 "luxjs/services/*.js",
