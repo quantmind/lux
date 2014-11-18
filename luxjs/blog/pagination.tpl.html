@@ -1,6 +1,6 @@
 <ul class="media-list">
     <li ng-repeat="post in items" class="media" data-ng-controller='BlogEntry'>
-        <a href="{{post.html_url}}">
+        <a href="{{post.html_url}}" ng-attr-target="{{postTarget}}">
             <div class="clearfix">
                 <img ng-src="{{post.image}}" class="hidden-xs post-image" alt="{{post.title}}">
                 <img ng-src="{{post.image}}" alt="{{post.title}}" class="visible-xs post-image-xs center-block">

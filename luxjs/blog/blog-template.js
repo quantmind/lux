@@ -11,7 +11,7 @@ angular.module("blog/pagination.tpl.html", []).run(["$templateCache", function($
   $templateCache.put("blog/pagination.tpl.html",
     "<ul class=\"media-list\">\n" +
     "    <li ng-repeat=\"post in items\" class=\"media\" data-ng-controller='BlogEntry'>\n" +
-    "        <a href=\"{{post.html_url}}\">\n" +
+    "        <a href=\"{{post.html_url}}\" ng-attr-target=\"{{postTarget}}\">\n" +
     "            <div class=\"clearfix\">\n" +
     "                <img ng-src=\"{{post.image}}\" class=\"hidden-xs post-image\" alt=\"{{post.title}}\">\n" +
     "                <img ng-src=\"{{post.image}}\" alt=\"{{post.title}}\" class=\"visible-xs post-image-xs center-block\">\n" +

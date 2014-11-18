@@ -13,7 +13,7 @@ from lux.utils.crypt import digest
 from lux.extensions.sessions import (SessionMixin, JWTMixin,
                                      AuthenticationError)
 
-from .models import ndb, User, Session, Registration, role_name
+from .models import ndb, User, Session, Registration, Permission, role_name
 from .api import *
 
 
@@ -31,12 +31,11 @@ class AuthBackend(sessions.AuthBackend):
         elif level <= self.READ:
             return True
         elif user.is_authenticated():
-            roles = request.cache.user_roles
-            if roles is None:
-                request.cache.user_roles = roles = dict(((r.name, r) for r
-                                                         in user.roles))
-            role = roles.get(role_name(model))
-            if role and role.level >= level:
+            cache = request.cache.user_roles
+            if cache is None:
+                request.cache.user_roles = cache = {}
+            p = Permission.get_from_user_and_model(user, model, cache)
+            if p and p.level >= level:
                 return True
         return False
 

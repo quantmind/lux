@@ -1,6 +1,6 @@
 //      Lux Library - v0.1.0
 
-//      Compiled 2014-11-17.
+//      Compiled 2014-11-18.
 //      Copyright (c) 2014 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -436,8 +436,9 @@ function(angular, root) {
                 var Api = ApiTypes[context.type || 'lux'];
                 if (!Api)
                     $lux.log.error('Api provider "' + context.name + '" is not available');
-                else
+                else {
                     return new Api(context.name, context.url, context.options, $lux);
+                }
             };
             //
             this.registerApi = function (name, object, inheritFrom) {
@@ -1026,6 +1027,12 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                 };
 
                 return page;
+            };
+
+            this.formatDate = function (dt, format) {
+                if (!dt)
+                    dt = new Date();
+                return dateFilter(dt, format || 'yyyy-MM-ddTHH:mm:ss');
             };
         }])
         //
@@ -2210,7 +2217,7 @@ angular.module("blog/pagination.tpl.html", []).run(["$templateCache", function($
   $templateCache.put("blog/pagination.tpl.html",
     "<ul class=\"media-list\">\n" +
     "    <li ng-repeat=\"post in items\" class=\"media\" data-ng-controller='BlogEntry'>\n" +
-    "        <a href=\"{{post.html_url}}\">\n" +
+    "        <a href=\"{{post.html_url}}\" ng-attr-target=\"{{postTarget}}\">\n" +
     "            <div class=\"clearfix\">\n" +
     "                <img ng-src=\"{{post.image}}\" class=\"hidden-xs post-image\" alt=\"{{post.title}}\">\n" +
     "                <img ng-src=\"{{post.image}}\" alt=\"{{post.title}}\" class=\"visible-xs post-image-xs center-block\">\n" +
@@ -2246,8 +2253,11 @@ angular.module("blog/pagination.tpl.html", []).run(["$templateCache", function($
             var post = $scope.post;
             if (!post)
                 $lux.log.error('post not available in $scope, cannot use pagination controller!');
-            else
+            else {
+                if (!post.date)
+                    post.date = post.published || post.last_modified;
                 pageService.addInfo(post, $scope);
+            }
         }])
         //
         .directive('blogPagination', function () {
@@ -2381,9 +2391,9 @@ angular.module('templates-nav', ['nav/link.tpl.html', 'nav/navbar.tpl.html', 'na
 angular.module("nav/link.tpl.html", []).run(["$templateCache", function($templateCache) {
   $templateCache.put("nav/link.tpl.html",
     "<a ng-if=\"link.title\" ng-href=\"{{link.href}}\" data-title=\"{{link.title}}\" ng-click=\"clickLink($event, link)\"\n" +
-    "bs-tooltip=\"tooltip\">\n" +
+    "ng-attr-target=\"{{link.target}}\" bs-tooltip=\"tooltip\">\n" +
     "<i ng-if=\"link.icon\" class=\"{{link.icon}}\"></i> {{link.name}}</a>\n" +
-    "<a ng-if=\"!link.title\" ng-href=\"{{link.href}}\">\n" +
+    "<a ng-if=\"!link.title\" ng-href=\"{{link.href}}\" ng-attr-target=\"{{link.target}}\">\n" +
     "<i ng-if=\"link.icon\" class=\"{{link.icon}}\"></i> {{link.name}}</a>");
 }]);
 
@@ -2408,11 +2418,11 @@ angular.module("nav/navbar.tpl.html", []).run(["$templateCache", function($templ
     "            </a>\n" +
     "        </div>\n" +
     "        <div class=\"navbar-collapse\" bs-collapse-target>\n" +
-    "            <ul class=\"nav navbar-nav\">\n" +
+    "            <ul ng-if=\"navbar.items\" class=\"nav navbar-nav\">\n" +
     "                <li ng-repeat=\"link in navbar.items\" ng-class=\"{active:activeLink(link)}\" navbar-link>\n" +
     "                </li>\n" +
     "            </ul>\n" +
-    "            <ul class=\"nav navbar-nav navbar-right\">\n" +
+    "            <ul ng-if=\"navbar.itemsRight\" class=\"nav navbar-nav navbar-right\">\n" +
     "                <li ng-repeat=\"link in navbar.itemsRight\" ng-class=\"{active:activeLink(link)}\" navbar-link>\n" +
     "                </li>\n" +
     "            </ul>\n" +

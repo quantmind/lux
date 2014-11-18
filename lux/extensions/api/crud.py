@@ -32,7 +32,7 @@ class ModelManager(object):
         self.form = form
         self.edit_form = edit_form or form
 
-    def collection(self, limit, offset=0, text=None):
+    def collection(self, request, limit, offset=0, text=None):
         '''Retrieve a collection of models
         '''
         raise NotImplementedError
@@ -64,7 +64,10 @@ class ModelManager(object):
     def create_model(self, request, data):
         raise NotImplementedError
 
-    def update_model(self, request, data):
+    def update_model(self, request, instance, data):
+        raise NotImplementedError
+
+    def delete_model(self, request, instance):
         raise NotImplementedError
 
     def instance_data(self, request, instance, url=None):
@@ -83,7 +86,7 @@ class CRUD(lux.Router):
     def get(self, request):
         limit = self.manager.limit(request)
         offset = self.manager.offset(request)
-        collection = self.manager.collection(limit, offset)
+        collection = self.manager.collection(request, limit, offset)
         data = self.manager.collection_data(request, collection)
         return Json(data).http_response(request)
 
@@ -121,7 +124,7 @@ class CRUD(lux.Router):
     @route('<id>')
     def post_update(self, request):
         manager = self.manager
-        instance = manager.get(request.urlargs['id'])
+        instance = manager.get(request, request.urlargs['id'])
         if not instance:
             raise Http404
         form_class = manager.form
@@ -131,10 +134,25 @@ class CRUD(lux.Router):
         if auth.has_permission(request, auth.UPDATE, instance):
             data, files = request.data_and_files()
             form = form_class(request, data=data, files=files)
-            if form.is_valid():
-                instance = manager.update_model(instance, form.cleaned_data)
+            if form.is_valid(exclude_missing=True):
+                instance = manager.update_model(request, instance,
+                                                form.cleaned_data)
                 data = self.manager.instance(instance)
             else:
                 data = form.tojson()
             return Json(data).http_response(request)
+        raise PermissionDenied
+
+    @route('delete/<id>', method='delete')
+    def delete(self, request):
+        manager = self.manager
+        instance = manager.get(request, request.urlargs['id'])
+        auth = request.cache.auth_backend
+        if auth.has_permission(request, auth.DELETE, instance or self.model):
+            if instance:
+                manager.delete_model(request, instance)
+                request.response.status_code = 204
+                return request.response
+            else:
+                raise Http404
         raise PermissionDenied

@@ -17,11 +17,11 @@ ng-model="navbar.collapse" bs-collapse>
             </a>
         </div>
         <div class="navbar-collapse" bs-collapse-target>
-            <ul class="nav navbar-nav">
+            <ul ng-if="navbar.items" class="nav navbar-nav">
                 <li ng-repeat="link in navbar.items" ng-class="{active:activeLink(link)}" navbar-link>
                 </li>
             </ul>
-            <ul class="nav navbar-nav navbar-right">
+            <ul ng-if="navbar.itemsRight" class="nav navbar-nav navbar-right">
                 <li ng-repeat="link in navbar.itemsRight" ng-class="{active:activeLink(link)}" navbar-link>
                 </li>
             </ul>

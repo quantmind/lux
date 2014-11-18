@@ -1,5 +1,5 @@
 <a ng-if="link.title" ng-href="{{link.href}}" data-title="{{link.title}}" ng-click="clickLink($event, link)"
-bs-tooltip="tooltip">
+ng-attr-target="{{link.target}}" bs-tooltip="tooltip">
 <i ng-if="link.icon" class="{{link.icon}}"></i> {{link.name}}</a>
-<a ng-if="!link.title" ng-href="{{link.href}}">
+<a ng-if="!link.title" ng-href="{{link.href}}" ng-attr-target="{{link.target}}">
 <i ng-if="link.icon" class="{{link.icon}}"></i> {{link.name}}</a>

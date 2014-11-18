@@ -28,8 +28,9 @@
                 var Api = ApiTypes[context.type || 'lux'];
                 if (!Api)
                     $lux.log.error('Api provider "' + context.name + '" is not available');
-                else
+                else {
                     return new Api(context.name, context.url, context.options, $lux);
+                }
             };
             //
             this.registerApi = function (name, object, inheritFrom) {

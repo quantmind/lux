@@ -5,6 +5,7 @@ from google.appengine.ext import ndb
 from pulsar.utils.pep import iteritems
 
 import lux
+from lux.utils import iso8601
 from lux.extensions import api
 
 
@@ -23,7 +24,7 @@ class ModelManager(api.ModelManager):
     def get(self, request, id):
         return self.model.get_by_id(ndbid(id))
 
-    def collection(self, limit, offset=0, text=None):
+    def collection(self, request, limit, offset=0, text=None):
         if limit > 0:
             if text:
                 return self.model.search(text, limit=limit, offset=offset)
@@ -43,24 +44,32 @@ class ModelManager(api.ModelManager):
             if hasattr(value, 'id'):
                 value = value.id()
             elif isinstance(value, date):
-                value = time.mktime(value.timetuple())
+                value = iso8601(value)
             data[name] = value
         data['id'] = instance.key.id()
         return data
 
     def create_model(self, request, data):
-        m = self.model(**data)
-        m.put()
-        return m
+        model = self.model()
+        return self.update_model(request, model, data)
 
-    def update_model(self, instance, data):
-        for name, value in iteritems(data):
-            if name == 'id':
-                assert instance.key.id() == value
-            else:
-                setattr(instance, name, value)
+    def put(self, request, instance):
         instance.put()
         return instance
+
+    def update_model(self, request, instance, data):
+        for prop in instance._properties.itervalues():
+            name = prop._code_name
+            if name in data:
+                value = data[name]
+                if name == 'id':
+                    assert instance.key.id() == value
+                else:
+                    setattr(instance, name, value)
+        return self.put(request, instance)
+
+    def delete_model(self, request, instance):
+        return instance.key.delete()
 
 
 class CRUD(api.CRUD):

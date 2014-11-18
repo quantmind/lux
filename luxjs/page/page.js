@@ -34,6 +34,12 @@
 
                 return page;
             };
+
+            this.formatDate = function (dt, format) {
+                if (!dt)
+                    dt = new Date();
+                return dateFilter(dt, format || 'yyyy-MM-ddTHH:mm:ss');
+            };
         }])
         //
         .controller('Page', ['$scope', '$log', '$lux', 'pageService', function ($scope, log, $lux, pageService) {

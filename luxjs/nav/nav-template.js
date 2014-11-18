@@ -3,9 +3,9 @@ angular.module('templates-nav', ['nav/link.tpl.html', 'nav/navbar.tpl.html', 'na
 angular.module("nav/link.tpl.html", []).run(["$templateCache", function($templateCache) {
   $templateCache.put("nav/link.tpl.html",
     "<a ng-if=\"link.title\" ng-href=\"{{link.href}}\" data-title=\"{{link.title}}\" ng-click=\"clickLink($event, link)\"\n" +
-    "bs-tooltip=\"tooltip\">\n" +
+    "ng-attr-target=\"{{link.target}}\" bs-tooltip=\"tooltip\">\n" +
     "<i ng-if=\"link.icon\" class=\"{{link.icon}}\"></i> {{link.name}}</a>\n" +
-    "<a ng-if=\"!link.title\" ng-href=\"{{link.href}}\">\n" +
+    "<a ng-if=\"!link.title\" ng-href=\"{{link.href}}\" ng-attr-target=\"{{link.target}}\">\n" +
     "<i ng-if=\"link.icon\" class=\"{{link.icon}}\"></i> {{link.name}}</a>");
 }]);
 
@@ -30,11 +30,11 @@ angular.module("nav/navbar.tpl.html", []).run(["$templateCache", function($templ
     "            </a>\n" +
     "        </div>\n" +
     "        <div class=\"navbar-collapse\" bs-collapse-target>\n" +
-    "            <ul class=\"nav navbar-nav\">\n" +
+    "            <ul ng-if=\"navbar.items\" class=\"nav navbar-nav\">\n" +
     "                <li ng-repeat=\"link in navbar.items\" ng-class=\"{active:activeLink(link)}\" navbar-link>\n" +
     "                </li>\n" +
     "            </ul>\n" +
-    "            <ul class=\"nav navbar-nav navbar-right\">\n" +
+    "            <ul ng-if=\"navbar.itemsRight\" class=\"nav navbar-nav navbar-right\">\n" +
     "                <li ng-repeat=\"link in navbar.itemsRight\" ng-class=\"{active:activeLink(link)}\" navbar-link>\n" +
     "                </li>\n" +
     "            </ul>\n" +

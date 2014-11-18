@@ -230,15 +230,15 @@ class Form(FormType('BaseForm', (UnicodeMixin,), {})):
     def _loop(self):
         return getattr(self.request, '_loop', None)
 
-    def is_valid(self):
+    def is_valid(self, exclude_missing=False):
         '''Asynchronous check if this :class:`Form` is valid.
 
         Includes any subforms. It returns a coroutine.'''
         if not self._check_unwind(False):
-            self._unwind()
+            self._unwind(exclude_missing)
             if not bool(self._errors):
                 for fset in self.form_sets.values():
-                    if not fset.is_valid():
+                    if not fset.is_valid(exclude_missing):
                         break
         return not bool(self._errors) if self.is_bound else False
 
@@ -342,10 +342,6 @@ instances with initial values.'''
                 fset.set_save_as_new()
         return self.save(commit=commit)
 
-    def submit(self):
-        '''Submit the form once the validation has been successful. Must
-be implemented by subclasses. By default it does nothing.'''
-
     def tojson(self):
         '''Return a json-serialisable dictionary of messages for form fields.
         The field included are the one available in the :attr:`errors` and
@@ -395,13 +391,13 @@ be implemented by subclasses. By default it does nothing.'''
                 return False
         return True
 
-    def _unwind(self):
+    def _unwind(self, exclude_missing=False):
         is_bound = self.is_bound
         if is_bound:
             self._cleaned_data = {}
             self._errors = {}
         rawdata = self.rawdata
-        self._clean_fields(rawdata)
+        self._clean_fields(rawdata, exclude_missing)
         if is_bound:
             if not self._errors:
                 # Invoke the form clean method.
@@ -413,8 +409,7 @@ be implemented by subclasses. By default it does nothing.'''
             if self._errors:
                 del self._cleaned_data
 
-    def _clean_fields(self, rawdata):
-        loop = self._loop
+    def _clean_fields(self, rawdata, exclude_missing):
         files = self._files
         self._data = data = {}
         self._fields = fields = []
@@ -425,6 +420,8 @@ be implemented by subclasses. By default it does nothing.'''
         for name, field in iteritems(self.base_fields):
             bfield = BoundField(self, field, name, self.prefix)
             key = bfield.html_name
+            if is_bound and exclude_missing and key not in rawdata:
+                continue
             fields.append(bfield)
             dfields[name] = bfield
             field_value = None

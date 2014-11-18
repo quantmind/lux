@@ -57,6 +57,7 @@ class FormMixin(object):
 
 
 class WebFormRouter(WebRouter, FormMixin):
+    uirouter = False
     template = None
 
     def build_main(self, request):

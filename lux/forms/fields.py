@@ -2,6 +2,8 @@ from inspect import isclass
 from datetime import datetime, date
 from collections import Mapping
 
+from dateutil.parser import parse as dateparser
+
 from pulsar.utils.html import NOTHING, escape
 from pulsar.utils.pep import to_string
 
@@ -298,8 +300,7 @@ class CharField(Field):
         except Exception:
             raise ValidationError
         if self.required and not value:
-            raise ValidationError(
-                self.validation_error.format(bfield.name, value))
+            raise ValidationError('Invalid value')
         return value
 
 
@@ -360,7 +361,7 @@ class DateField(IntegerField):
         if not isinstance(value, date):
             try:
                 value = dateparser(value)
-            except:
+            except Exception:
                 raise ValidationError(
                     self.validation_error.format(bfield, value))
         return self.todate(value)

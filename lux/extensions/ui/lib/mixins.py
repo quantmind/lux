@@ -58,18 +58,30 @@ class Animation(Mixin):
         css('.myelement',
             Animation('fade', '1s'))
     '''
-    def __init__(self, name, duration):
+    def __init__(self, name=None, duration=None, function=None,
+                 fill_mode=None):
         self.name = name
         self.duration = duration
+        self.function = function
+        self.fill_mode = fill_mode
 
     def __call__(self, elem):
         name = as_value(self.name)
         duration = as_value(self.duration)
-        animation = '%s %s' % (name, duration)
-        elem['-webkit-animation'] = animation
-        elem['   -moz-animation'] = animation
-        elem['    -ms-animation'] = animation
-        elem['        animation'] = animation
+        function = as_value(self.function)
+        fill_mode = as_value(self.fill_mode)
+        if name:
+            elem['-webkit-animation-name'] = name
+            elem['   -moz-animation-name'] = name
+        if duration:
+            elem['-webkit-animation-duration'] = duration
+            elem['   -moz-animation-duration'] = duration
+        if function:
+            elem['-webkit-animation-timing-function'] = function
+            elem['   -moz-animation-timing-function'] = function
+        if fill_mode:
+            elem['-webkit-animation-fill-mode'] = fill_mode
+            elem['        animation-fill-mode'] = fill_mode
 
 
 ################################################# OPACITY

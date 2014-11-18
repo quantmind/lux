@@ -12,8 +12,11 @@
             var post = $scope.post;
             if (!post)
                 $lux.log.error('post not available in $scope, cannot use pagination controller!');
-            else
+            else {
+                if (!post.date)
+                    post.date = post.published || post.last_modified;
                 pageService.addInfo(post, $scope);
+            }
         }])
         //
         .directive('blogPagination', function () {

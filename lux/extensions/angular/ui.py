@@ -43,6 +43,11 @@ def add_navbar(all):
     sidebar.width = px(250)
     min_width_collapse = px(cfg['NAVBAR_COLLAPSE_WIDTH'])
 
+    css('.navbar',
+        css(' .navbar-toggle',
+            margin_top=0.5*(navbar.height-50)+8),
+        min_height=navbar.height)
+
     css('.navbar-default',
         background=navbar.default.background)
 
@@ -87,31 +92,37 @@ def add_animate(all):
     fade = vars.animate.fade
     fade.top = 0
     fade.left = 0
-    fade.fadein ='1s'
-    fade.fadeout ='1s'
+    fade.fadein ='0.3s'
+    fade.fadeout ='0.3s'
 
-    css('body',
-        CssInclude('animate'))
-
+    # Animate fade-in fade-out
     css('.animate-fade',
-        css('.ng-enter',
-            #css('.ng-enter-active',
-            #    Opacity(1)),
-            #Opacity(0),
-            Animation('fadeIn', vars.animate.fade.fadein),
+        css('.ng-enter,.ng-leave',
             position='absolute',
             width=pc(100),
             top=fade.top,
             left=fade.left),
+        css('.ng-enter',
+            Transition('all', fade.fadein, 'linear'),
+            css('.ng-enter-active',
+                Opacity(1)),
+            Opacity(0)),
         css('.ng-leave',
-            #css('.ng-leave-active',
-            #    Opacity(1)),
-            #Opacity(0),
-            Animation('fadeOut', vars.animate.fade.fadeout),
-            position='absolute',
-            width=pc(100),
-            top=fade.top,
-            left=fade.left))
+            Transition('all', fade.fadeout, 'linear'),
+            css('.ng-leave-active',
+                Opacity(0)),
+            Opacity(1)))
+
+    c = vars.animate.amcollapse
+    c.duration = '0s'
+    # Animate for navbar collapse
+    css('.collapse.am-collapse',
+        Animation(duration=c.duration, function='ease', fill_mode='backwards'),
+        css('.in-remove',
+            Animation('collapse'),
+            display='block'),
+        css('.in-add',
+            Animation('expand')))
 
 
 def add_forms(all):

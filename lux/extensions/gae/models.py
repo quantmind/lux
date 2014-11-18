@@ -6,13 +6,13 @@ from google.appengine.api import mail
 from .. import sessions
 
 
-def role_name(model):
-    id = ''
+def role_name(model, id=None):
+    id = id or ''
     if isinstance(model, ndb.Model):
         id = model.key.id()
-        if id:
-            id = '.%s' % id
         model = model.__class__
+    if id:
+        id = '.%s' % id
     return model.__name__.lower() + id
 
 
@@ -57,11 +57,6 @@ class MessageMixin(sessions.MessageMixin):
         return False
 
 
-class Role(ndb.Model):
-    name = ndb.StringProperty()
-    level = ndb.IntegerProperty()
-
-
 class User(ndb.Model, sessions.UserMixin, MessageMixin):
     '''Model for users
     '''
@@ -77,9 +72,6 @@ class User(ndb.Model, sessions.UserMixin, MessageMixin):
     #
     oauths = ndb.StructuredProperty(Oauth, repeated=True)
     messages = ndb.StructuredProperty(Message, repeated=True)
-    #
-    # user roles
-    roles = ndb.StructuredProperty(Role, repeated=True)
 
     def message(self, level, message):
         msg = Message(level=level, body=message, userid=self.key().id())
@@ -117,10 +109,15 @@ class User(ndb.Model, sessions.UserMixin, MessageMixin):
                        subject=subject,
                        body=message)
 
-    def add_role(self, model, level):
-        role = Role(name=role_name(model), level=level)
-        self.roles.append(role)
-        return role
+    def add_permission(self, model, level):
+        name = role_name(model)
+        key = '%s.%s' % (self.key.id(), name)
+        p = Permission.get_or_insert(key, user=self.key, name=name,
+                                     level=level)
+        if p.level < level:
+            p.level = level
+            p.put()
+        return p
 
     @classmethod
     def create_from_oauth(cls, data, provider, token):
@@ -169,6 +166,29 @@ class User(ndb.Model, sessions.UserMixin, MessageMixin):
             else:
                 break
         return username
+
+
+class Permission(ndb.Model):
+    user = ndb.KeyProperty(User)
+    name = ndb.StringProperty()
+    level = ndb.IntegerProperty()
+
+    @classmethod
+    def remove_model(cls, model, id=None):
+        name = role_name(model, id)
+        keys = cls.query(Permission.name==name).fetch(keys_only=True)
+        ndb.delete_multi(keys)
+
+    @classmethod
+    def get_from_user_and_model(cls, user, model, cache=None):
+        name = role_name(model)
+        key = '%s.%s' % (user.key.id(), name)
+        if cache and key in cache:
+            return cache[key]
+        p = cls.get_by_id(key)
+        if p and cache is not None:
+            cache[key] = p
+        return p
 
 
 class Session(ndb.Model, MessageMixin):
