@@ -53,13 +53,23 @@ class ModelManager(object):
         user = request.cache.user
         MAXLIMIT = (cfg['API_LIMIT_AUTH'] if user.is_authenticated() else
                     cfg['API_LIMIT_NOAUTH'])
-        limit = request.body_data().get(cfg['API_LIMIT_KEY'],
-                                        cfg['API_LIMIT_DEFAULT'])
+        try:
+            limit = int(request.url_data.get(cfg['API_LIMIT_KEY'],
+                                             cfg['API_LIMIT_DEFAULT']))
+        except ValueError:
+            limit = MAXLIMIT
         return min(limit, MAXLIMIT)
 
     def offset(self, request):
         cfg = request.config
-        return request.body_data().get(cfg['API_OFFSET_KEY'], 0)
+        try:
+            return int(request.url_data.get(cfg['API_OFFSET_KEY'], 0))
+        except ValueError:
+            return 0
+
+    def text(self, request):
+        cfg = request.config
+        return request.url_data.get(cfg['API_SEARCH_KEY'], '')
 
     def create_model(self, request, data):
         raise NotImplementedError
@@ -86,7 +96,8 @@ class CRUD(lux.Router):
     def get(self, request):
         limit = self.manager.limit(request)
         offset = self.manager.offset(request)
-        collection = self.manager.collection(request, limit, offset)
+        text = self.manager.text(request)
+        collection = self.manager.collection(request, limit, offset, text)
         data = self.manager.collection_data(request, collection)
         return Json(data).http_response(request)
 

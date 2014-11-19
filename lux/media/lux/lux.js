@@ -1,6 +1,6 @@
 //      Lux Library - v0.1.0
 
-//      Compiled 2014-11-18.
+//      Compiled 2014-11-19.
 //      Copyright (c) 2014 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -2531,14 +2531,24 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
         //
         .service('navService', ['$location', function ($location) {
 
-            this.initScope = function (opts) {
-                var navbar = extend({}, navBarDefaults, getOptions(opts));
+            this.initScope = function (scope, opts) {
+                var navbar = extend({}, navBarDefaults, getOptions(opts), scope.navbar);
                 if (!navbar.url)
                     navbar.url = '/';
                 if (!navbar.themeTop)
                     navbar.themeTop = navbar.theme;
                 navbar.container = navbar.fluid ? 'container-fluid' : 'container';
+
                 this.maybeCollapse(navbar);
+                scope.activeLink = this.activeLink;
+                scope.clickLink = function (e, link) {
+                    if (link.click) {
+                        var func = scope[link.click];
+                        if (func)
+                            func(e, link.href, link);
+                    }
+                };
+                scope.navbar = navbar;
                 return navbar;
             };
 
@@ -2584,15 +2594,7 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
                 restrict: 'AE',
                 // Link function
                 link: function (scope, element, attrs) {
-                    scope.navbar = navService.initScope(attrs);
-                    scope.activeLink = navService.activeLink;
-                    scope.clickLink = function (e, link) {
-                        if (link.click) {
-                            var func = scope[link.click];
-                            if (func)
-                                func(e, link.href, link);
-                        }
-                    };
+                    navService.initScope(scope, attrs);
                     //
                     windowResize(function () {
                         if (navService.maybeCollapse(scope.navbar))
@@ -2624,8 +2626,8 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
                     return {
                         post: function (scope, element, attrs) {
                             scope.navbar2Content = inner;
-                            scope.activeLink = navService.activeLink;
-                            scope.navbar = navService.initScope(attrs);
+                            navService.initScope(scope, attrs);
+
                             inner = $compile('<div data-nav-side-bar></div>')(scope);
                             element.replaceWith(inner.addClass(className));
                             //
