@@ -1,5 +1,5 @@
     //
-    //  Lux Static JSON API
+    //  Lux Static site JSON API
     //  ------------------------
     //
     //  Api used by static sites
@@ -41,6 +41,7 @@
                         if (data.require_js) {
                             var defer = $lux.q.defer();
                             require(rcfg.min(data.require_js), function () {
+                                // let angular resolve its queue if it needs to
                                 defer.resolve(data);
                             });
                             return defer.promise;
@@ -51,7 +52,7 @@
                 //
                 getItems: function (page, state, stateParams) {
                     if (page.apiItems)
-                        return this.getList();
+                        return this.getList({url: this._url + '.json'});
                 }
             });
         }]);

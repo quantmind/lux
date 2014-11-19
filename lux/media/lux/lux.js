@@ -519,7 +519,8 @@ function(angular, root) {
         // Build the object used by $http when executing the api call
         httpOptions: function (request) {
             var options = request.options;
-            options.url = this.url(request.urlparams);
+            if (!options.url)
+                options.url = this.url(request.urlparams);
             return options;
         },
         //
@@ -605,18 +606,19 @@ function(angular, root) {
         //
         //      request: a request object obtained from the ``request`` method
         call: function (request) {
-            var $lux = this.$lux;
+            var $lux = this.$lux,
+                url = request.options.url || this._url;
             //
-            if (!this._url && ! this.name) {
+            if (!url && ! this.name) {
                 return request.error('api should have url or name');
             }
 
-            if (!this._url) {
+            if (!url) {
                 if (this.apiUrls) {
-                    this._url = this.apiUrls[this.name] || this.apiUrls[this.name + '_url'];
+                    this._url = url = this.apiUrls[this.name] || this.apiUrls[this.name + '_url'];
                     //
                     // No api url!
-                    if (!this.url)
+                    if (url)
                         return request.error('Could not find a valid url for ' + this.name);
                     //
                 } else if (lux.context.apiUrl) {
@@ -937,7 +939,7 @@ function(angular, root) {
 
         }]);
     //
-    //  Lux Static JSON API
+    //  Lux Static site JSON API
     //  ------------------------
     //
     //  Api used by static sites
@@ -979,6 +981,7 @@ function(angular, root) {
                         if (data.require_js) {
                             var defer = $lux.q.defer();
                             require(rcfg.min(data.require_js), function () {
+                                // let angular resolve its queue if it needs to
                                 defer.resolve(data);
                             });
                             return defer.promise;
@@ -989,7 +992,7 @@ function(angular, root) {
                 //
                 getItems: function (page, state, stateParams) {
                     if (page.apiItems)
-                        return this.getList();
+                        return this.getList({url: this._url + '.json'});
                 }
             });
         }]);
@@ -2172,6 +2175,10 @@ angular.module("users/messages.tpl.html", []).run(["$templateCache", function($t
 
     lux.loader
         .value('context', lux.context)
+        //
+        .config(['$controllerProvider', function ($controllerProvider) {
+            lux.loader.cp = $controllerProvider;
+        }])
         //
         .run(['$rootScope', '$log', '$timeout', 'context', function (scope, $log, $timeout, context) {
             $log.info('Extend root scope with context');

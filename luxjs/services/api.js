@@ -97,7 +97,8 @@
         // Build the object used by $http when executing the api call
         httpOptions: function (request) {
             var options = request.options;
-            options.url = this.url(request.urlparams);
+            if (!options.url)
+                options.url = this.url(request.urlparams);
             return options;
         },
         //
@@ -183,18 +184,19 @@
         //
         //      request: a request object obtained from the ``request`` method
         call: function (request) {
-            var $lux = this.$lux;
+            var $lux = this.$lux,
+                url = request.options.url || this._url;
             //
-            if (!this._url && ! this.name) {
+            if (!url && ! this.name) {
                 return request.error('api should have url or name');
             }
 
-            if (!this._url) {
+            if (!url) {
                 if (this.apiUrls) {
-                    this._url = this.apiUrls[this.name] || this.apiUrls[this.name + '_url'];
+                    this._url = url = this.apiUrls[this.name] || this.apiUrls[this.name + '_url'];
                     //
                     // No api url!
-                    if (!this.url)
+                    if (url)
                         return request.error('Could not find a valid url for ' + this.name);
                     //
                 } else if (lux.context.apiUrl) {

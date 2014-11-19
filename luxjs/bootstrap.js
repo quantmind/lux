@@ -3,6 +3,10 @@
     lux.loader
         .value('context', lux.context)
         //
+        .config(['$controllerProvider', function ($controllerProvider) {
+            lux.loader.cp = $controllerProvider;
+        }])
+        //
         .run(['$rootScope', '$log', '$timeout', 'context', function (scope, $log, $timeout, context) {
             $log.info('Extend root scope with context');
             extend(scope, context);
