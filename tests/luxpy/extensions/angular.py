@@ -22,7 +22,7 @@ class AngularTest(test.TestCase):
 
     def test_properties(self):
         router = example()
-        self.assertEqual(router.uirouter, True)
+        self.assertEqual(router.uirouter, 'lux.ui.router')
         self.assertFalse(router.route.is_leaf)
         self.assertEqual(router.html_body_template, 'foo.html')
         self.assertEqual(len(router.routes), 2)

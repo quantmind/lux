@@ -13,7 +13,7 @@ class CrudTests(test.TestCase):
     def test_crud(self):
         router = api.CRUD('bla', manager=DummyManager())
         self.assertEqual(router.route.path, '/bla')
-        self.assertEqual(len(router.routes), 1)
+        self.assertEqual(len(router.routes), 2)
         r1 = router.routes[0]
         # This router should have both get and put method
         get = getattr(r1, 'get', None)
