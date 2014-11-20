@@ -158,14 +158,6 @@ def add_css(all):
     css('.nav-second-level li a',
         padding_left=px(37))
 
-    # a class for setting the aspect ratio of a container
-    # put class <div style="padding-top:75%"></div>
-    # follow by <div class="absolute-full"></div>
-    # to get a 4:3 aspect ratio
-    css('.absolute-full',
-        position='absolute',
-        top=0, bottom=0)
-
     css('.nav.navbar-nav > li > a',
         outline='none')
 
@@ -187,9 +179,10 @@ def lazyContainer(all):
     css('.lazyContainer',
         css(' > .content',
             top=0,
+            left=0,
             position='absolute',
+            width=pc(100),
             min_height=pc(100)),
-        width=pc(100),
         position='relative')
 
 

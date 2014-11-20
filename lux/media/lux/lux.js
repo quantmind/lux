@@ -1,6 +1,6 @@
 //      Lux Library - v0.1.0
 
-//      Compiled 2014-11-19.
+//      Compiled 2014-11-20.
 //      Copyright (c) 2014 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -88,6 +88,7 @@ function(angular, root) {
                         if (App) {
                             options.scope = scope;
                             var app = new App(element[0], options);
+                            scope.$emit('lux-app', app);
                         } else {
                             $lux.log.error('Application ' + appName + ' not registered');
                         }
@@ -2301,12 +2302,12 @@ angular.module("blog/pagination.tpl.html", []).run(["$templateCache", function($
                 element.html("<div class='alert alert-danger' role='alert'>" + err + "</div>");
             }
 
-            function render(katex, text, element) {
+            function render(katex, text, element, fallback) {
                 try {
                     katex.render(text, element[0]);
                 }
                 catch(err) {
-                    if (blogDefaults.fallback) {
+                    if (fallback) {
                         require(['mathjax'], function (mathjax) {
                             try {
                                 if (text.substring(0, 15) === '\\displaystyle {')
@@ -2326,7 +2327,9 @@ angular.module("blog/pagination.tpl.html", []).run(["$templateCache", function($
                 restrict: 'AE',
 
                 link: function (scope, element, attrs) {
-                    var text = element.html();
+                    var text = element.html(),
+                        fallback = attrs.nofallback !== undefined ? false : blogDefaults.fallback;
+
                     if (element[0].tagName === 'DIV') {
                         if (blogDefaults.centerMath)
                             element.addClass('text-center');
@@ -2335,7 +2338,7 @@ angular.module("blog/pagination.tpl.html", []).run(["$templateCache", function($
                     }
                     if (typeof(katex) === 'undefined')
                         require(['katex'], function (katex) {
-                            render(katex, text, element);
+                            render(katex, text, element, fallback);
                         });
                     else
                         render(katex, text, element);

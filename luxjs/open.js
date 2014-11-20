@@ -80,6 +80,7 @@ function(angular, root) {
                         if (App) {
                             options.scope = scope;
                             var app = new App(element[0], options);
+                            scope.$emit('lux-app', app);
                         } else {
                             $lux.log.error('Application ' + appName + ' not registered');
                         }

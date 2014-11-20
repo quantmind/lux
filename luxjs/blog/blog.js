@@ -39,12 +39,12 @@
                 element.html("<div class='alert alert-danger' role='alert'>" + err + "</div>");
             }
 
-            function render(katex, text, element) {
+            function render(katex, text, element, fallback) {
                 try {
                     katex.render(text, element[0]);
                 }
                 catch(err) {
-                    if (blogDefaults.fallback) {
+                    if (fallback) {
                         require(['mathjax'], function (mathjax) {
                             try {
                                 if (text.substring(0, 15) === '\\displaystyle {')
@@ -64,7 +64,9 @@
                 restrict: 'AE',
 
                 link: function (scope, element, attrs) {
-                    var text = element.html();
+                    var text = element.html(),
+                        fallback = attrs.nofallback !== undefined ? false : blogDefaults.fallback;
+
                     if (element[0].tagName === 'DIV') {
                         if (blogDefaults.centerMath)
                             element.addClass('text-center');
@@ -73,7 +75,7 @@
                     }
                     if (typeof(katex) === 'undefined')
                         require(['katex'], function (katex) {
-                            render(katex, text, element);
+                            render(katex, text, element, fallback);
                         });
                     else
                         render(katex, text, element);
