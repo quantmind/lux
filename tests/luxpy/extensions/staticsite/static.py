@@ -22,10 +22,6 @@ class StaticSiteTests(StaticSiteMixin, test.TestCase):
         items = site.build(app)
         self.assertTrue(items)
         self.assertEqual(len(items), 7)
-        #
-        # last file should be the index.html
-        item = items[-1]
-        self.assertTrue(item.file.endswith('/index.html'))
 
     def test_blog_post(self):
         app = self.application()
