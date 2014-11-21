@@ -12,7 +12,7 @@ Restructured = False
 
 from pulsar.apps.wsgi import AsyncString
 
-from .contents import (Content, METADATA_PROCESSORS, slugify, is_text,
+from .contents import (Content, METADATA_PROCESSORS, slugify, is_html,
                        SkipBuild)
 from .urlwrappers import MultiValue
 
@@ -111,7 +111,7 @@ class BaseReader(object):
         ct, encoding = mimetypes.guess_type(source_path)
         with open(source_path, 'rb') as f:
             body = f.read()
-        if is_text(ct):
+        if is_html(ct):
             body = body.decode(encoding=encoding or 'utf-8')
         else:
             ct = ct or 'application/octet-stream'

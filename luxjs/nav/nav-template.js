@@ -4,9 +4,9 @@ angular.module("nav/link.tpl.html", []).run(["$templateCache", function($templat
   $templateCache.put("nav/link.tpl.html",
     "<a ng-if=\"link.title\" ng-href=\"{{link.href}}\" data-title=\"{{link.title}}\" ng-click=\"clickLink($event, link)\"\n" +
     "ng-attr-target=\"{{link.target}}\" bs-tooltip=\"tooltip\">\n" +
-    "<i ng-if=\"link.icon\" class=\"{{link.icon}}\"></i> {{link.name}}</a>\n" +
+    "<i ng-if=\"link.icon\" class=\"{{link.icon}}\"></i> {{link.label || link.name}}</a>\n" +
     "<a ng-if=\"!link.title\" ng-href=\"{{link.href}}\" ng-attr-target=\"{{link.target}}\">\n" +
-    "<i ng-if=\"link.icon\" class=\"{{link.icon}}\"></i> {{link.name}}</a>");
+    "<i ng-if=\"link.icon\" class=\"{{link.icon}}\"></i> {{link.label || link.name}}</a>");
 }]);
 
 angular.module("nav/navbar.tpl.html", []).run(["$templateCache", function($templateCache) {
@@ -60,11 +60,11 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
     "            {{navbar.brand}}\n" +
     "        </a>\n" +
     "    </div>\n" +
-    "    <ul class=\"nav navbar-nav navbar-right\">\n" +
-    "        <li ng-repeat=\"item in navbar.items\">\n" +
-    "            <a href=\"{{item.href}}\" target=\"{{item.target}}\" title=\"{{item.title || item.label || item.value}}\">\n" +
-    "            <i ng-if=\"item.icon\" class=\"{{item.icon}}\"></i> {{item.label || item.value}}</a>\n" +
-    "        </li>\n" +
+    "    <ul ng-if=\"navbar.items\" class=\"nav navbar-nav\">\n" +
+    "        <li ng-repeat=\"link in navbar.items\" ng-class=\"{active:activeLink(link)}\" navbar-link></li>\n" +
+    "    </ul>\n" +
+    "    <ul ng-if=\"navbar.itemsRight\" class=\"nav navbar-nav navbar-right\">\n" +
+    "        <li ng-repeat=\"link in navbar.itemsRight\" ng-class=\"{active:activeLink(link)}\" navbar-link></li>\n" +
     "    </ul>\n" +
     "    <div class=\"sidebar navbar-{{navbar.theme}}\" role=\"navigation\">\n" +
     "        <div class=\"sidebar-nav sidebar-collapse\" bs-collapse-target>\n" +

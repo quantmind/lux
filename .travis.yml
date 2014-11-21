@@ -15,6 +15,11 @@ install:
   - sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm
   - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then npm install; fi
 
+before_script:
+  - mkdir -p vendors
+  - wget https://storage.googleapis.com/appengine-sdks/featured/google_appengine_1.9.15.zip -nv
+  - unzip -qd vendors google_appengine_1.9.15.zip
+
 script:
   - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then grunt jasmine; fi
   # - pep8 lux

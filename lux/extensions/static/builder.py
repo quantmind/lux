@@ -238,6 +238,12 @@ class Builder(BaseBuilder):
                     if not path.endswith(ext):
                         path = '%s%s' % (path, ext)
                     break
+
+            # Handle specials
+            if content and content.name in app.config['STATIC_SPECIALS']:
+                priority = 0
+                path = '/%s' % content.name
+
             dst_filename = os.path.join(location, path[1:])
             dirname = os.path.dirname(dst_filename)
             if not os.path.isdir(dirname):

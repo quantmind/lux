@@ -83,7 +83,9 @@ class Extension(lux.Extension):
                   'an action'),
         Parameter('ACCOUNT_ACTIVATION_DAYS', 2,
                   'Number of days the activation code is valid'),
-        Parameter('RESET_PASSWORD_URL', '',
+        Parameter('LOGIN_URL', '/login', 'Url to login'),
+        Parameter('REGISTER_URL', '/signup', 'Url to register with site'),
+        Parameter('RESET_PASSWORD_URL', '/reset-password',
                   'If given, add the router to handle password resets'),
         Parameter('CSRF_EXPIRY', 60*60,
                   'Cross Site Request Forgery token expiry in seconds.'),
@@ -107,7 +109,8 @@ class Extension(lux.Extension):
         add_ng_modules(doc, self.ngModules)
         backend = request.cache.auth_backend
         if backend and request.method in ('GET', 'HEAD', 'OPTIONS', 'TRACE'):
-            param = app.config['CSRF_PARAM']
+            cfg = app.config
+            param = cfg['CSRF_PARAM']
             csrf_token = backend.csrf_token(request)
             if param:
                 if not csrf_token:
@@ -124,6 +127,10 @@ class Extension(lux.Extension):
                 doc.jscontext['user'] = user.todict()
             if messages:
                 doc.jscontext['messages'] = messages
+            # authentication urls
+            doc.jscontext['loginUrl'] = cfg['LOGIN_URL']
+            doc.jscontext['registerUrl'] = cfg['REGISTER_URL']
+            doc.jscontext['resetPasswordUrl'] = cfg['RESET_PASSWORD_URL']
 
     def on_form(self, app, form):
         '''Handle CSRF on form

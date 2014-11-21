@@ -1,4 +1,10 @@
-angular.module('templates-users', ['users/messages.tpl.html']);
+angular.module('templates-users', ['users/login-help.tpl.html', 'users/messages.tpl.html']);
+
+angular.module("users/login-help.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("users/login-help.tpl.html",
+    "<p class=\"text-center\">Don't have an account? <a ng-href=\"{{registerUrl}}\" target=\"_self\">Create one</a></p>\n" +
+    "<p class=\"text-center\">{{bla}}<a ng-href=\"{{resetPasswordUrl}}\" target=\"_self\">Forgot your username or password?</a></p>");
+}]);
 
 angular.module("users/messages.tpl.html", []).run(["$templateCache", function($templateCache) {
   $templateCache.put("users/messages.tpl.html",

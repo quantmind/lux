@@ -127,7 +127,7 @@ class Extension(lux.Extension):
             app.handler = StaticHandler()
             path = os.path.abspath(app.config['STATIC_LOCATION'])
             middleware = app.handler.middleware
-            file404 = os.path.join(path, '404.html')
+            file404 = os.path.join(path, '404')
             if not os.path.isfile(file404):
                 file404 = None
             #site_url = app.config['SITE_URL']
@@ -139,7 +139,8 @@ class Extension(lux.Extension):
                                 raise_404=(not file404))
             middleware.append(media)
             if file404:
-                middleware.append(FileRouter('<path:path>', file404,
+                middleware.append(FileRouter('<path:path>',
+                                             file404,
                                              status_code=404))
 
     def build(self, app):

@@ -313,7 +313,8 @@ class Application(ConsoleParser, Extension):
         if required:
             head.scripts.append(cfg['REQUIREJS_CONFIG'])
             head.scripts.append(cfg['REQUIREJS_URL'])
-            head.scripts.require.extend(required)
+            head.scripts.require.extend((media_path+r[1:] if r.startswith('.')
+                                         else r for r in required))
         #
         for entry in cfg['HTML_META'] or ():
             head.add_meta(**entry)

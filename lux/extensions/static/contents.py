@@ -70,6 +70,10 @@ def modified_datetime(src):
     return datetime.fromtimestamp(stat_src[stat.ST_MTIME])
 
 
+def is_html(content_type):
+    return content_type == 'text/html'
+
+
 def is_text(content_type):
     return content_type in CONTENT_EXTENSIONS
 
@@ -105,7 +109,7 @@ class Content(object):
         # Used to render Content metadata
         self._update_meta(metadata)
         meta = self._meta
-        if self.is_text:
+        if self.is_html:
             dir, slug = os.path.split(self._path)
             if not slug:
                 slug = self._path
@@ -114,8 +118,13 @@ class Content(object):
                 meta.slug = slugify(slug, separator='_')
             if dir:
                 meta.slug = '%s/%s' % (dir, meta.slug)
-        elif not meta.slug:
-            meta.slug = self._path
+        else:
+            if self.suffix: # Any other file
+                suffix = '.%s' % self.suffix
+                if not self._path.endswith(suffix):
+                    self._path = self._path + suffix
+            if not meta.slug:
+                meta.slug = self._path
         meta.name = slugify(meta.slug, separator='_')
         for name in self.mandatory_properties:
             if not meta.get(name):
@@ -136,7 +145,7 @@ class Content(object):
 
     @property
     def is_html(self):
-        return self._meta.content_type == 'text/html'
+        return is_html(self._meta.content_type)
 
     @property
     def suffix(self):
@@ -168,7 +177,7 @@ class Content(object):
 
     @property
     def id(self):
-        if self.is_text:
+        if self.is_html:
             return '%s.json' % self._meta.slug
 
     @property
@@ -221,7 +230,7 @@ class Content(object):
     def render(self, context):
         '''Render the content
         '''
-        if self.is_text:
+        if self.is_html:
             context = self.context(context)
             content = self._engine(self._content, context)
             if self.template:
@@ -235,7 +244,7 @@ class Content(object):
     def json(self, request):
         '''Convert the content into a Json dictionary for the API
         '''
-        if not self._json_dict and self.is_text:
+        if not self._json_dict and self.is_html:
             context = self._app.context(request)
             context = self.context(context)
             # Add additional context keys

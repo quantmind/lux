@@ -62,8 +62,7 @@ class ChangePassword2(forms.Form):
     layout = forms.Layout(
         forms.Fieldset(all=True),
         forms.Submit('Reset password', classes='btn btn-primary'),
-        showLabels=False,
-        ng_controller='UserController')
+        showLabels=False)
 
 
 class ForgotPasswordForm(forms.Form):
@@ -72,5 +71,4 @@ class ForgotPasswordForm(forms.Form):
     layout = forms.Layout(
         forms.Fieldset(all=True),
         forms.Submit('Submit', classes='btn btn-primary'),
-        showLabels=False,
-        ng_controller='userController')
+        showLabels=False)

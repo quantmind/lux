@@ -20,6 +20,8 @@
         // Navigation place on top of the page (add navbar-static-top class to navbar)
         // nabar2 it is always placed on top
         top: false,
+        // Fixed navbar
+        fixed: false,
         search: false,
         url: lux.context.url,
         target: '',

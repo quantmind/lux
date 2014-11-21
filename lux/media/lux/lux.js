@@ -1,6 +1,6 @@
 //      Lux Library - v0.1.0
 
-//      Compiled 2014-11-20.
+//      Compiled 2014-11-21.
 //      Copyright (c) 2014 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -946,7 +946,7 @@ function(angular, root) {
     //  Api used by static sites
     angular.module('lux.static.api', ['lux.api'])
 
-        .run(['$lux', function ($lux) {
+        .run(['$lux', '$window', function ($lux, $window) {
             var pageCache = {};
 
             $lux.registerApi('static', {
@@ -974,7 +974,8 @@ function(angular, root) {
                     if (data)
                         return data;
                     //
-                    return this.get(stateParams).success(function (data) {
+                    return this.get(stateParams).then(function (response) {
+                        var data = response.data;
                         pageCache[href] = data;
                         forEach(data.require_css, function (css) {
                             loadCss(css);
@@ -988,6 +989,10 @@ function(angular, root) {
                             return defer.promise;
                         } else
                             return data;
+                    }, function (response) {
+                        if (response.status === 404) {
+                            $window.location.reload();
+                        }
                     });
                 },
                 //
@@ -2055,7 +2060,13 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
             };
         });
 
-angular.module('templates-users', ['users/messages.tpl.html']);
+angular.module('templates-users', ['users/login-help.tpl.html', 'users/messages.tpl.html']);
+
+angular.module("users/login-help.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("users/login-help.tpl.html",
+    "<p class=\"text-center\">Don't have an account? <a ng-href=\"{{registerUrl}}\" target=\"_self\">Create one</a></p>\n" +
+    "<p class=\"text-center\">{{bla}}<a ng-href=\"{{resetPasswordUrl}}\" target=\"_self\">Forgot your username or password?</a></p>");
+}]);
 
 angular.module("users/messages.tpl.html", []).run(["$templateCache", function($templateCache) {
   $templateCache.put("users/messages.tpl.html",
@@ -2157,6 +2168,12 @@ angular.module("users/messages.tpl.html", []).run(["$templateCache", function($t
 
             return renderer.directive();
         }])
+
+        .directive('loginHelp', function () {
+            return {
+                templateUrl: "users/login-help.tpl.html"
+            };
+        })
 
         .controller('UserController', ['$scope', '$lux', function (scope, lux) {
             // Model for a user when updating
@@ -2416,9 +2433,9 @@ angular.module("nav/link.tpl.html", []).run(["$templateCache", function($templat
   $templateCache.put("nav/link.tpl.html",
     "<a ng-if=\"link.title\" ng-href=\"{{link.href}}\" data-title=\"{{link.title}}\" ng-click=\"clickLink($event, link)\"\n" +
     "ng-attr-target=\"{{link.target}}\" bs-tooltip=\"tooltip\">\n" +
-    "<i ng-if=\"link.icon\" class=\"{{link.icon}}\"></i> {{link.name}}</a>\n" +
+    "<i ng-if=\"link.icon\" class=\"{{link.icon}}\"></i> {{link.label || link.name}}</a>\n" +
     "<a ng-if=\"!link.title\" ng-href=\"{{link.href}}\" ng-attr-target=\"{{link.target}}\">\n" +
-    "<i ng-if=\"link.icon\" class=\"{{link.icon}}\"></i> {{link.name}}</a>");
+    "<i ng-if=\"link.icon\" class=\"{{link.icon}}\"></i> {{link.label || link.name}}</a>");
 }]);
 
 angular.module("nav/navbar.tpl.html", []).run(["$templateCache", function($templateCache) {
@@ -2472,11 +2489,11 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
     "            {{navbar.brand}}\n" +
     "        </a>\n" +
     "    </div>\n" +
-    "    <ul class=\"nav navbar-nav navbar-right\">\n" +
-    "        <li ng-repeat=\"item in navbar.items\">\n" +
-    "            <a href=\"{{item.href}}\" target=\"{{item.target}}\" title=\"{{item.title || item.label || item.value}}\">\n" +
-    "            <i ng-if=\"item.icon\" class=\"{{item.icon}}\"></i> {{item.label || item.value}}</a>\n" +
-    "        </li>\n" +
+    "    <ul ng-if=\"navbar.items\" class=\"nav navbar-nav\">\n" +
+    "        <li ng-repeat=\"link in navbar.items\" ng-class=\"{active:activeLink(link)}\" navbar-link></li>\n" +
+    "    </ul>\n" +
+    "    <ul ng-if=\"navbar.itemsRight\" class=\"nav navbar-nav navbar-right\">\n" +
+    "        <li ng-repeat=\"link in navbar.itemsRight\" ng-class=\"{active:activeLink(link)}\" navbar-link></li>\n" +
     "    </ul>\n" +
     "    <div class=\"sidebar navbar-{{navbar.theme}}\" role=\"navigation\">\n" +
     "        <div class=\"sidebar-nav sidebar-collapse\" bs-collapse-target>\n" +
@@ -2530,6 +2547,8 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
         // Navigation place on top of the page (add navbar-static-top class to navbar)
         // nabar2 it is always placed on top
         top: false,
+        // Fixed navbar
+        fixed: false,
         search: false,
         url: lux.context.url,
         target: '',

@@ -23,4 +23,4 @@ class StaticSiteTests(StaticSiteMixin, test.TestCase):
         self.assertIsInstance(site, HtmlContent)
         items = site.build(app)
         self.assertTrue(items)
-        self.assertEqual(len(items), 10)
+        self.assertEqual(len(items), 11)

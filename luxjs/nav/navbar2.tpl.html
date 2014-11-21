@@ -13,11 +13,11 @@
             {{navbar.brand}}
         </a>
     </div>
-    <ul class="nav navbar-nav navbar-right">
-        <li ng-repeat="item in navbar.items">
-            <a href="{{item.href}}" target="{{item.target}}" title="{{item.title || item.label || item.value}}">
-            <i ng-if="item.icon" class="{{item.icon}}"></i> {{item.label || item.value}}</a>
-        </li>
+    <ul ng-if="navbar.items" class="nav navbar-nav">
+        <li ng-repeat="link in navbar.items" ng-class="{active:activeLink(link)}" navbar-link></li>
+    </ul>
+    <ul ng-if="navbar.itemsRight" class="nav navbar-nav navbar-right">
+        <li ng-repeat="link in navbar.itemsRight" ng-class="{active:activeLink(link)}" navbar-link></li>
     </ul>
     <div class="sidebar navbar-{{navbar.theme}}" role="navigation">
         <div class="sidebar-nav sidebar-collapse" bs-collapse-target>

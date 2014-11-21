@@ -72,6 +72,7 @@ class Command(lux.Command):
         self.write('Minimise %s css file via http://cssminifier.com' % b)
         http = HttpClient(loop=new_event_loop())
         response = http.post('http://cssminifier.com/raw',
+                             encode_multipart=False,
                              data={'input': data})
         if response.status_code == 200:
             return native_str(response.get_content())

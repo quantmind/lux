@@ -43,11 +43,45 @@ class SessionMixin(object):
         if cfg['SESSION_MESSAGES']:
             wsgi.middleware.append(Router('_dismiss_message',
                                           post=self._dismiss_message))
-            reset = cfg['RESET_PASSWORD_URL']
-            if reset:
-                router = self.ForgotPasswordRouter or ForgotPassword
-                wsgi.middleware.append(router(reset))
 
+    # ABSTRACT METHODS WHICH MUST BE IMPLEMENTED
+    def get_session(self, key):
+        '''Retrieve a session from its key
+        '''
+        raise NotImplementedError
+
+    def session_key(self, session):
+        '''Session key from session object
+        '''
+        raise NotImplementedError
+
+    def create_registration(self, request, user, expiry):
+        '''Create a registration entry for a user.
+        This method should return the registration/activation key.'''
+        raise NotImplementedError
+
+    def confirm_registration(self, request, **params):
+        '''Confirm registration'''
+        raise NotImplementedError
+
+    def create_session(self, request, user=None, expiry=None):
+        '''Create a new session
+        '''
+        raise NotImplementedError
+
+    def get_user_by_email(self, email):
+        '''Get a user from its email address
+        '''
+        raise NotImplementedError
+
+    def auth_key_used(self, key):
+        '''The authentication ``key`` has been used and this method is
+        for setting/updating the backend model accordingly.
+        Used during password retrieval and user registration
+        '''
+        raise NotImplementedError
+
+    # MIDDLEWARE
     def request(self, request):
         key = self.config['SESSION_COOKIE_NAME']
         session_key = request.cookies.get(key)
@@ -76,6 +110,7 @@ class SessionMixin(object):
             session.put()
         return response
 
+    # CSRF
     def csrf_token(self, request):
         session = request.cache.session
         if session:
@@ -105,39 +140,16 @@ class SessionMixin(object):
                 break
         return session_key
 
-    def get_session(self, key):
-        '''Retrieve a session from its key
-        '''
-        raise NotImplementedError
-
-    def session_key(self, session):
-        '''Session key from session object
-        '''
-        raise NotImplementedError
-
-    def create_registration(self, request, user, expiry):
-        '''Create a registration entry for a user.
-        This method should return the registration/activation key.'''
-        raise NotImplementedError
-
-    def confirm_registration(self, request, **params):
-        '''Confirm registration'''
-        raise NotImplementedError
-
-    def create_session(self, request, user=None, expiry=None):
-        '''Create a new session
-        '''
-        raise NotImplementedError
-
-    def auth_key_used(self, key):
-        '''The authentication ``key`` has been used and this method is
-        for setting/updating the backend model accordingly.
-        Used during password retrieval and user registration
-        '''
-        raise NotImplementedError
-
     def password_recovery(self, request, email):
-        raise NotImplementedError
+        '''Recovery password email
+        '''
+        user = self.get_user_by_email(email)
+        if not self.get_or_create_registration(
+                request, user,
+                email_subject='password_email_subject.txt',
+                email_message='password_email.txt',
+                message='password_message.txt'):
+            raise AuthenticationError("Can't find that email, sorry")
 
     def login(self, request, user=None):
         '''Login a user from a model or from post data
@@ -156,7 +168,7 @@ class SessionMixin(object):
     def inactive_user_login(self, request, user):
         '''Handle a user not yet active'''
         cfg = request.config
-        url = '/signup/confirmation/%s' % user.username
+        url = '%s/confirmation/%s' % (cfg['REGISTER_URL'], user.username)
         session = request.cache.session
         context = {'email': user.email,
                    'email_from': cfg['DEFAULT_FROM_EMAIL'],
@@ -179,7 +191,7 @@ class SessionMixin(object):
         This method send an email to the user so that the email
         is verified once the user follows the link in the email.
 
-        Usually called after user registration.
+        Usually called after user registration or password recovery.
         '''
         if user and user.email:
             days = request.config['ACCOUNT_ACTIVATION_DAYS']
@@ -188,13 +200,15 @@ class SessionMixin(object):
             self.send_email_confirmation(request, user, auth_key, **kw)
             return auth_key
 
-    def send_email_confirmation(self, request, user, auth_key,
+    def send_email_confirmation(self, request, user, auth_key, ctx=None,
                                 email_subject=None, email_message=None,
                                 message=None):
         '''Send an email to user to confirm his/her email address'''
         app = request.app
         cfg = app.config
         ctx = {'auth_key': auth_key,
+               'register_url': cfg['REGISTER_URL'],
+               'reset_password_url': cfg['RESET_PASSWORD_URL'],
                'expiration_days': cfg['ACCOUNT_ACTIVATION_DAYS'],
                'email': user.email,
                'site_uri': request.absolute_uri('/')[:-1]}

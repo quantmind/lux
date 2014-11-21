@@ -21,7 +21,7 @@ class StaticSiteTests(StaticSiteMixin, test.TestCase):
         self.assertIsInstance(site, HtmlContent)
         items = site.build(app)
         self.assertTrue(items)
-        self.assertEqual(len(items), 6)
+        self.assertEqual(len(items), 7)
         #
         # last file should be the index.html
         item = items[-1]

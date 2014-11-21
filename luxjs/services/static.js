@@ -5,7 +5,7 @@
     //  Api used by static sites
     angular.module('lux.static.api', ['lux.api'])
 
-        .run(['$lux', function ($lux) {
+        .run(['$lux', '$window', function ($lux, $window) {
             var pageCache = {};
 
             $lux.registerApi('static', {
@@ -33,7 +33,8 @@
                     if (data)
                         return data;
                     //
-                    return this.get(stateParams).success(function (data) {
+                    return this.get(stateParams).then(function (response) {
+                        var data = response.data;
                         pageCache[href] = data;
                         forEach(data.require_css, function (css) {
                             loadCss(css);
@@ -47,6 +48,10 @@
                             return defer.promise;
                         } else
                             return data;
+                    }, function (response) {
+                        if (response.status === 404) {
+                            $window.location.reload();
+                        }
                     });
                 },
                 //

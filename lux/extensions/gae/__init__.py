@@ -124,13 +124,8 @@ class SessionBackend(SessionMixin, AuthBackend):
         session.put()
         return session
 
-    def password_recovery(self, request, email):
-        user = self.User.get_by_email(email)
-        if not self.get_or_create_registration(
-                request, user, email_subject='password_email_subject.txt',
-                email_message='password_email.txt',
-                message='password_message.txt'):
-            raise AuthenticationError("Can't find that email, sorry")
+    def get_user_by_email(self, email):
+        return self.User.get_by_email(email)
 
     def create_registration(self, request, user, expiry):
         auth_key = digest(user.username)

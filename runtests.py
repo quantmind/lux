@@ -2,11 +2,16 @@
 import sys
 import os
 
-from pulsar.apps.test import TestSuite
-from pulsar.apps.test.plugins import bench, profile
+GAEBLOG = os.path.join(os.path.dirname(__file__), 'examples', 'gaeblog')
+if os.path.isdir(GAEBLOG) and GAEBLOG not in sys.path:
+    sys.path.append(GAEBLOG)
+import managegae
 
 
 def runtests():
+    from pulsar.apps.test import TestSuite
+    from pulsar.apps.test.plugins import bench, profile
+
     args = sys.argv
     if '--coveralls' in args:
         import pulsar

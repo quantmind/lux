@@ -142,24 +142,7 @@ class ForgotPassword(WebFormRouter):
     '''
     default_form = ForgotPasswordForm
     template = 'forgot.html'
-
-    @route('<key>')
-    def get_reset_form(self, request):
-        key = request.urlargs['key']
-        try:
-            user = request.app.auth_backend.get_user(request, auth_key=key)
-        except AuthenticationError as e:
-            session = request.cache.session
-            session.error('The link is no longer valid, %s' % e)
-            return request.redirect('/')
-        if not user:
-            raise Http404
-        form = ChangePassword2(request)
-        html = form.layout(request, action=request.full_path('reset'))
-        context = {'form': html.render(request),
-                   'site_name': request.config['APP_NAME']}
-        return request.app.html_response(request, 'reset_password.html',
-                                         context=context)
+    reset_template = 'reset_password.html'
 
     def post(self, request):
         '''Handle request for resetting password
@@ -169,7 +152,7 @@ class ForgotPassword(WebFormRouter):
             raise MethodNotAllowed
         form = self.fclass(request, data=request.body_data())
         if form.is_valid():
-            auth = request.app.auth_backend
+            auth = request.cache.auth_backend
             email = form.cleaned_data['email']
             try:
                 auth.password_recovery(request, email)
@@ -179,6 +162,26 @@ class ForgotPassword(WebFormRouter):
                 return self.maybe_redirect_to(request, form, user=user)
         return Json(form.tojson()).http_response(request)
 
+    @route('<key>')
+    def get_reset_form(self, request):
+        key = request.urlargs['key']
+        try:
+            user = request.cache.auth_backend.get_user(request, auth_key=key)
+        except AuthenticationError as e:
+            session = request.cache.session
+            session.error('The link is no longer valid, %s' % e)
+            return request.redirect('/')
+        if not user:
+            raise Http404
+        form = ChangePassword2(request).layout
+        html = form.as_form(action=request.full_path('reset'),
+                            enctype='multipart/form-data',
+                            method='post')
+        context = {'form': html.render(request),
+                   'site_name': request.config['APP_NAME']}
+        return request.app.render_template(self.reset_template, context,
+                                           request=request)
+
     @route('<key>/reset', method='post',
            response_content_types=lux.JSON_CONTENT_TYPES)
     def reset(self, request):
@@ -186,7 +189,7 @@ class ForgotPassword(WebFormRouter):
         session = request.cache.session
         result = {}
         try:
-            user = request.app.auth_backend.get_user(request, auth_key=key)
+            user = request.cache.auth_backend.get_user(request, auth_key=key)
         except AuthenticationError as e:
             session.error('The link is no longer valid, %s' % e)
         else:
@@ -195,7 +198,7 @@ class ForgotPassword(WebFormRouter):
             else:
                 form = ChangePassword2(request, data=request.body_data())
                 if form.is_valid():
-                    auth = request.app.auth_backend
+                    auth = request.cache.auth_backend
                     password = form.cleaned_data['password']
                     auth.set_password(user, password)
                     session.info('Password successfully changed')
