@@ -3,5 +3,5 @@
 import environment
 import lux
 
-# WSGI application for potatoblog
+# WSGI application
 app = lux.App('blogapp.config').setup()

@@ -1,3 +1,3 @@
-    // bootstrap potatoblog angular application
-    lux.bootstrap('potatoblog', ['live.blog', 'live.blog.nav', 'monospaced.elastic']);
+    // bootstrap angular application
+    lux.bootstrap('gaeblog', ['live.blog', 'live.blog.nav', 'monospaced.elastic']);
 });

@@ -31,7 +31,7 @@ HTML_META = [{'http-equiv': 'X-UA-Compatible',
               'content': 'width=device-width, initial-scale=1'},
              {'name': 'description',
               'content': "A blog site by quantmind"}]
-HTML_LINKS = [CssLibraries['katex'], 'blogapp/blogapp.css']
+HTML_LINKS = [CssLibraries['katex'], 'blogapp/blogapp']
 REQUIREJS = ['blogapp/blogapp']
 REQUIREJS_CONFIG = MEDIA_URL + 'blogapp/require.config.min.js'
 SESSION_COOKIE_NAME = APP_ID

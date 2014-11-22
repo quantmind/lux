@@ -12,7 +12,7 @@ def add_css(all):
 
     vars.color = color('#555')
     # Override default background color
-    vars.colors.default_background = color('#efeae2')
+    vars.colors.default_background = color('#ffffe5')
     # set anchor colors
     vars.anchor.color = color('#000')
     vars.anchor.color_hover = color('#000')

@@ -16,7 +16,7 @@ require(rcfg.min(['lux/lux', 'angular-ui-router', 'angular-strap', 'angular-anim
     angular.module('live.blog.nav', ['lux.nav', 'mgcrea.ngStrap'])
 
         .constant('nav', {
-            brandImage: lux.media('potatoblog/potatoblog.svg')
+            brandImage: lux.media('blogapp/lux.svg')
         })
 
         .controller('NavController', ['$scope', '$modal', 'nav', function (scope, modal, nav) {
@@ -82,7 +82,7 @@ require(rcfg.min(['lux/lux', 'angular-ui-router', 'angular-strap', 'angular-anim
     //  Blog application
     //  ==========================
     //
-    angular.module('live.blog', ['lux.form', 'lux.blog', 'templates-potatoblog', 'mgcrea.ngStrap'])
+    angular.module('live.blog', ['lux.form', 'lux.blog', 'templates-gaeblog', 'mgcrea.ngStrap'])
 
         .constant('liveBlogDefaults', {
             // Check for updates every ``heartBeat`` milliseconds
@@ -647,6 +647,6 @@ function($timeout, $window, config) {
         }
     };
 }]);
-    // bootstrap potatoblog angular application
-    lux.bootstrap('potatoblog', ['live.blog', 'live.blog.nav', 'monospaced.elastic']);
+    // bootstrap angular application
+    lux.bootstrap('gaeblog', ['live.blog', 'live.blog.nav', 'monospaced.elastic']);
 });

@@ -4,7 +4,7 @@
     angular.module('live.blog.nav', ['lux.nav', 'mgcrea.ngStrap'])
 
         .constant('nav', {
-            brandImage: lux.media('potatoblog/potatoblog.svg')
+            brandImage: lux.media('blogapp/lux.svg')
         })
 
         .controller('NavController', ['$scope', '$modal', 'nav', function (scope, modal, nav) {

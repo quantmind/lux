@@ -2,7 +2,7 @@
     //  Blog application
     //  ==========================
     //
-    angular.module('live.blog', ['lux.form', 'lux.blog', 'templates-potatoblog', 'mgcrea.ngStrap'])
+    angular.module('live.blog', ['lux.form', 'lux.blog', 'templates-gaeblog', 'mgcrea.ngStrap'])
 
         .constant('liveBlogDefaults', {
             // Check for updates every ``heartBeat`` milliseconds

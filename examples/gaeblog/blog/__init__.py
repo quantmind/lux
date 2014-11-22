@@ -101,7 +101,7 @@ class BlogManager(ModelManager):
         else:
             url = '/write/%s' % instance.key.id()
         if not data.get('image'):
-            data['image'] = request.app.media_url('potatoblog/blogimage.svg')
+            data['image'] = request.app.media_url('blogapp/blogimage.svg')
         data['html_url'] = request.absolute_uri(url)
         return data
 

@@ -48,12 +48,12 @@ def install():
     target = os.path.join(TARGET, 'site-packages')
     ln(source, target)
     #
-    # Create lux soft link
+    # Create lux symlink for lux
     source = os.path.abspath('../lux')
     target = target = os.path.join(TARGET, 'lux')
     #ln(source, target)
     #
-    # Create lux soft link with luxsite media
+    # Create lux symlink for media directory
     source = os.path.abspath('luxsite/media/luxsite')
     target = target = os.path.join(TARGET, 'blogapp/media/blogapp')
     ln(source, target)
