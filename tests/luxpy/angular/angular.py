@@ -5,11 +5,6 @@ from lux.utils import test
 from lux.extensions.angular import Router
 
 
-EXTENSIONS = ['lux.extensions.ui',
-              'lux.extensions.angular']
-ANGULAR_UI_ROUTER = True
-
-
 def example(url=''):
     return Router(url,
                   Router('bla'),
@@ -18,7 +13,7 @@ def example(url=''):
 
 
 class AngularTest(test.TestCase):
-    config_file = 'luxpy.extensions.angular'
+    config_file = 'luxpy.angular'
 
     def test_properties(self):
         router = example()

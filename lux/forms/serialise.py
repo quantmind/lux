@@ -14,6 +14,7 @@ __all__ = ['AngularFieldset', 'AngularSubmit', 'AngularLayout',
 
 FORMKEY = 'm__form'
 
+
 def angular_fields(form_class, fields, missings):
     '''Utility function for checking fields in layouts'''
     for field in fields:
@@ -100,7 +101,6 @@ class Row(AngularFieldset):
     type = 'div'
 
 
-
 class AngularLayout(AngularFieldset):
     type = 'form'
     form_class = None
@@ -139,7 +139,7 @@ class AngularForm(object):
     def as_dict(self, id=None, **attrs):
         data = self.layout.as_dict(self.form)
         form = data['field']
-        if not 'model' in form:
+        if 'model' not in form:
             form['model'] = self.form.__class__.__name__
         if id is None and not form.get('id'):
             id = '%s_%s' % (self.form.__class__.__name__.lower(),

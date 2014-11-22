@@ -57,7 +57,7 @@ class Sitemap(Router):
         for item in self.items(request):
             loc = self._get('loc', item)
             priority = self._get('priority', item)
-            if not loc or priority==0 or priority=='0':
+            if not loc or priority == 0 or priority == '0':
                 continue
             count += 1
             if count > self.limit:

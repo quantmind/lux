@@ -124,7 +124,7 @@ class JsonFile(lux.Router, FileBuilder):
         o = 'modified' if draft else 'date'
         for d in self.build(app):
             data = json.loads(d.body.decode('utf-8'))
-            if bool(data.get('priority')=='0') is not draft:
+            if bool(data.get('priority') == '0') is not draft:
                 continue
             if not html:
                 data = dict(page_info(data))
@@ -153,10 +153,11 @@ class JsonContent(lux.Router, DirBuilder):
         # When the html router is a index template, add the index.json
         # resource for rendering the index
         if html_router.index_template:
-            self.add_child(JsonIndex('index.json',
-                                     dir=self.dir,
-                                     html_router=html_router,
-                                     index_template=html_router.index_template))
+            self.add_child(
+                JsonIndex('index.json',
+                          dir=self.dir,
+                          html_router=html_router,
+                          index_template=html_router.index_template))
         #
         # TODO! Add Drafts API if drafts are available
         # drafts = html_router.get_route(html_router.childname('drafts'))

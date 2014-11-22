@@ -66,7 +66,8 @@ def add_navbar(all):
         '.navbar2-wrapper.navbar-default .navbar2-page',
         Border(color=sidebar.default.border, left=px(1)))
 
-    media(min_width=min_width_collapse).css('.sidebar',
+    media(min_width=min_width_collapse).css(
+        '.sidebar',
         margin_top=navbar.height+1,
         position='absolute',
         width=sidebar.width,
@@ -92,8 +93,8 @@ def add_animate(all):
     fade = vars.animate.fade
     fade.top = 0
     fade.left = 0
-    fade.fadein ='0.3s'
-    fade.fadeout ='0.3s'
+    fade.fadein = '0.3s'
+    fade.fadeout = '0.3s'
 
     # Animate fade-in fade-out
     css('.animate-fade',
@@ -131,4 +132,3 @@ def add_forms(all):
 
     css('.form-error',
         css(' span', display='block'))
-

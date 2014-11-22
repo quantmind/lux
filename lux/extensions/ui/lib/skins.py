@@ -188,7 +188,7 @@ class Skin(Mixin):
         self.states = {}
         for state in STATES:
             value = params.pop(state, None)
-            if value is not False: # if False, the state is switched off
+            if value is not False:  # if False, the state is switched off
                 self.states[state] = value
         self.cursor = cursor
         self.applyto = as_tuple(applyto)

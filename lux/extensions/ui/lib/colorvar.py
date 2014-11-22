@@ -130,7 +130,7 @@ new :class:`RGBA` color with lightness increased by that amount.'''
 
 
 #############################################################################
-##    color factory
+#    color factory
 def color(col, *cols, **kwargs):
     '''Build a :class:`RGBA` or a :class:`lazy` variable
     from several type of inputs.

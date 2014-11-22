@@ -6,17 +6,17 @@ threadsafe: true
 
 handlers:
 # Static assets
-- url: /media/potatoblog
-  static_dir: potatoblog/media/potatoblog
+- url: /media/blogapp
+  static_dir: blogapp/media/blogapp
 - url: /media/lux
   static_dir: site-packages/lux/media/lux
 - url: /favicon\.ico
-  static_files: potatoblog/media/potatoblog/favicon.ico
+  static_files: blogapp/media/blogapp/favicon.ico
   upload: /favicon.ico
 
 # Web handlers
 - url: /.*
-  script: potatoengine.app
+  script: engine.app
   secure: always
 
 libraries:

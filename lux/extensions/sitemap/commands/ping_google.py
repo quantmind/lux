@@ -27,4 +27,3 @@ class Command(lux.Command):
         else:
             for route in router.routes:
                 self.ping(route)
-

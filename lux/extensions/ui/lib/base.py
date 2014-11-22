@@ -339,7 +339,7 @@ class Spacing(Unit):
 
 
 ############################################################################
-##    factory functions
+#    factory functions
 px = lambda v: size(v, unit='px')
 pc = lambda v: size(v, unit='%')
 em = lambda v: size(v, unit='em')
@@ -417,7 +417,7 @@ class Mixin(CssBase):
             parent.add_child(self)
 
 
-################################################# Media
+# ################################################ Media
 class Media(Mixin):
     '''Add @media queries to css.'''
     def __init__(self, type, query):
@@ -744,7 +744,7 @@ http://quantmind.github.io/lux/
                         app.write('Imported style from "%s".' % extension)
                 except ImportError as e:
                     app.write_err('Cannot import style %s: "%s".' %
-                                   (extension, e))
+                                  (extension, e))
         if dump_variables:
             data = root.variables.tojson()
             return json.dumps(data, indent=4)

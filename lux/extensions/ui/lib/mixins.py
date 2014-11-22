@@ -35,11 +35,11 @@ __all__ = ['Animation',
 
 
 ############################################################################
-##    BATTERY INCLUDED MIXINS
+#    BATTERY INCLUDED MIXINS
 ############################################################################
 
 
-################################################# ANIMATION
+# ################################################ ANIMATION
 class Animation(Mixin):
     '''Bind the animation to a selector (element) by specifying at least
     these two properties:
@@ -84,7 +84,7 @@ class Animation(Mixin):
             elem['        animation-fill-mode'] = fill_mode
 
 
-################################################# OPACITY
+# ################################################ OPACITY
 class Opacity(Mixin):
     '''Add opacity to an element.
 
@@ -108,7 +108,7 @@ class Opacity(Mixin):
         elem['filter'] = 'alpha(opacity=%s)' % (100*value)
 
 
-################################################# CLEARFIX
+# ################################################ CLEARFIX
 class Clearfix(Mixin):
     '''A ``clearfix`` is a way for an element to automatically clear after
 itself, so that you don't need to add additional markup.
@@ -121,7 +121,7 @@ stacked horizontally.'''
         elem.css(':after', clear='both')
 
 
-################################################# InlineBlock
+# ################################################ InlineBlock
 class InlineBlock(Mixin):
     '''Cross browser inline block form
 
@@ -133,7 +133,7 @@ http://foohack.com/2007/11/cross-browser-support-for-inline-block-styling/'''
         elem['*display'] = 'inline'
 
 
-################################################# CenterBlock
+# ################################################ CenterBlock
 class CenterBlock(Mixin):
     '''Center block a-la bootstrap'''
     def __call__(self, elem):
@@ -142,7 +142,7 @@ class CenterBlock(Mixin):
         elem['margin-right'] = 'auto'
 
 
-################################################# TEXT OVERFLOW
+# ################################################ TEXT OVERFLOW
 class Textoverflow(Mixin):
 
     def __call__(self, elem):
@@ -161,7 +161,7 @@ class clear_anchor(Mixin):
                  cursor='inherit')
 
 
-################################################# FIXTOP
+# ################################################ FIXTOP
 class fixtop(Mixin):
     '''Fix an element at the top of the page.'''
     def __init__(self, zindex=2000):
@@ -184,7 +184,7 @@ class unfixtop(Mixin):
         elem['z_index'] = 'auto'
 
 
-################################################# CSS BORDER
+# ################################################ CSS BORDER
 class Border(Mixin):
     '''A :class:`Mixin` for adding border to a css element.
 
@@ -233,7 +233,7 @@ class Border(Mixin):
         return ' '.join(bits)
 
 
-################################################# CSS3 BOX SHADOW
+# ################################################ CSS3 BOX SHADOW
 class Shadow(Mixin):
     '''The box-shadow css3 property attaches one or more drop-shadows to the
     box. The property is a comma-separated list of shadows, each specified by
@@ -300,7 +300,7 @@ class Shadow(Mixin):
             elem['        box-shadow'] = shadow
 
 
-################################################# CSS3 BOX SIZING
+# ################################################ CSS3 BOX SIZING
 class BoxSizing(Mixin):
     '''The box-sizing CSS3 property.
 
@@ -333,7 +333,7 @@ The only parameter is ``value`` which can be one of:
             elem['        box-sizing'] = value
 
 
-################################################# CSS3 RADIUS
+# ################################################ CSS3 RADIUS
 class Radius(Mixin):
     '''css3 border radius. The optional location parameter specifies the
     location where to apply the radius. For example, 'top', 'bottom', 'left',
@@ -368,7 +368,7 @@ class Radius(Mixin):
                 elem['        border%s-radius' % l] = r
 
 
-################################################# CSS3 BACKGROUNd
+# ################################################ CSS3 BACKGROUNd
 class Background(Mixin):
     '''Set the background property of an element
     '''
@@ -400,7 +400,7 @@ class Background(Mixin):
             elem['background-attachment'] = attachment
 
 
-################################################# CSS3 GRADIENT
+# ################################################ CSS3 GRADIENT
 class Gradient(Mixin):
     '''css3 gradient. Don't initialise directly, use :func:`gradient`
 instead.
@@ -488,7 +488,7 @@ instead.
                           "GradientType={2})".format(s, e, t))
         #
         # Reset filters for IE
-        #elem['filter'] = ('progid:DXImageTransform.Microsoft.gradient'
+        # elem['filter'] = ('progid:DXImageTransform.Microsoft.gradient'
         #                  '(enabled = false)')
 
     def hgradient(self, elem, d, s, e):
@@ -505,7 +505,7 @@ def gradient(*args):
         return Gradient(*args)
 
 
-################################################# PLACEHOLDER
+# ################################################ PLACEHOLDER
 class Placeholder(Mixin):
 
     def __init__(self, color):
@@ -519,7 +519,7 @@ class Placeholder(Mixin):
              color=self.color)
 
 
-################################################# BCD - BACKGROUND-COLOR-DECO
+# ################################################ BCD - BACKGROUND-COLOR-DECO
 class Bcd(Mixin):
     '''Background-color-decorator :class:`Mixin`.
 
@@ -560,7 +560,7 @@ def bcd(params):
         return Bcd(**as_params(params))
 
 
-################################################# CLICKABLE
+# ################################################ CLICKABLE
 class Clickable(Mixin):
     '''Defines the default, hover and active state.'''
     def __init__(self, default=None, hover=None, active=None, cursor='pointer',
@@ -581,7 +581,7 @@ class Clickable(Mixin):
             elem.css(':active,.%s' % classes.active, self.active)
 
 
-################################################# TRANSLATE
+# ################################################ TRANSLATE
 class Transform(Mixin):
     '''Defines a 2D transform.
 
@@ -652,7 +652,7 @@ class Transform(Mixin):
         elem['        transform'] = value
 
 
-################################################# TRANSITION
+# ################################################ TRANSITION
 class Transition(Mixin):
     '''Define a CSS3 transition.
 
@@ -721,7 +721,7 @@ class Transition(Mixin):
         elem['        transition'] = transition
 
 
-################################################# INCLUDE CSS
+# ################################################ INCLUDE CSS
 class CssInclude(Mixin):
     '''Include one or more css resources. The correct use of this
     :class:`.Mixin` is within the ``body`` tag only::
@@ -837,7 +837,7 @@ class Image(Mixin):
             elem['background-position'] = self.position
 
 
-################################################# FONT-FACE
+# ################################################ FONT-FACE
 class Fontface(Mixin):
 
     def __init__(self, base, svg=None):
@@ -864,7 +864,7 @@ class FontSmoothing(Mixin):
         elem['-webkit-font-smoothing'] = 'antialiased'
 
 
-################################################# Stack
+# ################################################ Stack
 class Stack(Mixin):
     '''Stack :class:`Stackable` mixins.'''
     def __init__(self, *mixins):

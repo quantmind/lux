@@ -37,7 +37,8 @@ is the css file) and it is an instance of the :class:`.Css` class::
 The :class:`.Border` in the example is a :class:`.Mixin` which generate
 css border rules for the css element where it is declared. The ``max_width``
 key-valued pair is added to the css rules too. When the python code
-is converted into stylesheets, all underscore (``_``) are converted into dashes (``-``).
+is converted into stylesheets, all underscore (``_``) are converted into
+dashes (``-``).
 
 .. _style-command:
 
@@ -78,13 +79,15 @@ import lux
 from lux import Parameter
 
 ############################################################################
-##    USEFUL CSS LIBRARIES
+#    USEFUL CSS LIBRARIES
 ############################################################################
 CssLibraries = {
     'bootstrap': '//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap',
-    'fontawesome': '//netdna.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome',
+    'fontawesome': ('//netdna.bootstrapcdn.com/font-awesome/4.2.0'
+                    '/css/font-awesome'),
     'animate': '//cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate',
-    'weather-icons': '//cdnjs.cloudflare.com/ajax/libs/weather-icons/1.2/css/weather-icons',
+    'weather-icons': ('//cdnjs.cloudflare.com/ajax/libs/weather-icons/1.2'
+                      '/css/weather-icons'),
     'highlight': '//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.3',
     'katex': '//cdnjs.cloudflare.com/ajax/libs/KaTeX/0.1.1/katex.min.css',
     'leaflet': 'http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css'
@@ -96,10 +99,12 @@ from .lib import *
 class Extension(lux.Extension):
 
     _config = [
-        Parameter('FONTAWESOME',
+        Parameter(
+            'FONTAWESOME',
             '//netdna.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome',
             'FONTAWESOME url. Set to none to not use it.'),
-        Parameter('BOOTSTRAP',
+        Parameter(
+            'BOOTSTRAP',
             '//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap',
             'Twitter bootstrap url. Set to none to not use it.'),
         Parameter('EXCLUDE_EXTENSIONS_CSS', None,

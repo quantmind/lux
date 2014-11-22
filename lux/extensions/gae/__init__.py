@@ -20,7 +20,6 @@ from .api import *
 isdev = lambda: os.environ.get('SERVER_SOFTWARE', '').startswith('Development')
 
 
-
 class AuthBackend(sessions.AuthBackend):
     '''A :class:`.AuthBackend` for the google app engine
     '''

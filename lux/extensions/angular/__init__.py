@@ -105,8 +105,8 @@ class Router(lux.Router, MediaMixin):
 
         * Collets children routers operating in :ref:`ui mode <spa-router>`
           and build the sitemap used by angular `ui-router`_.
-        * The ``$html_main`` content, rendered by the :meth:`build_main` method is
-          wrapped by a ``div`` element::
+        * The ``$html_main`` content, rendered by the :meth:`build_main`
+          method is wrapped by a ``div`` element::
 
             <div id="seo-view" data-ui-main="main" class="hidden">
                 $html_main

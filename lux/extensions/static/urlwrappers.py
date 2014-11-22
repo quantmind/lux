@@ -37,7 +37,6 @@ class MultiValue(Processor):
         return all
 
 
-#@total_ordering
 class URLWrapper(object):
 
     def __init__(self, name, settings):

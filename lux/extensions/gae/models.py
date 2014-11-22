@@ -176,7 +176,7 @@ class Permission(ndb.Model):
     @classmethod
     def remove_model(cls, model, id=None):
         name = role_name(model, id)
-        keys = cls.query(Permission.name==name).fetch(keys_only=True)
+        keys = cls.query(Permission.name == name).fetch(keys_only=True)
         ndb.delete_multi(keys)
 
     @classmethod

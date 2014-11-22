@@ -18,6 +18,7 @@ from sphinx.util.nodes import make_refnode
 
 modules_path = 'modules/'
 
+
 def doctree_read(app, doctree):
     env = app.builder.env
     if not hasattr(env, '_viewcode_modules'):
@@ -99,7 +100,8 @@ def collect_pages(app):
         # construct a page name for the highlighted source
         pagename = modules_path + modname.replace('.', '/')
         # highlight the source using the builder's highlighter
-        highlighted = highlighter.highlight_block(code, 'python', linenos=False)
+        highlighted = highlighter.highlight_block(code, 'python',
+                                                  linenos=False)
         # split the code into lines
         lines = highlighted.splitlines()
         # split off wrap markup from the first line of the actual code
@@ -135,8 +137,8 @@ def collect_pages(app):
         context = {
             'parents': parents,
             'title': modname,
-            'body': _('<h1>Source code for %s</h1>') % modname + \
-                    '\n'.join(lines)
+            'body': _('<h1>Source code for %s</h1>') % modname +
+            '\n'.join(lines)
         }
         yield (pagename, context, 'page.html')
 
@@ -159,13 +161,12 @@ def collect_pages(app):
             stack.append(modname + '.')
         html.append('<li><a href="%s">%s</a></li>\n' % (
             urito(modules_path + 'index',
-                  modules_path + modname.replace('.', '/')),
-                                                        modname))
+                  modules_path + modname.replace('.', '/')), modname))
     html.append('</ul>' * (len(stack) - 1))
     context = {
         'title': _('Overview: module code'),
-        'body': _('<h1>All modules for which code is available</h1>') + \
-            ''.join(html),
+        'body': _('<h1>All modules for which code is available</h1>') +
+        ''.join(html),
     }
 
     yield (modules_path + 'index', context, 'page.html')

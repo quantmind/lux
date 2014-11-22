@@ -14,3 +14,8 @@ node_modules
 MANIFEST
 .DS_Store
 dist
+
+# GAEBLOG
+examples/libs
+examples/gaeblog/site-packages
+examples/gaeblog/lux

@@ -18,12 +18,10 @@ class Command(lux.Command):
     def __call__(self, argv, **params):
         return self.run_until_complete(argv, **params)
 
-    def run(self, argv):
-        options = self.options(argv)
+    def run(self, options):
         apps = options.apps
         models = self.app.models
         for model in models:
             manager = models[model]
-            result = yield from manager.create_table(
-                remove_existing=options.force)
+            result = manager.create_table(remove_existing=options.force)
             self.write('Created table for %s' % manager)

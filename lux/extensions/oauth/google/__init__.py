@@ -48,7 +48,6 @@ you do not need to access user data::
 
 .. _OAuth2: https://developers.google.com/accounts/docs/OAuth2
 .. _`ui.router`: http://angular-ui.github.io/ui-router/site
-.. _`google analytics`: https://developers.google.com/analytics/devguides/collection/analyticsjs/
 '''
 from string import Template
 

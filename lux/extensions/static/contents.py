@@ -119,7 +119,7 @@ class Content(object):
             if dir:
                 meta.slug = '%s/%s' % (dir, meta.slug)
         else:
-            if self.suffix: # Any other file
+            if self.suffix:  # Any other file
                 suffix = '.%s' % self.suffix
                 if not self._path.endswith(suffix):
                     self._path = self._path + suffix
@@ -357,7 +357,7 @@ class Content(object):
     def _render_meta(self, value, context):
         if isinstance(value, Mapping):
             return dict(((k, self._render_meta(v, context))
-                          for k, v in value.items()))
+                         for k, v in value.items()))
         elif isinstance(value, (list, tuple)):
             return [self._render_meta(v, context) for v in value]
         elif isinstance(value, date):

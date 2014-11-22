@@ -142,7 +142,7 @@ queries on models as well as list of two-elements tuples ``(value, label)``.
             if not self.autocomplete:
                 query = query if query is not None else self.mapper.query()
                 for v in query:
-                    #TODO: allow for diferent attribute name for id
+                    # TODO: allow for diferent attribute name for id
                     yield v.id, v
         elif query:
             for v in query:

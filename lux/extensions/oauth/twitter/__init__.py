@@ -5,6 +5,7 @@ from ..oauth import OAuth1, register_oauth
 
 twitter_cards = {}
 
+
 def twitter_card(cls):
     type = cls.__name__.lower()
     twitter_cards[type] = cls()

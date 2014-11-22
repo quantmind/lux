@@ -62,6 +62,7 @@ class OGPType(object):
             for v in value:
                 doc.head.add_meta(property=key, content=v)
 
+
 @ogp_type
 class Website(OGPType):
 

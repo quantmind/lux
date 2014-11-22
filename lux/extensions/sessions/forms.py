@@ -26,7 +26,8 @@ class CreateUserForm(forms.Form):
                                helpText='between 6 and 30 characters')
     email = forms.EmailField()
     password = forms.PasswordField(minlength=6, maxlength=60)
-    password_repeat = forms.PasswordField(label='confirm password',
+    password_repeat = forms.PasswordField(
+        label='confirm password',
         data_check_repeat='password')
 
     layout = forms.Layout(

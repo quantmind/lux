@@ -573,8 +573,8 @@ class Application(ConsoleParser, Extension):
                 self.meta.version = extension.meta.version
             if not self.meta.has_module:
                 raise RuntimeError('Invalid project setup. The Application '
-                                   'config module must be within a valid python '
-                                   'module.')
+                                   'config module must be within a valid '
+                                   'python module.')
         params = self.callable._params
         parser = self.get_parser(with_commands=False, add_help=False)
         opts, _ = parser.parse_known_args(self.meta.argv)

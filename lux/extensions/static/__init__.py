@@ -1,6 +1,7 @@
 '''Static site generator
 
-**Required extensions**: :mod:`lux.extensions.ui`, :mod:`lux.extensions.angular`
+**Required extensions**: :mod:`lux.extensions.ui`,
+:mod:`lux.extensions.angular`
 
 **Optional third-party libraries**: markdown_, sphinx_
 
@@ -16,7 +17,8 @@ command line::
 There are several :ref:`parameters <parameters-static>` which can be modified
 in order to customise the site.
 
-The first step is to create a new project via the :command:`startproject` command.
+The first step is to create a new project via the :command:`startproject`
+command.
 
 
 When creating the middleware for the static site one can pass the following
@@ -130,12 +132,7 @@ class Extension(lux.Extension):
             file404 = os.path.join(path, '404')
             if not os.path.isfile(file404):
                 file404 = None
-            #site_url = app.config['SITE_URL']
-            base_url = ''
-            #if site_url:
-            #    p = urlparse(site_url)
-            #    base_url = p.path
-            media = MediaRouter(base_url, path, default_suffix='html',
+            media = MediaRouter('', path, default_suffix='html',
                                 raise_404=(not file404))
             middleware.append(media)
             if file404:
@@ -197,10 +194,11 @@ class Extension(lux.Extension):
             if url.endswith('/'):
                 url = url[:-1]
             self._static_info = {
-                'date': dte.strftime('%Y-%m-%dT%H-%M-%S'), #ISO 8601
+                'date': dte.strftime('%Y-%m-%dT%H-%M-%S'),  # ISO 8601
                 'year': dte.year,
                 'lux_version': lux.__version__,
-                'python_version': '.'.join((str(v) for v in sys.version_info[:3])),
+                'python_version': '.'.join((str(v) for v in
+                                            sys.version_info[:3])),
                 'url': url,
                 'media': cfg['MEDIA_URL'][:-1],
                 'name': cfg['APP_NAME']

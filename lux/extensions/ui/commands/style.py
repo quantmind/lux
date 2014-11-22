@@ -34,8 +34,6 @@ class Command(lux.Command):
     )
 
     def run(self, options, dump=True, **params):
-        #if 'base' not in self.app.extensions:
-        #    raise ImproperlyConfigured('"ui" requires the "base" extension.')
         target = options.cssfile
         app = self.app
         name = app.meta.name

@@ -80,7 +80,6 @@ def add_css(all):
             font_size=vars.font_size))
 
 
-
 def katex(all):
     css = all.css
 

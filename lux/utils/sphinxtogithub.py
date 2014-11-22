@@ -48,7 +48,7 @@ class FileHandler(object):
     def process(self):
         text = self.opener(self.name).read()
         for replacer in self.replacers:
-            text = replacer.process( text )
+            text = replacer.process(text)
         self.opener(self.name, "w").write(text)
 
 
@@ -82,10 +82,8 @@ class VerboseRename(object):
 
     def __call__(self, from_, to):
         self.stream.write(
-                "Renaming directory '%s' -> '%s'\n"
-                    % (os.path.basename(from_), os.path.basename(to))
-                )
-
+            "Renaming directory '%s' -> '%s'\n" %
+            (os.path.basename(from_), os.path.basename(to)))
         self.renamer(from_, to)
 
 
@@ -144,7 +142,6 @@ class Layout(object):
     Applies a set of operations which result in the layout
     of a directory changing
     """
-
     def __init__(self, directory_handlers, file_handlers):
         self.directory_handlers = directory_handlers
         self.file_handlers = file_handlers
@@ -188,9 +185,8 @@ class LayoutFactory(object):
         # Build list of directories to process
         directories = [d for d in contents if self.is_underscore_dir(path, d)]
         underscore_directories = [
-                self.handler_factory.create_dir_handler(d, path, renamer)
-                    for d in directories
-                ]
+            self.handler_factory.create_dir_handler(d, path, renamer)
+            for d in directories]
 
         if not underscore_directories:
             raise NoDirectoriesError()
@@ -201,11 +197,9 @@ class LayoutFactory(object):
             for directory, dirs, files in self.dir_helper.walk(handler.path()):
                 for f in files:
                     replacers.append(
-                            self.operations_factory.create_replacer(
-                                handler.relative_path(directory, f),
-                                handler.new_relative_path(directory, f)
-                                )
-                            )
+                        self.operations_factory.create_replacer(
+                            handler.relative_path(directory, f),
+                            handler.new_relative_path(directory, f)))
 
         # Build list of handlers to process all files
         filelist = []
@@ -233,12 +227,12 @@ class LayoutFactory(object):
     def is_underscore_dir(self, path, directory):
         return (self.dir_helper.is_dir(
             self.file_helper.path_join(path, directory))
-                and directory.startswith("_"))
+            and directory.startswith("_"))
 
 
 def sphinx_extension(app, exception):
     "Wrapped up as a Sphinx Extension"
-    if not app.builder.name in ("html", "dirhtml", "json"):
+    if app.builder.name not in ("html", "dirhtml", "json"):
         return
 
     if not app.config.sphinx_to_github:
@@ -253,31 +247,28 @@ def sphinx_extension(app, exception):
         return
 
     dir_helper = DirHelper(
-            os.path.isdir,
-            os.listdir,
-            os.walk,
-            shutil.rmtree
-            )
+        os.path.isdir,
+        os.listdir,
+        os.walk,
+        shutil.rmtree)
 
     file_helper = FileSystemHelper(
-            open,
-            os.path.join,
-            shutil.move,
-            os.path.exists
-            )
+        open,
+        os.path.join,
+        shutil.move,
+        os.path.exists)
 
     operations_factory = OperationsFactory()
     handler_factory = HandlerFactory()
 
     layout_factory = LayoutFactory(
-            operations_factory,
-            handler_factory,
-            file_helper,
-            dir_helper,
-            app.config.sphinx_to_github_verbose,
-            sys.stdout,
-            force=True
-            )
+        operations_factory,
+        handler_factory,
+        file_helper,
+        dir_helper,
+        app.config.sphinx_to_github_verbose,
+        sys.stdout,
+        force=True)
 
     layout = layout_factory.create_layout(app.outdir)
     layout.process()

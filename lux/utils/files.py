@@ -47,10 +47,6 @@ class File(object):
             else:
                 yield chunk
 
-        #while counter > 0:
-        #    r = self.file.read(chunk_size)
-        #    counter -= chunk_size
-
 
 class Filehandler(object):
 
