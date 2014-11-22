@@ -71,7 +71,7 @@
                 "luxjs/gaeblog/templates.js",
                 "luxjs/gaeblog/elastic.js",
                 "luxjs/gaeblog/close.js"],
-        "dest": "examples/gaeblog/blogapp/media/blogapp/blogapp.js",
+        "dest": "examples/luxsite/media/luxsite/blogapp.js",
         "options": {
             "stripBanners": true,
             "banner": "luxjs/banner.js",

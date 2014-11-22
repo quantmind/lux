@@ -19,3 +19,4 @@ dist
 examples/libs
 examples/gaeblog/site-packages
 examples/gaeblog/lux
+examples/gaeblog/blogapp/media

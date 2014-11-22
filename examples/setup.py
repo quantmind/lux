@@ -23,8 +23,11 @@ def sh(command, cwd=None):
                             universal_newlines=True).communicate()[0]
 
 def ln(source, target):
-    print('Create soft link from %s to %s' % (source, target))
-    sh('ln -s %s %s' % (source, target))
+    if path.exists(target):
+        os.remove(target)
+    command = 'ln -s %s %s' % (source, target)
+    print(command)
+    sh(command)
 
 
 def install():
@@ -43,14 +46,12 @@ def install():
     # Create the symlink
     source = os.path.join(LIBS, 'lib/python2.7/site-packages')
     target = os.path.join(TARGET, 'site-packages')
-    if path.exists(target):
-        os.remove(target)
     ln(source, target)
     #
     # Create lux soft link
     source = os.path.abspath('../lux')
     target = target = os.path.join(TARGET, 'lux')
-    ln(source, target)
+    #ln(source, target)
     #
     # Create lux soft link with luxsite media
     source = os.path.abspath('luxsite/media/luxsite')
