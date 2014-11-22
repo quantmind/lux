@@ -13,12 +13,12 @@ EXTENSIONS = ['lux.extensions.base',
               'lux.extensions.code',
               'blog']
 
-APP_NAME = 'QuantmindBlog'
-APP_ID = 'quantmindblog'
-SITE_URL = 'https://quantmindblog.appspot.com'
+APP_NAME = 'Lux Blog'
+APP_ID = 'luxgaeblog'
+SITE_URL = 'https://luxgaeblog.appspot.com'
 ADMIN_EMAIL = 'info@quantmind.com'
 TIME_FORMAT_STRING = '%b %d, %Y %I:%M:%S %p'
-HTML_TITLE = 'Potato blog - a blog for potato'
+HTML_TITLE = 'Lux blog - a blog for created using Lux'
 COMPANY = 'Quantmind'
 DEFAULT_FROM_EMAIL = 'info@quantmind.com'
 MEDIA_URL = '/media/'

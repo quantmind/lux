@@ -51,6 +51,11 @@ def install():
     source = os.path.abspath('../lux')
     target = target = os.path.join(TARGET, 'lux')
     ln(source, target)
+    #
+    # Create lux soft link with luxsite media
+    source = os.path.abspath('luxsite/media/luxsite')
+    target = target = os.path.join(TARGET, 'blogapp/media/blogapp')
+    ln(source, target)
 
     # And local applications, one directory up from the project directory
     os.chdir(DIR)

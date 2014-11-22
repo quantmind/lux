@@ -1,0 +1,25 @@
+{
+    "html2js": {
+        "potatoblog": {
+            "src": "js/templates/*.tpl.html",
+            "dest": "js/templates.js"
+        },
+        "options": {
+            "base": "js"
+        }
+    },
+    "potatoblog": {
+        "src": ["js/open.js",
+                "js/nav.js",
+                "js/blog.js",
+                "js/templates.js",
+                "js/elastic.js",
+                "js/close.js"],
+        "dest": "src/potatoblog/media/potatoblog/potatoblog.js",
+        "options": {
+            "stripBanners": true,
+            "banner": "js/banner.js",
+            "process": true
+        }
+    }
+}

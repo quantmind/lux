@@ -1,0 +1,6 @@
+<ul class="blogActions" ng-class="layout" ng-if="page">
+<li ng-if="page.id && !page.published"><a class="btn btn-default" ng-click="publishPost()"> Publish</a></li>
+<li ng-if="page.preview_url"><a class="btn btn-default" ng-href="{{page.preview_url}}"> Preview</a></li>
+<li ng-if="page.edit_url"><a class="btn btn-default" ng-href="{{page.edit_url}}"> Write</a></li>
+<li ng-if="page.id"><a class="btn btn-danger" ng-click="deletePost()"> Delete</a></li>
+</ul>

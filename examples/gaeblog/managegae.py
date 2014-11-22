@@ -22,4 +22,4 @@ for path in APPENGINE_PATHS:
 
 if __name__ == '__main__':
     import lux
-    lux.execute_from_config('potatoblog.config')
+    lux.execute_from_config('blogapp.config')

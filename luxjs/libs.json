@@ -22,6 +22,13 @@
         "users": {
             "src": "luxjs/users/*.tpl.html",
             "dest": "luxjs/users/templates.js"
+        },
+        "gaeblog": {
+            "src": "luxjs/gaeblog/templates/*.tpl.html",
+            "dest": "luxjs/gaeblog/templates.js",
+            "options": {
+                "base": "luxjs/gaeblog"
+            }
         }
     },
     "lux": {
@@ -54,7 +61,21 @@
         "options": {
             "banner": "luxjs/banner.js"
         },
-        "src": ["luxsite/src.js"],
-        "dest": "luxsite/media/luxsite/luxsite.js"
+        "src": ["examples/luxsite/src.js"],
+        "dest": "examples/luxsite/media/luxsite/luxsite.js"
+    },
+    "gaeblog": {
+        "src": ["luxjs/gaeblog/open.js",
+                "luxjs/gaeblog/nav.js",
+                "luxjs/gaeblog/blog.js",
+                "luxjs/gaeblog/templates.js",
+                "luxjs/gaeblog/elastic.js",
+                "luxjs/gaeblog/close.js"],
+        "dest": "examples/gaeblog/blogapp/media/blogapp/blogapp.js",
+        "options": {
+            "stripBanners": true,
+            "banner": "luxjs/banner.js",
+            "process": true
+        }
     }
 }
