@@ -6,4 +6,4 @@ markdown
 requests-oauthlib
 unidecode
 sphinx
-yaml
+pyyaml
