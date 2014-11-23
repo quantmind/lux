@@ -1,1 +1,7 @@
-.. _changelog:=========================Changelog=========================.. include:: ../../CHANGELOG.rst
+.. _changelog:
+
+=========================
+Changelog
+=========================
+
+.. include:: ../../../CHANGELOG.rst

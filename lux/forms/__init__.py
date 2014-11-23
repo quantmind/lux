@@ -45,7 +45,7 @@ Fields
 Layout
 =========================
 
-.. automodule:: lux.forms.layouts
+.. automodule:: lux.forms.serialise
    :members:
    :member-order: bysource
 

@@ -1,4 +1,5 @@
 pulsar
+pyjwt
 python-dateutil
 coverage
 pep8
