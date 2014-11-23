@@ -10,7 +10,7 @@ import sys
 
 import environment
 
-APPENGINE_PATHS = ['/usr/local/google_appengine', 'vendors']
+APPENGINE_PATHS = ['/usr/local/google_appengine']
 
 
 for path in APPENGINE_PATHS:
