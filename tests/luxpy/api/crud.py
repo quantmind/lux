@@ -19,6 +19,3 @@ class CrudTests(test.TestCase):
         # This router should have both get and put method
         get = getattr(r1, 'get', None)
         self.assertTrue(ismethod(get))
-
-    def test_create_tables_command(self):
-        cmnd = self.fetch_command('create_tables')

@@ -67,7 +67,7 @@ class ChangePassword2(forms.Form):
 
 
 class ForgotPasswordForm(forms.Form):
-    email = forms.EmailField()
+    email = forms.EmailField(label='Enter your email address')
 
     layout = forms.Layout(
         forms.Fieldset(all=True),

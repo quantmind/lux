@@ -23,15 +23,14 @@ class Command(lux.Command):
     def __call__(self, argv, **params):
         return self.run_until_complete(argv, **params)
 
-    def run(self, argv):
-        options = self.options(argv)
+    def run(self, options):
         dryrun = options.dryrun
         models = self.app.models
         self.write('\nFlush model data\n')
         if not models:
             return self.write('No model registered')
         apps = options.apps or None
-        managers_count = yield from models.flush(include=apps, dryrun=True)
+        managers_count = models.flush(include=apps, dryrun=True)
         if not managers_count:
             return self.write('Nothing done. No models selected')
         if not dryrun:
@@ -46,7 +45,7 @@ class Command(lux.Command):
             self.write('')
             yn = input('yes/no : ')
             if yn.lower() == 'yes':
-                managers_count = yield from models.flush(include=apps)
+                managers_count = models.flush(include=apps)
                 for manager, removed in managers_count:
                     N = plural(len(removed), 'model')
                     self.write('{0} - removed {1}'.format(manager, N))

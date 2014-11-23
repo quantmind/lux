@@ -33,8 +33,7 @@ class Command(lux.Command):
     def __call__(self, argv, **params):
         return self.run_until_complete(argv, **params)
 
-    def run(self, argv, dump=True):
-        options = self.options(argv)
+    def run(self, options, dump=True):
         apps = options.apps or self.app.config.get('DUMPDB_EXTENSIONS')
         models = self.app.extensions['api'].get_router()
         if not models:

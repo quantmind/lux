@@ -1,7 +1,7 @@
 Examples
 =============
 
-For testing an documentation
+For testing and documentation
 
 Gaeblog
 -------------
@@ -12,4 +12,4 @@ A blog application running on the app engine running on https://luxgaeblog.appsp
 Luxsite
 -------------
 
-Static site for documenting lux
+Static site documenting lux http://quantmind.github.io/lux/
