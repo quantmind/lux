@@ -71,29 +71,16 @@ def install():
             print('WARNING: Cannot locate %s' % source)
 
 
-def runtests():
-    try:
-        import nose
-    except ImportError:
-        print('Install nose to run unit tests.')
-        exit(1)
-    argv = ['nosetests'] + sys.argv[2:]
-    argv.extend(('-w', 'tests'))
-    src = os.path.join(DIR, 'src')
-    if src not in sys.path:
-        sys.path.insert(0, src)
-    import manage
-    nose.run(argv=argv)
+def docs():
+    import lux
+    lux.execute_from_config('luxsite')
 
 
 if __name__ == '__main__':
     if len(sys.argv) > 1:
-        if sys.argv[1] == 'test':
-            runtests()
-        elif sys.argv[1] == 'install':
+        if sys.argv[1] == 'install':
             install()
         else:
-            print('Unknown command %s' % sys.argv[1])
-            exit(1)
+            docs()
     else:
-        print('Specify a command: install or test')
+        print('Specify a command: install or docs')

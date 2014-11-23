@@ -1,7 +1,11 @@
+import os
+
 import lux
 from lux.extensions.static import HtmlContent, SphinxDocs, Sitemap
 
 from .ui import add_css
+
+d = lambda path: os.path.join(os.path.abspath(os.path.dirname(__file__)), path)
 
 
 APP_NAME = 'Lux'
@@ -15,8 +19,8 @@ EXTENSIONS = ('lux.extensions.base',
               'lux.extensions.static')
 
 STATIC_API = 'jsonapi'
-CONTEXT_LOCATION = 'luxsite/context'
-STATIC_LOCATION = '../docs/luxsite'
+CONTEXT_LOCATION = d('context')
+STATIC_LOCATION = os.path.abspath('../../docs/luxsite')
 MD_EXTENSIONS = ['extra', 'meta', 'toc']
 CODE_HIGHLIGHT_THEME = 'zenburn'
 FAVICON = 'luxsite/favicon.ico'
@@ -59,10 +63,10 @@ class Extension(lux.Extension):
     def middleware(self, app):
         content = HtmlContent('/',
                               Sitemap('/sitemap.xml'),
-                              SphinxDocs('/docs/', dir='luxsite/docs',
+                              SphinxDocs('/docs/',
+                                         dir=d('docs'),
                                          meta={'template': 'doc.html'}),
                               meta={'template': 'main.html'},
-                              dir='luxsite/site',
+                              dir=d('site'),
                               drafts=None)
         return [content]
-

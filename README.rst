@@ -1,6 +1,6 @@
 .. image:: http://quantmind.github.io/lux/media/luxsite/lux-banner.png
    :alt: Lux
-   :width: 90%
+   :width: 80%
 
 
 Lux is a library for developing web applications with Python and AngularJS.

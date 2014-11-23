@@ -2,9 +2,11 @@
 import sys
 import os
 
-GAEBLOG = os.path.join(os.path.dirname(__file__), 'examples', 'gaeblog')
-if os.path.isdir(GAEBLOG) and GAEBLOG not in sys.path:
-    sys.path.append(GAEBLOG)
+EXAMPLES = os.path.join(os.path.dirname(__file__), 'examples')
+GAEBLOG = os.path.join(EXAMPLES, 'gaeblog')
+for path in [EXAMPLES, GAEBLOG]:
+    if os.path.isdir(path) and path not in sys.path:
+        sys.path.append(path)
 import managegae
 
 
