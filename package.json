@@ -1,36 +1,36 @@
 {
-    "devDependencies": {
-        "grunt-contrib-jasmine": "",
-        "grunt-contrib-concat": "",
-        "grunt-contrib-jshint": "",
-        "grunt-docco": "~0.3.2",
-        "benchmark": "",
-        "grunt": "",
-        "grunt-contrib-uglify": "",
-        "docco": "",
-        "grunt-html2js": ""
-    },
+    "name": "lux", 
     "repository": {
-        "type": "git",
-        "url": "https://github.com/quantmind/lux"
-    },
-    "homepage": "http://quantmind.github.io/lux",
-    "title": "Lux Library",
-    "keywords": [],
+        "url": "https://github.com/quantmind/lux", 
+        "type": "git"
+    }, 
     "author": {
-        "email": "luca.sbardella@gmail.com",
+        "email": "luca.sbardella@gmail.com", 
         "name": "Luca Sbardella"
-    },
-    "name": "lux",
-    "description": "python web toolkit",
+    }, 
+    "title": "Lux Library", 
     "licenses": [
         {
             "type": "BSD"
         }
-    ],
-    "contributors": [],
+    ], 
+    "version": "0.1.1", 
+    "contributors": [], 
     "scripts": {
         "test": "grunt jasmine"
-    },
-    "version": "0.1.0"
+    }, 
+    "keywords": [], 
+    "devDependencies": {
+        "grunt-contrib-concat": "", 
+        "grunt-docco": "~0.3.2", 
+        "grunt-contrib-jshint": "", 
+        "benchmark": "", 
+        "grunt-contrib-uglify": "", 
+        "grunt-contrib-jasmine": "", 
+        "grunt-html2js": "", 
+        "grunt": "", 
+        "docco": ""
+    }, 
+    "homepage": "http://quantmind.github.io/lux", 
+    "description": "python web toolkit"
 }

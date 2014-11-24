@@ -1,10 +1,8 @@
-__test__ = False
 import os
 import io
 import shutil
 from os import path
 
-import lux
 from lux.utils import test
 
 
@@ -17,17 +15,17 @@ class CommandTests(test.TestCase):
         name = 'testproject'
         try:
             command([name])
-            self.assertTrue(path.isdir(name))
-            self.assertTrue(path.isfile(path.join(name, 'manage.py')))
-            self.assertTrue(path.isfile(path.join(name, 'Gruntfile.js')))
-            self.assertTrue(path.isdir(path.join(name, name)))
+            target = command.target
+            self.assertTrue(path.isdir(target))
+            self.assertTrue(path.isfile(path.join(target, 'manage.py')))
+            self.assertTrue(path.isfile(path.join(target, 'Gruntfile.js')))
+            self.assertTrue(path.isdir(path.join(target, name)))
         finally:
-            shutil.rmtree(name)
+            shutil.rmtree(target)
 
     def testServe(self):
         command = self.fetch_command('serve')
         self.assertTrue(command.help)
-        self.assertEqual(command.app, self.application())
         self.assertEqual(len(command.option_list), 0)
         app = command([], start=False)
 
@@ -35,7 +33,6 @@ class CommandTests(test.TestCase):
         command = self.fetch_command('serve')
         server = command(['-b', '9000'], start=False)
         self.assertTrue(server)
-        self.assertEqual(server.cfg.callable, self.application())
 
     def testShell(self):
         command = self.fetch_command('shell')
