@@ -56,6 +56,7 @@ class Command(lux.Command):
                         f.write(data)
                     b = convert_bytes(len(data))
                     self.write('Created %s file. Size %s.' % (target, b))
+                return targets
             else:
                 self.write(data)
         return data

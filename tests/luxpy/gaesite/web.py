@@ -1,3 +1,4 @@
+import os
 from bs4 import BeautifulSoup as bs
 
 from lux.extensions.gae.test import TestCase
@@ -92,3 +93,8 @@ class TestAPI(TestCase):
         self.assertEqual(message[1], 'user4@bla.com')
         body = message[3]
 
+    def test_css(self):
+        command = self.fetch_command('style')
+        result = command(['--cssfile', 'teststyle'], dump=False)
+        self.assertFalse(os.path.isfile(result))
+        self.assertTrue(result)

@@ -1,4 +1,4 @@
-from io import StringIO
+from io import BytesIO
 
 import lux
 
@@ -72,7 +72,7 @@ class TestCase(unittest.TestCase):
 
     def fetch_command(self, command, out=None):
         '''Fetch a command.'''
-        out = out or StringIO()
+        out = out or BytesIO()
         app = self.application()
         cmd = app.get_command(command, stdout=out)
         self.assertTrue(cmd.logger)

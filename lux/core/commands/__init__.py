@@ -9,7 +9,7 @@ import argparse
 import logging
 
 from pulsar import (Setting, get_event_loop, Application, ImproperlyConfigured,
-                    asyncio, maybe_async, Future, Config)
+                    asyncio, maybe_async, Future, Config, get_actor)
 from pulsar.utils.pep import native_str
 from pulsar.utils.config import Loglevel, Debug, LogHandlers
 
@@ -65,6 +65,13 @@ class ConsoleParser(object):
 class LuxApp(Application):
     name = 'lux'
     cfg = Config(include=('loglevel', 'loghandlers', 'debug', 'config'))
+
+    def __call__(self, actor=None):
+        try:
+            return super(LuxApp, self).__call__(actor)
+        except ImproperlyConfigured:
+            actor = actor or get_actor()
+            return self.on_config(actor)
 
     def on_config(self, actor):
         asyncio.set_event_loop(actor._loop)
