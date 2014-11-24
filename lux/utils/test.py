@@ -1,10 +1,12 @@
 from io import StringIO
+import mock
 
 import lux
 
 from pulsar import get_actor
 from pulsar.apps.test import unittest, HttpTestClient, TestSuite
 from pulsar.apps.test.plugins import bench, profile
+from pulsar.utils.httpurl import encode_multipart_formdata
 
 
 def get_params(*names):
@@ -52,6 +54,22 @@ class TestCase(unittest.TestCase):
         self.apps.append(app)
         return app
 
+    def request_start_response(self, app, path=None, HTTP_ACCEPT=None,
+                               headers=None, body=None, **extra):
+        extra['HTTP_ACCEPT'] = HTTP_ACCEPT or '*/*'
+        request = app.wsgi_request(path=path, headers=headers, body=body,
+                                   extra=extra)
+        start_response = mock.MagicMock()
+        return request, start_response
+
+    def request(self, app=None, **params):
+        if not app:
+            app = self.application()
+        request, sr = self.request_start_response(app, **params)
+        response = app(request.environ, sr)
+        self.assertEqual(response, request.response)
+        return request
+
     def fetch_command(self, command, out=None):
         '''Fetch a command.'''
         out = out or StringIO()
@@ -60,3 +78,23 @@ class TestCase(unittest.TestCase):
         self.assertTrue(cmd.logger)
         self.assertEqual(cmd.name, command)
         return cmd
+
+    def authenticity_token(self, doc):
+        name = doc.find('meta', attrs={'name': 'csrf-param'})
+        value = doc.find('meta', attrs={'name': 'csrf-token'})
+        if name and value:
+            name = name.attrs['content']
+            value = value.attrs['content']
+            return {name: value}
+
+    def post(self, app=None, path=None, content_type=None, body=None,
+             headers=None, **extra):
+        extra['REQUEST_METHOD'] = 'POST'
+        headers = headers or []
+        if body and not isinstance(body, bytes):
+            if content_type is None:
+                body, content_type = encode_multipart_formdata(body)
+        if content_type:
+            headers.append(('content-type', content_type))
+        return self.request(app, path=path, headers=headers,
+                            body=body, **extra)

@@ -8,3 +8,4 @@ requests-oauthlib
 unidecode
 sphinx
 pyyaml
+beautifulsoup4

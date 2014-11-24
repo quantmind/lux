@@ -264,9 +264,7 @@ class Application(ConsoleParser, Extension):
         '''
         if not environ:
             # No WSGI environment, build a test one
-            environ = test_wsgi_environ(path=path, loop=loop)
-        if kw:
-            environ.update(kw)
+            environ = test_wsgi_environ(path=path, loop=loop, **kw)
         request = wsgi_request(environ, app_handler=app_handler,
                                urlargs=urlargs)
         environ['error.handler'] = self.config['ERROR_HANDLER']

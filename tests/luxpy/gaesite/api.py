@@ -2,11 +2,11 @@ from lux.extensions.gae.test import TestCase
 
 
 class TestAPI(TestCase):
-    config_module = 'blogapp.config'
+    config_file = 'blogapp.config'
 
     def test_index(self):
-        app = self.app()
-        request = self.response(app, path='/api/')
+        app = self.application()
+        request = self.request(app, path='/api/')
         response = request.response
 
         self.assertEqual(request.path, '/api/')
@@ -17,8 +17,8 @@ class TestAPI(TestCase):
         self.assertTrue(request.cache.auth_backend)
 
     def test_blog(self):
-        app = self.app()
-        request = self.response(app, path='/api/blog')
+        app = self.application()
+        request = self.request(app, path='/api/blog')
         response = request.response
 
         self.assertEqual(request.path, '/api/blog')
