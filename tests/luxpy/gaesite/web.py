@@ -29,9 +29,9 @@ class TestAPI(TestCase):
     def test_user_ok(self):
         request = self.request()
         auth = request.cache.auth_backend
-        user = auth.create_user(request, username='pippo')
-        self.assertEqual(user.username, 'pippo')
-        request = self.request(path='/pippo', HTTP_ACCEPT='text/html')
+        user = auth.create_user(request, username='test45')
+        self.assertEqual(user.username, 'test45')
+        request = self.request(path='/test45', HTTP_ACCEPT='text/html')
         response = request.response
         # we get a redirect to login
         self.assertEqual(response.status_code, 200)
@@ -90,4 +90,5 @@ class TestAPI(TestCase):
         self.assertEqual(user.username, 'user4')
         message = app._outbox.pop()
         self.assertEqual(message[1], 'user4@bla.com')
+        body = message[3]
 
