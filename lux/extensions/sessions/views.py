@@ -46,7 +46,7 @@ class FormMixin(object):
                          'redirect': redirect_to}
                         ).http_response(request)
         else:
-            Json(form.tojson()).http_response(request)
+            return Json(form.tojson()).http_response(request)
 
     def redirect_url(self, request):
         redirect_to = self.redirect_to

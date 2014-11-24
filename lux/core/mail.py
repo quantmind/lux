@@ -1,5 +1,4 @@
 
-
 class EmailBackend(object):
 
     def __init__(self, app):

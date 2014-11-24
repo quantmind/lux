@@ -193,7 +193,6 @@ class Session(ndb.Model, MessageMixin):
 
 
 class Registration(ndb.Model):
-    key = ndb.StringProperty()
     user = ndb.KeyProperty(User)
     expiry = ndb.DateTimeProperty()
     confirmed = ndb.BooleanProperty()

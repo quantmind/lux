@@ -52,12 +52,6 @@ class AuthBackend(sessions.AuthBackend):
         user.password = self.password(raw_password)
         user.put()
 
-    def auth_key_used(self, key):
-        reg = Registration.get_by_id(key)
-        if reg:
-            reg.confirmed = True
-            reg.put()
-
     def authenticate(self, request, username=None, email=None, password=None):
         user = None
         if username:
@@ -86,7 +80,8 @@ class AuthBackend(sessions.AuthBackend):
                          email=email, name=name, surname=surname,
                          active=active)
         user.put()
-        self.get_or_create_registration(request, user)
+        if not user.active:  # create registration email if user is not active
+            self.get_or_create_registration(request, user)
         return user
 
     def get_user(self, request, username=None, email=None, auth_key=None,
@@ -142,6 +137,12 @@ class SessionBackend(SessionMixin, AuthBackend):
                            expiry=expiry, confirmed=False)
         reg.put()
         return auth_key
+
+    def auth_key_used(self, key):
+        reg = Registration.get_by_id(key)
+        if reg:
+            reg.confirmed = True
+            reg.put()
 
     def confirm_registration(self, request, key=None, **params):
         reg = None

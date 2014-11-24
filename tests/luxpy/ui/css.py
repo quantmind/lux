@@ -1,4 +1,3 @@
-__test__ = False
 import sys
 import os
 
@@ -8,14 +7,17 @@ from lux.extensions.ui.lib import *
 
 class TestCSS(test.TestCase):
 
-    def testSimple(self):
+    def test_simple(self):
         # the variable does not exist
         all = Css()
-        c = all.css('#random', margin=cssv.skjncdfcd)
+        css = all.css
+        vars = all.variables
+        c = css('#random', margin=vars.skjncdfcd)
         self.assertFalse(c.attributes)
-        self.assertEqual(c.parent, css('body'))
+        self.assertEqual(c.parent, all)
 
-    def testRadius(self):
+    def test_radius(self):
+        css = Css().css
         s = css('.bla', Radius(px(5)))
         text = s.render()
         self.assertEqual(text, '''.bla {
@@ -26,6 +28,8 @@ class TestCSS(test.TestCase):
 ''')
 
     def testRadiusSpacing(self):
+        all = Css()
+        css = all.css
         ra = Radius(spacing('5px', 0))
         s = css('.bla', ra)
         text = s.render()
@@ -37,6 +41,8 @@ class TestCSS(test.TestCase):
 ''')
 
     def testRadiusVariable(self):
+        all = Css()
+        css = all.css
         r = Symbol('x', spacing(px(5), 0))
         s = css('.bla', Radius(r))
         text = s.render()
@@ -48,16 +54,20 @@ class TestCSS(test.TestCase):
 ''')
 
     def testBorder(self):
+        all = Css()
+        css = all.css
         b = Border(color='#555')
         self.assertEqual(b.color, '#555')
         s = css('.bla', b)
         text = s.render()
         self.assertEqual(text, '''.bla {
-    border: 1px solid #555;
+    border-color: #555;
 }
 ''')
 
     def testBorderVariables(self):
+        all = Css()
+        css = all.css
         c = Variables()
         c.border.color = '#222'
         c.border.style = 'dotted'
@@ -66,26 +76,31 @@ class TestCSS(test.TestCase):
         s = css('.bla', b)
         text = s.render()
         self.assertEqual(text, '''.bla {
-    border: 1px dotted #222;
+    border-style: dotted;
+    border-color: #222;
 }
 ''')
 
     def testBorderVariables2(self):
+        all = Css()
+        css = all.css
         c = Variables()
         c.border.color = color('222')
         c.border.style = 'dotted'
-        c.border.width = None
+        c.border.width = px(2)
         b = Border(**c.border.params())
         s = css('.bla', b)
         text = s.render()
         self.assertEqual(text, '''.bla {
-    border: 1px dotted #222;
+    border: 2px dotted #222;
 }
 ''')
 
     def testBoxShadow(self):
+        all = Css()
+        css = all.css
         s = css('.bla',
-                Shadow('10px 10px 5px #888'),
+                Shadow(10, 10, 5, color='#888'),
                 display='block')
         text = s.render()
         r = '''
@@ -95,6 +110,8 @@ class TestCSS(test.TestCase):
         self.assertTrue(r in text)
 
     def test_fixtop(self):
+        all = Css()
+        css = all.css
         s = css('.foo',
                 fixtop(3000))
         text = s.render()
@@ -106,7 +123,11 @@ class TestCSS(test.TestCase):
     z-index: 3000;'''
         self.assertTrue(r in text)
 
+class f:
+
     def test_clickable(self):
+        all = Css()
+        css = all.css
         s = css('.click',
                 Clickable(cursor=None))
         self.assertEqual(s.render(), '')
@@ -144,6 +165,8 @@ class TestCSS(test.TestCase):
 
     # Gradient
     def test_vgradient(self):
+        all = Css()
+        css = all.css
         s = css('.bla',
                 gradient(('v', '#ffffff', '#f5f5f5')),
                 display='block')
