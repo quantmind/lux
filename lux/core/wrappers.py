@@ -1,5 +1,5 @@
 from pulsar.apps.wsgi import (route, wsgi_request, cached_property,
-                              EnvironMixin, html_factory)
+                              html_factory)
 from pulsar.apps import wsgi
 from pulsar.apps.wsgi import RouterParam
 from pulsar.utils.httpurl import JSON_CONTENT_TYPES
@@ -8,7 +8,7 @@ from pulsar.utils.structures import mapping_iterator
 from lux.utils import unique_tuple
 
 __all__ = ['Html', 'WsgiRequest', 'Router', 'route', 'wsgi_request', 'as_tag',
-           'cached_property', 'EnvironMixin', 'html_factory', 'RedirectRouter',
+           'cached_property', 'html_factory', 'RedirectRouter',
            'RouterParam', 'JSON_CONTENT_TYPES',
            'DEFAULT_CONTENT_TYPES']
 

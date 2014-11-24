@@ -4,6 +4,8 @@ import os
 import time
 from datetime import datetime, timedelta
 
+from google.appengine.api import mail
+
 from pulsar import PermissionDenied, Http404
 
 import lux
@@ -17,6 +19,15 @@ from .api import *
 
 
 isdev = lambda: os.environ.get('SERVER_SOFTWARE', '').startswith('Development')
+
+
+class EmailBackend(lux.EmailBackend):   #  pragma nocover
+
+    def send_mail(self, app, sender=None, to=None,
+                  subject=None, body=None):
+        sender = sender or app.config['DEFAULT_FROM_EMAIL']
+        mail.send_mail(sender=sender, to=to,
+                       subject=subject, body=message)
 
 
 class AuthBackend(sessions.AuthBackend):

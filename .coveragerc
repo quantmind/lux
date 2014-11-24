@@ -1,6 +1,5 @@
 [run]
-source =
-    lux
+source = lux
 
 [report]
 # Regexes for lines to exclude from consideration

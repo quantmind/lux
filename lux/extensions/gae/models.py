@@ -1,7 +1,6 @@
 from datetime import datetime
 
 from google.appengine.ext import ndb
-from google.appengine.api import mail
 
 from .. import sessions
 
@@ -102,12 +101,6 @@ class User(ndb.Model, sessions.UserMixin, MessageMixin):
             if self.oauths.pop(name, None) is not None:
                 self.put()
                 return True
-
-    def email_user(self, subject, message, from_email, **kwargs):
-        mail.send_mail(sender=from_email,
-                       to=self.email,
-                       subject=subject,
-                       body=message)
 
     def add_permission(self, model, level):
         name = role_name(model)

@@ -39,6 +39,8 @@ class TestCase(unittest.TestCase):
         '''
         kwargs = self.config_params.copy()
         kwargs.update(params)
+        if 'EMAIL_BACKEND' not in kwargs:
+            kwargs['EMAIL_BACKEND'] = 'lux.core.mail.LocalMemory'
         config_file = config_file or self.config_file
         if argv is None:
             argv = []

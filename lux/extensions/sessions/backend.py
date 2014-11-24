@@ -111,12 +111,12 @@ class UserMixin(MessageMixin):
         '''
         raise NotImplementedError
 
-    def email_user(self, subject, message, from_email, **kwargs):
-        '''Sends an email to this User'''
-        send_mail(subject, message, from_email, [self.email], **kwargs)
-
     def todict(self):
         '''Return a dictionary with information about the user'''
+
+    def email_user(self, app, subject, body, sender=None):
+        backend = app.email_backend
+        backend.send_mail(app, sender, self.email, subject, body)
 
     @classmethod
     def get_by_username(cls, username):

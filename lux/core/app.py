@@ -13,6 +13,7 @@ from pulsar.apps.wsgi import (WsgiHandler, HtmlDocument, test_wsgi_environ,
                               LazyWsgi)
 from pulsar.utils.pep import itervalues
 from pulsar.utils.log import lazyproperty
+from pulsar.utils.importer import module_attribute
 
 from .commands import ConsoleParser, CommandError
 from .extension import Extension, Parameter, EventHandler
@@ -216,7 +217,9 @@ class Application(ConsoleParser, Extension):
                    'supporting the cache protocol')),
         Parameter('DEFAULT_FROM_EMAIL', '',
                   'Default email address to send email from'),
-        Parameter('LOCALE', 'en_GB', 'Default locale')
+        Parameter('LOCALE', 'en_GB', 'Default locale'),
+        Parameter('EMAIL_BACKEND', 'lux.core.mail.EmailBackend',
+                  'Default locale')
         ]
 
     def __init__(self, callable):
@@ -349,6 +352,13 @@ class Application(ConsoleParser, Extension):
             except ImportError:
                 pass    # No management module
         return cmnds
+
+    @lazyproperty
+    def email_backend(self):
+        '''Email backend for this application
+        '''
+        dotted_path = self.config['EMAIL_BACKEND']
+        return module_attribute(dotted_path)(self)
 
     def get_command(self, name, stdout=None, stderr=None):
         '''Construct and return a :class:`.Command` for this application

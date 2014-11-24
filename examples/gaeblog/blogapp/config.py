@@ -15,6 +15,7 @@ EXTENSIONS = ['lux.extensions.base',
 
 APP_NAME = 'Lux Blog'
 APP_ID = 'luxgaeblog'
+EMAIL_BACKEND = 'lux.extensions.gae.EmailBackend'
 SITE_URL = 'https://luxgaeblog.appspot.com'
 ADMIN_EMAIL = 'info@quantmind.com'
 TIME_FORMAT_STRING = '%b %d, %Y %I:%M:%S %p'

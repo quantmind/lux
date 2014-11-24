@@ -219,7 +219,7 @@ class SessionMixin(object):
         subject = ''.join(subject.splitlines())
         body = app.render_template(
             email_message or 'activation_email.txt', ctx)
-        user.email_user(subject, body, cfg['DEFAULT_FROM_EMAIL'])
+        user.email_user(app, subject, body)
         message = app.render_template(
             message or 'activation_message.txt', ctx)
         request.cache.session.info(message)

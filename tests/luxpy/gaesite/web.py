@@ -21,7 +21,7 @@ class TestAPI(TestCase):
         self.assertEqual(response.status_code, 302)
 
     def test_user_404(self):
-        request = self.request(path='/pippo')
+        request = self.request(path='/pluto')
         response = request.response
         # we get a redirect to login
         self.assertEqual(response.status_code, 404)
@@ -74,4 +74,20 @@ class TestAPI(TestCase):
         response = request.response
         self.assertEqual(response.status_code, 200)
         self.assertTrue(request.cache.user.is_authenticated())
+
+    def test_password_reset(self):
+        app = self.application()
+        request = self.request(app, path='/reset-password')
+        response = request.response
+        self.assertEqual(response.status_code, 200)
+        doc = bs(response.content[0])
+        data = self.authenticity_token(doc)
+        # create user
+        auth = request.cache.auth_backend
+        user = auth.create_user(request, username='user4',
+                                email='user4@bla.com',
+                                password='abcdfg', active=True)
+        self.assertEqual(user.username, 'user4')
+        message = app._outbox.pop()
+        self.assertEqual(message[1], 'user4@bla.com')
 
