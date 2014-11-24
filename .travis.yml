@@ -11,7 +11,7 @@ before_install:
 
 install:
   - pip install -r requirements_dev.txt --use-mirrors
-  - git clone git@github.com:quantmind/pulsar.git
+  - git clone https://github.com/quantmind/pulsar.git
   - cd pulsar && git checkout -b dev origin/dev && python setup.py install
   - cd .. && rm -rf pulsar
   - python setup.py install
