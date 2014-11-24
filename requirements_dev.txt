@@ -1,4 +1,4 @@
-pulsar
+git+git://github.com/quantmind/pulsar.git@dev
 pyjwt
 python-dateutil
 coverage
