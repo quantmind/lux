@@ -8,7 +8,7 @@ from importlib import import_module
 
 import pulsar
 from pulsar import HttpException, ImproperlyConfigured
-from pulsar.utils.httpurl import urljoin, remove_double_slash
+from pulsar.utils.httpurl import remove_double_slash
 from pulsar.apps.wsgi import (WsgiHandler, HtmlDocument, test_wsgi_environ,
                               LazyWsgi)
 from pulsar.utils.pep import itervalues
@@ -531,7 +531,6 @@ class Application(ConsoleParser, Extension):
             if status_code:
                 request.response.status_code = status_code
             context = self.context(request, context)
-            cfg = self.config
             if doc.jscontext:
                 jscontext = json.dumps(doc.jscontext)
                 doc.head.embedded_js.insert(

@@ -5,7 +5,6 @@ import time
 from datetime import datetime, timedelta
 
 from pulsar import PermissionDenied, Http404
-from pulsar.apps.wsgi import wsgi_request
 
 import lux
 from lux.extensions import sessions

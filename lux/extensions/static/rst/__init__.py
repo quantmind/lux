@@ -52,7 +52,7 @@ class SphinxMixin(object):
         path = self.path(**urlparams)
         url = app.site_url(normpath(path))
         content = SphinxContent(app, self.meta.copy(), ctx)
-        request = app.wsgi_request(path=url, HTTP_ACCEPT='*/*')
+        request = app.wsgi_request(path=url, extra={'HTTP_ACCEPT': '*/*'})
         request.cache.building_static = True
         request.cache.content = content
         response = self.response(request.environ, urlparams)

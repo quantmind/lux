@@ -28,7 +28,6 @@ from functools import wraps
 from pulsar import PermissionDenied, Http404
 from pulsar.utils.pep import to_bytes, to_string
 from pulsar.utils.importer import module_attribute
-from pulsar.apps.wsgi import wsgi_request
 
 import lux
 from lux import Parameter, Router

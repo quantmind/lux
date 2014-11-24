@@ -1,3 +1,5 @@
+import time
+
 from pulsar.utils.httpurl import urlparse
 
 

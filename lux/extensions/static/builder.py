@@ -194,7 +194,7 @@ class Builder(BaseBuilder):
                 urlparams = content.urlparams(self.route.variables)
             path = self.path(**urlparams)
             url = app.site_url(normpath(path))
-            request = app.wsgi_request(path=url, HTTP_ACCEPT='*/*')
+            request = app.wsgi_request(path=url, extra={'HTTP_ACCEPT': '*/*'})
             request.cache.building_static = True
             request.cache.content = content
             response = self.response(request.environ, urlparams)

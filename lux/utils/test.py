@@ -1,13 +1,11 @@
 from io import StringIO
-import mock
 
 import lux
 
 from pulsar import get_actor
-from pulsar.apps.test import unittest, HttpTestClient, TestSuite
+from pulsar.apps.test import unittest, mock, HttpTestClient, TestSuite
 from pulsar.apps.test.plugins import bench, profile
 from pulsar.utils.httpurl import encode_multipart_formdata
-
 
 def get_params(*names):
     cfg = get_actor().cfg

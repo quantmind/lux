@@ -363,7 +363,7 @@ class Sitemap(sitemap.Sitemap, FileBuilder):
 
     def _build_file(self, app, location, build):
         path = self.route.path
-        request = app.wsgi_request(path=path, HTTP_ACCEPT='*/*')
+        request = app.wsgi_request(path=path, extra={'HTTP_ACCEPT': '*/*'})
         response = self.response(request.environ, {})
         #
         dst_filename = os.path.join(location, path[1:])
