@@ -113,7 +113,6 @@ class Router(lux.Router, MediaMixin):
             </div>
         '''
         app = request.app
-        uirouter = app.config['ANGULAR_UI_ROUTER'] and self.uirouter
         doc = request.html_document
         doc.body.data({'ng-model': 'page',
                        'ng-controller': 'Page',
@@ -130,6 +129,7 @@ class Router(lux.Router, MediaMixin):
         main = self.build_main(request)
         #
         ngmodules = add_ng_modules(doc, app.config['NGMODULES'])
+        uirouter = app.config['ANGULAR_UI_ROUTER'] and self.uirouter
         #
         # Using Angular Ui-Router
         if uirouter:

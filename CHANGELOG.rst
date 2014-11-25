@@ -2,7 +2,7 @@ Ver. 0.1.1 - 2014-Nov-24
 =======================================
 * Added the example directory with a static site example and a blog running on
   the google app engine
-* Test coverage increased
+* Test coverage increased, 92 unit tests.
 
 Ver. 0.1.0 - 2014-Oct-14
 =======================================

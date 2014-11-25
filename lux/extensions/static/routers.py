@@ -199,10 +199,13 @@ class HtmlFile(HtmlRouter, FileBuilder):
 
     def build_main(self, request):
         content = self.get_content(request)
+        if content._meta.slug in request.config['STATIC_SPECIALS']:
+            self.uirouter = False
         return content.html(request)
 
     def get_api_info(self, app):
-        return self.parent.get_api_info(app)
+        if self.parent:
+            return self.parent.get_api_info(app)
 
 
 class HtmlContent(HtmlRouter, DirBuilder):

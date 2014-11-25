@@ -97,6 +97,7 @@ class BaseBuilder(object):
 class Builder(BaseBuilder):
     built = None
     dir = None
+    src = None
     priority = 0.5
     include_subdirectories = True
     '''Include all subdirectories in the build'''
@@ -210,10 +211,11 @@ class Builder(BaseBuilder):
             app.logger.exception('Unhandled exception while building "%s"',
                                  content or path)
             content = None
-        return self.write(app, request, location, response, content)
+        return self.write(app, request, location, response)
 
-    def write(self, app, request, location, response, content):
-        if request and (response or content):
+    def write(self, app, request, location, response):
+        if request and (response or request.cache.content):
+            content = request.cache.content
             path = self.relative_path(request)
             url = app.site_url(normpath(path))
             if not path or path.endswith('/'):
@@ -243,7 +245,7 @@ class Builder(BaseBuilder):
             # Handle specials
             if content and content.name in app.config['STATIC_SPECIALS']:
                 priority = 0
-                path = '/%s' % content.name
+                #path = '/%s' % content.name
 
             dst_filename = os.path.join(location, path[1:])
             dirname = os.path.dirname(dst_filename)
@@ -300,14 +302,17 @@ class FileBuilder(Builder):
     '''Build a static file within a :class:`.DirBuilder`
     '''
     def get_content(self, request):
-        content = request.cache.content
-        if not content:
-            path = src = request.urlargs['path']
-            dir = self.parent.get_src()
-            if dir:
-                src = os.path.join(dir, path)
-            content = self.read_file(request.app, src, path)
-        return content
+        if not request.cache.content:
+            if not self.src:
+                slug = src = request.urlargs['path']
+                dir = self.parent.get_src()
+                if dir:
+                    src = os.path.join(dir, path)
+            else:
+                src = self.src
+                slug = str(self.route)[1:]
+            request.cache.content = self.read_file(request.app, src, slug)
+        return request.cache.content
 
 
 class DirBuilder(Builder):
