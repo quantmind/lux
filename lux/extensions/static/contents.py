@@ -78,9 +78,12 @@ def is_text(content_type):
     return content_type in CONTENT_EXTENSIONS
 
 
-def page_info(data):
+def page_info(data, *include_keys):
+    '''Yield only keys which are not associated with a dictionary
+    unless they are included in ``included_keys``
+    '''
     for key, value in data.items():
-        if not isinstance(value, dict):
+        if not isinstance(value, dict) or key in include_keys:
             yield key, value
 
 

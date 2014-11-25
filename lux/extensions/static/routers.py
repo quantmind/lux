@@ -140,31 +140,19 @@ class JsonContent(lux.Router, DirBuilder):
     JsonFileRouter = JsonFile
 
     def __init__(self, route, dir=None, name=None, html_router=None):
-        route = self.valid_route(route, dir)[:-1]
-        base = os.path.basename(self.dir)
-        route = route or base
-        name = slugify(name or route)
+        route = self.valid_route(route, dir)[:-1] or os.path.basename(self.dir)
         self.src = '%s.json' % route
         assert html_router, 'html router required'
-        super(JsonContent, self).__init__(route, name=name,
-                                          html_router=html_router,
-                                          content=html_router.content,
-                                          meta=copy(html_router.meta))
+        super(JsonContent, self).__init__(route)
         # When the html router is a index template, add the index.json
-        # resource for rendering the index
+        # resource for rendering the index page
         if html_router.index_template:
             self.add_child(
                 JsonIndex('index.json',
                           dir=self.dir,
+                          meta=copy(html_router.meta),
                           html_router=html_router,
                           index_template=html_router.index_template))
-        #
-        # TODO! Add Drafts API if drafts are available
-        # drafts = html_router.get_route(html_router.childname('drafts'))
-        # if drafts:
-        #     self.add_child(JsonFile(drafts.route.rule,
-        #                             dir=self.dir,
-        #                             content=self.content))
 
         child_router = html_router.get_route(html_router.childname('view'))
         self.add_child(self.JsonFileRouter('<path:id>',
@@ -191,19 +179,14 @@ class JsonIndex(lux.Router, FileBuilder):
 
     def get(self, request):
         app = request.app
-        response = request.response
-        content = self.get_content(request)
-        # Get the JSON representation of the resource
+        src = app.template_full_path(self.index_template)
+        content = self.read_file(app, src, 'index', False)
         data = content.json(request)
-        if data:
-            html_router = self.html_router
-            data['api_url'] = app.site_url(self.relative_path(request))
-            urlparams = content.urlparams(html_router.route.variables)
-            path = html_router.path(**urlparams)
-            data['html_url'] = app.site_url(normpath(path))
-            return Json(data).http_response(request)
-        else:
-            raise Unsupported
+        html_router = self.html_router
+        data['api_url'] = app.site_url(self.relative_path(request))
+        urlparams = content.urlparams(html_router.route.variables)
+        path = html_router.path(**urlparams)
+        data['html_url'] = app.site_url(normpath(path))
         return Json(data).http_response(request)
 
 
@@ -239,6 +222,8 @@ class HtmlContent(HtmlRouter, DirBuilder):
     '''
     index_template = None
     meta_children = None
+    '''Metadata dictionary for children routes
+    '''
     drafts_template = 'blogindex.html'
     '''The children render the children routes of this router
     '''
@@ -251,14 +236,15 @@ class HtmlContent(HtmlRouter, DirBuilder):
         route = self.valid_route(route, params.pop('dir', None))
         name = slugify(params.pop('name', None) or route or self.dir)
         super(HtmlContent, self).__init__(route, *routes, name=name, **params)
+        # Add drafts index
         if self.drafts:
             self.add_child(Drafts(self.drafts,
                                   name=self.childname('drafts'),
                                   index_template=self.drafts_template))
+        # Add children routes
         meta = copy(self.meta) if self.meta else {}
         if self.meta_children:
             meta.update(self.meta_children)
-        #
         file = self.HtmlFileRouter(self.child_url, dir=self.dir,
                                    name=self.childname('view'),
                                    content=self.content,
@@ -266,6 +252,7 @@ class HtmlContent(HtmlRouter, DirBuilder):
                                    meta=meta,
                                    ngmodules=self.ngmodules)
         self.add_child(file)
+        self.content = None
         #
         for url_path, file_path, ext in self.all_files():
             if url_path == 'index':
@@ -297,17 +284,13 @@ class HtmlContent(HtmlRouter, DirBuilder):
         if self.src and request.cache.building_static:
             raise SkipBuild     # it will be built by the file handler
         if self.index_template:
-            # Don't use the content and the template if given
-            self.content = None
-            if self.meta:
-                self.meta.pop('template', None)
             doc = request.html_document
             app = request.app
             files = self.api.get_route('json_files') if self.api else None
             if files:
                 doc.jscontext['items'] = files.all(app, html=False)
             src = app.template_full_path(self.index_template)
-            content = self.read_file(app, src, 'index')
+            content = self.read_file(app, src, 'index', False)
             return content.html(request)
         elif self.src:
             content = self.read_file(request.app, self.src, 'index')

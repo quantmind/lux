@@ -5,6 +5,7 @@ include runtests.py
 include Gruntfile.js
 include package.json
 include requirements.txt
+include requirements_dev.txt
 recursive-include luxjs *
 recursive-include tests *
 recursive-include lux/extensions *.html *.txt

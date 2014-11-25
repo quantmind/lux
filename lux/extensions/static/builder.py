@@ -54,14 +54,16 @@ class BaseBuilder(object):
     '''Default meta attribute for the content built by this builder.
 
     If supplied it must be a dictionary of valid meta parameters
-    for a :class:`.Snippet`
+    for a :class:`.Content`
     '''
 
-    def read_file(self, app, src, name):
-        '''Read a file and create a :class:`.Snippet`
+    def read_file(self, app, src, name, usecache=True):
+        '''Read a file and create a :class:`.Content`
         '''
         src = self.get_filename(src)
-        if src not in app.all_contents:
+        if usecache and src in app.all_contents:
+            content = app.all_contents[src]
+        else:
             bits = src.split('.')
             ext = bits[-1] if len(bits) > 1 else None
             Reader = READERS.get(ext) or BaseReader
@@ -71,9 +73,8 @@ class BaseBuilder(object):
             reader = Reader(app, ext)
             content = reader.read(src, name, content=self.content,
                                   meta=self.meta)
-            app.all_contents[src] = content
-        else:
-            content = app.all_contents[src]
+            if usecache:
+                app.all_contents[src] = content
         return content
 
     def get_filename(self, src):

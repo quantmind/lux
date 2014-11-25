@@ -1,5 +1,5 @@
 '''python web toolkit'''
-VERSION = (0, 1, 1, 'final', 1)
+VERSION = (0, 1, 2, 'alpha', 1)
 
 import os
 from pulsar.utils.version import get_version

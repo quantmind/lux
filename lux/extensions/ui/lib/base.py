@@ -790,18 +790,6 @@ class Variables(object):
         '''Provide the value method which returns ``None``.'''
         pass
 
-    def valid(self):
-        '''``True`` if the :class:`Variables` are part of a root dictionary.'''
-        return self.name == 'root' or self.parent
-
-    def copy(self, parent=None, name=None):
-        '''Copy the :class:`Variables` in a recursive way.'''
-        v = self.__class__(parent, name)
-        for child in self:
-            child = child.copy(self, child.name)
-            setattr(v, child.name, child)
-        return v
-
     def get(self, name):
         if name not in self._data:
             return Variables(self, name)

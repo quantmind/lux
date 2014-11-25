@@ -4,31 +4,31 @@
         "url": "https://github.com/quantmind/lux", 
         "type": "git"
     }, 
+    "title": "Lux Library", 
     "author": {
         "email": "luca.sbardella@gmail.com", 
         "name": "Luca Sbardella"
     }, 
-    "title": "Lux Library", 
-    "licenses": [
-        {
-            "type": "BSD"
-        }
-    ], 
+    "keywords": [], 
     "version": "0.1.1", 
     "contributors": [], 
     "scripts": {
         "test": "grunt jasmine"
     }, 
-    "keywords": [], 
+    "licenses": [
+        {
+            "type": "BSD"
+        }
+    ], 
     "devDependencies": {
-        "grunt-contrib-concat": "", 
+        "grunt": "", 
         "grunt-docco": "~0.3.2", 
         "grunt-contrib-jshint": "", 
         "benchmark": "", 
         "grunt-contrib-uglify": "", 
         "grunt-contrib-jasmine": "", 
         "grunt-html2js": "", 
-        "grunt": "", 
+        "grunt-contrib-concat": "", 
         "docco": ""
     }, 
     "homepage": "http://quantmind.github.io/lux", 

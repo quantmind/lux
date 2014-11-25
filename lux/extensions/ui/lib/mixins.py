@@ -12,7 +12,6 @@ __all__ = ['Animation',
            'Textoverflow',
            'clear_anchor',
            'fixtop',
-           'unfixtop',
            'Border',
            'Shadow',
            'BoxSizing',
@@ -173,15 +172,6 @@ class fixtop(Mixin):
         elem['right'] = 0
         elem['position'] = 'fixed'
         elem['z_index'] = '%s' % as_value(self.zindex)
-
-
-class unfixtop(Mixin):
-    def __call__(self, elem):
-        elem['left'] = 'auto'
-        elem['top'] = 'auto'
-        elem['right'] = 'auto'
-        elem['position'] = 'static'
-        elem['z_index'] = 'auto'
 
 
 # ################################################ CSS BORDER
