@@ -3,6 +3,7 @@ from pulsar.apps.wsgi import Json
 
 import lux
 from lux import route
+from pulsar.utils.exceptions import ImproperlyConfigured
 
 
 def html_form(request, Form, name):
@@ -27,10 +28,15 @@ class ModelManager(object):
 
         The :class:`.Form` used to update models
     '''
+    model = None
+    form = None
+
     def __init__(self, model=None, form=None, edit_form=None):
-        self.model = model
-        self.form = form
-        self.edit_form = edit_form or form
+        self.model = model or self.model
+        self.form = form or self.form
+        self.edit_form = edit_form or self.form
+        if not (self.model and self.form):
+            raise ImproperlyConfigured('missing model or form')
 
     def collection(self, request, limit, offset=0, text=None):
         '''Retrieve a collection of models
@@ -91,7 +97,11 @@ class ModelManager(object):
 
 
 class CRUD(lux.Router):
-    manager = lux.RouterParam(ModelManager())
+    '''A :class:`.Router` for handling CRUD requests
+    '''
+    manager = lux.RouterParam(None)
+    '''The :class:`.ModelManager` for this router
+    '''
 
     def get(self, request):
         limit = self.manager.limit(request)

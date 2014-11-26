@@ -2,7 +2,7 @@ import sys
 from lux import forms
 
 
-__all__ = ['LoginForm', 'CreateUserForm', 'ChangePassword',
+__all__ = ['LoginForm', 'CreateUserForm', 'ChangePasswordForm',
            'ForgotPasswordForm']
 
 
@@ -21,10 +21,7 @@ class LoginForm(forms.Form):
         showLabels=False)
 
 
-class CreateUserForm(forms.Form):
-    username = forms.CharField(minlength=6, maxlength=30,
-                               helpText='between 6 and 30 characters')
-    email = forms.EmailField()
+class PasswordForm(forms.Form):
     password = forms.PasswordField(minlength=6, maxlength=60)
     password_repeat = forms.PasswordField(
         label='confirm password',
@@ -32,6 +29,17 @@ class CreateUserForm(forms.Form):
 
     layout = forms.Layout(
         forms.Fieldset(all=True),
+        forms.Submit('Reset password', classes='btn btn-primary'),
+        showLabels=False)
+
+
+class CreateUserForm(PasswordForm):
+    username = forms.CharField(minlength=6, maxlength=30,
+                               helpText='between 6 and 30 characters')
+    email = forms.EmailField()
+
+    layout = forms.Layout(
+        forms.Fieldset('username', 'email', 'password', 'password_repeat'),
         forms.Submit(
             'Sign up',
             classes='btn btn-primary btn-block',
@@ -40,29 +48,12 @@ class CreateUserForm(forms.Form):
         directive='user-form')
 
 
-class ChangePassword(forms.Form):
-    username = forms.HiddenField()
-    old_password = forms.PasswordField(required=False)
-    password = forms.PasswordField(label='New password',
-                                   min_length=6, max_length=60)
-    password_repeat = forms.PasswordField(
-        label='Confirm new password',
-        data_check_repeat='ChangePassword.password')
+class ChangePasswordForm(PasswordForm):
+    old_password = forms.PasswordField()
 
     layout = forms.Layout(
-        forms.Fieldset(all=True),
+        forms.Fieldset('old_password', 'password', 'password_repeat'),
         forms.Submit('Update password', classes='btn btn-primary'),
-        showLabels=False)
-
-
-class ChangePassword2(forms.Form):
-    password = forms.PasswordField(label='New password',
-                                   min_length=6, max_length=60)
-    password_repeat = forms.PasswordField(label='Confirm new password')
-
-    layout = forms.Layout(
-        forms.Fieldset(all=True),
-        forms.Submit('Reset password', classes='btn btn-primary'),
         showLabels=False)
 
 

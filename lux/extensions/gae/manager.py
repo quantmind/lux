@@ -16,7 +16,7 @@ def ndbid(value):
         return value
 
 
-__all__ = ['ModelManager', 'CRUD', 'ndbid']
+__all__ = ['ModelManager', 'ndbid']
 
 
 class ModelManager(api.ModelManager):
@@ -70,7 +70,3 @@ class ModelManager(api.ModelManager):
 
     def delete_model(self, request, instance):
         return instance.key.delete()
-
-
-class CRUD(api.CRUD):
-    pass

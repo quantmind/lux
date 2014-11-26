@@ -91,11 +91,25 @@
             });
         }])
         //
+        // Default controller for an Html5 page loaded via the ui router
         .controller('Html5', ['$scope', '$state', 'pageService', 'page', 'items',
             function ($scope, $state, pageService, page, items) {
                 $scope.items = items ? items.data : null;
                 $scope.page = pageService.addInfo(page, $scope);
             }])
+        //
+        // A directive to compile Html received from the server
+        // A page that returns html should use the following template
+        //  <div data-compile-html></div>
+        .directive('compileHtml', ['$compile', function ($compile) {
+
+            return {
+                link: function (scope, element) {
+                    element.html(scope.page.html);
+                    $compile(element.contents())(scope);
+                }
+            };
+        }])
         //
         .directive('dynamicPage', ['$compile', '$log', function ($compile, log) {
             return {

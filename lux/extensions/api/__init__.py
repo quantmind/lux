@@ -64,6 +64,7 @@ from .crud import ModelManager, CRUD, html_form
 class ApiRoot(lux.Router):
     '''Api Root'''
     response_content_types = lux.RouterParam(JSON_CONTENT_TYPES)
+    managers = None
 
     def apis(self, request):
         routes = {}
@@ -73,6 +74,15 @@ class ApiRoot(lux.Router):
 
     def get(self, request):
         return Json(self.apis(request)).http_response(request)
+
+    def createManager(self, app, Manager, Model=None, Form=None):
+        '''Create a new model manager instance
+        '''
+        manager = Manager(Model, Form)
+        if not self.managers:
+            self.managers = {}
+        self.managers[Model] = manager
+        return manager
 
 
 def api404(environ, start_response):

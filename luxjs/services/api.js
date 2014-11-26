@@ -27,7 +27,7 @@
                 }
                 var Api = ApiTypes[context.type || 'lux'];
                 if (!Api)
-                    $lux.log.error('Api provider "' + context.name + '" is not available');
+                    $lux.log.error('Api provider "' + context.type + '" is not available');
                 else {
                     return new Api(context.name, context.url, context.options, $lux);
                 }
@@ -170,10 +170,12 @@
             return this.request('GET', null, options);
         },
         //
+        // Retrieve a page when in angular ui.router
         getPage: function (page, state, stateParams) {
             return page;
         },
         //
+        // Retrieve a list of items when in angular ui.router
         getItems: function (page, state, stateParams) {
             if (!lux.size(stateParams))
                 return this.getList();

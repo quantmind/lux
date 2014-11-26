@@ -97,6 +97,15 @@ class Router(lux.Router, MediaMixin):
     and the whole html5 document is loaded when accessed.'''
     _sitemap = None
 
+    @property
+    def angular_root(self):
+        '''The root angular router
+        '''
+        root = self
+        while isinstance(root.parent, Router):
+            root = root.parent
+        return root
+
     def get(self, request):
         '''This is the only http method implemented.
 
@@ -185,9 +194,7 @@ class Router(lux.Router, MediaMixin):
     def sitemap(self, app, ngmodules, uirouter):
         '''Build the sitemap used by angular `ui-router`_
         '''
-        root = self
-        while isinstance(root.parent, Router):
-            root = root.parent
+        root = self.angular_root
         if root._sitemap is None:
             ngmodules.add('ui.router')
             sitemap = {'hrefs': [],

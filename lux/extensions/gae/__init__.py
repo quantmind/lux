@@ -15,7 +15,7 @@ from lux.extensions.sessions import (SessionMixin, JWTMixin,
                                      AuthenticationError)
 
 from .models import ndb, User, Session, Registration, Permission, role_name
-from .api import *
+from .manager import *
 
 
 isdev = lambda: os.environ.get('SERVER_SOFTWARE', '').startswith('Development')

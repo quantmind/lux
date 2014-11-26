@@ -6,13 +6,14 @@ from lux.extensions.angular import Router as WebRouter
 from pulsar import Http404, PermissionDenied, HttpRedirect
 from pulsar.apps.wsgi import Json
 
-from .forms import (LoginForm, CreateUserForm, ChangePassword,
-                    ForgotPasswordForm, ChangePassword2)
+from .forms import (LoginForm, CreateUserForm, ChangePasswordForm,
+                    ForgotPasswordForm, PasswordForm)
 from .backend import AuthenticationError
 from .jwtmixin import jwt
 
 
-__all__ = ['Login', 'SignUp', 'Logout', 'Token', 'ForgotPassword', 'csrf']
+__all__ = ['Login', 'SignUp', 'Logout', 'Token', 'ForgotPassword',
+           'ChangePassword', 'csrf']
 
 
 def csrf(method):
@@ -137,6 +138,24 @@ class SignUp(WebFormRouter):
         raise HttpRedirect(self.redirect_url(request))
 
 
+class ChangePassword(WebFormRouter):
+    default_form = ChangePasswordForm
+
+    def post(self, request):
+        '''Handle post data
+        '''
+        user = request.cache.user
+        if not user.is_authenticated():
+            raise MethodNotAllowed
+        form = self.fclass(request, data=request.body_data())
+        if form.is_valid():
+            auth = request.cache.auth_backend
+            password = form.cleaned_data['password']
+            auth.set_password(user, password)
+            return self.maybe_redirect_to(request, form, user=user)
+        return Json(form.tojson()).http_response(request)
+
+
 class ForgotPassword(WebFormRouter):
     '''Adds login get ("text/html") and post handlers
     '''
@@ -173,7 +192,7 @@ class ForgotPassword(WebFormRouter):
             return request.redirect('/')
         if not user:
             raise Http404
-        form = ChangePassword2(request).layout
+        form = PasswordForm(request).layout
         html = form.as_form(action=request.full_path('reset'),
                             enctype='multipart/form-data',
                             method='post')
@@ -196,7 +215,7 @@ class ForgotPassword(WebFormRouter):
             if not user:
                 session.error('Could not find the user')
             else:
-                form = ChangePassword2(request, data=request.body_data())
+                form = PasswordForm(request, data=request.body_data())
                 if form.is_valid():
                     auth = request.cache.auth_backend
                     password = form.cleaned_data['password']

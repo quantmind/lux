@@ -3,7 +3,8 @@ from pulsar.apps.wsgi import Json
 from pulsar import PermissionDenied, Http404
 
 from lux import route
-from lux.extensions.gae import ModelManager, CRUD
+from lux.extensions.api import CRUD
+from lux.extensions.gae import ModelManager
 
 from markdown import Markdown
 
