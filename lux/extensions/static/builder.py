@@ -10,10 +10,14 @@ from pulsar.utils.httpurl import remove_double_slash, urljoin
 from lux import route
 
 from .contents import SkipBuild, BuildError, Unsupported, CONTENT_EXTENSIONS
-from .readers import READERS, BaseReader
+from .contents import Content, get_reader
 
 
 Item = namedtuple('Item', 'loc lastmod priority file content_type body')
+
+
+def skipfile(name):
+    return name.startswith('.') or name.startswith('__')
 
 
 def directory(dir):
@@ -41,10 +45,6 @@ def normpath(path):
         return path
 
 
-def skip(name):
-    return name.startswith('.') or name.startswith('__')
-
-
 class BaseBuilder(object):
     '''Base class for static site builders
     '''
@@ -64,13 +64,7 @@ class BaseBuilder(object):
         if usecache and src in app.all_contents:
             content = app.all_contents[src]
         else:
-            bits = src.split('.')
-            ext = bits[-1] if len(bits) > 1 else None
-            Reader = READERS.get(ext) or BaseReader
-            if not Reader.enabled:
-                raise BuildError('Missing dependencies for %s'
-                                 % Reader.__name__)
-            reader = Reader(app, ext)
+            reader = get_reader(app, src)
             content = reader.read(src, name, content=self.content,
                                   meta=self.meta)
             if usecache:
@@ -119,7 +113,7 @@ class Builder(BaseBuilder):
             location = os.path.abspath(app.config['STATIC_LOCATION'])
         with self:
             if self.route.ordered_variables:
-                for name, src, _ in self.all_files():
+                for name, src, _ in self.all_files(app):
                     self.build_file(app, location, src, name)
             else:
                 self.build_file(app, location)
@@ -142,18 +136,21 @@ class Builder(BaseBuilder):
             self._build_done = []
         self._build_done.append(callback)
 
-    def all_files(self, src=None):
+    def all_files(self, app=None, src=None, include_subdirectories=None):
         '''Generator of all files within a directory
         '''
+        if include_subdirectories is None:
+            include_subdirectories = getattr(self.content, 'from_dir',
+                                             self.include_subdirectories)
         src = self.get_src(src)
         if os.path.isdir(src):
-            if self.include_subdirectories:
+            if include_subdirectories is True:
                 for dirpath, _, filenames in os.walk(src):
-                    if skip(os.path.basename(dirpath) or dirpath):
+                    if skipfile(os.path.basename(dirpath) or dirpath):
                         continue
                     rel_dir = get_rel_dir(dirpath, src)
                     for filename in filenames:
-                        if skip(filename):
+                        if skipfile(filename):
                             continue
                         name, ext = self.split(filename)
                         name = os.path.join(rel_dir, name)
@@ -161,13 +158,18 @@ class Builder(BaseBuilder):
                         yield name, fpath, ext
             else:
                 for filename in os.listdir(src):
+                    if skipfile(filename):
+                        continue
                     path = os.path.join(src, filename)
-                    if not os.path.isfile(path):
-                        continue
-                    if skip(filename):
-                        continue
-                    name, ext = self.split(filename)
-                    yield name, path, ext
+                    if os.path.isdir(path):
+                        if include_subdirectories:
+                            for p in include_subdirectories(app, self, path):
+                                yield None, p, None
+                        else:
+                            continue
+                    else:
+                        name, ext = self.split(filename)
+                        yield name, path, ext
         #
         elif os.path.isfile(src):
             dirpath, filename = os.path.split(src)
@@ -177,8 +179,8 @@ class Builder(BaseBuilder):
             yield name, dirpath, ext
         #
         else:
-            raise BuildError("'%s' not found. Could not build route '%s'",
-                             src, self)
+            raise BuildError("'%s' not found. Could not build route '%s'" %
+                             (src, self))
 
     def build_file(self, app, location, src=None, name=None):
         '''Build the files for a route in this Builder
@@ -338,20 +340,23 @@ class DirBuilder(Builder):
 class ContextBuilder(dict, BaseBuilder):
     '''Build context dictionary entry for the static site
     '''
-    def __init__(self, app, ctx=None, content=None):
+    def __init__(self, app, ctx=None, content=None, location=None,
+                 exclude=None, render=True):
         self.app = app
         self.waiting = {}
         self.content = content
+        self.render = render
+        exclude = exclude or ()
         if ctx:
             self.update(ctx)
-        location = app.config['CONTEXT_LOCATION']
+        location = location or app.config['CONTEXT_LOCATION']
         if location and os.path.isdir(location):
             for dirpath, _, filenames in os.walk(location):
                 rel_dir = get_rel_dir(dirpath, location)
                 if rel_dir and rel_dir[0] in ('.', '_'):
                     continue
                 for filename in filenames:
-                    if filename.startswith('.'):
+                    if skipfile(filename) or filename in exclude:
                         continue
                     name, _ = os.path.join(rel_dir, filename).split('.', 1)
                     src = os.path.join(dirpath, filename)
@@ -386,8 +391,10 @@ class ContextBuilder(dict, BaseBuilder):
 
         if waiting:
             self.waiting[content.key()] = (content, waiting)
-        else:
+        elif self.render:
             self[content.key()] = content.render(self)
+        else:
+            self[content.key()] = content
 
     def _refresh(self):
         all = list(self.waiting.values())
@@ -400,3 +407,38 @@ class ContextBuilder(dict, BaseBuilder):
         if waiting:
             waiting = ', '.join((str(c) for c, _ in waiting.values()))
             self.app.logger.warning('%s is still waiting to be built', waiting)
+
+
+class DirContent(Content):
+    '''Create a single html content from a directory
+    '''
+
+    @classmethod
+    def from_dir(cls, app, router, path):
+        index = os.path.join(path, 'index.md')
+        if not os.path.isfile(index):
+            # No index file no joy
+            raise BuildError('A Directory content without index.md!!')
+        reader = get_reader(app, index)
+        ctx = ContextBuilder(app, location=path, exclude=('index.md',),
+                             render=False)
+        location = os.path.abspath(app.config['STATIC_LOCATION'])
+        for key, content in list(ctx.items()):
+            if content.is_text:
+                value = content.render()
+                ctx[key] = decode(value)
+                if not content.is_html:
+                    value = reader.process(value, index)._content
+                    ctx['html_%s' % key] = decode(value)
+            else:
+                yield content.src
+        name = os.path.basename(path)
+        content = router.read_file(app, index, name)
+        content.additional_context.update(ctx)
+        yield index
+
+
+def decode(value):
+    if isinstance(value, bytes):
+        value = value.decode('utf-8')
+    return value

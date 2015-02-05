@@ -31,7 +31,7 @@ class HtmlRouter(angular.Router):
         '''Template used when in html5 mode
         '''
         div = Html('div', cn=self.angular_view_class)
-        div.data({'dynamic-page': ''})
+        div.data({'compile-html': ''})
         return div.render()
 
 
@@ -46,7 +46,7 @@ class MediaBuilder(base.MediaRouter, FileBuilder):
             return self.built
         self.built = []
         for url_base, src in self.extension_paths(app):
-            for upath, src, ext in self.all_files(src):
+            for upath, src, ext in self.all_files(app, src):
                 url = '%s.%s' % (os.path.join(url_base, upath), ext)
                 self.build_file(app, location, src=src, name=url)
 
@@ -144,21 +144,23 @@ class JsonContent(lux.Router, DirBuilder):
         self.src = '%s.json' % route
         assert html_router, 'html router required'
         super(JsonContent, self).__init__(route)
-        # When the html router is a index template, add the index.json
+
+        content = html_router.content
+        # When the html router is an index template, add the index.json
         # resource for rendering the index page
         if html_router.index_template:
             self.add_child(
                 JsonIndex('index.json',
                           dir=self.dir,
+                          html_router=html_router.remove_content_template(),
                           meta=copy(html_router.meta),
-                          html_router=html_router,
                           index_template=html_router.index_template))
 
         child_router = html_router.get_route(html_router.childname('view'))
         self.add_child(self.JsonFileRouter('<path:id>',
                                            dir=self.dir,
                                            name='json_files',
-                                           content=self.content,
+                                           content=content,
                                            html_router=html_router,
                                            meta=copy(child_router.meta)))
 
@@ -200,7 +202,9 @@ class HtmlFile(HtmlRouter, FileBuilder):
     def build_main(self, request):
         content = self.get_content(request)
         if content._meta.slug in request.config['STATIC_SPECIALS']:
-            self.uirouter = False
+            request.cache.uirouter = False
+        else:
+            request.cache.uirouter = self.uirouter
         return content.html(request)
 
     def get_api_info(self, app):
@@ -244,8 +248,9 @@ class HtmlContent(HtmlRouter, DirBuilder):
             self.add_child(Drafts(self.drafts,
                                   name=self.childname('drafts'),
                                   index_template=self.drafts_template))
+        self.meta = copy(self.meta) if self.meta else {}
         # Add children routes
-        meta = copy(self.meta) if self.meta else {}
+        meta = copy(self.meta)
         if self.meta_children:
             meta.update(self.meta_children)
         file = self.HtmlFileRouter(self.child_url, dir=self.dir,
@@ -253,11 +258,12 @@ class HtmlContent(HtmlRouter, DirBuilder):
                                    content=self.content,
                                    html_body_template=self.html_body_template,
                                    meta=meta,
+                                   uirouter=self.uirouter,
                                    ngmodules=self.ngmodules)
         self.add_child(file)
-        self.content = None
         #
-        for url_path, file_path, ext in self.all_files():
+        for url_path, file_path, ext in self.all_files(
+                include_subdirectories=False):
             if url_path == 'index':
                 self.src = file_path
         if self.src and self.index_template:
@@ -293,6 +299,8 @@ class HtmlContent(HtmlRouter, DirBuilder):
             if files:
                 doc.jscontext['items'] = files.all(app, html=False)
             src = app.template_full_path(self.index_template)
+            # set content and template to nothing, Important
+            self.remove_content_template()
             content = self.read_file(app, src, 'index', False)
             return content.html(request)
         elif self.src:
@@ -300,6 +308,11 @@ class HtmlContent(HtmlRouter, DirBuilder):
             return content.html(request)
         else:
             raise SkipBuild
+
+    def remove_content_template(self):
+        self.content = None
+        self.meta.pop('template', None)
+        return self
 
 
 class Drafts(HtmlRouter, FileBuilder):

@@ -13,23 +13,15 @@ Restructured = False
 from pulsar.apps.wsgi import AsyncString
 
 from .contents import (Content, METADATA_PROCESSORS, slugify, is_html,
-                       SkipBuild)
+                       SkipBuild, register_reader)
 from .urlwrappers import MultiValue
-
-
-READERS = {}
-
-
-def register_reader(cls):
-    for extension in cls.file_extensions:
-        READERS[extension] = cls
-    return cls
 
 
 def guess(value):
     return value if len(value) > 1 else value[-1]
 
 
+@register_reader
 class BaseReader(object):
     """Base class to read files.
 
@@ -44,7 +36,7 @@ class BaseReader(object):
 
     """
     enabled = True
-    file_extensions = []
+    file_extensions = ['']
     extensions = None
     content = Content
 
@@ -57,8 +49,27 @@ class BaseReader(object):
     def __str__(self):
         return self.__class__.__name__
 
-    def process(self, body, meta_input, src, name, content=None, meta=None,
-                **params):
+    def process(self, raw, source_path, name=None, **params):
+        ct, encoding = mimetypes.guess_type(source_path)
+        body = raw
+        if is_html(ct):
+            if isinstance(raw, bytes):
+                body = raw.decode(encoding=encoding or 'utf-8')
+        else:
+            ct = ct or 'application/octet-stream'
+            if name and self.ext and not name.endswith('.%s' % self.ext):
+                name = '%s.%s' % (name, self.ext)
+        metadata = {'content_type': ct}
+        return self.post_process(body, metadata, source_path, name, **params)
+
+    def read(self, source_path, name, **params):
+        """Parse content and metadata of markdown files"""
+        with open(source_path, 'rb') as text:
+            raw = text.read()
+        return self.process(raw, source_path, name, **params)
+
+    def post_process(self, body, meta_input, src, name, content=None,
+                     meta=None, **params):
         """Return the dict containing document metadata
         """
         cfg = self.config
@@ -99,26 +110,11 @@ class BaseReader(object):
         content = content or self.content
         if meta.get('priority') == '0':
             content = content.as_draft()
-            meta['robots'] = ['noindex', 'nofollow']
+            head_meta['robots'] = ['noindex', 'nofollow']
         meta['head'] = head_meta
         if params:
             pass
         return content(self.app, body, meta, src, name, context, **params)
-
-    def read(self, source_path, name, **params):
-        '''Default read method
-        '''
-        ct, encoding = mimetypes.guess_type(source_path)
-        with open(source_path, 'rb') as f:
-            body = f.read()
-        if is_html(ct):
-            body = body.decode(encoding=encoding or 'utf-8')
-        else:
-            ct = ct or 'application/octet-stream'
-            if self.ext and not name.endswith('.%s' % self.ext):
-                name = '%s.%s' % (name, self.ext)
-        metadata = {'content_type': ct}
-        return self.process(body, metadata, source_path, name, **params)
 
 
 @register_reader
@@ -134,16 +130,15 @@ class MarkdownReader(BaseReader):
         if 'meta' not in self.extensions:
             self.extensions.append('meta')
 
-    def read(self, source_path, name, **params):
-        """Parse content and metadata of markdown files"""
+    def process(self, raw, source_path, name=None, **params):
+        if isinstance(raw, bytes):
+            raw = raw.decode('utf-8')
         self._md = md = Markdown(extensions=self.extensions)
-        with open(source_path, 'rb') as text:
-            raw = text.read().decode('utf-8')
         raw = '%s\n\n%s' % (raw, self.links())
         body = md.convert(raw)
         meta = self._md.Meta
         meta['content_type'] = 'text/html'
-        return self.process(body, meta, source_path, name, **params)
+        return self.post_process(body, meta, source_path, name, **params)
 
     def links(self):
         links = self.app.config.get('_MARKDOWN_LINKS_')
@@ -172,14 +167,17 @@ class PythonReader(BaseReader):
         mod = imp.load_source(name, source_path)
         if not hasattr(mod, 'template'):
             raise SkipBuild
-        content = mod.template()
-        if isinstance(content, AsyncString):
-            ct = content._content_type
-            content = content.render()
+        return self.process(mod.template(), source_path, name, **params)
+
+    def process(self, raw, source_path, name=None, **params):
+        if isinstance(raw, AsyncString):
+            ct = raw._content_type
+            body = raw.render()
         else:
+            body = raw
             ct = 'text/plain'
         metadata = {'content_type': [ct]}
-        return self.process(content, metadata, source_path, name, **params)
+        return self.post_process(body, metadata, source_path, name, **params)
 
 
 @register_reader
@@ -187,9 +185,8 @@ class RestructuredReader(BaseReader):
     enabled = bool(Restructured)
     file_extensions = ['rst']
 
-    def read(self, source_path, name, **params):
-        with open(source_path, encoding='utf-8') as text:
-            raw = text.read()
-            re = Restructured(raw)
+    def process(self, raw, source_path, name=None, **params):
+        raw = raw.decode('utf-8')
+        re = Restructured(raw)
         body = re.convert()
-        return self.process(body, re.Meta, source_path, name, **params)
+        return self.post_process(body, re.Meta, source_path, name, **params)

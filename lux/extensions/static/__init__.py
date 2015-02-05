@@ -49,7 +49,7 @@ from pulsar.utils.slugify import slugify
 import lux
 from lux import Parameter, Router
 
-from .builder import Builder, DirBuilder, ContextBuilder
+from .builder import Builder, DirBuilder, ContextBuilder, DirContent
 from .contents import Content, Article
 from .routers import (MediaBuilder, HtmlContent, Blog, ErrorRouter,
                       JsonRoot, JsonRedirect, Sitemap, HtmlFile)

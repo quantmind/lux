@@ -22,3 +22,10 @@ class FieldTests(test.TestCase):
                 {'value': 'b', 'repr': 'hello'}]
         field = forms.ChoiceField(options=opts)
         self.assertEqual(field.options.all(), opts)
+        self.assertEqual(field.options.get_initial(), 'a')
+
+    def test_options(self):
+        opts = ('uno', 'due', 'tre')
+        field = forms.ChoiceField(options=opts)
+        self.assertEqual(field.options.all(), opts)
+        self.assertEqual(field.options.get_initial(), 'uno')

@@ -30,10 +30,11 @@
             function ($locationProvider, $stateProvider, $urlRouterProvider, $anchorScrollProvider) {
 
             var
+
             hrefs = lux.context.hrefs,
+
             pages = lux.context.pages,
-            pageCache = lux.context.cachePages ? {} : null,
-            //
+
             state_config = function (page) {
                 var main = {
                     //
@@ -105,25 +106,17 @@
 
             return {
                 link: function (scope, element) {
-                    element.html(scope.page.html);
-                    $compile(element.contents())(scope);
-                }
-            };
-        }])
-        //
-        .directive('dynamicPage', ['$compile', '$log', function ($compile, log) {
-            return {
-                link: function (scope, element, attrs) {
                     scope.$on('$stateChangeSuccess', function () {
                         var page = scope.page;
-                        if (page.html && page.html.main) {
-                            element[0].innerHTML = page.html.main;
+                        if (page && page.html) {
+                            var html = page.html;
+                            if (html.main) html = html.main;
+                            element.html(html);
                             var scripts= element[0].getElementsByTagName('script');
                             // Execute scripts in the loaded html
                             forEach(scripts, function (js) {
                                 globalEval(js.innerHTML);
                             });
-                            log.info('Compiling new html content');
                             $compile(element.contents())(scope);
                             // load required scripts if necessary
                             lux.loadRequire();

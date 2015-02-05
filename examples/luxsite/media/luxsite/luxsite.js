@@ -1,7 +1,7 @@
 //      Lux Library - v0.1.1
 
-//      Compiled 2014-11-26.
-//      Copyright (c) 2014 - Luca Sbardella
+//      Compiled 2015-01-13.
+//      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
 //      http://quantmind.github.io/lux

@@ -49,7 +49,6 @@
                 "luxjs/nav/*.js",
                 "luxjs/misc/*.js",
                 "luxjs/google/*.js",
-                "luxjs/viz/*.js",
                 "luxjs/close.js"],
         "dest": "lux/media/lux/lux.js"
     },

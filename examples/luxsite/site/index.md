@@ -13,6 +13,3 @@ and the ``luxmake.py`` command you can use to create lux projects:
 Lux has been designed to work with [AngularJS][] frontend and to load javascript
 modules asynchronously via [RequireJS][].
 
-
-
-

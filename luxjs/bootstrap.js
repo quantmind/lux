@@ -5,6 +5,7 @@
         //
         .config(['$controllerProvider', function ($controllerProvider) {
             lux.loader.cp = $controllerProvider;
+            lux.loader.controller = $controllerProvider;
         }])
         //
         .run(['$rootScope', '$log', '$timeout', 'context', function (scope, $log, $timeout, context) {

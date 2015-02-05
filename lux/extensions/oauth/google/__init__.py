@@ -124,6 +124,6 @@ var google_maps_callbacks = [],
 '''
 
 
-google_map_url = ('https://maps.googleapis.com/maps/api/js?v=3.exp&'
+google_map_url = ('https://maps.googleapis.com/maps/api/js?'
                   'key=%s&sensor=%s&'
                   'callback=run_google_maps_callbacks')

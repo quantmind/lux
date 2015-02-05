@@ -3,7 +3,8 @@ __all__ = ['Options', 'OptionGroup']
 
 
 class Options(object):
-
+    '''Manage group of options for :class:`.ChoicField`
+    '''
     def __init__(self, options):
         self._choices = options or ()
 
@@ -13,7 +14,7 @@ class Options(object):
             choices = choices()
         return choices
 
-    def get_initial(self, form):
+    def get_initial(self, form=None):
         choices = self.all()
         if choices:
             initial = choices[0]
@@ -24,22 +25,6 @@ class Options(object):
             elif initial and isinstance(initial, (list, tuple)):
                 initial = initial[0]
             return initial
-
-    def html(self, html, value=None):
-        choices = self.choices()
-        for choice in choices:
-            if isinstance(choice, ChoiceGroup):
-                choice.html(html, value)
-            else:
-                if isinstance(choice, (list, tuple)):
-                    assert len(choice) == 2, ("choice must be a two elements "
-                                              "tuple or list")
-                    opt = Html('option', choice[1], value=choice[0])
-                else:
-                    opt = Html('option', choice, value=choice)
-                if opt.get_form_value() == value:
-                    opt.attr('selected', '')
-                html.append(opt)
 
     def clean(self, values, bfield):
         choices = dict(self.choices())

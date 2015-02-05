@@ -39,10 +39,7 @@ function(angular, root) {
             media: '',  // default url for media content
             html5mode: true, //  html5mode for angular
             hashPrefix: '!',
-            ngModules: [],
-            loadRequire: function (callback) {
-                callback();
-            }
+            ngModules: []
         };
     //
     lux.$ = $;

@@ -35,9 +35,16 @@ class Unsupported(HttpException):
 
 no_draft_field = ('date', 'category')
 
+
+READERS = {}
+
+
 CONTENT_EXTENSIONS = {'text/html': 'html',
                       'text/plain': 'txt',
-                      'application/json': 'json'}
+                      'text/css': 'css',
+                      'application/json': 'json',
+                      'application/javascript': 'js',
+                      'application/xml': 'xml'}
 
 HEAD_META = ('title', 'description', 'author', 'keywords')
 
@@ -87,10 +94,26 @@ def page_info(data, *include_keys):
             yield key, value
 
 
+def register_reader(cls):
+    for extension in cls.file_extensions:
+        READERS[extension] = cls
+    return cls
+
+
+def get_reader(app, src):
+    bits = src.split('.')
+    ext = bits[-1] if len(bits) > 1 else None
+    Reader = READERS.get(ext) or READERS['']
+    if not Reader.enabled:
+        raise BuildError('Missing dependencies for %s' % Reader.__name__)
+    return Reader(app, ext)
+
+
 class Content(object):
     template = None
     template_engine = None
     _json_dict = None
+    _loc = None
     '''Template engine to render this content. Overwritten my metadata.
     If not available, the application default engine is used'''
     mandatory_properties = ()
@@ -137,6 +160,18 @@ class Content(object):
     @property
     def name(self):
         return self._meta.name
+
+    @property
+    def src(self):
+        return self._src
+
+    @property
+    def loc(self):
+        return self._loc or self._src
+
+    @loc.setter
+    def loc(self, value):
+        self._loc = value
 
     @property
     def content_type(self):
@@ -204,9 +239,8 @@ class Content(object):
     def key(self, name=None):
         '''The key for a context dictionary
         '''
-        suffix = self.suffix
         name = name or self.name
-        return '%s_%s' % (suffix, name) if suffix else name
+        return 'html_%s' % name if self.is_html else name
 
     def context(self, context=None):
         '''Extract the context dictionary for server side template rendering
@@ -230,16 +264,22 @@ class Content(object):
                 urlparams[name] = value
         return urlparams
 
-    def render(self, context):
+    def render(self, context=None):
         '''Render the content
         '''
         if self.is_html:
             context = self.context(context)
             content = self._engine(self._content, context)
             if self.template:
-                context[self.key('main')] = content
-                content = self._app.render_template(self.template,
-                                                    context=context)
+                template = self._app.template_full_path(self.template)
+                if template:
+                    context[self.key('main')] = content
+                    with open(template, 'r') as file:
+                        template_str = file.read()
+                    raw = self._engine(template_str, context)
+                    reader = get_reader(self._app, template)
+                    ct = reader.process(raw, template)
+                    content = ct._content
             return content
         else:
             return self._content
@@ -253,7 +293,10 @@ class Content(object):
             # Add additional context keys
             if self.additional_context:
                 for key, ct in self.additional_context.items():
-                    context[ct.key(key)] = ct.render(context)
+                    if isinstance(ct, Content):
+                        key = ct.key(key)
+                        ct = ct.render(context)
+                    context[key] = ct
             #
             assert self.suffix
             data = self._to_json(self._meta)
@@ -313,6 +356,10 @@ class Content(object):
             for css in data.get('require_css') or ():
                 doc.head.links.append(css)
             doc.head.scripts.require.extend(data.get('require_js') or ())
+        #
+        if request.cache.uirouter is False:
+            doc.head.scripts.require.extend(data.get('require_js') or ())
+
         self.on_html(doc)
         return data[self.suffix]['main']
 

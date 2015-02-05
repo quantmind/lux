@@ -103,7 +103,11 @@ class Router(lux.Router, MediaMixin):
         '''
         root = self
         while isinstance(root.parent, Router):
-            root = root.parent
+            if (root.html_body_template == root.parent.html_body_template and
+                    root.parent.uirouter == root.uirouter):
+                root = root.parent
+            else:
+                break
         return root
 
     def get(self, request):
@@ -126,7 +130,8 @@ class Router(lux.Router, MediaMixin):
         doc.body.data({'ng-model': 'page',
                        'ng-controller': 'Page',
                        'page': ''})
-        #
+        # Build the ui-view main
+        main = self.build_main(request)
         # Add info to jscontext
         jscontext = doc.jscontext
         jscontext['html5mode'] = app.config['HTML5_NAVIGATION']
@@ -134,11 +139,14 @@ class Router(lux.Router, MediaMixin):
         navbar['collapseWidth'] = app.config['NAVBAR_COLLAPSE_WIDTH']
         jscontext['navbar'] = navbar
         #
-        # Build the ui-view main
-        main = self.build_main(request)
+        if jscontext['html5mode']:
+            doc.head.meta.append(Html('base', href=""))
         #
         ngmodules = add_ng_modules(doc, app.config['NGMODULES'])
-        uirouter = app.config['ANGULAR_UI_ROUTER'] and self.uirouter
+        if request.cache.uirouter is False:
+            uirouter = None
+        else:
+            uirouter = app.config['ANGULAR_UI_ROUTER'] and self.uirouter
         #
         # Using Angular Ui-Router
         if uirouter:
@@ -253,7 +261,7 @@ def add_to_sitemap(sitemap, app, router, parent=None):
         return
     uirouter = app.config['ANGULAR_UI_ROUTER'] and router.uirouter
     if (not uirouter or
-            (router.parent and
+            (parent and
              router.parent.html_body_template != router.html_body_template)):
         return
 
