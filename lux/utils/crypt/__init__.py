@@ -3,14 +3,7 @@ import string
 import random
 from hashlib import sha1
 
-from pulsar.utils.pep import ispy3k
-
-
-if ispy3k:
-    default_choices = string.digits + string.ascii_letters
-else:   # pragma    nocover
-    default_choices = string.digits + string.letters
-    range = xrange
+default_choices = string.digits + string.ascii_letters
 
 
 def get_random_string(length, allowed_chars=None):

@@ -8,7 +8,6 @@ from datetime import datetime
 
 from pulsar import asyncio
 from pulsar.utils.structures import OrderedDict, mapping_iterator
-from pulsar.utils.pep import itervalues, iteritems, ispy3k
 from pulsar.apps.http import HttpClient
 from pulsar.apps import wsgi
 
@@ -104,12 +103,8 @@ class Symbolic(object):
     def __rmul__(self, other):
         return self.__mul__(other)
 
-    if ispy3k:  # pragma: no cover
-        def __truediv__(self, other):
-            return self._sp(other, division)
-    else:   # pragma: no cover
-        def __div__(self, other):
-            return self._sp(other, division)
+    def __truediv__(self, other):
+        return self._sp(other, division)
 
     def _op(self, other, op, right=False):
         raise NotImplementedError
@@ -438,7 +433,7 @@ class Media(Mixin):
         media = self.type
         if self.query:
             query = ' and '.join(('(%s:%s)' % (k.replace('_', '-'), v)
-                                  for k, v in iteritems(self.query)))
+                                  for k, v in self.query.items()))
             media = '%s and %s' % (media, query)
         stream = '\n'.join(('@media %s {' % media,
                             self.container.render('    '),
@@ -569,7 +564,7 @@ class Css(CssBase):
         else:
             elems = [Css(tag)]
         for clone, css in enumerate(elems):
-            for name, value in iteritems(attributes):
+            for name, value in attributes.items():
                 css[name] = value
             css.set_parent(self)
             # Loop over components to add them to self
@@ -651,7 +646,7 @@ class Css(CssBase):
     def extend(self, elem):
         '''Extend by adding *elem* attributes and children.'''
         self._attributes.extend(elem._attributes)
-        for child_list in itervalues(elem._children):
+        for child_list in elem._children.values():
             for child in child_list:
                 child.set_parent(self)
 
@@ -663,7 +658,7 @@ class Css(CssBase):
         self.rendered = True
         children = self._children
         self._children = OrderedDict()
-        for tag, clist in iteritems(children):
+        for tag, clist in children.items():
             for c in clist:
                 c._parent = None
                 s = c.set_parent(self)
@@ -677,7 +672,7 @@ class Css(CssBase):
         if data:
             yield (self.tag, '\n'.join(data))
         # Mixins and children
-        for child_list in itervalues(self._children):
+        for child_list in self._children.values():
             if isinstance(child_list, list):
                 child = child_list[0]
                 for c in child_list[1:]:
@@ -697,7 +692,7 @@ class Css(CssBase):
                 od[data].append(tag)
 
         def _():
-            for data, tags in iteritems(od):
+            for data, tags in od.items():
                 if tags:
                     yield ',\n'.join(('%s%s' % (whitespace, t) for t in tags)
                                      ) + ' {'

@@ -1,18 +1,12 @@
 import string
-from itertools import chain
+from itertools import chain, zip_longest
 from random import choice
 from collections import Hashable
 from functools import partial
 from datetime import datetime, date
 
 from pulsar.utils.httpurl import *
-from pulsar.utils.pep import range, ispy3k, to_string
 from pulsar.utils.version import get_version
-
-if ispy3k:
-    from itertools import zip_longest
-else:
-    from itertools import izip_longest as zip_longest
 
 
 def unique_tuple(*iterables):

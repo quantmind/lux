@@ -49,7 +49,6 @@ router. The router serves requests at the ``/api/blog/`` url.
 '''
 from pulsar import HttpException, Http404, ImproperlyConfigured
 from pulsar.utils.structures import OrderedDict, mapping_iterator
-from pulsar.utils.pep import itervalues
 from pulsar.utils.slugify import slugify
 from pulsar.apps.wsgi import Json
 from pulsar.utils.httpurl import JSON_CONTENT_TYPES, remove_double_slash
@@ -126,7 +125,7 @@ class Extension(lux.Extension):
         url = app.config['API_URL']
         app.api = api = ApiRoot(url)
         app.config['API_URL'] = str(api.route)
-        for extension in itervalues(app.extensions):
+        for extension in app.extensions.values():
             api_sections = getattr(extension, 'api_sections', None)
             if api_sections:
                 for router in api_sections(app):

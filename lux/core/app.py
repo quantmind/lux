@@ -11,7 +11,6 @@ from pulsar import HttpException, ImproperlyConfigured
 from pulsar.utils.httpurl import remove_double_slash
 from pulsar.apps.wsgi import (WsgiHandler, HtmlDocument, test_wsgi_environ,
                               LazyWsgi)
-from pulsar.utils.pep import itervalues
 from pulsar.utils.log import lazyproperty
 from pulsar.utils.importer import module_attribute
 
@@ -619,7 +618,7 @@ class Application(ConsoleParser, Extension):
         this :class:`App` can be used by pulsar in a multiprocessing setup.
         '''
         # do this here so that the config is already loaded before fire signal
-        extensions = list(itervalues(self.extensions))
+        extensions = list(self.extensions.values())
         self.fire('on_config')
         middleware = []
         rmiddleware = []

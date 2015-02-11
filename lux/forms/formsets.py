@@ -1,13 +1,8 @@
 from copy import copy
+from itertools import zip_longest
 
-from pulsar.utils.html import UnicodeMixin, ispy3k, to_string
+from pulsar.utils.html import to_string
 from pulsar.apps.wsgi import html_factory
-
-if ispy3k:
-    from itertools import zip_longest
-else:
-    from itertools import izip_longest as zip_longest
-    range = xrange
 
 from .fields import IntegerField, CharField, ValidationError
 
@@ -18,7 +13,7 @@ __all__ = ['FormSet']
 HiddenInput = html_factory('input', type='hidden')
 
 
-class FormSet(UnicodeMixin):
+class FormSet(object):
     '''A factory class for foreign keys model fields. Instances
 of this class are declared in the body of a :class:`Form`.
 

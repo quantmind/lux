@@ -37,7 +37,7 @@ class FormError(Exception):
 
 
 class ValidationError(ValueError):
-    '''Raised when a :class:`djpcms.Form` instance does not validate.
+    '''Raised when a :class:`~.Form` instance does not validate.
 
 .. attribute:: field_name
 
@@ -119,12 +119,6 @@ class Field(object):
             an unbounded form. The :func:`Form.initials`
             method return a dictionary of initial values for fields
             providing one.
-
-    .. attribute:: widget
-
-        The :class:`djpcms.html.WidgetMaker` for this field.
-
-        Default: ``None``.
 
     .. attribute:: attrs
 

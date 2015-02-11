@@ -3,9 +3,9 @@ from collections import Mapping
 from functools import partial
 
 from pulsar import multi_async, HttpRedirect
-from pulsar.utils.pep import iteritems, to_string
+from pulsar.utils.pep import to_string
 from pulsar.utils.structures import OrderedDict
-from pulsar.utils.html import nicename, UnicodeMixin, NOTHING
+from pulsar.utils.html import nicename, NOTHING
 
 from lux import Html
 from lux.utils import JSON_CONTENT_TYPES
@@ -43,7 +43,7 @@ class FieldList(list):
      :class:`Form` class.
      For example::
 
-         from djpcms import forms
+         from lux import forms
 
          class MyForm(forms.Form):
              some_fields = forms.FieldList(('name',forms.CharField()),
@@ -119,7 +119,7 @@ class FormType(type):
         return super(FormType, cls).__new__(cls, name, bases, attrs)
 
 
-class Form(FormType('BaseForm', (UnicodeMixin,), {})):
+class Form(metaclass=FormType):
     '''Base class for forms.
 
     It can be used for browser based applications as well as remote procedure
@@ -377,7 +377,7 @@ instances with initial values.'''
         This class method can be useful when using forms outside web
         applications.
         '''
-        for name, field in iteritems(cls.base_fields):
+        for name, field in cls.base_fields.items():
             initial = field.get_initial(cls)
             if initial is not None:
                 yield name, initial
@@ -417,7 +417,7 @@ instances with initial values.'''
         initial = self.initial
         is_bound = self.is_bound
         # Loop over form fields
-        for name, field in iteritems(self.base_fields):
+        for name, field in self.base_fields.items():
             bfield = BoundField(self, field, name, self.prefix)
             key = bfield.html_name
             if is_bound and exclude_missing and key not in rawdata:
@@ -442,7 +442,7 @@ instances with initial values.'''
         self.initial = initial = {}
         instance = self.instance
         instance_id = instance.id if instance else None
-        for name, field in iteritems(self.base_fields):
+        for name, field in self.base_fields.items():
             if name in old_initial:
                 value = old_initial[name]
             else:
@@ -483,7 +483,7 @@ class BoundField(object):
 
     .. attribute::    request
 
-        An instance of :class:`djpcms.core.Request`
+        An WSGI request
 
     .. attribute::    name
 
@@ -537,9 +537,8 @@ class BoundField(object):
             form._form_message(form._errors, self.name, err)
 
     def widget(self):
-        '''The :class:`djpcms.html.Widget` instance for the field
-with bound data and attributes. This is obtained from the :class:`Field.widget`
-factory.'''
+        '''The instance for the field with bound data and attributes.
+        This is obtained from the :class:`Field.widget` factory.'''
         field = self.field
         data = field.get_widget_data(self)
         fdata = self.form.get_widget_data(self)

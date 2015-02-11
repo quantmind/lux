@@ -1,12 +1,7 @@
 import colorsys
 from collections import namedtuple
 
-from .base import (Unit, as_value, ispy3k, Variable, clamp, Lazy)
-
-
-if not ispy3k:  # pragma: no cover
-    from itertools import izip
-    zip = izip
+from .base import Unit, as_value, Variable, clamp, Lazy
 
 
 __all__ = ['RGBA', 'color', 'safe_color', 'lighten', 'darken', 'mix_colors']

@@ -1,13 +1,13 @@
 import os
 import itertools
 
-from lux.utils import to_string
-
 
 __all__ = ['File', 'Filehandler', 'Disk']
 
 
 class File(object):
+    '''A file object
+    '''
     DEFAULT_CHUNK_SIZE = 64 * 2**10
 
     def __init__(self, file, name=None, content_type=None, size=None):
@@ -57,14 +57,12 @@ class Filehandler(object):
         raise NotImplementedError()
 
     def save(self, file):
-        '''Save an instance of :class:`djpcms.core.files.File` into
-the backened storage.'''
+        '''Save an instance of :class:`~.File` into the backened storage.'''
         name = file.name
         name = self.get_available_name(name)
         name = self._save(name, file)
-
         # Store filenames with forward slashes, even on Windows
-        return to_string(name.replace('\\', '/'))
+        return name.replace('\\', '/')
 
     # These methods are part of the public API, with default implementations.
 
