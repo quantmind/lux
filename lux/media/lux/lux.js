@@ -1,6 +1,6 @@
 //      Lux Library - v0.1.1
 
-//      Compiled 2015-01-13.
+//      Compiled 2015-02-13.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -2284,6 +2284,7 @@ angular.module("users/messages.tpl.html", []).run(["$templateCache", function($t
         //
         .config(['$controllerProvider', function ($controllerProvider) {
             lux.loader.cp = $controllerProvider;
+            lux.loader.controller = $controllerProvider;
         }])
         //
         .run(['$rootScope', '$log', '$timeout', 'context', function (scope, $log, $timeout, context) {

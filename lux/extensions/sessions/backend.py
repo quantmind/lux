@@ -165,10 +165,8 @@ class AuthBackend(object):
     DELETE = 40     # D
     wsgi = None
 
-    def init_wsgi(self, app):
+    def __init__(self, app):
         self.app = app
-        self.wsgi = WsgiHandler([self], response_middleware=False)
-        return self.wsgi
 
     @property
     def config(self):
