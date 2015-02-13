@@ -13,7 +13,7 @@ from .jwtmixin import jwt
 
 
 __all__ = ['Login', 'SignUp', 'Logout', 'Token', 'ForgotPassword',
-           'ChangePassword', 'csrf']
+           'ChangePassword', 'csrf', 'RequirePermission']
 
 
 def csrf(method):
@@ -256,3 +256,17 @@ class Token(lux.Router):
         token = jwt.encode({'username': user.username,
                             'application': cfg['APP_NAME']}, secret)
         return Json({'token': token}).http_response(request)
+
+
+class RequirePermission(object):
+    '''Decorator to apply to a view
+    '''
+    def __init__(self, name):
+        self.name = name
+
+    def __call__(self, callable):
+
+        def _(*args, **kw):
+            return callable(*args, **kw)
+
+        return _

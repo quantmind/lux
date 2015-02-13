@@ -99,6 +99,7 @@ def execute_app(app, argv=None, **params):
 
 
 class App(LazyWsgi):
+
     def __init__(self, config_file, script=None, argv=None, **params):
         if not os.path.isfile(config_file):
             config_file = import_module(config_file).__file__
