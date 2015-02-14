@@ -96,11 +96,6 @@ def api404(environ, start_response):
 class Extension(lux.Extension):
 
     _config = [
-        Parameter('DATASTORE', None,
-                  'Dictionary for mapping models to their back-ends database'),
-        Parameter('SEARCHENGINE', None,
-                  'Search engine for models'),
-        Parameter('ODM', None, 'Optional Object Data Mapper.'),
         Parameter('DUMPDB_EXTENSIONS', None, ''),
         Parameter('API_URL', 'api/', ''),
         Parameter('API_DOCS_URL', 'api/docs', ''),
