@@ -148,7 +148,6 @@ class Application(ConsoleParser, Extension):
     cfg = None
     debug = False
     logger = None
-    models = None
     admin = None
     auth_backend = None
 

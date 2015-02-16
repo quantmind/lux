@@ -9,8 +9,7 @@ import argparse
 import logging
 
 from pulsar import (Setting, get_event_loop, Application, ImproperlyConfigured,
-                    asyncio, maybe_async, Future, Config, get_actor)
-from pulsar.utils.pep import native_str
+                    asyncio, Config, get_actor, is_async)
 from pulsar.utils.config import Loglevel, Debug, LogHandlers
 
 from lux import __version__
@@ -140,9 +139,8 @@ class Command(ConsoleParser):
         Most commands are run using this method.
         '''
         loop = get_event_loop()
-        result = maybe_async(self.run(options, **params), loop=loop)
-        if isinstance(result, Future):
-            assert not loop.is_running(), 'Loop already running'
+        result = self.run(options, **params)
+        if is_async(result) and not loop.is_running():
             return loop.run_until_complete(result)
         else:
             return result
@@ -155,14 +153,14 @@ class Command(ConsoleParser):
         '''Write ``stream`` to the :attr:`stdout`.'''
         h = self.stdout or sys.stdout
         if stream:
-            h.write(native_str(stream))
+            h.write(stream)
         h.write('\n')
 
     def write_err(self, stream=''):
         '''Write ``stream`` to the :attr:`stderr`.'''
         h = self.stderr or self.stdout or sys.stderr
         if stream:
-            h.write(native_str(stream))
+            h.write(stream)
         h.write('\n')
 
     def pulsar_app(self, argv, application=None, log_name='lux', **kw):

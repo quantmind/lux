@@ -49,8 +49,7 @@ class Extension(lux.Extension):
     protection and user permissions levels.
     '''
     _config = [
-        Parameter('AUTHENTICATION_BACKEND',
-                  'lux.extensions.sessions.AuthBackend',
+        Parameter('AUTHENTICATION_BACKEND', None,
                   'Python dotted path to a class used to provide '
                   'a backend for authentication.'),
         Parameter('CRYPT_ALGORITHM',
@@ -102,7 +101,8 @@ class Extension(lux.Extension):
                 return [self.backend.wsgi]
 
     def response_middleware(self, app):
-        return [self.backend.response_middleware]
+        if self.backend:
+            return [self.backend.response_middleware]
 
     def on_html_document(self, app, request, doc):
         add_ng_modules(doc, self.ngModules)

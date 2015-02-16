@@ -15,13 +15,9 @@ class Command(lux.Command):
     help = ("create database tables for registered models.")
     args = '[appname appname.ModelName ...]'
 
-    def __call__(self, argv, **params):
-        return self.run_until_complete(argv, **params)
-
-    def run(self, options):
+    def run(self, options, **params):
         apps = options.apps
-        models = self.app.models
-        for model in models:
-            manager = models[model]
-            result = manager.create_table(remove_existing=options.force)
+        mapper = self.app.mapper
+        for manager in mapper:
+            result = yield from manager.table_create(options.force)
             self.write('Created table for %s' % manager)

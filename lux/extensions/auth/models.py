@@ -36,8 +36,12 @@ class Permission(odm.Model):
 
 
 class AuthBackend(backend.AuthBackend):
-    '''Authentication Backend based on pulsar-odm models
+    '''Authentication Backend based on :mod:`lux.extensions.odm`
     '''
+    @property
+    def mapper(self):
+        return self.app.mapper
+
     def has_permission(self, request, level, model):
         user = request.cache.user
         if user.is_superuser():
@@ -91,10 +95,6 @@ class AuthBackend(backend.AuthBackend):
 
 class SessionBackend(SessionMixin, AuthBackend):
 
-    def __init__(self, app):
-        super().__init__(app)
-        self.User = User
-
     def get_session(self, id):
         return self.Session.get_by_id(id)
 
@@ -108,12 +108,11 @@ class SessionBackend(SessionMixin, AuthBackend):
             session.put()
         if not expiry:
             expiry = datetime.now() + timedelta(seconds=self.session_expiry)
-        session = self.Session(id=self.create_session_id(),
-                               user=user.key if user else None,
-                               expiry=expiry,
-                               client_address=request.get_client_address(),
-                               agent=request.get('HTTP_USER_AGENT', ''))
-        session.put()
+        client_address = request.get_client_address()
+        session = self.mapper.session(
+            user=user, expiry=expiry, client_address=client_address,
+            agent=request.get('HTTP_USER_AGENT', ''))
+        session.save()
         return session
 
     def get_user_by_email(self, email):
