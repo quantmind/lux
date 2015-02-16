@@ -12,7 +12,7 @@ class Command(lux.Command):
         app = self.app
         server = self.pulsar_app(argv, wsgi.WSGIServer)
         app.on_start(server)
-        if start:   # pragma    nocover
+        if start and not server.logger:   # pragma    nocover
             server.start()
         else:
             return server

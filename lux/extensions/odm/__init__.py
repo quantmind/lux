@@ -1,5 +1,6 @@
 from pulsar import ImproperlyConfigured
 from pulsar.apps.greenio import GreenPool
+from pulsar.utils.log import LocalMixin
 
 import lux
 from lux import Parameter
@@ -25,18 +26,33 @@ class Extension(lux.Extension):
         If :setting:`API_URL` is defined, it loops through all extensions
         and checks if the ``api_sections`` method is available.
         '''
-        datastore = app.config['DATASTORE']
+        app.mapper = AppMapper(app)
+        if app.config['USEGREENLET']:
+            app.handler = run_in_green_pool(app.handler)
+
+
+class AppMapper(LocalMixin):
+
+    def __init__(self, app):
+        self.app = app
+
+    def __call__(self):
+        if not self.local.mapper:
+            self.local.mapper = self.create_mapper()
+        return self.local.mapper
+
+    def create_mapper(self):
+        datastore = self.app.config['DATASTORE']
         if not datastore:
             return
         if 'default' not in datastore:
             raise ImproperlyConfigured('default datastore not specified')
-        if app.config['USEGREENLET']:
-            app.mapper = GreenMapper(datastore['default'])
+        if self.app.config['USEGREENLET']:
+            mapper = GreenMapper(datastore['default'])
         else:
-            app.mapper = odm.Mapper(datastore['default'])
-        app.mapper.register_applications(app.config['EXTENSIONS'])
-        if app.config['USEGREENLET']:
-            app.handler = run_in_green_pool(app.handler)
+            mapper = odm.Mapper(datastore['default'])
+        mapper.register_applications(self.app.config['EXTENSIONS'])
+        return mapper
 
 
 class run_in_green_pool:
