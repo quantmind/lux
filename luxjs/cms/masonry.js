@@ -1,45 +1,47 @@
 
     angular.module('lux.masonry', [])
-    .controller('MasonryCtrl', ['$scope', '$element', '$timeout', function ($scope, $element, $timeout) {
-        var bricks = {};
-        var schedule = [];
-        var destroyed = false;
-        var self = this;
-        var timeout = null;
 
-        this.preserveOrder = false;
-        this.loadImages = true;
+        .controller('MasonryCtrl', ['$scope', '$element', '$timeout',
+                function ($scope, $element, $timeout) {
+            var bricks = {};
+            var schedule = [];
+            var destroyed = false;
+            var self = this;
+            var timeout = null;
 
-        this.scheduleMasonryOnce = function scheduleMasonryOnce() {
-            var args = arguments;
-            var found = schedule.filter(function filterFn(item) {
-              return item[0] === args[0];
-            }).length > 0;
+            this.preserveOrder = false;
+            this.loadImages = true;
 
-            if (!found) {
-              this.scheduleMasonry.apply(null, arguments);
-            }
-        };
+            this.scheduleMasonryOnce = function scheduleMasonryOnce() {
+                var args = arguments;
+                var found = schedule.filter(function filterFn(item) {
+                  return item[0] === args[0];
+                }).length > 0;
 
-        // Make sure it's only executed once within a reasonable time-frame in
-        // case multiple elements are removed or added at once.
-        this.scheduleMasonry = function scheduleMasonry() {
-            if (timeout) {
-                $timeout.cancel(timeout);
-            }
+                if (!found) {
+                  this.scheduleMasonry.apply(null, arguments);
+                }
+            };
 
-            schedule.push([].slice.call(arguments));
+            // Make sure it's only executed once within a reasonable time-frame in
+            // case multiple elements are removed or added at once.
+            this.scheduleMasonry = function scheduleMasonry() {
+                if (timeout) {
+                    $timeout.cancel(timeout);
+                }
 
-            timeout = $timeout(function runMasonry() {
-              if (destroyed) {
-                return;
-              }
-              schedule.forEach(function scheduleForEach(args) {
-                $element.masonry.apply($element, args);
-              });
-              schedule = [];
-            }, 30);
-        };
+                schedule.push([].slice.call(arguments));
+
+                timeout = $timeout(function runMasonry() {
+                  if (destroyed) {
+                    return;
+                  }
+                  schedule.forEach(function scheduleForEach(args) {
+                    $element.masonry.apply($element, args);
+                  });
+                  schedule = [];
+                }, 30);
+            };
 
       function defaultLoaded($element) {
         $element.addClass('loaded');

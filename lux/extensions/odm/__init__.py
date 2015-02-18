@@ -1,5 +1,5 @@
 from pulsar import ImproperlyConfigured
-from pulsar.apps.greenio import GreenPool
+from pulsar.apps.greenio import GreenPool, wait
 from pulsar.utils.log import LocalMixin
 
 import lux
@@ -28,7 +28,7 @@ class Extension(lux.Extension):
         '''
         app.mapper = AppMapper(app)
         if app.config['USEGREENLET']:
-            app.handler = run_in_green_pool(app.handler)
+            app.handler = WsgiGreenPool(app.handler)
 
 
 class AppMapper(LocalMixin):
@@ -55,10 +55,10 @@ class AppMapper(LocalMixin):
         return mapper
 
 
-class run_in_green_pool:
+class WsgiGreenPool:
 
-    def __init__(self, middleware, max_workers=None):
-        self.middleware = middleware
+    def __init__(self, wsgi, max_workers=None):
+        self.wsgi = wsgi
         self.max_workers = max_workers
         self.pool = None
 
@@ -66,4 +66,7 @@ class run_in_green_pool:
         if self.pool is None:
             self.pool = GreenPool(max_workers=self.max_workers)
 
-        return self.pool.submit(self.middleware, environ, start_response)
+        return self.pool.submit(self._green_handler, environ, start_response)
+
+    def _green_handler(self, environ, start_response):
+        return wait(self.wsgi(environ, start_response))

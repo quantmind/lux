@@ -10,7 +10,7 @@ def add_css(all):
     vars.font_family = '"freight-text-pro",Georgia,Cambria,"Times New Roman",Times,serif'
     vars.font_size = px(18)
     vars.line_height = 1.5
-    vars.color = color(0,0,0,0.8)
+    vars.color = color(0, 0, 0, 0.8)
 
     vars.navbar_height = 50
     vars.colors.lux_blue = color('#005A8A')

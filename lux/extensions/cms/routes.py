@@ -19,7 +19,7 @@ class CMS(angular.Router):
     template = '<div data-compile-html></div>'
 
     def __init__(self, *args, **kwargs):
-        super(CMS, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         if self.manager:
             self.api = CRUD('_cms', manager=self.manager)
             self.routes.insert(0, self.api)

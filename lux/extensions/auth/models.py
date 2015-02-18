@@ -35,6 +35,12 @@ class Permission(odm.Model):
     level = odm.IntegerField()
 
 
+class Application(odm.Model):
+    user = odm.ForeignKey(User)
+    key = odm.TextField()
+    secret = odm.TextField()
+
+
 class AuthBackend(backend.AuthBackend):
     '''Authentication Backend based on :mod:`lux.extensions.odm`
     '''
