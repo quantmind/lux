@@ -1,3 +1,2 @@
 python-dateutil
 pulsar
--e git+https://github.com/quantmind/pulsar-odm.git#egg=odm
