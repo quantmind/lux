@@ -1,4 +1,4 @@
-pulsar
 python-dateutil
-pulsar-odm
 pyjwt
+pulsar
+pulsar-odm
