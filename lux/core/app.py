@@ -150,7 +150,7 @@ class Application(ConsoleParser, Extension):
     logger = None
     admin = None
     auth_backend = None
-
+    _WsgiHandler = WsgiHandler
     _config = [
         Parameter('EXTENSIONS', [],
                   'List of extension names to use in your application. '
@@ -631,7 +631,7 @@ class Application(ConsoleParser, Extension):
                 rmiddleware.extend(_middleware)
         # Response middleware executed in reversed order
         rmiddleware = list(reversed(rmiddleware))
-        return WsgiHandler(middleware, response_middleware=rmiddleware)
+        return self._WsgiHandler(middleware, response_middleware=rmiddleware)
 
 
 def add_app(apps, name, pos=None):

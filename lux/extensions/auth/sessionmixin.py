@@ -28,7 +28,7 @@ class SessionMixin(object):
     dismiss_message = None
 
     def __init__(self, app):
-        wsgi = self.init_wsgi(app)
+        self._init(app)
         cfg = self.config
         self.encoding = cfg['ENCODING']
         self.secret_key = cfg['SECRET_KEY'].encode()
@@ -40,9 +40,14 @@ class SessionMixin(object):
         algorithm = cfg['CRYPT_ALGORITHM']
         self.crypt_module = import_module(algorithm)
         self.jwt = jwt
+
+    def wsgi(self):
+        wsgi = [self]
+        cfg = self.config
         if cfg['SESSION_MESSAGES']:
-            wsgi.middleware.append(Router('_dismiss_message',
-                                          post=self._dismiss_message))
+            wsgi.append(Router('_dismiss_message',
+                               post=self._dismiss_message))
+        return wsgi
 
     # ABSTRACT METHODS WHICH MUST BE IMPLEMENTED
     def get_session(self, key):
@@ -55,6 +60,14 @@ class SessionMixin(object):
         '''
         raise NotImplementedError
 
+    def session_save(self, session):
+        raise NotImplementedError
+
+    def session_create(self, request, user=None, expiry=None):
+        '''Create a new session
+        '''
+        raise NotImplementedError
+
     def create_registration(self, request, user, expiry):
         '''Create a registration entry for a user.
         This method should return the registration/activation key.'''
@@ -62,11 +75,6 @@ class SessionMixin(object):
 
     def confirm_registration(self, request, **params):
         '''Confirm registration'''
-        raise NotImplementedError
-
-    def create_session(self, request, user=None, expiry=None):
-        '''Create a new session
-        '''
         raise NotImplementedError
 
     def get_user_by_email(self, email):
@@ -89,7 +97,7 @@ class SessionMixin(object):
         if session_key:
             session = self.get_session(session_key.value)
         if not session:
-            session = self.create_session(request)
+            session = self.session_create(request)
         request.cache.session = session
         if session.user:
             request.cache.user = session.user.get()
@@ -102,12 +110,12 @@ class SessionMixin(object):
             if response.can_set_cookies():
                 key = request.app.config['SESSION_COOKIE_NAME']
                 session_key = request.cookies.get(key)
-                id = str(session.key.id())
+                id = self.session_key(session)
                 if not session_key or session_key.value != id:
                     response.set_cookie(key, value=str(id), httponly=True,
                                         expires=session.expiry)
 
-            session.put()
+            self.session_save(session)
         return response
 
     # CSRF
@@ -132,13 +140,6 @@ class SessionMixin(object):
         else:
             if token['session'] != self.session_key(request.cache.session):
                 raise PermissionDenied(REASON_BAD_TOKEN)
-
-    def create_session_id(self):
-        while True:
-            session_key = get_random_string(32)
-            if not self.get_session(session_key):
-                break
-        return session_key
 
     def password_recovery(self, request, email):
         '''Recovery password email

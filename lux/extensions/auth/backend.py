@@ -163,12 +163,9 @@ class AuthBackend(object):
     READ = 10       # R
     UPDATE = 20     # U
     DELETE = 40     # D
-    wsgi = None
 
-    def init_wsgi(self, app):
+    def _init(self, app):
         self.app = app
-        self.wsgi = WsgiHandler([self])
-        return self.wsgi
 
     @property
     def config(self):
@@ -179,6 +176,9 @@ class AuthBackend(object):
         # Inject self as the authentication backend
         request.cache.auth_backend = self
         return self.request(request)
+
+    def wsgi(self):
+        return [self]
 
     def response_middleware(self, environ, response):
         request = self.app.wsgi_request(environ)

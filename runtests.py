@@ -31,7 +31,7 @@ def runtests():
         sys.exit(0)
     #
     TestSuite(description='Lux Asynchronous test suite',
-              modules=['tests.luxpy'],
+              modules=['tests'],
               plugins=(bench.BenchMark(),
                        profile.Profile())).start()
 

@@ -7,7 +7,7 @@ from .jwtmixin import JWTMixin
 from . import backend
 
 
-class User(odm.Model):
+class User(odm.Model, backend.UserMixin):
     username = odm.CharField()
     password = odm.CharField()
     name = odm.CharField()
@@ -22,7 +22,8 @@ class User(odm.Model):
     #messages = odm.StructuredProperty(Message, repeated=True)
 
 
-class Session(odm.Model):
+class Session(odm.Model, backend.MessageMixin):
+    expiry = odm.DateTimeField()
     user = odm.ForeignKey(User, required=False)
     access = odm.IntegerField(default=1)
     agent = odm.CharField()
@@ -46,7 +47,7 @@ class AuthBackend(backend.AuthBackend):
     '''
     @property
     def mapper(self):
-        return self.app.mapper
+        return self.app.mapper()
 
     def has_permission(self, request, level, model):
         user = request.cache.user
@@ -102,12 +103,15 @@ class AuthBackend(backend.AuthBackend):
 class SessionBackend(SessionMixin, AuthBackend):
 
     def get_session(self, id):
-        return self.Session.get_by_id(id)
+        return self.mapper.session.get(id)
 
     def session_key(self, session):
-        return session.key.id() if session else None
+        return session.pk if session else None
 
-    def create_session(self, request, user=None, expiry=None):
+    def session_save(self, session):
+        session.save()
+
+    def session_create(self, request, user=None, expiry=None):
         session = request.cache.session
         if session:
             session.expiry = datetime.now()
@@ -115,11 +119,9 @@ class SessionBackend(SessionMixin, AuthBackend):
         if not expiry:
             expiry = datetime.now() + timedelta(seconds=self.session_expiry)
         client_address = request.get_client_address()
-        session = self.mapper.session(
+        return self.mapper.session(
             user=user, expiry=expiry, client_address=client_address,
-            agent=request.get('HTTP_USER_AGENT', ''))
-        session.save()
-        return session
+            agent=request.get('HTTP_USER_AGENT', '')).save()
 
     def get_user_by_email(self, email):
         return self.User.get_by_email(email)

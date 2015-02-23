@@ -1,3 +1,4 @@
 pulsar
 python-dateutil
 pulsar-odm
+pyjwt

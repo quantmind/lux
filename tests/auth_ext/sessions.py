@@ -1,11 +1,10 @@
-__test__ = False
 import lux
 from lux.utils import test
 
 
 class TestCase(test.TestCase):
     config_params = {'EXTENSIONS': ['lux.extensions.api',
-                                    'lux.extensions.sessions']}
+                                    'lux.extensions.auth']}
 
     def test_create_superuser(self):
         command = self.fetch_command('create_superuser')

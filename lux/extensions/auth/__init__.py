@@ -97,8 +97,7 @@ class Extension(lux.Extension):
         dotted_path = app.config['AUTHENTICATION_BACKEND']
         if dotted_path:
             self.backend = module_attribute(dotted_path)(app)
-            if self.backend.wsgi:
-                return [self.backend.wsgi]
+            return self.backend.wsgi()
 
     def response_middleware(self, app):
         if self.backend:

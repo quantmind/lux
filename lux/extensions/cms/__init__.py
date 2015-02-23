@@ -10,8 +10,15 @@ class Extension(lux.Extension):
     def middleware(self, app):
         '''Add middleware to edit content
         '''
+        pass
 
-    def on_loaded(self, app, handler):
+    def on_loaded(self, app):
+        ext = app.extensions.get('pubsub')
+        if ext:
+            # pubsub extension available
+            # add page update channel
+            ext.websocket
+
         templates = app.config['PAGE_TEMPLATES']
         dtemplates = OrderedDict()
         for id, template in enumerate(app.config['PAGE_TEMPLATES'], 1):
