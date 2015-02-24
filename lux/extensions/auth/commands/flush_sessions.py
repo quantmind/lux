@@ -17,20 +17,17 @@ class Command(lux.Command):
     def __call__(self, argv, **params):
         return self.run_until_complete(argv, **params)
 
-    def run(self, argv, **params):
-        request = self.app.wsgi_request()
-        options = self.options(argv)
-        qs = request.models[Session].query()
-        if not options.all:
-            qs = qs.filter(expiry__lt=datetime.now())
-        deleted = yield qs.delete()
-        if deleted:
-            N = len(deleted)
+    def run(self, options, **params):
+        ext = self.app.extensions['auth']
+        auth = ext.backend
+        if not auth:
+            raise ImproperlyConfigured('Authentication backend not available')
+        N = auth.flush_sessions(options.all)
+        if N:
             if options.all:
                 self.write('Removed %s sessions' % N)
             else:
                 self.write('Removed %s expired sessions' % N)
         else:
-            N = 0
             self.write('Nothing done')
-        yield N
+        return N

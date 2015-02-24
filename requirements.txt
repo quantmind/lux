@@ -1,4 +1,5 @@
 python-dateutil
 pyjwt
+greenlet
 pulsar
 pulsar-odm

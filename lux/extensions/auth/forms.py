@@ -9,8 +9,8 @@ __all__ = ['LoginForm', 'CreateUserForm', 'ChangePasswordForm',
 class LoginForm(forms.Form):
     '''The Standard login form'''
     error_message = 'Incorrect username or password'
-    username = forms.CharField(maxlength=30)
-    password = forms.PasswordField(maxlength=128)
+    username = forms.CharField(required=True, minlength=6, maxlength=30)
+    password = forms.PasswordField(required=True, minlength=6, maxlength=128)
 
     layout = forms.Layout(
         forms.Fieldset(all=True),
@@ -22,21 +22,18 @@ class LoginForm(forms.Form):
 
 
 class PasswordForm(forms.Form):
-    password = forms.PasswordField(minlength=6, maxlength=60)
+    password = forms.PasswordField(required=True, minlength=6, maxlength=128)
     password_repeat = forms.PasswordField(
         label='confirm password',
         data_check_repeat='password')
 
     layout = forms.Layout(
-        forms.Fieldset(all=True),
+        forms.Fieldset('password', 'password_repeat'),
         forms.Submit('Reset password', classes='btn btn-primary'),
         showLabels=False)
 
 
 class CreateUserForm(PasswordForm):
-    username = forms.CharField(minlength=6, maxlength=30,
-                               helpText='between 6 and 30 characters')
-    email = forms.EmailField()
 
     layout = forms.Layout(
         forms.Fieldset('username', 'email', 'password', 'password_repeat'),

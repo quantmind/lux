@@ -4,22 +4,27 @@ import odm
 
 from .sessionmixin import SessionMixin
 from .jwtmixin import JWTMixin
+from .backend import AuthenticationError
 from . import backend
 
 
 class User(odm.Model, backend.UserMixin):
-    username = odm.CharField()
-    password = odm.CharField()
+    username = odm.CharField(required=True, minlength=6, maxlength=30)
+    password = odm.PasswordField(maxlength=128)
     name = odm.CharField()
     surname = odm.CharField()
-    email = odm.CharField()
+    email = odm.EmailField()
     active = odm.BooleanField(default=False)
     superuser = odm.BooleanField(default=False)
     company = odm.CharField()
-    joined = odm.DateTimeField(auto_now_add=True)
+    joined = odm.DateTimeField(default=lambda _: datetime.now())
+    #timezone = odm.CharField(default=default_timezone)
     #
     #oauths = odm.StructuredProperty(Oauth, repeated=True)
     #messages = odm.StructuredProperty(Message, repeated=True)
+
+    def is_active(self):
+        return self.active
 
 
 class Session(odm.Model, backend.MessageMixin):
@@ -28,6 +33,12 @@ class Session(odm.Model, backend.MessageMixin):
     access = odm.IntegerField(default=1)
     agent = odm.CharField()
     client_address = odm.CharField()
+
+    def message(self, level, message):
+        pass
+
+    def remove_message(self, data):
+        pass
 
 
 class Permission(odm.Model):
@@ -69,41 +80,52 @@ class AuthBackend(backend.AuthBackend):
         user.save()
 
     def create_user(self, request, username=None, password=None, email=None,
-                    name=None, surname=None, active=False, **kwargs):
+                    name=None, surname=None, active=False, superuser=False,
+                    **kwargs):
         assert username
+        manager = self.mapper.user
         email = self.normalise_email(email)
-        if self.User.get_by_username(username):
+        if manager.filter(username=username).all():
             raise sessions.AuthenticationError('%s already used' % username)
-        if email and self.User.get_by_email(email):
+        if email and manager.filter(email=email).all():
             raise sessions.AuthenticationError('%s already used' % email)
-        user = self.User(username=username, password=self.password(password),
-                         email=email, name=name, surname=surname,
-                         active=active)
-        user.put()
+        user = manager(username=username, password=self.password(password),
+                       email=email, name=name, surname=surname,
+                       active=active, superuser=superuser, **kwargs).save()
         if not user.active:  # create registration email if user is not active
             self.get_or_create_registration(request, user)
         return user
 
-    def get_user(self, request, username=None, email=None, auth_key=None,
-                 **kw):
-        if username:
-            assert email is None, 'get_user by username or email'
-            assert auth_key is None
-            return self.User.get_by_username(username)
-        elif email:
-            assert auth_key is None
-            return self.User.get_by_email(email)
-        elif auth_key:
-            reg = Registration.get_by_id(auth_key)
-            if reg:
-                reg.check_valid()
-                return reg.user.get()
+    def create_superuser(self, request, **params):
+        params['superuser'] = True
+        params['active'] = True
+        return self.create_user(request, **params)
+
+    def get_user(self, _, username=None, email=None, auth_key=None, **kw):
+        try:
+            if username:
+                assert email is None, 'get_user by username or email'
+                assert auth_key is None
+                return self.mapper.user.get(username=username)
+            elif email:
+                assert auth_key is None
+                return self.mapper.user.get(email=email)
+            elif auth_key:
+                reg = Registration.get_by_id(auth_key)
+                if reg:
+                    reg.check_valid()
+                    return reg.user.get()
+        except odm.ModelNotFound:
+            return None
 
 
 class SessionBackend(SessionMixin, AuthBackend):
 
     def get_session(self, id):
-        return self.mapper.session.get(id)
+        try:
+            return self.mapper.session.get(id)
+        except odm.ModelNotFound:
+            return None
 
     def session_key(self, session):
         return session.pk if session else None
@@ -115,7 +137,7 @@ class SessionBackend(SessionMixin, AuthBackend):
         session = request.cache.session
         if session:
             session.expiry = datetime.now()
-            session.put()
+            session.save()
         if not expiry:
             expiry = datetime.now() + timedelta(seconds=self.session_expiry)
         client_address = request.get_client_address()
@@ -123,8 +145,25 @@ class SessionBackend(SessionMixin, AuthBackend):
             user=user, expiry=expiry, client_address=client_address,
             agent=request.get('HTTP_USER_AGENT', '')).save()
 
-    def get_user_by_email(self, email):
-        return self.User.get_by_email(email)
+    def authenticate(self, request, username=None, email=None, password=None):
+        manager = self.mapper.user
+        user = None
+        try:
+            if username:
+                user = manager.get(username=username)
+            elif email:
+                user = manager.get(email=self.normalise_email(email))
+            else:
+                raise AuthenticationError('Invalid credentials')
+            if user and self.decript(user.password) == password:
+                return user
+            else:
+                raise odm.ModelNotFound
+        except odm.ModelNotFound:
+            if username:
+                raise AuthenticationError('Invalid username or password')
+            else:
+                raise AuthenticationError('Invalid email or password')
 
     def create_registration(self, request, user, expiry):
         auth_key = digest(user.username)

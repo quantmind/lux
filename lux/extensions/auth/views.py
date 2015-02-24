@@ -80,6 +80,11 @@ class Login(WebFormRouter):
     template = 'login.html'
     redirect_to = '/'
 
+    def get(self, request):
+        if request.cache.user.is_authenticated():
+            raise HttpRedirect(self.redirect_to)
+        return super().get(request)
+
     def post(self, request):
         '''Handle login post data
         '''

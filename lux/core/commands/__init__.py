@@ -11,6 +11,7 @@ import logging
 from pulsar import (Setting, get_event_loop, Application, ImproperlyConfigured,
                     asyncio, Config, get_actor, is_async)
 from pulsar.utils.config import Loglevel, Debug, LogHandlers
+from pulsar.apps.greenio import run_in_greenlet
 
 from lux import __version__
 
@@ -139,8 +140,9 @@ class Command(ConsoleParser):
         Most commands are run using this method.
         '''
         loop = get_event_loop()
-        result = self.run(options, **params)
-        if is_async(result) and not loop.is_running():
+        run = run_in_greenlet(self.run)
+        result = run(options, **params)
+        if not loop.is_running():
             return loop.run_until_complete(result)
         else:
             return result

@@ -1,7 +1,6 @@
 import time
 import json
 
-from importlib import import_module
 from datetime import datetime, timedelta
 
 from pulsar import PermissionDenied, Http404
@@ -30,15 +29,10 @@ class SessionMixin(object):
     def __init__(self, app):
         self._init(app)
         cfg = self.config
-        self.encoding = cfg['ENCODING']
-        self.secret_key = cfg['SECRET_KEY'].encode()
         self.session_cookie_name = cfg['SESSION_COOKIE_NAME']
         self.session_expiry = cfg['SESSION_EXPIRY']
-        self.salt_size = cfg['AUTH_SALT_SIZE']
         self.check_username = cfg['CHECK_USERNAME']
         self.csrf_expiry = cfg['CSRF_EXPIRY']
-        algorithm = cfg['CRYPT_ALGORITHM']
-        self.crypt_module = import_module(algorithm)
         self.jwt = jwt
 
     def wsgi(self):
@@ -100,7 +94,7 @@ class SessionMixin(object):
             session = self.session_create(request)
         request.cache.session = session
         if session.user:
-            request.cache.user = session.user.get()
+            request.cache.user = session.user
         if not request.cache.user:
             request.cache.user = self.anonymous()
 
@@ -162,7 +156,7 @@ class SessionMixin(object):
                 raise AuthenticationError('Invalid username or password')
         if not user.is_active():
             return self.inactive_user_login(request, user)
-        request.cache.session = self.create_session(request, user)
+        request.cache.session = self.session_create(request, user)
         request.cache.user = user
         return user
 
@@ -183,7 +177,7 @@ class SessionMixin(object):
         session = request.cache.session
         user = user or request.cache.user
         if user and user.is_authenticated():
-            request.cache.session = self.create_session(request)
+            request.cache.session = self.session_create(request)
             request.cache.user = self.anonymous()
 
     def get_or_create_registration(self, request, user, **kw):
@@ -225,14 +219,6 @@ class SessionMixin(object):
             message or 'activation_message.txt', ctx)
         request.cache.session.info(message)
 
-    def decript(self, password=None):
-        if password:
-            p = self.crypt_module.decrypt(to_bytes(password, self.encoding),
-                                          self.secret_key)
-            return to_string(p, self.encoding)
-        else:
-            return UNUSABLE_PASSWORD
-
     # INTERNALS
     def _dismiss_message(self, request):
         response = request.response
@@ -243,8 +229,3 @@ class SessionMixin(object):
             body = {'success': session.remove_message(data)}
             response.content = json.dumps(body)
             return response
-
-    def _encript(self, password):
-        p = self.crypt_module.encrypt(to_bytes(password, self.encoding),
-                                      self.secret_key, self.salt_size)
-        return to_string(p, self.encoding)

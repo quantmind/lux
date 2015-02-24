@@ -16,9 +16,7 @@ class JWTMixin(object):
     '''
 
     def __init__(self, app):
-        self.init_wsgi(app)
-        cfg = self.config
-        self.secret_key = cfg['SECRET_KEY'].encode()
+        self._init(app)
 
     def request(self, request):
         '''Check for ``HTTP_AUTHORIZATION`` header and if it is available

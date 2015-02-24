@@ -166,6 +166,12 @@ class AuthBackend(object):
 
     def _init(self, app):
         self.app = app
+        cfg = app.config
+        self.encoding = cfg['ENCODING']
+        self.secret_key = cfg['SECRET_KEY'].encode()
+        self.salt_size = cfg['AUTH_SALT_SIZE']
+        algorithm = cfg['CRYPT_ALGORITHM']
+        self.crypt_module = import_module(algorithm)
 
     @property
     def config(self):
@@ -226,7 +232,7 @@ class AuthBackend(object):
 
     def password(self, raw_password=None):
         if raw_password:
-            return self._encript(raw_password)
+            return self.encript(raw_password)
         else:
             return UNUSABLE_PASSWORD
 
@@ -256,3 +262,16 @@ class AuthBackend(object):
     def logout(self, request, user=None):
         ''''Logout a user'''
         raise NotImplementedError
+
+    def decript(self, password=None):
+        if password:
+            p = self.crypt_module.decrypt(to_bytes(password, self.encoding),
+                                          self.secret_key)
+            return to_string(p, self.encoding)
+        else:
+            return UNUSABLE_PASSWORD
+
+    def encript(self, password):
+        p = self.crypt_module.encrypt(to_bytes(password, self.encoding),
+                                      self.secret_key, self.salt_size)
+        return to_string(p, self.encoding)

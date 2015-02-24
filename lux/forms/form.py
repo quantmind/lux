@@ -3,15 +3,15 @@ from collections import Mapping
 from functools import partial
 
 from pulsar import multi_async, HttpRedirect
-from pulsar.utils.pep import to_string
+from pulsar.utils.string import to_string
 from pulsar.utils.structures import OrderedDict
 from pulsar.utils.html import nicename, NOTHING
+from pulsar.utils.httpurl import JSON_CONTENT_TYPES
+from pulsar.apps.wsgi import Html
 
-from lux import Html
-from lux.utils import JSON_CONTENT_TYPES
+from odm import Field, ValidationError
 
 from .formsets import FormSet
-from .fields import Field, ValidationError, FormError
 from .serialise import Layout, FORMKEY
 
 
@@ -21,6 +21,10 @@ __all__ = ['FormType',
            'FieldList',
            'MakeForm',
            'smart_redirect']
+
+
+class FormError(Exception):
+    pass
 
 
 def smart_redirect(request, url=None, status=None):
@@ -353,12 +357,12 @@ instances with initial values.'''
         for name, msg in self.errors.items():
             field = self.dfields.get(name)
             if field:
-                name = field.for_name
+                name = field.html_name
             data[name] = [{'message': m, 'error': True} for m in msg]
         for name, msg in self.messages.items():
             field = self.dfields.get(name)
             if field:
-                name = field.for_name
+                name = field.html_name
             l = data.get(name, [])
             l.extend(({'message': m} for m in msg))
             data[name] = l
@@ -418,7 +422,7 @@ instances with initial values.'''
         is_bound = self.is_bound
         # Loop over form fields
         for name, field in self.base_fields.items():
-            bfield = BoundField(self, field, name, self.prefix)
+            bfield = BoundField(self, field)
             key = bfield.html_name
             if is_bound and exclude_missing and key not in rawdata:
                 continue
@@ -446,7 +450,7 @@ instances with initial values.'''
             if name in old_initial:
                 value = old_initial[name]
             else:
-                value = field.get_initial(self)
+                value = field.get_default(self)
             # Instance with id can override the initial value
             if instance_id:
                 try:
@@ -493,18 +497,17 @@ class BoundField(object):
 
         The :attr:`field` name to be used in HTML.
     '''
-    auto_id = 'id_{0[for_name]}'
+    auto_id = 'id_{0[html_name]}'
 
-    def __init__(self, form, field, name, prefix):
+    def __init__(self, form, field):
         self.form = form
         self.field = field
         self.request = form.request
-        self.name = name
-        self.for_name = '%s%s' % (prefix, name)
-        self.html_name = field.html_name(self.for_name)
+        self.name = field.name
+        self.html_name = field.html_name(form.prefix)
         self.value = None
         if field.label is None:
-            self.label = nicename(name)
+            self.label = nicename(self.name)
         else:
             self.label = field.label
         self.required = field.required

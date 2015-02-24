@@ -82,22 +82,38 @@ class Extension(lux.Extension):
         Parameter('ACCOUNT_ACTIVATION_DAYS', 2,
                   'Number of days the activation code is valid'),
         Parameter('LOGIN_URL', '/login', 'Url to login'),
+        Parameter('LOGOUT_URL', '/logout', 'Url to logout'),
         Parameter('REGISTER_URL', '/signup', 'Url to register with site'),
         Parameter('RESET_PASSWORD_URL', '/reset-password',
                   'If given, add the router to handle password resets'),
         Parameter('CSRF_EXPIRY', 60*60,
                   'Cross Site Request Forgery token expiry in seconds.'),
         Parameter('CSRF_PARAM', 'authenticity_token',
-                  'CSRF parameter name in forms')]
+                  'CSRF parameter name in forms'),
+        Parameter('DEFAULT_TIMEZONE', 'GMT',
+                  'Default timezone'),
+        Parameter('ADD_AUTH_ROUTES', True,
+                  'Add available authentication Routes')]
 
     backend = None
     ngModules = ['lux.users']
 
     def middleware(self, app):
-        dotted_path = app.config['AUTHENTICATION_BACKEND']
+        cfg = app.config
+        dotted_path = cfg['AUTHENTICATION_BACKEND']
+        middleware = []
         if dotted_path:
             self.backend = module_attribute(dotted_path)(app)
-            return self.backend.wsgi()
+            middleware.extend(self.backend.wsgi())
+        if cfg['ADD_AUTH_ROUTES']:
+            if cfg['LOGIN_URL']:
+                middleware.append(Login(cfg['LOGIN_URL']))
+                middleware.append(Logout(cfg['LOGOUT_URL']))
+            if cfg['REGISTER_URL']:
+                middleware.append(SignUp(cfg['REGISTER_URL']))
+            if cfg['RESET_PASSWORD_URL']:
+                middleware.append(ForgotPassword(cfg['RESET_PASSWORD_URL']))
+        return middleware
 
     def response_middleware(self, app):
         if self.backend:

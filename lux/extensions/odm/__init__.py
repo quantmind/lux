@@ -15,10 +15,7 @@ class Extension(lux.Extension):
         Parameter('DATASTORE', None,
                   'Dictionary for mapping models to their back-ends database'),
         Parameter('SEARCHENGINE', None,
-                  'Search engine for models'),
-        Parameter('USEGREENLET', True,
-                  ('Use the greenlet package for implicit asynchronous '
-                   'paradigm'))]
+                  'Search engine for models')]
 
     def on_loaded(self, app):
         '''Build the API middleware.
@@ -27,8 +24,7 @@ class Extension(lux.Extension):
         and checks if the ``api_sections`` method is available.
         '''
         app.mapper = AppMapper(app)
-        if app.config['USEGREENLET']:
-            app.handler = WsgiGreen(app.handler)
+        app.handler = WsgiGreen(app.handler)
 
 
 class AppMapper(LocalMixin):
@@ -47,9 +43,6 @@ class AppMapper(LocalMixin):
             return
         if 'default' not in datastore:
             raise ImproperlyConfigured('default datastore not specified')
-        if self.app.config['USEGREENLET']:
-            mapper = GreenMapper(datastore['default'])
-        else:
-            mapper = odm.Mapper(datastore['default'])
+        mapper = GreenMapper(datastore['default'])
         mapper.register_applications(self.app.config['EXTENSIONS'])
         return mapper

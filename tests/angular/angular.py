@@ -13,7 +13,7 @@ def example(url=''):
 
 
 class AngularTest(test.TestCase):
-    config_file = 'luxpy.angular'
+    config_file = 'angular'
 
     def test_properties(self):
         router = example()

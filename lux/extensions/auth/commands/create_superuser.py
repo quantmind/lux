@@ -3,6 +3,8 @@ import getpass
 import re
 import sys
 
+from pulsar import ImproperlyConfigured
+
 import lux
 
 try:
@@ -14,7 +16,7 @@ except NameError:
 RE_VALID_USERNAME = re.compile('[\w.@+-]+$')
 
 
-def get_def_username(request):
+def get_def_username(request, auth):
     # Try to determine the current system user's username to use as a default.
     try:
         def_username = getpass.getuser().replace(' ', '').lower()
@@ -26,8 +28,7 @@ def get_def_username(request):
     # Determine whether the default username is taken, so we don't display
     # it as an option.
     if def_username:
-        user = request.app.auth_backend.get_user(request,
-                                                 username=def_username)
+        user = auth.get_user(request, username=def_username)
         if user:
             def_username = ''
     return def_username
@@ -38,10 +39,13 @@ class Command(lux.Command):
 
     def run(self, options, interactive=True, **params):
         request = self.app.wsgi_request()
+        ext = self.app.extensions['auth']
+        auth = ext.backend
+        if not auth:
+            raise ImproperlyConfigured('Authentication backend not available')
         username = None
         password = None
-        auth = self.app.auth_backend
-        def_username = get_def_username(request)
+        def_username = get_def_username(request, auth)
         input_msg = 'Username'
         if def_username:
             input_msg += ' (Leave blank to use %s)' % def_username
@@ -57,8 +61,7 @@ class Command(lux.Command):
                                        'only letters, digits and underscores.')
                         username = None
                     else:
-                        user = yield permissions.get_user(request,
-                                                          username=username)
+                        user = auth.get_user(request, username=username)
                         if user is not None:
                             self.write_err(
                                 "Error: That username is already taken.\n")
@@ -82,9 +85,8 @@ class Command(lux.Command):
             except KeyboardInterrupt:
                 self.write_err('\nOperation cancelled.')
                 sys.exit(1)
-        user = yield permissions.create_superuser(request,
-                                                  username=username,
-                                                  password=password)
+        user = auth.create_superuser(request, username=username,
+                                     password=password)
         if user:
             self.write("Superuser %s created successfully.\n" % user)
         else:
