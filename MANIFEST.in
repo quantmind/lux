@@ -10,8 +10,4 @@ recursive-include luxjs *
 recursive-include tests *
 recursive-include lux/extensions *.html *.txt
 recursive-include lux/media *.js
-recursive-include examples/gaeblog *
-recursive-include examples/luxsite *
-include examples/README.md
-include examples/requirements.txt
-include examples/setup.py
+recursive-include examples *

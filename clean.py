@@ -1,12 +1,12 @@
 import os
 import shutil
 
-remove_dirs = ('dist', 'build', 'lux.egg-info')
+remove_dirs = ('dist', 'build', 'pulsar.egg-info')
+
 
 def rmgeneric(path, __func__):
     try:
         __func__(path)
-        #print 'Removed ', path
         return 1
     except OSError as e:
         print('Could not remove {0}, {1}'.format(path, e))
@@ -45,7 +45,7 @@ def run():
         if os.path.isdir(path):
             print('Removing %s' % path)
             shutil.rmtree(path)
-    removed, allfiles = rmfiles(os.curdir, 'pyc', 'DS_Store', 'log')
+    removed, allfiles = rmfiles(os.curdir, 'pyc', 'DS_Store')
     print('removed {0} pyc files out of {1}'.format(removed, allfiles))
 
 

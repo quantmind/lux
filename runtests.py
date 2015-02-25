@@ -3,11 +3,9 @@ import sys
 import os
 
 EXAMPLES = os.path.join(os.path.dirname(__file__), 'examples')
-GAEBLOG = os.path.join(EXAMPLES, 'gaeblog')
-for path in [EXAMPLES, GAEBLOG]:
+for path in [EXAMPLES]:
     if os.path.isdir(path) and path not in sys.path:
         sys.path.append(path)
-import managegae
 
 
 def runtests():

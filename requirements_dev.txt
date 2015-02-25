@@ -1,4 +1,5 @@
 cython
+greenlet
 git+git://github.com/quantmind/pulsar.git@dev
 coverage
 pep8
@@ -7,3 +8,4 @@ unidecode
 sphinx
 pyyaml
 beautifulsoup4
+rethinkdb

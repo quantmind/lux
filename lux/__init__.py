@@ -1,13 +1,15 @@
 '''python web toolkit'''
-VERSION = (0, 1, 2, 'alpha', 1)
-
 import os
-from pulsar.utils.version import get_version
 
-PACKAGE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-__version__ = version = get_version(VERSION)
+VERSION = (0, 1, 2, 'alpha', 1)
 __author__ = 'Luca Sbardella'
 __contact__ = "luca@quantmind.com"
+PACKAGE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-from .core import *
+
+if os.environ.get('lux_install_running') != 'yes':
+    from pulsar.utils.version import get_version
+
+    __version__ = version = get_version(VERSION)
+
+    from .core import *

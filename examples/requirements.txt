@@ -1,4 +1,0 @@
-pyjwt
-markdown
-python-dateutil
-pulsar

@@ -6,6 +6,7 @@ from distutils.core import setup
 from distutils.command.install_data import install_data
 from distutils.command.install import INSTALL_SCHEMES
 
+
 def read(fname):
     with open(os.path.join(root_dir, fname)) as f:
         return f.read()
@@ -19,10 +20,10 @@ pkg = json.loads(read('package.json'))
 
 
 def requirements():
-    req = read('requirements.txt').replace('\r','').split('\n')
+    req = read('requirements.txt').replace('\r', '').split('\n')
     result = []
     for r in req:
-        r = r.replace(' ','')
+        r = r.replace(' ', '')
         if r:
             result.append(r)
     return result
@@ -55,14 +56,15 @@ def fullsplit(path, result=None):
         return result
     return fullsplit(head, [tail] + result)
 
+
 # Compile the list of packages available, because distutils doesn't have
 # an easy way to do this.
 def get_rel_dir(d, base, res=''):
     if d == base:
         return res
-    br,r = os.path.split(d)
+    br, r = os.path.split(d)
     if res:
-        r = os.path.join(r,res)
+        r = os.path.join(r, res)
     return get_rel_dir(br, base, r)
 
 packages, data_files = [], []
@@ -92,7 +94,6 @@ def run(argv=None):
         params['cmdclass']['install_data'] = osx_install_data
     else:
         params['cmdclass']['install_data'] = install_data
-
 
     setup(name=package_name,
           version=pkg['version'],

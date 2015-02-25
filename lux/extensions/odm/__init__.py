@@ -10,7 +10,8 @@ from odm.green import GreenMapper
 
 
 class Extension(lux.Extension):
-
+    '''Object data mapper extension
+    '''
     _config = [
         Parameter('DATASTORE', None,
                   'Dictionary for mapping models to their back-ends database'),
@@ -41,8 +42,11 @@ class AppMapper(LocalMixin):
         datastore = self.app.config['DATASTORE']
         if not datastore:
             return
+        elif isinstance(datastore, str):
+            datastore = {'default': datastore}
         if 'default' not in datastore:
             raise ImproperlyConfigured('default datastore not specified')
         mapper = GreenMapper(datastore['default'])
         mapper.register_applications(self.app.config['EXTENSIONS'])
         return mapper
+

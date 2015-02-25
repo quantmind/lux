@@ -5,6 +5,7 @@ from datetime import datetime, date
 
 import lux
 import clean
+import setup
 
 clean.run()
 
@@ -32,7 +33,6 @@ with open('package.json', 'w') as f:
     f.write(json.dumps(pkg, indent=4))
 
 # Run setup.py
-import setup
 script = os.path.abspath(setup.__file__)
 argv = [script, 'sdist'] + sys.argv[1:]
 setup.run(argv=argv)

@@ -1,28 +1,17 @@
 import unittest
+import string
 from unittest import mock
 from io import StringIO
 
+from pulsar.utils.httpurl import encode_multipart_formdata
+from pulsar.utils.string import random_string
+
 import lux
 
-from pulsar import get_actor
-from pulsar.apps.test import HttpTestClient, TestSuite
-from pulsar.apps.test.plugins import bench, profile
-from pulsar.utils.httpurl import encode_multipart_formdata
 
-
-def get_params(*names):
-    cfg = get_actor().cfg
-    values = []
-    for name in names:
-        value = cfg.get(name)
-        if value:
-            values.append(value)
-        else:
-            return None
-    return values
-
-
-skipUnless = unittest.skipUnless
+def randomname():
+    return random_string(min_len=8, max_len=8,
+                         characters=string.ascii_letters)
 
 
 class TestCase(unittest.TestCase):
@@ -52,6 +41,7 @@ class TestCase(unittest.TestCase):
             levels = self.cfg.loglevel if hasattr(self, 'cfg') else ['none']
             argv.extend(levels)
         app = lux.App(config_file, argv=argv, **kwargs).setup()
+        self.on_loaded(app)
         if self.apps is None:
             self.apps = []
         self.apps.append(app)
@@ -73,6 +63,18 @@ class TestCase(unittest.TestCase):
         self.assertEqual(response, request.response)
         return request
 
+    def run_command(self, app, *args, **kwargs):
+        if not args:
+            command = app
+            app = self.application()
+        else:
+            command = args[0]
+        argv = args[1] if len(args) == 2 else []
+        cmd = app.get_command(command, stdout=StringIO())
+        self.assertTrue(cmd.logger)
+        self.assertEqual(cmd.name, command)
+        return cmd(argv, **kwargs)
+
     def fetch_command(self, command, out=None):
         '''Fetch a command.'''
         out = StringIO()
@@ -90,6 +92,14 @@ class TestCase(unittest.TestCase):
             value = value.attrs['content']
             return {name: value}
 
+    def on_loaded(self, app):
+        if hasattr(app, 'mapper'):
+            mapper = app.mapper()
+            dbname = randomname()
+            mapper.default_store.database = dbname
+            for manager in mapper:
+                manager._store.database = dbname
+
     def post(self, app=None, path=None, content_type=None, body=None,
              headers=None, **extra):
         extra['REQUEST_METHOD'] = 'POST'
@@ -101,3 +111,17 @@ class TestCase(unittest.TestCase):
             headers.append(('content-type', content_type))
         return self.request(app, path=path, headers=headers,
                             body=body, **extra)
+
+    def database_drop(self):
+        if self.apps:
+            for app in self.apps:
+                if hasattr(app, 'mapper'):
+                    mapper = app.mapper()
+                    try:
+                        yield from mapper.database_drop()
+                    except Exception:
+                        pass
+
+    def tearDown(self):
+        return self.database_drop()
+

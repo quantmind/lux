@@ -37,19 +37,20 @@ def get_def_username(request, auth):
 class Command(lux.Command):
     help = 'Create a superuser.'
 
-    def run(self, options, interactive=True, **params):
+    def run(self, options, interactive=True, username=None, password=None,
+            **params):
         request = self.app.wsgi_request()
         ext = self.app.extensions['auth']
         auth = ext.backend
         if not auth:
             raise ImproperlyConfigured('Authentication backend not available')
-        username = None
-        password = None
         def_username = get_def_username(request, auth)
         input_msg = 'Username'
         if def_username:
             input_msg += ' (Leave blank to use %s)' % def_username
         if interactive:  # pragma    nocover
+            username = None
+            password = None
             try:
                 # Get a username
                 while not username:

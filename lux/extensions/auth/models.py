@@ -26,6 +26,9 @@ class User(odm.Model, backend.UserMixin):
     def is_active(self):
         return self.active
 
+    def is_superuser(self):
+        return self.superuser
+
 
 class Session(odm.Model, backend.MessageMixin):
     expiry = odm.DateTimeField()
