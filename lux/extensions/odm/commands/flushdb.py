@@ -20,17 +20,14 @@ class Command(lux.Command):
     )
     help = "Flush models in the data server."
 
-    def __call__(self, argv, **params):
-        return self.run_until_complete(argv, **params)
-
-    def run(self, options):
+    def run(self, options, **params):
         dryrun = options.dryrun
-        models = self.app.models
+        mapper = self.app.mapper()
         self.write('\nFlush model data\n')
-        if not models:
+        if not mapper:
             return self.write('No model registered')
         apps = options.apps or None
-        managers_count = models.flush(include=apps, dryrun=True)
+        managers_count = yield from mapper.flush(include=apps, dryrun=True)
         if not managers_count:
             return self.write('Nothing done. No models selected')
         if not dryrun:
@@ -45,9 +42,10 @@ class Command(lux.Command):
             self.write('')
             yn = input('yes/no : ')
             if yn.lower() == 'yes':
-                managers_count = models.flush(include=apps)
-                for manager, removed in managers_count:
-                    N = plural(len(removed), 'model')
+                managers_count = yield from mapper.flush(include=apps)
+                for manager, removed in sorted(
+                        managers_count, key=lambda x: x[0]._meta.table_name):
+                    N = plural(removed, 'model')
                     self.write('{0} - removed {1}'.format(manager, N))
             else:
                 self.write('Nothing done.')

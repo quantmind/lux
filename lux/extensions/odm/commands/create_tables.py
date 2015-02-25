@@ -10,4 +10,9 @@ class Command(OdmCommand):
         for manager in mapper:
             if not options.dry_run:
                 result = yield from manager.table_create(options.force)
-            self.write('Created table for %s' % manager)
+                if result:
+                    self.write('Created table for %s' % manager)
+                else:
+                    self.write('Table already available for %s' % manager)
+            else:
+                self.write('Need table for %s' % manager)

@@ -51,7 +51,7 @@ def execute_from_config(config_file, argv=None, **params):
         python module which implements the :ref:`main application`
         of the web site.
     '''
-    execute_app(App(config_file, **params), argv=argv)
+    return execute_app(App(config_file, **params), argv=argv)
 
 
 def execute_app(app, argv=None, **params):
