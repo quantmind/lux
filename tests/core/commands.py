@@ -7,14 +7,14 @@ from lux.utils import test
 
 
 class CommandTests(test.TestCase):
-    config_file = 'luxpy.config'
+    config_file = 'tests.config'
 
     def test_startproject(self):
         command = self.fetch_command('startproject')
         self.assertTrue(command.help)
         name = 'testproject'
         try:
-            command([name])
+            yield from command([name])
             target = command.target
             self.assertTrue(path.isdir(target))
             self.assertTrue(path.isfile(path.join(target, 'manage.py')))
@@ -23,16 +23,19 @@ class CommandTests(test.TestCase):
         finally:
             shutil.rmtree(target)
 
-    def testServe(self):
+    def test_serve(self):
         command = self.fetch_command('serve')
         self.assertTrue(command.help)
         self.assertEqual(len(command.option_list), 0)
-        app = command([], start=False)
+        app = command(['-b', ':9000'], start=False)
+        self.assertEqual(app, command.app)
 
-    def test_serve_dry(self):
-        command = self.fetch_command('serve')
-        server = command(['-b', '9000'], start=False)
-        self.assertTrue(server)
-
-    def testShell(self):
-        command = self.fetch_command('shell')
+    def test_generate_key(self):
+        command = self.fetch_command('generate_secret_key')
+        self.assertTrue(command.help)
+        key = yield from command([])
+        self.assertEqual(len(key), 50)
+        key = yield from command(['--length', '35'])
+        self.assertEqual(len(key), 35)
+        key = yield from command(['--hex'])
+        self.assertTrue(len(key) > 50)

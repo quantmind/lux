@@ -59,7 +59,7 @@ Static Site
 Authentication
 =====================
 
-.. lux_extension:: lux.extensions.sessions
+.. lux_extension:: lux.extensions.auth
 
 
 .. _parameters-oauth:

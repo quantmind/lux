@@ -218,7 +218,9 @@ class Application(ConsoleParser, Extension):
                   'Default email address to send email from'),
         Parameter('LOCALE', 'en_GB', 'Default locale'),
         Parameter('EMAIL_BACKEND', 'lux.core.mail.EmailBackend',
-                  'Default locale')
+                  'Default locale'),
+        Parameter('DEFAULT_CONTENT_TYPE', None,
+                  'Default content type for this application')
         ]
 
     def __init__(self, callable):
@@ -270,6 +272,7 @@ class Application(ConsoleParser, Extension):
         request = wsgi_request(environ, app_handler=app_handler,
                                urlargs=urlargs)
         environ['error.handler'] = self.config['ERROR_HANDLER']
+        environ['default.content_type'] = self.config['DEFAULT_CONTENT_TYPE']
         # Check if pulsar is serving the application
         if 'pulsar.cfg' not in environ:
             if not self.cfg:

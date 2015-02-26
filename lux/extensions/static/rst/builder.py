@@ -21,6 +21,7 @@ class LuxSphinx(Sphinx):
     def __init__(self, app, *args, **kwargs):
         self.data = []
         self.lux = app
+        kwargs['status'] = None
         super(LuxSphinx, self).__init__(*args, **kwargs)
 
     def _init_builder(self, buildername):

@@ -1,7 +1,6 @@
-from pulsar.apps.test import mock
+from unittest import mock
 
 from lux.utils import test
-
 from lux.extensions.angular import Router
 
 
@@ -13,7 +12,7 @@ def example(url=''):
 
 
 class AngularTest(test.TestCase):
-    config_file = 'angular'
+    config_file = 'tests.angular'
 
     def test_properties(self):
         router = example()

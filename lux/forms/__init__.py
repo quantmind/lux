@@ -35,13 +35,6 @@ Form
    :members:
    :member-order: bysource
 
-Fields
-=========================
-
-.. automodule:: lux.forms.fields
-   :members:
-   :member-order: bysource
-
 Layout
 =========================
 

@@ -15,6 +15,6 @@ Python API
    angular
    api
    static
-   sessions
+   auth
    oauth/index
    code

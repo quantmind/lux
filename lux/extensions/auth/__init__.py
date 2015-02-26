@@ -1,6 +1,6 @@
 '''A :ref:`lux extension <extensions>` for managing users, sessions
 and permissions. The extension is added by inserting
-``lux.extensions.sessions`` into the
+``lux.extensions.auth`` into the
 list of :setting:`EXTENSIONS` of your application.
 
 There are several :ref:`parameters <parameters-auth>` which can be used
@@ -9,15 +9,15 @@ to customise authorisation.
 Authentication Backend
 ========================
 
-.. automodule:: lux.extensions.sessions.backend
+.. automodule:: lux.extensions.auth.backend
    :members:
    :member-order: bysource
 
-.. automodule:: lux.extensions.sessions.sessionmixin
+.. automodule:: lux.extensions.auth.sessionmixin
    :members:
    :member-order: bysource
 
-.. automodule:: lux.extensions.sessions.jwtmixin
+.. automodule:: lux.extensions.auth.jwtmixin
    :members:
    :member-order: bysource
 '''

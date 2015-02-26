@@ -3,7 +3,7 @@ from lux.utils import test
 
 
 class TestCmsRouter(test.TestCase):
-    config_file = 'luxpy.config'
+    config_file = 'tests.config'
 
     def test_base(self):
         app = self.application()

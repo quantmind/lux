@@ -5,9 +5,10 @@ from importlib import import_module
 from string import Template
 
 from pulsar import Setting
-from pulsar.utils.security import random_string
 
 import lux
+
+from .generate_secret_key import generate_secret
 
 
 def validate_name(name, app_or_project):
@@ -62,9 +63,7 @@ class Command(lux.Command):
         self.write('%s "%s" created' % (self.template_type, name))
 
     def add_context(self, context):
-        # Create a random SECRET_KEY hash to put it in the main settings.
-        chars = 'abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)'
-        context['secret_key'] = random_string(chars, 50)
+        context['secret_key'] = generate_secret(50)
 
     def build(self, name, top_dir):
         base_name = '%s_name' % self.template_type

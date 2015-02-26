@@ -1,7 +1,7 @@
 from random import randint
 
 from pulsar import Setting
-from pulsar.utils.security import random_string
+from pulsar.utils.string import random_string
 
 import lux
 
@@ -11,11 +11,12 @@ def generate_secret(length, hexadecimal=False):
         return ''.join((hex(randint(1, 10000)) for _ in range(length)))
     else:
         chars = 'abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)'
-        return random_string(chars, length)
+        return random_string(min_len=length, max_len=length,
+                             char=chars)
 
 
 class Command(lux.Command):
-    help = "Show parameters."
+    help = "Generate a secret key."
     option_list = (
         Setting('length', ('--length',),
                 default=50, type=int,
@@ -27,6 +28,8 @@ class Command(lux.Command):
     )
 
     def run(self, options, **params):
+        key = generate_secret(options.length, options.hex)
         self.write('Secret key:')
-        self.write(generate_secret(options.length, options.hex))
+        self.write(key)
         self.write('-----------------------------------------------------')
+        return key

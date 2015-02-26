@@ -14,8 +14,8 @@ EXTENSIONS = ['lux.extensions.base',
               'lux.extensions.static']
 
 
-cfgfile = 'luxpy/staticsite'
-base = 'tests/' + cfgfile + '/'
+cfgfile = 'tests/staticsite'
+base = cfgfile + '/'
 STATIC_LOCATION = base + 'build'
 CONTEXT_LOCATION = base + 'content/context'
 

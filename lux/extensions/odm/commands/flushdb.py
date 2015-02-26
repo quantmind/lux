@@ -20,7 +20,7 @@ class Command(lux.Command):
     )
     help = "Flush models in the data server."
 
-    def run(self, options, **params):
+    def run(self, options, interactive=True, **params):
         dryrun = options.dryrun
         mapper = self.app.mapper()
         self.write('\nFlush model data\n')
@@ -40,7 +40,7 @@ class Command(lux.Command):
             self.write('\nNothing done. Dry run')
         else:
             self.write('')
-            yn = input('yes/no : ')
+            yn = input('yes/no : ') if interactive else 'yes'
             if yn.lower() == 'yes':
                 managers_count = yield from mapper.flush(include=apps)
                 for manager, removed in sorted(

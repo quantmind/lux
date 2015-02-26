@@ -1,3 +1,5 @@
+from pulsar.apps.test import test_timeout
+
 import lux
 from lux.utils import test
 
@@ -14,6 +16,7 @@ class TestCase(test.TestCase):
         mapper = app.mapper()
         self.assertEqual(len(mapper), 4)
 
+    @test_timeout(30)
     def test_command_create_superuser(self):
         app = self.application()
         yield from self.run_command(app, 'create_databases')

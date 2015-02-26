@@ -4,4 +4,4 @@
 Authentication
 =============================
 
-.. automodule:: lux.extensions.sessions
+.. automodule:: lux.extensions.auth
