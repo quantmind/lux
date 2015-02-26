@@ -5,7 +5,9 @@ from lux.extensions.static import HtmlContent, SphinxDocs, Sitemap
 
 from .ui import add_css
 
-d = lambda path: os.path.join(os.path.abspath(os.path.dirname(__file__)), path)
+
+def d(path):
+    return os.path.join(os.path.abspath(os.path.dirname(__file__)), path)
 
 
 APP_NAME = 'Lux'

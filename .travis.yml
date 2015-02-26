@@ -1,11 +1,10 @@
 language: python
 
 python:
-  - "2.7"
   - "3.4"
 
 before_install:
-  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then npm install -g grunt-cli; fi
+  - npm install -g grunt-cli
 
 install:
   - pip install -r requirements_dev.txt --use-mirrors
@@ -13,19 +12,12 @@ install:
   - sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm
   - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then npm install; fi
 
-before_script:
-  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then wget https://storage.googleapis.com/appengine-sdks/featured/google_appengine_1.9.15.zip -nv; fi
-  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then unzip -q google_appengine_1.9.15.zip; fi
-  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then rm google_appengine_1.9.15.zip && ls; fi
-
-
 script:
-  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then grunt jasmine; fi
-  # - pep8 lux
+  - grunt jasmine
+  - pep8
   - sudo rm -rf lux
-  - python -m runtests
-  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then python -m runtests --coverage; fi
-  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then python -m runtests --coveralls; fi
+  - python -m runtests --coverage
+  - python -m runtests --coveralls
 
 notifications:
   email: false

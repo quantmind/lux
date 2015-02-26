@@ -4,7 +4,9 @@ from functools import partial, total_ordering
 from pulsar.utils.slugify import slugify
 
 
-identity = lambda x, cfg: x
+def identity(x, cfg):
+    return x
+
 
 SEP = ', '
 

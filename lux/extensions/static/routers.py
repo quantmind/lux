@@ -129,8 +129,8 @@ class JsonFile(lux.Router, FileBuilder):
             if not html:
                 data = dict(page_info(data))
             all.append(data)
-        key = lambda d: parse_date(d.get('date', d['modified']))
-        return list(reversed(sorted(all, key=key)))
+        return list(reversed(sorted(
+            all, key=lambda d: parse_date(d.get('date', d['modified'])))))
 
 
 class JsonContent(lux.Router, DirBuilder):

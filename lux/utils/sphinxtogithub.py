@@ -226,8 +226,8 @@ class LayoutFactory(object):
 
     def is_underscore_dir(self, path, directory):
         return (self.dir_helper.is_dir(
-            self.file_helper.path_join(path, directory))
-            and directory.startswith("_"))
+            self.file_helper.path_join(path, directory)) and
+            directory.startswith("_"))
 
 
 def sphinx_extension(app, exception):

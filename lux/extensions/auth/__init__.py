@@ -152,8 +152,8 @@ class Extension(lux.Extension):
         request = form.request
         backend = request.cache.auth_backend if request else None
         param = app.config['CSRF_PARAM']
-        if (backend and form.request.method == 'POST'
-                and form.is_bound and param):
+        if (backend and form.request.method == 'POST' and
+                form.is_bound and param):
             token = form.rawdata.get(param)
             backend.validate_csrf_token(form.request, token)
 

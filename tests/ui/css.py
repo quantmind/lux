@@ -123,6 +123,7 @@ class TestCSS(test.TestCase):
     z-index: 3000;'''
         self.assertTrue(r in text)
 
+
 class f:
 
     def test_clickable(self):

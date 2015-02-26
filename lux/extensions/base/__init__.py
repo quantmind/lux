@@ -80,8 +80,8 @@ class Extension(lux.Extension):
         else:
             etag = '"%s"' % hashlib.md5(response.content).hexdigest()
         if etag is not None:
-            if (200 <= response.status_code < 300
-                    and environ.get('HTTP_IF_NONE_MATCH') == etag):
+            if (200 <= response.status_code < 300 and
+                    environ.get('HTTP_IF_NONE_MATCH') == etag):
                 response.not_modified()
             else:
                 response['ETag'] = etag

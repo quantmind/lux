@@ -3,18 +3,18 @@ import imp
 import mimetypes
 from itertools import chain
 
+from pulsar.apps.wsgi import AsyncString
+
+from .contents import (Content, METADATA_PROCESSORS, slugify, is_html,
+                       SkipBuild, register_reader)
+from .urlwrappers import MultiValue
+
 try:
     from markdown import Markdown
 except ImportError:
     Markdown = False
 
 Restructured = False
-
-from pulsar.apps.wsgi import AsyncString
-
-from .contents import (Content, METADATA_PROCESSORS, slugify, is_html,
-                       SkipBuild, register_reader)
-from .urlwrappers import MultiValue
 
 
 def guess(value):

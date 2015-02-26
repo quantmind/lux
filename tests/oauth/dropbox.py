@@ -19,7 +19,7 @@ class TestDropbox(test.TestCase):
         d = Dropbox(client_id=cfg.get('DROPBOX_CLIENT_ID'),
                     client_secret=cfg.get('DROPBOX_CLIENT_SECRET'))
         cls.auth = yield d.authorization(response_type='code')
-        #cls.auth = yield d.authorization(response_type='code',
+        # cls.auth = yield d.authorization(response_type='code',
         #                                redirect_uri='http://localhost:8060/')
         cls.dropbox = d
 

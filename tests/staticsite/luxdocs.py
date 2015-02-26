@@ -5,7 +5,6 @@ from lux.extensions.static import HtmlContent
 from . import StaticSiteMixin
 
 
-
 class StaticSiteTests(StaticSiteMixin, test.TestCase):
     config_file = 'luxsite'
     config_params = {'STATIC_LOCATION': os.path.join(os.path.dirname(__file__),

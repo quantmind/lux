@@ -15,8 +15,8 @@ module.exports = function (grunt) {
                 // need to set it even if we don't use it
                 src : [],
                 options : {
-                    specs : 'tests/luxjs/*.js',
-                    template: 'tests/luxjs/test.tpl.html',
+                    specs : 'luxjs/tests/*.js',
+                    template: 'luxjs/tests/test.tpl.html',
                     templateOptions: {
                         deps: ['lux/media/lux/lux.min.js', 'angular-strap', 'angular-mocks']
                     }

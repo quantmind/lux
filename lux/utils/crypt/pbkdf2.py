@@ -48,14 +48,14 @@
 #       print "Invalid password"
 #
 ###########################################################################
-
-__version__ = "1.3"
-__all__ = ['PBKDF2', 'crypt']
-
 from struct import pack
 from random import randint
 import string
 import sys
+
+__version__ = "1.3"
+__all__ = ['PBKDF2', 'crypt']
+
 
 try:
     # Use PyCrypto (if available).

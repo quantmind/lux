@@ -103,7 +103,7 @@ class TestSize(test.TestCase):
         self.assertEqual(str(a), '5px 1.1em 2% 2px')
 
     def __testBadSpacing(self):
-        #TODO: fix this
+        # TODO: fix this
         self.assertRaises(TypeError, spacing, 5, 4, 5, 6, 7)
         self.assertRaises(TypeError, spacing, 5, 'bla')
         self.assertRaises(TypeError, spacing, 5, None)

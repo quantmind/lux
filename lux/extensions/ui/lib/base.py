@@ -69,11 +69,24 @@ def as_params(value, default_name=None):
         raise TypeError('"%s" is not a mapping' % value)
 
 
-addition = lambda a, b: a+b
-subtraction = lambda a, b: a-b
-multiplication = lambda a, b: a*b
-division = lambda a, b: a/b
-floordivision = lambda a, b: a//b
+def addition(a, b):
+    return a+b
+
+
+def subtraction(a, b):
+    return a-b
+
+
+def multiplication(a, b):
+    return a*b
+
+
+def division(a, b):
+    return a/b
+
+
+def floordivision(a, b):
+    return a//b
 
 
 class Symbolic(object):
@@ -335,9 +348,16 @@ class Spacing(Unit):
 
 ############################################################################
 #    factory functions
-px = lambda v: size(v, unit='px')
-pc = lambda v: size(v, unit='%')
-em = lambda v: size(v, unit='em')
+def px(v):
+    return size(v, unit='px')
+
+
+def pc(v):
+    return size(v, unit='%')
+
+
+def em(v):
+    return size(v, unit='em')
 
 
 def size(s, unit=None):

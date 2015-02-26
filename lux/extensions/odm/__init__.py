@@ -49,4 +49,3 @@ class AppMapper(LocalMixin):
         mapper = GreenMapper(datastore['default'])
         mapper.register_applications(self.app.config['EXTENSIONS'])
         return mapper
-

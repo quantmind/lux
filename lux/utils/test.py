@@ -124,4 +124,3 @@ class TestCase(unittest.TestCase):
 
     def tearDown(self):
         return self.database_drop()
-

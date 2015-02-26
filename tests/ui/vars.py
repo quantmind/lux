@@ -78,7 +78,7 @@ class TestVariables(test.TestCase):
         text = s.render()
         self.assertFalse(text)
         s = all.css('a', color=vars.color)
-        vars.color=color('#333')
+        vars.color = color('#333')
         text = s.render()
         self.assertEqual(text, '''a {
     color: #333;

@@ -18,10 +18,10 @@ class User(odm.Model, backend.UserMixin):
     superuser = odm.BooleanField(default=False)
     company = odm.CharField()
     joined = odm.DateTimeField(default=lambda _: datetime.now())
-    #timezone = odm.CharField(default=default_timezone)
+    # timezone = odm.CharField(default=default_timezone)
     #
-    #oauths = odm.StructuredProperty(Oauth, repeated=True)
-    #messages = odm.StructuredProperty(Message, repeated=True)
+    # oauths = odm.StructuredProperty(Oauth, repeated=True)
+    # messages = odm.StructuredProperty(Message, repeated=True)
 
     def is_active(self):
         return self.active

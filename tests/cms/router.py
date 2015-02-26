@@ -13,5 +13,5 @@ class TestCmsRouter(test.TestCase):
         self.assertEqual(router.state_template_url(app), None)
         api = router.get_api_info(app)
         self.assertTrue(api)
-        #self.assertEqual(api['url'], '/')
+        # self.assertEqual(api['url'], '/')
         self.assertEqual(api['type'], 'cms')

@@ -7,13 +7,17 @@ from .base import Unit, as_value, Variable, clamp, Lazy
 __all__ = ['RGBA', 'color', 'safe_color', 'lighten', 'darken', 'mix_colors']
 
 
-clamprgb = lambda v: int(clamp(round(v), 255))
-
-hex2 = lambda v: '0'+hex(v)[2:] if v < 16 else hex(v)[2:]
-
 HSLA = namedtuple('HSLA', 'h s l alpha')
 HSVA = namedtuple('HSVA', 'h s v alpha')
 string_colors = frozenset(('transparent', 'inherit'))
+
+
+def clamprgb(v):
+    return int(clamp(round(v), 255))
+
+
+def hex2(v):
+    return '0'+hex(v)[2:] if v < 16 else hex(v)[2:]
 
 
 class ColorError(TypeError):

@@ -44,7 +44,6 @@ class WsClient:
         msg['message'] = str(exc)
 
 
-
 class LuxWs(ws.WS):
     '''Lux websocket
     '''

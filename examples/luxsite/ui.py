@@ -7,7 +7,8 @@ def add_css(all):
     vars = all.variables
     media_url = all.app.config['MEDIA_URL']
 
-    vars.font_family = '"freight-text-pro",Georgia,Cambria,"Times New Roman",Times,serif'
+    vars.font_family = ('"freight-text-pro",Georgia,Cambria,"Times New Roman",'
+                        'Times,serif')
     vars.font_size = px(18)
     vars.line_height = 1.5
     vars.color = color(0, 0, 0, 0.8)
@@ -26,17 +27,17 @@ def add_css(all):
     css('#lux-logo',
         height=px(300))
 
-    media(max_height=px(600)
-        ).css('#lux-logo',
-              height=px(250))
+    media(max_height=px(600)).css(
+        '#lux-logo',
+        height=px(250))
 
-    media(max_height=px(500)
-        ).css('#lux-logo',
-              height=px(180))
+    media(max_height=px(500)).css(
+        '#lux-logo',
+        height=px(180))
 
-    media(max_height=px(400)
-        ).css('#lux-logo',
-              height=px(100))
+    media(max_height=px(400)).css(
+        '#lux-logo',
+        height=px(100))
 
     css('#top a.navbar-brand',
         css(' img',

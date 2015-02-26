@@ -64,4 +64,3 @@ class CMS(angular.Router):
     @route('<path:path>')
     def path(self, request):
         return self.build_main(request)
-
