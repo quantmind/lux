@@ -1,9 +1,6 @@
 cython
-greenlet
-git+git://github.com/quantmind/pulsar.git@dev
 coverage
 pep8
-markdown
 unidecode
 sphinx
 pyyaml

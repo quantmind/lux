@@ -3,6 +3,7 @@ import string
 from unittest import mock
 from io import StringIO
 
+from pulsar import send
 from pulsar.utils.httpurl import encode_multipart_formdata
 from pulsar.utils.string import random_string
 from pulsar.apps.http import HttpClient
@@ -15,17 +16,9 @@ def randomname():
                          characters=string.ascii_letters)
 
 
-class TestCase(unittest.TestCase):
-    '''TestCase class for lux tests.
-
-    It provides several utilities methods.
-    '''
+class TestMixin:
     config_file = 'tests.config'
     '''THe config file to use when building an :meth:`application`'''
-    config_params = {}
-    '''Dictionary of parameters to override the parameters from
-    :attr:`config_file`'''
-    apps = None
 
     @classmethod
     def on_loaded(cls, app):
@@ -37,7 +30,18 @@ class TestCase(unittest.TestCase):
             mapper.default_store.database = dbname
             for manager in mapper:
                 manager._store.database = dbname
-        return app
+            return mapper
+
+
+class TestCase(unittest.TestCase, TestMixin):
+    '''TestCase class for lux tests.
+
+    It provides several utilities methods.
+    '''
+    config_params = {}
+    '''Dictionary of parameters to override the parameters from
+    :attr:`config_file`'''
+    apps = None
 
     def application(self, config_file=None, argv=None, **params):
         '''Return an application for testing. Override if needed.
@@ -127,8 +131,7 @@ class TestCase(unittest.TestCase):
         return self.database_drop()
 
 
-class TestServer(unittest.TestCase):
-    config_file = 'tests.config'
+class TestServer(unittest.TestCase, TestMixin):
     app_cfg = None
 
     @classmethod
@@ -139,16 +142,14 @@ class TestServer(unittest.TestCase):
                 '--concurrency', cfg.concurrency]
         cls.app = app = lux.execute_from_config(cls.config_file, argv=argv,
                                                 name=name)
-        cls.on_loaded(app)
+        mapper = cls.on_loaded(app)
+        if mapper:
+            app.params['DATASTORE'] = mapper._default_store.dns
+            yield from app.get_command('create_databases')([])
+            yield from app.get_command('create_tables')([])
         cls.app_cfg = yield from app._started
-        yield from app.get_command('create_databases')([])
-        yield from app.get_command('create_tables')([])
-        yield from app.get_command('create_superuser')([], interactive=False,
-                                                       username='pippo',
-                                                       password='pluto')
         cls.url = 'http://{0}:{1}'.format(*cls.app_cfg.addresses[0])
         cls.http = HttpClient()
-        # Create databases
 
     @classmethod
     def tearDownClass(cls):

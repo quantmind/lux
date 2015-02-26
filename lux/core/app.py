@@ -255,6 +255,10 @@ class Application(ConsoleParser, Extension):
         '''
         return self.config['EXTENSION_HANDLERS']
 
+    @property
+    def params(self):
+        return self.callable._params
+
     def get_version(self):
         '''Get version of this :class:`App`. Required by
         :class:`.ConsoleParser`.'''
@@ -441,7 +445,7 @@ class Application(ConsoleParser, Extension):
                         exc_info=True)
 
     def setup_logger(self, config, opts):
-        debug = opts.debug or self.callable._params.get('debug', False)
+        debug = opts.debug or self.params.get('debug', False)
         cfg = pulsar.Config(log_name='lux')
         cfg.set('debug', debug)
         cfg.set('loglevel', opts.loglevel)
@@ -584,7 +588,7 @@ class Application(ConsoleParser, Extension):
                 raise RuntimeError('Invalid project setup. The Application '
                                    'config module must be within a valid '
                                    'python module.')
-        params = self.callable._params
+        #
         parser = self.get_parser(with_commands=False, add_help=False)
         opts, _ = parser.parse_known_args(self.meta.argv)
         config_module = import_module(opts.config)
@@ -593,7 +597,7 @@ class Application(ConsoleParser, Extension):
             return self._build_config(config_module.__file__)
         #
         # setup application
-        config = self.setup(config_module, params, opts)
+        config = self.setup(config_module, self.params, opts)
         #
         # Load extensions
         self.logger.debug('Setting up extensions')
@@ -611,7 +615,7 @@ class Application(ConsoleParser, Extension):
                 extension = Ext()
                 extensions[extension.meta.name] = extension
                 self.bind_events(extension)
-                config.update(extension.setup(config_module, params))
+                config.update(extension.setup(config_module, self.params))
         return config
 
     def _build_handler(self):

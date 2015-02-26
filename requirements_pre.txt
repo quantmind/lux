@@ -1,0 +1,2 @@
+-e git+https://github.com/quantmind/pulsar.git#egg=pulsar
+-e git+https://github.com/quantmind/pulsar-odm.git#egg=pulsar-odm

@@ -1,5 +1,5 @@
 import lux
-from lux import Router
+from lux import Router, Html
 
 from tests.config import *
 
