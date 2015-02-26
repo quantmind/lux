@@ -11,7 +11,7 @@ before_install:
   - npm install -g grunt-cli
 
 install:
-  - pip install -r requirements_dev.txt --use-mirrors
+  - pip install -r requirements_dev.txt
   - python setup.py install
   - sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm
   - npm install

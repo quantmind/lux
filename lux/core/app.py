@@ -362,7 +362,7 @@ class Application(ConsoleParser, Extension):
         dotted_path = self.config['EMAIL_BACKEND']
         return module_attribute(dotted_path)(self)
 
-    def get_command(self, name, stdout=None, stderr=None):
+    def get_command(self, name):
         '''Construct and return a :class:`.Command` for this application
         '''
         for e, cmnds in self.commands.items():
@@ -370,7 +370,7 @@ class Application(ConsoleParser, Extension):
                 if name == cmnd:
                     modname = 'lux.core' if e == 'lux' else e
                     mod = import_module('%s.commands.%s' % (modname, name))
-                    return mod.Command(name, self, stdout, stderr)
+                    return mod.Command(name, self)
         raise CommandError("Unknown command '%s'" % name)
 
     def get_usage(self):

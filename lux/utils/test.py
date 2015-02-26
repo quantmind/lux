@@ -70,16 +70,15 @@ class TestCase(unittest.TestCase):
         else:
             command = args[0]
         argv = args[1] if len(args) == 2 else []
-        cmd = app.get_command(command, stdout=StringIO())
+        cmd = app.get_command(command)
         self.assertTrue(cmd.logger)
         self.assertEqual(cmd.name, command)
         return cmd(argv, **kwargs)
 
     def fetch_command(self, command, out=None):
         '''Fetch a command.'''
-        out = StringIO()
         app = self.application()
-        cmd = app.get_command(command, stdout=out)
+        cmd = app.get_command(command)
         self.assertTrue(cmd.logger)
         self.assertEqual(cmd.name, command)
         return cmd
@@ -93,6 +92,8 @@ class TestCase(unittest.TestCase):
             return {name: value}
 
     def on_loaded(self, app):
+        app.stdout = StringIO()
+        app.stderr = StringIO()
         if hasattr(app, 'mapper'):
             mapper = app.mapper()
             dbname = randomname()

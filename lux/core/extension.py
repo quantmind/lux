@@ -5,7 +5,6 @@ from copy import copy
 from inspect import getfile
 
 from pulsar.utils.path import Path
-from pulsar.utils.pep import native_str
 
 from lux import __version__
 
@@ -144,7 +143,7 @@ class ExtensionType(type):
         return klass
 
 
-class Extension(ExtensionType('ExtBase', (object,), {'abstract': True})):
+class Extension(metaclass=ExtensionType):
     '''Base class for extensions including the :class:`.Application` class.
 
     .. attribute:: meta
@@ -157,6 +156,8 @@ class Extension(ExtensionType('ExtBase', (object,), {'abstract': True})):
         The logger instance for this :class:`Extension`.
     '''
     abstract = True
+    stdout = None
+    stderr = None
 
     def middleware(self, app):
         '''Called by application ``app`` when creating the middleware.
@@ -196,21 +197,21 @@ class Extension(ExtensionType('ExtBase', (object,), {'abstract': True})):
         '''
         return ()
 
-    def write(self, msg='', stream=None):
-        '''Write ``msg`` into ``stream`` or ``sys.stdout``
+    def write(self, msg=''):
+        '''Write ``msg`` into :attr:`stdout` or ``sys.stdout``
         '''
-        h = stream or sys.stdout
+        out = self.stdout or sys.stdout
         if msg:
-            h.write(native_str(msg))
-        h.write('\n')
+            out.write(msg)
+        out.write('\n')
 
-    def write_err(self, msg='', stream=None):
-        '''Write ``msg`` into ``stream`` or ``sys.stderr``
+    def write_err(self, msg=''):
+        '''Write ``msg`` into :attr:`stderr` or ``sys.stderr``
         '''
-        h = stream or sys.stderr
+        out = self.stderr or sys.stderr
         if msg:
-            h.write(native_str(msg))
-        h.write('\n')
+            out.write(msg)
+        out.write('\n')
 
     def check(self, request, data):
         pass

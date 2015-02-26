@@ -105,11 +105,11 @@ class Command(ConsoleParser):
 
         Default: ``sys.stderr``
     '''
-    def __init__(self, name, app, stdout=None, stderr=None):
+    def __init__(self, name, app):
         self.name = name
         self.app = app
-        self.stdout = stdout
-        self.stderr = stderr
+        self.stdout = app.stdout
+        self.stderr = app.stderr
 
     def __call__(self, argv, **params):
         app = self.pulsar_app(argv)

@@ -2,7 +2,7 @@ import os
 import sys
 import json
 
-from distutils.core import setup
+from setuptools import setup
 from distutils.command.install_data import install_data
 from distutils.command.install import INSTALL_SCHEMES
 
