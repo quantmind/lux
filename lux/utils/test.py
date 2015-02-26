@@ -140,8 +140,9 @@ class TestServer(unittest.TestCase, TestMixin):
         cfg = cls.cfg
         argv = [__file__, 'serve', '-b', '127.0.0.1:0',
                 '--concurrency', cfg.concurrency]
+        loglevel = cfg.loglevel
         cls.app = app = lux.execute_from_config(cls.config_file, argv=argv,
-                                                name=name)
+                                                name=name, loglevel=loglevel)
         mapper = cls.on_loaded(app)
         if mapper:
             app.params['DATASTORE'] = mapper._default_store.dns

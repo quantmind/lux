@@ -17,12 +17,20 @@ install:
   - sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm
   - npm install
 
+before_script:
+  - sudo rethinkdb --io-threads 2048 --daemon
+  - ulimit -S -n 2048
+  - sleep 5
+
 script:
   - grunt jasmine
   - pep8
   - sudo rm -rf lux
   - python -m runtests --coverage
   - python -m runtests --coveralls
+
+after_script:
+  - killall rethinkdb
 
 notifications:
   email: false

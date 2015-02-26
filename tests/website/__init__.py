@@ -5,6 +5,7 @@ from tests.config import *
 
 EXTENSIONS = ['lux.extensions.base',
               'lux.extensions.api',
+              'lux.extensions.ui',
               'lux.extensions.angular',
               'lux.extensions.auth',
               'lux.extensions.odm']
@@ -20,5 +21,5 @@ class Extension(lux.Extension):
     def home(self, request):
         doc = request.html_document
         doc.body.append(Html('div',
-                             '<p>Well done, TARS is created!</p>'))
+                             '<p>Well done, Site is created!</p>'))
         return doc.http_response(request)
