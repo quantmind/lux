@@ -35,7 +35,7 @@ ALL_EVENTS = ('on_config',  # Config ready.
               )
 
 
-def execute_from_config(config_file, argv=None, **params):
+def execute_from_config(config_file, **params):
     '''Create and run an :class:`.Application` from a ``config_file``.
 
     This is the function to use when creating the script which runs your
@@ -51,7 +51,7 @@ def execute_from_config(config_file, argv=None, **params):
         python module which implements the :ref:`main application`
         of the web site.
     '''
-    return execute_app(App(config_file, **params), argv=argv)
+    return execute_app(App(config_file, **params))
 
 
 def execute_app(app, argv=None, **params):
@@ -64,7 +64,7 @@ def execute_app(app, argv=None, **params):
         :class:`.Command` executing the ``app``.
     '''
     if argv is None:
-        argv = sys.argv
+        argv = app._argv or sys.argv
     app._argv = argv = list(argv)
     if argv:
         app._script = argv.pop(0)

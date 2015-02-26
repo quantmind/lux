@@ -49,3 +49,25 @@ class AppMapper(LocalMixin):
         mapper = GreenMapper(datastore['default'])
         mapper.register_applications(self.app.config['EXTENSIONS'])
         return mapper
+
+
+def database_create(app, dry_run=False):
+    mapper = app.mapper()
+    for manager in mapper:
+        store = manager._store
+        databases = yield from store.database_all()
+        if store.database not in databases:
+            if not dry_run:
+                yield from store.database_create()
+            app.write('Created database %s' % store)
+
+
+def database_drop(app, dry_run=False):
+    mapper = app.mapper()
+    for manager in mapper:
+        store = manager._store
+        databases = yield from store.database_all()
+        if store.database in databases:
+            if not dry_run:
+                yield from store.database_drop()
+            app.write('Dropped database %s' % store)

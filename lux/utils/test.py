@@ -5,6 +5,7 @@ from io import StringIO
 
 from pulsar.utils.httpurl import encode_multipart_formdata
 from pulsar.utils.string import random_string
+from pulsar.apps.http import HttpClient
 
 import lux
 
@@ -25,6 +26,18 @@ class TestCase(unittest.TestCase):
     '''Dictionary of parameters to override the parameters from
     :attr:`config_file`'''
     apps = None
+
+    @classmethod
+    def on_loaded(cls, app):
+        app.stdout = StringIO()
+        app.stderr = StringIO()
+        if hasattr(app, 'mapper'):
+            mapper = app.mapper()
+            dbname = randomname()
+            mapper.default_store.database = dbname
+            for manager in mapper:
+                manager._store.database = dbname
+        return app
 
     def application(self, config_file=None, argv=None, **params):
         '''Return an application for testing. Override if needed.
@@ -91,16 +104,6 @@ class TestCase(unittest.TestCase):
             value = value.attrs['content']
             return {name: value}
 
-    def on_loaded(self, app):
-        app.stdout = StringIO()
-        app.stderr = StringIO()
-        if hasattr(app, 'mapper'):
-            mapper = app.mapper()
-            dbname = randomname()
-            mapper.default_store.database = dbname
-            for manager in mapper:
-                manager._store.database = dbname
-
     def post(self, app=None, path=None, content_type=None, body=None,
              headers=None, **extra):
         extra['REQUEST_METHOD'] = 'POST'
@@ -117,11 +120,39 @@ class TestCase(unittest.TestCase):
         if self.apps:
             for app in self.apps:
                 if hasattr(app, 'mapper'):
-                    mapper = app.mapper()
-                    try:
-                        yield from mapper.database_drop()
-                    except Exception:
-                        pass
+                    from lux.extensions.odm import database_drop
+                    yield from database_drop(app)
 
     def tearDown(self):
         return self.database_drop()
+
+
+class TestServer(unittest.TestCase):
+    config_file = 'tests.config'
+    app_cfg = None
+
+    @classmethod
+    def setUpClass(cls):
+        name = cls.__name__.lower()
+        cfg = cls.cfg
+        argv = [__file__, 'serve', '-b', '127.0.0.1:0',
+                '--concurrency', cfg.concurrency]
+        cls.app = app = lux.execute_from_config(cls.config_file, argv=argv,
+                                                name=name)
+        cls.on_loaded(app)
+        cls.app_cfg = yield from app._started
+        yield from app.get_command('create_databases')([])
+        yield from app.get_command('create_tables')([])
+        yield from app.get_command('create_superuser')([], interactive=False,
+                                                       username='pippo',
+                                                       password='pluto')
+        cls.url = 'http://{0}:{1}'.format(*cls.app_cfg.addresses[0])
+        cls.http = HttpClient()
+        # Create databases
+
+    @classmethod
+    def tearDownClass(cls):
+        from lux.extensions.odm import database_drop
+        if cls.app_cfg is not None:
+            yield from send('arbiter', 'kill_actor', cls.app_cfg.name)
+            yield from database_drop(cls.app)
