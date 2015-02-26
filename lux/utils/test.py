@@ -6,7 +6,7 @@ from io import StringIO
 from pulsar import send
 from pulsar.utils.httpurl import encode_multipart_formdata
 from pulsar.utils.string import random_string
-from pulsar.apps.http import HttpClient
+from pulsar.apps.test import test_timeout
 
 import lux
 
@@ -134,6 +134,7 @@ class TestCase(unittest.TestCase, TestMixin):
 class TestServer(unittest.TestCase, TestMixin):
     app_cfg = None
 
+    @test_timeout(30)
     @classmethod
     def setUpClass(cls):
         name = cls.__name__.lower()
@@ -150,7 +151,6 @@ class TestServer(unittest.TestCase, TestMixin):
             yield from app.get_command('create_tables')([])
         cls.app_cfg = yield from app._started
         cls.url = 'http://{0}:{1}'.format(*cls.app_cfg.addresses[0])
-        cls.http = HttpClient()
 
     @classmethod
     def tearDownClass(cls):

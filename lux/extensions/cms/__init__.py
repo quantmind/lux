@@ -12,7 +12,7 @@ class Extension(lux.Extension):
         '''
         pass
 
-    def on_loaded(self, app):
+    def __on_loaded(self, app):
         ext = app.extensions.get('pubsub')
         if ext:
             # pubsub extension available
