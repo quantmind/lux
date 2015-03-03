@@ -1,10 +1,9 @@
 import lux
-from lux import route
+from lux import route, Router as WebRouter
 from lux.forms import Form
-from lux.extensions.angular import Router as WebRouter
 
 from pulsar import Http404, PermissionDenied, HttpRedirect, MethodNotAllowed
-from pulsar.apps.wsgi import Json
+from pulsar.apps.wsgi import Json, Router
 
 from .forms import (LoginForm, CreateUserForm, ChangePasswordForm,
                     ForgotPasswordForm, PasswordForm)
@@ -61,7 +60,7 @@ class WebFormRouter(WebRouter, FormMixin):
     uirouter = False
     template = None
 
-    def build_main(self, request):
+    def get_html(self, request):
         '''Handle the HTML page for login
         '''
         form = self.fclass(request).layout
@@ -232,7 +231,7 @@ class ForgotPassword(WebFormRouter):
         return Json(result).http_response(request)
 
 
-class Logout(lux.Router, FormMixin):
+class Logout(Router, FormMixin):
     '''Logout handler, post view only
     '''
     redirect_to = '/'
@@ -247,7 +246,7 @@ class Logout(lux.Router, FormMixin):
         return self.maybe_redirect_to(request, form)
 
 
-class Token(lux.Router):
+class Token(Router):
 
     @csrf
     def post(self, request):

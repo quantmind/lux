@@ -89,20 +89,22 @@ class Router(wsgi.Router):
         response = request.response
         ct = response.content_type or ''
         if ct.startswith('text/html'):
+            app = request.app
             template = self.get_html_body_template(request)
-            return self.get_html(request, template)
+            context = {'html_main': self.get_html(request)}
+            return app.html_response(request, template, context=context)
         elif ct == 'application/json':
             return self.get_json(request)
         else:
             return self.get_text(request)
 
-    def get_html(self, request, template):
-        return template
+    def get_html(self, request):
+        return ''
 
-    def get_json(self, request, template):
+    def get_json(self, request):
         return '{}'
 
-    def get_text(self, request, template):
+    def get_text(self, request):
         return ''
 
     def get_html_body_template(self, request):
@@ -113,6 +115,7 @@ class Router(wsgi.Router):
                 return self.parent.get_html_body_template(request)
             else:
                 return 'home.html'
+        return template
 
     def make_router(self, rule, **params):
         '''Create a new :class:`.Router` form rule and parameters

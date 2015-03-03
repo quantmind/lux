@@ -1,5 +1,7 @@
 .. highlight:: html
 
+.. _js-lux-scroll:
+
 lux.scroll
 ================
 
