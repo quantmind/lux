@@ -1,1 +1,0 @@
-//	$extension_name project

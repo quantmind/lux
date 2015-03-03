@@ -4,7 +4,7 @@ module.exports = function(grunt) {
   "use strict";
     // $project_name configuration.
     var libs = {
-            $project_name: grunt.file.readJSON('${project_name}/media/src/lib.json')
+            $project_name: grunt.file.readJSON('js/lib.json')
         };
     //
     function for_each(obj, callback) {
@@ -73,10 +73,7 @@ module.exports = function(grunt) {
         pkg: grunt.file.readJSON('package.json'),
         concat: libs,
         uglify: uglify_libs(),
-        jshint: jshint_libs(),
-        qunit: {
-            files: "${project_name}/media/src/index.html"
-        }
+        jshint: jshint_libs()
     });
     //
     // These plugins provide necessary tasks.

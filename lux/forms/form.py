@@ -189,14 +189,6 @@ class Form(metaclass=FormType):
 
         Default: ``None``.
 
-    .. attribute:: layout
-
-        The :ref:`Html layout <form-layout>` for this :class:`Form`. It is
-        a descriptor_ for rendering a :class:`Form` instance into HTML::
-
-            form = MyForm(...)
-            html = form.layout(method='post', action='.')
-
     .. _descriptor: http://users.rcn.com/python/download/Descriptor.htm
     '''
     def __init__(self, request=None, data=None, files=None, initial=None,
