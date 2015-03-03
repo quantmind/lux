@@ -1,2 +1,2 @@
-define(['jquery'], function ($$) {
+define(['lux/lux'], function (lux) {
     "use strict";

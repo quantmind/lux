@@ -13,7 +13,6 @@ def add_css(all):
     vars.navbar_height = 80
     vars.animate.fade.top = px(vars.navbar_height)
 
-    #vars.font_family = '"jaf-bernino-sans","Lucida Grande","Lucida Sans Unicode","Lucida Sans",Geneva,Verdana,sans-serif'
     vars.font_family = ('"freight-text-pro",Georgia,Cambria,"Times New Roman",'
                         'Times,serif')
     vars.font_size = px(18)
@@ -53,4 +52,3 @@ def add_css(all):
 
     css('.text-large',
         font_size=pc(150))
-

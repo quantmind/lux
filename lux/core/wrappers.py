@@ -99,7 +99,9 @@ class Router(wsgi.Router):
             return self.get_text(request)
 
     def get_html(self, request):
-        return ''
+        '''Must be implemented by subclasses
+        '''
+        raise MethodNotAllowed
 
     def get_json(self, request):
         return '{}'

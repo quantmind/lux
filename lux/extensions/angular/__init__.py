@@ -48,10 +48,10 @@ from .ui import add_css
 
 
 def add_ng_modules(doc, modules):
-    ngmodules = set(doc.jscontext.get('ngModules', ()))
-    ngmodules.update(modules)
-    doc.jscontext['ngModules'] = ngmodules
-    return ngmodules
+    if modules:
+        ngmodules = set(doc.jscontext.get('ngModules', ()))
+        ngmodules.update(modules)
+        doc.jscontext['ngModules'] = tuple(ngmodules)
 
 
 class Extension(lux.Extension):
@@ -142,7 +142,7 @@ class Router(lux.Router, MediaMixin):
         if jscontext['html5mode']:
             doc.head.meta.append(Html('base', href=""))
         #
-        ngmodules = add_ng_modules(doc, app.config['NGMODULES'])
+        add_ng_modules(doc, app.config['NGMODULES'])
         if request.cache.uirouter is False:
             uirouter = None
         else:
@@ -150,10 +150,10 @@ class Router(lux.Router, MediaMixin):
         #
         # Using Angular Ui-Router
         if uirouter:
-            jscontext.update(self.sitemap(app, ngmodules, uirouter))
+            jscontext.update(self.sitemap(app, doc, uirouter))
             jscontext['page'] = router_href(app, self.full_route)
-        elif self.ngmodules:
-            ngmodules.update(self.ngmodules)
+        else:
+            add_ng_modules(doc, self.ngmodules)
 
         if uirouter:
             main = self.uiview(app, main, jscontext)
