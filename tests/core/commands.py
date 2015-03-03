@@ -10,7 +10,7 @@ class CommandTests(test.TestCase):
     config_file = 'tests.config'
 
     def test_startproject(self):
-        command = self.fetch_command('startproject')
+        command = self.fetch_command('start_project')
         self.assertTrue(command.help)
         name = 'testproject'
         try:
