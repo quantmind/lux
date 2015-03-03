@@ -3,7 +3,7 @@ import getpass
 import re
 import sys
 
-from pulsar import ImproperlyConfigured
+from pulsar import ImproperlyConfigured, Setting
 
 import lux
 
@@ -36,9 +36,16 @@ def get_def_username(request, auth):
 
 class Command(lux.Command):
     help = 'Create a superuser.'
+    option_list = (
+        Setting('username', ('--username',), desc='Username'),
+        Setting('password', ('--password',), desc='Password')
+    )
 
-    def run(self, options, interactive=True, username=None, password=None,
-            **params):
+    def run(self, options, interactive=False):
+        username = options.username
+        password = options.password
+        if not username or not password:
+            interactive = True
         request = self.app.wsgi_request()
         ext = self.app.extensions['auth']
         auth = ext.backend

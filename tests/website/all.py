@@ -17,7 +17,7 @@ class TestAuthSite(test.TestServer):
     def setUpClass(cls):
         yield from super().setUpClass()
         yield from cls.app.get_command('create_superuser')(
-            [], interactive=False, username='pippo', password='pluto')
+            ['--username', 'pippo', '--password', 'pluto'])
 
     def test_css(self):
         command = self.app.get_command('style')
