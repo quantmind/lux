@@ -1,4 +1,5 @@
 from pulsar.apps.test import test_timeout
+from pulsar.apps.wsgi import WsgiHandler
 
 import lux
 from lux.utils import test
@@ -11,7 +12,9 @@ class TestCase(test.TestCase):
         from pulsar.apps.greenio import WsgiGreen
         app = self.application()
         handle = app.handler
-        self.assertIsInstance(handle, WsgiGreen)
+        self.assertIsInstance(handle, WsgiHandler)
+        self.assertEqual(len(handle.middleware), 2)
+        handle = app.handler.middleware[1]
         self.assertEqual(handle.pool, None)
         mapper = app.mapper()
         self.assertEqual(len(mapper), 4)

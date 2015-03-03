@@ -5,7 +5,6 @@ Contents
 .. toctree::
    :maxdepth: 2
 
-   overview
    tutorials/index
    api/index
    js/index

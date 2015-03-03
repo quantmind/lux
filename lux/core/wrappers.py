@@ -6,30 +6,14 @@ from pulsar.utils.httpurl import JSON_CONTENT_TYPES
 from pulsar.utils.structures import mapping_iterator
 
 from lux.utils import unique_tuple
+from pulsar.utils.exceptions import MethodNotAllowed
 
-__all__ = ['Html', 'WsgiRequest', 'Router', 'route', 'wsgi_request', 'as_tag',
+__all__ = ['Html', 'WsgiRequest', 'Router', 'route', 'wsgi_request',
            'cached_property', 'html_factory', 'RedirectRouter',
            'RouterParam', 'JSON_CONTENT_TYPES',
            'DEFAULT_CONTENT_TYPES']
 
 Html = wsgi.Html
-
-
-def frozen_set(*elems):
-    def _():
-        for elem in elems:
-            if isinstance(elem, str):
-                yield elem
-            else:
-                for el in elem:
-                    yield el
-    return frozenset(_())
-
-
-def as_tag(elem, tag):
-    if not isinstance(elem, wsgi.Html) or elem.tag != tag:
-        return Html(tag, elem)
-    return elem
 
 
 DEFAULT_CONTENT_TYPES = unique_tuple(('text/html', 'text/plain', 'text/csv'),
@@ -92,31 +76,49 @@ class RedirectRouter(wsgi.Router):
 
 
 class Router(wsgi.Router):
-    '''Extend pulsar :class:`~pulsar.apps.wsgi.routers.Router` with content
-    management.'''
+    '''Extend pulsar :class:`~pulsar.apps.wsgi.routers.Router`
+    with content management.'''
     in_nav = False
-    content_manager = None
     controller = None
     form = RouterParam(None)
 
-    def __init__(self, *args, **kwargs):
-        super(Router, self).__init__(*args, **kwargs)
-        if self.content_manager:
-            self.content_manager = self.content_manager._clone(self)
-
-    def template_response(self, request, template):
-        '''A text/html response with an angular template
+    def get(self, request):
+        '''Return the html template used by the GET method
+        and content-type is text/html
         '''
         response = request.response
-        response.content_type = 'text/plain'
-        response.content = template
-        return response
+        ct = response.content_type or ''
+        if ct.startswith('text/html'):
+            template = self.get_html_body_template(request)
+            return self.get_html(request, template)
+        elif ct == 'application/json':
+            return self.get_json(request)
+        else:
+            return self.get_text(request)
+
+    def get_html(self, request, template):
+        return template
+
+    def get_json(self, request, template):
+        return '{}'
+
+    def get_text(self, request, template):
+        return ''
+
+    def get_html_body_template(self, request):
+        cms = request.app.cms
+        template = cms.template(self.full_route.path)
+        if not template:
+            if self.parent:
+                return self.parent.get_html_body_template(request)
+            else:
+                return 'home.html'
 
     def make_router(self, rule, **params):
         '''Create a new :class:`.Router` form rule and parameters
         '''
         params.setdefault('cls', Router)
-        return super(Router, self).make_router(rule, **params)
+        return super().make_router(rule, **params)
 
     def add_api_urls(self, request, api):
         for r in self.routes:

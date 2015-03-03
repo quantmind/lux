@@ -57,6 +57,7 @@ class LuxExtensionDirective(Directive):
 
     def text(self, params):
         for p in sorted(params, key=lambda x: x.name):
+            yield ''
             yield '.. setting:: %s' % p.name
             yield ''
             yield '%s' % p.name

@@ -175,10 +175,10 @@ class Symbol(Variable):
 
 
 class Lazy(Variable):
-    '''A lazy :class:`Variable`.
+    '''A lazy :class:`.Variable`.
 
     :param callable: the callable invoked when accessing the
-    :meth:`Variable.value` method of this lazy variable.
+        :meth:`Variable.value` method of this lazy variable.
     '''
     def __init__(self, callable, *args, **kwargs):
         if not hasattr(callable, '__call__'):

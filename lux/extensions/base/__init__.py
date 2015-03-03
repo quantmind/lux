@@ -1,4 +1,4 @@
-'''The base :ref:`lux extension <extensions>` provides several
+'''The base :ref:`lux extension <writing-extensions>` provides several
 middleware utilities. If used, it should be the first extension in your
 :setting:`EXTENSIONS` list (excluding extensions which
 don't provide any wsgi middleware such as :mod:`lux.extensions.sitemap`

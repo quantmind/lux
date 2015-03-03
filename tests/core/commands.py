@@ -39,3 +39,10 @@ class CommandTests(test.TestCase):
         self.assertEqual(len(key), 35)
         key = yield from command(['--hex'])
         self.assertTrue(len(key) > 50)
+
+    def test_show_parameters(self):
+        command = self.fetch_command('show_parameters')
+        self.assertTrue(command.help)
+        yield from command([])
+        data = command.app.stdout.getvalue()
+        self.assertTrue(data)

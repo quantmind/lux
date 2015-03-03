@@ -1,4 +1,5 @@
 [run]
+concurrency = gevent
 source = lux
 omit =
     *lux/utils/sphinxtogithub.py

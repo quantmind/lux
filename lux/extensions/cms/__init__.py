@@ -1,7 +1,5 @@
 import lux
 
-from .routes import CMS
-
 
 class Extension(lux.Extension):
     '''This extension should be the last extension which provides

@@ -32,6 +32,20 @@ class TestMixin:
                 manager._store.database = dbname
             return mapper
 
+    def bs(self, response):
+        from bs4 import BeautifulSoup
+        self.assertEqual(response.headers['content-type'],
+                         'text/html; charset=utf-8')
+        return BeautifulSoup(response.get_content())
+
+    def authenticity_token(self, doc):
+        name = doc.find('meta', attrs={'name': 'csrf-param'})
+        value = doc.find('meta', attrs={'name': 'csrf-token'})
+        if name and value:
+            name = name.attrs['content']
+            value = value.attrs['content']
+            return {name: value}
+
 
 class TestCase(unittest.TestCase, TestMixin):
     '''TestCase class for lux tests.
@@ -99,14 +113,6 @@ class TestCase(unittest.TestCase, TestMixin):
         self.assertTrue(cmd.logger)
         self.assertEqual(cmd.name, command)
         return cmd
-
-    def authenticity_token(self, doc):
-        name = doc.find('meta', attrs={'name': 'csrf-param'})
-        value = doc.find('meta', attrs={'name': 'csrf-token'})
-        if name and value:
-            name = name.attrs['content']
-            value = value.attrs['content']
-            return {name: value}
 
     def post(self, app=None, path=None, content_type=None, body=None,
              headers=None, **extra):

@@ -1,4 +1,5 @@
 from pulsar import ImproperlyConfigured
+from pulsar.apps.wsgi import WsgiHandler, wait_for_body_middleware
 from pulsar.apps.greenio import WsgiGreen
 from pulsar.utils.log import LocalMixin
 
@@ -19,13 +20,12 @@ class Extension(lux.Extension):
                   'Search engine for models')]
 
     def on_loaded(self, app):
-        '''Build the API middleware.
-
-        If :setting:`API_URL` is defined, it loops through all extensions
-        and checks if the ``api_sections`` method is available.
+        '''Wraps the Wsgi handler into a grrnlet friendly handler
         '''
         app.mapper = AppMapper(app)
-        app.handler = WsgiGreen(app.handler)
+        green = WsgiGreen(app.handler)
+        app.handler = WsgiHandler((wait_for_body_middleware, green),
+                                  async=True)
 
 
 class AppMapper(LocalMixin):

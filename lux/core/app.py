@@ -18,6 +18,7 @@ from .commands import ConsoleParser, CommandError
 from .extension import Extension, Parameter, EventHandler
 from .wrappers import wsgi_request, HeadMeta
 from .engines import template_engine
+from .cms import CMS
 
 
 __all__ = ['App',
@@ -220,7 +221,9 @@ class Application(ConsoleParser, Extension):
         Parameter('EMAIL_BACKEND', 'lux.core.mail.EmailBackend',
                   'Default locale'),
         Parameter('DEFAULT_CONTENT_TYPE', None,
-                  'Default content type for this application')
+                  'Default content type for this application'),
+        Parameter('HTML_TEMPLATES', {'/': 'home.html'},
+                  'Dictionary of Html templates to render')
         ]
 
     def __init__(self, callable):
@@ -229,6 +232,7 @@ class Application(ConsoleParser, Extension):
         self.meta.script = callable._script
         self.events = {}
         self.config = self._build_config(callable._config_file)
+        self.cms = CMS(self)
         self.fire('on_config')
         self.handler = self._build_handler()
         self.fire('on_loaded')
@@ -243,7 +247,9 @@ class Application(ConsoleParser, Extension):
 
     @property
     def config_module(self):
-        '''The :ref:`configuration file` used by this :class:`App`.'''
+        '''The :ref:`configuration file <parameters>` used by this
+        :class:`.App`.
+        '''
         return '%s.%s' % (self, self.meta.file.module_name())
 
     @property

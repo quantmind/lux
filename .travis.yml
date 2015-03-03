@@ -14,7 +14,6 @@ install:
   - pip install -r requirements_dev.txt
   - pip install -r requirements_pre.txt
   - python setup.py install
-  - sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm
   - npm install
 
 before_script:
@@ -26,6 +25,7 @@ script:
   - grunt jasmine
   - pep8
   - sudo rm -rf lux
+  - sudo rm -rf lux.egg-info
   - python -m runtests --coverage
   - python -m runtests --coveralls
 

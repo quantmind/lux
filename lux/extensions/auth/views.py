@@ -3,7 +3,7 @@ from lux import route
 from lux.forms import Form
 from lux.extensions.angular import Router as WebRouter
 
-from pulsar import Http404, PermissionDenied, HttpRedirect
+from pulsar import Http404, PermissionDenied, HttpRedirect, MethodNotAllowed
 from pulsar.apps.wsgi import Json
 
 from .forms import (LoginForm, CreateUserForm, ChangePasswordForm,

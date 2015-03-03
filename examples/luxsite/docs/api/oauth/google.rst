@@ -1,6 +1,6 @@
 .. _extension-google:
 
-=====================
+
 Google Integration
 =====================
 

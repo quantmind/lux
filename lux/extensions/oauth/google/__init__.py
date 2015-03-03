@@ -2,10 +2,10 @@
 This module integrates Google OAuth2_ services and APIs with lux.
 
 When the ``google`` dictionary is included into the :setting:`OAUTH_PROVIDERS`
-dictionary, the :ref:`google angular module <lux-google>` is added to the
-:ref:`javascript context object` which can be used by AngularJS if the
-:mod:`lux.extensions.angular` module is included in the list of
-:setting:`EXTENSIONS` of your application.
+dictionary, the :ref:`google angular module <js-lux-google>` is added to the
+:ref:`javascript context object <js-lux-context>` which can be used by
+AngularJS if the :mod:`lux.extensions.angular` module is included in
+the list of :setting:`EXTENSIONS` of your application.
 
 Google analytics
 ====================
@@ -27,7 +27,7 @@ When using google analytics integration with :mod:`lux.extensions.angular`
 in `ui.router`_ mode (:setting:`ANGULAR_UI_ROUTER` set to ``True``) one
 must be aware that **pageview** events are not triggered anymore.
 
-To handle this situation the :ref:`google angular module <lux-google>`
+To handle this situation the :ref:`google angular module <js-lux-google>`
 interacts with google analytics to register pageviews and custom events
 by listening for the `$stateChangeSuccess` event.
 

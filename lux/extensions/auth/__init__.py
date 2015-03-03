@@ -1,4 +1,4 @@
-'''A :ref:`lux extension <extensions>` for managing users, sessions
+'''A :ref:`lux extension <writing-extensions>` for managing users, sessions
 and permissions. The extension is added by inserting
 ``lux.extensions.auth`` into the
 list of :setting:`EXTENSIONS` of your application.
