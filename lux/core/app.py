@@ -178,6 +178,8 @@ class Application(ConsoleParser, Extension):
                   'List of links to include in the html head tag.'),
         Parameter('SCRIPTS', [],
                   'List of scripts to load in the head tag'),
+        Parameter('COPYRIGHT', 'Lux',
+                  'Site Copyright'),
         Parameter(
             'REQUIREJS_CONFIG',
             'http://quantmind.github.io/require-config-js/require.config',
@@ -516,6 +518,7 @@ class Application(ConsoleParser, Extension):
         all :setting:`EXTENSIONS` which expose the ``context`` method.
         '''
         context = context if context is not None else {}
+        context.update(request.app.config)
         for ext in self.extensions.values():
             if hasattr(ext, 'context'):
                 context = ext.context(request, context) or context

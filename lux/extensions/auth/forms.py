@@ -34,6 +34,8 @@ class PasswordForm(forms.Form):
 
 
 class CreateUserForm(PasswordForm):
+    username = forms.CharField(required=True, minlength=6, maxlength=30)
+    email = forms.EmailField(required=True)
 
     layout = forms.Layout(
         forms.Fieldset('username', 'email', 'password', 'password_repeat'),
