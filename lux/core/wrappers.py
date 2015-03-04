@@ -80,7 +80,9 @@ class Router(wsgi.Router):
     with content management.'''
     in_nav = False
     controller = None
-    form = RouterParam(None)
+    html_body_template = None
+    form = None
+    response_content_types = DEFAULT_CONTENT_TYPES
 
     def get(self, request):
         '''Return the html template used by the GET method
@@ -91,7 +93,10 @@ class Router(wsgi.Router):
         if ct.startswith('text/html'):
             app = request.app
             template = self.get_html_body_template(request)
-            context = {'html_main': self.get_html(request)}
+            html = self.get_html(request)
+            if isinstance(html, Html):
+                html = html.render(request)
+            context = {'html_main': html}
             return app.html_response(request, template, context=context)
         elif ct == 'application/json':
             return self.get_json(request)
@@ -111,12 +116,13 @@ class Router(wsgi.Router):
 
     def get_html_body_template(self, request):
         cms = request.app.cms
-        template = cms.template(self.full_route.path)
+        template = (cms.template(self.full_route.path) or
+                    self.html_body_template)
         if not template:
             if self.parent:
-                return self.parent.get_html_body_template(request)
+                template = self.parent.get_html_body_template(request)
             else:
-                return 'home.html'
+                template = 'home.html'
         return template
 
     def make_router(self, rule, **params):

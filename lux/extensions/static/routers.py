@@ -8,7 +8,7 @@ from lux.extensions import angular, base, sitemap
 
 from pulsar import ImproperlyConfigured
 from pulsar.utils.slugify import slugify
-from pulsar.apps.wsgi import Json, Html
+from pulsar.apps.wsgi import Json, Html, Router
 
 from .builder import (DirBuilder, FileBuilder, BuildError, SkipBuild,
                       Unsupported, normpath)
@@ -51,7 +51,7 @@ class MediaBuilder(base.MediaRouter, FileBuilder):
                 self.build_file(app, location, src=src, name=url)
 
 
-class JsonRedirect(lux.Router):
+class JsonRedirect(Router):
 
     def __init__(self, route):
         route = str(route)
@@ -67,7 +67,7 @@ class JsonRedirect(lux.Router):
         return request.redirect(self.target)
 
 
-class JsonRoot(lux.Router, FileBuilder):
+class JsonRoot(Router, FileBuilder):
     '''The root for :class:`.JsonContent`
     '''
     response_content_types = JSON_CONTENT_TYPES
@@ -87,7 +87,7 @@ class JsonRoot(lux.Router, FileBuilder):
         return Json(self.apis(request)).http_response(request)
 
 
-class JsonFile(lux.Router, FileBuilder):
+class JsonFile(Router, FileBuilder):
     '''Serve/build a json file
     '''
     html_router = None
@@ -133,7 +133,7 @@ class JsonFile(lux.Router, FileBuilder):
             all, key=lambda d: parse_date(d.get('date', d['modified'])))))
 
 
-class JsonContent(lux.Router, DirBuilder):
+class JsonContent(Router, DirBuilder):
     '''Handle JSON contents in a directory
     '''
     html_router = None
@@ -172,7 +172,7 @@ class JsonContent(lux.Router, DirBuilder):
         return Json(data).http_response(request)
 
 
-class JsonIndex(lux.Router, FileBuilder):
+class JsonIndex(Router, FileBuilder):
     index_template = None
 
     def build_file(self, app, location):
@@ -199,7 +199,7 @@ class HtmlFile(HtmlRouter, FileBuilder):
     def html_router(self):
         return self.parent
 
-    def build_main(self, request):
+    def get_html(self, request):
         content = self.get_content(request)
         if content._meta.slug in request.config['STATIC_SPECIALS']:
             request.cache.uirouter = False
@@ -289,7 +289,7 @@ class HtmlContent(HtmlRouter, DirBuilder):
                                 'url': '%s.json' % url,
                                 'type': 'static'}
 
-    def build_main(self, request):
+    def get_html(self, request):
         if self.src and request.cache.building_static:
             raise SkipBuild     # it will be built by the file handler
         if self.index_template:
@@ -322,7 +322,7 @@ class Drafts(HtmlRouter, FileBuilder):
     uirouter = False
     ngmodules = ['lux.blog']
 
-    def build_main(self, request):
+    def get_html(self, request):
         if self.index_template and self.parent:
             app = request.app
             api = self.parent.api

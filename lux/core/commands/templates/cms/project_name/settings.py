@@ -27,9 +27,13 @@ FAVICON = '$project_name/favicon.ico'
 HTML_LINKS = ['$project_name/$project_name']
 
 LOGIN_URL = '/login'
+REGISTER_URL = '/signup'
+RESET_PASSWORD_URL = '/reset-password'
 
 HTML_TEMPLATES = {'/': 'home.html',
-                  LOGIN_URL: 'small.html'}
+                  LOGIN_URL: 'small.html',
+                  REGISTER_URL: 'small.html',
+                  RESET_PASSWORD_URL: 'small.html'}
 
 # PULSAR config
 loglevel = ['pulsar.info']
