@@ -40,7 +40,7 @@
             angular.module(name, modules);
             angular.bootstrap(document, [name]);
             //
-            if (!lux.context.uiRouter)
+            if (!lux.context.uiRouter && lux.loadRequire)
                 lux.loadRequire();
         }
 

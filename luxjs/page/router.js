@@ -5,8 +5,8 @@
             if (lux.context.html5mode) {
                 $locationProvider.html5Mode(true);
                 lux.context.targetLinks = true;
+                $locationProvider.hashPrefix(lux.context.hashPrefix);
             }
-            $locationProvider.hashPrefix(lux.context.hashPrefix);
         }])
         //
         //  Convert all internal links to have a target so that the page reload
@@ -23,7 +23,8 @@
                         };
                     // Put the toTarget function into the queue so that it is
                     // processed after all
-                    timer(toTarget, 0);
+                    if (lux.context.html5mode)
+                        timer(toTarget, 0);
                 }
             };
         }]);

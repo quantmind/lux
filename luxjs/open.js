@@ -37,7 +37,7 @@ function(angular, root) {
         defaults = {
             url: '',    // base url for the web site
             media: '',  // default url for media content
-            html5mode: true, //  html5mode for angular
+            html5mode: false, //  html5mode for angular
             hashPrefix: '!',
             ngModules: []
         };

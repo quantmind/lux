@@ -1,6 +1,6 @@
 //      Lux Library - v0.1.1
 
-//      Compiled 2015-02-26.
+//      Compiled 2015-03-05.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -45,7 +45,7 @@ function(angular, root) {
         defaults = {
             url: '',    // base url for the web site
             media: '',  // default url for media content
-            html5mode: true, //  html5mode for angular
+            html5mode: false, //  html5mode for angular
             hashPrefix: '!',
             ngModules: []
         };
@@ -1220,8 +1220,8 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
             if (lux.context.html5mode) {
                 $locationProvider.html5Mode(true);
                 lux.context.targetLinks = true;
+                $locationProvider.hashPrefix(lux.context.hashPrefix);
             }
-            $locationProvider.hashPrefix(lux.context.hashPrefix);
         }])
         //
         //  Convert all internal links to have a target so that the page reload
@@ -1238,7 +1238,8 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                         };
                     // Put the toTarget function into the queue so that it is
                     // processed after all
-                    timer(toTarget, 0);
+                    if (lux.context.html5mode)
+                        timer(toTarget, 0);
                 }
             };
         }]);
@@ -2319,7 +2320,7 @@ angular.module("users/messages.tpl.html", []).run(["$templateCache", function($t
             angular.module(name, modules);
             angular.bootstrap(document, [name]);
             //
-            if (!lux.context.uiRouter)
+            if (!lux.context.uiRouter && lux.loadRequire)
                 lux.loadRequire();
         }
 

@@ -119,6 +119,9 @@ class Router(lux.Router, MediaMixin):
                 break
         return root
 
+    def get_html(self, request):
+        return ''
+
     def context(self, request, context):
         '''This is the only http method implemented.
 

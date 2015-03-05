@@ -1,21 +1,15 @@
 from unittest import mock
 
 from lux.utils import test
-from lux.extensions.angular import Router
-
-
-def example(url=''):
-    return Router(url,
-                  Router('bla'),
-                  Router('foo/'),
-                  html_body_template='foo.html')
 
 
 class AngularTest(test.TestCase):
     config_file = 'tests.angular'
 
     def test_properties(self):
-        router = example()
+        app = self.application()
+        request = self.request(app)
+        router = request.app_handler
         self.assertEqual(router.uirouter, 'lux.ui.router')
         self.assertFalse(router.route.is_leaf)
         self.assertEqual(router.html_body_template, 'foo.html')
@@ -23,10 +17,10 @@ class AngularTest(test.TestCase):
 
     def test_sitemap(self):
         app = self.application()
-        app.html_response = mock.MagicMock()
-        router = example()
-        request = app.wsgi_request()
-        response = router.get(request)
+        #app.html_response = mock.MagicMock()
+        request = self.request(app)
+        router = request.app_handler
+        response = request.response
         jscontext = request.html_document.jscontext
         self.assertTrue('pages' in jscontext)
         pages = jscontext['pages']
