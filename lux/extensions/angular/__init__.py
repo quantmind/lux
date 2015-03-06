@@ -156,7 +156,7 @@ class Router(lux.Router, MediaMixin):
         Add animation class if specified in :setting:`ANGULAR_VIEW_ANIMATE`.
         '''
         app = request.app
-        main = context.get('hteml_main', '')
+        main = context.get('html_main', '')
         main = Html('div', main, cn='hidden', id="seo-view")
         div = Html('div', main, cn=self.angular_view_class)
         animate = app.config['ANGULAR_VIEW_ANIMATE']

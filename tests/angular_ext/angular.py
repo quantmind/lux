@@ -1,10 +1,8 @@
-from unittest import mock
-
 from lux.utils import test
 
 
 class AngularTest(test.TestCase):
-    config_file = 'tests.angular'
+    config_file = 'tests.angular_ext'
 
     def test_properties(self):
         app = self.application()
@@ -17,7 +15,6 @@ class AngularTest(test.TestCase):
 
     def test_sitemap(self):
         app = self.application()
-        #app.html_response = mock.MagicMock()
         request = self.request(app)
         router = request.app_handler
         response = request.response
