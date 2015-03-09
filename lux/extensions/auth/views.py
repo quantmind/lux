@@ -6,13 +6,14 @@ from pulsar import Http404, PermissionDenied, HttpRedirect, MethodNotAllowed
 from pulsar.apps.wsgi import Json, Router
 
 from .forms import (LoginForm, CreateUserForm, ChangePasswordForm,
-                    ForgotPasswordForm, PasswordForm)
+                    EmailForm, PasswordForm)
 from .backend import AuthenticationError
 from .jwtmixin import jwt
 
 
 __all__ = ['Login', 'SignUp', 'Logout', 'Token', 'ForgotPassword',
-           'ChangePassword', 'csrf', 'RequirePermission']
+           'ChangePassword', 'csrf', 'RequirePermission',
+           'ComingSoon']
 
 
 def csrf(method):
@@ -163,7 +164,7 @@ class ChangePassword(WebFormRouter):
 class ForgotPassword(WebFormRouter):
     '''Adds login get ("text/html") and post handlers
     '''
-    default_form = ForgotPasswordForm
+    default_form = EmailForm
     template = 'forgot.html'
     reset_template = 'reset_password.html'
 
@@ -229,6 +230,31 @@ class ForgotPassword(WebFormRouter):
                 else:
                     result = form.tojson()
         return Json(result).http_response(request)
+
+
+class ComingSoon(WebFormRouter):
+    template = 'comingsoon.html'
+    default_form = EmailForm
+    redirect_to = '/'
+
+    def post(self, request):
+        '''Handle login post data
+        '''
+        user = request.cache.user
+        if user.is_authenticated():
+            raise MethodNotAllowed
+        data = request.body_data()
+        form = self.fclass(request, data=data)
+        if form.is_valid():
+            data = form.cleaned_data
+            auth_backend = request.cache.auth_backend
+            try:
+                user = auth_backend.create_user(request, **data)
+            except AuthenticationError as e:
+                form.add_error_message(str(e))
+            else:
+                return self.maybe_redirect_to(request, form, user=user)
+        return Json(form.tojson()).http_response(request)
 
 
 class Logout(Router, FormMixin):

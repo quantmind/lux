@@ -88,17 +88,28 @@ class AuthBackend(backend.AuthBackend):
     def create_user(self, request, username=None, password=None, email=None,
                     name=None, surname=None, active=False, superuser=False,
                     **kwargs):
-        assert username
         manager = self.mapper.user
         email = self.normalise_email(email)
-        if manager.filter(username=username).all():
-            raise sessions.AuthenticationError('%s already used' % username)
+        assert username or email
+
+        if username:
+            if manager.filter(username=username).all():
+                raise sessions.AuthenticationError(
+                    '%s already used' % username)
         if email and manager.filter(email=email).all():
             raise sessions.AuthenticationError('%s already used' % email)
+
+        if not username:
+            username = email
+            active = False
+            registration = False
+        else:
+            registration = not active
+
         user = manager(username=username, password=self.password(password),
                        email=email, name=name, surname=surname,
                        active=active, superuser=superuser, **kwargs).save()
-        if not user.active:  # create registration email if user is not active
+        if registration:  # create registration email if user is not active
             self.get_or_create_registration(request, user)
         return user
 

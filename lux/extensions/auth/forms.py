@@ -3,7 +3,7 @@ from lux import forms
 
 
 __all__ = ['LoginForm', 'CreateUserForm', 'ChangePasswordForm',
-           'ForgotPasswordForm']
+           'EmailForm']
 
 
 class LoginForm(forms.Form):
@@ -56,7 +56,7 @@ class ChangePasswordForm(PasswordForm):
         showLabels=False)
 
 
-class ForgotPasswordForm(forms.Form):
+class EmailForm(forms.Form):
     email = forms.EmailField(label='Enter your email address')
 
     layout = forms.Layout(
