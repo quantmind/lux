@@ -34,7 +34,7 @@
         .service('navService', ['$location', function ($location) {
 
             this.initScope = function (scope, opts) {
-                var navbar = extend({}, navBarDefaults, getOptions(opts), scope.navbar);
+                var navbar = extend({}, navBarDefaults, getOptions(opts));
                 if (!navbar.url)
                     navbar.url = '/';
                 if (!navbar.themeTop)

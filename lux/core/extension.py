@@ -37,11 +37,12 @@ class Parameter(object):
 
     Parameters are case insensitive.
     '''
-    def __init__(self, name, default, doc):
+    def __init__(self, name, default, doc, jscontext=False):
         self.name = name
         self.default = default
         self.doc = doc
         self.extension = None
+        self.jscontext = jscontext
 
     def __repr__(self):
         return '%s: %s' % (self.name, self.default)
@@ -176,11 +177,13 @@ class Extension(metaclass=ExtensionType):
         '''Called by :meth:`setup` method to setup the :attr:`logger`.'''
         self.logger = logging.getLogger('lux.%s' % self.meta.name)
 
-    def setup(self, module, params, opts=None):
+    def setup(self, config, module, params, opts=None):
         '''Internal method which prepare the extension for usage.
         '''
-        config = {}
+        if '_parameters' not in config:
+            config['_parameters'] = {}
         for setting in self.meta.config.values():
+            config['_parameters'][setting.name] = setting
             if setting.name in params:
                 value = params[setting.name]
             else:

@@ -15,13 +15,18 @@ from lux.utils.crypt import get_random_string, digest
 __all__ = ['AuthBackend', 'AuthenticationError',
            'LoginError', 'LogoutError', 'MessageMixin', 'UserMixin',
            'Anonymous', 'REASON_NO_REFERER', 'REASON_BAD_REFERER',
-           'REASON_BAD_TOKEN']
+           'REASON_BAD_TOKEN', 'CREATE', 'READ', 'UPDATE', 'DELETE']
 
 
 UNUSABLE_PASSWORD = '!'
 REASON_NO_REFERER = "Referer checking failed - no Referer"
 REASON_BAD_REFERER = "Referer checking failed - %s does not match %s"
 REASON_BAD_TOKEN = "CSRF token missing or incorrect"
+
+CREATE = 30     # C
+READ = 10       # R
+UPDATE = 20     # U
+DELETE = 40     # D
 
 
 class AuthenticationError(ValueError):
@@ -159,11 +164,6 @@ class AuthBackend(object):
 
         backend = request.cache.auth_backend
     '''
-    CREATE = 30     # C
-    READ = 10       # R
-    UPDATE = 20     # U
-    DELETE = 40     # D
-
     def _init(self, app):
         self.app = app
         cfg = app.config
@@ -275,3 +275,7 @@ class AuthBackend(object):
         p = self.crypt_module.encrypt(to_bytes(password, self.encoding),
                                       self.secret_key, self.salt_size)
         return to_string(p, self.encoding)
+
+    def has_permission(self, request, level, model):
+        '''Check for permissions'''
+        return True

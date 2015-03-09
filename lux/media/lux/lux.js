@@ -1,6 +1,6 @@
 //      Lux Library - v0.1.1
 
-//      Compiled 2015-03-05.
+//      Compiled 2015-03-09.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -44,8 +44,7 @@ function(angular, root) {
         lazyApplications = {},
         defaults = {
             url: '',    // base url for the web site
-            media: '',  // default url for media content
-            html5mode: false, //  html5mode for angular
+            MEDIA_URL: '',  // default url for media content
             hashPrefix: '!',
             ngModules: []
         };
@@ -64,7 +63,7 @@ function(angular, root) {
     lux.media = function (url, ctx) {
         if (!ctx)
             ctx = lux.context;
-        return joinUrl(ctx.url, ctx.media, url);
+        return joinUrl(ctx.url, ctx.MEDIA_URL, url);
     };
 
     lux.luxApp = function (name, App) {
@@ -1217,7 +1216,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
 
     angular.module('lux.router', ['lux.page'])
         .config(['$provide', '$locationProvider', function ($provide, $locationProvider) {
-            if (lux.context.html5mode) {
+            if (lux.context.HTML5_NAVIGATION) {
                 $locationProvider.html5Mode(true);
                 lux.context.targetLinks = true;
                 $locationProvider.hashPrefix(lux.context.hashPrefix);
@@ -1238,7 +1237,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                         };
                     // Put the toTarget function into the queue so that it is
                     // processed after all
-                    if (lux.context.html5mode)
+                    if (lux.context.HTML5_NAVIGATION)
                         timer(toTarget, 0);
                 }
             };
@@ -1320,7 +1319,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                 };
             };
 
-            $locationProvider.html5Mode(lux.context.html5mode).hashPrefix(lux.context.hashPrefix);
+            $locationProvider.html5Mode(true).hashPrefix(lux.context.hashPrefix);
             //
             forEach(hrefs, function (href) {
                 var page = pages[href];
@@ -2564,7 +2563,9 @@ angular.module("nav/navbar.tpl.html", []).run(["$templateCache", function($templ
 
 angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($templateCache) {
   $templateCache.put("nav/navbar2.tpl.html",
-    "<nav class=\"navbar navbar-{{navbar.themeTop}} navbar-fixed-top navbar-static-top\" role=\"navigation\" ng-model=\"navbar.collapse\" bs-collapse>\n" +
+    "<nav class=\"navbar navbar-{{navbar.themeTop}}\n" +
+    "ng-class=\"{'navbar-fixed-top':navbar.fixed, 'navbar-static-top':navbar.top}\"\n" +
+    "role=\"navigation\" ng-model=\"navbar.collapse\" bs-collapse>\n" +
     "    <div class=\"navbar-header\">\n" +
     "        <button ng-if=\"navbar.toggle\" type=\"button\" class=\"navbar-toggle\" bs-collapse-toggle>\n" +
     "            <span class=\"sr-only\">Toggle navigation</span>\n" +
@@ -2651,7 +2652,7 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
         .service('navService', ['$location', function ($location) {
 
             this.initScope = function (scope, opts) {
-                var navbar = extend({}, navBarDefaults, getOptions(opts), scope.navbar);
+                var navbar = extend({}, navBarDefaults, getOptions(opts));
                 if (!navbar.url)
                     navbar.url = '/';
                 if (!navbar.themeTop)

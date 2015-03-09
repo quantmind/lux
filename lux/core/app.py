@@ -16,7 +16,7 @@ from pulsar.utils.importer import module_attribute
 
 from .commands import ConsoleParser, CommandError
 from .extension import Extension, Parameter, EventHandler
-from .wrappers import wsgi_request, HeadMeta
+from .wrappers import wsgi_request, HeadMeta, error_handler
 from .engines import template_engine
 from .cms import CMS
 
@@ -34,6 +34,8 @@ ALL_EVENTS = ('on_config',  # Config ready.
               'on_html_document',  # Html doc built. Extra args: request, html
               'on_form',  # Form constructed. Extra args: form
               )
+
+LUX_CORE = os.path.dirname(__file__)
 
 
 def execute_from_config(config_file, **params):
@@ -162,24 +164,24 @@ class Application(ConsoleParser, Extension):
                   'command line when running commands'),
         Parameter('ENCODING', 'utf-8',
                   'Default encoding for text.'),
-        Parameter('ERROR_HANDLER', None,
+        Parameter('ERROR_HANDLER', error_handler,
                   'Handler of Http exceptions'),
         Parameter('HTML_TITLE', 'Lux',
                   'Default HTML Title'),
         Parameter('LOGGING_CONFIG', None,
                   'Dictionary for configuring logging'),
         Parameter('MEDIA_URL', '/media/',
-                  'the base url for static files'),
+                  'the base url for static files', True),
         Parameter('MINIFIED_MEDIA', True,
                   'Use minified media files. All media files will replace '
                   'their extensions with .min.ext. For example, javascript '
-                  'links *.js become *.min.js'),
+                  'links *.js become *.min.js', True),
         Parameter('HTML_LINKS', [],
                   'List of links to include in the html head tag.'),
         Parameter('SCRIPTS', [],
                   'List of scripts to load in the head tag'),
         Parameter('COPYRIGHT', 'Lux',
-                  'Site Copyright'),
+                  'Site Copyright', True),
         Parameter(
             'REQUIREJS_CONFIG',
             'http://quantmind.github.io/require-config-js/require.config',
@@ -200,12 +202,12 @@ class Application(ConsoleParser, Extension):
                   'List of default ``meta`` elements to add to the html head'
                   'element'),
         Parameter('DATE_FORMAT', 'd MMM y',
-                  'Default formatting for dates in JavaScript'),
+                  'Default formatting for dates in JavaScript', True),
         Parameter('DATETIME_FORMAT', 'd MMM y, h:mm:ss a',
-                  'Default formatting for dates in JavaScript'),
+                  'Default formatting for dates in JavaScript', True),
         Parameter('DEFAULT_TEMPLATE_ENGINE', 'python',
                   'Default template engine'),
-        Parameter('APP_NAME', 'Lux', 'Application site name'),
+        Parameter('APP_NAME', 'Lux', 'Application site name', True),
         Parameter('SITE_URL', None,
                   'Web site url'),
         Parameter('LINKS',
@@ -219,7 +221,9 @@ class Application(ConsoleParser, Extension):
                    'supporting the cache protocol')),
         Parameter('DEFAULT_FROM_EMAIL', '',
                   'Default email address to send email from'),
-        Parameter('LOCALE', 'en_GB', 'Default locale'),
+        Parameter('LOCALE', 'en_GB', 'Default locale', True),
+        Parameter('DEFAULT_TIMEZONE', 'GMT',
+                  'Default timezone'),
         Parameter('EMAIL_BACKEND', 'lux.core.mail.EmailBackend',
                   'Default locale'),
         Parameter('DEFAULT_CONTENT_TYPE', None,
@@ -312,10 +316,9 @@ class Application(ConsoleParser, Extension):
                            charset=cfg['ENCODING'],
                            asset_protocol=cfg['ASSET_PROTOCOL'])
         doc.meta = HeadMeta(doc.head)
-        doc.jscontext = {'dateFormat': cfg['DATE_FORMAT'],
-                         'datetimeFormat': cfg['DATETIME_FORMAT'],
-                         'media': cfg['MEDIA_URL'],
-                         'brand': cfg['APP_NAME']}
+        doc.jscontext = dict(((p.name, cfg[p.name])
+                              for p in cfg['_parameters'].values()
+                              if p.jscontext))
         # Locale
         lang = cfg['LOCALE'][:2]
         doc.attr('lang', lang)
@@ -479,14 +482,20 @@ class Application(ConsoleParser, Extension):
         return dte.strftime(self.config['DATETIME_FORMAT'])
 
     # Template redering
-    def template_full_path(self, name):
+    def template_full_path(self, names):
         '''Return the template full path or None.
 
         Loops through all :attr:`extensions` in reversed order and
         check for ``name`` within the ``templates`` directory
         '''
-        for ext in reversed(tuple(self.extensions.values())):
-            filename = os.path.join(ext.meta.path, 'templates', name)
+        if not isinstance(names, (list, tuple)):
+            names = (names,)
+        for name in names:
+            for ext in reversed(tuple(self.extensions.values())):
+                filename = os.path.join(ext.meta.path, 'templates', name)
+                if os.path.exists(filename):
+                    return filename
+            filename = os.path.join(LUX_CORE, 'templates', name)
             if os.path.exists(filename):
                 return filename
         self.logger.error('Template %s not found' % name)
@@ -606,7 +615,7 @@ class Application(ConsoleParser, Extension):
             return self._build_config(config_module.__file__)
         #
         # setup application
-        config = self.setup(config_module, self.params, opts)
+        config = self.setup({}, config_module, self.params, opts)
         #
         # Load extensions
         self.logger.debug('Setting up extensions')
@@ -624,7 +633,7 @@ class Application(ConsoleParser, Extension):
                 extension = Ext()
                 extensions[extension.meta.name] = extension
                 self.bind_events(extension)
-                config.update(extension.setup(config_module, self.params))
+                extension.setup(config, config_module, self.params)
         return config
 
     def _build_handler(self):

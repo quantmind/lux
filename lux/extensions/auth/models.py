@@ -30,6 +30,10 @@ class User(odm.Model, backend.UserMixin):
         return self.superuser
 
 
+class Group(odm.Model):
+    name = odm.CharField()
+
+
 class Session(odm.Model, backend.MessageMixin):
     expiry = odm.DateTimeField()
     user = odm.ForeignKey(User, required=False)
@@ -63,11 +67,9 @@ class AuthBackend(backend.AuthBackend):
     def mapper(self):
         return self.app.mapper()
 
-    def has_permission(self, request, level, model):
+    def has_permission(self, request, name):
         user = request.cache.user
         if user.is_superuser():
-            return True
-        elif level <= self.READ:
             return True
         elif user.is_authenticated():
             cache = request.cache.user_roles
@@ -76,7 +78,8 @@ class AuthBackend(backend.AuthBackend):
             p = Permission.get_from_user_and_model(user, model, cache)
             if p and p.level >= level:
                 return True
-        return False
+        else:
+            return False
 
     def set_password(self, user, raw_password):
         user.password = self.password(raw_password)

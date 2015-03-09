@@ -2,7 +2,7 @@
 
     angular.module('lux.router', ['lux.page'])
         .config(['$provide', '$locationProvider', function ($provide, $locationProvider) {
-            if (lux.context.html5mode) {
+            if (lux.context.HTML5_NAVIGATION) {
                 $locationProvider.html5Mode(true);
                 lux.context.targetLinks = true;
                 $locationProvider.hashPrefix(lux.context.hashPrefix);
@@ -23,7 +23,7 @@
                         };
                     // Put the toTarget function into the queue so that it is
                     // processed after all
-                    if (lux.context.html5mode)
+                    if (lux.context.HTML5_NAVIGATION)
                         timer(toTarget, 0);
                 }
             };

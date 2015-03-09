@@ -4,7 +4,7 @@ from copy import copy
 
 import lux
 from lux import route, JSON_CONTENT_TYPES
-from lux.extensions import angular, base, sitemap
+from lux.extensions import base, sitemap
 
 from pulsar import ImproperlyConfigured
 from pulsar.utils.slugify import slugify
@@ -24,7 +24,7 @@ class ErrorRouter(lux.Router, DirBuilder):
                                  status_code=self.status_code)
 
 
-class HtmlRouter(angular.Router):
+class HtmlRouter(lux.HtmlRouter):
     '''Base class for static Html routes.
     '''
     def state_template(self, app):

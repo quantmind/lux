@@ -94,9 +94,14 @@ class Extension(lux.Extension):
             '//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap',
             'Twitter bootstrap url. Set to none to not use it.'),
         Parameter('EXCLUDE_EXTENSIONS_CSS', None,
-                  'Optional list of extensions to exclude form the css')]
+                  'Optional list of extensions to exclude form the css'),
+        Parameter('NAVBAR_COLLAPSE_WIDTH', 768,
+                  'Width when to collapse the navbar')]
 
     def on_html_document(self, app, request, doc):
+        navbar = doc.jscontext.get('navbar') or {}
+        navbar['collapseWidth'] = app.config['NAVBAR_COLLAPSE_WIDTH']
+        doc.jscontext['navbar'] = navbar
         for name in ('BOOTSTRAP', 'FONTAWESOME'):
             doc.head.links.append(app.config[name])
 
@@ -105,9 +110,10 @@ def add_css(all):
     css = all.css
     vars = all.variables
 
+    classes(all)
     colors(all)
-    lazyContainer(all)
     anchor(all)
+    add_navbar(all)
 
     vars.font_family = '"Helvetica Neue",Helvetica,Arial,sans-serif'
     vars.font_size = px(14)
@@ -164,8 +170,12 @@ def colors(all):
     vars.colors.gray_lighter = lighten(black, 93.5)
 
 
-def lazyContainer(all):
+def classes(all):
     css = all.css
+
+    css('.fullpage',
+        height=pc(100),
+        min_height=pc(100))
 
     css('.lazyContainer',
         css(' > .content',
@@ -192,3 +202,60 @@ def anchor(all):
         css(':hover',
             color=vars.anchor.color_hover),
         color=vars.anchor.color)
+
+
+def add_navbar(all):
+    '''
+    The navbar2 page layout should use the following template::
+
+        <navbar2>
+            ...
+        </navbar2>
+    '''
+    css = all.css
+    cfg = all.app.config
+    media = all.media
+    vars = all.variables
+    #
+    # STYLING
+    navbar = vars.navbar
+    navbar.default.background = '#f8f8f8'
+    #
+    # NAVBAR (TOP)
+    navbar.height = px(50)
+    #
+    # SIDEBAR
+    sidebar = vars.sidebar
+    sidebar.default.border = '#E7E7E7'
+    sidebar.width = px(250)
+    min_width_collapse = px(cfg['NAVBAR_COLLAPSE_WIDTH'])
+
+    css('.navbar',
+        css(' .navbar-toggle',
+            margin_top=0.5*(navbar.height-50)+8),
+        min_height=navbar.height)
+
+    css('.navbar-default',
+        background=navbar.default.background)
+
+    # wraps the navbar2 and the main page
+    css('.navbar2-wrapper',
+        width=pc(100),
+        min_height=pc(100))
+
+    css('.navbar2-page',
+        background=vars.background,
+        padding=spacing(navbar.height+20, 15, 0))
+
+    media(min_width=min_width_collapse).css(
+        '.navbar2-page',
+        margin=spacing(0, 0, 0, sidebar.width)).css(
+        '.navbar2-wrapper.navbar-default .navbar2-page',
+        Border(color=sidebar.default.border, left=px(1)))
+
+    media(min_width=min_width_collapse).css(
+        '.sidebar',
+        margin_top=navbar.height+1,
+        position='absolute',
+        width=sidebar.width,
+        z_index=1)

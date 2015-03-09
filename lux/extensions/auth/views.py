@@ -1,5 +1,5 @@
 import lux
-from lux import route, Router as WebRouter
+from lux import route, HtmlRouter
 from lux.forms import Form
 
 from pulsar import Http404, PermissionDenied, HttpRedirect, MethodNotAllowed
@@ -56,7 +56,7 @@ class FormMixin(object):
             return request.absolute_uri(redirect_to)
 
 
-class WebFormRouter(WebRouter, FormMixin):
+class WebFormRouter(HtmlRouter, FormMixin):
     uirouter = False
     template = None
 
@@ -268,9 +268,13 @@ class RequirePermission(object):
     def __init__(self, name):
         self.name = name
 
-    def __call__(self, callable):
+    def __call__(self, router):
+        router.response_wrapper = self.check_permissions
+        return router
 
-        def _(*args, **kw):
-            return callable(*args, **kw)
-
-        return _
+    def check_permissions(self, callable, request):
+        backend = request.cache.auth_backend
+        if backend.has_permission(request, self.name):
+            return callable(request)
+        else:
+            raise PermissionDenied

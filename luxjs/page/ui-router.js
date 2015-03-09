@@ -75,7 +75,7 @@
                 };
             };
 
-            $locationProvider.html5Mode(lux.context.html5mode).hashPrefix(lux.context.hashPrefix);
+            $locationProvider.html5Mode(true).hashPrefix(lux.context.hashPrefix);
             //
             forEach(hrefs, function (href) {
                 var page = pages[href];

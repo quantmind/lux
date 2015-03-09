@@ -36,8 +36,7 @@ function(angular, root) {
         lazyApplications = {},
         defaults = {
             url: '',    // base url for the web site
-            media: '',  // default url for media content
-            html5mode: false, //  html5mode for angular
+            MEDIA_URL: '',  // default url for media content
             hashPrefix: '!',
             ngModules: []
         };
@@ -56,7 +55,7 @@ function(angular, root) {
     lux.media = function (url, ctx) {
         if (!ctx)
             ctx = lux.context;
-        return joinUrl(ctx.url, ctx.media, url);
+        return joinUrl(ctx.url, ctx.MEDIA_URL, url);
     };
 
     lux.luxApp = function (name, App) {

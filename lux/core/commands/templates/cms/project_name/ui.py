@@ -52,3 +52,37 @@ def add_css(all):
 
     css('.text-large',
         font_size=pc(150))
+
+    page_error(all)
+
+
+def page_error(all):
+    css = all.css
+    media = all.media
+    cfg = all.app.config
+    mediaurl = cfg['MEDIA_URL']
+    collapse_width = px(cfg['NAVBAR_COLLAPSE_WIDTH'])
+
+    css('#page-error',
+        css(' a, a:hover',
+            color=color('#fff'),
+            text_decoration='underline'),
+        Background(url=mediaurl+'lux/see.jpg',
+                   size='cover',
+                   repeat='no-repeat',
+                   position='left top'),
+        color=color('#fff'))
+    css('.error-message-container',
+        BoxSizing('border-box'),
+        padding=spacing(40, 120),
+        background=color(0, 0, 0, 0.4),
+        height=pc(100)),
+    css('.error-message',
+        css(' p',
+            font_size=px(50)))
+    media(max_width=collapse_width).css(
+        '.error-message p',
+        font_size=px(32)).css(
+        '.error-message-container',
+        text_align='center',
+        padding=spacing(40, 0))

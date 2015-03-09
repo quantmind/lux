@@ -3,11 +3,10 @@ from pulsar.apps.wsgi import Json
 
 import lux
 from lux import route
-from lux.extensions import angular
 from lux.extensions.api import CRUD
 
 
-class CMS(angular.Router):
+class CMS(lux.HtmlRouter):
     '''Main Router whch render any path with templates if available
     '''
     # AngularJS stuff

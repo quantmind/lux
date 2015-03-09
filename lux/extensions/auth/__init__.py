@@ -81,17 +81,17 @@ class Extension(lux.Extension):
                   'an action'),
         Parameter('ACCOUNT_ACTIVATION_DAYS', 2,
                   'Number of days the activation code is valid'),
-        Parameter('LOGIN_URL', '/login', 'Url to login'),
-        Parameter('LOGOUT_URL', '/logout', 'Url to logout'),
-        Parameter('REGISTER_URL', '/signup', 'Url to register with site'),
+        Parameter('LOGIN_URL', '/login', 'Url to login', True),
+        Parameter('LOGOUT_URL', '/logout', 'Url to logout', True),
+        Parameter('REGISTER_URL', '/signup',
+                  'Url to register with site', True),
         Parameter('RESET_PASSWORD_URL', '/reset-password',
-                  'If given, add the router to handle password resets'),
+                  'If given, add the router to handle password resets',
+                  True),
         Parameter('CSRF_EXPIRY', 60*60,
                   'Cross Site Request Forgery token expiry in seconds.'),
         Parameter('CSRF_PARAM', 'authenticity_token',
                   'CSRF parameter name in forms'),
-        Parameter('DEFAULT_TIMEZONE', 'GMT',
-                  'Default timezone'),
         Parameter('ADD_AUTH_ROUTES', True,
                   'Add available authentication Routes')]
 
@@ -141,10 +141,6 @@ class Extension(lux.Extension):
                 doc.jscontext['user'] = user.todict()
             if messages:
                 doc.jscontext['messages'] = messages
-            # authentication urls
-            doc.jscontext['loginUrl'] = cfg['LOGIN_URL']
-            doc.jscontext['registerUrl'] = cfg['REGISTER_URL']
-            doc.jscontext['resetPasswordUrl'] = cfg['RESET_PASSWORD_URL']
 
     def on_form(self, app, form):
         '''Handle CSRF on form

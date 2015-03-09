@@ -1,14 +1,18 @@
+import json
+
 from pulsar.apps.wsgi import (route, wsgi_request, cached_property,
                               html_factory)
 from pulsar.apps import wsgi
-from pulsar.apps.wsgi import RouterParam
+from pulsar.apps.wsgi import RouterParam, Router, render_error_debug
+from pulsar.apps.wsgi.utils import error_messages
 from pulsar.utils.httpurl import JSON_CONTENT_TYPES
 from pulsar.utils.structures import mapping_iterator
 
 from lux.utils import unique_tuple
 from pulsar.utils.exceptions import MethodNotAllowed
 
-__all__ = ['Html', 'WsgiRequest', 'Router', 'route', 'wsgi_request',
+__all__ = ['Html', 'WsgiRequest', 'Router', 'HtmlRouter',
+           'route', 'wsgi_request',
            'cached_property', 'html_factory', 'RedirectRouter',
            'RouterParam', 'JSON_CONTENT_TYPES',
            'DEFAULT_CONTENT_TYPES']
@@ -66,7 +70,7 @@ class WsgiRequest(wsgi.WsgiRequest):
 wsgi.set_wsgi_request_class(WsgiRequest)
 
 
-class RedirectRouter(wsgi.Router):
+class RedirectRouter(Router):
 
     def __init__(self, routefrom, routeto):
         super(RedirectRouter, self).__init__(routefrom, routeto=routeto)
@@ -75,7 +79,7 @@ class RedirectRouter(wsgi.Router):
         return request.redirect(self.routeto)
 
 
-class Router(wsgi.Router):
+class HtmlRouter(Router):
     '''Extend pulsar :class:`~pulsar.apps.wsgi.routers.Router`
     with content management.'''
     in_nav = False
@@ -106,7 +110,7 @@ class Router(wsgi.Router):
     def get_html(self, request):
         '''Must be implemented by subclasses
         '''
-        raise MethodNotAllowed
+        return ''
 
     def get_json(self, request):
         return '{}'
@@ -128,7 +132,7 @@ class Router(wsgi.Router):
     def make_router(self, rule, **params):
         '''Create a new :class:`.Router` form rule and parameters
         '''
-        params.setdefault('cls', Router)
+        params.setdefault('cls', HtmlRouter)
         return super().make_router(rule, **params)
 
     def add_api_urls(self, request, api):
@@ -185,3 +189,39 @@ class HeadMeta(object):
             return self.head.title
         else:
             return self.head.get_meta(entry, meta_key=meta_key)
+
+
+def error_handler(request, exc):
+    '''Default renderer for errors.'''
+    app = request.app
+    response = request.response
+    if not response.content_type:
+        content_type = request.get('default.content_type')
+        if content_type:
+            response.content_type = request.content_types.best_match(
+                content_type)
+    content_type = None
+    if response.content_type:
+        content_type = response.content_type.split(';')[0]
+    is_html = content_type == 'text/html'
+
+    if app.debug:
+        msg = render_error_debug(request, exc, is_html)
+    else:
+        msg = error_messages.get(response.status_code) or str(exc)
+        if is_html:
+            msg = app.render_template(['%s.html' % response.status_code,
+                                       'error.html'],
+                                      {'status_code': response.status_code,
+                                       'status_message': msg})
+    #
+    if is_html:
+        doc = request.html_document
+        doc.head.title = response.status
+        doc.body.append(msg)
+        return doc.render(request)
+    elif content_type in JSON_CONTENT_TYPES:
+        return json.dumps({'status': response.status_code,
+                           'message': msg})
+    else:
+        return '\n'.join(msg) if isinstance(msg, (list, tuple)) else msg
