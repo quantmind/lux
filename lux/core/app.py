@@ -224,12 +224,13 @@ class Application(ConsoleParser, Extension):
         Parameter('LOCALE', 'en_GB', 'Default locale', True),
         Parameter('DEFAULT_TIMEZONE', 'GMT',
                   'Default timezone'),
-        Parameter('EMAIL_BACKEND', 'lux.core.mail.EmailBackend',
-                  'Default locale'),
         Parameter('DEFAULT_CONTENT_TYPE', None,
                   'Default content type for this application'),
         Parameter('HTML_TEMPLATES', {'/': 'home.html'},
-                  'Dictionary of Html templates to render')
+                  'Dictionary of Html templates to render'),
+        Parameter('SITE_MANAGERS', 'List of email for site managers', ()),
+        Parameter('EMAIL_BACKEND', 'lux.core.mail.EmailBackend',
+                  'Default locale')
         ]
 
     def __init__(self, callable):

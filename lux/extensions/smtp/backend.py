@@ -1,0 +1,100 @@
+import asyncio
+import smtplib
+import ssl
+
+import lux
+
+from .message import EmailMultiAlternatives, sanitize_address, DNS_NAME
+
+
+class EmailBackend(lux.EmailBackend):
+
+    def message(self, sender, to, subject, message, html_message):
+        if not isinstance(to, (list, tuple)):
+            to = [to]
+        msg = EmailMultiAlternatives(subject, message, sender, to,
+                                     encoding=self.app.config['ENCODING'])
+        if html_message:
+            msg.attach_alternative(html_message, 'text/html')
+        return msg
+
+    def send_mails(self, messages):
+        return asyncio.get_event_loop().run_in_executor(
+            None, self._send_mails, messages)
+
+    # INTERNALS
+
+    def _send_mails(self, messages):
+        num_sent = 0
+        try:
+            connection = self._open()
+            if connection:
+                for message in messages:
+                    num_sent += self._send(connection, message)
+                self._close(connection)
+        except Exception:
+            self.app.logger.exception('Error while sending mail',
+                                      extra={'mail': True})
+        return num_sent
+
+
+    def _open(self):
+        """
+        Ensures we have a connection to the email server. Returns whether or
+        not a new connection was required (True or False).
+        """
+        cfg = self.app.config
+        connection_class = smtplib.SMTP
+        # If local_hostname is not specified, socket.getfqdn() gets used.
+        # For performance, we use the cached FQDN for local_hostname.
+        connection_params = {'local_hostname': DNS_NAME.get_fqdn()}
+
+        try:
+            connection = connection_class(
+                cfg['EMAIL_HOST'], cfg['EMAIL_PORT'], **connection_params)
+
+            if cfg['EMAIL_USE_TLS']:
+                connection.ehlo()
+                connection.starttls(keyfile=cfg['EMAIL_TLS_KEYFILE'],
+                                    certfile=cfg['EMAIL_TLS_CERTFILE'])
+                connection.ehlo()
+
+            if cfg['EMAIL_HOST_USER'] and cfg['EMAIL_HOST_PASSWORD']:
+                connection.login(cfg['EMAIL_HOST_USER'],
+                                 cfg['EMAIL_HOST_PASSWORD'])
+            return connection
+        except smtplib.SMTPException:
+            self.app.logger.exception('Error while connecting to SMTP server',
+                                      extra={'mail': True})
+
+    def _send(self, connection, email_message):
+        """A helper method that does the actual sending."""
+        if not email_message.recipients():
+            return False
+        from_email = sanitize_address(email_message.from_email,
+                                      email_message.encoding)
+        recipients = [sanitize_address(addr, email_message.encoding)
+                      for addr in email_message.recipients()]
+        message = email_message.message()
+        try:
+            connection.sendmail(from_email, recipients,
+                                message.as_bytes(linesep='\r\n'))
+            return 1
+        except smtplib.SMTPException:
+            self.app.logger.exception('Error while sending message',
+                                      extra={'mail': True})
+            return 0
+
+    def _close(self, connection):
+        """Closes the connection to the email server."""
+        try:
+            connection.quit()
+        except (ssl.SSLError, smtplib.SMTPServerDisconnected):
+            # This happens when calling quit() on a TLS connection
+            # sometimes, or when the connection was already disconnected
+            # by the server.
+            connection.close()
+        except smtplib.SMTPException:
+            self.app.logger.exception(
+                'Error while closing connection to SMTP server',
+                extra={'mail': True})
