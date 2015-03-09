@@ -2735,6 +2735,8 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
         .directive('navbar2', ['navService', '$compile', function (navService, $compile) {
             return {
                 restrict: 'AE',
+                //
+                scope: {},
                 // We need to use the compile function so that we remove the
                 // before it is included in the bootstraping algorithm
                 compile: function compile(element) {
