@@ -23,7 +23,7 @@ class Extension(lux.Extension):
         Parameter('SMTP_LOG_LEVEL', None, 'Logging level for email messages')
     ]
 
-    def on_loaded(self, app):
+    def on_start(self, app, server):
         level = app.config['SMTP_LOG_LEVEL']
         if level:
             smtp = SMTPLogger(app, level)
@@ -47,7 +47,8 @@ class SMTPLogger(logging.Handler):
         cfg = self.app.config
         backend = self.app.email_backend
         msg = self.format(record)
-        subject = '%s - %s' % (record.levelname, record.message)
+        first = record.message.split('\n')[0]
+        subject = '%s - %s - %s' % (cfg['APP_NAME'], record.levelname, first)
         backend.send_mail(to=cfg['SITE_MANAGERS'],
                           subject=subject,
                           message=msg)
