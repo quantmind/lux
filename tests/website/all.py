@@ -14,6 +14,7 @@ class TestAuthSite(test.TestServer):
     config_file = 'tests.website'
 
     @classmethod
+    @test_timeout(30)
     def setUpClass(cls):
         yield from super().setUpClass()
         yield from cls.app.get_command('create_superuser')(

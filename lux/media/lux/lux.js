@@ -1,6 +1,6 @@
 //      Lux Library - v0.1.1
 
-//      Compiled 2015-03-09.
+//      Compiled 2015-03-10.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -2563,7 +2563,7 @@ angular.module("nav/navbar.tpl.html", []).run(["$templateCache", function($templ
 
 angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($templateCache) {
   $templateCache.put("nav/navbar2.tpl.html",
-    "<nav class=\"navbar navbar-{{navbar.themeTop}}\n" +
+    "<nav class=\"navbar navbar-{{navbar.themeTop}}\"\n" +
     "ng-class=\"{'navbar-fixed-top':navbar.fixed, 'navbar-static-top':navbar.top}\"\n" +
     "role=\"navigation\" ng-model=\"navbar.collapse\" bs-collapse>\n" +
     "    <div class=\"navbar-header\">\n" +
@@ -2732,6 +2732,9 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
         }])
         //
         //  Directive for the navbar with sidebar (nivebar2 template)
+        //      - items         -> Top left navigation
+        //      - itemsRight    -> Top right navigation
+        //      - items2        -> side navigation
         .directive('navbar2', ['navService', '$compile', function (navService, $compile) {
             return {
                 restrict: 'AE',

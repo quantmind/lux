@@ -594,6 +594,11 @@ class Application(ConsoleParser, Extension):
         else:
             return path or '/'
 
+    def require(self, *extensions):
+        for ext in extensions:
+            if ext not in self.config['EXTENSIONS']:
+                raise ImproperlyConfigured('Requires "%s" extension' % ext)
+
     # INTERNALS
     def _build_config(self, file):
         # Check if an extension module is available

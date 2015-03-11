@@ -254,10 +254,10 @@ def add_to_sitemap(sitemap, app, doc, router, parent=None):
     #
     page = {'url': path,
             'name': router.name,
-            #'template': router.state_template(app),
-            #'templateUrl': router.state_template_url(app),
-            #'api': router.get_api_info(app),
-            #'controller': router.get_controller(app),
+            # 'template': router.state_template(app),
+            # 'templateUrl': router.state_template_url(app),
+            # 'api': router.get_api_info(app),
+            # 'controller': router.get_controller(app),
             'parent': parent}
     sitemap['hrefs'].append(path)
     sitemap['pages'][path] = page

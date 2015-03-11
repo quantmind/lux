@@ -153,6 +153,9 @@ class Extension(lux.Extension):
             token = form.rawdata.get(param)
             backend.validate_csrf_token(form.request, token)
 
+    def api_sections(self, app):
+        return ()
+
     def _check_referer(self, request):
         referer = request.get('HTTP_REFERER')
         if referer is None:

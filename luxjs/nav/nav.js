@@ -114,6 +114,9 @@
         }])
         //
         //  Directive for the navbar with sidebar (nivebar2 template)
+        //      - items         -> Top left navigation
+        //      - itemsRight    -> Top right navigation
+        //      - items2        -> side navigation
         .directive('navbar2', ['navService', '$compile', function (navService, $compile) {
             return {
                 restrict: 'AE',

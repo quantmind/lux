@@ -57,7 +57,7 @@ from pulsar.apps.ds import DEFAULT_PULSAR_STORE_ADDRESS
 import lux
 from lux import Parameter
 
-from .crud import ModelManager, CRUD, html_form
+from .crud import ModelManager, JsonRouter, html_form
 
 
 class ApiRoot(lux.Router):
@@ -103,7 +103,9 @@ class Extension(lux.Extension):
                   'The query key for full text search'),
         Parameter('API_OFFSET_KEY', 'offset', ''),
         Parameter('API_LIMIT_KEY', 'limit', ''),
-        Parameter('API_LIMIT_DEFAULT', 30, 'Default number of items returned'),
+        Parameter('API_LIMIT_DEFAULT', 30,
+                  'Default number of items returned when no limit '
+                  'API_LIMIT_KEY available in the url'),
         Parameter('API_LIMIT_AUTH', 100,
                   ('Maximum number of items returned when user is '
                    'authenticated')),

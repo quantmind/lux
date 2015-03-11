@@ -13,9 +13,9 @@ class Extension(lux.Extension):
 
     def middleware(self, app):
         return [HtmlRouter('/',
-                       HtmlRouter('bla'),
-                       HtmlRouter('foo/'),
-                       html_body_template='foo.html')]
+                           HtmlRouter('bla'),
+                           HtmlRouter('foo/'),
+                           html_body_template='foo.html')]
 
 
 class AngularTest(test.TestCase):

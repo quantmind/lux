@@ -79,13 +79,15 @@ ADDRESS_HEADERS = {
 def forbid_multi_line_headers(name, val, encoding):
     """Forbids multi-line headers, to prevent header injection."""
     if '\n' in val or '\r' in val:
-        raise BadHeaderError("Header values can't contain newlines (got %r for header %r)" % (val, name))
+        raise BadHeaderError(
+            "Header values can't contain newlines (got %r for header %r)" %
+            (val, name))
     try:
         val.encode('ascii')
     except UnicodeEncodeError:
         if name.lower() in ADDRESS_HEADERS:
             val = ', '.join(sanitize_address(addr, encoding)
-                for addr in getaddresses((val,)))
+                            for addr in getaddresses((val,)))
         else:
             val = Header(val, encoding).encode()
     else:
@@ -153,7 +155,8 @@ class SafeMIMEText(MIMEMixin, MIMEText):
     def __init__(self, _text, _subtype='plain', _charset=None):
         self.encoding = _charset
         if _charset == 'utf-8':
-            # Unfortunately, Python < 3.5 doesn't support setting a Charset instance
+            # Unfortunately, Python < 3.5 doesn't support setting a
+            # Charset instance
             # as MIMEText init parameter (http://bugs.python.org/issue16324).
             # We do it manually and trigger re-encoding of the payload.
             MIMEText.__init__(self, _text, _subtype, None)
@@ -250,7 +253,8 @@ class EmailMessage(object):
         if self.cc:
             msg['Cc'] = ', '.join(self.cc)
         if self.reply_to:
-            msg['Reply-To'] = self.extra_headers.get('Reply-To', ', '.join(self.reply_to))
+            msg['Reply-To'] = self.extra_headers.get(
+                'Reply-To', ', '.join(self.reply_to))
 
         # Email header names are case-insensitive (RFC 2045), so we have to
         # accommodate that when doing comparisons.
@@ -261,7 +265,8 @@ class EmailMessage(object):
             # Use cached DNS_NAME for performance
             msg['Message-ID'] = make_msgid(domain=DNS_NAME)
         for name, value in self.extra_headers.items():
-            if name.lower() in ('from', 'to'):  # From and To are already handled
+            # From and To are already handled
+            if name.lower() in ('from', 'to'):
                 continue
             msg[name] = value
         return msg
@@ -311,7 +316,8 @@ class EmailMessage(object):
         if self.attachments:
             encoding = self.encoding
             body_msg = msg
-            msg = SafeMIMEMultipart(_subtype=self.mixed_subtype, encoding=encoding)
+            msg = SafeMIMEMultipart(_subtype=self.mixed_subtype,
+                                    encoding=encoding)
             if self.body:
                 msg.attach(body_msg)
             for attachment in self.attachments:
@@ -407,7 +413,8 @@ class EmailMultiAlternatives(EmailMessage):
         encoding = self.encoding
         if self.alternatives:
             body_msg = msg
-            msg = SafeMIMEMultipart(_subtype=self.alternative_subtype, encoding=encoding)
+            msg = SafeMIMEMultipart(_subtype=self.alternative_subtype,
+                                    encoding=encoding)
             if self.body:
                 msg.attach(body_msg)
             for alternative in self.alternatives:

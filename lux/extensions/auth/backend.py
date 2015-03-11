@@ -226,7 +226,7 @@ class AuthBackend(object):
         '''Create a user with *superuser* permissions.'''
         pass
 
-    def has_permission(self, request, level, model):
+    def has_permission(self, request, model):
         '''Check for permission on a model.'''
         return False
 

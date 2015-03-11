@@ -37,7 +37,6 @@ class EmailBackend(lux.EmailBackend):
                                       extra={'mail': True})
         return num_sent
 
-
     def _open(self):
         """
         Ensures we have a connection to the email server. Returns whether or

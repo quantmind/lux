@@ -45,7 +45,7 @@ angular.module("nav/navbar.tpl.html", []).run(["$templateCache", function($templ
 
 angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($templateCache) {
   $templateCache.put("nav/navbar2.tpl.html",
-    "<nav class=\"navbar navbar-{{navbar.themeTop}}\n" +
+    "<nav class=\"navbar navbar-{{navbar.themeTop}}\"\n" +
     "ng-class=\"{'navbar-fixed-top':navbar.fixed, 'navbar-static-top':navbar.top}\"\n" +
     "role=\"navigation\" ng-model=\"navbar.collapse\" bs-collapse>\n" +
     "    <div class=\"navbar-header\">\n" +

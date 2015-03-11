@@ -4,7 +4,7 @@ import odm
 
 from .sessionmixin import SessionMixin
 from .jwtmixin import JWTMixin
-from .backend import AuthenticationError
+from .backend import AuthenticationError, READ
 from . import backend
 
 
@@ -67,19 +67,20 @@ class AuthBackend(backend.AuthBackend):
     def mapper(self):
         return self.app.mapper()
 
-    def has_permission(self, request, name):
+    def has_permission(self, request, name, level=None):
         user = request.cache.user
+        mapper = self.mapper
+        level = level or READ
+        # Superuser, always true
         if user.is_superuser():
             return True
-        elif user.is_authenticated():
-            cache = request.cache.user_roles
-            if cache is None:
-                request.cache.user_roles = cache = {}
-            p = Permission.get_from_user_and_model(user, model, cache)
+        else:
+            permissions = self._permissions(request)
+            p = permissions.get(name)
             if p and p.level >= level:
                 return True
-        else:
-            return False
+            else:
+                return False
 
     def set_password(self, user, raw_password):
         user.password = self.password(raw_password)
@@ -134,6 +135,21 @@ class AuthBackend(backend.AuthBackend):
                     return reg.user.get()
         except odm.ModelNotFound:
             return None
+
+    def _permissions(self, request):
+        cache = request.cache.user_roles
+        if cache is None:
+            mapper = self.mapper
+            user = request.cache.user
+            if user.is_authenticated():
+                query = mapper.permission.filter(user=user)
+            else:
+                query = mapper.permission.filter(user=None)
+            all = query.all()
+            cache = dict(((perm.name, perm) for perm in
+                          sorted(all, key=lambda p: o.level)))
+            request.cache.user_roles = cache
+        return cache
 
 
 class SessionBackend(SessionMixin, AuthBackend):

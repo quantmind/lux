@@ -1,3 +1,12 @@
+'''
+This extension integrates pulsar-odm, an asynchronous object
+data mapper built on top of pulsar.
+
+It also implements an Admin inteface.
+
+In order to use the Admin interface, the :setting:`ADMIN_URL`
+needs to be specified.
+'''
 from pulsar import ImproperlyConfigured
 from pulsar.apps.wsgi import WsgiHandler, wait_for_body_middleware
 from pulsar.apps.greenio import WsgiGreen
@@ -12,6 +21,7 @@ from lux import Parameter
 from lux.extensions.auth import RequirePermission
 
 from .admin import Admin, AdminModel, adminMap
+from .api import CRUD
 
 
 class Extension(lux.Extension):
@@ -25,16 +35,17 @@ class Extension(lux.Extension):
         Parameter('ADMIN_URL', None,
                   'Admin site url', True),
         Parameter('ADMIN_PERMISSIONS', 'admin',
-                  'Admin permission name'),]
+                  'Admin permission name')]
 
     def middleware(self, app):
         admin = app.config['ADMIN_URL']
         if admin:
-            admin = Admin(admin)
+            self.admin = admin = Admin(admin)
             for model in model_iterator(app.config['EXTENSIONS']):
                 meta = model._meta
                 admin_cls = adminMap.get(meta, AdminModel)
-                admin.add_child(admin_cls(meta))
+                if admin_cls:
+                    admin.add_child(admin_cls(meta))
             permission = app.config['ADMIN_PERMISSIONS']
             return [RequirePermission(permission)(admin)]
 
@@ -54,16 +65,25 @@ class Extension(lux.Extension):
 
 
 class AppMapper(LocalMixin):
-
+    '''Lazy object data mapper handler.
+    '''
     def __init__(self, app):
         self.app = app
 
     def __call__(self):
         if not self.local.mapper:
-            self.local.mapper = self.create_mapper()
+            self.local.mapper = self._create_mapper()
         return self.local.mapper
 
-    def create_mapper(self):
+    def api_info(self, meta):
+        '''Return a dictionary of information about the API for model meta.
+
+        The best way to override this method is on your main application
+        using the ``on_load`` callback.
+        '''
+        raise NotImplementedError
+
+    def _create_mapper(self):
         datastore = self.app.config['DATASTORE']
         if not datastore:
             return

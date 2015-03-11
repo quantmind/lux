@@ -110,11 +110,6 @@ def add_css(all):
     css = all.css
     vars = all.variables
 
-    classes(all)
-    colors(all)
-    anchor(all)
-    add_navbar(all)
-
     vars.font_family = '"Helvetica Neue",Helvetica,Arial,sans-serif'
     vars.font_size = px(14)
     vars.line_height = 1.42857
@@ -124,11 +119,15 @@ def add_css(all):
     # Helper classes
     vars.push_bottom = '20px !important'
 
-    css('.push-bottom',
-        margin_bottom=vars.push_bottom)
+    black = color('#000')
+    vars.colors.gray_darker = lighten(black, 13.5)
+    vars.colors.gray_dark = lighten(black, 20)
+    vars.colors.gray = lighten(black, 50)
+    vars.colors.gray_light = lighten(black, 70)
+    vars.colors.gray_lighter = lighten(black, 93.5)
 
     # SKINS
-    skins = all.variables.skins
+    skins = vars.skins
     default = skins.default
     default.background = color('#f7f7f9')
 
@@ -142,6 +141,10 @@ def add_css(all):
         font_style=vars.font_style,
         background=vars.background,
         color=vars.color)
+
+    classes(all)
+    anchor(all)
+    add_navbar(all)
 
     css('p.form-error',
         margin=0)
@@ -159,23 +162,16 @@ def add_css(all):
         outline='none')
 
 
-def colors(all):
-    vars = all.variables
-    black = color('#000')
-
-    vars.colors.gray_darker = lighten(black, 13.5)
-    vars.colors.gray_dark = lighten(black, 20)
-    vars.colors.gray = lighten(black, 50)
-    vars.colors.gray_light = lighten(black, 70)
-    vars.colors.gray_lighter = lighten(black, 93.5)
-
-
 def classes(all):
     css = all.css
+    vars = all.variables
 
     css('.fullpage',
         height=pc(100),
         min_height=pc(100))
+
+    css('.push-bottom',
+        margin_bottom=vars.push_bottom)
 
     css('.lazyContainer',
         css(' > .content',
@@ -240,12 +236,13 @@ def add_navbar(all):
 
     # wraps the navbar2 and the main page
     css('.navbar2-wrapper',
+        css(' > .navbar', margin_bottom=0),
         width=pc(100),
         min_height=pc(100))
 
     css('.navbar2-page',
         background=vars.background,
-        padding=spacing(navbar.height+20, 15, 0))
+        padding=spacing(15, 15, 0))
 
     media(min_width=min_width_collapse).css(
         '.navbar2-page',
