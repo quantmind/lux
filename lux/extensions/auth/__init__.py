@@ -125,8 +125,8 @@ class Extension(lux.Extension):
         if backend and request.method in ('GET', 'HEAD', 'OPTIONS', 'TRACE'):
             cfg = app.config
             param = cfg['CSRF_PARAM']
-            csrf_token = backend.csrf_token(request)
             if param:
+                csrf_token = backend.csrf_token(request)
                 if not csrf_token:
                     raise PermissionDenied(REASON_BAD_TOKEN)
                 doc.head.add_meta(name="csrf-param", content=param)
