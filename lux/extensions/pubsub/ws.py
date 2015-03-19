@@ -23,7 +23,7 @@ class WsClient:
         return '%s - %s' % (self.address, self.started)
 
     # Lux Implementation
-    def write(event, channel=None, data=None, **kw):
+    def write(self, event, channel=None, data=None, **kw):
         msg = {'event': event}
         if channel:
             msg['channel'] = channel
