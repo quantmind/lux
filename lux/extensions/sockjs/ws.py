@@ -1,26 +1,39 @@
 import time
 import json
 import hashlib
+import logging
 
 from pulsar.apps import ws
 
 LUX_CONNECTION = 'lux:connection_established'
+LUX_MESSAGE = 'lux:message'
 LUX_ERROR = 'lux:error'
+
+LOGGER = logging.getLogger('lux.sockjs')
 
 
 class WsClient:
     '''Server side of a websocket client
     '''
-    def __init__(self, websocket, handler):
-        self.websocket = websocket
+    def __init__(self, transport, handler):
+        request = transport.handshake
+        self.transport = transport
         self.handler = handler
         self.started = time.time()
-        self.address = websocket.handshake.get_client_address()
-        self.id = hashlib.sha224(str(self)).hexdigest()
-        websocket.handshake.cache.websocket = self
+        self.address = request.get_client_address()
+        session_id = request.urlargs.get('session_id')
+        if not session_id:
+            key = '%s - %s' % (self.address, self.started)
+            session_id = hashlib.sha224(key.encode('utf-8')).hexdigest()
+        self.session_id = session_id
+        request.cache.websocket = self
+        transport.on_open(self)
 
     def __str__(self):
-        return '%s - %s' % (self.address, self.started)
+        return '%s - %s' % (self.address, self.session_id)
+
+    def __call__(self, channel, message):
+        self.write(LUX_MESSAGE, channel, message)
 
     # Lux Implementation
     def write(self, event, channel=None, data=None, **kw):
@@ -33,8 +46,9 @@ class WsClient:
             else:
                 data = kw
         if data:
-            msg['data'] = json.dumps(data)
-        self.websocket.write(json.dumps(msg))
+            msg['data'] = data
+        array = [json.dumps(msg)]
+        self.transport.write('a%s' % json.dumps(array))
 
     def error_message(self, ws, exc):
         msg = {'event': LUX_ERROR}
@@ -47,16 +61,15 @@ class WsClient:
 class LuxWs(ws.WS):
     '''Lux websocket
     '''
-    def __init__(self, pubsub=None):
-        self.pubsub = pubsub
+    pubsub = None
 
     def on_open(self, websocket):
         ws = WsClient(websocket, self)
         if self.pubsub:
-            self.pubsub.add(ws)
+            self.pubsub.add_client(ws)
         #
         # Send the LUX_CONNECTION event with socket id and start time
-        ws.write(LUX_CONNECTION, socket_id=ws.id, time=ws.started)
+        ws.write(LUX_CONNECTION, socket_id=ws.session_id, time=ws.started)
 
     def on_message(self, websocket, message):
         ws = websocket.handshake.cache.websocket
@@ -65,3 +78,9 @@ class LuxWs(ws.WS):
 
         except Exception as exc:
             ws.error_message(exc)
+
+    def on_close(self, websocket):
+        ws = websocket.handshake.cache.websocket
+        if self.pubsub:
+            self.pubsub.remove_client(ws)
+        LOGGER.info('closing socket %s', ws)

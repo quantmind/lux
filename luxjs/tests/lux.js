@@ -9,11 +9,11 @@
 
         it("Check lux urls", function() {
             expect(lux.context.url).toBe('');
-            expect(lux.context.media).toBe('');
+            expect(lux.context.MEDIA_URL).toBe('');
         });
 
         it("Check lux media function", function() {
-            lux.context.media = '/media/'
+            lux.context.MEDIA_URL = '/media/'
             expect(lux.media('foo')).toBe('/media/foo');
             expect(lux.media('/foo')).toBe('/media/foo');
             expect(lux.media('////foo')).toBe('/media/foo');
