@@ -462,14 +462,16 @@ class Application(ConsoleParser, Extension):
         cfg.set('debug', debug)
         cfg.set('loglevel', opts.loglevel)
         cfg.set('loghandlers', opts.loghandlers)
-        cfg.set('logconfig', config['LOGGING_CONFIG'])
+        if config['LOGGING_CONFIG']:
+            cfg.set('logconfig', config['LOGGING_CONFIG'])
         cfg.configured_logger()
         self.debug = cfg.debug
         self.logger = logging.getLogger('lux')
 
-    def bind_events(self, extension):
+    def bind_events(self, extension, all_events=None):
         events = self.events
-        for name in ALL_EVENTS:
+        all_events = all_events or ALL_EVENTS
+        for name in all_events:
             if name not in events:
                 events[name] = []
             handlers = events[name]
@@ -599,6 +601,12 @@ class Application(ConsoleParser, Extension):
             if ext not in self.config['EXTENSIONS']:
                 raise ImproperlyConfigured('Requires "%s" extension' % ext)
 
+    def add_events(self, event_names):
+        '''Add additional event names to the event dictionary
+        '''
+        for ext in self.extensions.values():
+            self.bind_events(ext, event_names)
+
     # INTERNALS
     def _build_config(self, file):
         # Check if an extension module is available
@@ -650,7 +658,6 @@ class Application(ConsoleParser, Extension):
         '''
         # do this here so that the config is already loaded before fire signal
         extensions = list(self.extensions.values())
-        self.fire('on_config')
         middleware = []
         rmiddleware = []
         for extension in extensions:

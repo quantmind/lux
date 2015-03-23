@@ -10,10 +10,6 @@ class WebSocketProtocol(ws.WebSocketProtocol, Transport):
     name = 'websocket'
     _logger = logging.getLogger('lux.sockjs')
 
-    @property
-    def config(self):
-        return self.handshake.config
-
     def on_open(self, client, *args):
         if not args:
             self.logger.info('Opened a new websocket connection %s', client)

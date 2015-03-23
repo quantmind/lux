@@ -4,6 +4,7 @@ import hashlib
 import logging
 
 from pulsar.apps import ws
+from builtins import isinstance
 
 LUX_CONNECTION = 'lux:connection_established'
 LUX_MESSAGE = 'lux:message'
@@ -33,6 +34,7 @@ class WsClient:
         return '%s - %s' % (self.address, self.session_id)
 
     def __call__(self, channel, message):
+        message = message.decode('utf-8')
         self.write(LUX_MESSAGE, channel, message)
 
     # Lux Implementation
@@ -46,6 +48,8 @@ class WsClient:
             else:
                 data = kw
         if data:
+            if not isinstance(data, str):
+                data = json.dumps(data)
             msg['data'] = data
         array = [json.dumps(msg)]
         self.transport.write('a%s' % json.dumps(array))
@@ -67,6 +71,8 @@ class LuxWs(ws.WS):
         ws = WsClient(websocket, self)
         if self.pubsub:
             self.pubsub.add_client(ws)
+            app = websocket.app
+            app.fire('on_websocket_open', websocket, self)
         #
         # Send the LUX_CONNECTION event with socket id and start time
         ws.write(LUX_CONNECTION, socket_id=ws.session_id, time=ws.started)
