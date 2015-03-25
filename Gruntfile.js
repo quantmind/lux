@@ -6,7 +6,6 @@ module.exports = function (grunt) {
     var docco_output = '../docs/lux/html/docco',
         // All libraries
         libs = grunt.file.readJSON('luxjs/libs.json'),
-        allHtml2js = {},
         buildTasks = ['gruntfile', 'concat', 'jshint', 'uglify'],
         cfg = {
             pkg: grunt.file.readJSON('package.json'),

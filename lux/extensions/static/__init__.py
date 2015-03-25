@@ -77,8 +77,6 @@ class Extension(lux.Extension):
         Parameter('CONTEXT_LOCATION', 'context',
                   'Directory where to find files to populate the context '
                   'dictionary'),
-        Parameter('MD_EXTENSIONS', ['extra', 'meta', 'toc'],
-                  'List/tuple of markdown extensions'),
         Parameter('STATIC_API', 'api',
                   'Build a JSON api, required when using angular in Html5 '
                   ' navigation mode'),

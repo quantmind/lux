@@ -1,3 +1,6 @@
+'''
+Websocket handler for SockJS clients.
+'''
 import lux
 from pulsar.apps.data import create_store
 
@@ -24,12 +27,12 @@ class Extension(lux.Extension):
     def middleware(self, app):
         '''Add middleware to edit content
         '''
-        cfg = app.config
-        pubsub = None
-        pubsub_store = cfg['PUBSUB_STORE']
-        socketio = SocketIO(cfg['WS_URL'])
+        socketio = SocketIO(app.config['WS_URL'])
         self.websocket = socketio.handle
+        return [socketio]
+
+    def on_start(self, app, server):
+        pubsub_store = app.config['PUBSUB_STORE']
         if pubsub_store:
             self.pubsub_store = create_store(pubsub_store)
             self.websocket.pubsub = self.pubsub_store.pubsub()
-        return [socketio]

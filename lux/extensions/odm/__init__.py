@@ -54,6 +54,7 @@ class Extension(lux.Extension):
         '''
         app.mapper = AppMapper(app)
         green = WsgiGreen(app.handler)
+        self.logger.info('Setup green Wsgi handler')
         app.handler = WsgiHandler((wait_for_body_middleware, green),
                                   async=True)
 

@@ -1,6 +1,6 @@
 //      Lux Library - v0.1.1
 
-//      Compiled 2015-03-22.
+//      Compiled 2015-03-23.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -1091,6 +1091,8 @@ function(angular, root) {
                         log.info('event', msg.event);
                         if (msg.channel)
                             listeners = websocketChannels[msg.channel];
+                        if (msg.data)
+                            msg.data = angular.fromJson(msg.data);
                         angular.forEach(listeners, function (listener) {
                             listener(sock, msg);
                         });
@@ -1098,7 +1100,7 @@ function(angular, root) {
                     };
 
                     sock.onclose = function() {
-                        log.warning('Connection with ' + websocket + ' CLOSED');
+                        log.warn('Connection with ' + websocket + ' CLOSED');
                     };
                 });
             }

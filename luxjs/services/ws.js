@@ -28,6 +28,8 @@
                         log.info('event', msg.event);
                         if (msg.channel)
                             listeners = websocketChannels[msg.channel];
+                        if (msg.data)
+                            msg.data = angular.fromJson(msg.data);
                         angular.forEach(listeners, function (listener) {
                             listener(sock, msg);
                         });
@@ -35,7 +37,7 @@
                     };
 
                     sock.onclose = function() {
-                        log.warning('Connection with ' + websocket + ' CLOSED');
+                        log.warn('Connection with ' + websocket + ' CLOSED');
                     };
                 });
             }

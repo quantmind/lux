@@ -153,6 +153,7 @@ class Application(ConsoleParser, Extension):
     logger = None
     admin = None
     auth_backend = None
+    log_name = 'luxstart'
     _WsgiHandler = WsgiHandler
     _config = [
         Parameter('EXTENSIONS', [],
@@ -168,8 +169,6 @@ class Application(ConsoleParser, Extension):
                   'Handler of Http exceptions'),
         Parameter('HTML_TITLE', 'Lux',
                   'Default HTML Title'),
-        Parameter('LOGGING_CONFIG', None,
-                  'Dictionary for configuring logging'),
         Parameter('MEDIA_URL', '/media/',
                   'the base url for static files', True),
         Parameter('MINIFIED_MEDIA', True,
@@ -230,7 +229,9 @@ class Application(ConsoleParser, Extension):
                   'Dictionary of Html templates to render'),
         Parameter('SITE_MANAGERS', 'List of email for site managers', ()),
         Parameter('EMAIL_BACKEND', 'lux.core.mail.EmailBackend',
-                  'Default locale')
+                  'Default locale'),
+        Parameter('MD_EXTENSIONS', ['extra', 'meta', 'toc'],
+                  'List/tuple of markdown extensions')
         ]
 
     def __init__(self, callable):
@@ -413,7 +414,7 @@ class Application(ConsoleParser, Extension):
         '''
         if with_commands:
             params['usage'] = self.get_usage()
-        parser = super(Application, self).get_parser(**params)
+        parser = super().get_parser(**params)
         parser.add_argument('command', nargs=nargs, help='command to run')
         return parser
 
@@ -458,12 +459,11 @@ class Application(ConsoleParser, Extension):
 
     def setup_logger(self, config, opts):
         debug = opts.debug or self.params.get('debug', False)
-        cfg = pulsar.Config(log_name='lux')
+        cfg = pulsar.Config(log_name=self.log_name)
+        self.log_name = 'lux'
         cfg.set('debug', debug)
         cfg.set('loglevel', opts.loglevel)
         cfg.set('loghandlers', opts.loghandlers)
-        if config['LOGGING_CONFIG']:
-            cfg.set('logconfig', config['LOGGING_CONFIG'])
         cfg.configured_logger()
         self.debug = cfg.debug
         self.logger = logging.getLogger('lux')
