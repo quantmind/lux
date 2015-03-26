@@ -69,6 +69,7 @@
                 var loc;
                 if (url)
                     url = typeof(url) === 'string' ? url : url.href || url.url;
+                if (!url) return;
                 if (isAbsolute.test(url))
                     loc = $location.absUrl();
                 else

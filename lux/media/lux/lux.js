@@ -1,6 +1,6 @@
 //      Lux Library - v0.1.1
 
-//      Compiled 2015-03-23.
+//      Compiled 2015-03-26.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -2731,6 +2731,7 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
                 var loc;
                 if (url)
                     url = typeof(url) === 'string' ? url : url.href || url.url;
+                if (!url) return;
                 if (isAbsolute.test(url))
                     loc = $location.absUrl();
                 else
@@ -2839,6 +2840,7 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
                 }
             };
         }]);
+
     //
     //  Angular module for photos
     //  ============================
