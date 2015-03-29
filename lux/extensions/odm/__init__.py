@@ -37,6 +37,9 @@ class Extension(lux.Extension):
         Parameter('ADMIN_PERMISSIONS', 'admin',
                   'Admin permission name')]
 
+    def on_config(self, app):
+        app.mapper = AppMapper(app)
+
     def middleware(self, app):
         admin = app.config['ADMIN_URL']
         if admin:
@@ -50,9 +53,8 @@ class Extension(lux.Extension):
             return [RequirePermission(permission)(admin)]
 
     def on_loaded(self, app):
-        '''Wraps the Wsgi handler into a grrnlet friendly handler
+        '''Wraps the Wsgi handler into a greenlet friendly handler
         '''
-        app.mapper = AppMapper(app)
         green = WsgiGreen(app.handler)
         self.logger.info('Setup green Wsgi handler')
         app.handler = WsgiHandler((wait_for_body_middleware, green),
