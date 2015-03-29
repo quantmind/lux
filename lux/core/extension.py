@@ -173,10 +173,6 @@ class Extension(metaclass=ExtensionType):
         middleware'''
         pass
 
-    def setup_logger(self, config, opts):
-        '''Called by :meth:`setup` method to setup the :attr:`logger`.'''
-        self.logger = logging.getLogger('lux.%s' % self.meta.name)
-
     def setup(self, config, module, params, opts=None):
         '''Internal method which prepare the extension for usage.
         '''
@@ -189,7 +185,7 @@ class Extension(metaclass=ExtensionType):
             else:
                 value = getattr(module, setting.name, setting.default)
             config[setting.name] = value
-        self.setup_logger(config, opts)
+        self._setup_logger(config, module, opts)
         return config
 
     def extra_form_data(self, request):
@@ -224,6 +220,10 @@ class Extension(metaclass=ExtensionType):
 
     def __str__(self):
         return self.__repr__()
+
+    def _setup_logger(self, config, module, opts):
+        '''Called by :meth:`setup` method to setup the :attr:`logger`.'''
+        self.logger = logging.getLogger('lux.%s' % self.meta.name)
 
 
 class EventHandler:

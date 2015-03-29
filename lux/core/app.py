@@ -1,6 +1,5 @@
 import sys
 import os
-import logging
 import json
 from inspect import isclass
 from collections import OrderedDict
@@ -72,7 +71,7 @@ def execute_app(app, argv=None, **params):
     if argv:
         app._script = argv.pop(0)
     try:
-        application = app.handler()
+        application = app.commands()
     except ImproperlyConfigured as e:
         print('IMPROPERLY CONFUGURED: %s' % e)
         exit(1)
@@ -114,6 +113,9 @@ class App(LazyWsgi):
     def setup(self, environ=None):
         return Application(self)
 
+    def commands(self):
+        return Application(self, handler=False)
+
 
 class Application(ConsoleParser, Extension):
     '''The :class:`.Application` is the WSGI callable for serving
@@ -153,7 +155,7 @@ class Application(ConsoleParser, Extension):
     logger = None
     admin = None
     auth_backend = None
-    log_name = 'luxstart'
+    _worker = None
     _WsgiHandler = WsgiHandler
     _config = [
         Parameter('EXTENSIONS', [],
@@ -234,16 +236,18 @@ class Application(ConsoleParser, Extension):
                   'List/tuple of markdown extensions')
         ]
 
-    def __init__(self, callable):
+    def __init__(self, callable, handler=True):
         self.callable = callable
         self.meta.argv = callable._argv
         self.meta.script = callable._script
         self.events = {}
         self.config = self._build_config(callable._config_file)
-        self.cms = CMS(self)
         self.fire('on_config')
-        self.handler = self._build_handler()
-        self.fire('on_loaded')
+        if handler:
+            self._worker = pulsar.get_actor()
+            self.cms = CMS(self)
+            self.handler = self._build_handler()
+            self.fire('on_loaded')
 
     def __call__(self, environ, start_response):
         '''The WSGI thing.'''
@@ -272,6 +276,11 @@ class Application(ConsoleParser, Extension):
     @property
     def params(self):
         return self.callable._params
+
+    @property
+    def _loop(self):
+        if self._worker:
+            return self._worker._loop
 
     def get_version(self):
         '''Get version of this :class:`App`. Required by
@@ -456,17 +465,6 @@ class Application(ConsoleParser, Extension):
                     self.logger.critical(
                         'Unhandled exception while firing event %s', handler,
                         exc_info=True)
-
-    def setup_logger(self, config, opts):
-        debug = opts.debug or self.params.get('debug', False)
-        cfg = pulsar.Config(log_name=self.log_name)
-        self.log_name = 'lux'
-        cfg.set('debug', debug)
-        cfg.set('loglevel', opts.loglevel)
-        cfg.set('loghandlers', opts.loghandlers)
-        cfg.configured_logger()
-        self.debug = cfg.debug
-        self.logger = logging.getLogger('lux')
 
     def bind_events(self, extension, all_events=None):
         events = self.events
@@ -670,6 +668,15 @@ class Application(ConsoleParser, Extension):
         # Response middleware executed in reversed order
         rmiddleware = list(reversed(rmiddleware))
         return self._WsgiHandler(middleware, response_middleware=rmiddleware)
+
+    def _setup_logger(self, config, module, opts):
+        debug = opts.debug or self.params.get('debug', False)
+        cfg = pulsar.Config()
+        cfg.set('debug', debug)
+        cfg.set('loglevel', opts.loglevel)
+        cfg.set('loghandlers', opts.loghandlers)
+        self.debug = cfg.debug
+        self.logger = cfg.configured_logger('lux')
 
 
 def add_app(apps, name, pos=None):

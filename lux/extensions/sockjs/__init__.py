@@ -31,7 +31,7 @@ class Extension(lux.Extension):
         self.websocket = socketio.handle
         return [socketio]
 
-    def on_start(self, app, server):
+    def on_loaded(self, app):
         pubsub_store = app.config['PUBSUB_STORE']
         if pubsub_store:
             self.pubsub_store = create_store(pubsub_store)

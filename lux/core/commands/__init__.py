@@ -33,7 +33,7 @@ class ConsoleParser(object):
     help = None
     option_list = ()
     default_option_list = (Loglevel(),
-                           LogHandlers(default=['console_level_message']),
+                           LogHandlers(default=['console']),
                            Debug())
 
     @property
