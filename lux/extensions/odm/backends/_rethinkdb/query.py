@@ -1,6 +1,6 @@
 from rethinkdb import ast
 
-from odm.query import CompiledQuery
+from ...query import CompiledQuery
 
 
 class RethinkDbQuery(CompiledQuery):

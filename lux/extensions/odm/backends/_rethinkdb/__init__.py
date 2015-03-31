@@ -4,8 +4,7 @@ from collections import OrderedDict
 
 from pulsar import Pool
 
-import odm
-from odm.store import REV_KEY
+from ...store import RemoteStore, REV_KEY, Command, register_store
 
 try:
     from rethinkdb import ast
@@ -16,10 +15,7 @@ except ImportError:     # pragma    nocover
     rethinkdbProtocol = None
 
 
-Command = odm.Command
-
-
-class RethinkDB(odm.RemoteStore):
+class RethinkDB(RemoteStore):
     '''RethinkDB asynchronous data store
     '''
     protocol_factory = rethinkdbProtocol
@@ -112,7 +108,7 @@ class RethinkDB(odm.RemoteStore):
         table_name = manager._meta.table_name
         data = yield from self.execute(ast.Table(table_name).get(pk))
         if not data:
-            raise odm.ModelNotFound
+            raise self.ModelNotFound
         return self._model_from_db(manager, **data)
 
     def compile_query(self, query):
@@ -156,4 +152,4 @@ class RethinkDB(odm.RemoteStore):
         return instance
 
 
-odm.register_store("rethinkdb", "odm.backends._rethinkdb.RethinkDB")
+register_store("rethinkdb", "lux.extensions.odm.backends.RethinkDB")

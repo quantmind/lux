@@ -260,7 +260,7 @@ class Application(ConsoleParser, Extension):
         '''The :ref:`configuration file <parameters>` used by this
         :class:`.App`.
         '''
-        return '%s.%s' % (self, self.meta.file.module_name())
+        return self.meta.module_name
 
     @property
     def extensions(self):

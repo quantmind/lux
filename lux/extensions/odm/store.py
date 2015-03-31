@@ -1,6 +1,8 @@
 from pulsar import is_async
 from pulsar.apps import data
 
+from lux import forms
+
 create_store = data.create_store
 register_store = data.register_store
 Command = data.Command
@@ -95,7 +97,7 @@ class Store(data.Store, OdmMixin):
 
 
 class RemoteStore(data.RemoteStore, OdmMixin):
-    pass
+    ModelNotFound = forms.ModelNotFound
 
 
 class DummyStore(Store):

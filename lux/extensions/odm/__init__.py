@@ -12,15 +12,12 @@ from pulsar.apps.wsgi import WsgiHandler, wait_for_body_middleware
 from pulsar.apps.greenio import WsgiGreen
 from pulsar.utils.log import LocalMixin
 
-import odm
-from odm.green import GreenMapper
-from odm.mapper import model_iterator
-
 import lux
 from lux import Parameter
 from lux.extensions.auth import RequirePermission
 
-from .mapper import Mapper
+from .mapper import Mapper, model_iterator
+from .green import GreenMapper
 from .admin import Admin, AdminModel, adminMap
 from .store import Store, RemoteStore, create_store, register_store, Command
 from .api import CRUD

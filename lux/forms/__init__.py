@@ -46,6 +46,7 @@ Layout
 .. _django: https://www.djangoproject.com/
 '''
 from .fields import *
+from .errors import *
 from .formsets import FormSet
 from .form import Form
 from .serialise import *

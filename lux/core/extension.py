@@ -4,8 +4,6 @@ import logging
 from copy import copy
 from inspect import getfile, getmodule
 
-from pulsar.utils.path import Path
-
 from lux import __version__
 
 
@@ -70,12 +68,16 @@ class ExtensionMeta(object):
     argv = None
 
     def __init__(self, module, version, config=None):
-        file = Path(getfile(module))
-        appdir = file if file.isdir() else file.realpath().parent
+        file = getfile(module)
+        dir, filename = os.path.split(file)
+        self.module_name = module.__name__
+        name = self.module_name
+        if not filename.startswith('__init__.') and dir:
+            name = '.'.join(self.module_name.split('.')[:-1])
         self.file = file
-        self.path = appdir.realpath()
+        self.path = dir
         self.version = version or __version__
-        self.name = module.__name__
+        self.name = name
         self.config = cfg = {}
         if config:
             for setting in config:
