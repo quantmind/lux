@@ -4,7 +4,7 @@ from itertools import zip_longest
 from pulsar.utils.string import to_string
 from pulsar.apps.wsgi import html_factory
 
-from odm import CharField, ValidationError
+from .fields import CharField, ValidationError
 
 
 __all__ = ['FormSet']

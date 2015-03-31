@@ -9,8 +9,7 @@ from pulsar.utils.html import nicename, NOTHING
 from pulsar.utils.httpurl import JSON_CONTENT_TYPES
 from pulsar.apps.wsgi import Html
 
-from odm import Field, ValidationError
-
+from .fields import Field, ValidationError
 from .formsets import FormSet
 from .serialise import Layout, FORMKEY
 

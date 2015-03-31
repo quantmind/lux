@@ -28,9 +28,9 @@ class TestMixin:
             mapper = app.mapper()
             dbname = randomname()
             mapper.default_store.database = dbname
-            for manager in mapper:
-                manager._store.database = dbname
-            return mapper
+            app.config['DATASTORE'] = mapper.default_store.dns
+            app.mapper.clear()
+            return app.mapper()
 
     def bs(self, response):
         from bs4 import BeautifulSoup

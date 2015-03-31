@@ -2,7 +2,7 @@ import os
 import sys
 import logging
 from copy import copy
-from inspect import getfile
+from inspect import getfile, getmodule
 
 from pulsar.utils.path import Path
 
@@ -69,21 +69,13 @@ class ExtensionMeta(object):
     script = None
     argv = None
 
-    def __init__(self, file, version, config=None):
-        file = Path(file)
-        if file.isdir():
-            appdir = file
-        else:
-            appdir = file.realpath().parent
+    def __init__(self, module, version, config=None):
+        file = Path(getfile(module))
+        appdir = file if file.isdir() else file.realpath().parent
         self.file = file
         self.path = appdir.realpath()
         self.version = version or __version__
-        if self.has_module:
-            _, name = self.path.split()
-        else:
-            # otherwise it is the name of the file
-            _, name = self.file.split()
-        self.name = name
+        self.name = module.__name__
         self.config = cfg = {}
         if config:
             for setting in config:
@@ -94,27 +86,15 @@ class ExtensionMeta(object):
     def __repr__(self):
         return self.name
 
-    def add_to_pypath(self):
-        if self.has_module:
-            base, _ = self.path.split()
-            if base not in sys.path:
-                sys.path.append(str(base))
-
-    @property
-    def has_module(self):
-        return True
-        return self.path.ispymodule()
-
     @property
     def media_dir(self):
         '''Directory containing media files (if available)'''
-        if self.has_module:
-            dir = os.path.join(self.path, 'media')
-            if os.path.isdir(dir):
-                return dir
+        dir = os.path.join(self.path, 'media')
+        if os.path.isdir(dir):
+            return dir
 
-    def copy(self, file):
-        meta = self.__class__(file, self.version, self.config.values())
+    def copy(self, module):
+        meta = self.__class__(module, self.version, self.config.values())
         meta.script = self.script
         meta.argv = copy(self.argv)
         return meta
@@ -130,16 +110,17 @@ class ExtensionType(type):
         config = attrs.pop('_config', None)
         version = attrs.pop('version', None)
         abstract = attrs.pop('abstract', False)
-        klass = super(ExtensionType, cls).__new__(cls, name, bases, attrs)
+        klass = super().__new__(cls, name, bases, attrs)
         if not abstract:
             meta = getattr(klass, 'meta', None)
+            module = getmodule(klass)
             if isinstance(meta, ExtensionMeta):
                 cfg = list(meta.config.values())
                 if config:
                     cfg.extend(config)
-                meta = ExtensionMeta(getfile(klass), version, cfg)
+                meta = ExtensionMeta(module, version, cfg)
             else:
-                meta = ExtensionMeta(getfile(klass), version, config)
+                meta = ExtensionMeta(module, version, config)
             klass.meta = meta
         return klass
 

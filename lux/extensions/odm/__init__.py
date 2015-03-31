@@ -20,8 +20,12 @@ import lux
 from lux import Parameter
 from lux.extensions.auth import RequirePermission
 
+from .mapper import Mapper
 from .admin import Admin, AdminModel, adminMap
+from .store import Store, RemoteStore, create_store, register_store, Command
 from .api import CRUD
+from .models import Model
+from .backends import sql
 
 
 class Extension(lux.Extension):
@@ -35,7 +39,9 @@ class Extension(lux.Extension):
         Parameter('ADMIN_URL', None,
                   'Admin site url', True),
         Parameter('ADMIN_PERMISSIONS', 'admin',
-                  'Admin permission name')]
+                  'Admin permission name'),
+        Parameter('GREEN_WSGI', 0,
+                  'Run the WSGI handle in a pool of greenlet')]
 
     def on_config(self, app):
         app.mapper = AppMapper(app)
@@ -68,7 +74,7 @@ class Extension(lux.Extension):
 
 
 class AppMapper(LocalMixin):
-    '''Lazy object data mapper handler.
+    '''Lazy object data mapper.
     '''
     def __init__(self, app):
         self.app = app
@@ -77,6 +83,9 @@ class AppMapper(LocalMixin):
         if not self.local.mapper:
             self.local.mapper = self._create_mapper()
         return self.local.mapper
+
+    def clear(self):
+        self.local.pop('mapper', None)
 
     def api_info(self, meta):
         '''Return a dictionary of information about the API for model meta.
@@ -94,7 +103,11 @@ class AppMapper(LocalMixin):
             datastore = {'default': datastore}
         if 'default' not in datastore:
             raise ImproperlyConfigured('default datastore not specified')
-        mapper = GreenMapper(datastore['default'])
+        if self.app.config['GREEN_WSGI']:
+            from .green import GreenMapper
+            mapper = GreenMapper(datastore['default'])
+        else:
+            mapper = Mapper(datastore['default'])
         mapper.register_applications(self.app.config['EXTENSIONS'])
         return mapper
 

@@ -103,8 +103,6 @@ def execute_app(app, argv=None, **params):
 class App(LazyWsgi):
 
     def __init__(self, config_file, script=None, argv=None, **params):
-        if not os.path.isfile(config_file):
-            config_file = import_module(config_file).__file__
         self._params = params
         self._config_file = config_file
         self._script = script
@@ -606,18 +604,15 @@ class Application(ConsoleParser, Extension):
             self.bind_events(ext, event_names)
 
     # INTERNALS
-    def _build_config(self, file):
+    def _build_config(self, module_name):
         # Check if an extension module is available
-        self.meta = self.meta.copy(file)
+        module = import_module(module_name)
+        self.meta = self.meta.copy(module)
         if self.meta.name != 'lux':
-            self.meta.path.add2python(self.meta.name, up=1)
+            # self.meta.path.add2python(self.meta.name, up=1)
             extension = self.load_extension(self.meta.name)
             if extension:   # extension available, get the version from it
                 self.meta.version = extension.meta.version
-            if not self.meta.has_module:
-                raise RuntimeError('Invalid project setup. The Application '
-                                   'config module must be within a valid '
-                                   'python module.')
         #
         parser = self.get_parser(with_commands=False, add_help=False)
         opts, _ = parser.parse_known_args(self.meta.argv)

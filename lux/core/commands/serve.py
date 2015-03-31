@@ -14,7 +14,8 @@ class Command(lux.Command):
         app = self.app
         server = self.pulsar_app(argv, wsgi.WSGIServer)
         if start and not server.logger:   # pragma    nocover
-            clear_logger()
+            if not pulsar.get_actor():
+                clear_logger()
             app._started = server()
             app.on_start(server)
             arbiter = pulsar.arbiter()

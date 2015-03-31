@@ -45,8 +45,7 @@ Layout
 
 .. _django: https://www.djangoproject.com/
 '''
-from odm.fields import *
-
+from .fields import *
 from .formsets import FormSet
 from .form import Form
 from .serialise import *
