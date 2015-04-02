@@ -9,7 +9,7 @@ from .store import ModelTypes, create_store, ascoro
 from .manager import Manager
 
 
-class Mapper(EventHandler):
+class Mapper:
     '''A mapper is a mapping of :class:`.Model` to a :class:`.Manager`.
 
     A :class:`.Manager` is registered with a :class:`.Store`::
@@ -49,34 +49,9 @@ class Mapper(EventHandler):
     MANY_TIMES_EVENTS = ('pre_commit', 'pre_delete',
                          'post_commit', 'post_delete')
 
-    def __init__(self, default_store, **kw):
-        store = create_store(default_store, **kw)
-        loop = getattr(store, '_loop', None) or asyncio.get_event_loop()
-        super().__init__(loop)
-        self._registered_models = {}
-        self._registered_names = {}
-        self._default_store = store
-        self._search_engine = None
-
-    @property
-    def default_store(self):
-        '''The default :class:`.Store` for this :class:`.Mapper`.
-
-        Used when calling the :meth:`register` method without explicitly
-        passing a :class:`.Store`.
-        '''
-        return self._default_store
-
-    @property
-    def search_engine(self):
-        '''The :class:`.SearchEngine` for this :class:`.Mapper`.
-
-        This must be created by users and intalled on a mapper via the
-        :meth:`set_search_engine` method.
-        Check :ref:`full text search <odm-search>`
-        tutorial for information.
-        '''
-        return self._search_engine
+    def __init__(self, app):
+        self.app = app
+        self.sql = SqlAlchemy(self)
 
     def __repr__(self):
         return '%s %s' % (self.__class__.__name__, self._registered_models)
@@ -101,21 +76,6 @@ class Mapper(EventHandler):
             return self._registered_names[name]
         raise AttributeError('No model named "%s"' % name)
 
-    def begin(self):
-        '''Begin a new :class:`.Transaction`
-        '''
-        return Transaction(self)
-
-    def set_search_engine(self, engine):
-        '''Set the :class:`.SearchEngine` for this :class:`.Mapper`.
-
-        Check :ref:`full text search <odm-search>`
-        tutorial for information.
-        '''
-        self._search_engine = engine
-        if engine:
-            self._search_engine.set_mapper(self)
-
     def register(self, *models, **params):
         '''Register one or several :class:`.Model` with this :class:`Mapper`.
 
@@ -123,10 +83,6 @@ class Mapper(EventHandler):
 
         :param models: a list of :class:`.Model`
         :param store: a :class:`.Store` or a connection string.
-        :param read_store: Optional :class:`.Store` for read
-            operations. This is useful when the server has a master/slave
-            configuration, where the master accept write and read operations
-            and the ``slave`` read only operations (Redis).
         :param include_related: ``True`` if related models to ``model``
             needs to be registered.
             Default ``True``.
@@ -137,10 +93,7 @@ class Mapper(EventHandler):
         '''
         include_related = params.pop('include_related', True)
         store = params.pop('store', None) or self._default_store
-        read_store = params.pop('read_store', None)
         store = create_store(store, **params)
-        if read_store:
-            read_store = create_store(read_store, *params)
         registered = []
         for model in models:
             for model in models_from_model(
@@ -153,7 +106,7 @@ class Mapper(EventHandler):
                 default_manager = store.default_manager or Manager
                 manager_class = getattr(model, 'manager_class',
                                         default_manager)
-                manager = manager_class(model, store, read_store, self)
+                manager = manager_class(model, store, self)
                 self._register(manager)
         return registered[0] if len(registered) == 1 else registered
 

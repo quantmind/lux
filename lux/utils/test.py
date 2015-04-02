@@ -25,12 +25,11 @@ class TestMixin:
         app.stdout = StringIO()
         app.stderr = StringIO()
         if hasattr(app, 'mapper'):
-            mapper = app.mapper()
+            mapper = app.mapper
             dbname = randomname()
             mapper.default_store.database = dbname
             app.config['DATASTORE'] = mapper.default_store.dns
-            app.mapper.clear()
-            return app.mapper()
+            return mapper
 
     def bs(self, response):
         from bs4 import BeautifulSoup

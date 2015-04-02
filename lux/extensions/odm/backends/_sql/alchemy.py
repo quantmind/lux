@@ -371,106 +371,10 @@ def get_state(app):
     return app.extensions['sqlalchemy']
 
 
-class _SQLAlchemyState(object):
-    """Remembers configuration for the (db, app) tuple."""
-
-    def __init__(self, db, app):
-        self.db = db
-        self.app = app
-        self.connectors = {}
-
 
 class SQLAlchemy(object):
-    """This class is used to control the SQLAlchemy integration to one
-    or more Flask applications.  Depending on how you initialize the
-    object it is usable right away or will attach as needed to a
-    Flask application.
 
-    There are two usage modes which work very similarly.  One is binding
-    the instance to a very specific Flask application::
-
-        app = Flask(__name__)
-        db = SQLAlchemy(app)
-
-    The second possibility is to create the object once and configure the
-    application later to support it::
-
-        db = SQLAlchemy()
-
-        def create_app():
-            app = Flask(__name__)
-            db.init_app(app)
-            return app
-
-    The difference between the two is that in the first case methods like
-    :meth:`create_all` and :meth:`drop_all` will work all the time but in
-    the second case a :meth:`flask.Flask.app_context` has to exist.
-
-    By default Flask-SQLAlchemy will apply some backend-specific settings
-    to improve your experience with them.  As of SQLAlchemy 0.6 SQLAlchemy
-    will probe the library for native unicode support.  If it detects
-    unicode it will let the library handle that, otherwise do that itself.
-    Sometimes this detection can fail in which case you might want to set
-    `use_native_unicode` (or the ``SQLALCHEMY_NATIVE_UNICODE`` configuration
-    key) to `False`.  Note that the configuration key overrides the
-    value you pass to the constructor.
-
-    This class also provides access to all the SQLAlchemy functions and classes
-    from the :mod:`sqlalchemy` and :mod:`sqlalchemy.orm` modules.  So you can
-    declare models like this::
-
-        class User(db.Model):
-            username = db.Column(db.String(80), unique=True)
-            pw_hash = db.Column(db.String(80))
-
-    You can still use :mod:`sqlalchemy` and :mod:`sqlalchemy.orm` directly, but
-    note that Flask-SQLAlchemy customizations are available only through an
-    instance of this :class:`SQLAlchemy` class.  Query classes default to
-    :class:`BaseQuery` for `db.Query`, `db.Model.query_class`, and the default
-    query_class for `db.relationship` and `db.backref`.  If you use these
-    interfaces through :mod:`sqlalchemy` and :mod:`sqlalchemy.orm` directly,
-    the default query class will be that of :mod:`sqlalchemy`.
-
-    .. admonition:: Check types carefully
-
-       Don't perform type or `isinstance` checks against `db.Table`, which
-       emulates `Table` behavior but is not a class. `db.Table` exposes the
-       `Table` interface, but is a function which allows omission of metadata.
-
-    You may also define your own SessionExtension instances as well when
-    defining your SQLAlchemy class instance. You may pass your custom instances
-    to the `session_extensions` keyword. This can be either a single
-    SessionExtension instance, or a list of SessionExtension instances. In the
-    following use case we use the VersionedListener from the SQLAlchemy
-    versioning examples.::
-
-        from history_meta import VersionedMeta, VersionedListener
-
-        app = Flask(__name__)
-        db = SQLAlchemy(app, session_extensions=[VersionedListener()])
-
-        class User(db.Model):
-            __metaclass__ = VersionedMeta
-            username = db.Column(db.String(80), unique=True)
-            pw_hash = db.Column(db.String(80))
-
-    The `session_options` parameter can be used to override session
-    options.  If provided it's a dict of parameters passed to the
-    session's constructor.
-
-    .. versionadded:: 0.10
-       The `session_options` parameter was added.
-
-    .. versionadded:: 0.16
-       `scopefunc` is now accepted on `session_options`. It allows specifying
-        a custom function which will define the SQLAlchemy session's scoping.
-
-    .. versionadded:: 2.1
-       The `metadata` parameter was added. This allows for setting custom
-       naming conventions among other, non-trivial things.
-    """
-
-    def __init__(self, app=None, use_native_unicode=True,
+    def __init__(self, app, use_native_unicode=True,
                  session_options=None, metadata=None):
 
         if session_options is None:
@@ -540,10 +444,6 @@ class SQLAlchemy(object):
 
         if track_modifications is None:
             warnings.warn('SQLALCHEMY_TRACK_MODIFICATIONS adds significant overhead and will be disabled by default in the future.  Set it to True to suppress this warning.')
-
-        if not hasattr(app, 'extensions'):
-            app.extensions = {}
-        app.extensions['sqlalchemy'] = _SQLAlchemyState(self, app)
 
         # 0.9 and later
         if hasattr(app, 'teardown_appcontext'):
