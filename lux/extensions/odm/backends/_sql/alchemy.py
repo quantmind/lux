@@ -1,17 +1,4 @@
-# -*- coding: utf-8 -*-
-"""
-Lux extension to handle SQLAlchemy models
 
-This files was copied from
-
-    flaskext.sqlalchemy
-    ~~~~~~~~~~~~~~~~~~~
-
-    Adds basic SQLAlchemy support to your application.
-
-    :copyright: (c) 2014 by Armin Ronacher, Daniel Neuhäuser.
-    :license: BSD, see LICENSE for more details.
-"""
 import os
 import re
 import sys
@@ -29,13 +16,6 @@ from sqlalchemy.orm.exc import UnmappedClassError
 from sqlalchemy.orm.session import Session as SessionBase
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta
-
-
-# the best timer function for the platform
-if sys.platform == 'win32':
-    _timer = time.clock
-else:
-    _timer = time.time
 
 
 def _make_table(db):
@@ -374,18 +354,7 @@ def get_state(app):
 
 class SQLAlchemy(object):
 
-    def __init__(self, app, use_native_unicode=True,
-                 session_options=None, metadata=None):
-
-        if session_options is None:
-            session_options = {}
-
-        session_options.setdefault('scopefunc', connection_stack.__ident_func__)
-        self.use_native_unicode = use_native_unicode
-        self.session = self.create_scoped_session(session_options)
-        self.Model = self.make_declarative_base(metadata)
-        self.Query = BaseQuery
-        self._engine_lock = Lock()
+    def __init__(self, app):
         self.app = app
         _include_sqlalchemy(self)
 

@@ -51,7 +51,19 @@ class Mapper:
 
     def __init__(self, app):
         self.app = app
-        self.sql = SqlAlchemy(self)
+        self._registered_models = {}
+        self._registered_names = {}
+
+    @property
+    def search_engine(self):
+        '''The :class:`.SearchEngine` for this :class:`.Mapper`.
+
+        This must be created by users and intalled on a mapper via the
+        :meth:`set_search_engine` method.
+        Check :ref:`full text search <odm-search>`
+        tutorial for information.
+        '''
+        return self._search_engine
 
     def __repr__(self):
         return '%s %s' % (self.__class__.__name__, self._registered_models)
@@ -75,6 +87,21 @@ class Mapper:
         if name in self._registered_names:
             return self._registered_names[name]
         raise AttributeError('No model named "%s"' % name)
+
+    def begin(self):
+        '''Begin a new :class:`.Transaction`
+        '''
+        return Transaction(self)
+
+    def set_search_engine(self, engine):
+        '''Set the :class:`.SearchEngine` for this :class:`.Mapper`.
+
+        Check :ref:`full text search <odm-search>`
+        tutorial for information.
+        '''
+        self._search_engine = engine
+        if engine:
+            self._search_engine.set_mapper(self)
 
     def register(self, *models, **params):
         '''Register one or several :class:`.Model` with this :class:`Mapper`.
@@ -230,75 +257,3 @@ class Mapper:
         self._registered_models[model] = manager
         if model._meta.name not in self._registered_names:
             self._registered_names[model._meta.name] = manager
-
-
-def valid_model(model):
-    if isinstance(model, tuple(ModelTypes)):
-        return not model._meta.abstract
-    return False
-
-
-def models_from_model(model, include_related=False, exclude=None):
-    '''Generator of all model in model.
-
-    :param model: a :class:`.Model`
-    :param include_related: if ``True`` al related models to ``model``
-        are included
-    :param exclude: optional set of models to exclude
-    '''
-    if exclude is None:
-        exclude = set()
-    if valid_model(model) and model not in exclude:
-        exclude.add(model)
-        yield model
-        if include_related:
-            for column in model._meta.dfields.values():
-                for fk in column.foreign_keys:
-                    for model in (fk.column.table,):
-                        for m in models_from_model(
-                                model, include_related=include_related,
-                                exclude=exclude):
-                            yield m
-
-
-def model_iterator(application, include_related=True, exclude=None):
-    '''A generator of :class:`.Model` classes found in *application*.
-
-    :parameter application: A python dotted path or an iterable over
-        python dotted-paths where models are defined.
-
-    Only models defined in these paths are considered.
-    '''
-    if exclude is None:
-        exclude = set()
-    if ismodule(application) or isinstance(application, str):
-        if ismodule(application):
-            mod, application = application, application.__name__
-        else:
-            try:
-                mod = import_module(application)
-            except ImportError:
-                # the module is not there
-                mod = None
-        if mod:
-            label = application.split('.')[-1]
-            try:
-                mod_models = import_module('.models', application)
-            except ImportError:
-                mod_models = mod
-            label = getattr(mod_models, 'app_label', label)
-            models = set()
-            for name in dir(mod_models):
-                value = getattr(mod_models, name)
-                for model in models_from_model(
-                        value, include_related=include_related,
-                        exclude=exclude):
-                    if (model._meta.app_label == label and
-                            model not in models):
-                        models.add(model)
-                        yield model
-    else:
-        for app in application:
-            for m in model_iterator(app, include_related=include_related,
-                                    exclude=exclude):
-                yield m
