@@ -11,6 +11,22 @@ from ...manager import Manager
 from ...models import meta_mixin, Meta
 
 
+metadata = sql.MetaData()
+sql._Table = sql.Table
+
+
+def _make_table():
+    def _make_table(*args, **kwargs):
+        if len(args) > 1 and isinstance(args[1], sql.Column):
+            args = (args[0], metadata) + args[1:]
+        info = kwargs.pop('info', None) or {}
+        info.setdefault('bind_key', None)
+        kwargs['info'] = info
+        return sql._Table(*args, **kwargs)
+
+    return _make_table
+
+
 def in_executor(method):
 
     @wraps(method)
@@ -118,4 +134,8 @@ class ModelBase:
 
 sql.Model = declarative_base(cls=ModelBase,
                              name='Model',
+                             metadata=metadata,
                              metaclass=SqlModelType)
+
+
+sql.Table = _make_table()

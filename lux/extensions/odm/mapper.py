@@ -7,6 +7,7 @@ from pulsar import InvalidOperation, ImproperlyConfigured, EventHandler
 from .transaction import Transaction, ModelDictionary
 from .store import ModelTypes, create_store, ascoro
 from .manager import Manager
+from .models import ModelType
 
 
 class Mapper(EventHandler):
@@ -141,13 +142,14 @@ class Mapper(EventHandler):
         store = create_store(store, **params)
         if read_store:
             read_store = create_store(read_store, *params)
+        ModelType = store.ModelType or ModelType
         registered = []
         for model in models:
             for model in models_from_model(
                     model, include_related=include_related):
                 if model in self._registered_models:
                     continue
-                if not isinstance(model, store.ModelType):
+                if not isinstance(model, ModelType):
                     continue
                 registered.append(model)
                 default_manager = store.default_manager or Manager

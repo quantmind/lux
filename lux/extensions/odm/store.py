@@ -17,6 +17,9 @@ ModelTypes = set()
 
 
 class OdmMixin:
+    ModelType = None
+    '''Model type for a store
+    '''
     _loop = None
 
     def create_model(self, manager, *args, **kwargs):

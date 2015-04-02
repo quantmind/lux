@@ -6,6 +6,7 @@ from lux.utils import test
 class SqlCommandsTest(test.TestCase):
     config_file = 'tests.odm_ext'
     config_params = {'DATASTORE': 'sqlite:///test.db'}
+    config_params = {'DATASTORE': 'postgresql://bmlltech:bmlltech-localdb@127.0.0.1:5432/bmll'}
 
     @test_timeout(30)
     def test_command_flushdb(self):
