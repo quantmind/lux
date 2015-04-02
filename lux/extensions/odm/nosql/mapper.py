@@ -10,7 +10,7 @@ from .manager import Manager
 from .models import ModelType
 
 
-class Mapper(EventHandler):
+class Mapper:
     '''A mapper is a mapping of :class:`.Model` to a :class:`.Manager`.
 
     A :class:`.Manager` is registered with a :class:`.Store`::
@@ -50,23 +50,10 @@ class Mapper(EventHandler):
     MANY_TIMES_EVENTS = ('pre_commit', 'pre_delete',
                          'post_commit', 'post_delete')
 
-    def __init__(self, default_store, **kw):
-        store = create_store(default_store, **kw)
-        loop = getattr(store, '_loop', None) or asyncio.get_event_loop()
-        super().__init__(loop)
+    def __init__(self, app):
+        self.app = app
         self._registered_models = {}
         self._registered_names = {}
-        self._default_store = store
-        self._search_engine = None
-
-    @property
-    def default_store(self):
-        '''The default :class:`.Store` for this :class:`.Mapper`.
-
-        Used when calling the :meth:`register` method without explicitly
-        passing a :class:`.Store`.
-        '''
-        return self._default_store
 
     @property
     def search_engine(self):
@@ -124,10 +111,6 @@ class Mapper(EventHandler):
 
         :param models: a list of :class:`.Model`
         :param store: a :class:`.Store` or a connection string.
-        :param read_store: Optional :class:`.Store` for read
-            operations. This is useful when the server has a master/slave
-            configuration, where the master accept write and read operations
-            and the ``slave`` read only operations (Redis).
         :param include_related: ``True`` if related models to ``model``
             needs to be registered.
             Default ``True``.
@@ -138,11 +121,7 @@ class Mapper(EventHandler):
         '''
         include_related = params.pop('include_related', True)
         store = params.pop('store', None) or self._default_store
-        read_store = params.pop('read_store', None)
         store = create_store(store, **params)
-        if read_store:
-            read_store = create_store(read_store, *params)
-        ModelType = store.ModelType or ModelType
         registered = []
         for model in models:
             for model in models_from_model(
@@ -155,7 +134,7 @@ class Mapper(EventHandler):
                 default_manager = store.default_manager or Manager
                 manager_class = getattr(model, 'manager_class',
                                         default_manager)
-                manager = manager_class(model, store, read_store, self)
+                manager = manager_class(model, store, self)
                 self._register(manager)
         return registered[0] if len(registered) == 1 else registered
 
@@ -279,75 +258,3 @@ class Mapper(EventHandler):
         self._registered_models[model] = manager
         if model._meta.name not in self._registered_names:
             self._registered_names[model._meta.name] = manager
-
-
-def valid_model(model):
-    if isinstance(model, tuple(ModelTypes)):
-        return not model._meta.abstract
-    return False
-
-
-def models_from_model(model, include_related=False, exclude=None):
-    '''Generator of all model in model.
-
-    :param model: a :class:`.Model`
-    :param include_related: if ``True`` al related models to ``model``
-        are included
-    :param exclude: optional set of models to exclude
-    '''
-    if exclude is None:
-        exclude = set()
-    if valid_model(model) and model not in exclude:
-        exclude.add(model)
-        yield model
-        if include_related:
-            for column in model._meta.dfields.values():
-                for fk in column.foreign_keys:
-                    for model in (fk.column.table,):
-                        for m in models_from_model(
-                                model, include_related=include_related,
-                                exclude=exclude):
-                            yield m
-
-
-def model_iterator(application, include_related=True, exclude=None):
-    '''A generator of :class:`.Model` classes found in *application*.
-
-    :parameter application: A python dotted path or an iterable over
-        python dotted-paths where models are defined.
-
-    Only models defined in these paths are considered.
-    '''
-    if exclude is None:
-        exclude = set()
-    if ismodule(application) or isinstance(application, str):
-        if ismodule(application):
-            mod, application = application, application.__name__
-        else:
-            try:
-                mod = import_module(application)
-            except ImportError:
-                # the module is not there
-                mod = None
-        if mod:
-            label = application.split('.')[-1]
-            try:
-                mod_models = import_module('.models', application)
-            except ImportError:
-                mod_models = mod
-            label = getattr(mod_models, 'app_label', label)
-            models = set()
-            for name in dir(mod_models):
-                value = getattr(mod_models, name)
-                for model in models_from_model(
-                        value, include_related=include_related,
-                        exclude=exclude):
-                    if (model._meta.app_label == label and
-                            model not in models):
-                        models.add(model)
-                        yield model
-    else:
-        for app in application:
-            for m in model_iterator(app, include_related=include_related,
-                                    exclude=exclude):
-                yield m

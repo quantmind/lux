@@ -58,7 +58,7 @@ class QueryMixin:
         return self.query().all()
 
     def compile_query(self, query):
-        return self._read_store.compile_query(query)
+        return self._store.compile_query(query)
 
 
 class Manager(QueryMixin):
@@ -103,19 +103,13 @@ class Manager(QueryMixin):
 
         The :class:`.Store` associated with this manager
 
-    .. attribute:: _read_store
-
-        The :class:`.Store` associated with this manager for
-        read-only operations
-
     .. attribute:: _mapper
 
         The :class:`.Mapper` where this :class:`.Manager` is registered
     '''
-    def __init__(self, model, store=None, read_store=None, mapper=None):
+    def __init__(self, model, store=None, mapper=None):
         self._model = model
         self._store = store
-        self._read_store = read_store or store
         self._mapper = mapper
 
     @property
@@ -168,7 +162,7 @@ class Manager(QueryMixin):
         filter.
         '''
         if len(args) == 1:
-            model = yield from self._read_store.get_model(self, args[0])
+            model = yield from self._store.get_model(self, args[0])
             return model
         elif args:
             raise QueryError("'get' expected at most 1 argument, %s given" %

@@ -49,6 +49,14 @@ class BaseQuery(orm.Query, QueryMixin):
 
 class SqlManager(Manager):
 
+    def __init__(self, model, store, mapper):
+        if not hasattr(mapper, 'sql'):
+            mapper.sql = SQLAlchemy()
+        self._model = model
+        self._store = store
+        self._read_store = read_store or store
+        self._mapper = mapper
+
     @property
     def _meta(self):
         return self._model._meta
