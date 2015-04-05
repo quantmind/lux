@@ -9,13 +9,6 @@ Command = data.Command
 REV_KEY = '_rev'
 
 
-__all__ = ['Store', 'RemoteStore', 'create_store',
-           'register_store', 'Command', 'ModelTypes']
-
-
-ModelTypes = set()
-
-
 class OdmMixin:
     ModelType = None
     '''Model type for a store
@@ -113,4 +106,4 @@ def ascoro(result=None):
     return result
 
 
-register_store("dummy", "odm.store.DummyStore")
+register_store("dummy", "lux.extensions.odm.nosql.DummyStore")

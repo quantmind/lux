@@ -7,7 +7,6 @@ from pulsar.apps.http import HttpClient
 
 import lux
 from lux.utils import test
-from lux.extensions.odm import database_drop
 
 
 class TestAuthSite(test.TestServer):

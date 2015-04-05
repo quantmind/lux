@@ -5,7 +5,7 @@ from lux.utils import test
 
 
 class CommandTests(test.TestCase):
-    config_file = 'tests.ui_ext'
+    config_file = 'tests.ui'
 
     def test_style_cssfile(self):
         command = self.fetch_command('style')
@@ -20,7 +20,7 @@ class CommandTests(test.TestCase):
         targets = yield from command([])
         self.assertEqual(len(targets), 1)
         self.assertTrue(os.path.isfile(targets[0]))
-        self.assertEqual(targets[0], 'ui_ext.css')
+        self.assertEqual(targets[0], 'tests.ui.css')
         os.remove(targets[0])
 
     def test_nodump_style(self):

@@ -1,6 +1,6 @@
 import inspect
 
-from lux.extensions.odm import admin
+from lux.extensions.admin import admin
 from lux.utils import test
 
 

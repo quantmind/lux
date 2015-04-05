@@ -11,12 +11,14 @@ Python Requirements
 =======================
 
 * pulsar_
+* sqlalchemy_
 * dateutil_
 
 Additionally, Lux can benefit form these python libraries
 
 * markdown_
 * sphinx_
+* psycopg2_ for object data mapping on psotgresql database
 
 Developing with lux.js
 ==========================
@@ -35,6 +37,18 @@ To build lux.js_ use grunt::
 
 
 Angular templates are compiled into javascript via the `grunt-html2js`_ package.
+
+
+Testing
+==========
+
+For testing postgreSQL create a new role::
+
+    CREATE ROLE lux WITH PASSWORD 'luxtest';
+    ALTER ROLE lux CREATEDB;
+    CREATE DATABASE luxtests;
+    GRANT ALL PRIVILEGES ON DATABASE luxtests to lux;
+
 
 
 .. _pulsar: https://github.com/quantmind/pulsar

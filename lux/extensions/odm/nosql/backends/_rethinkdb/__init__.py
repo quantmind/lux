@@ -25,13 +25,13 @@ class RethinkDB(RemoteStore):
         return rethinkdbProtocol is not None
 
     # Database API
-    def database_create(self, dbname=None, **kw):
+    def database_create(self, database=None, **kw):
         '''Create a new database
         '''
-        dbname = dbname or self.database
-        if not dbname:
+        database = database or self.database
+        if not database:
             raise ValueError('Database name must be specified')
-        term = ast.DbCreate(dbname or self.database)
+        term = ast.DbCreate(database)
         result = yield from self.execute(term, **kw)
         assert result['dbs_created'] == 1
         self.database = result['config_changes'][0]['new_val']['name']
@@ -152,4 +152,4 @@ class RethinkDB(RemoteStore):
         return instance
 
 
-register_store("rethinkdb", "lux.extensions.odm.backends.RethinkDB")
+register_store("rethinkdb", "lux.extensions.odm.nosql.RethinkDB")

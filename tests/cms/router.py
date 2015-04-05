@@ -1,4 +1,3 @@
-from lux.extensions.cms import CMS
 from lux.utils import test
 
 

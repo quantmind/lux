@@ -1,5 +1,4 @@
 import sys
-import re
 from inspect import isclass
 from copy import copy
 from base64 import b64encode
@@ -13,23 +12,15 @@ from lux.forms.errors import *
 
 from .manager import class_prepared, makeManyToManyRelatedManager, Command
 from .relfields import Field, ForeignKey, CompositeIdField
-from .store import REV_KEY, ModelTypes
+from .store import REV_KEY
+from ..mapper import model_name
 
 
 primary_keys = ('id', 'ID', 'pk', 'PK')
 
-_camelcase_re = re.compile(r'([A-Z]+)(?=[a-z0-9])')
-
 
 def is_private_field(field):
     return field.startswith('_') or field == 'Type'
-
-
-def _join(match):
-    word = match.group()
-    if len(word) > 1:
-        return ('_%s_%s' % (word[:-1], word[-1])).lower()
-    return '_' + word.lower()
 
 
 def rev_key(value, instance):
@@ -62,12 +53,9 @@ class Meta(object):
                  table_name=None, **kwargs):
         self.abstract = abstract
         self.app_label = app_label
-        self.name = _camelcase_re.sub(_join, name).lstrip('_')
+        self.name = model_name(name)
         if not table_name:
-            if self.app_label:
-                table_name = '%s_%s' % (self.app_label, self.name)
-            else:
-                table_name = self.name
+            table_name = self.name
         self.table_name = table_name
         self.dfields = {}
         self.__dict__.update(kwargs)
@@ -272,9 +260,6 @@ class ModelType(type):
         ModelMeta(new_class, fields, **meta)
         class_prepared.fire(new_class)
         return new_class
-
-
-ModelTypes.add(ModelType)
 
 
 class Model(dict, metaclass=ModelType):

@@ -24,6 +24,10 @@ before_script:
   - rethinkdb --io-threads 2048 --daemon
   - ulimit -S -n 2048
   - sleep 5
+  - psql -U postgres -c "CREATE USER lux WITH PASSWORD 'luxtest';"
+  - psql -U postgres -c "CREATE USER lux CREATEDB;"
+  - psql -U postgres -c "CREATE DATABASE luxtests;"
+  - psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE luxtests to lux;"
 
 script:
   - grunt jasmine

@@ -1,5 +1,6 @@
 import unittest
 import string
+import logging
 from unittest import mock
 from io import StringIO
 
@@ -10,26 +11,53 @@ from pulsar.apps.test import test_timeout
 
 import lux
 
+logger = logging.getLogger('lux.test')
+
 
 def randomname():
-    return random_string(min_len=8, max_len=8,
-                         characters=string.ascii_letters)
+    return 'luxtest_%s' % random_string(
+        min_len=8, max_len=8, characters=string.ascii_letters).lower()
+
+
+def test_app(test, config_file=None, argv=None, **params):
+    '''Return an application for testing. Override if needed.
+    '''
+    kwargs = test.config_params.copy()
+    kwargs.update(params)
+    if 'EMAIL_BACKEND' not in kwargs:
+        kwargs['EMAIL_BACKEND'] = 'lux.core.mail.LocalMemory'
+    config_file = config_file or test.config_file
+    if argv is None:
+        argv = []
+    if '--log-level' not in argv:
+        argv.append('--log-level')
+        levels = test.cfg.loglevel if hasattr(test, 'cfg') else ['none']
+        argv.extend(levels)
+
+    app = lux.App(config_file, argv=argv, **kwargs).setup()
+    #
+    # Data mapper
+    app.stdout = StringIO()
+    app.stderr = StringIO()
+    return app
 
 
 class TestMixin:
     config_file = 'tests.config'
-    '''THe config file to use when building an :meth:`application`'''
+    '''The config file to use when building an :meth:`application`'''
+    config_params = {}
+    '''Dictionary of parameters to override the parameters from
+    :attr:`config_file`'''
+    store = 'sqlite://'
 
     @classmethod
     def on_loaded(cls, app):
         app.stdout = StringIO()
         app.stderr = StringIO()
-        if hasattr(app, 'mapper'):
-            mapper = app.mapper
-            dbname = randomname()
-            mapper.default_store.database = dbname
-            app.config['DATASTORE'] = mapper.default_store.dns
-            return mapper
+        if hasattr(app, 'odm'):
+            for mapper in app.odm:
+                for engine in mapper.engines():
+                    engine.url.database = randomname()
 
     def bs(self, response):
         from bs4 import BeautifulSoup
@@ -51,9 +79,6 @@ class TestCase(unittest.TestCase, TestMixin):
 
     It provides several utilities methods.
     '''
-    config_params = {}
-    '''Dictionary of parameters to override the parameters from
-    :attr:`config_file`'''
     apps = None
 
     def application(self, config_file=None, argv=None, **params):
@@ -134,6 +159,37 @@ class TestCase(unittest.TestCase, TestMixin):
 
     def tearDown(self):
         return self.database_drop()
+
+
+class AppTestCase(unittest.TestCase, TestMixin):
+    '''Test calss for testing applications
+    '''
+    odm = None
+    app = None
+
+    @classmethod
+    def setUpClass(cls):
+        # Create the application
+        cls.dbs = {}
+        cls.app = test_app(cls)
+        if hasattr(cls.app, 'odm'):
+            cls.odm = cls.app.odm
+            logger.info('Create test databases')
+            cls.app.odm = cls.odm.database_create(database=cls.dbname)
+            logger.info('Create test tables')
+            cls.app.odm.table_create()
+
+    @classmethod
+    def tearDownClass(cls):
+        if cls.odm:
+            cls.app.odm.close()
+            cls.odm.database_drop(database=cls.dbname)
+
+    @classmethod
+    def dbname(cls, engine):
+        if engine not in cls.dbs:
+            cls.dbs[engine] = randomname()
+        return cls.dbs[engine]
 
 
 class TestServer(unittest.TestCase, TestMixin):
