@@ -1,5 +1,1 @@
-greenlet
-pyjwt
 pulsar
-markdown
-sqlalchemy

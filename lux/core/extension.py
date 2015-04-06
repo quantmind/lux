@@ -4,10 +4,21 @@ import logging
 from copy import copy
 from inspect import getfile, getmodule
 
+from pulsar import HttpException
+
 from lux import __version__
 
 
 __all__ = ['Extension', 'Parameter']
+
+# All events are fired with app as first positional argument
+ALL_EVENTS = ('on_config',  # Config ready.
+              'on_loaded',  # Wsgi handler ready.
+              'on_start',  # Wsgi server starts. Extra args: server
+              'on_request',  # Fired when a new request arrives
+              'on_html_document',  # Html doc built. Extra args: request, html
+              'on_form',  # Form constructed. Extra args: form
+              )
 
 
 class Parameter(object):
@@ -169,7 +180,6 @@ class Extension(metaclass=ExtensionType):
                 value = getattr(module, setting.name, setting.default)
             config[setting.name] = value
         self._setup_logger(config, module, opts)
-        return config
 
     def extra_form_data(self, request):
         '''Must return an iterable over key-value pair of data to add to a
@@ -222,3 +232,36 @@ class EventHandler:
 
     def __call__(self, *args):
         return getattr(self.extension, self.name)(*args)
+
+
+class EventMixin:
+    events = None
+
+    def bind_events(self, extension, all_events=None, exclude=None):
+        if self.events is None:
+            self.events = {}
+        events = self.events
+        all_events = all_events or ALL_EVENTS
+        exclude = set(exclude or ())
+        for name in all_events:
+            if name in exclude:
+                continue
+            if name not in events:
+                events[name] = []
+            handlers = events[name]
+            if hasattr(extension, name):
+                handlers.append(EventHandler(extension, name))
+
+    def fire(self, event, *args):
+        '''Fire an ``event``.'''
+        handlers = self.events.get(event) if self.events else None
+        if handlers:
+            for handler in handlers:
+                try:
+                    handler(self, *args)
+                except HttpException:
+                    raise
+                except Exception:
+                    self.logger.critical(
+                        'Unhandled exception while firing event %s', handler,
+                        exc_info=True)

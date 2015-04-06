@@ -12,7 +12,7 @@ from lux.utils import unique_tuple
 from pulsar.utils.exceptions import MethodNotAllowed
 
 __all__ = ['Html', 'WsgiRequest', 'Router', 'HtmlRouter',
-           'route', 'wsgi_request',
+           'JsonRouter', 'route', 'wsgi_request',
            'cached_property', 'html_factory', 'RedirectRouter',
            'RouterParam', 'JSON_CONTENT_TYPES',
            'DEFAULT_CONTENT_TYPES']
@@ -43,12 +43,6 @@ class WsgiRequest(wsgi.WsgiRequest):
         '''Shortcut to app logger'''
         return self.cache.app.logger
 
-    @property
-    def models(self):
-        '''The router to registered models for the application serving
-        the request'''
-        return self.cache.app.local.models
-
     @cached_property
     def html_document(self):
         '''The HTML document for this request.'''
@@ -77,6 +71,10 @@ class RedirectRouter(Router):
 
     def get(self, request):
         return request.redirect(self.routeto)
+
+
+class JsonRouter(Router):
+    response_content_types = ['application/json']
 
 
 class HtmlRouter(Router):

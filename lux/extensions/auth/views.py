@@ -7,11 +7,10 @@ from pulsar.apps.wsgi import Json, Router
 
 from .forms import (LoginForm, CreateUserForm, ChangePasswordForm,
                     EmailForm, PasswordForm)
-from .backend import AuthenticationError
-from .jwtmixin import jwt
+from .user import AuthenticationError
 
 
-__all__ = ['Login', 'SignUp', 'Logout', 'Token', 'ForgotPassword',
+__all__ = ['Login', 'SignUp', 'Logout', 'ForgotPassword',
            'ChangePassword', 'csrf', 'RequirePermission',
            'ComingSoon']
 
@@ -270,22 +269,6 @@ class Logout(Router, FormMixin):
         backend = request.cache.auth_backend
         backend.logout(request)
         return self.maybe_redirect_to(request, form)
-
-
-class Token(Router):
-
-    @csrf
-    def post(self, request):
-        '''Obtain a Json Web Token (JWT)
-        '''
-        user = request.cache.user
-        if not user:
-            raise PermissionDenied
-        cfg = request.config
-        secret = cfg['SECRET_KEY']
-        token = jwt.encode({'username': user.username,
-                            'application': cfg['APP_NAME']}, secret)
-        return Json({'token': token}).http_response(request)
 
 
 class RequirePermission(object):

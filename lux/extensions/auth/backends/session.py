@@ -8,26 +8,44 @@ from pulsar.utils.pep import to_bytes, to_string
 from pulsar.utils.importer import module_attribute
 
 import lux
-from lux import Router
+from lux import Parameter, Router
 from lux.forms import Form
 from lux.utils.crypt import get_random_string, digest
 
-from .jwtmixin import jwt
-from .views import ForgotPassword
-from .backend import REASON_BAD_TOKEN
+from .token import jwt
+from .browser import BrowserBackend
 
 
-__all__ = ['SessionMixin']
+REASON_BAD_TOKEN = "CSRF token missing or incorrect"
 
 
-class SessionMixin(object):
+class SessionBackend(BrowserBackend):
     '''Mixin for :class:`.AuthBackend` via sessions.
     '''
+    _config = [
+        Parameter('SESSION_COOKIE_NAME', 'LUX',
+                  'Name of the cookie which stores session id'),
+        Parameter('CSRF_EXPIRY', 60*60,
+                  'Cross Site Request Forgery token expiry in seconds.'),
+        Parameter('CSRF_PARAM', 'authenticity_token',
+                  'CSRF parameter name in forms')
+    ]
+
     ForgotPasswordRouter = None
     dismiss_message = None
 
-    def __init__(self, app):
-        self._init(app)
+    def on_form(self, app, form):
+        '''Handle CSRF on form
+        '''
+        request = form.request
+        backend = request.cache.auth_backend if request else None
+        param = app.config['CSRF_PARAM']
+        if (backend and form.request.method == 'POST' and
+                form.is_bound and param):
+            token = form.rawdata.get(param)
+            backend.validate_csrf_token(form.request, token)
+
+    def _init(self):
         cfg = self.config
         self.session_cookie_name = cfg['SESSION_COOKIE_NAME']
         self.session_expiry = cfg['SESSION_EXPIRY']

@@ -1,47 +1,55 @@
-'''A :ref:`lux extension <writing-extensions>` for managing users, sessions
-and permissions. The extension is added by inserting
-``lux.extensions.auth`` into the
-list of :setting:`EXTENSIONS` of your application.
-
-There are several :ref:`parameters <parameters-auth>` which can be used
-to customise authorisation.
-
-Authentication Backend
-========================
-
-.. automodule:: lux.extensions.auth.backend
-   :members:
-   :member-order: bysource
-
-.. automodule:: lux.extensions.auth.sessionmixin
-   :members:
-   :member-order: bysource
-
-.. automodule:: lux.extensions.auth.jwtmixin
-   :members:
-   :member-order: bysource
+'''
+Extension for Authorization and Authentication Backends
 '''
 from datetime import datetime, timedelta
 from importlib import import_module
 from functools import wraps
 
-from pulsar import PermissionDenied, Http404
 from pulsar.utils.pep import to_bytes, to_string
 from pulsar.utils.importer import module_attribute
 
 import lux
 from lux import Parameter, Router
+from lux.core.wrappers import wsgi_request
 from lux.utils.http import same_origin
 from lux.extensions.angular import add_ng_modules
 
-from .views import *
-from .backend import *
-from .jwtmixin import *
-from .sessionmixin import *
-from .forms import *
+from .user import Anonymous
 
 
-class Extension(lux.Extension):
+class AuthBackend(lux.Extension):
+
+    def authenticate(self, request, **params):
+        '''Authenticate user'''
+        pass
+
+    def login(self, request, user):
+        '''Login user'''
+        pass
+
+    def create_user(self, request, **kwargs):
+        '''Create a standard user.'''
+        pass
+
+    def create_superuser(self, request, **kwargs):
+        '''Create a user with *superuser* permissions.'''
+        pass
+
+    def get_user(self, request, **kwargs):
+        '''Retrieve a user.'''
+        pass
+
+    def request(self, request):
+        '''Request middleware'''
+        pass
+
+    def session_expiry(self, request):
+        session_expiry = request.config['SESSION_EXPIRY']
+        if session_expiry:
+            return datetime.now() + timedelta(seconds=session_expiry)
+
+
+class Extension(AuthBackend):
     '''The sessions extensions provides wsgi middleware for managing sessions
     and users.
 
@@ -49,8 +57,8 @@ class Extension(lux.Extension):
     protection and user permissions levels.
     '''
     _config = [
-        Parameter('AUTHENTICATION_BACKEND', None,
-                  'Python dotted path to a class used to provide '
+        Parameter('AUTHENTICATION_BACKENDS', [],
+                  'List of python dotted path to classES used to provide '
                   'a backend for authentication.'),
         Parameter('CRYPT_ALGORITHM',
                   'lux.utils.crypt.arc4',
@@ -63,8 +71,6 @@ class Extension(lux.Extension):
                   'to the application and long and random enough'),
         Parameter('AUTH_SALT_SIZE', 8,
                   'Salt size for encription algorithm'),
-        Parameter('SESSION_COOKIE_NAME', 'LUX',
-                  'Name of the cookie which stores session id'),
         Parameter('SESSION_MESSAGES', True, 'Handle session messages'),
         Parameter('SESSION_EXPIRY', 7*24*60*60,
                   'Expiry for a session in seconds.'),
@@ -80,88 +86,77 @@ class Extension(lux.Extension):
                   'parameter is used to check if a model has permission for '
                   'an action'),
         Parameter('ACCOUNT_ACTIVATION_DAYS', 2,
-                  'Number of days the activation code is valid'),
-        Parameter('LOGIN_URL', '/login', 'Url to login', True),
-        Parameter('LOGOUT_URL', '/logout', 'Url to logout', True),
-        Parameter('REGISTER_URL', '/signup',
-                  'Url to register with site', True),
-        Parameter('RESET_PASSWORD_URL', '/reset-password',
-                  'If given, add the router to handle password resets',
-                  True),
-        Parameter('CSRF_EXPIRY', 60*60,
-                  'Cross Site Request Forgery token expiry in seconds.'),
-        Parameter('CSRF_PARAM', 'authenticity_token',
-                  'CSRF parameter name in forms'),
-        Parameter('ADD_AUTH_ROUTES', True,
-                  'Add available authentication Routes')]
+                  'Number of days the activation code is valid')]
 
-    backend = None
     ngModules = ['lux.users']
 
+    def on_config(self, app):
+        self.backends = []
+
+        module = import_module(app.meta.module_name)
+
+        for dotted_path in app.config['AUTHENTICATION_BACKENDS']:
+            backend = module_attribute(dotted_path)()
+            backend.setup(app.config, module, app.params)
+            self.backends.append(backend)
+            app.bind_events(backend, exclude=('on_config',))
+
+        for backend in self.backends:
+            if hasattr(backend, 'on_config'):
+                backend.on_config(app)
+
+        app.auth_backend = self
+
     def middleware(self, app):
-        cfg = app.config
-        dotted_path = cfg['AUTHENTICATION_BACKEND']
-        middleware = []
-        if dotted_path:
-            self.backend = module_attribute(dotted_path)(app)
-            middleware.extend(self.backend.wsgi())
-        if cfg['ADD_AUTH_ROUTES']:
-            if cfg['LOGIN_URL']:
-                middleware.append(Login(cfg['LOGIN_URL']))
-                middleware.append(Logout(cfg['LOGOUT_URL']))
-            if cfg['REGISTER_URL']:
-                middleware.append(SignUp(cfg['REGISTER_URL']))
-            if cfg['RESET_PASSWORD_URL']:
-                middleware.append(ForgotPassword(cfg['RESET_PASSWORD_URL']))
+        middleware = [self]
+        for backend in self.backends:
+            middleware.extend(backend.middleware(app) or ())
         return middleware
 
     def response_middleware(self, app):
-        if self.backend:
-            return [self.backend.response_middleware]
+        middleware = []
+        for backend in self.backends:
+            middleware.extend(backend.response_middleware(app) or ())
+        return middleware
+
+    def api_sections(self, app):
+        '''Called by the api extension'''
+        for backend in self.backends:
+            api_sections = getattr(backend, 'api_sections', None)
+            if api_sections:
+                for router in api_sections(app):
+                    yield router
+
+    def __call__(self, environ, start_response):
+        return self.request(wsgi_request(environ))
+
+    # AuthBackend Implementation
+    def request(self, request):
+        # Inject self as the authentication backend
+        cache = request.cache
+        cache.user = Anonymous()
+        cache.auth_backend = self
+        return self._apply_all('request', request)
+
+    def authenticate(self, request, **kwargs):
+        return self._apply_all('authenticate', request, **kwargs)
+
+    def logout(self, request, user=None):
+        return self._apply_all('logout', request, user=user)
+
+    def create_user(self, request, **kwargs):
+        '''Create a standard user.'''
+        return self._apply_all('create_user', request, **kwargs)
+
+    def create_superuser(self, request, **kwargs):
+        '''Create a user with *superuser* permissions.'''
+        return self._apply_all('create_superuser', request, **kwargs)
 
     def on_html_document(self, app, request, doc):
         add_ng_modules(doc, self.ngModules)
-        backend = request.cache.auth_backend
-        if backend and request.method in ('GET', 'HEAD', 'OPTIONS', 'TRACE'):
-            cfg = app.config
-            param = cfg['CSRF_PARAM']
-            if param:
-                csrf_token = backend.csrf_token(request)
-                if not csrf_token:
-                    raise PermissionDenied(REASON_BAD_TOKEN)
-                doc.head.add_meta(name="csrf-param", content=param)
-                doc.head.add_meta(name="csrf-token", content=csrf_token)
-            session = request.cache.session
-            messages = []
-            if session:
-                messages.extend(session.get_messages())
-            user = request.cache.user
-            if user:
-                messages.extend(user.get_messages())
-                doc.jscontext['user'] = user.todict()
-            if messages:
-                doc.jscontext['messages'] = messages
 
-    def on_form(self, app, form):
-        '''Handle CSRF on form
-        '''
-        request = form.request
-        backend = request.cache.auth_backend if request else None
-        param = app.config['CSRF_PARAM']
-        if (backend and form.request.method == 'POST' and
-                form.is_bound and param):
-            token = form.rawdata.get(param)
-            backend.validate_csrf_token(form.request, token)
-
-    def api_sections(self, app):
-        return ()
-
-    def _check_referer(self, request):
-        referer = request.get('HTTP_REFERER')
-        if referer is None:
-            raise PermissionDenied(REASON_NO_REFERER)
-        # Note that request.get_host() includes the port.
-        good_referer = 'https://%s/' % request.get_host()
-        if not same_origin(referer, good_referer):
-            reason = REASON_BAD_REFERER % (referer, good_referer)
-            raise PermissionDenied(reason)
+    def _apply_all(self, method, request, *args, **kwargs):
+        for backend in self.backends:
+            result = getattr(backend, method)(request, *args, **kwargs)
+            if result is not None:
+                return result

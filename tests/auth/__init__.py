@@ -9,7 +9,7 @@ EXTENSIONS = ['lux.extensions.base',
               'lux.extensions.auth',
               'lux.extensions.odm']
 
-AUTHENTICATION_BACKEND = 'lux.extensions.auth.models.SessionBackend'
+AUTHENTICATION_BACKENDS = ['lux.extensions.auth.models.SessionBackend']
 
 
 class Extension(lux.Extension):

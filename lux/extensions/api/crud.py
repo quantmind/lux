@@ -73,7 +73,7 @@ class ModelManager(object):
         return [d(request, instance) for instance in collection]
 
 
-class JsonRouter(lux.Router):
+class ApiRouter(lux.Router):
     response_content_types = ['application/json']
     manager = None
 

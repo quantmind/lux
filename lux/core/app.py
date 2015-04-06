@@ -6,15 +6,15 @@ from collections import OrderedDict
 from importlib import import_module
 
 import pulsar
-from pulsar import HttpException, ImproperlyConfigured
+from pulsar import ImproperlyConfigured
 from pulsar.utils.httpurl import remove_double_slash
 from pulsar.apps.wsgi import (WsgiHandler, HtmlDocument, test_wsgi_environ,
-                              LazyWsgi)
+                              LazyWsgi, wait_for_body_middleware)
 from pulsar.utils.log import lazyproperty
 from pulsar.utils.importer import module_attribute
 
 from .commands import ConsoleParser, CommandError
-from .extension import Extension, Parameter, EventHandler
+from .extension import Extension, Parameter, EventHandler, EventMixin
 from .wrappers import wsgi_request, HeadMeta, error_handler
 from .engines import template_engine
 from .cms import CMS
@@ -24,15 +24,6 @@ __all__ = ['App',
            'Application',
            'execute_from_config']
 
-
-# All events are fired with app as first positional argument
-ALL_EVENTS = ('on_config',  # Config ready.
-              'on_loaded',  # Wsgi handler ready.
-              'on_start',  # Wsgi server starts. Extra args: server
-              'on_request',  # Fired when a new request arrives
-              'on_html_document',  # Html doc built. Extra args: request, html
-              'on_form',  # Form constructed. Extra args: form
-              )
 
 LUX_CORE = os.path.dirname(__file__)
 
@@ -115,7 +106,7 @@ class App(LazyWsgi):
         return Application(self, handler=False)
 
 
-class Application(ConsoleParser, Extension):
+class Application(ConsoleParser, Extension, EventMixin):
     '''The :class:`.Application` is the WSGI callable for serving
     lux applications.
 
@@ -231,14 +222,15 @@ class Application(ConsoleParser, Extension):
         Parameter('EMAIL_BACKEND', 'lux.core.mail.EmailBackend',
                   'Default locale'),
         Parameter('MD_EXTENSIONS', ['extra', 'meta', 'toc'],
-                  'List/tuple of markdown extensions')
+                  'List/tuple of markdown extensions'),
+        Parameter('GREEN_WSGI', 0,
+                  'Run the WSGI handle in a pool of greenlet')
         ]
 
     def __init__(self, callable, handler=True):
         self.callable = callable
         self.meta.argv = callable._argv
         self.meta.script = callable._script
-        self.events = {}
         self.config = self._build_config(callable._config_file)
         self.fire('on_config')
         if handler:
@@ -246,6 +238,14 @@ class Application(ConsoleParser, Extension):
             self.cms = CMS(self)
             self.handler = self._build_handler()
             self.fire('on_loaded')
+            if self.config['GREEN_WSGI']:
+                from pulsar.apps.greenio import WsgiGreen
+
+                green = WsgiGreen(self.handler,
+                                  max_workers=self.config['GREEN_WSGI'])
+                self.logger.info('Setup green Wsgi handler')
+                self.handler = WsgiHandler((wait_for_body_middleware, green),
+                                           async=True)
 
     def __call__(self, environ, start_response):
         '''The WSGI thing.'''
@@ -450,30 +450,6 @@ class Application(ConsoleParser, Extension):
         if Ext and isclass(Ext) and issubclass(Ext, Extension):
             return Ext
 
-    def fire(self, event, *args):
-        '''Fire an ``event``.'''
-        handlers = self.events.get(event)
-        if handlers:
-            for handler in handlers:
-                try:
-                    handler(self, *args)
-                except HttpException:
-                    raise
-                except Exception:
-                    self.logger.critical(
-                        'Unhandled exception while firing event %s', handler,
-                        exc_info=True)
-
-    def bind_events(self, extension, all_events=None):
-        events = self.events
-        all_events = all_events or ALL_EVENTS
-        for name in all_events:
-            if name not in events:
-                events[name] = []
-            handlers = events[name]
-            if hasattr(extension, name):
-                handlers.append(EventHandler(extension, name))
-
     def format_date(self, dte):
         return dte.strftime(self.config['DATE_FORMAT'])
 
@@ -622,7 +598,8 @@ class Application(ConsoleParser, Extension):
             return self._build_config(config_module.__file__)
         #
         # setup application
-        config = self.setup({}, config_module, self.params, opts)
+        config = {}
+        self.setup(config, config_module, self.params, opts)
         #
         # Load extensions
         self.logger.debug('Setting up extensions')

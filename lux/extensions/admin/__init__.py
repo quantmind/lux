@@ -14,7 +14,7 @@ class Extension(lux.Extension):
     '''Object data mapper extension
     '''
     _config = [
-        Parameter('ADMIN_URL', None,
+        Parameter('ADMIN_URL', 'admin',
                   'Admin site url', True),
         Parameter('ADMIN_PERMISSIONS', 'admin',
                   'Admin permission name')]

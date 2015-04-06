@@ -4,7 +4,7 @@ from lux import route
 from lux.extensions import api, auth
 
 
-class CRUD(api.JsonRouter):
+class CRUD(api.ApiRouter):
 
     def __init__(self, app, model, url=None, *args, **kwargs):
         url = url or model

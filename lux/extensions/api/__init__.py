@@ -51,13 +51,13 @@ from pulsar import HttpException, Http404, ImproperlyConfigured
 from pulsar.utils.structures import OrderedDict, mapping_iterator
 from pulsar.utils.slugify import slugify
 from pulsar.apps.wsgi import Json
-from pulsar.utils.httpurl import JSON_CONTENT_TYPES, remove_double_slash
+from pulsar.utils.httpurl import JSON_CONTENT_TYPES, is_absolute_uri
 from pulsar.apps.ds import DEFAULT_PULSAR_STORE_ADDRESS
 
 import lux
 from lux import Parameter
 
-from .crud import ModelManager, JsonRouter, html_form
+from .crud import ModelManager, ApiRouter, html_form
 
 
 class ApiRoot(lux.Router):
@@ -97,8 +97,7 @@ class Extension(lux.Extension):
 
     _config = [
         Parameter('DUMPDB_EXTENSIONS', None, ''),
-        Parameter('API_URL', 'api/', ''),
-        Parameter('API_DOCS_URL', 'api/docs', ''),
+        Parameter('API_URL', '', 'URL FOR THE REST API'),
         Parameter('API_SEARCH_KEY', 'q',
                   'The query key for full text search'),
         Parameter('API_OFFSET_KEY', 'offset', ''),
@@ -113,13 +112,15 @@ class Extension(lux.Extension):
                   ('Maximum number of items returned when user is '
                    'not authenticated'))]
 
-    def on_config(self, app):
+    def middleware(self, app):
         '''Build the API middleware.
 
         If :setting:`API_URL` is defined, it loops through all extensions
         and checks if the ``api_sections`` method is available.
         '''
         url = app.config['API_URL']
+        if is_absolute_uri(url):
+            return
         app.api = api = ApiRoot(url)
         app.config['API_URL'] = str(api.route)
         for extension in app.extensions.values():

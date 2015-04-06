@@ -5,8 +5,6 @@ from datetime import datetime, timedelta
 
 from pulsar import PermissionDenied, Http404
 from pulsar.utils.pep import to_bytes, to_string
-from pulsar.utils.importer import module_attribute
-from pulsar.apps.wsgi import WsgiHandler
 
 import lux
 from lux.utils.crypt import get_random_string, digest
@@ -14,14 +12,10 @@ from lux.utils.crypt import get_random_string, digest
 
 __all__ = ['AuthBackend', 'AuthenticationError',
            'LoginError', 'LogoutError', 'MessageMixin', 'UserMixin',
-           'Anonymous', 'REASON_NO_REFERER', 'REASON_BAD_REFERER',
-           'REASON_BAD_TOKEN', 'CREATE', 'READ', 'UPDATE', 'DELETE']
+           'Anonymous', 'CREATE', 'READ', 'UPDATE', 'DELETE']
 
 
 UNUSABLE_PASSWORD = '!'
-REASON_NO_REFERER = "Referer checking failed - no Referer"
-REASON_BAD_REFERER = "Referer checking failed - %s does not match %s"
-REASON_BAD_TOKEN = "CSRF token missing or incorrect"
 
 CREATE = 30     # C
 READ = 10       # R
@@ -152,116 +146,15 @@ class Anonymous(UserMixin):
         return 0
 
 
-class AuthBackend(object):
-    '''Interface for authentication backends.
+class PasswordMixin:
 
-    An authentication backend manage authentication, login, logout and
-    several other activities which are required for managing users of
-    a web site.
-
-    During a client ``request``, the instance of the authentication backend
-    can be accessed from the ``request`` cache dictionary::
-
-        backend = request.cache.auth_backend
-    '''
-    def _init(self, app):
-        self.app = app
+    def on_config(self, app):
         cfg = app.config
         self.encoding = cfg['ENCODING']
         self.secret_key = cfg['SECRET_KEY'].encode()
         self.salt_size = cfg['AUTH_SALT_SIZE']
         algorithm = cfg['CRYPT_ALGORITHM']
         self.crypt_module = import_module(algorithm)
-
-    @property
-    def config(self):
-        return self.app.config
-
-    def __call__(self, environ, start_response):
-        request = self.app.wsgi_request(environ)
-        # Inject self as the authentication backend
-        request.cache.auth_backend = self
-        return self.request(request)
-
-    def wsgi(self):
-        return [self]
-
-    def response_middleware(self, environ, response):
-        request = self.app.wsgi_request(environ)
-        return self.response(request, response)
-
-    def request(self, request):
-        '''Handle an incoming request and should be implemented.'''
-        pass
-
-    def response(self, request, response):
-        '''Handle an outgoing ``response`` from a ``request``.
-        By default it returns ``response`` without performing any operations.
-        '''
-        return response
-
-    def get_user(self, request, **kwargs):
-        '''Retrieve a user.
-        Return ``None`` if the user could not be found'''
-        pass
-
-    def csrf_token(self, request):
-        '''Create a CSRF token for a given request.'''
-        pass
-
-    def validate_csrf_token(self, request, token):
-        '''Validate CSRF
-        '''
-        pass
-
-    def anonymous(self):
-        '''An anonymous user'''
-        return Anonymous()
-
-    def create_user(self, request, **kwargs):
-        '''Create a standard user.'''
-        pass
-
-    def create_superuser(self, request, *args, **kwargs):
-        '''Create a user with *superuser* permissions.'''
-        pass
-
-    def has_permission(self, request, model):
-        '''Check for permission on a model.'''
-        return False
-
-    def password(self, raw_password=None):
-        if raw_password:
-            return self.encript(raw_password)
-        else:
-            return UNUSABLE_PASSWORD
-
-    def set_password(self, user, password):
-        '''Set the password for ``user``.
-        This method should commit changes.'''
-        pass
-
-    def normalise_email(self, email):
-        """
-        Normalise the address by lowercasing the domain part of the email
-        address.
-        """
-        email = email or ''
-        try:
-            email_name, domain_part = email.strip().rsplit('@', 1)
-        except ValueError:
-            pass
-        else:
-            email = '@'.join([email_name, domain_part.lower()])
-        return email
-
-    def authenticate(self, request, **params):
-        '''Authenticate user'''
-        raise NotImplementedError
-
-    def logout(self, request, user=None):
-        ''''Logout a user'''
-        raise NotImplementedError
 
     def decript(self, password=None):
         if password:
@@ -276,6 +169,28 @@ class AuthBackend(object):
                                       self.secret_key, self.salt_size)
         return to_string(p, self.encoding)
 
-    def has_permission(self, request, level, model):
-        '''Check for permissions'''
-        return True
+    def password(self, raw_password=None):
+        if raw_password:
+            return self.encript(raw_password)
+        else:
+            return UNUSABLE_PASSWORD
+
+    def set_password(self, user, password):
+        '''Set the password for ``user``.
+        This method should commit changes.'''
+        pass
+
+
+def normalise_email(email):
+    """
+    Normalise the address by lowercasing the domain part of the email
+    address.
+    """
+    email = email or ''
+    try:
+        email_name, domain_part = email.strip().rsplit('@', 1)
+    except ValueError:
+        pass
+    else:
+        email = '@'.join([email_name, domain_part.lower()])
+    return email

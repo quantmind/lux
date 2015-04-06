@@ -2,7 +2,9 @@ import sys
 from lux import forms
 
 
-__all__ = ['LoginForm', 'CreateUserForm', 'ChangePasswordForm',
+__all__ = ['LoginForm',
+           'CreateUserForm',
+           'ChangePasswordForm',
            'EmailForm']
 
 

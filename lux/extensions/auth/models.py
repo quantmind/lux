@@ -1,27 +1,26 @@
 from datetime import datetime, timedelta
 
-import odm
+from lux.extensions.odm import nosql
 
-from .sessionmixin import SessionMixin
-from .jwtmixin import JWTMixin
-from .backend import AuthenticationError, READ
-from . import backend
+from .user import (normalise_email, UserMixin, PasswordMixin,
+                   MessageMixin, AuthenticationError, READ)
+from . import backends
 
 
-class User(odm.Model, backend.UserMixin):
-    username = odm.CharField(required=True, minlength=6, maxlength=30)
-    password = odm.PasswordField(maxlength=128)
-    name = odm.CharField()
-    surname = odm.CharField()
-    email = odm.EmailField()
-    active = odm.BooleanField(default=False)
-    superuser = odm.BooleanField(default=False)
-    company = odm.CharField()
-    joined = odm.DateTimeField(default=lambda _: datetime.now())
-    # timezone = odm.CharField(default=default_timezone)
+class User(nosql.Model, UserMixin):
+    username = nosql.CharField(required=True, minlength=6, maxlength=30)
+    password = nosql.PasswordField(maxlength=128)
+    name = nosql.CharField()
+    surname = nosql.CharField()
+    email = nosql.EmailField()
+    active = nosql.BooleanField(default=False)
+    superuser = nosql.BooleanField(default=False)
+    company = nosql.CharField()
+    joined = nosql.DateTimeField(default=lambda _: datetime.now())
+    # timezone = nosql.CharField(default=default_timezone)
     #
-    # oauths = odm.StructuredProperty(Oauth, repeated=True)
-    # messages = odm.StructuredProperty(Message, repeated=True)
+    # oauths = nosql.StructuredProperty(Oauth, repeated=True)
+    # messages = nosql.StructuredProperty(Message, repeated=True)
 
     def is_active(self):
         return self.active
@@ -30,16 +29,17 @@ class User(odm.Model, backend.UserMixin):
         return self.superuser
 
 
-class Group(odm.Model):
-    name = odm.CharField()
+class Group(nosql.Model):
+    name = nosql.CharField()
 
 
-class Session(odm.Model, backend.MessageMixin):
-    expiry = odm.DateTimeField()
-    user = odm.ForeignKey(User, required=False)
-    access = odm.IntegerField(default=1)
-    agent = odm.CharField()
-    client_address = odm.CharField()
+
+class Session(nosql.Model, MessageMixin):
+    expiry = nosql.DateTimeField()
+    user = nosql.ForeignKey(User, required=False)
+    access = nosql.IntegerField(default=1)
+    agent = nosql.CharField()
+    client_address = nosql.CharField()
 
     def message(self, level, message):
         pass
@@ -48,24 +48,48 @@ class Session(odm.Model, backend.MessageMixin):
         pass
 
 
-class Permission(odm.Model):
-    user = odm.ForeignKey(User)
-    name = odm.CharField()
-    level = odm.IntegerField()
+class Permission(nosql.Model):
+    user = nosql.ForeignKey(User)
+    name = nosql.CharField()
+    level = nosql.IntegerField()
 
 
-class Application(odm.Model):
-    user = odm.ForeignKey(User)
-    key = odm.TextField()
-    secret = odm.TextField()
+class Application(nosql.Model):
+    user = nosql.ForeignKey(User)
+    key = nosql.TextField()
+    secret = nosql.TextField()
 
 
-class AuthBackend(backend.AuthBackend):
-    '''Authentication Backend based on :mod:`lux.extensions.odm`
-    '''
-    @property
-    def mapper(self):
-        return self.app.mapper()
+class AuthMixin(PasswordMixin):
+
+    def authenticate(self, request, user_id=None, username=None, email=None,
+                     password=None, **kw):
+        manager = request.app.odm('nosql').user
+        user = None
+        try:
+            if user_id:
+                user = manager.get(user_id)
+            elif username:
+                user = manager.get(username=username)
+            elif email:
+                user = manager.get(email=normalise_email(email))
+            else:
+                raise AuthenticationError('Invalid credentials')
+            if user and self.decript(user.password) == password:
+                return user
+            else:
+                raise odm.ModelNotFound
+        except odm.ModelNotFound:
+            if username:
+                raise AuthenticationError('Invalid username or password')
+            elif email:
+                raise AuthenticationError('Invalid email or password')
+            else:
+                raise AuthenticationError('Invalid credentials')
+
+    def set_password(self, user, raw_password):
+        user.password = self.password(raw_password)
+        user.save()
 
     def has_permission(self, request, name, level=None):
         user = request.cache.user
@@ -82,15 +106,11 @@ class AuthBackend(backend.AuthBackend):
             else:
                 return False
 
-    def set_password(self, user, raw_password):
-        user.password = self.password(raw_password)
-        user.save()
-
     def create_user(self, request, username=None, password=None, email=None,
                     name=None, surname=None, active=False, superuser=False,
                     **kwargs):
-        manager = self.mapper.user
-        email = self.normalise_email(email)
+        manager = request.app.odm('nosql').user
+        email = normalise_email(email)
         assert username or email
 
         if username:
@@ -152,7 +172,16 @@ class AuthBackend(backend.AuthBackend):
         return cache
 
 
-class SessionBackend(SessionMixin, AuthBackend):
+class TokenBackend(AuthMixin, backends.TokenBackend):
+
+    def jwt_payload(self, request, user):
+        payload = super().jwt_payload(request, user)
+        if user.superuser:
+            payload['admin'] = True
+        return payload
+
+
+class SessionBackend(AuthMixin, backends.SessionBackend):
 
     def get_session(self, id):
         try:
@@ -237,11 +266,3 @@ class SessionBackend(SessionMixin, AuthBackend):
         else:
             user = self.get_user(**params)
             self.get_or_create_registration(request, user)
-
-
-class JWTBackend(JWTMixin, AuthBackend):
-
-    def __init__(self, app):
-        super().__init__(app)
-        self.User = User
-        self.Session = Session
