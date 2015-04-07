@@ -13,7 +13,7 @@ class BrowserBackend(AuthBackend):
     or handling authentication on the same site.
     '''
     _config = [
-        Parameter('LOGIN_URL', '/login', 'Url to login', True),
+        Parameter('LOGIN_URL', '/login', 'Url to login page', True),
         Parameter('LOGOUT_URL', '/logout', 'Url to logout', True),
         Parameter('REGISTER_URL', '/signup',
                   'Url to register with site', True),

@@ -1,6 +1,6 @@
     //
-    //  Lux web and api handler
-    //  ----------------------
+    //  API handler for lux web authentication
+    //  ---------------------------------------
     angular.module('lux.web.api', ['lux.api'])
 
         .run(['$lux', function ($lux) {

@@ -6,4 +6,4 @@ class Command(OdmCommand):
 
     def run(self, options, **params):
         odm = self.app.odm
-        return odm.database_create(options.dry_run)
+        return odm.database_create(dry_run=options.dry_run)

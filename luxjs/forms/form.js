@@ -338,7 +338,7 @@
                         input = $(element[0].querySelector(scope.info.element)),
                         p = $($document[0].createElement('p'))
                                 .attr('ng-show', '(' + submitted + ' || ' + dirty + ') && ' + invalid)
-                                .addClass('text-danger')
+                                .addClass('text-danger error-block')
                                 .addClass(scope.formErrorClass)
                                 .html('{{formErrors.' + field.name + '}}'),
                         value,

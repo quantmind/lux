@@ -17,13 +17,13 @@ from ..forms import LoginForm
 
 class Http401(HttpException):
 
-    def __init__(self, auth):
+    def __init__(self, auth, msg=''):
         headers = [('WWW-Authenticate', auth)]
-        super().__init__(status=401, headers=headers)
+        super().__init__(msg=msg, status=401, headers=headers)
 
 
 class TokenBackend(AuthBackend):
-    '''Mixin for :class:`.AuthBackend` based on JWT_
+    '''Backend based on JWT_
 
     Requires pyjwt_ package.
 
@@ -92,7 +92,7 @@ class Authorization(ApiRouter):
         '''
         user = request.cache.user
         if not user.is_authenticated():
-            raise Http401('Token')
+            raise Http401('Token', 'Requires authentication')
 
     def post(self, request):
         '''Create a new Authorization token

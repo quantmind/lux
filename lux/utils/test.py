@@ -14,9 +14,10 @@ import lux
 logger = logging.getLogger('lux.test')
 
 
-def randomname():
-    return 'luxtest_%s' % random_string(
-        min_len=8, max_len=8, characters=string.ascii_letters).lower()
+def randomname(prefix=None):
+    prefix = prefix or 'luxtest_'
+    name = random_string(min_len=8, max_len=8, characters=string.ascii_letters)
+    return ('%s%s' % (prefix, name)).lower()
 
 
 def test_app(test, config_file=None, argv=None, **params):
@@ -48,7 +49,7 @@ class TestMixin:
     config_params = {}
     '''Dictionary of parameters to override the parameters from
     :attr:`config_file`'''
-    store = 'sqlite://'
+    prefixdb = 'luxtest_'
 
     @classmethod
     def on_loaded(cls, app):
@@ -57,7 +58,7 @@ class TestMixin:
         if hasattr(app, 'odm'):
             for mapper in app.odm:
                 for engine in mapper.engines():
-                    engine.url.database = randomname()
+                    engine.url.database = randomname(cls.prefixdb)
 
     def bs(self, response):
         from bs4 import BeautifulSoup
@@ -188,7 +189,7 @@ class AppTestCase(unittest.TestCase, TestMixin):
     @classmethod
     def dbname(cls, engine):
         if engine not in cls.dbs:
-            cls.dbs[engine] = randomname()
+            cls.dbs[engine] = randomname(cls.prefixdb)
         return cls.dbs[engine]
 
 

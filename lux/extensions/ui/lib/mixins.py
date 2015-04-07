@@ -2,7 +2,7 @@ import os
 
 from .base import *
 from .colorvar import *
-from .. import CssLibraries
+from ..libs import CssLibraries
 
 __all__ = ['Animation',
            'Opacity',

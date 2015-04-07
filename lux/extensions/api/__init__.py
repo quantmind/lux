@@ -96,8 +96,7 @@ def api404(environ, start_response):
 class Extension(lux.Extension):
 
     _config = [
-        Parameter('DUMPDB_EXTENSIONS', None, ''),
-        Parameter('API_URL', '', 'URL FOR THE REST API'),
+        Parameter('API_URL', '', 'URL FOR THE REST API', True),
         Parameter('API_SEARCH_KEY', 'q',
                   'The query key for full text search'),
         Parameter('API_OFFSET_KEY', 'offset', ''),
