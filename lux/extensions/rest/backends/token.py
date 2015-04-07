@@ -41,7 +41,6 @@ class TokenBackend(AuthBackend):
     def on_config(self, app):
         if not jwt:
             raise ImproperlyConfigured('JWT library not available')
-        app.require('lux.extensions.api')
 
     def api_sections(self, app):
         yield Authorization(app.config['AUTHORIZATION_URL'])
