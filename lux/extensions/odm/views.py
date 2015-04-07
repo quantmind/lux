@@ -1,16 +1,15 @@
 from pulsar import PermissionDenied
+from pulsar.apps.wsgi import Json
 
 from lux import route
-from lux.extensions import api, auth
+from lux.extensions import rest
 
 
-class CRUD(api.ApiRouter):
+class CRUD(rest.RestRouter):
 
-    def __init__(self, app, model, url=None, *args, **kwargs):
+    def __init__(self, model, url=None, *args, **kwargs):
         url = url or model
         self.model = model
-        self.app = app
-        app.require('lux.extensions.api', 'lux.extensions.auth')
         super().__init__(url, *args, **kwargs)
 
     @property
@@ -19,13 +18,11 @@ class CRUD(api.ApiRouter):
 
     def get(self, request):
         backend = request.cache.auth_backend
-        manager = self.manager
-        if backend.has_permission(request, manager._meta.name, auth.READ):
+        if backend.has_permission(request, self.model, rest.READ):
             limit = self.limit(request)
             offset = self.offset(request)
             text = self.query(request)
-            collection = self.manager.collection(request, limit, offset, text)
-            data = self.manager.collection_data(request, collection)
+            data = self.collection(request, limit, offset, text)
             return Json(data).http_response(request)
         raise PermissionDenied
 
@@ -95,3 +92,6 @@ class CRUD(api.ApiRouter):
             else:
                 raise Http404
         raise PermissionDenied
+
+    def collection(self, request, limit, offset, text):
+        raise NotImplementedError

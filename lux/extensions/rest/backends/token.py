@@ -4,7 +4,7 @@ import time
 from pulsar import HttpException, MethodNotAllowed, ImproperlyConfigured
 
 from lux import Parameter
-from lux.extensions.api import ApiRouter
+from ..views import RestRouter
 
 try:
     import jwt
@@ -85,7 +85,7 @@ class TokenBackend(AuthBackend):
         return payload
 
 
-class Authorization(ApiRouter):
+class Authorization(RestRouter):
 
     def get(self, request):
         '''List all authorizations for the authenticated user

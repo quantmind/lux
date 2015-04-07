@@ -47,11 +47,8 @@ class Command(lux.Command):
         if not username or not password:
             interactive = True
         request = self.app.wsgi_request()
-        ext = self.app.extensions['auth']
-        auth = ext.backend
-        if not auth:
-            raise ImproperlyConfigured('Authentication backend not available')
-        def_username = get_def_username(request, auth)
+        auth_backend = self.app.extensions['lux.extensions.auth']
+        def_username = get_def_username(request, auth_backend)
         input_msg = 'Username'
         if def_username:
             input_msg += ' (Leave blank to use %s)' % def_username
@@ -69,7 +66,8 @@ class Command(lux.Command):
                                        'only letters, digits and underscores.')
                         username = None
                     else:
-                        user = auth.get_user(request, username=username)
+                        user = auth_backend.get_user(request,
+                                                     username=username)
                         if user is not None:
                             self.write_err(
                                 "Error: That username is already taken.\n")
@@ -93,8 +91,8 @@ class Command(lux.Command):
             except KeyboardInterrupt:
                 self.write_err('\nOperation cancelled.')
                 sys.exit(1)
-        user = auth.create_superuser(request, username=username,
-                                     password=password)
+        user = auth_backend.create_superuser(request, username=username,
+                                             password=password)
         if user:
             self.write("Superuser %s created successfully.\n" % user)
         else:

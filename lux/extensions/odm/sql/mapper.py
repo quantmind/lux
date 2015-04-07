@@ -9,13 +9,24 @@ from sqlalchemy.orm.session import Session
 
 from pulsar.utils.exceptions import ImproperlyConfigured
 
-from .mapper import Mapper
+from ..mapper import Mapper
 
 
 class SQL(Mapper):
     '''SQLAlchemy wrapper for lux applications
     '''
     metadata = None
+    _engines = None
+
+    def __getitem__(self, model):
+        self._setup()
+        return self._declarative_register[model]
+
+    def __getattr__(self, name):
+        self._setup()
+        if name in self._declarative_register:
+            return self._declarative_register[name]
+        raise AttributeError('No model named "%s"' % name)
 
     def database_create(self, database=None, **params):
         '''Create databases for each engine and return a new :class:`.SQL`
@@ -76,6 +87,10 @@ class SQL(Mapper):
                         if engine:
                             table.tometadata(self.metadata)
                             self.binds[table] = engine
+                if (isinstance(value, DeclarativeMeta) and
+                        hasattr(value, '__table__')):
+                    table = value.__table__
+                    self._declarative_register[table.key] = value
 
     def table_create(self, remove_existing=False):
         """Creates all tables.
@@ -131,6 +146,7 @@ class SQL(Mapper):
         self.metadata = MetaData()
         binds = self.binds
         self._engines = {}
+        self._declarative_register = {}
         self.binds = {}
         # Create all sql engines in the binds dictionary
         # Quietly fails if the engine is not recognised,

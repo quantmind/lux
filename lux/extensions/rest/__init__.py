@@ -7,6 +7,7 @@ from functools import wraps
 
 from pulsar.utils.pep import to_bytes, to_string
 from pulsar.utils.importer import module_attribute
+from pulsar.utils.httpurl import is_absolute_uri
 
 import lux
 from lux import Parameter, Router
@@ -14,7 +15,9 @@ from lux.core.wrappers import wsgi_request
 from lux.utils.http import same_origin
 from lux.extensions.angular import add_ng_modules
 
-from .user import Anonymous
+from .user import (Anonymous, normalise_email, PasswordMixin,
+                   AuthenticationError, CREATE, READ, UPDATE, DELETE)
+from .views import RestRoot, RestRouter
 
 
 class AuthBackend(lux.Extension):
@@ -41,6 +44,12 @@ class AuthBackend(lux.Extension):
 
     def request(self, request):
         '''Request middleware'''
+        pass
+
+    def has_permission(self, request, target, level):
+        '''Check if the given request has permission over ``target``
+        element with permission ``level``
+        '''
         pass
 
     def session_expiry(self, request):
@@ -86,7 +95,21 @@ class Extension(AuthBackend):
                   'parameter is used to check if a model has permission for '
                   'an action'),
         Parameter('ACCOUNT_ACTIVATION_DAYS', 2,
-                  'Number of days the activation code is valid')]
+                  'Number of days the activation code is valid'),
+        Parameter('API_URL', '', 'URL FOR THE REST API', True),
+        Parameter('API_SEARCH_KEY', 'q',
+                  'The query key for full text search'),
+        Parameter('API_OFFSET_KEY', 'offset', ''),
+        Parameter('API_LIMIT_KEY', 'limit', ''),
+        Parameter('API_LIMIT_DEFAULT', 30,
+                  'Default number of items returned when no limit '
+                  'API_LIMIT_KEY available in the url'),
+        Parameter('API_LIMIT_AUTH', 100,
+                  ('Maximum number of items returned when user is '
+                   'authenticated')),
+        Parameter('API_LIMIT_NOAUTH', 30,
+                  ('Maximum number of items returned when user is '
+                   'not authenticated'))]
 
     ngModules = ['lux.users']
 
@@ -111,6 +134,18 @@ class Extension(AuthBackend):
         middleware = [self]
         for backend in self.backends:
             middleware.extend(backend.middleware(app) or ())
+
+        url = app.config['API_URL']
+        if not is_absolute_uri(url):
+
+            app.api = api = RestRoot(url)
+            app.config['API_URL'] = str(api.route)
+            for extension in app.extensions.values():
+                api_sections = getattr(extension, 'api_sections', None)
+                if api_sections:
+                    for router in api_sections(app):
+                        api.add_child(router)
+
         return middleware
 
     def response_middleware(self, app):
@@ -151,6 +186,12 @@ class Extension(AuthBackend):
     def create_superuser(self, request, **kwargs):
         '''Create a user with *superuser* permissions.'''
         return self._apply_all('create_superuser', request, **kwargs)
+
+    def get_user(self, request, **kwargs):
+        return self._apply_all('get_user', request, **kwargs)
+
+    def has_permission(self, request, target, level):
+        return self._apply_all('has_permission', request, target, level)
 
     def on_html_document(self, app, request, doc):
         add_ng_modules(doc, self.ngModules)

@@ -17,8 +17,8 @@ in a router handler:
 import lux
 from lux import Parameter
 
+from .exc import *
 from .mapper import Odm
-from .api import CRUD
 from . import sql
 from . import nosql
 

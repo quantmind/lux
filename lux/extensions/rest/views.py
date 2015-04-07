@@ -10,9 +10,7 @@ from .forms import (LoginForm, CreateUserForm, ChangePasswordForm,
 from .user import AuthenticationError
 
 
-__all__ = ['Login', 'SignUp', 'Logout', 'ForgotPassword',
-           'ChangePassword', 'csrf', 'RequirePermission',
-           'ComingSoon']
+REST_CONTENT_TYPES = ['application/json']
 
 
 def csrf(method):
@@ -54,6 +52,70 @@ class FormMixin(object):
             redirect_to = redirect_to(request, **kw)
         if redirect_to:
             return request.absolute_uri(redirect_to)
+
+
+class RestRoot(lux.Router):
+    '''Api Root'''
+    response_content_types = REST_CONTENT_TYPES
+    managers = None
+
+    def apis(self, request):
+        routes = {}
+        for route in self.routes:
+            routes['%s_url' % route.name] = request.absolute_uri(route.path())
+        return routes
+
+    def get(self, request):
+        return Json(self.apis(request)).http_response(request)
+
+    def createManager(self, app, Manager, Model=None, Form=None):
+        '''Create a new model manager instance
+        '''
+        manager = Manager(Model, Form)
+        if not self.managers:
+            self.managers = {}
+        self.managers[Model] = manager
+        return manager
+
+
+class RestRouter(lux.Router):
+    response_content_types = REST_CONTENT_TYPES
+
+    def limit(self, request):
+        '''The maximum number of items to return when fetching list
+        of data'''
+        cfg = request.config
+        user = request.cache.user
+        MAXLIMIT = (cfg['API_LIMIT_AUTH'] if user.is_authenticated() else
+                    cfg['API_LIMIT_NOAUTH'])
+        try:
+            limit = int(request.url_data.get(cfg['API_LIMIT_KEY'],
+                                             cfg['API_LIMIT_DEFAULT']))
+        except ValueError:
+            limit = MAXLIMIT
+        return min(limit, MAXLIMIT)
+
+    def offset(self, request):
+        '''Retrieve the offset value from the url when fetching list of data
+        '''
+        cfg = request.config
+        try:
+            return int(request.url_data.get(cfg['API_OFFSET_KEY'], 0))
+        except ValueError:
+            return 0
+
+    def query(self, request):
+        cfg = request.config
+        return request.url_data.get(cfg['API_SEARCH_KEY'], '')
+
+    def serialise(self, request, data):
+        if isinstance(data, list):
+            return [self.serialise_object(request, o, True) for o in data]
+        else:
+            return self.serialise_object(request, data)
+
+    def serialise_object(self, request, data, in_list=False):
+        raise NotImplementedError
 
 
 class WebFormRouter(HtmlRouter, FormMixin):

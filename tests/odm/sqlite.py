@@ -2,8 +2,6 @@ from pulsar.apps.test import test_timeout
 
 from lux.utils import test
 
-from tests.odm import Author
-
 
 class TestSql(test.AppTestCase):
     config_file = 'tests.odm'
@@ -21,7 +19,7 @@ class TestSql(test.AppTestCase):
         sql = app.odm('sql')
         with sql.begin() as s:
             self.assertEqual(s.app, app)
-            author = Author(name='Luca')
+            author = sql.author(name='Luca')
             s.add(author)
 
         with sql.begin() as s:

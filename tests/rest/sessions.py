@@ -6,7 +6,7 @@ from lux.utils import test
 
 
 class TestCase(test.TestCase):
-    config_file = 'tests.auth_ext'
+    config_file = 'tests.rest'
 
     def test_app(self):
         from pulsar.apps.greenio import WsgiGreen
