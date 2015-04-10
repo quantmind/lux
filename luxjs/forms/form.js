@@ -19,8 +19,6 @@
     angular.module('lux.form', ['lux.services'])
         //
         .constant('formDefaults', {
-            // Default form processing function
-            processForm: lux.processForm,
             // Default layout
             layout: 'default',
             // for horizontal layout
@@ -34,7 +32,7 @@
         //
         // The formService is a reusable component for redering form fields
         .service('standardForm', ['$log', '$http', '$document', '$templateCache', 'formDefaults',
-                function (log, $http, $document, $templateCache, formDefaults) {
+                                  function (log, $http, $document, $templateCache, formDefaults) {
 
             var supported = {
                     //  Text-based elements
@@ -293,14 +291,16 @@
                 onClick: function (scope, element) {
                     var name = element.attr('name'),
                         field = scope.field,
-                        clickname = name + 'Click';
+                        clickname = name + 'Click',
+                        self = this;
                     //
                     // scope function
                     scope[clickname] = function (e) {
                         if (scope.$broadcast(clickname, e).defaultPrevented) return;
                         if (scope.$emit(clickname, e).defaultPrevented) return;
 
-                        var callback = formDefaults.processForm;
+                        // Get the form processing function
+                        var callback = self.processForm(scope);
                         //
                         if (field.click) {
                             callback = getRootAttribute(field.click);
@@ -419,6 +419,11 @@
                     return scope.field.label + " is required";
                 },
                 //
+                // Return the function to handle form processing
+                processForm: function (scope) {
+                	return scope.processForm || lux.processForm();
+                },
+                //
                 _select: function (tag, element) {
                     if (isArray(element)) {
                         for (var i=0; i<element.length; ++i) {
@@ -433,7 +438,8 @@
         }])
         //
         // Bootstrap Horizontal form renderer
-        .service('horizontalForm', ['$document', 'standardForm', function ($document, standardForm) {
+        .service('horizontalForm', ['$document', 'standardForm',
+                                    function ($document, standardForm) {
             //
             // extend the standardForm service
             extend(this, standardForm, {

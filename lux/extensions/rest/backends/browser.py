@@ -2,7 +2,7 @@ from lux import Parameter
 
 from pulsar.utils.httpurl import is_absolute_uri
 
-from .. import AuthBackend
+from .. import AuthBackend, luxrest
 from ..views import Login, Logout, SignUp, ForgotPassword
 
 
@@ -22,22 +22,25 @@ class BrowserBackend(AuthBackend):
                   True)
     ]
 
-    def on_config(self, app):
-        app.require('lux.extensions.api')
-
     def middleware(self, app):
         middleware = []
         cfg = app.config
         api_url = cfg['API_URL']
-        if not is_absolute_uri(api_url):
-            api_url = None
 
-        if cfg['LOGIN_URL']:
-            middleware.append(Login(cfg['LOGIN_URL'], api_url=api_url))
-            middleware.append(Logout(cfg['LOGOUT_URL'], api_url=api_url))
+        # If the API_URL is absolute, pass the luxrest api name for the
+        # processForm
+        if is_absolute_uri(api_url):
+            if cfg['LOGIN_URL']:
+                url = luxrest(api_url, 'authorizations')
+                middleware.append(Login(cfg['LOGIN_URL'], post=url))
+
+        else:
+            if cfg['LOGIN_URL']:
+                middleware.append(Login(cfg['LOGIN_URL']))
+                middleware.append(Logout(cfg['LOGOUT_URL']))
+
         if cfg['REGISTER_URL']:
-            middleware.append(SignUp(cfg['REGISTER_URL'], api_url=api_url))
+            middleware.append(SignUp(cfg['REGISTER_URL']))
         if cfg['RESET_PASSWORD_URL']:
-            middleware.append(ForgotPassword(cfg['RESET_PASSWORD_URL'],
-                                             api_url=api_url))
+            middleware.append(ForgotPassword(cfg['RESET_PASSWORD_URL']))
         return middleware

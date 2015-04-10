@@ -39,39 +39,47 @@
                 };
             };
             //
-            $lux.registerApi('lux', {
-                //
-                authentication: function (request) {
-                    var self = this;
-                    //
-                    if (lux.context.user_token) {
-                        self.auth = {user_token: lux.context.user_token};
-                    } else if (lux.context.user) {
-                        $lux.log.info('Fetching authentication token');
-                        //
-                        $lux.post('/_token').success(function (data) {
-                            lux.context.user_token = data.token;
-                            self.auth = {user_token: lux.context.user_token};
-                            self.call(request);
-                        }).error(request.error);
-                        //
-                        return request.deferred.promise;
-                    } else {
-                        self.auth = {};
-                    }
-                    self.call(request);
-                },
-                //
-                addAuth: function (request) {
-                    //
-                    // Add authentication token
-                    if (lux.context.user_token) {
-                        var headers = request.options.headers;
-                        if (!headers)
-                            request.options.headers = headers = {};
-
-                        headers.Authorization = 'Bearer ' + lux.context.user_token;
-                    }
-                },
-            });
+            $lux.registerApi('lux', luxrest);
         }]);
+
+
+    var luxrest = function (opts, $lux) {
+
+    	var api = baseapi(opts, $lux);
+
+
+    	api.authentication = function (request) {
+            var self = this;
+            //
+            if (lux.context.user_token) {
+                self.auth = {user_token: lux.context.user_token};
+            } else if (lux.context.user) {
+                $lux.log.info('Fetching authentication token');
+                //
+                $lux.post('/_token').success(function (data) {
+                    lux.context.user_token = data.token;
+                    self.auth = {user_token: lux.context.user_token};
+                    self.call(request);
+                }).error(request.error);
+                //
+                return request.deferred.promise;
+            } else {
+                self.auth = {};
+            }
+            self.call(request);
+        };
+        //
+        api.addAuth = function (request) {
+            //
+            // Add authentication token
+            if (lux.context.user_token) {
+                var headers = request.options.headers;
+                if (!headers)
+                    request.options.headers = headers = {};
+
+                headers.Authorization = 'Bearer ' + lux.context.user_token;
+            }
+        };
+
+        return api;
+    };

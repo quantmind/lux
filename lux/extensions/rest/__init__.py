@@ -20,6 +20,12 @@ from .user import (Anonymous, normalise_email, PasswordMixin,
 from .views import RestRoot, RestRouter
 
 
+def luxrest(url, name):
+    '''Dictionary containing the api type and the api url name
+    '''
+    return {'url': url, 'name': name}
+
+
 class AuthBackend(lux.Extension):
 
     def authenticate(self, request, **params):

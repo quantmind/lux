@@ -50,3 +50,4 @@ from .errors import *
 from .formsets import FormSet
 from .form import Form
 from .serialise import *
+from .views import FormMixin, WebFormRouter

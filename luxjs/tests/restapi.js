@@ -1,6 +1,14 @@
 
     describe("Test lux.restapi module", function() {
-        angular.module('lux.restapi.test', ['lux.loader', 'lux.restapi']);
+
+        angular.module('lux.restapi.test', ['lux.loader', 'lux.restapi'])
+
+        	.service('http', ['$httpBackend', function ($httpBackend) {
+        		//
+        		authRequestHandler = $httpBackend.when('GET', '/').respond(
+        			{'authentication_url': '/authentication'},
+        			{'foo_url': '/foo'});
+        	}]);
 
         beforeEach(function () {
             module('lux.restapi.test');

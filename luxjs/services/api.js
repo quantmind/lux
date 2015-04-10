@@ -22,14 +22,11 @@
             //  url: the api base url
             //  type: optional api type (default is ``lux``)
             this.api = function (context) {
-                if (Object(context) !== context) {
-                    context = {name: context};
-                }
-                var Api = ApiTypes[context.type || 'lux'];
+                var api = ApiTypes[context.url];
                 if (!Api)
-                    $lux.log.error('Api provider "' + context.type + '" is not available');
+                    $lux.log.error('Api provider for "' + context.url + '" is not available');
                 else {
-                    return new Api(context.name, context.url, context.options, $lux);
+                    return api(context, $lux);
                 }
             };
             //
@@ -182,7 +179,8 @@
         },
         //
         //  Execute an API call for a given request
-        //  This method is hardly used directly, the ``request`` method is normally used.
+        //  This method is hardly used directly,
+        //	the ``request`` method is normally used.
         //
         //      request: a request object obtained from the ``request`` method
         call: function (request) {

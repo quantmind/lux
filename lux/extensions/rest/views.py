@@ -1,6 +1,6 @@
 import lux
 from lux import route, HtmlRouter
-from lux.forms import Form
+from lux.forms import Form, WebFormRouter, FormMixin
 
 from pulsar import Http404, PermissionDenied, HttpRedirect, MethodNotAllowed
 from pulsar.apps.wsgi import Json, Router
@@ -26,32 +26,6 @@ def csrf(method):
         return method(self, request)
 
     return _
-
-
-class FormMixin(object):
-    default_form = Form
-    form = None
-    redirect_to = None
-
-    @property
-    def fclass(self):
-        return self.form or self.default_form
-
-    def maybe_redirect_to(self, request, form, **kw):
-        redirect_to = self.redirect_url(request)
-        if redirect_to:
-            return Json({'success': True,
-                         'redirect': redirect_to}
-                        ).http_response(request)
-        else:
-            return Json(form.tojson()).http_response(request)
-
-    def redirect_url(self, request):
-        redirect_to = self.redirect_to
-        if hasattr(redirect_to, '__call__'):
-            redirect_to = redirect_to(request, **kw)
-        if redirect_to:
-            return request.absolute_uri(redirect_to)
 
 
 class RestRoot(lux.Router):
@@ -116,22 +90,6 @@ class RestRouter(lux.Router):
 
     def serialise_object(self, request, data, in_list=False):
         raise NotImplementedError
-
-
-class WebFormRouter(HtmlRouter, FormMixin):
-    uirouter = False
-    template = None
-
-    def get_html(self, request):
-        '''Handle the HTML page for login
-        '''
-        form = self.fclass(request).layout
-        html = form.as_form(action=request.full_path(),
-                            enctype='multipart/form-data',
-                            method='post')
-        context = {'form': html.render(request)}
-        return request.app.render_template(self.template, context,
-                                           request=request)
 
 
 class Login(WebFormRouter):
