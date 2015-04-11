@@ -238,6 +238,13 @@ class EventMixin:
     events = None
 
     def bind_events(self, extension, all_events=None, exclude=None):
+        '''Bind ``all_events`` to an ``extension``.
+
+        :param extension: an class:`.Extension`
+        :param all_events: optional list of event names. If not supplied,
+            the default lux events are used.
+        :param exclude: optional list of event to exclude
+        '''
         if self.events is None:
             self.events = {}
         events = self.events

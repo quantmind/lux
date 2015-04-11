@@ -20,6 +20,9 @@
             "type": "BSD"
         }
     ],
+    "dependencies": {
+        "angular-jwt": ""
+    },
     "devDependencies": {
         "grunt": "",
         "grunt-docco": "",
@@ -29,6 +32,7 @@
         "grunt-contrib-jasmine": "",
         "grunt-html2js": "",
         "grunt-contrib-concat": "",
+        "grunt-contrib-copy": "",
         "docco": ""
     },
     "homepage": "http://quantmind.github.io/lux",

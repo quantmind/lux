@@ -1,7 +1,7 @@
     //
     //  API handler for lux web authentication
     //  ---------------------------------------
-    angular.module('lux.web.api', ['lux.api'])
+    angular.module('lux.web.api', ['lux.services'])
 
         .run(['$lux', function ($lux) {
             //
@@ -39,17 +39,16 @@
                 };
             };
             //
-            $lux.registerApi('lux', luxrest);
+            if (scope.API_URL)
+                $lux.api(scope.API_URL, luxweb);
         }]);
 
 
-    var luxrest = function (opts, $lux) {
+    var luxweb = function (url, $lux) {
 
-    	var api = baseapi(opts, $lux);
-
+    	var api = baseapi(url, $lux);
 
     	api.authentication = function (request) {
-            var self = this;
             //
             if (lux.context.user_token) {
                 self.auth = {user_token: lux.context.user_token};
@@ -66,10 +65,6 @@
             } else {
                 self.auth = {};
             }
-            self.call(request);
-        };
-        //
-        api.addAuth = function (request) {
             //
             // Add authentication token
             if (lux.context.user_token) {

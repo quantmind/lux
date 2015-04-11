@@ -2,7 +2,7 @@
     //  CMS api for dynamic web apps
     //  -------------------------------
     //
-    angular.module('lux.cms.api', ['lux.api'])
+    angular.module('lux.cms.api', ['lux.services'])
 
         .run(['$lux', '$window', function ($lux, $window) {
             var pageCache = {};

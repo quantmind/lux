@@ -1,6 +1,6 @@
     //  Lux Api service factory for angular
     //  ---------------------------------------
-    angular.module('lux.api', [])
+    angular.module('lux.services', [])
         //
         .value('ApiTypes', {})
         //
@@ -21,19 +21,20 @@
             //  name: the api name
             //  url: the api base url
             //  type: optional api type (default is ``lux``)
-            this.api = function (context) {
-                var api = ApiTypes[context.url];
-                if (!Api)
-                    $lux.log.error('Api provider for "' + context.url + '" is not available');
-                else {
-                    return api(context, $lux);
+            this.api = function (url, api) {
+                if (arguments.length === 1) {
+                    if (isObject(url)) {
+                        url = url.url;
+                    }
+                    api = ApiTypes[url];
+                    if (!api)
+                        $lux.log.error('Api client for "' + url + '" is not available');
+                    else
+                        return api;
+                } else if (arguments.length === 2) {
+                    ApiTypes[url] = api(url, this);
+                    return this;
                 }
-            };
-            //
-            this.registerApi = function (name, object, inheritFrom) {
-                var Base = inheritFrom ? ApiTypes[inheritFrom] : ApiClient;
-                ApiTypes[name] = Base.extend(object);
-                return ApiTypes[name];
             };
         }]);
     //
@@ -55,72 +56,43 @@
     //
     //  Lux API Interface for REST
     //
-    var ApiClient = lux.ApiClient = Class.extend({
+    var baseapi = function (url, $lux) {
         //
         //  Object containing the urls for the api.
-        //  If not given, the object will be loaded via the ``context.apiUrl``
-        //  variable.
-        apiUrls: lux.context.apiUrls,
+        var api = {},
+            apiUrls;
         //
-        init: function (name, url, options, $lux) {
-            this.name = name;
-            this.options = options || {};
-            this.$lux = $lux;
-            this.auth = null;
-            this._url = url;
-        },
-        //
-        // Can be used to manipulate the url
-        url: function (urlparams) {
-            if (urlparams && urlparams.id)
-                return this._url + '/' + urlparams.id;
-            else
-                return this._url;
-        },
-        //
-        //  Handle authentication
-        //
-        //  By default does nothing
-        authentication: function (request) {
-            this.auth = {};
-            this.call(request);
-        },
-        //
-        // Add Authentication to call options
-        addAuth: function (request) {
+        // API base url
+        api.baseUrl  = function () {
+            return url;
+        };
 
-        },
-        //
-        // Build the object used by $http when executing the api call
-        httpOptions: function (request) {
-            var options = request.options;
-            if (!options.url)
-                options.url = this.url(request.urlparams);
-            return options;
-        },
-        //
+        // calculate the url for an API call
+        api.httpOptions = function (request) {
+            request.options.url = request.baseUrl;
+        };
+
+        // This function can be used to add authentication
+        api.authentication = function (request) {};
         //
         // Perform the actual request and return a promise
         //  method: HTTP method
         //  urlparams:
         //  opts: object passed to
-        request: function (method, urlparams, opts, data) {
+        api.request = function (method, opts, data) {
             // handle urlparams when not an object
-            if (urlparams && urlparams!==Object(urlparams))
-                urlparams = {id: urlparams};
+            opts = extend({'method': method, 'data': data}, opts);
 
-            var d = this.$lux.q.defer(),
+            var d = $lux.q.defer(),
                 //
                 promise = d.promise,
                 //
-                request = {
+                request = extend({
+                    name: opts.name,
+                    //
                     deferred: d,
                     //
-                    options: extend({'method': method, 'data': data}, opts),
-                    //
-                    'urlparams': urlparams,
-                    //
-                    api: this,
+                    options: opts,
                     //
                     error: function (data, status, headers) {
                         if (isString(data)) {
@@ -140,92 +112,64 @@
                             'headers': headers
                         });
                     }
-                };
+                });
+            //
+            delete opts.name;
+            opts.method = opts.method.toLowerCase();
+            if (opts.url === api.baseUrl())
+                delete opts.url;
             //
             this.call(request);
             //
             return wrapPromise(promise);
-        },
-        //
-        //  Get a single element
-        //  ---------------------------
-        get: function (urlparams, options) {
-            return this.request('GET', urlparams, options);
-        },
-        //  Create or update a model
-        //  ---------------------------
-        put: function (model, options) {
-            if (model.id) {
-                return this.request('POST', {id: model.id}, options, model);
-            } else {
-                return this.request('POST', null, options, model);
-            }
-        },
-        //  Get a list of models
-        //  -------------------------
-        getList: function (options) {
-            return this.request('GET', null, options);
-        },
-        //
-        // Retrieve a page when in angular ui.router
-        getPage: function (page, state, stateParams) {
-            return page;
-        },
-        //
-        // Retrieve a list of items when in angular ui.router
-        getItems: function (page, state, stateParams) {
-            if (!lux.size(stateParams))
-                return this.getList();
-        },
+        };
         //
         //  Execute an API call for a given request
         //  This method is hardly used directly,
         //	the ``request`` method is normally used.
         //
         //      request: a request object obtained from the ``request`` method
-        call: function (request) {
-            var $lux = this.$lux,
-                url = request.options.url || this._url;
+        api.call = function (request) {
             //
-            if (!url && ! this.name) {
-                return request.error('api should have url or name');
-            }
-
-            if (!url) {
-                if (this.apiUrls) {
-                    this._url = url = this.apiUrls[this.name] || this.apiUrls[this.name + '_url'];
+            if (!request.baseUrl && request.name) {
+                if (apiUrls) {
+                    request.baseUrl = apiUrls[request.name];
                     //
                     // No api url!
-                    if (url)
-                        return request.error('Could not find a valid url for ' + this.name);
+                    if (!request.baseUrl)
+                        return request.error('Could not find a valid url for ' + request.name);
+
                     //
-                } else if (lux.context.apiUrl) {
+                } else {
                     // Fetch the api urls
-                    var self = this;
                     $lux.log.info('Fetching api info');
-                    return $lux.http.get(lux.context.apiUrl).success(function (resp) {
-                        self.apiUrls = resp;
-                        self.call(request);
+                    return $lux.http.get(api.baseUrl()).success(function (resp) {
+                        apiUrls = resp;
+                        api.call(request);
                     }).error(request.error);
                     //
-                } else
-                    return request.error('Api url not available');
+                }
             }
+
+            if (!request.baseUrl)
+                request.baseUrl = api.baseUrl();
+
+            api.httpOptions(request);
+
             //
             // Fetch authentication token?
-            if (!this.auth)
-                return this.authentication(request);
+            var r = api.authentication(request);
+            if (r) return r;
             //
-            // Add authentication
-            this.addAuth(request);
-            //
-            var options = this.httpOptions(request);
-            //
+            var options = request.options;
+
             if (options.url) {
                 $lux.log.info('Executing HTTP ' + options.method + ' request @ ' + options.url);
                 $lux.http(options).success(request.success).error(request.error);
             }
             else
                 request.error('Api url not available');
-        }
-    });
+        };
+
+        return api;
+    };

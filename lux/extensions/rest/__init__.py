@@ -15,8 +15,7 @@ from lux.core.wrappers import wsgi_request
 from lux.utils.http import same_origin
 from lux.extensions.angular import add_ng_modules
 
-from .user import (Anonymous, normalise_email, PasswordMixin,
-                   AuthenticationError, CREATE, READ, UPDATE, DELETE)
+from .user import *
 from .views import RestRoot, RestRouter
 
 
@@ -142,9 +141,17 @@ class Extension(AuthBackend):
             middleware.extend(backend.middleware(app) or ())
 
         url = app.config['API_URL']
+        # If the api url is not absolute, add the api middleware
         if not is_absolute_uri(url):
 
+            # Add the preflight event
+            events = ('on_preflight',)
+            app.add_events(events)
+            for backend in self.backends:
+                app.bind_events(backend, events)
+
             app.api = api = RestRoot(url)
+            middleware.append(api)
             app.config['API_URL'] = str(api.route)
             for extension in app.extensions.values():
                 api_sections = getattr(extension, 'api_sections', None)

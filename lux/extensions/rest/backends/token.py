@@ -4,7 +4,7 @@ import time
 from pulsar import HttpException, MethodNotAllowed, ImproperlyConfigured
 
 from lux import Parameter
-from ..views import RestRouter
+from ..views import RestRouter, AuthenticationError
 
 try:
     import jwt
@@ -30,8 +30,6 @@ class TokenBackend(AuthBackend):
     .. _pyjwt: https://pypi.python.org/pypi/PyJWT
     .. _JWT: http://self-issued.info/docs/draft-ietf-oauth-json-web-token.html
     '''
-    form = LoginForm
-
     _config = [
         Parameter('AUTHORIZATION_URL', '/authorizations',
                   'Url for authorizations',
@@ -70,6 +68,30 @@ class TokenBackend(AuthBackend):
                     if user:
                         request.cache.user = user
 
+    def response(self, environ, response):
+        name = 'Access-Control-Allow-Origin'
+        if name not in response.headers:
+            origin = environ.get('HTTP_ORIGIN', '*')
+            response[name] = origin
+        return response
+
+    def response_middleware(self, app):
+        return [self.response]
+
+    def on_preflight(self, app, request):
+        '''Preflight handler
+        '''
+        headers = request.get('HTTP_ACCESS_CONTROL_REQUEST_HEADERS')
+        response = request.response
+        origin = request.get('HTTP_ORIGIN', '*')
+
+        if origin == 'null':
+            origin = '*'
+
+        response['Access-Control-Allow-Origin'] = origin
+        if headers:
+            response['Access-Control-Allow-Headers'] = headers
+
     def create_token(self, request, user):
         '''Create the token
         '''
@@ -85,6 +107,7 @@ class TokenBackend(AuthBackend):
 
 
 class Authorization(RestRouter):
+    form = LoginForm
 
     def get(self, request):
         '''List all authorizations for the authenticated user

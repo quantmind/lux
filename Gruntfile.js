@@ -40,6 +40,14 @@ module.exports = function (grunt) {
         grunt.loadNpmTasks('grunt-html2js');
         buildTasks.splice(0, 0, 'html2js');
     }
+
+    // Add copy tasks if available
+    if (libs.copy) {
+        cfg.copy = libs.copy;
+        buildTasks.push('copy');
+        grunt.loadNpmTasks('grunt-contrib-copy');
+        delete libs.copy;
+    }
     //
     // Preprocess libs
     for_each(libs, function (name) {
@@ -77,28 +85,24 @@ module.exports = function (grunt) {
     // js hint all libraries
     function jshint_libs () {
         var result = {
-                gruntfile: "Gruntfile.js",
-                options: {
-                    browser: true,
-                    expr: true,
-                    evil: true,
-                    globals: {
-                        lux: true,
-                        requirejs: true,
-                        require: true,
-                        exports: true,
-                        console: true,
-                        DOMParser: true,
-                        Showdown: true,
-                        prettyPrint: true,
-                        module: true,
-                        ok: true,
-                        equal: true,
-                        test: true,
-                        asyncTest: true,
-                        start: true
-                    }
+            gruntfile: "Gruntfile.js",
+            options: {
+                browser: true,
+                expr: true,
+                evil: true,
+                globals: {
+                    lux: true,
+                    requirejs: true,
+                    require: true,
+                    exports: true,
+                    console: true,
+                    DOMParser: true,
+                    Showdown: true,
+                    prettyPrint: true,
+                    module: true,
+                    start: true
                 }
+            }
         };
         for_each(libs, function (name) {
             result[name] = this.dest;

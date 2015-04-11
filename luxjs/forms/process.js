@@ -14,6 +14,7 @@
 	            scope = this,
 	            FORMKEY = scope.formAttrs.FORMKEY,
 	            $lux = this.$lux,
+	            method = attrs.method || 'post',
 	            promise,
 	            api;
 	        //
@@ -27,14 +28,13 @@
 	        //	target
 	        //		- name:	api name
 	        //		- target: api target
-	        if (isObject(target)) {
-	            api = $lux.api(target);
-	            target = null;
-	        }
+	        if (isObject(target)) api = $lux.api(target);
 
 	        this.formMessages = {};
 	        //
-	        if (target) {
+	        if (api) {
+	        	promise = api.request(method, target, model);
+	        } else if (target) {
 	            var enctype = attrs.enctype || '',
 	                ct = enctype.split(';')[0],
 	                options = {
@@ -50,8 +50,6 @@
 	                };
 	            }
 	            promise = $lux.http(options);
-	        } else if (api) {
-	            promise = api.put(model);
 	        } else {
 	            $lux.log.error('Could not process form. No target or api');
 	            return;

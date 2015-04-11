@@ -1,10 +1,9 @@
 from datetime import datetime, timedelta
 
 from lux.extensions.odm import nosql
-
-from .user import (normalise_email, UserMixin, PasswordMixin,
-                   MessageMixin, AuthenticationError, READ)
-from . import backends
+from lux.extensions.rest import (normalise_email, UserMixin, PasswordMixin,
+                                 MessageMixin, AuthenticationError, READ,
+                                 backends)
 
 
 class User(nosql.Model, UserMixin):
@@ -31,7 +30,6 @@ class User(nosql.Model, UserMixin):
 
 class Group(nosql.Model):
     name = nosql.CharField()
-
 
 
 class Session(nosql.Model, MessageMixin):

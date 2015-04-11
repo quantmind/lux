@@ -31,7 +31,7 @@ class BrowserBackend(AuthBackend):
         # processForm
         if is_absolute_uri(api_url):
             if cfg['LOGIN_URL']:
-                url = luxrest(api_url, 'authorizations')
+                url = luxrest(api_url, 'authorizations_url')
                 middleware.append(Login(cfg['LOGIN_URL'], post=url))
 
         else:

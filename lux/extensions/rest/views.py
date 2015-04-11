@@ -55,6 +55,12 @@ class RestRoot(lux.Router):
 class RestRouter(lux.Router):
     response_content_types = REST_CONTENT_TYPES
 
+    def options(self, request):
+        '''Handle the CORS preflight request
+        '''
+        request.app.fire('on_preflight', request)
+        return request.response
+
     def limit(self, request):
         '''The maximum number of items to return when fetching list
         of data'''

@@ -10,8 +10,8 @@ import lux
 from lux.utils.crypt import get_random_string, digest
 
 
-__all__ = ['AuthBackend', 'AuthenticationError',
-           'LoginError', 'LogoutError', 'MessageMixin', 'UserMixin',
+__all__ = ['AuthenticationError', 'LoginError', 'LogoutError',
+           'MessageMixin', 'UserMixin', 'normalise_email', 'PasswordMixin',
            'Anonymous', 'CREATE', 'READ', 'UPDATE', 'DELETE']
 
 

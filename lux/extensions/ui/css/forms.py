@@ -8,8 +8,11 @@ def add_css(all):
     css('p.form-error',
         margin=0)
 
-    css('.form-group .help-block',
-        display='none')
+    css('.form-group',
+        css(' .help-block',
+            display='none'),
+        css(' .error-block',
+            font_size=vars.font.size_small))
 
     css('.form-group.has-error .help-block.active',
         display='block')

@@ -5,10 +5,12 @@ def add_css(all):
     css = all.css
     vars = all.variables
 
-    vars.font_family = '"Helvetica Neue",Helvetica,Arial,sans-serif'
-    vars.font_size = px(14)
+    vars.font.family = '"Helvetica Neue",Helvetica,Arial,sans-serif'
+    vars.font.size = px(16)
+    vars.font.size_small = px(14)
+    vars.font.style = 'normal'
+
     vars.line_height = 1.42857
-    vars.font_style = 'normal'
     vars.color = color('#333')
     vars.background = color('#fff')
     # Helper classes
@@ -30,10 +32,10 @@ def add_css(all):
     inverse.background = color('#3d3d3d')
 
     css('body',
-        font_family=vars.font_family,
-        font_size=vars.font_size,
+        font_family=vars.font.family,
+        font_size=vars.font.size,
         line_height=vars.line_height,
-        font_style=vars.font_style,
+        font_style=vars.font.style,
         background=vars.background,
         color=vars.color)
 

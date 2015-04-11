@@ -28,11 +28,10 @@ class NoSQL(Mapper):
         for engine in self.engines():
             wait(engine.database_drop(**params))
 
-    def register(self, module, *args, **params):
+    def register(self, module, *args, include_related=True, **params):
         '''Register Models from ``module``
         '''
         self._setup()
-        include_related = params.pop('include_related', True)
         # Loop through attributes in mod_models
         for name in dir(module):
             value = getattr(module, name)

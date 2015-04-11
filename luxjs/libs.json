@@ -63,19 +63,5 @@
         },
         "src": ["examples/luxsite/src.js"],
         "dest": "examples/luxsite/media/luxsite/luxsite.js"
-    },
-    "gaeblog": {
-        "src": ["luxjs/gaeblog/open.js",
-                "luxjs/gaeblog/nav.js",
-                "luxjs/gaeblog/blog.js",
-                "luxjs/gaeblog/templates.js",
-                "luxjs/gaeblog/elastic.js",
-                "luxjs/gaeblog/close.js"],
-        "dest": "examples/luxsite/media/luxsite/blogapp.js",
-        "options": {
-            "stripBanners": true,
-            "banner": "luxjs/banner.js",
-            "process": true
-        }
     }
 }
