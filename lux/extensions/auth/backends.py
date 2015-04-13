@@ -3,6 +3,8 @@ from sqlalchemy.orm.exc import NoResultFound
 from lux.extensions.rest import (PasswordMixin, backends, normalise_email,
                                  AuthenticationError, READ)
 
+from .views import Authorization
+
 
 class AuthMixin(PasswordMixin):
     '''Mixin to implement authentication backend based on
@@ -108,6 +110,9 @@ class TokenBackend(AuthMixin, backends.TokenBackend):
         super().on_config(app)
         backends.TokenBackend.on_config(self, app)
 
+    def api_sections(self, app):
+        yield Authorization(app.config['AUTHORIZATION_URL'])
+
     def create_token(self, request, user):
         '''Create the token
         '''
@@ -122,4 +127,5 @@ class TokenBackend(AuthMixin, backends.TokenBackend):
             session.add(token)
 
         payload['token_id'] = token.id
+        payload['username'] = user.username
         return self.encode_payload(request, payload)

@@ -113,13 +113,6 @@ class TokenBackend(AuthBackend):
 class Authorization(RestRouter):
     form = LoginForm
 
-    def get(self, request):
-        '''List all authorizations for the authenticated user
-        '''
-        user = request.cache.user
-        if not user.is_authenticated():
-            raise Http401('Token', 'Requires authentication')
-
     def post(self, request):
         '''Create a new Authorization token
         '''

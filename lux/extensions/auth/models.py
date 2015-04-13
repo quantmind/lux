@@ -110,3 +110,4 @@ class Token(Base):
     ip_adderss = Column(IPAddressType)
     user_agent = Column(String(80))
     last_access = Column(DateTime, default=datetime.utcnow)
+

@@ -76,21 +76,21 @@
         api.authentication = function (request) {};
         //
         // Perform the actual request and return a promise
-        //  method: HTTP method
-        //  urlparams:
-        //  opts: object passed to
+        //      method: HTTP method
+        //      urlparams:
+        //      opts: object passed to
         api.request = function (method, opts, data) {
             // handle urlparams when not an object
             opts = extend({'method': method, 'data': data}, opts);
 
             var d = $lux.q.defer(),
                 //
-                promise = d.promise,
-                //
                 request = extend({
                     name: opts.name,
                     //
                     deferred: d,
+                    //
+                    on: wrapPromise(d.promise),
                     //
                     options: opts,
                     //
@@ -106,11 +106,20 @@
                     },
                     //
                     success: function (data, status, headers) {
-                        d.resolve({
-                            'data': data,
-                            'status': status,
-                            'headers': headers
-                        });
+                        if (isString(data)) data = {message: data};
+
+                        if (data.error)
+                            d.reject({
+                                'data': data,
+                                'status': status,
+                                'headers': headers
+                            });
+                        else
+                            d.resolve({
+                                'data': data,
+                                'status': status,
+                                'headers': headers
+                            });
                     }
                 });
             //
@@ -121,7 +130,7 @@
             //
             this.call(request);
             //
-            return wrapPromise(promise);
+            return request.on;
         };
         //
         //  Execute an API call for a given request

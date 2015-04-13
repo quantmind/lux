@@ -1,6 +1,6 @@
 //      Lux Library - v0.1.1
 
-//      Compiled 2015-04-11.
+//      Compiled 2015-04-13.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -495,21 +495,21 @@ function(angular, root) {
         api.authentication = function (request) {};
         //
         // Perform the actual request and return a promise
-        //  method: HTTP method
-        //  urlparams:
-        //  opts: object passed to
+        //      method: HTTP method
+        //      urlparams:
+        //      opts: object passed to
         api.request = function (method, opts, data) {
             // handle urlparams when not an object
             opts = extend({'method': method, 'data': data}, opts);
 
             var d = $lux.q.defer(),
                 //
-                promise = d.promise,
-                //
                 request = extend({
                     name: opts.name,
                     //
                     deferred: d,
+                    //
+                    on: wrapPromise(d.promise),
                     //
                     options: opts,
                     //
@@ -525,11 +525,20 @@ function(angular, root) {
                     },
                     //
                     success: function (data, status, headers) {
-                        d.resolve({
-                            'data': data,
-                            'status': status,
-                            'headers': headers
-                        });
+                        if (isString(data)) data = {message: data};
+
+                        if (data.error)
+                            d.reject({
+                                'data': data,
+                                'status': status,
+                                'headers': headers
+                            });
+                        else
+                            d.resolve({
+                                'data': data,
+                                'status': status,
+                                'headers': headers
+                            });
                     }
                 });
             //
@@ -540,7 +549,7 @@ function(angular, root) {
             //
             this.call(request);
             //
-            return wrapPromise(promise);
+            return request.on;
         };
         //
         //  Execute an API call for a given request
@@ -694,8 +703,20 @@ function(angular, root) {
                 };
             };
             //
-            if (scope.API_URL)
+            if (scope.API_URL) {
+
                 $lux.api(scope.API_URL, luxweb);
+
+                // logout via post method
+                scope.logout = function(e, url) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    $lux.post(url).success(function (data) {
+                        if (data.redirect)
+                            window.location.replace(data.redirect);
+                    });
+                };
+            }
         }]);
 
 
@@ -738,11 +759,33 @@ function(angular, root) {
     // Add this module if the API_URL in the root scope is a lux-rest API
     angular.module('lux.restapi', ['lux.services'])
 
-        .run(['$rootScope', '$lux', function (scope, $lux) {
+        .run(['$rootScope', '$window', '$lux', function (scope, $window, $lux) {
 
-            // If the scope has an API_URL register the client
-            if (scope.API_URL)
+            // If the root scope has an API_URL register the client
+            if (scope.API_URL) {
+
             	$lux.api(scope.API_URL, luxrest);
+
+                // Get the api client
+                scope.api = function () {
+                    return $lux.api(scope.API_URL);
+                };
+
+                // Get a user
+                scope.getUser = function () {
+                    var api = scope.api();
+                    if (api)
+                        return api.user();
+                };
+
+                scope.logout = function () {
+                    var api = scope.api();
+                    if (api && api.token()) {
+                        api.logout();
+                        $window.location.reload();
+                    }
+                };
+            }
 
         }]);
 
@@ -789,6 +832,15 @@ function(angular, root) {
 
     	var api = luxweb(url, $lux);
 
+        api.httpOptions = function (request) {
+            var options = request.options,
+                headers = options.headers;
+            if (!headers)
+                options.headers = headers = {};
+            headers['Content-Type'] = 'application/json';
+            options.url = request.baseUrl;
+        };
+
         // Set/Get the JWT token
         api.token = function (token) {
             var key = 'luxrest - ' + api.baseUrl();
@@ -807,17 +859,35 @@ function(angular, root) {
             }
         };
 
+        api.logout = function () {
+            var key = 'luxrest - ' + api.baseUrl();
+
+            localStorage.removeItem(key);
+            sessionStorage.removeItem(key);
+        };
+
+        api.user = function () {
+            var token = api.token();
+            if (token) {
+                var u = lux.decodeJWToken(token);
+                u.token = token;
+                return u;
+            }
+        };
+
         // Add authentication token if available
 		api.authentication = function (request) {
             //
             // If the call is for the authorizations_url api, add callback to store the token
             if (request.name === 'authorizations_url' &&
                     request.options.url === request.baseUrl &&
-                    request.options.method === 'post')
-                request.success(function(data, status) {
+                    request.options.method === 'post') {
+
+                request.on.success(function(data, status) {
                     api.token(data.token);
                 });
-            else {
+
+            } else {
                 var jwt = api.token();
 
                 if (jwt) {
@@ -2405,20 +2475,6 @@ angular.module("users/messages.tpl.html", []).run(["$templateCache", function($t
     // Controller for User.
     // This controller can be used by eny element, including forms
     angular.module('lux.users', ['lux.form', 'templates-users'])
-
-        .run(['$rootScope', '$lux', function (scope, $lux) {
-
-            // logout via post method
-            scope.logout = function(e, url) {
-                e.preventDefault();
-                e.stopPropagation();
-                $lux.post(url).success(function (data) {
-                    if (data.redirect)
-                        window.location.replace(data.redirect);
-                });
-            };
-
-        }])
         //
         // Directive for displaying page messages
         //

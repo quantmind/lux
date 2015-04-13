@@ -2,20 +2,6 @@
     // Controller for User.
     // This controller can be used by eny element, including forms
     angular.module('lux.users', ['lux.form', 'templates-users'])
-
-        .run(['$rootScope', '$lux', function (scope, $lux) {
-
-            // logout via post method
-            scope.logout = function(e, url) {
-                e.preventDefault();
-                e.stopPropagation();
-                $lux.post(url).success(function (data) {
-                    if (data.redirect)
-                        window.location.replace(data.redirect);
-                });
-            };
-
-        }])
         //
         // Directive for displaying page messages
         //

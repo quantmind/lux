@@ -39,8 +39,20 @@
                 };
             };
             //
-            if (scope.API_URL)
+            if (scope.API_URL) {
+
                 $lux.api(scope.API_URL, luxweb);
+
+                // logout via post method
+                scope.logout = function(e, url) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    $lux.post(url).success(function (data) {
+                        if (data.redirect)
+                            window.location.replace(data.redirect);
+                    });
+                };
+            }
         }]);
 
 

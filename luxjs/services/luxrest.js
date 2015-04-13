@@ -2,11 +2,33 @@
     // Add this module if the API_URL in the root scope is a lux-rest API
     angular.module('lux.restapi', ['lux.services'])
 
-        .run(['$rootScope', '$lux', function (scope, $lux) {
+        .run(['$rootScope', '$window', '$lux', function (scope, $window, $lux) {
 
-            // If the scope has an API_URL register the client
-            if (scope.API_URL)
+            // If the root scope has an API_URL register the client
+            if (scope.API_URL) {
+
             	$lux.api(scope.API_URL, luxrest);
+
+                // Get the api client
+                scope.api = function () {
+                    return $lux.api(scope.API_URL);
+                };
+
+                // Get a user
+                scope.getUser = function () {
+                    var api = scope.api();
+                    if (api)
+                        return api.user();
+                };
+
+                scope.logout = function () {
+                    var api = scope.api();
+                    if (api && api.token()) {
+                        api.logout();
+                        $window.location.reload();
+                    }
+                };
+            }
 
         }]);
 
@@ -80,17 +102,35 @@
             }
         };
 
+        api.logout = function () {
+            var key = 'luxrest - ' + api.baseUrl();
+
+            localStorage.removeItem(key);
+            sessionStorage.removeItem(key);
+        };
+
+        api.user = function () {
+            var token = api.token();
+            if (token) {
+                var u = lux.decodeJWToken(token);
+                u.token = token;
+                return u;
+            }
+        };
+
         // Add authentication token if available
 		api.authentication = function (request) {
             //
             // If the call is for the authorizations_url api, add callback to store the token
             if (request.name === 'authorizations_url' &&
                     request.options.url === request.baseUrl &&
-                    request.options.method === 'post')
-                request.success(function(data, status) {
+                    request.options.method === 'post') {
+
+                request.on.success(function(data, status) {
                     api.token(data.token);
                 });
-            else {
+
+            } else {
                 var jwt = api.token();
 
                 if (jwt) {
