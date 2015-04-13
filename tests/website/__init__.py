@@ -1,6 +1,8 @@
 import lux
 from lux import Router, Html
 
+__test__ = False
+
 from tests.config import *
 
 SECRET_KEY = 'PHCWf8hiGtk65l19FnoVnypaWe2AYGY3XerbM2GDs45Oq5Az4O'

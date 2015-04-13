@@ -1,7 +1,7 @@
 import sys
 import os
 import json
-from inspect import isclass
+from inspect import isclass, getfile
 from collections import OrderedDict
 from importlib import import_module
 
@@ -363,7 +363,7 @@ class Application(ConsoleParser, Extension, EventMixin):
                 modname = e + ('.core' if e == 'lux' else '') + '.commands'
                 mod = import_module(modname)
                 if hasattr(mod, '__path__'):
-                    path = mod.__path__[0]
+                    path = os.path.dirname(getfile(mod))
                     try:
                         commands = tuple((f[:-3] for f in os.listdir(path)
                                           if not f.startswith('_') and

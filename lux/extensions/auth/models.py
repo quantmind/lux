@@ -26,7 +26,6 @@ class BaseModel(object):
         return self.__name__.lower()
 
 
-
 Base = declarative_base(cls=BaseModel)
 
 
@@ -110,4 +109,3 @@ class Token(Base):
     ip_adderss = Column(IPAddressType)
     user_agent = Column(String(80))
     last_access = Column(DateTime, default=datetime.utcnow)
-

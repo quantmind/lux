@@ -14,7 +14,7 @@ class CommandTests(test.TestCase):
         self.assertTrue(command.help)
         name = 'testproject'
         try:
-            yield from command([name])
+            command([name])
             target = command.target
             self.assertTrue(path.isdir(target))
             self.assertTrue(path.isfile(path.join(target, 'manage.py')))
@@ -33,16 +33,16 @@ class CommandTests(test.TestCase):
     def test_generate_key(self):
         command = self.fetch_command('generate_secret_key')
         self.assertTrue(command.help)
-        key = yield from command([])
+        key = command([])
         self.assertEqual(len(key), 50)
-        key = yield from command(['--length', '35'])
+        key = command(['--length', '35'])
         self.assertEqual(len(key), 35)
-        key = yield from command(['--hex'])
+        key = command(['--hex'])
         self.assertTrue(len(key) > 50)
 
     def test_show_parameters(self):
         command = self.fetch_command('show_parameters')
         self.assertTrue(command.help)
-        yield from command([])
+        command([])
         data = command.app.stdout.getvalue()
         self.assertTrue(data)

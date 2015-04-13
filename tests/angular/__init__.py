@@ -2,6 +2,7 @@ import lux
 from lux import HtmlRouter
 from lux.utils import test
 
+__test__ = False
 
 EXTENSIONS = ['lux.extensions.ui',
               'lux.extensions.angular']

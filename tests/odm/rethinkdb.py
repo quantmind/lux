@@ -1,4 +1,5 @@
 from . import sqlite
+__test__ = False
 
 
 class TestRethinkDB(sqlite.TestSql):

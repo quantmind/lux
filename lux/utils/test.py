@@ -132,22 +132,10 @@ class TestCase(unittest.TestCase, TestMixin):
     '''
     apps = None
 
-    def application(self, config_file=None, argv=None, **params):
+    def application(self, **params):
         '''Return an application for testing. Override if needed.
         '''
-        kwargs = self.config_params.copy()
-        kwargs.update(params)
-        if 'EMAIL_BACKEND' not in kwargs:
-            kwargs['EMAIL_BACKEND'] = 'lux.core.mail.LocalMemory'
-        config_file = config_file or self.config_file
-        if argv is None:
-            argv = []
-        if '--log-level' not in argv:
-            argv.append('--log-level')
-            levels = self.cfg.loglevel if hasattr(self, 'cfg') else ['none']
-            argv.extend(levels)
-        app = lux.App(config_file, argv=argv, **kwargs).setup()
-        self.on_loaded(app)
+        app = test_app(self, **params)
         if self.apps is None:
             self.apps = []
         self.apps.append(app)

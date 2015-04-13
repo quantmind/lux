@@ -1,6 +1,8 @@
 import os
 import shutil
 
+__test__ = False
+
 import lux
 from lux import Parameter
 from lux.extensions.static import HtmlContent, Blog, Sitemap, SphinxDocs
