@@ -43,6 +43,10 @@ class AuthBackend(lux.Extension):
         '''Create a user with *superuser* permissions.'''
         pass
 
+    def create_token(self, request, user):
+        '''Create an athentication token for ``user``'''
+        pass
+
     def get_user(self, request, **kwargs):
         '''Retrieve a user.'''
         pass
@@ -188,6 +192,12 @@ class Extension(AuthBackend):
 
     def authenticate(self, request, **kwargs):
         return self._apply_all('authenticate', request, **kwargs)
+
+    def login(self, request, user):
+        return self._apply_all('login', request, user)
+
+    def create_token(self, request, user):
+        return self._apply_all('create_token', request, user)
 
     def logout(self, request, user=None):
         return self._apply_all('logout', request, user=user)

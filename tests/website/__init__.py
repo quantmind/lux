@@ -7,7 +7,7 @@ SECRET_KEY = 'PHCWf8hiGtk65l19FnoVnypaWe2AYGY3XerbM2GDs45Oq5Az4O'
 SESSION_COOKIE_NAME = 'luxtest'
 
 EXTENSIONS = ['lux.extensions.base',
-              'lux.extensions.auth',
+              'lux.extensions.rest',
               'lux.extensions.api',
               'lux.extensions.ui',
               'lux.extensions.angular',

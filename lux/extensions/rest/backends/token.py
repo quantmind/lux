@@ -1,7 +1,7 @@
-
 import time
 
 from pulsar import HttpException, MethodNotAllowed, ImproperlyConfigured
+from pulsar.apps.wsgi import Json
 
 from lux import Parameter
 from ..views import RestRouter, AuthenticationError
@@ -96,11 +96,12 @@ class TokenBackend(AuthBackend):
         '''Create the token
         '''
         payload = self.jwt_payload(request, user)
-        return jwt.encode(payload, cfg['SECRET_KEY'])
+        return jwt.encode(payload, request.config['SECRET_KEY'])
 
     def jwt_payload(self, request, user):
         expiry = self.session_expiry(request)
-        payload = {'user_id': user.id}
+        payload = {'user_id': user.id,
+                   'superuser': user.is_superuser()}
         if expiry:
             payload['exp'] = int(time.mktime(expiry.timetuple()))
         return payload
@@ -126,14 +127,16 @@ class Authorization(RestRouter):
         form = self.form(request, data=request.body_data())
 
         if form.is_valid():
-            auth = request.cache.auth_backend
+            auth_backend = request.cache.auth_backend
             try:
-                user = auth.authenticate(request, **form.cleaned_data)
-                auth.login(request, user)
+                user = auth_backend.authenticate(request, **form.cleaned_data)
+                auth_backend.login(request, user)
             except AuthenticationError as e:
                 form.add_error_message(str(e))
             else:
-                token = self.create_token(request, user)
+                token = auth_backend.create_token(request, user)
+                token = token.decode('utf-8')
+                request.response.status_code = 201
                 return Json({'token': token}).http_response(request)
 
         return Json(form.tojson()).http_response(request)

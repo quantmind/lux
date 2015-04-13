@@ -17,9 +17,10 @@ in a router handler:
 import lux
 from lux import Parameter
 
+from pulsar.utils.log import LocalMixin
+
 from .exc import *
-from .mapper import Odm
-from . import sql
+from .mapper import Mapper
 from . import nosql
 
 
@@ -34,3 +35,26 @@ class Extension(lux.Extension):
     def on_config(self, app):
         '''Initialise Object Data Mapper'''
         app.odm = Odm(app, app.config['DATASTORE'])
+
+
+class Odm(LocalMixin):
+    '''Lazy object data mapper container
+
+    Usage:
+
+        odm = app.odm()
+    '''
+
+    def __init__(self, app, binds):
+        self.app = app
+        self.binds = binds
+
+    def __call__(self):
+        if self.local.mapper is None:
+            self.local.mapper = Mapper(self.app, self.binds)
+        return self.local.mapper
+
+    def database_create(self, database, **params):
+        odm = Odm(self.app, self.binds)
+        odm.local.mapper = self().database_create(database, **params)
+        return odm

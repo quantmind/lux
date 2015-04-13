@@ -6,7 +6,7 @@ from pulsar.utils.string import random_string
 import lux
 
 
-def generate_secret(length, hexadecimal=False):
+def generate_secret(length=50, hexadecimal=False):
     if hexadecimal:
         return ''.join((hex(randint(1, 10000)) for _ in range(length)))
     else:

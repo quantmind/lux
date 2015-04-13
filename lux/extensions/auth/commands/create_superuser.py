@@ -6,6 +6,7 @@ import sys
 from pulsar import ImproperlyConfigured, Setting
 
 import lux
+from lux.extensions.rest import normalise_email
 
 try:
     input = raw_input
@@ -38,22 +39,25 @@ class Command(lux.Command):
     help = 'Create a superuser.'
     option_list = (
         Setting('username', ('--username',), desc='Username'),
-        Setting('password', ('--password',), desc='Password')
+        Setting('password', ('--password',), desc='Password'),
+        Setting('email', ('--email',), desc='Email')
     )
 
     def run(self, options, interactive=False):
         username = options.username
         password = options.password
-        if not username or not password:
+        email = options.email
+        if not username or not password or not email:
             interactive = True
         request = self.app.wsgi_request()
-        auth_backend = self.app.extensions['lux.extensions.auth']
-        def_username = get_def_username(request, auth_backend)
-        input_msg = 'Username'
-        if def_username:
-            input_msg += ' (Leave blank to use %s)' % def_username
+        auth_backend = self.app.auth_backend
         if interactive:  # pragma    nocover
+            def_username = get_def_username(request, auth_backend)
+            input_msg = 'Username'
+            if def_username:
+                input_msg += ' (Leave blank to use %s)' % def_username
             username = None
+            email = None
             password = None
             try:
                 # Get a username
@@ -72,6 +76,21 @@ class Command(lux.Command):
                             self.write_err(
                                 "Error: That username is already taken.\n")
                             username = None
+
+                while not email:
+                    email = input('Email: ')
+                    try:
+                        email = normalise_email(email)
+                    except Exception:
+                        self.write_err('Error: That email is invalid.')
+                        email = None
+                    else:
+                        user = auth_backend.get_user(request, email=email)
+                        if user is not None:
+                            self.write_err(
+                                "Error: That email is already taken.")
+                            email = None
+
                 # Get a password
                 while 1:
                     if not password:
@@ -91,9 +110,13 @@ class Command(lux.Command):
             except KeyboardInterrupt:
                 self.write_err('\nOperation cancelled.')
                 sys.exit(1)
-        user = auth_backend.create_superuser(request, username=username,
+        user = auth_backend.create_superuser(request,
+                                             username=username,
+                                             email=normalise_email(email),
                                              password=password)
         if user:
             self.write("Superuser %s created successfully.\n" % user)
         else:
             self.write_err("ERROR: could not create superuser")
+
+        return user

@@ -12,9 +12,12 @@ class CRUD(rest.RestRouter):
         self.model = model
         super().__init__(url, *args, **kwargs)
 
-    @property
-    def manager(self):
-        return getattr(self.app.mapper(), self.model)
+    def collection(self, request, limit, offset, text):
+        odm = request.app.odm()
+        with odm.begin() as session:
+            query = session.query(odm[self.model])
+            data = query.limit(limit).offset(offset).all()
+            return self.serialise(request, data)
 
     def get(self, request):
         backend = request.cache.auth_backend

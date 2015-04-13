@@ -15,6 +15,9 @@ class OdmMixin:
     '''
     _loop = None
 
+    def table_names(self):
+        return self.table_all()
+
     def create_model(self, manager, *args, **kwargs):
         '''Create a new model from a ``manager``
         Method used by the :class:`.Manager` callable method.

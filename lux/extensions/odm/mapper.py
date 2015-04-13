@@ -1,191 +1,315 @@
 import re
+import os
+import logging
 from copy import copy
-
-from abc import ABCMeta, abstractmethod
+from contextlib import contextmanager
 from inspect import ismodule
 from importlib import import_module
-from collections import OrderedDict
+from itertools import chain
+
+from sqlalchemy import MetaData, Table, inspect, event, exc
+from sqlalchemy.engine import create_engine
+from sqlalchemy.ext.declarative import DeclarativeMeta
+from sqlalchemy.orm.session import Session
 
 from pulsar import ImproperlyConfigured
-from pulsar.utils.log import LocalMixin
+from pulsar.apps.data import Store, create_store
+from pulsar.apps.greenio import wait
 
 
-_mappers = OrderedDict()
+
 _camelcase_re = re.compile(r'([A-Z]+)(?=[a-z0-9])')
 
+logger = logging.getLogger('lux.odm')
 
-class MapperType(ABCMeta):
-    '''Metaclass for Object data mappers
+
+class Mapper:
+    '''SQLAlchemy wrapper for lux applications
     '''
-    def __new__(cls, name, bases, attrs):
-        key = attrs.pop('name', name).lower()
-        abstract = attrs.pop('__abstract__', False)
-        mapper_class = super().__new__(cls, name, bases, attrs)
-        if not abstract:
-            _mappers[key] = mapper_class
-        return mapper_class
-
-
-class Mapper(metaclass=MapperType):
-    '''Base class for lux object data mappers
-    '''
-    __abstract__ = True
 
     def __init__(self, app, binds):
         self.app = app
-        self.binds = binds
+        self._autodiscover(binds)
 
-    def __repr__(self):
-        return '%s %s' % (self.__class__.__name__, self)
+    def __getitem__(self, model):
+        return self._declarative_register[model]
 
-    def __str__(self):
-        return str(self.binds)
+    def __getattr__(self, name):
+        if name in self._declarative_register:
+            return self._declarative_register[name]
+        raise AttributeError('No model named "%s"' % name)
 
-    @abstractmethod
-    def register(self, module, label, **params):
-        '''Register models defined in ``module`` with this mapper
-        '''
-        pass
-
-    @abstractmethod
-    def database_create(self, **params):
-        '''Create databases and return a new mapper
-        '''
-        pass
-
-    @abstractmethod
-    def database_drop(self, **params):
-        '''Drop all databases associated with this mapper
-        '''
-        pass
-
-    @abstractmethod
-    def table_create(self, remove_existing=False):
-        '''Create all tables associated with this mapper
-        '''
-        pass
-
-    @abstractmethod
-    def table_drop(self, bind='__all__'):
-        '''Drop all tables associated with this mapper
-        '''
-        pass
-
-    @abstractmethod
-    def tables(self):
-        '''List all tables for this mapper
-        '''
-        pass
-
-    @abstractmethod
-    def session(self, **params):
-        '''Obtain a session for this mapper
-        '''
-        pass
-
-    @abstractmethod
-    def engines(self):
-        '''List of datastore engines
-        '''
-        pass
-
-    @abstractmethod
-    def begin(self, **params):
-        '''Close the backend connections
-        '''
-        pass
-
-    @abstractmethod
-    def close(self):
-        '''Close the backend connections
-        '''
-        pass
-
-
-class Odm(Mapper, LocalMixin):
-    '''Lazy object data mapper container
-
-    Usage:
-
-        sql = app.odm('sql')
-    '''
-    __abstract__ = True
-
-    def __call__(self, key):
-        return self.mappers()[key]
-
-    def __iter__(self):
-        return iter(self.mappers().values())
-
-    def __len__(self):
-        return len(self.mappers())
-
-    def mappers(self):
-        if self.local.mappers is None:
-            self.local.mappers = self._autodiscover()
-        return self.local.mappers
-
-    def database_create(self, **params):
-        '''Create databases and return a new :class:`.Odm`
+    def database_create(self, database, **params):
+        '''Create databases for each engine and return a new :class:`.Mapper`.
         '''
         binds = {}
-        for mapper in self:
-            binds.update(mapper.database_create(**params))
+        dbname = database
+        for key, engine in self.keys_engines():
+            if hasattr(database, '__call__'):
+                dbname = database(engine)
+            assert dbname, "Cannot create a database, no db name given"
+            key = key if key else 'default'
+            binds[key] = self._database_create(engine, dbname)
         return self.__class__(self.app, binds)
 
-    def database_drop(self, **params):
-        for mapper in self:
-            mapper.database_drop(**params)
+    def database_all(self):
+        '''Return a dictionary mapping engines with databases
+        '''
+        all = {}
+        for engine in self.engines():
+            all[engine] = self._database_all(engine)
+        return all
 
-    def table_create(self, remove_existing=False):
-        for mapper in self.mappers().values():
-            mapper.table_create(remove_existing)
-
-    def table_drop(self):
-        for mapper in self.mappers().values():
-            mapper.table_drop()
+    def database_drop(self, database=None, **params):
+        dbname = database
+        for engine in self.engines():
+            if hasattr(database, '__call__'):
+                dbname = database(engine)
+            assert dbname, "Cannot drop database, no db name given"
+            self._database_drop(engine, dbname)
 
     def tables(self):
-        '''Return a list of tables associated with this mapper
-        '''
         tables = []
-        for mapper in self.mappers().values():
-            tables.extend(mapper.tables())
+        for engine in self.engines():
+            tbs = engine.table_names()
+            if tbs:
+                tables.append((str(engine.url), tbs))
         return tables
 
+    def table_create(self, remove_existing=False):
+        """Creates all tables.
+        """
+        for engine in self.engines():
+            tables = self._get_tables(engine)
+            if not remove_existing:
+                self.metadata.create_all(engine, tables=tables)
+            else:
+                pass
+
+    def table_drop(self):
+        """Drops all tables.
+        """
+        for engine in self.engines():
+            self.metadata.drop_all(engine, tables=self._get_tables(engine))
+
+    def reflect(self, bind='__all__'):
+        """Reflects tables from the database.
+        """
+        self._execute_for_all_tables(bind, 'reflect', skip_tables=True)
+
+    @contextmanager
+    def begin(self, close=True, expire_on_commit=False, **options):
+        """Provide a transactional scope around a series of operations.
+
+        By default, ``expire_on_commit`` is set to False so that instances
+        can be used outside the session.
+        """
+        session = self.session(expire_on_commit=expire_on_commit, **options)
+        try:
+            yield session
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            if close:
+                session.close()
+
+    def session(self, **options):
+        options['binds'] = self.binds
+        return LuxSession(self, **options)
+
+    def get_engine(self, key=None):
+        '''Get an engine by key
+        '''
+        if key in self._engines:
+            return self._engines[key]
+        elif key in self._nosql_engines:
+            return self._nosql_engines[key]
+
     def engines(self):
-        engines = []
-        for mapper in self:
-            engines.extend(mapper.engines())
-        return engines
+        return chain(self._engines.values(), self._nosql_engines.values())
+
+    def keys_engines(self):
+        return chain(self._engines.items(), self._nosql_engines.items())
 
     def close(self):
-        for mapper in self:
-            mapper.close()
+        for engine in self.engines():
+            engine.dispose()
 
-    def register(self, module, label, **params):
-        pass
+    # INTERNALS
+    def _get_tables(self, engine):
+        tables = []
+        for table, eng in self.binds.items():
+            if eng == engine:
+                tables.append(table)
+        return tables
 
-    def begin(self, **params):
-        raise NotImplementedError
+    def _database_all(self, engine):
+        if isinstance(engine, Store):
+            return engine.database_all()
+        elif engine.name == 'sqlite':
+            database = engine.url.database
+            if os.path.isfile(database):
+                return [database]
+            else:
+                return []
+        else:
+            insp = inspect(engine)
+            return insp.get_schema_names()
 
-    def session(self, **params):
-        raise NotImplementedError
+    def _database_create(self, engine, dbname):
+        if isinstance(engine, Store):
+            return wait(engine.database_create(dbname))
+        elif engine.name != 'sqlite':
+            conn = engine.connect()
+            # the connection will still be inside a transaction,
+            # so we have to end the open transaction with a commit
+            conn.execute("commit")
+            conn.execute('create database %s' % dbname)
+            conn.close()
+        url = copy(engine.url)
+        url.database = dbname
+        return str(url)
 
-    def _autodiscover(self):
-        datastore = self.binds
-        if not datastore:
-            datastore = {}
-        elif isinstance(datastore, str):
-            datastore = {'default': datastore}
-        if datastore and 'default' not in datastore:
+    def _database_drop(self, engine, database):
+        logger.info('dropping database "%s" from %s', database, engine)
+        if engine.name == 'sqlite':
+            try:
+                os.remove(database)
+            except FileNotFoundError:
+                pass
+        elif isinstance(engine, Store):
+            engine.database_drop(database)
+        else:
+            conn = engine.connect()
+            conn.execute("commit")
+            conn.execute('drop database %s' % database)
+            conn.close()
+
+    def _autodiscover(self, binds):
+        # Setup mdoels and engines
+        if not binds:
+            binds = {}
+        elif isinstance(binds, str):
+            binds = {'default': binds}
+        if binds and 'default' not in binds:
             raise ImproperlyConfigured('default datastore not specified')
 
-        self.binds = datastore
-        return register_applications(self.app,
-                                     copy(datastore),
-                                     self.app.config['EXTENSIONS'],
-                                     green=self.app.config['GREEN_WSGI'])
+        self.metadata = MetaData()
+        self._engines = {}
+        self._nosql_engines = {}
+        self._declarative_register = {}
+        self.binds = {}
+        # Create all sql engines in the binds dictionary
+        # Quietly fails if the engine is not recognised,
+        # it my be a NoSQL store
+        for name, bind in tuple(binds.items()):
+            key = None if name == 'default' else name
+            try:
+                self._engines[key] = create_engine(bind)
+            except exc.NoSuchModuleError:
+                self._nosql_engines[key] = create_store(bind)
+        #
+        if self._nosql_engines and not self.app.green_pool:
+            raise ImproperlyConfigured('NoSql stores requires GREEN_POOL')
+
+        for label, mod in module_iterator(self.app.config['EXTENSIONS']):
+            # Loop through attributes in mod_models
+            for name in dir(mod):
+                value = getattr(mod, name)
+                if isinstance(value, (Table, DeclarativeMeta)):
+                    for table in value.metadata.sorted_tables:
+                        if table.key not in self.metadata.tables:
+                            engine = None
+                            label = table.info.get('bind_label')
+                            keys = ('%s.%s' % (label, table.key),
+                                    label, None) if label else (None,)
+                            for key in keys:
+                                engine = self.get_engine(key)
+                                if engine:
+                                    break
+                            assert engine
+                            table.tometadata(self.metadata)
+                            self.binds[table] = engine
+                    if (isinstance(value, DeclarativeMeta) and
+                            hasattr(value, '__table__')):
+                        table = value.__table__
+                        self._declarative_register[table.key] = value
+
+
+class LuxSession(Session):
+    """The sql alchemy session that lux uses.
+
+    It extends the default session system with bind selection and
+    modification tracking.
+    """
+
+    def __init__(self, mapper, **options):
+        #: The application that this session belongs to.
+        self.mapper = mapper
+        # self.register()
+        super().__init__(**options)
+
+    @property
+    def app(self):
+        return self.mapper.app
+
+    def register(self):
+        if not hasattr(self, '_model_changes'):
+            self._model_changes = {}
+
+        event.listen(self, 'before_flush', self.record_ops)
+        event.listen(self, 'before_commit', self.record_ops)
+        event.listen(self, 'before_commit', self.before_commit)
+        event.listen(self, 'after_commit', self.after_commit)
+        event.listen(self, 'after_rollback', self.after_rollback)
+
+    @staticmethod
+    def record_ops(session, flush_context=None, instances=None):
+        try:
+            d = session._model_changes
+        except AttributeError:
+            return
+
+        for targets, operation in ((session.new, 'insert'),
+                                   (session.dirty, 'update'),
+                                   (session.deleted, 'delete')):
+            for target in targets:
+                state = inspect(target)
+                key = state.identity_key if state.has_identity else id(target)
+                d[key] = (target, operation)
+
+    @staticmethod
+    def before_commit(session):
+        try:
+            d = session._model_changes
+        except AttributeError:
+            return
+
+        # if d:
+        #     before_models_committed.send(session.app,
+        #                                  changes=list(d.values()))
+
+    @staticmethod
+    def after_commit(session):
+        try:
+            d = session._model_changes
+        except AttributeError:
+            return
+
+        # if d:
+        #     models_committed.send(session.app, changes=list(d.values()))
+        #     d.clear()
+
+    @staticmethod
+    def after_rollback(session):
+        try:
+            d = session._model_changes
+        except AttributeError:
+            return
+
+        # d.clear()
 
 
 def model_label(attrs):
@@ -200,42 +324,6 @@ def model_label(attrs):
 
 def model_name(name):
     return _camelcase_re.sub(_join, name).lstrip('_')
-
-
-def register_applications(app, binds, applications, **params):
-    '''A higher level registration method for group of models located
-    on application modules.
-
-    It uses the :meth:`model_iterator` method to iterate
-    through all :class:`.Model` available in ``applications``
-    and :meth:`register` them.
-
-    :parameter applications: A String or a list of strings representing
-        python dotted paths where models are implemented. Can also be
-        a module or a list of modules.
-    :parameter models: Optional list of models to include. If not provided
-        all models found in *applications* will be included.
-    :parameter binds: dictionary which map a model or an
-        application to a store
-        :ref:`connection string <connection-string>`.
-    :rtype: A list of registered :class:`.Model`.
-
-    For example::
-
-
-        register_applications('mylib.myapp')
-        register_applications(['mylib.myapp', 'another.path'])
-        register_applications(pythonmodule)
-        register_applications(['mylib.myapp', pythonmodule])
-
-    '''
-    mappers = {}
-    for key, MapperClass in _mappers.items():
-        mapper = MapperClass(app, binds)
-        for label, mod in module_iterator(applications):
-            mapper.register(mod, label, **params)
-        mappers[key] = mapper
-    return mappers
 
 
 def module_iterator(application):

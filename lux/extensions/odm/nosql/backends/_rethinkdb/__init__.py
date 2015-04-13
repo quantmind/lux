@@ -25,25 +25,27 @@ class RethinkDB(RemoteStore):
         return rethinkdbProtocol is not None
 
     # Database API
-    def database_create(self, database=None, **kw):
+    def database_create(self, database, **kw):
         '''Create a new database
         '''
-        database = database or self.database
         if not database:
             raise ValueError('Database name must be specified')
         term = ast.DbCreate(database)
         result = yield from self.execute(term, **kw)
         assert result['dbs_created'] == 1
+        database = self.database
         self.database = result['config_changes'][0]['new_val']['name']
-        return result
+        url = self.dns
+        self.database = database
+        return url
 
     def database_all(self):
         '''The list of all databases
         '''
         return self.execute(ast.DbList())
 
-    def database_drop(self, dbname=None, **kw):
-        return self.execute(ast.DbDrop(dbname or self.database), **kw)
+    def database_drop(self, dbname, **kw):
+        return self.execute(ast.DbDrop(dbname), **kw)
 
     # Table API
     def table_create(self, table_name, **kw):

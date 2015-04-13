@@ -186,11 +186,6 @@ def normalise_email(email):
     Normalise the address by lowercasing the domain part of the email
     address.
     """
-    email = email or ''
-    try:
-        email_name, domain_part = email.strip().rsplit('@', 1)
-    except ValueError:
-        pass
-    else:
-        email = '@'.join([email_name, domain_part.lower()])
+    email_name, domain_part = email.strip().rsplit('@', 1)
+    email = '@'.join([email_name, domain_part.lower()])
     return email

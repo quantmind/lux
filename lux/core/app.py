@@ -223,7 +223,7 @@ class Application(ConsoleParser, Extension, EventMixin):
                   'Default locale'),
         Parameter('MD_EXTENSIONS', ['extra', 'meta', 'toc'],
                   'List/tuple of markdown extensions'),
-        Parameter('GREEN_WSGI', 0,
+        Parameter('GREEN_POOL', 0,
                   'Run the WSGI handle in a pool of greenlet')
         ]
 
@@ -238,11 +238,8 @@ class Application(ConsoleParser, Extension, EventMixin):
             self.cms = CMS(self)
             self.handler = self._build_handler()
             self.fire('on_loaded')
-            if self.config['GREEN_WSGI']:
-                from pulsar.apps.greenio import WsgiGreen
-
-                green = WsgiGreen(self.handler,
-                                  max_workers=self.config['GREEN_WSGI'])
+            if self.green_pool:
+                green = WsgiGreen(self.handler, self.green_pool)
                 self.logger.info('Setup green Wsgi handler')
                 self.handler = WsgiHandler((wait_for_body_middleware, green),
                                            async=True)
@@ -579,6 +576,12 @@ class Application(ConsoleParser, Extension, EventMixin):
         for ext in self.extensions.values():
             self.bind_events(ext, event_names)
 
+    @lazyproperty
+    def green_pool(self):
+        if self.config['GREEN_POOL']:
+            from pulsar.apps.greenio import GreenPool
+            return GreenPool(self.config['GREEN_POOL'])
+
     # INTERNALS
     def _build_config(self, module_name):
         # Check if an extension module is available
@@ -649,6 +652,23 @@ class Application(ConsoleParser, Extension, EventMixin):
         cfg.set('loghandlers', opts.loghandlers)
         self.debug = cfg.debug
         self.logger = cfg.configured_logger('lux')
+
+
+class WsgiGreen:
+    '''Wraps a Wsgi application to be executed on a pool of greenlet
+    '''
+    def __init__(self, wsgi, pool):
+        from pulsar.apps.greenio import wait
+        self.wsgi = wsgi
+        self.pool = pool
+        self.wait = wait
+
+    def __call__(self, environ, start_response):
+        return self.pool.submit(self._green_handler, environ, start_response)
+
+    def _green_handler(self, environ, start_response):
+        # Running on a greenlet worker
+        return self.wait(self.wsgi(environ, start_response))
 
 
 def add_app(apps, name, pos=None):

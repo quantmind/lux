@@ -16,7 +16,7 @@ class NoSQL(Mapper):
 
     _engines = None
 
-    def database_create(self, **params):
+    def database_create(self, database=None, **params):
         '''Create databases and return a new :class:`.Odm`
         '''
         binds = {}

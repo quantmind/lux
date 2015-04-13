@@ -8,20 +8,19 @@ class TestSql(test.AppTestCase):
     config_params = {'DATASTORE': 'sqlite://'}
 
     def test_odm(self):
-        odm = self.app.odm
-        self.assertEqual(len(odm), 2)
-        sql = odm('sql')
-        tables = sql.tables()
+        odm = self.app.odm()
+        tables = odm.tables()
         self.assertTrue(tables)
 
     def test_simple_session(self):
         app = self.app
-        sql = app.odm('sql')
-        with sql.begin() as s:
-            self.assertEqual(s.app, app)
-            author = sql.author(name='Luca')
-            s.add(author)
+        odm = app.odm()
+        with odm.begin() as session:
+            self.assertEqual(session.app, app)
+            user = odm.user(first_name='Luca')
+            session.add(user)
 
-        with sql.begin() as s:
-            s.add(author)
-            self.assertTrue(author.id)
+        self.assertTrue(user.id)
+        self.assertEqual(user.first_name, 'Luca')
+        self.assertFalse(user.is_superuser())
+
