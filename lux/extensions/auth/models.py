@@ -1,13 +1,16 @@
 '''
 SQLAlchemy models for Authentications
+
+Requires sqlalchemy_utils
 '''
 import enum
+from datetime import datetime
 
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
 from sqlalchemy.orm import relationship
 from sqlalchemy import (Column, Integer, String, Table, ForeignKey, Boolean,
-                        DateTime, func)
-from sqlalchemy_utils import ChoiceType
+                        DateTime)
+from sqlalchemy_utils import ChoiceType, IPAddressType
 
 from lux.extensions.rest import UserMixin
 
@@ -63,7 +66,7 @@ class User(Base, UserMixin):
     groups = relationship("Group", secondary=users_groups)
     active = Column(Boolean)
     superuser = Column(Boolean)
-    joined = Column(DateTime, default=func.now())
+    joined = Column(DateTime, default=datetime.utcnow)
 
     def has_permission(self, permission):
         return self.is_superuser or permission in self.permissions
@@ -101,6 +104,9 @@ class Permission(Base):
 
 
 class Token(Base):
-    key = Column(String(40), primary_key=True)
-    user = Column(Integer, ForeignKey('user.id'))
-    created = Column(DateTime, default=func.now())
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('user.id'))
+    created = Column(DateTime, default=datetime.utcnow)
+    ip_adderss = Column(IPAddressType)
+    user_agent = Column(String(80))
+    last_access = Column(DateTime, default=datetime.utcnow)

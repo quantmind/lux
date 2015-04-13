@@ -87,7 +87,7 @@ class TestSqlite(test.AppTestCase):
         self.assertEqual(response['content-type'],
                          'application/json; charset=utf-8')
 
-    def test_create_superuser_command_and_login(self):
+    def test_create_superuser_command_and_token(self):
         username = 'ghghghgh'
         password = 'dfbjdhbvdjbhv'
         user = self.client.run_command('create_superuser',
@@ -97,7 +97,7 @@ class TestSqlite(test.AppTestCase):
         self.assertEqual(user.username, username)
         self.assertNotEqual(user.password, password)
 
-        # Test login
+        # Get new token
         request = self.client.post('/authorizations',
                                    content_type='application/json',
                                    body={'username': username,

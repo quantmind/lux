@@ -107,3 +107,19 @@ class TokenBackend(AuthMixin, backends.TokenBackend):
     def on_config(self, app):
         super().on_config(app)
         backends.TokenBackend.on_config(self, app)
+
+    def create_token(self, request, user):
+        '''Create the token
+        '''
+        odm = request.app.odm()
+        payload = self.jwt_payload(request, user)
+        ip_adderss = request.get_client_address()
+
+        with odm.begin() as session:
+            token = odm.token(user_id=user.id,
+                              ip_adderss=ip_adderss,
+                              user_agent=self.user_agent(request, 80))
+            session.add(token)
+
+        payload['token_id'] = token.id
+        return self.encode_payload(request, payload)

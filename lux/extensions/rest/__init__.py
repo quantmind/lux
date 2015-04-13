@@ -66,6 +66,10 @@ class AuthBackend(lux.Extension):
         if session_expiry:
             return datetime.now() + timedelta(seconds=session_expiry)
 
+    def user_agent(self, request, max_len=80):
+        agent = request.get('HTTP_USER_AGENT')
+        return agent[:max_len] if agent else ''
+
 
 class Extension(AuthBackend):
     '''The sessions extensions provides wsgi middleware for managing sessions
@@ -128,7 +132,11 @@ class Extension(AuthBackend):
         module = import_module(app.meta.module_name)
 
         for dotted_path in app.config['AUTHENTICATION_BACKENDS']:
-            backend = module_attribute(dotted_path)()
+            backend = module_attribute(dotted_path)
+            if not backend:
+                self.logger.error('Could not load backend "%s"', dotted_path)
+                continue
+            backend = backend()
             backend.setup(app.config, module, app.params)
             self.backends.append(backend)
             app.bind_events(backend, exclude=('on_config',))

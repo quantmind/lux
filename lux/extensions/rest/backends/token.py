@@ -96,7 +96,7 @@ class TokenBackend(AuthBackend):
         '''Create the token
         '''
         payload = self.jwt_payload(request, user)
-        return jwt.encode(payload, request.config['SECRET_KEY'])
+        return self.encode_payload(self.jwt_payload(request, user))
 
     def jwt_payload(self, request, user):
         expiry = self.session_expiry(request)
@@ -105,6 +105,9 @@ class TokenBackend(AuthBackend):
         if expiry:
             payload['exp'] = int(time.mktime(expiry.timetuple()))
         return payload
+
+    def encode_payload(self, request, payload):
+        return jwt.encode(payload, request.config['SECRET_KEY'])
 
 
 class Authorization(RestRouter):

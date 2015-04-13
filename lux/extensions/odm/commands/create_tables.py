@@ -6,5 +6,5 @@ class Command(OdmCommand):
 
     def run(self, options, **params):
         apps = options.apps
-        odm = self.app.odm
+        odm = self.app.odm()
         odm.table_create()
