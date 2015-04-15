@@ -6,9 +6,6 @@ python:
   - "3.4"
 
 before_install:
-  - add-apt-repository ppa:rethinkdb/ppa -y
-  - apt-get update -q
-  - apt-get install rethinkdb
   - npm install -g grunt-cli
 
 install:
@@ -20,9 +17,6 @@ install:
   - npm install
 
 before_script:
-  - rethinkdb --io-threads 2048 --daemon
-  - ulimit -S -n 2048
-  - sleep 5
   - psql -U postgres -c "CREATE USER lux WITH PASSWORD 'luxtest';"
   - psql -U postgres -c "CREATE USER lux CREATEDB;"
   - psql -U postgres -c "CREATE DATABASE luxtests;"
