@@ -4,5 +4,7 @@ pep8
 unidecode
 sphinx
 pyyaml
+pyjwt
 beautifulsoup4
 rethinkdb
+psycopg2
