@@ -97,6 +97,11 @@ class RestRouter(lux.Router):
     def serialise_object(self, request, data, in_list=False):
         raise NotImplementedError
 
+    def json(self, request, data):
+        '''Return a response as application/json
+        '''
+        return Json(data).http_response(request)
+
 
 class Login(WebFormRouter):
     '''Adds login get ("text/html") and post handlers
@@ -175,13 +180,8 @@ class ChangePassword(WebFormRouter):
         '''Handle post data
         '''
         user = request.cache.user
-        if not user.is_authenticated():
-            raise MethodNotAllowed
-        form = self.fclass(request, data=request.body_data())
+        form = change_password(request, self.form_class)
         if form.is_valid():
-            auth = request.cache.auth_backend
-            password = form.cleaned_data['password']
-            auth.set_password(user, password)
             return self.maybe_redirect_to(request, form, user=user)
         return Json(form.tojson()).http_response(request)
 
@@ -313,3 +313,15 @@ class RequirePermission(object):
             return callable(request)
         else:
             raise PermissionDenied
+
+
+def change_password(request, form_class):
+    user = request.cache.user
+    if not user.is_authenticated():
+        raise MethodNotAllowed
+    form = form_class(request, data=request.body_data())
+    if form.is_valid():
+        auth = request.cache.auth_backend
+        password = form.cleaned_data['password']
+        auth.set_password(user, password)
+    return form

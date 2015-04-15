@@ -1,5 +1,6 @@
 import json
 
+from lux.extensions.rest import RestRouter
 from lux.extensions.rest.backends import token
 
 
