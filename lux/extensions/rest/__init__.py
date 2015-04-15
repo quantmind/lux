@@ -1,5 +1,5 @@
 '''
-Extension for Authorization and Authentication Backends
+Extension for Restful web services
 '''
 from datetime import datetime, timedelta
 from importlib import import_module
@@ -26,7 +26,8 @@ def luxrest(url, name):
 
 
 class AuthBackend(lux.Extension):
-
+    '''Interface for extension supporting restful methods
+    '''
     def authenticate(self, request, **params):
         '''Authenticate user'''
         pass
@@ -52,7 +53,8 @@ class AuthBackend(lux.Extension):
         pass
 
     def request(self, request):
-        '''Request middleware'''
+        '''Request middleware. Most restful backends implement this method
+        '''
         pass
 
     def has_permission(self, request, target, level):
