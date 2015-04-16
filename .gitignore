@@ -1,23 +1,22 @@
+# eclipse
 .project
 .pydevproject
+.settings
+
+# python
+*.pyc
 .coverage
 _doc_build
 __pycache__
 htmlcov
-.settings
+dist
+build
+lux.egg-info
 docs/build
 example/luxweb/settings.py
-*.pyc
+
 *.log
 npm*
 node_modules
 MANIFEST
 .DS_Store
-dist
-
-# GAEBLOG
-examples/libs
-examples/gaeblog/site-packages
-examples/gaeblog/lux
-examples/gaeblog/blogapp/media
-examples/gaeblog/index.yaml

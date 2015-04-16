@@ -1,4 +1,11 @@
 greenlet
-pyjwt
 markdown
 sqlalchemy
+cython
+unidecode
+sphinx
+pyyaml
+pyjwt
+beautifulsoup4
+rethinkdb
+psycopg2

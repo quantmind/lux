@@ -9,9 +9,9 @@ before_install:
   - npm install -g grunt-cli
 
 install:
-  - pip install -r requirements_dev.txt
-  - pip install -r requirements_pre.txt
-  - python setup.py install
+  - pip install -r requirements-dev.txt
+  - pip install -r requirements-soft.txt
+  - pip install -r requirements.txt
   - rm -rf build
   - rm -rf lux.egg-info
   - npm install

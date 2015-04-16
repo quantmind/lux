@@ -1,8 +1,14 @@
-
+    //
+    //  SockJS Module
+    //  ==================
+    //
+    //
+    //
     angular.module('lux.sockjs', [])
 
         .run(['$rootScope', '$log', function (scope, log) {
-            var websocket = scope.STREAM_URL,
+
+            var websockets = {},
                 websocketChannels = {};
 
             scope.websocketListener = function (channel, callback) {
@@ -14,12 +20,20 @@
                 callbacks.push(callback);
             };
 
-            if (websocket) {
+            scope.connectSockJs = function (url) {
+                if (websockets[url]) {
+                    log.warn('Already connected with ' + url);
+                    return;
+                }
+
                 require(['sockjs'], function (SockJs) {
-                    var sock = new SockJs(websocket);
+                    var sock = new SockJs(url);
+
+                    websockets[url] = sock;
 
                     sock.onopen = function() {
-                        log.info('New connection with ' + websocket);
+                        websockets[url] = sock;
+                        log.info('New connection with ' + url);
                     };
 
                     sock.onmessage = function (e) {
@@ -37,8 +51,12 @@
                     };
 
                     sock.onclose = function() {
+                        delete websockets[url];
                         log.warn('Connection with ' + websocket + ' CLOSED');
                     };
                 });
-            }
+            };
+
+            if (scope.STREAM_URL)
+                scope.connectSockJs(scope.STREAM_URL);
         }]);
