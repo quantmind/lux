@@ -12,8 +12,6 @@ install:
   - pip install -r requirements-dev.txt
   - pip install -r requirements-soft.txt
   - pip install -r requirements.txt
-  - rm -rf build
-  - rm -rf lux.egg-info
   - npm install
 
 before_script:
@@ -26,7 +24,6 @@ before_script:
 script:
   - grunt jasmine
   - pep8
-  - rm -rf lux
   - python -m runtests --coverage --test-timeout 10
   - python -m runtests --coveralls
 
