@@ -1,5 +1,6 @@
 greenlet
 markdown
+sqlalchemy_utils
 sqlalchemy
 cython
 unidecode

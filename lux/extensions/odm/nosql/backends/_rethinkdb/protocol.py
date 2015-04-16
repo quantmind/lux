@@ -10,8 +10,7 @@ from pulsar import ProtocolConsumer, Connection
 pResponse = p.Response.ResponseType
 pQuery = p.Query.QueryType
 SequenceResponse = frozenset((pResponse.SUCCESS_PARTIAL,
-                              pResponse.SUCCESS_SEQUENCE,
-                              pResponse.SUCCESS_FEED))
+                              pResponse.SUCCESS_SEQUENCE))
 
 
 def start_query(term, token, options):

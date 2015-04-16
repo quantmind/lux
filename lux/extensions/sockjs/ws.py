@@ -34,6 +34,8 @@ class WsClient:
         return '%s - %s' % (self.address, self.session_id)
 
     def __call__(self, channel, message):
+        '''Invoked by the pubsub handler when a new message on a channel
+        is available.'''
         message = message.decode('utf-8')
         self.write(LUX_MESSAGE, channel, message)
 
