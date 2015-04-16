@@ -68,6 +68,7 @@ class LuxWs(ws.WS):
     '''Lux websocket
     '''
     pubsub = None
+    '''Publish/subscribe handler'''
 
     def on_open(self, websocket):
         ws = WsClient(websocket, self)
@@ -83,7 +84,7 @@ class LuxWs(ws.WS):
         ws = websocket.handshake.cache.websocket
         try:
             msg = json.loads(message)
-
+            app.fire('on_websocket_message', websocket, self)
         except Exception as exc:
             ws.error_message(exc)
 

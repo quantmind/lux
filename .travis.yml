@@ -27,8 +27,8 @@ script:
   - python -m runtests --coverage --test-timeout 10
   - python -m runtests --coveralls
 
-after_script:
-  - killall rethinkdb
+# after_script:
+#   - killall rethinkdb
 
 notifications:
   email: false
