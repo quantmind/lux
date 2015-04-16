@@ -1,4 +1,4 @@
 python-dateutil
 pytz
--e git+git@github.com:quantmind/pulsar.git#egg=pulsar
+-e git+https://github.com/quantmind/pulsar.git#egg=pulsar
 -e .
