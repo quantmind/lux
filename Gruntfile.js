@@ -3,7 +3,7 @@
 module.exports = function (grunt) {
   "use strict";
     // Project configuration.
-    var docco_output = '../docs/lux/html/docco',
+    var docco_output = 'docs/lux/html/docco',
         // All libraries
         libs = grunt.file.readJSON('luxjs/libs.json'),
         buildTasks = ['gruntfile', 'concat', 'jshint', 'uglify'],
@@ -17,7 +17,8 @@ module.exports = function (grunt) {
                     specs : 'luxjs/tests/**/*.js',
                     template: 'luxjs/tests/test.tpl.html',
                     templateOptions: {
-                        deps: ['lux/media/lux/lux.min.js', 'angular-strap', 'angular-mocks', 'lodash']
+                        deps: ['lux/media/lux/lux.min.js', 'angular-strap',
+                               'angular-mocks', 'lodash']
                     }
                 }
             }

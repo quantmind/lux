@@ -1,6 +1,5 @@
-    lux.loader = angular.module('lux.loader', []);
-
-    lux.loader
+    lux.loader = angular.module('lux.loader', [])
+    	//
         .value('context', lux.context)
         //
         .config(['$controllerProvider', function ($controllerProvider) {
@@ -8,7 +7,8 @@
             lux.loader.controller = $controllerProvider;
         }])
         //
-        .run(['$rootScope', '$log', '$timeout', 'context', function (scope, $log, $timeout, context) {
+        .run(['$rootScope', '$log', '$timeout', 'context',
+              	function (scope, $log, $timeout, context) {
             $log.info('Extend root scope with context');
             extend(scope, context);
             scope.$timeout = $timeout;

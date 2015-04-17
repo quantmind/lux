@@ -1,6 +1,6 @@
 //      Lux Library - v0.1.1
 
-//      Compiled 2015-04-15.
+//      Compiled 2015-04-17.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -1186,11 +1186,17 @@ function(angular, root) {
     };
 
 
-
+    //
+    //  SockJS Module
+    //  ==================
+    //
+    //
+    //
     angular.module('lux.sockjs', [])
 
         .run(['$rootScope', '$log', function (scope, log) {
-            var websocket = scope.STREAM_URL,
+
+            var websockets = {},
                 websocketChannels = {};
 
             scope.websocketListener = function (channel, callback) {
@@ -1202,12 +1208,20 @@ function(angular, root) {
                 callbacks.push(callback);
             };
 
-            if (websocket) {
+            scope.connectSockJs = function (url) {
+                if (websockets[url]) {
+                    log.warn('Already connected with ' + url);
+                    return;
+                }
+
                 require(['sockjs'], function (SockJs) {
-                    var sock = new SockJs(websocket);
+                    var sock = new SockJs(url);
+
+                    websockets[url] = sock;
 
                     sock.onopen = function() {
-                        log.info('New connection with ' + websocket);
+                        websockets[url] = sock;
+                        log.info('New connection with ' + url);
                     };
 
                     sock.onmessage = function (e) {
@@ -1225,11 +1239,16 @@ function(angular, root) {
                     };
 
                     sock.onclose = function() {
+                        delete websockets[url];
                         log.warn('Connection with ' + websocket + ' CLOSED');
                     };
                 });
-            }
+            };
+
+            if (scope.STREAM_URL)
+                scope.connectSockJs(scope.STREAM_URL);
         }]);
+
 angular.module('templates-page', ['page/breadcrumbs.tpl.html']);
 
 angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function($templateCache) {
@@ -2566,9 +2585,8 @@ angular.module("users/messages.tpl.html", []).run(["$templateCache", function($t
                 });
             };
         }]);
-    lux.loader = angular.module('lux.loader', []);
-
-    lux.loader
+    lux.loader = angular.module('lux.loader', [])
+    	//
         .value('context', lux.context)
         //
         .config(['$controllerProvider', function ($controllerProvider) {
@@ -2576,7 +2594,8 @@ angular.module("users/messages.tpl.html", []).run(["$templateCache", function($t
             lux.loader.controller = $controllerProvider;
         }])
         //
-        .run(['$rootScope', '$log', '$timeout', 'context', function (scope, $log, $timeout, context) {
+        .run(['$rootScope', '$log', '$timeout', 'context',
+              	function (scope, $log, $timeout, context) {
             $log.info('Extend root scope with context');
             extend(scope, context);
             scope.$timeout = $timeout;
