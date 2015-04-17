@@ -43,7 +43,7 @@ class BaseReader(object):
     def __init__(self, app, ext=None):
         self.app = app
         self.ext = ext
-        self.logger = app.extensions['static'].logger
+        self.logger = app.extensions['lux.extensions.static'].logger
         self.config = app.config
 
     def __str__(self):

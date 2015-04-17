@@ -84,6 +84,8 @@ class HtmlRouter(Router):
     controller = None
     html_body_template = None
     form = None
+    uirouter = None
+    uimodules = None
     response_content_types = DEFAULT_CONTENT_TYPES
 
     def get(self, request):
@@ -106,7 +108,10 @@ class HtmlRouter(Router):
             return self.get_text(request)
 
     def get_html(self, request):
-        '''Must be implemented by subclasses
+        '''Must be implemented by subclasses.
+
+        This method should return the main part of the html body.
+        It is rendered where the $html_main key is placed.
         '''
         return ''
 
@@ -117,6 +122,8 @@ class HtmlRouter(Router):
         return ''
 
     def get_html_body_template(self, request):
+        '''Fetch the HTML template for the body part of this request
+        '''
         cms = request.app.cms
         template = (cms.template(self.full_route.path) or
                     self.html_body_template)
@@ -126,6 +133,11 @@ class HtmlRouter(Router):
             else:
                 template = 'home.html'
         return template
+
+    def childname(self, prefix):
+        '''key for a child router
+        '''
+        return '%s%s' % (self.name, prefix) if self.name else prefix
 
     def make_router(self, rule, **params):
         '''Create a new :class:`.Router` form rule and parameters

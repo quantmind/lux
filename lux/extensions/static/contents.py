@@ -375,7 +375,8 @@ class Content(object):
     # INTERNALS
     def _update_meta(self, metadata):
         meta = self._meta
-        meta.site = self._app.extensions['static'].build_info(self._app)
+        static = self._app.extensions['lux.extensions.static']
+        meta.site = static.build_info(self._app)
         context = self.context()
         for name in ('template_engine', 'template'):
             default = getattr(self, name)

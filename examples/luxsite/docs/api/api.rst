@@ -1,9 +1,9 @@
-.. _extension-api:
+.. _extension-rest:
 
 =============================
 RESTful web API
 =============================
 
-.. automodule:: lux.extensions.api
+.. automodule:: lux.extensions.rest
    :members:
    :member-order: bysource

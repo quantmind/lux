@@ -1,17 +1,16 @@
 import os
-from lux.utils import test
+
 from lux.extensions.static import HtmlContent
 
-from . import StaticSiteMixin
+from . import TestStaticSite, base
 
 
-class StaticSiteTests(StaticSiteMixin, test.TestCase):
+class StaticSiteTests(TestStaticSite):
     config_file = 'luxsite'
-    config_params = {'STATIC_LOCATION': os.path.join(os.path.dirname(__file__),
-                                                     'docs')}
+    config_params = {'STATIC_LOCATION': os.path.join(base, 'docs')}
 
     def test_build_site(self):
-        app = self.application()
+        app = self.app
         site = app.handler.middleware[-1]
         self.assertIsInstance(site, HtmlContent)
         items = site.build(app)

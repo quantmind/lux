@@ -23,4 +23,4 @@ class Command(lux.Command):
             self.app.config['SITE_URL'] = ''
         if options.nominify:
             self.app.config['MINIFIED_MEDIA'] = False
-        return self.app.extensions['static'].build(self.app)
+        return self.app.extensions['lux.extensions.static'].build(self.app)

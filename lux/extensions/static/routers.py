@@ -259,7 +259,7 @@ class HtmlContent(HtmlRouter, DirBuilder):
                                    html_body_template=self.html_body_template,
                                    meta=meta,
                                    uirouter=self.uirouter,
-                                   ngmodules=self.ngmodules)
+                                   uimodules=self.uimodules)
         self.add_child(file)
         #
         for url_path, file_path, ext in self.all_files(
@@ -320,7 +320,7 @@ class Drafts(HtmlRouter, FileBuilder):
     '''
     priority = 0
     uirouter = False
-    ngmodules = ['lux.blog']
+    uimodules = ['lux.blog']
 
     def get_html(self, request):
         if self.index_template and self.parent:
@@ -343,7 +343,7 @@ class Blog(HtmlContent):
     '''
     index_template = 'blogindex.html'
     content = Article
-    ngmodules = ['lux.blog']
+    uimodules = ['lux.blog']
 
 
 class Sitemap(sitemap.Sitemap, FileBuilder):

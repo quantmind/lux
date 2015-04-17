@@ -147,7 +147,9 @@ class Extension(lux.Extension):
             os.makedirs(location)
         #
         # Loop over middleware and build when instance of a Builder
-        for middleware in app.handler.middleware:
+        handler = app.get_handler()
+
+        for middleware in handler.middleware:
             if isinstance(middleware, Builder):
                 middleware.build(app, location)
         #
@@ -159,6 +161,7 @@ class Extension(lux.Extension):
         app = request.app
         jscontext = doc.jscontext
         jscontext.update(self.build_info(app))
+        return
         if request.config['STATIC_API']:
             apiUrls = jscontext.get('apiUrls', {})
             for middleware in app.handler.middleware:

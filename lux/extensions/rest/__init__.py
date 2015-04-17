@@ -74,12 +74,7 @@ class AuthBackend(lux.Extension):
 
 
 class Extension(AuthBackend):
-    '''The sessions extensions provides wsgi middleware for managing sessions
-    and users.
 
-    In addition it provides utilities for managing Cross Site Request Forgery
-    protection and user permissions levels.
-    '''
     _config = [
         Parameter('AUTHENTICATION_BACKENDS', [],
                   'List of python dotted path to classES used to provide '

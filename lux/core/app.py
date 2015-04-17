@@ -143,6 +143,7 @@ class Application(ConsoleParser, Extension, EventMixin):
     debug = False
     logger = None
     admin = None
+    handler = None
     auth_backend = None
     _worker = None
     _WsgiHandler = WsgiHandler
@@ -218,7 +219,8 @@ class Application(ConsoleParser, Extension, EventMixin):
                   'Default content type for this application'),
         Parameter('HTML_TEMPLATES', {'/': 'home.html'},
                   'Dictionary of Html templates to render'),
-        Parameter('SITE_MANAGERS', 'List of email for site managers', ()),
+        Parameter('SITE_MANAGERS', (),
+                  'List of email for site managers'),
         Parameter('EMAIL_BACKEND', 'lux.core.mail.EmailBackend',
                   'Default locale'),
         Parameter('MD_EXTENSIONS', ['extra', 'meta', 'toc'],
@@ -234,15 +236,7 @@ class Application(ConsoleParser, Extension, EventMixin):
         self.config = self._build_config(callable._config_file)
         self.fire('on_config')
         if handler:
-            self._worker = pulsar.get_actor()
-            self.cms = CMS(self)
-            self.handler = self._build_handler()
-            self.fire('on_loaded')
-            if self.green_pool:
-                green = WsgiGreen(self.handler, self.green_pool)
-                self.logger.info('Setup green Wsgi handler')
-                self.handler = WsgiHandler((wait_for_body_middleware, green),
-                                           async=True)
+            self.get_handler()
 
     def __call__(self, environ, start_response):
         '''The WSGI thing.'''
@@ -276,6 +270,19 @@ class Application(ConsoleParser, Extension, EventMixin):
     def _loop(self):
         if self._worker:
             return self._worker._loop
+
+    def get_handler(self):
+        if self.handler is None:
+            self._worker = pulsar.get_actor()
+            self.cms = CMS(self)
+            self.handler = self._build_handler()
+            self.fire('on_loaded')
+            if self.green_pool:
+                green = WsgiGreen(self.handler, self.green_pool)
+                self.logger.info('Setup green Wsgi handler')
+                self.handler = WsgiHandler((wait_for_body_middleware, green),
+                                           async=True)
+        return self.handler
 
     def get_version(self):
         '''Get version of this :class:`App`. Required by
