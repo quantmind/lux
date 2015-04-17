@@ -22,7 +22,7 @@ class Extension(lux.Extension):
     ]
 
     def on_config(self, app):
-        app.add_events(['on_websocket_open'])
+        app.add_events(('on_websocket_open', 'on_websocket_message'))
 
     def middleware(self, app):
         '''Add middleware to edit content

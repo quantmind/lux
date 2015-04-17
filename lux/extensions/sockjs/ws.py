@@ -81,12 +81,15 @@ class LuxWs(ws.WS):
         ws.write(LUX_CONNECTION, socket_id=ws.session_id, time=ws.started)
 
     def on_message(self, websocket, message):
+        '''When a new message arrives, decode it into json
+        and fire the ``on_websocket_message`` event.
+        '''
         ws = websocket.handshake.cache.websocket
         try:
             msg = json.loads(message)
-            app.fire('on_websocket_message', websocket, self)
         except Exception as exc:
             ws.error_message(exc)
+        app.fire('on_websocket_message', ws, msg)
 
     def on_close(self, websocket):
         ws = websocket.handshake.cache.websocket
