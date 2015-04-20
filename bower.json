@@ -4,9 +4,6 @@
   "homepage": "https://github.com/quantmind/lux",
   "description": "Lux library",
   "main": "lux/media/lux/lux.js",
-  "moduleType": [
-    "amd"
-  ],
   "authors": [
     "Luca Sbardella"
   ],
@@ -15,7 +12,7 @@
     "*.txt",
     "*.js",
     "*.cfg",
-    "**/.*",
+    ".*",
     "*.py",
     "bin",
     "dist",
