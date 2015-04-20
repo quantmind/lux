@@ -1,0 +1,35 @@
+{
+  "name": "lux",
+  "version": "0.2.0",
+  "homepage": "https://github.com/quantmind/lux",
+  "description": "Lux library",
+  "main": "lux/media/lux/lux.js",
+  "moduleType": [
+    "amd"
+  ],
+  "authors": [
+    "Luca Sbardella"
+  ],
+  "license": "BSD",
+  "ignore": [
+    "*.txt",
+    "**/.*",
+    "*.py",
+    "bin",
+    "dist",
+    "examples",
+    "htmlcov",
+    "lux/core",
+    "lux/extensions",
+    "lux/forms",
+    "lux/utils",
+    "lux/*.py",
+    "lux.*",
+    "luxjs",
+    "node_modules",
+    "tests"
+  ],
+  "dependencies": {
+    "angular": ""
+  }
+}
