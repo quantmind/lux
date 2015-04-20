@@ -3,8 +3,8 @@ from lux import forms
 
 
 class SimpleForm(forms.Form):
-    name = forms.CharField(required=True)
-    email = forms.CharField()
+    name = forms.CharField()
+    email = forms.CharField(required=False)
 
 
 class FormTests(test.TestCase):

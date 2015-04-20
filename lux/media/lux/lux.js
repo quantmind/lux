@@ -1,6 +1,6 @@
 //      Lux Library - v0.1.1
 
-//      Compiled 2015-04-17.
+//      Compiled 2015-04-20.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -1914,19 +1914,29 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                 // Create a select element
                 select: function (scope) {
                     var field = scope.field,
-                        info = scope.info,
-                        element = this.input(scope),
-                        select = this._select(info.element, element);
+                        options = [];
+
                     forEach(field.options, function (opt) {
                         if (typeof(opt) === 'string') {
                             opt = {'value': opt};
                         } else if (isArray(opt)) {
                             opt = {'value': opt[0], 'repr': opt[1] || opt[0]};
                         }
+                        options.push(opt);
+                        // Set the default value if not available
+                        if (!field.value) field.value = opt.value;
+                    });
+
+                    var info = scope.info,
+                        element = this.input(scope),
+                        select = this._select(info.element, element);
+
+                    forEach(options, function (opt) {
                         opt = $($document[0].createElement('option'))
                                 .attr('value', opt.value).html(opt.repr || opt.value);
                         select.append(opt);
                     });
+
                     return this.onChange(scope, element);
                 },
                 //
@@ -3278,9 +3288,9 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
 
     //
     //  Module for interacting with google API and services
-    angular.module('lux.google', ['lux.api'])
+    angular.module('lux.google', ['lux.services'])
         //
-        .run(['$rootScope', '$lux', '$log', '$location', function (scope, $lux, log, location) {
+        .run(['$rootScope', '$lux', '$log', function (scope, $lux, log) {
             var analytics = scope.google ? scope.google.analytics : null;
 
             if (analytics && analytics.id) {
@@ -3306,44 +3316,7 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
             }
 
             // Googlesheet api
-            $lux.registerApi('googlesheets', {
-                //
-                endpoint: "https://spreadsheets.google.com",
-                //
-                url: function (urlparams) {
-                    // when given the url is of the form key/worksheet where
-                    // key is the key of the spreadsheet you want to retrieve,
-                    // worksheet is the positional or unique identifier of the worksheet
-                    if (this._url) {
-                        if (urlparams) {
-                            return this.endpoint + '/feeds/list/' + this._url + '/' + urlparams.id + '/public/values?alt=json';
-                        } else {
-                            return null;
-                        }
-                    }
-                },
-                //
-                getList: function (options) {
-                    var Model = this.Model,
-                        opts = this.options,
-                        $lux = this.$lux;
-                    return this.request('GET', null, options).then(function (response) {
-                        return response;
-                    });
-                },
-                //
-                get: function (urlparams, options) {
-                    var Model = this.Model,
-                        opts = this.options,
-                        $lux = this.$lux;
-                    return this.request('GET', urlparams, options).then(function (response) {
-                        response.data = opts.orientation === 'columns' ? new GoogleSeries(
-                            $lux, response.data) : new GoogleModel($lux, response.data);
-                        return response;
-                    });
-                }
-            });
-
+            $lux.api('googlesheets', googlesheets);
         }])
         //
         .directive('googleMap', function () {
@@ -3380,6 +3353,38 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
                 }
             };
         });
+
+    var googlesheets = function (url, $lux) {
+        url = "https://spreadsheets.google.com";
+
+        var api = baseapi(url, $lux);
+
+        api.httpOptions = function (request) {
+            request.options.url = request.baseUrl() + '/feeds/list/' + this._url + '/' + urlparams.id + '/public/values?alt=json';
+        };
+
+        api.getList = function (options) {
+            var Model = this.Model,
+                opts = this.options,
+                $lux = this.$lux;
+            return api.request('get', null, options).then(function (response) {
+                return response;
+            });
+        };
+
+        api.get = function (urlparams, options) {
+            var Model = this.Model,
+                opts = this.options,
+                $lux = this.$lux;
+            return api.request('get', urlparams, options).then(function (response) {
+                response.data = opts.orientation === 'columns' ? new GoogleSeries(
+                    $lux, response.data) : new GoogleModel($lux, response.data);
+                return response;
+            });
+        };
+
+        return api;
+    };
 
 	return lux;
 }));

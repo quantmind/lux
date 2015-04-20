@@ -1,8 +1,8 @@
     //
     //  Module for interacting with google API and services
-    angular.module('lux.google', ['lux.api'])
+    angular.module('lux.google', ['lux.services'])
         //
-        .run(['$rootScope', '$lux', '$log', '$location', function (scope, $lux, log, location) {
+        .run(['$rootScope', '$lux', '$log', function (scope, $lux, log) {
             var analytics = scope.google ? scope.google.analytics : null;
 
             if (analytics && analytics.id) {
@@ -28,44 +28,7 @@
             }
 
             // Googlesheet api
-            $lux.registerApi('googlesheets', {
-                //
-                endpoint: "https://spreadsheets.google.com",
-                //
-                url: function (urlparams) {
-                    // when given the url is of the form key/worksheet where
-                    // key is the key of the spreadsheet you want to retrieve,
-                    // worksheet is the positional or unique identifier of the worksheet
-                    if (this._url) {
-                        if (urlparams) {
-                            return this.endpoint + '/feeds/list/' + this._url + '/' + urlparams.id + '/public/values?alt=json';
-                        } else {
-                            return null;
-                        }
-                    }
-                },
-                //
-                getList: function (options) {
-                    var Model = this.Model,
-                        opts = this.options,
-                        $lux = this.$lux;
-                    return this.request('GET', null, options).then(function (response) {
-                        return response;
-                    });
-                },
-                //
-                get: function (urlparams, options) {
-                    var Model = this.Model,
-                        opts = this.options,
-                        $lux = this.$lux;
-                    return this.request('GET', urlparams, options).then(function (response) {
-                        response.data = opts.orientation === 'columns' ? new GoogleSeries(
-                            $lux, response.data) : new GoogleModel($lux, response.data);
-                        return response;
-                    });
-                }
-            });
-
+            $lux.api('googlesheets', googlesheets);
         }])
         //
         .directive('googleMap', function () {

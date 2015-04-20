@@ -26,10 +26,10 @@ Base
 .. lux_extension:: lux.extensions.base
 
 
-API
+REST
 ================
 
-.. lux_extension:: lux.extensions.api
+.. lux_extension:: lux.extensions.rest
 
 
 Web design
@@ -52,14 +52,6 @@ Static Site
 ================
 
 .. lux_extension:: lux.extensions.static
-
-
-.. _parameters-auth:
-
-Authentication
-=====================
-
-.. lux_extension:: lux.extensions.auth
 
 
 .. _parameters-oauth:

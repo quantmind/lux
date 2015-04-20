@@ -261,19 +261,29 @@
                 // Create a select element
                 select: function (scope) {
                     var field = scope.field,
-                        info = scope.info,
-                        element = this.input(scope),
-                        select = this._select(info.element, element);
+                        options = [];
+
                     forEach(field.options, function (opt) {
                         if (typeof(opt) === 'string') {
                             opt = {'value': opt};
                         } else if (isArray(opt)) {
                             opt = {'value': opt[0], 'repr': opt[1] || opt[0]};
                         }
+                        options.push(opt);
+                        // Set the default value if not available
+                        if (!field.value) field.value = opt.value;
+                    });
+
+                    var info = scope.info,
+                        element = this.input(scope),
+                        select = this._select(info.element, element);
+
+                    forEach(options, function (opt) {
                         opt = $($document[0].createElement('option'))
                                 .attr('value', opt.value).html(opt.repr || opt.value);
                         select.append(opt);
                     });
+
                     return this.onChange(scope, element);
                 },
                 //

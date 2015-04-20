@@ -158,7 +158,6 @@ class Field(ModelMixin):
             self.index = True
         else:
             self.unique = unique
-            self.required = required
             self.index = True if unique else index
         self.validation_error = (validation_error or self.validation_error or
                                  standard_validation_error)
@@ -245,9 +244,9 @@ class Field(ModelMixin):
     def html_name(self, prefix=None):
         return '%s%s' % (prefix, self.name) if prefix else self.name
 
-    def html(self, bfield, **kwargs):
-        '''Create the Html element for this :class:`Field`.'''
-        return self.widget(**kwargs)
+    def getattrs(self):
+        '''Dictionary of attributes for the Html; element.'''
+        return self.attrs.copy()
 
 
 class CharField(Field):
@@ -410,7 +409,7 @@ class ChoiceField(Field, MultipleMixin):
     attrs = {'type': 'select'}
 
     def getattrs(self):
-        attrs = self.attrs.copy()
+        attrs = super().getattrs()
         attrs['options'] = self.options.all()
         return attrs
 

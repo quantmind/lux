@@ -13,8 +13,7 @@ Python API
    base
    ui
    angular
-   api
+   rest
    static
-   auth
    oauth/index
    code

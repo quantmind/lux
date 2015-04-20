@@ -67,6 +67,11 @@ class Extension(lux.Extension):
     ]
 
     def on_html_document(self, app, request, doc):
+        router = angular_router(request.app_handler)
+
+        if not router:
+            return
+
         min = '.min' if app.config['MINIFIED_MEDIA'] else ''
         js = app.template('lux.require%s.js' % min)
         doc.head.embedded_js.append(js)
@@ -76,7 +81,6 @@ class Extension(lux.Extension):
         jscontext = doc.jscontext
         #
         add_ng_modules(doc, app.config['NGMODULES'])
-        router = angular_router(request.app_handler)
 
         if app.config['HTML5_NAVIGATION']:
             doc.head.meta.append(Html('base', href=""))
@@ -93,6 +97,10 @@ class Extension(lux.Extension):
                                              'uiRouter': uirouter}
                     add_to_sitemap(root._angular_sitemap, app, doc, root)
                 doc.jscontext.update(root._angular_sitemap)
+
+        else:
+
+            add_ng_modules(doc, router.uimodules)
 
         if router:
             doc.jscontext['page'] = router_href(app, router.full_route)
@@ -120,7 +128,7 @@ class Extension(lux.Extension):
 
 
 def angular_router(router):
-    if isinstance(router, HtmlRouter) and getattr(router, 'uirouter', True):
+    if isinstance(router, HtmlRouter):
         return router
 
 

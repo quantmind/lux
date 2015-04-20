@@ -180,7 +180,7 @@ class Application(ConsoleParser, Extension, EventMixin):
         Parameter('REQUIREJS_URL',
                   "//cdnjs.cloudflare.com/ajax/libs/require.js/2.1.14/require",
                   'Default url for requirejs'),
-        Parameter('REQUIREJS', ('require',),
+        Parameter('REQUIREJS', (),
                   'Default Required javascript. Loaded via requirejs.'),
         Parameter('ASSET_PROTOCOL', '',
                   ('Default protocol for scripts and links '

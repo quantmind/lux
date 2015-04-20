@@ -34,7 +34,7 @@ def as_angular_dict(field, form):
     if isinstance(field, AngularFormElement):
         return field.as_dict(form)
     else:
-        data = field.attrs.copy()
+        data = field.getattrs()
         data['name'] = field.name
         if form.is_bound:
             pass

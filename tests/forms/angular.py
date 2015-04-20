@@ -57,6 +57,19 @@ class FormAngularLayoutTests(test.TestCase):
         choice = data['children'][1]
         self.assertEqual(choice['field']['type'], 'select')
 
+    def test_select_field(self):
+        form = PageForm()
+        data = form.layout.as_dict()
+        self.assertEqual(len(data['children']), 1)
+        data = data['children'][0]
+        self.assertEqual(data['field']['type'], 'fieldset')
+        self.assertEqual(len(data['children']), 3)
+        markup = data['children'][1]
+        self.assertEqual(markup['field']['type'], 'select')
+        options = markup['field']['options']
+        self.assertEqual(len(options), 2)
+        self.assertTrue(markup['field']['required'])
+
     def __test_layout_create(self):
         class TestForm(forms.Form):
             name = forms.CharField()
