@@ -2,21 +2,31 @@
 //
 (function () {
 
+    if (this.lux)
+        this.lux = {};
+
     // The original require
     var require_config = require.config,
         root = this,
         protocol = root.location ? (root.location.protocol === 'file:' ? 'https:' : '') : '',
         end = '.js',
         processed = false,
-        context = root.lux ? root.lux.context : {},
-        ostring = Object.prototype.toString;
+        ostring = Object.prototype.toString,
+        lux = root.lux;
+
 
     function isArray(it) {
         return ostring.call(it) === '[object Array]';
     }
 
     function minify () {
-        return context.MINIFIED_MEDIA;
+        if (root.lux.context)
+            return lux.context.MINIFIED_MEDIA;
+    }
+
+    function baseUrl () {
+        if (root.lux.context)
+            return lux.context.MEDIA_URL;
     }
 
     function extend (o1, o2) {
@@ -63,6 +73,44 @@
             }
         };
     }
+
+    //
+    // A function to load module only when angular is ready to compile
+    lux.require = function (modules, callback) {
+        if (lux.angular || !lux.context.uiRouter) {
+            var lazy = {
+                callback: callback
+            };
+            lux.requireQueue.push(lazy);
+            require(rcfg.min(modules), function () {
+                lazy.arguments = Array.prototype.slice.call(arguments, 0);
+            });
+        }
+    };
+    lux.requireQueue = [];
+    //
+    // Use this function when angular is ready to compile
+    lux.loadRequire = function (callback) {
+        if (!this.loadingRequire) {
+            var queue = this.requireQueue,
+                notReady = [];
+            this.loadingRequire = true;
+            this.requireQueue = notReady;
+            for (var i=0; i<queue.length; ++i) {
+                if (queue[i].arguments === undefined)
+                    notReady.push(queue[i]);
+                else
+                    queue[i].callback.apply(this.root, queue[i].arguments);
+            }
+            this.loadingRequire = false;
+            if (notReady.length)
+                setTimeout(function () {
+                    lux.loadRequire(callback);
+                });
+            else if (callback)
+                callback();
+        }
+    };
 
     function newPaths (cfg) {
         var all = {},
@@ -123,8 +171,8 @@
     require.config = function (cfg) {
         if (!processed) {
             processed = true;
-            if(!cfg.baseUrl && context.MEDIA_URL)
-                cfg.baseUrl = context.MEDIA_URL;
+            if(!cfg.baseUrl)
+                cfg.baseUrl = baseUrl();
             cfg.shim = extend(defaultShims(), cfg.shim);
             cfg.paths = newPaths(cfg);
             if (!cfg.paths.lux)

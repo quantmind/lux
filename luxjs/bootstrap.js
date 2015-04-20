@@ -39,9 +39,6 @@
             modules.splice(0, 0, 'lux.loader');
             angular.module(name, modules);
             angular.bootstrap(document, [name]);
-            //
-            if (!lux.context.uiRouter && lux.loadRequire)
-                lux.loadRequire();
         }
 
         if (!angular_bootstrapped) {

@@ -1,5 +1,4 @@
-    if (!window.lux)
-        window.lux = {};
+
     //
     // A function to load module only when angular is ready to compile
     lux.require = function (modules, callback) {

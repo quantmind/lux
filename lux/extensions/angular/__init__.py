@@ -72,9 +72,6 @@ class Extension(lux.Extension):
         if not router:
             return
 
-        min = '.min' if app.config['MINIFIED_MEDIA'] else ''
-        js = app.template('lux.require%s.js' % min)
-        doc.head.embedded_js.append(js)
         doc.body.data({'ng-model': 'page',
                        'ng-controller': 'Page',
                        'page': ''})

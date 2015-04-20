@@ -54,12 +54,12 @@
         "dest": "lux/media/lux/lux.js"
     },
     "cfg": {
-        "src": "luxjs/cfg.js",
+        "src": ["luxjs/config/open.js",
+                "luxjs/config/paths.js",
+                "luxjs/config/shims.js",
+                "luxjs/config/require.js",
+                "luxjs/config/close.js"],
         "dest": "lux/media/lux/cfg.js"
-    },
-    "luxRequire": {
-        "src": "luxjs/require.js",
-        "dest": "lux/extensions/angular/templates/lux.require.js"
     },
     "luxsite": {
         "options": {

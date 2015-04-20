@@ -1,68 +1,3 @@
-//
-//
-(function () {
-
-    // The original require
-    var require_config = require.config,
-        root = this,
-        protocol = root.location ? (root.location.protocol === 'file:' ? 'https:' : '') : '',
-        end = '.js',
-        processed = false,
-        context = root.lux ? root.lux.context : {},
-        ostring = Object.prototype.toString;
-
-    function isArray(it) {
-        return ostring.call(it) === '[object Array]';
-    }
-
-    function minify () {
-        return context.MINIFIED_MEDIA;
-    }
-
-    function extend (o1, o2) {
-        if (o2) {
-            for (var key in o2) {
-                if (o2.hasOwnProperty(key))
-                    o1[key] = o2[key];
-            }
-        }
-        return o1;
-    }
-
-    function defaultPaths () {
-        return {};
-    }
-
-    // Default shims
-    function defaultShims () {
-        return {
-            angular: {
-                exports: "angular"
-            },
-            "google-analytics": {
-                exports: root.GoogleAnalyticsObject || "ga"
-            },
-            highlight: {
-                exports: "hljs"
-            },
-            lux: {
-                deps: ["angular"]
-            },
-            restangular: {
-                deps: ["angular"]
-            },
-            crossfilter: {
-                exports: "crossfilter"
-            },
-            trianglify: {
-                deps: ["d3"],
-                exports: "Trianglify"
-            },
-            mathjax: {
-                exports: "MathJax"
-            }
-        };
-    }
 
     function newPaths (cfg) {
         var all = {},
@@ -123,8 +58,8 @@
     require.config = function (cfg) {
         if (!processed) {
             processed = true;
-            if(!cfg.baseUrl && context.MEDIA_URL)
-                cfg.baseUrl = context.MEDIA_URL;
+            if(!cfg.baseUrl)
+                cfg.baseUrl = baseUrl();
             cfg.shim = extend(defaultShims(), cfg.shim);
             cfg.paths = newPaths(cfg);
             if (!cfg.paths.lux)
