@@ -7,13 +7,14 @@ Lux is a library for developing web applications with Python and AngularJS.
 
 .. _requirements:
 
-## Python Requirements
+Python Requirements
+=======================
 
-### Hard requirements
+**Hard requirements**
 
-* [pulsar](https://github.com/quantmind/pulsar)
+* pulsar_
 
-### Soft requirements
+**Soft requirements**
 
 * sqlalchemy_
 * dateutil_
@@ -52,6 +53,7 @@ For testing postgreSQL create a new role::
 
 
 
+.. _pulsar: (https://github.com/quantmind/pulsar
 .. _dateutil: https://pypi.python.org/pypi/python-dateutil
 .. _gruntjs: http://gruntjs.com/
 .. _nodejs: http://nodejs.org/
