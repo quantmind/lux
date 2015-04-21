@@ -6,10 +6,7 @@
     if (typeof define === 'function' && define.amd) {
         // Support AMD. Register as an anonymous module.
         // NOTE: List all dependencies in AMD style
-        var deps = ['angular'];
-        if (typeof rcfg === 'object')
-            deps = rcfg.min(deps);
-        define(deps, function (angular) {
+        define(['angular'], function (angular) {
             root.lux = factory(angular, root);
             return root.lux;
         });

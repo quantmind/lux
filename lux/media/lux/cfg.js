@@ -1,16 +1,13 @@
 //
-//
-(function () {
+(function (root) {
+    "use strict";
 
-    if (this.lux)
-        this.lux = {};
+    if (!root.lux)
+        root.lux = {};
 
     // The original require
-    var require_config = require.config,
-        root = this,
-        protocol = root.location ? (root.location.protocol === 'file:' ? 'https:' : '') : '',
+    var protocol = root.location ? (root.location.protocol === 'file:' ? 'https:' : '') : '',
         end = '.js',
-        processed = false,
         ostring = Object.prototype.toString,
         lux = root.lux;
 
@@ -40,11 +37,37 @@
     }
 
     function defaultPaths () {
-        return {};
+        return {
+            "lux": "lux/lux",
+            "angular": "//ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular",
+            "angular-animate": "//ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular-animate",
+            "angular-mocks": "//ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular-mocks.js",
+            "angular-strap": "//cdnjs.cloudflare.com/ajax/libs/angular-strap/2.2.1/angular-strap",
+            "angular-ui-router": "//cdnjs.cloudflare.com/ajax/libs/angular-ui-router/0.2.13/angular-ui-router",
+            "angular-ui-grid": "http://ui-grid.info/release/ui-grid-unstable",
+            "angular-pusher": "//cdn.jsdelivr.net/angular.pusher/latest/pusher-angular.min.js",
+            "pusher": "//js.pusher.com/2.2/pusher",
+            "codemirror": "//cdnjs.cloudflare.com/ajax/libs/codemirror/3.21.0/codemirror",
+            "crossfilter": "//cdnjs.cloudflare.com/ajax/libs/crossfilter/1.3.11/crossfilter",
+            "d3": "//cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3",
+            "google-analytics": "//www.google-analytics.com/analytics.js",
+            "gridster": "//cdnjs.cloudflare.com/ajax/libs/jquery.gridster/0.5.6/jquery.gridster",
+            "holder": "//cdnjs.cloudflare.com/ajax/libs/holder/2.3.1/holder",
+            "highlight": "//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.3/highlight.min.js",
+            "katex": "//cdnjs.cloudflare.com/ajax/libs/KaTeX/0.1.0/katex.min.js",
+            "leaflet": "http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js",
+            "lodash": "//cdnjs.cloudflare.com/ajax/libs/lodash.js/2.4.1/lodash",
+            "marked": "//cdnjs.cloudflare.com/ajax/libs/marked/0.3.2/marked",
+            "mathjax": "//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML",
+            "restangular": "//cdnjs.cloudflare.com/ajax/libs/restangular/1.4.0/restangular",
+            "sockjs": "//cdnjs.cloudflare.com/ajax/libs/sockjs-client/0.3.4/sockjs.min.js",
+            "stats": "//cdnjs.cloudflare.com/ajax/libs/stats.js/r11/Stats",
+            "topojson": "//cdnjs.cloudflare.com/ajax/libs/topojson/1.6.19/topojson"
+        };
     }
 
     // Default shims
-    function defaultShims () {
+    function defaultShim () {
         return {
             angular: {
                 exports: "angular"
@@ -73,44 +96,6 @@
             }
         };
     }
-
-    //
-    // A function to load module only when angular is ready to compile
-    lux.require = function (modules, callback) {
-        if (lux.angular || !lux.context.uiRouter) {
-            var lazy = {
-                callback: callback
-            };
-            lux.requireQueue.push(lazy);
-            require(rcfg.min(modules), function () {
-                lazy.arguments = Array.prototype.slice.call(arguments, 0);
-            });
-        }
-    };
-    lux.requireQueue = [];
-    //
-    // Use this function when angular is ready to compile
-    lux.loadRequire = function (callback) {
-        if (!this.loadingRequire) {
-            var queue = this.requireQueue,
-                notReady = [];
-            this.loadingRequire = true;
-            this.requireQueue = notReady;
-            for (var i=0; i<queue.length; ++i) {
-                if (queue[i].arguments === undefined)
-                    notReady.push(queue[i]);
-                else
-                    queue[i].callback.apply(this.root, queue[i].arguments);
-            }
-            this.loadingRequire = false;
-            if (notReady.length)
-                setTimeout(function () {
-                    lux.loadRequire(callback);
-                });
-            else if (callback)
-                callback();
-        }
-    };
 
     function newPaths (cfg) {
         var all = {},
@@ -168,22 +153,18 @@
     }
 
     // require.config override
-    require.config = function (cfg) {
-        if (!processed) {
-            processed = true;
-            if(!cfg.baseUrl)
-                cfg.baseUrl = baseUrl();
-            cfg.shim = extend(defaultShims(), cfg.shim);
-            cfg.paths = newPaths(cfg);
-            if (!cfg.paths.lux)
-                cfg.paths.lux = "lux/lux";
-        }
-        require_config.call(this, cfg);
+    lux.config = function (cfg) {
+        if(!cfg.baseUrl)
+            cfg.baseUrl = baseUrl();
+        cfg.shim = extend(defaultShim(), cfg.shim);
+        cfg.paths = newPaths(cfg);
+        require.config(cfg);
     };
 
-    root.newRequire = function () {
+    lux.require = function () {
         if (arguments.length && isArray(arguments[0]) && minify()) {
-            var deps = arguments[0];
+            var deps = arguments[0],
+                cfg = require.config();
 
             deps.forEach(function (dep, i) {
                 if (dep.substring(dep.length-3) !== end)
@@ -191,7 +172,21 @@
                 deps[i] = dep;
             });
         }
-        return require.apply(this, arguments);
+        return require.apply(root, arguments);
     };
 
-}());
+    lux.define = function () {
+        if (arguments.length && isArray(arguments[1]) && minify()) {
+            var deps = arguments[1],
+                cfg = require.config();
+
+            deps.forEach(function (dep, i) {
+                if (dep.substring(dep.length-3) !== end)
+                    dep += min;
+                deps[i] = dep;
+            });
+        }
+        return define.apply(root, arguments);
+    };
+
+}(this));

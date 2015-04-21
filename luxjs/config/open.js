@@ -1,16 +1,13 @@
 //
-//
-(function () {
+(function (root) {
+    "use strict";
 
-    if (this.lux)
-        this.lux = {};
+    if (!root.lux)
+        root.lux = {};
 
     // The original require
-    var require_config = require.config,
-        root = this,
-        protocol = root.location ? (root.location.protocol === 'file:' ? 'https:' : '') : '',
+    var protocol = root.location ? (root.location.protocol === 'file:' ? 'https:' : '') : '',
         end = '.js',
-        processed = false,
         ostring = Object.prototype.toString,
         lux = root.lux;
 

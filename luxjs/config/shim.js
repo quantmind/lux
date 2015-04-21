@@ -1,6 +1,6 @@
 
     // Default shims
-    function defaultShims () {
+    function defaultShim () {
         return {
             angular: {
                 exports: "angular"

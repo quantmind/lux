@@ -56,8 +56,7 @@
     "cfg": {
         "src": ["luxjs/config/open.js",
                 "luxjs/config/paths.js",
-                "luxjs/config/shims.js",
-                "luxjs/config/require.js",
+                "luxjs/config/shim.js",
                 "luxjs/config/close.js"],
         "dest": "lux/media/lux/cfg.js"
     },

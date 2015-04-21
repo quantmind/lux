@@ -55,22 +55,18 @@
     }
 
     // require.config override
-    require.config = function (cfg) {
-        if (!processed) {
-            processed = true;
-            if(!cfg.baseUrl)
-                cfg.baseUrl = baseUrl();
-            cfg.shim = extend(defaultShims(), cfg.shim);
-            cfg.paths = newPaths(cfg);
-            if (!cfg.paths.lux)
-                cfg.paths.lux = "lux/lux";
-        }
-        require_config.call(this, cfg);
+    lux.config = function (cfg) {
+        if(!cfg.baseUrl)
+            cfg.baseUrl = baseUrl();
+        cfg.shim = extend(defaultShim(), cfg.shim);
+        cfg.paths = newPaths(cfg);
+        require.config(cfg);
     };
 
-    root.newRequire = function () {
+    lux.require = function () {
         if (arguments.length && isArray(arguments[0]) && minify()) {
-            var deps = arguments[0];
+            var deps = arguments[0],
+                cfg = require.config();
 
             deps.forEach(function (dep, i) {
                 if (dep.substring(dep.length-3) !== end)
@@ -78,7 +74,21 @@
                 deps[i] = dep;
             });
         }
-        return require.apply(this, arguments);
+        return require.apply(root, arguments);
     };
 
-}());
+    lux.define = function () {
+        if (arguments.length && isArray(arguments[1]) && minify()) {
+            var deps = arguments[1],
+                cfg = require.config();
+
+            deps.forEach(function (dep, i) {
+                if (dep.substring(dep.length-3) !== end)
+                    dep += min;
+                deps[i] = dep;
+            });
+        }
+        return define.apply(root, arguments);
+    };
+
+}(this));

@@ -1,6 +1,6 @@
 //      Lux Library - v0.1.1
 
-//      Compiled 2015-04-20.
+//      Compiled 2015-04-21.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -14,10 +14,7 @@
     if (typeof define === 'function' && define.amd) {
         // Support AMD. Register as an anonymous module.
         // NOTE: List all dependencies in AMD style
-        var deps = ['angular'];
-        if (typeof rcfg === 'object')
-            deps = rcfg.min(deps);
-        define(deps, function (angular) {
+        define(['angular'], function (angular) {
             root.lux = factory(angular, root);
             return root.lux;
         });
