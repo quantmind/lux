@@ -38,7 +38,6 @@
         "src": ["luxjs/open.js",
                 "luxjs/underscore.js",
                 "luxjs/utils.js",
-                "luxjs/class.js",
                 "luxjs/services/*.js",
                 "luxjs/page/*.js",
                 "luxjs/forms/process.js",

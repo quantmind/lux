@@ -1,5 +1,5 @@
 
-    describe("Test lux angular app", function() {
+    describe("Test lux utilities", function() {
 
         it("Check lux object", function() {
             expect(lux).not.toBe(undefined);

@@ -35,7 +35,7 @@
         return window.innerHeight > 0 ? window.innerHeight : screen.availHeight;
     },
     //
-    isAbsolute = new RegExp('^([a-z]+://|//)'),
+    isAbsolute = lux.isAbsolute = new RegExp('^([a-z]+://|//)'),
     //
     // Check if element has tagName tag
     isTag = function (element, tag) {
