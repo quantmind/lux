@@ -5,8 +5,8 @@
     if (!root.lux)
         root.lux = {};
 
-    // The original require
-    var protocol = root.location ? (root.location.protocol === 'file:' ? 'https:' : '') : '',
+    // If a file assign http as protocol (https does not work with PhantomJS)
+    var protocol = root.location ? (root.location.protocol === 'file:' ? 'http:' : '') : '',
         end = '.js',
         ostring = Object.prototype.toString,
         lux = root.lux;
