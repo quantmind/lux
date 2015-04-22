@@ -19,10 +19,7 @@
             expect(lux.media('////foo')).toBe('/media/foo');
             expect(lux.media('//foo/////')).toBe('/media/foo/');
         });
-    });
 
-
-    describe("Test utilis", function() {
         var joinUrl = lux.joinUrl;
 
         it("Check joinUrl", function() {
@@ -78,5 +75,15 @@
             a = {}
             lux.testing.v = a;
             expect(lux.getOptions({options: 'lux.testing.v', b: 4}).b).toBe(4);
+        });
+
+        it("Test querySelector", function () {
+            var body = lux.querySelector(document);
+            expect(body.length).toBe(1);
+            expect(body[0]).toBe(document);
+
+            body = lux.querySelector(document, 'body');
+            expect(body.length).toBe(1);
+            expect(body[0].tagName).toBe('BODY');
         });
     });

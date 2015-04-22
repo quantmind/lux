@@ -173,12 +173,8 @@ class Application(ConsoleParser, Extension, EventMixin):
                   'List of scripts to load in the head tag'),
         Parameter('COPYRIGHT', 'Lux',
                   'Site Copyright', True),
-        Parameter(
-            'REQUIREJS_CONFIG',
-            'http://quantmind.github.io/require-config-js/require.config',
-            'Configuration url for Requirejs'),
         Parameter('REQUIREJS_URL',
-                  "//cdnjs.cloudflare.com/ajax/libs/require.js/2.1.14/require",
+                  "//cdnjs.cloudflare.com/ajax/libs/require.js/2.1.17/require",
                   'Default url for requirejs'),
         Parameter('REQUIREJS', (),
                   'Default Required javascript. Loaded via requirejs.'),
@@ -342,7 +338,6 @@ class Application(ConsoleParser, Extension, EventMixin):
         #
         required = cfg['REQUIREJS']
         if required:
-            head.scripts.append(cfg['REQUIREJS_CONFIG'])
             head.scripts.append(cfg['REQUIREJS_URL'])
             head.scripts.require.extend((media_path+r[1:] if r.startswith('.')
                                          else r for r in required))

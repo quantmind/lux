@@ -242,9 +242,9 @@ function(angular, root) {
     //  ===================
     //
     //  Simple wrapper for a querySelector
-    querySelector = function (elem, query) {
+    querySelector = lux.querySelector = function (elem, query) {
         elem = $(elem);
-        if (elem.length)
+        if (elem.length && query)
             return $(elem[0].querySelector(query));
         else
             return elem;
