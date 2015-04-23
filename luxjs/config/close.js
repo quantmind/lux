@@ -56,8 +56,10 @@
 
     // require.config override
     lux.config = function (cfg) {
-        if(!cfg.baseUrl)
-            cfg.baseUrl = baseUrl();
+        if(!cfg.baseUrl) {
+            var url = baseUrl();
+            if (url !== undefined) cfg.baseUrl = url;
+        }
         cfg.shim = extend(defaultShim(), cfg.shim);
         cfg.paths = newPaths(cfg);
         require.config(cfg);

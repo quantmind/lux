@@ -2,7 +2,7 @@
     //  ==============
     //
     //  Design to work with the ``lux.extension.angular``
-    angular.module('lux.page', ['lux.services', 'lux.form', 'lux.scroll', 'templates-page'])
+    angular.module('lux.page', ['lux.services', 'lux.form', 'templates-page'])
         //
         .service('pageService', ['$lux', 'dateFilter', function ($lux, dateFilter) {
 

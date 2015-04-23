@@ -1,6 +1,6 @@
 //      Lux Library - v0.1.1
 
-//      Compiled 2015-04-22.
+//      Compiled 2015-04-23.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -1155,7 +1155,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
     //  ==============
     //
     //  Design to work with the ``lux.extension.angular``
-    angular.module('lux.page', ['lux.services', 'lux.form', 'lux.scroll', 'templates-page'])
+    angular.module('lux.page', ['lux.services', 'lux.form', 'templates-page'])
         //
         .service('pageService', ['$lux', 'dateFilter', function ($lux, dateFilter) {
 
@@ -1292,6 +1292,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
         }]);
 
 
+
     angular.module('lux.router', ['lux.page'])
         .config(['$provide', '$locationProvider', function ($provide, $locationProvider) {
             if (lux.context.HTML5_NAVIGATION) {
@@ -1339,7 +1340,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
         }
     };
 
-    angular.module('lux.ui.router', ['lux.page', 'ui.router'])
+    angular.module('lux.ui.router', ['lux.page', 'lux.scroll', 'ui.router'])
         //
         .run(['$rootScope', '$state', '$stateParams', function (scope, $state, $stateParams) {
             //

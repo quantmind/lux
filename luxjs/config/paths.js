@@ -1,7 +1,6 @@
 
     function defaultPaths () {
         return {
-            "lux": "lux/lux",
             "angular": "//ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular",
             "angular-animate": "//ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular-animate",
             "angular-mocks": "//ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular-mocks.js",
