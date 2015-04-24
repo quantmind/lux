@@ -16,7 +16,7 @@ from lux.utils.http import same_origin
 from lux.extensions.angular import add_ng_modules
 
 from .user import *
-from .views import RestRoot, RestRouter, change_password
+from .views import RestRoot, RestRouter, change_password, RequirePermission
 
 
 def luxrest(url, name):
