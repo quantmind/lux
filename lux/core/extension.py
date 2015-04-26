@@ -177,7 +177,8 @@ class Extension(metaclass=ExtensionType):
             if setting.name in params:
                 value = params[setting.name]
             else:
-                value = getattr(module, setting.name, setting.default)
+                default = os.environ.get(setting.name, setting.default)
+                value = getattr(module, setting.name, default)
             config[setting.name] = value
         self._setup_logger(config, module, opts)
 

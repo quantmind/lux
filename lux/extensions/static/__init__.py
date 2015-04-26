@@ -88,12 +88,8 @@ class Extension(lux.Extension):
     _global_context = None
 
     def middleware(self, app):
-        try:
-            html5 = app.config['ANGULAR_UI_ROUTER']
-        except KeyError:
-            raise ImproperlyConfigured(
-                '"lux.extensions.static" requires '
-                '"lux.extensions.angular" in EXTENSIONS')
+        app.require('lux.extensions.angular')
+        html5 = app.config['ANGULAR_UI_ROUTER']
         path = app.config['MEDIA_URL']
         api_url = app.config['STATIC_API'] or ''
         if api_url.startswith('/'):
