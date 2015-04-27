@@ -19,8 +19,7 @@ class SphinxContent(Content):
         meta.update(ctx.get('meta', ()))
         meta['content_type'] = 'text/html'
         content = ctx.get('body', '')
-        super(SphinxContent, self).__init__(app, content, meta,
-                                            ctx.get('src'), ctx['pagename'])
+        super().__init__(app, content, meta, ctx.get('src'), ctx['pagename'])
 
 
 class SphinxMixin(object):

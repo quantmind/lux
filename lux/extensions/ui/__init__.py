@@ -86,14 +86,6 @@ from .css import add_css
 class Extension(lux.Extension):
 
     _config = [
-        Parameter(
-            'FONTAWESOME',
-            '//netdna.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome',
-            'FONTAWESOME url. Set to none to not use it.'),
-        Parameter(
-            'BOOTSTRAP',
-            '//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap',
-            'Twitter bootstrap url. Set to none to not use it.'),
         Parameter('EXCLUDE_EXTENSIONS_CSS', None,
                   'Optional list of extensions to exclude form the css'),
         Parameter('NAVBAR_COLLAPSE_WIDTH', 768,
@@ -103,5 +95,3 @@ class Extension(lux.Extension):
         navbar = doc.jscontext.get('navbar') or {}
         navbar['collapseWidth'] = app.config['NAVBAR_COLLAPSE_WIDTH']
         doc.jscontext['navbar'] = navbar
-        for name in ('BOOTSTRAP', 'FONTAWESOME'):
-            doc.head.links.append(app.config[name])

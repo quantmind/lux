@@ -5,11 +5,6 @@ def add_css(all):
     css = all.css
     vars = all.variables
 
-    vars.font.family = '"Helvetica Neue",Helvetica,Arial,sans-serif'
-    vars.font.size = px(16)
-    vars.font.size_small = px(14)
-    vars.font.style = 'normal'
-
     vars.line_height = 1.42857
     vars.color = color('#333')
     vars.background = color('#fff')

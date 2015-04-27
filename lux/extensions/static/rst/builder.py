@@ -13,7 +13,7 @@ class SphinxContent(Content):
     def __init__(self, app, ctx):
         content_type = 'text/html'
         meta = ctx.get('meta') or {}
-        super(SphinxContent, self).__init__(app, content_type=content_type)
+        super().__init__(app, content_type=content_type)
 
 
 class LuxSphinx(Sphinx):
@@ -22,7 +22,7 @@ class LuxSphinx(Sphinx):
         self.data = []
         self.lux = app
         kwargs['status'] = None
-        super(LuxSphinx, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def _init_builder(self, buildername):
         self.builder = LuxBuilder(self)
