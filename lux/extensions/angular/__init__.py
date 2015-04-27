@@ -54,14 +54,6 @@ def add_ng_modules(doc, modules):
         doc.jscontext['ngModules'] = tuple(ngmodules)
 
 
-def get_api_info(router, app):
-    '''The api name for this :class:`.Router`
-    '''
-    base = app.config['API_URL']
-    if router.api_url:
-        return {'url': base, 'name': router.api_url}
-
-
 class Extension(lux.Extension):
 
     _config = [
@@ -168,25 +160,6 @@ def state_template(self, app):
         return div.render()
 
 
-class HtmlRouter(lux.HtmlRouter):
-
-    def state_template(self, app, router):
-        '''Template for ui-router state associated with this router.
-        '''
-        pass
-
-    def state_template_url(self, app, router):
-        pass
-
-    def get_controller(self, app, router):
-        pass
-
-    def angular_page(self, app, router, page):
-        '''Callback for adding additional data to angular page object
-        '''
-        pass
-
-
 def router_href(app, route):
     url = '/'.join(_angular_route(route))
     if url:
@@ -215,7 +188,7 @@ def add_to_sitemap(sitemap, app, doc, router, parent=None, angular=None):
     path = router_href(app, router.full_route)
 
     # Set the angukar router
-    if isinstance(router, HtmlRouter):
+    if hasattr(router, 'angular_page'):
         angular = router
 
     name = router.name
@@ -227,9 +200,6 @@ def add_to_sitemap(sitemap, app, doc, router, parent=None, angular=None):
             'parent': parent}
 
     if angular:
-        page.update({'template': angular.state_template(app, router),
-                     'templateUrl': angular.state_template_url(app, router),
-                     'controller': angular.get_controller(app, router)})
         angular.angular_page(app, router, page)
 
     sitemap['hrefs'].append(name)
