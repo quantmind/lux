@@ -38,7 +38,7 @@ a single page application.
 .. _`ui-router`: https://github.com/angular-ui/ui-router
 '''
 import lux
-from lux import Parameter, RouterParam, HtmlRouter
+from lux import Parameter, RouterParam
 
 from pulsar.apps.wsgi import MediaMixin, Html, route
 from pulsar.utils.httpurl import urlparse
@@ -54,6 +54,14 @@ def add_ng_modules(doc, modules):
         doc.jscontext['ngModules'] = tuple(ngmodules)
 
 
+def get_api_info(router, app):
+    '''The api name for this :class:`.Router`
+    '''
+    base = app.config['API_URL']
+    if router.api_url:
+        return {'url': base, 'name': router.api_url}
+
+
 class Extension(lux.Extension):
 
     _config = [
@@ -67,7 +75,7 @@ class Extension(lux.Extension):
     ]
 
     def on_html_document(self, app, request, doc):
-        router = angular_router(request.app_handler)
+        router = html_router(request.app_handler)
 
         if not router:
             return
@@ -81,6 +89,7 @@ class Extension(lux.Extension):
 
         # Use HTML5 navigation and angular router
         if app.config['HTML5_NAVIGATION']:
+            app.require('lux.extensions.rest')
             doc.head.meta.append(Html('base', href="/"))
 
             uirouter = app.config['ANGULAR_UI_ROUTER']
@@ -88,7 +97,7 @@ class Extension(lux.Extension):
             if router and uirouter and request.cache.uirouter is not False:
                 # The angular root for this router
                 add_ng_modules(doc, ('ui.router',))
-                root = angular_root(router)
+                root = angular_root(app, router)
                 if not hasattr(root, '_angular_sitemap'):
                     root._angular_sitemap = {'hrefs': [],
                                              'pages': {},
@@ -105,7 +114,7 @@ class Extension(lux.Extension):
 
     def context(self, request, context):
         if request.config['HTML5_NAVIGATION']:
-            router = angular_router(request.app_handler)
+            router = html_router(request.app_handler)
             if router:
                 context['html_main'] = self.uiview(request, context)
 
@@ -125,28 +134,28 @@ class Extension(lux.Extension):
         return div.render()
 
 
-def angular_router(router):
-    if isinstance(router, HtmlRouter):
+def html_router(router):
+    if isinstance(router, lux.HtmlRouter):
         return router
 
 
-def angular_root(router):
+def angular_root(app, router):
     '''The root angular router
     '''
     if not hasattr(router, '_angular_root'):
-        if angular_compatible(router, router.parent):
-            router._angular_root = angular_root(router.parent)
+        if angular_compatible(app, router, router.parent):
+            router._angular_root = angular_root(app, router.parent)
         else:
             router._angular_root = router
     return router._angular_root
 
 
-def angular_compatible(router1, router2):
-    router1 = angular_router(router1)
-    router2 = angular_router(router2)
+def angular_compatible(app, router1, router2):
+    router1 = html_router(router1)
+    router2 = html_router(router2)
     if router1 and router2:
-        templ1 = router1.get_html_body_template()
-        templ2 = router2.get_html_body_template()
+        templ1 = router1.get_html_body_template(app)
+        templ2 = router2.get_html_body_template(app)
         return templ1 == templ2
     return False
 
@@ -159,76 +168,23 @@ def state_template(self, app):
         return div.render()
 
 
-class _Router(lux.Router, MediaMixin):
-    '''A :class:`.Router` for Angular navigation.
-    '''
-    in_nav = True
-    title = None
-    api = None
-    angular_view_class = RouterParam('angular-view')
-    ngmodules = None
-    '''Optional list of angular modules to include
-    '''
+class HtmlRouter(lux.HtmlRouter):
 
-    def context(self, request, context):
-        '''This is the only http method implemented.
-
-        If this :class:`.Router` is operating in :ref:`ui mode <spa-router>`,
-        this method performs the following tasks:
-
-        * Collets children routers operating in :ref:`ui mode <spa-router>`
-          and build the sitemap used by angular `ui-router`_.
-
-            <div id="seo-view" data-ui-main="main" class="hidden">
-                $html_main
-            </div>
-        '''
-        app = request.app
-        doc = request.html_document
-        #
-        if request.cache.uirouter is False:
-            uirouter = None
-        else:
-            uirouter = app.config['ANGULAR_UI_ROUTER'] and self.uirouter
-        #
-        # Using Angular Ui-Router
-        if uirouter:
-            add_ng_modules(doc, ('ui.router',))
-            doc.jscontext.update(self.sitemap(app, doc, uirouter))
-            doc.jscontext['page'] = router_href(app, self.full_route)
-            context['html_main'] = self.uiview(request, context)
-        else:
-            add_ng_modules(doc, self.ngmodules)
-
-    def state_template(self, app):
+    def state_template(self, app, router):
         '''Template for ui-router state associated with this router.
         '''
         pass
 
-    def state_template_url(self, app):
+    def state_template_url(self, app, router):
         pass
 
-    def get_controller(self, app):
-        return 'Html5'
+    def get_controller(self, app, router):
+        pass
 
-    def angular_page(self, app, page):
+    def angular_page(self, app, router, page):
         '''Callback for adding additional data to angular page object
         '''
         pass
-
-    def childname(self, prefix):
-        return '%s%s' % (self.name, prefix) if self.name else prefix
-
-    def instance_url(self, request, instance):
-        '''Return the url for editing the ``instance``
-        '''
-        pass
-
-    def make_router(self, rule, method=None, handler=None, cls=None, **params):
-        if not cls:
-            cls = Router
-        return super().make_router(rule, method=method, handler=handler,
-                                   cls=cls, **params)
 
 
 def router_href(app, route):
@@ -254,31 +210,38 @@ def _angular_route(route):
             yield val
 
 
-def add_to_sitemap(sitemap, app, doc, router, parent=None):
+def add_to_sitemap(sitemap, app, doc, router, parent=None, angular=None):
     # path for the current router
     path = router_href(app, router.full_route)
-    #
+
+    # Set the angukar router
+    if isinstance(router, HtmlRouter):
+        angular = router
+
+    name = router.name
+    if parent:
+        name = '%s_%s' % (parent, name)
+
     page = {'url': path,
-            'name': router.name,
-            # 'template': router.state_template(app),
-            # 'templateUrl': router.state_template_url(app),
-            # 'api': router.get_api_info(app),
-            # 'controller': router.get_controller(app),
+            'name': name,
             'parent': parent}
-    sitemap['hrefs'].append(path)
-    sitemap['pages'][path] = page
+
+    if angular:
+        page.update({'template': angular.state_template(app, router),
+                     'templateUrl': angular.state_template_url(app, router),
+                     'controller': angular.get_controller(app, router)})
+        angular.angular_page(app, router, page)
+
+    sitemap['hrefs'].append(name)
+    sitemap['pages'][name] = page
     add_ng_modules(doc, router.uimodules)
     #
     # Loop over children routes
     for child in router.routes:
-        #
-        # This is the first child
-        if not parent:
-            getmany = True
-            apiname = router.name
-        add_to_sitemap(sitemap, app, doc, child, path)
+        add_to_sitemap(sitemap, app, doc, child, name, angular)
 
     # Add redirect to folder page if required
+    return
     if path.endswith('/') and path != '/':
         rpath = path[:-1]
         if rpath not in sitemap['pages']:

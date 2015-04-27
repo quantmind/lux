@@ -79,13 +79,15 @@ class JsonRouter(Router):
 
 class HtmlRouter(Router):
     '''Extend pulsar :class:`~pulsar.apps.wsgi.routers.Router`
-    with content management.'''
+    with content management.
+    '''
     in_nav = False
     controller = None
     html_body_template = None
     form = None
     uirouter = None
     uimodules = None
+    api_url = None
     response_content_types = DEFAULT_CONTENT_TYPES
 
     def get(self, request):
@@ -96,7 +98,7 @@ class HtmlRouter(Router):
         ct = response.content_type or ''
         if ct.startswith('text/html'):
             app = request.app
-            template = self.get_html_body_template(request)
+            template = self.get_html_body_template(request.app)
             html = self.get_html(request)
             if isinstance(html, Html):
                 html = html.render(request)
@@ -121,15 +123,15 @@ class HtmlRouter(Router):
     def get_text(self, request):
         return ''
 
-    def get_html_body_template(self, request):
+    def get_html_body_template(self, app):
         '''Fetch the HTML template for the body part of this request
         '''
-        cms = request.app.cms
+        cms = app.cms
         template = (cms.template(self.full_route.path) or
                     self.html_body_template)
         if not template:
             if self.parent:
-                template = self.parent.get_html_body_template(request)
+                template = self.parent.get_html_body_template(app)
             else:
                 template = 'home.html'
         return template
@@ -149,10 +151,6 @@ class HtmlRouter(Router):
         for r in self.routes:
             if isinstance(r, Router):
                 r.add_api_urls(request, api)
-
-    def get_api_info(self, app):
-        '''The api name for this :class:`.Router`
-        '''
 
 
 class HeadMeta(object):

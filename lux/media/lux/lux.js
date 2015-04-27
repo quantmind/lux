@@ -1340,6 +1340,46 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
         }
     };
 
+    function LuxStateProvider ($stateProvider, $urlRouterProvider) {
+
+        var states = lux.context.hrefs,
+            pages = lux.context.pages;
+
+        this.state = function (name, config) {
+            var page = pages[name];
+
+            page || (page = {});
+
+            if (angular.isFunction(config))
+                config = config(page);
+
+            pages[name] = angular.extend(page, config);
+
+            return this;
+        };
+
+        // Setup $stateProvider
+        this.setup = function () {
+            //
+            forEach(states, function (name) {
+                var page = pages[name];
+                // Redirection
+                if (page.redirectTo)
+                    $urlRouterProvider.when(page.url, page.redirectTo);
+                else {
+                    if (!name) name = 'home';
+                    $stateProvider.state(name, page);
+                }
+            });
+        };
+
+        this.$get = function () {
+
+            return {};
+        };
+    }
+
+
     angular.module('lux.ui.router', ['lux.page', 'lux.scroll', 'ui.router'])
         //
         .run(['$rootScope', '$state', '$stateParams', function (scope, $state, $stateParams) {
@@ -1349,70 +1389,10 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
             scope.$stateParams = $stateParams;
         }])
         //
-        .config(['$locationProvider', '$stateProvider', '$urlRouterProvider', '$anchorScrollProvider',
-            function ($locationProvider, $stateProvider, $urlRouterProvider, $anchorScrollProvider) {
-
-            var
-
-            hrefs = lux.context.hrefs,
-
-            pages = lux.context.pages,
-
-            state_config = function (page) {
-                var main = {
-                    //
-                    resolve: {
-                        // Fetch page information
-                        page: ['$lux', '$state', '$stateParams', function ($lux, state, stateParams) {
-                            if (page.api) {
-                                var api = $lux.api(page.api);
-                                if (api)
-                                    return api.getPage(page, state, stateParams);
-                            }
-                            return page;
-                        }],
-                        // Fetch items if needed
-                        items: ['$lux', '$state', '$stateParams', function ($lux, state, stateParams) {
-                            if (page.api) {
-                                var api = $lux.api(page.api);
-                                if (api)
-                                    return api.getItems(page, state, stateParams);
-                            }
-                        }],
-                    },
-                    //
-                    controller: page.controller
-                };
-
-                if (page.template)
-                    main.template = page.template;
-                else if (page.templateUrl)
-                    main.templateUrl = page.templateUrl;
-
-                return {
-                    url: page.url,
-                    //
-                    views: {
-                        main: main
-                    }
-                };
-            };
-
+        .provider('luxState', ["$stateProvider", "$urlRouterProvider", LuxStateProvider])
+        //
+        .config(['$locationProvider', function ($locationProvider) {
             $locationProvider.html5Mode(true).hashPrefix(lux.context.hashPrefix);
-            //
-            forEach(hrefs, function (href) {
-                var page = pages[href];
-                // Redirection
-                if (page.redirectTo)
-                    $urlRouterProvider.when(page.url, page.redirectTo);
-                else {
-                    var name = page.name;
-                    if (!name) {
-                        name = 'home';
-                    }
-                    $stateProvider.state(name, state_config(page));
-                }
-            });
         }])
         //
         // Default controller for an Html5 page loaded via the ui router

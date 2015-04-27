@@ -11,7 +11,7 @@ from .admin import Admin, AdminModel, adminMap, register
 
 
 class Extension(lux.Extension):
-    '''Object data mapper extension
+    '''Admin site for database data
     '''
     _config = [
         Parameter('ADMIN_URL', 'admin',

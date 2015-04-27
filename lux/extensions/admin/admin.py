@@ -67,11 +67,10 @@ class AdminModel(AdminRouter):
         super().__init__('/%s' % self.model, *args, **kwargs)
 
     def info(self, app):
-        info = app.mapper.api_info(self.meta)
-        if info:
-            info['label'] = nicename(info['name'])
-            info['href'] = self.full_route.path
-            return info
+        info = {}
+        info['label'] = nicename(self.model)
+        info['href'] = self.full_route.path
+        return info
 
     @route
     def add(self, request):
