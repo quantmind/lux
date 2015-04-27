@@ -106,28 +106,42 @@ class AngularLayout(AngularFieldset):
     form_class = None
     default_element = AngularFieldset
 
+    def __init__(self, *children, **attrs):
+        from lux.forms.form import FormType
+        form = None
+        if children and isinstance(children[0], FormType):
+            form = children[0]
+            children = children[1:]
+        super().__init__(*children, **attrs)
+        if form:
+            self.setup(form)
+
+    def __call__(self, *args, **kwargs):
+        form = self.form_class(*args, **kwargs)
+        return AngularForm(self, form)
+
     def __get__(self, form, instance_type=None):
         if instance_type:
-            if not self.form_class:
-                self.form_class = instance_type
-                self.setup()
-            elif self.form_class is not instance_type:
-                raise RuntimeError('Form layout element for multiple forms')
+            self.setup(instance_type)
         if form is None:
             return self
         else:
             return AngularForm(self, form)
 
-    def setup(self):
-        missings = list(self.form_class.base_fields)
-        children = self.children
-        self.children = []
-        for field in angular_fields(self.form_class, children, missings):
-            self.children.append(field)
-        if missings:
-            field = self.default_element(*missings)
-            field.setup(self.form_class, missings)
-            self.children.append(field)
+    def setup(self, instance_type):
+        if not self.form_class:
+            self.form_class = instance_type
+            missings = list(self.form_class.base_fields)
+            children = self.children
+            self.children = []
+            for field in angular_fields(self.form_class, children, missings):
+                self.children.append(field)
+            if missings:
+                field = self.default_element(*missings)
+                field.setup(self.form_class, missings)
+                self.children.append(field)
+        elif self.form_class is not instance_type:
+            raise RuntimeError('Form layout element for multiple forms')
 
 
 class AngularForm(object):
