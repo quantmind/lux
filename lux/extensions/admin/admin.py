@@ -26,11 +26,14 @@ class AdminRouter(lux.HtmlRouter):
     def response_wrapper(self, callable, request):
         app = request.app
         permission = app.config['ADMIN_PERMISSIONS']
-        backend = request.cache.auth_backend
-        if backend.has_permission(request, permission, rest.READ):
-            return callable(request)
+        if permission:
+            backend = request.cache.auth_backend
+            if backend.has_permission(request, permission, rest.READ):
+                return callable(request)
+            else:
+                raise Http404
         else:
-            raise Http404
+            return callable(request)
 
     def get_html(self, request):
         doc = request.html_document

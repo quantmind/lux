@@ -95,6 +95,3 @@ class CRUD(rest.RestRouter):
             else:
                 raise Http404
         raise PermissionDenied
-
-    def collection(self, request, limit, offset, text):
-        raise NotImplementedError

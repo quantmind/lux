@@ -79,8 +79,9 @@ class Extension(lux.Extension):
         #
         add_ng_modules(doc, app.config['NGMODULES'])
 
+        # Use HTML5 navigation and angular router
         if app.config['HTML5_NAVIGATION']:
-            doc.head.meta.append(Html('base', href=""))
+            doc.head.meta.append(Html('base', href="/"))
 
             uirouter = app.config['ANGULAR_UI_ROUTER']
 
@@ -266,7 +267,7 @@ def add_to_sitemap(sitemap, app, doc, router, parent=None):
             'parent': parent}
     sitemap['hrefs'].append(path)
     sitemap['pages'][path] = page
-    add_ng_modules(doc, router.ngmodules)
+    add_ng_modules(doc, router.uimodules)
     #
     # Loop over children routes
     for child in router.routes:
