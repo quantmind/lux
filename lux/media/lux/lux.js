@@ -1352,14 +1352,16 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
             pages = lux.context.pages;
 
         this.state = function (name, config) {
-            var page = pages[name];
+            if (pages) {
+                var page = pages[name];
 
-            page || (page = {});
+                page || (page = {});
 
-            if (angular.isFunction(config))
-                config = config(page);
+                if (angular.isFunction(config))
+                    config = config(page);
 
-            pages[name] = angular.extend(page, config);
+                pages[name] = angular.extend(page, config);
+            }
 
             return this;
         };
@@ -1367,16 +1369,18 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
         // Setup $stateProvider
         this.setup = function () {
             //
-            forEach(states, function (name) {
-                var page = pages[name];
-                // Redirection
-                if (page.redirectTo)
-                    $urlRouterProvider.when(page.url, page.redirectTo);
-                else {
-                    if (!name) name = 'home';
-                    $stateProvider.state(name, page);
-                }
-            });
+            if (pages) {
+                forEach(states, function (name) {
+                    var page = pages[name];
+                    // Redirection
+                    if (page.redirectTo)
+                        $urlRouterProvider.when(page.url, page.redirectTo);
+                    else {
+                        if (!name) name = 'home';
+                        $stateProvider.state(name, page);
+                    }
+                });
+            }
         };
 
         this.$get = function () {
@@ -1398,8 +1402,10 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
         .provider('luxState', ["$stateProvider", "$urlRouterProvider", LuxStateProvider])
         //
         .config(['$locationProvider', function ($locationProvider) {
-            $locationProvider.html5Mode(true).hashPrefix(lux.context.hashPrefix);
-            $(document.querySelector('#seo-view')).remove();
+            if (lux.context.HTML5_NAVIGATION) {
+                $locationProvider.html5Mode(true).hashPrefix(lux.context.hashPrefix);
+                $(document.querySelector('#seo-view')).remove();
+            }
         }])
         //
         // Default controller for an Html5 page loaded via the ui router

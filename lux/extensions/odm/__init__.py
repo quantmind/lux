@@ -22,6 +22,7 @@ from pulsar.utils.log import LocalMixin
 from .exc import *
 from .mapper import Mapper
 from . import nosql
+from .serialise import tojson
 
 
 class Extension(lux.Extension):

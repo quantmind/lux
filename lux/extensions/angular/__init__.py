@@ -61,6 +61,8 @@ class Extension(lux.Extension):
 
         # Use HTML5 navigation and angular router
         if app.config['HTML5_NAVIGATION']:
+            root = angular_root(app, router)
+
             app.require('lux.extensions.rest')
 
             doc.body.data({'ng-model': 'page',
@@ -69,30 +71,30 @@ class Extension(lux.Extension):
 
             doc.head.meta.append(Html('base', href="/"))
 
-            if router:
-                root = angular_root(app, router)
-                if not hasattr(root, '_angular_sitemap'):
-                    root._angular_sitemap = {'states': [], 'pages': {}}
-                    add_to_sitemap(root._angular_sitemap, app, doc, root)
-                doc.jscontext.update(root._angular_sitemap)
-                doc.jscontext['page'] = router.state
+            if not hasattr(root, '_angular_sitemap'):
+                root._angular_sitemap = {'states': [], 'pages': {}}
+                add_to_sitemap(root._angular_sitemap, app, doc, root)
+            doc.jscontext.update(root._angular_sitemap)
+            doc.jscontext['page'] = router.state
         else:
-
             add_ng_modules(doc, router.uimodules)
 
     def context(self, request, context):
-        if request.config['HTML5_NAVIGATION']:
-            router = html_router(request.app_handler)
-            if router:
-                context['html_main'] = self.uiview(request, context)
+        router = html_router(request.app_handler)
+        if request.config['HTML5_NAVIGATION'] and router:
+            root = angular_root(request.app, router)
+            pages = request.html_document.jscontext['pages']
+            page = pages.get(router.state)
+            context['html_main'] = self.uiview(request, context, page)
 
-    def uiview(self, request, context):
+    def uiview(self, request, context, page):
         '''Wrap the ``main`` html with a ``ui-view`` container.
         Add animation class if specified in :setting:`ANGULAR_VIEW_ANIMATE`.
         '''
         app = request.app
         main = context.get('html_main', '')
-        main = Html('div', main, cn='hidden', id="seo-view")
+        if 'templateUrl' in page or 'template' in page:
+            main = Html('div', main, cn='hidden', id="seo-view")
         div = Html('div', main, cn='angular-view')
         animate = app.config['ANGULAR_VIEW_ANIMATE']
         if animate:

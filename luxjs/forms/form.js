@@ -513,6 +513,7 @@
                     $lux.log.error('Layout "' + field.layout + '" not available, cannot render form');
             };
             //
+            // Initialise the form scope
             this.initScope = function (scope, element, attrs) {
                 var data = getOptions(attrs);
 
