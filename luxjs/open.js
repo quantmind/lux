@@ -34,7 +34,7 @@ function(angular, root) {
         defaults = {
             url: '',    // base url for the web site
             MEDIA_URL: '',  // default url for media content
-            hashPrefix: '!',
+            hashPrefix: '',
             ngModules: []
         };
     //

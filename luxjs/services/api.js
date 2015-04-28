@@ -75,6 +75,10 @@
         // This function can be used to add authentication
         api.authentication = function (request) {};
         //
+        api.get = function (opts, data) {
+            return api.request('get', opts, data);
+        };
+        //
         // Perform the actual request and return a promise
         //      method: HTTP method
         //      urlparams:

@@ -24,14 +24,6 @@
             // Resolve modules to load
             if (!isArray(modules))
                 modules = [];
-            if (lux.context.uiRouter) {
-                modules.push(lux.context.uiRouter);
-                // Remove seo view, we don't want to bootstrap it
-                $(document.querySelector('#seo-view')).remove();
-            }
-            else {
-                modules.push('lux.router');
-            }
             // Add all modules from context
             forEach(lux.context.ngModules, function (mod) {
                 modules.push(mod);

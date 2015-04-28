@@ -21,7 +21,7 @@
     //  Lux State Provider complements the python lux Html server
     function LuxStateProvider ($stateProvider, $urlRouterProvider) {
 
-        var states = lux.context.hrefs,
+        var states = lux.context.states,
             pages = lux.context.pages;
 
         this.state = function (name, config) {
@@ -72,6 +72,7 @@
         //
         .config(['$locationProvider', function ($locationProvider) {
             $locationProvider.html5Mode(true).hashPrefix(lux.context.hashPrefix);
+            $(document.querySelector('#seo-view')).remove();
         }])
         //
         // Default controller for an Html5 page loaded via the ui router

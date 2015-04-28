@@ -18,20 +18,7 @@ Include ``lux.extensions.angular`` into the :setting:`EXTENSIONS` list in your
         ...
         ]
 
-     ANGULAR_UI_ROUTER = True
-
-There are two different ways to serve html. The default way is to serve without
-the use of angular `ui-router`_, in which case urls load the whole html5
-document each time they are accessed.
-
-.. _spa-router:
-
-UI-Router
-=============
-
-When switching :setting:`ANGULAR_UI_ROUTER` to ``True``, each page served by
-an angular :class:`.Router` is managed, in javascript, by the `ui-router`_ as
-a single page application.
+     HTML5_NAVIGATION = True
 
 
 .. _AngularJS: https://angularjs.org/
@@ -59,8 +46,6 @@ class Extension(lux.Extension):
     _config = [
         Parameter('HTML5_NAVIGATION', False,
                   'Enable Html5 navigation', True),
-        Parameter('ANGULAR_UI_ROUTER', 'lux.ui.router',
-                  'Enable Angular ui-router'),
         Parameter('ANGULAR_VIEW_ANIMATE', False,
                   'Enable Animation of ui-router views.'),
         Parameter('NGMODULES', [], 'Angular module to load')
@@ -71,38 +56,29 @@ class Extension(lux.Extension):
 
         if not router:
             return
-
-        doc.body.data({'ng-model': 'page',
-                       'ng-controller': 'Page',
-                       'page': ''})
-        jscontext = doc.jscontext
         #
         add_ng_modules(doc, app.config['NGMODULES'])
 
         # Use HTML5 navigation and angular router
         if app.config['HTML5_NAVIGATION']:
             app.require('lux.extensions.rest')
+
+            doc.body.data({'ng-model': 'page',
+                           'ng-controller': 'Page',
+                           'page': ''})
+
             doc.head.meta.append(Html('base', href="/"))
 
-            uirouter = app.config['ANGULAR_UI_ROUTER']
-
-            if router and uirouter and request.cache.uirouter is not False:
-                # The angular root for this router
-                add_ng_modules(doc, ('ui.router',))
+            if router:
                 root = angular_root(app, router)
                 if not hasattr(root, '_angular_sitemap'):
-                    root._angular_sitemap = {'hrefs': [],
-                                             'pages': {},
-                                             'uiRouter': uirouter}
+                    root._angular_sitemap = {'states': [], 'pages': {}}
                     add_to_sitemap(root._angular_sitemap, app, doc, root)
                 doc.jscontext.update(root._angular_sitemap)
-
+                doc.jscontext['page'] = router.state
         else:
 
             add_ng_modules(doc, router.uimodules)
-
-        if router:
-            doc.jscontext['page'] = router_href(app, router.full_route)
 
     def context(self, request, context):
         if request.config['HTML5_NAVIGATION']:
@@ -122,7 +98,7 @@ class Extension(lux.Extension):
         if animate:
             add_ng_modules(request.html_document, ('ngAnimate',))
             div.addClass(animate)
-        div.data('ui-view', 'main')
+        div.data('ui-view', '')
         return div.render()
 
 
@@ -150,14 +126,6 @@ def angular_compatible(app, router1, router2):
         templ2 = router2.get_html_body_template(app)
         return templ1 == templ2
     return False
-
-
-def state_template(self, app):
-        '''Template used when in html5 mode
-        '''
-        div = Html('div', cn=self.angular_view_class)
-        div.data({'compile-html': ''})
-        return div.render()
 
 
 def router_href(app, route):
@@ -195,14 +163,14 @@ def add_to_sitemap(sitemap, app, doc, router, parent=None, angular=None):
     if parent:
         name = '%s_%s' % (parent, name)
 
-    page = {'url': path,
-            'name': name,
-            'parent': parent}
+    router.state = name
+
+    page = {'url': path, 'name': name}
 
     if angular:
         angular.angular_page(app, router, page)
 
-    sitemap['hrefs'].append(name)
+    sitemap['states'].append(name)
     sitemap['pages'][name] = page
     add_ng_modules(doc, router.uimodules)
     #
@@ -217,5 +185,5 @@ def add_to_sitemap(sitemap, app, doc, router, parent=None, angular=None):
         if rpath not in sitemap['pages']:
             page = {'url': rpath,
                     'redirectTo': path}
-            sitemap['hrefs'].append(rpath)
+            sitemap['states'].append(rpath)
             sitemap['pages'][rpath] = page

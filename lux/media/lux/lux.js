@@ -1,6 +1,6 @@
 //      Lux Library - v0.1.1
 
-//      Compiled 2015-04-27.
+//      Compiled 2015-04-28.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -42,7 +42,7 @@ function(angular, root) {
         defaults = {
             url: '',    // base url for the web site
             MEDIA_URL: '',  // default url for media content
-            hashPrefix: '!',
+            hashPrefix: '',
             ngModules: []
         };
     //
@@ -383,6 +383,10 @@ function(angular, root) {
 
         // This function can be used to add authentication
         api.authentication = function (request) {};
+        //
+        api.get = function (opts, data) {
+            return api.request('get', opts, data);
+        };
         //
         // Perform the actual request and return a promise
         //      method: HTTP method
@@ -1340,9 +1344,11 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
         }
     };
 
+    //
+    //  Lux State Provider complements the python lux Html server
     function LuxStateProvider ($stateProvider, $urlRouterProvider) {
 
-        var states = lux.context.hrefs,
+        var states = lux.context.states,
             pages = lux.context.pages;
 
         this.state = function (name, config) {
@@ -1393,6 +1399,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
         //
         .config(['$locationProvider', function ($locationProvider) {
             $locationProvider.html5Mode(true).hashPrefix(lux.context.hashPrefix);
+            $(document.querySelector('#seo-view')).remove();
         }])
         //
         // Default controller for an Html5 page loaded via the ui router
@@ -2492,14 +2499,6 @@ angular.module("users/messages.tpl.html", []).run(["$templateCache", function($t
             // Resolve modules to load
             if (!isArray(modules))
                 modules = [];
-            if (lux.context.uiRouter) {
-                modules.push(lux.context.uiRouter);
-                // Remove seo view, we don't want to bootstrap it
-                $(document.querySelector('#seo-view')).remove();
-            }
-            else {
-                modules.push('lux.router');
-            }
             // Add all modules from context
             forEach(lux.context.ngModules, function (mod) {
                 modules.push(mod);
