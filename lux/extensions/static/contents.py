@@ -352,7 +352,7 @@ class Content(object):
                          'og:modified_time': data.get('modified')})
         doc.meta.update(data['head'])
         #
-        if not request.config['ANGULAR_UI_ROUTER']:
+        if not request.config['HTML5_NAVIGATION']:
             for css in data.get('require_css') or ():
                 doc.head.links.append(css)
             doc.head.scripts.require.extend(data.get('require_js') or ())

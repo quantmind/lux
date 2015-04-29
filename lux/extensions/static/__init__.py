@@ -89,7 +89,7 @@ class Extension(lux.Extension):
 
     def middleware(self, app):
         app.require('lux.extensions.angular')
-        html5 = app.config['ANGULAR_UI_ROUTER']
+        html5 = app.config['HTML5_NAVIGATION']
         path = app.config['MEDIA_URL']
         api_url = app.config['STATIC_API'] or ''
         if api_url.startswith('/'):

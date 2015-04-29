@@ -7,7 +7,7 @@ __test__ = False
 EXTENSIONS = ['lux.extensions.ui',
               'lux.extensions.angular']
 
-ANGULAR_UI_ROUTER = True
+HTML5_NAVIGATION = True
 
 
 class Extension(lux.Extension):

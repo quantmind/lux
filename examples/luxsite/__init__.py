@@ -56,7 +56,7 @@ LINKS = {'Python': 'https://www.python.org/',
 
 
 # ANGULARJS CONFIGURATION
-ANGULAR_UI_ROUTER = True
+HTML5_NAVIGATION = True
 ANGULAR_VIEW_ANIMATE = 'animate-fade'
 
 
