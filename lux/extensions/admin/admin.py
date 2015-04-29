@@ -37,9 +37,6 @@ class AdminRouter(lux.HtmlRouter):
 
     def get_html(self, request):
         doc = request.html_document
-        nav = {'top': True,
-               'items2': self.sitemap(request)}
-        doc.jscontext['adminNavigation'] = nav
         return request.app.template('partials/admin.html')
 
     def sitemap(self, request):

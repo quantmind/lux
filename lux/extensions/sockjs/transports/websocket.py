@@ -10,22 +10,25 @@ class WebSocketProtocol(ws.WebSocketProtocol, Transport):
     name = 'websocket'
     _logger = logging.getLogger('lux.sockjs')
 
-    def on_open(self, client, *args):
-        if not args:
-            self.logger.info('Opened a new websocket connection %s', client)
-            args = ('o',)
-        else:
-            connection = self.connection
-            if not connection or connection.closed:
-                return
+    def on_open(self, client):
+        self.logger.info('Opened a new websocket connection %s', client)
+        self._hartbeat(client, 'o')
+
+    def _hartbeat(self, client, b):
+        connection = self.connection
+        if not connection or connection.closed:
+            return
+        if b == 'h':
             self.logger.debug('Hartbeat message  %s', client)
-        assert len(args) == 1
-        self.write(args[0])
+
+        self.write(b)
         self._loop.call_later(self.config['WEBSOCKET_HARTBEAT'],
-                              self.on_open, client, 'h')
+                              self._hartbeat, client, 'h')
 
 
 class WebSocket(ws.WebSocket):
+    '''WebSocket wsgi handler with new protocol class
+    '''
     protocol_class = WebSocketProtocol
 
     def get(self, request):

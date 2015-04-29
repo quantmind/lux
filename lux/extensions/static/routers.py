@@ -282,7 +282,7 @@ class HtmlContent(HtmlRouter, DirBuilder):
                     'url': url,
                     'type': 'static'}
 
-    def angular_page(self, app, page):
+    def angular_page(self, app, router, page):
         if self.index_template:
             url = app.config['SITE_URL'] + self.api.path()
             page['apiItems'] = {'name': self.api.name,

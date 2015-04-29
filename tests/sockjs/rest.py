@@ -25,3 +25,8 @@ class TestSockJSRestApp(test.AppTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.content_type,
                          'application/json; charset=utf-8')
+
+    def test_websocket(self):
+        request = self.client.get('/testws/websocket')
+        response = request.response
+        self.assertEqual(response.status_code, 400)

@@ -4,6 +4,10 @@ class Transport:
     name = ''
 
     @property
+    def cache(self):
+        return self.handshake.cache
+
+    @property
     def config(self):
         return self.handshake.config
 

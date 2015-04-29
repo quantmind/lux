@@ -63,8 +63,6 @@ class Extension(lux.Extension):
         if app.config['HTML5_NAVIGATION']:
             root = angular_root(app, router)
 
-            app.require('lux.extensions.rest')
-
             doc.body.data({'ng-model': 'page',
                            'ng-controller': 'Page',
                            'page': ''})
