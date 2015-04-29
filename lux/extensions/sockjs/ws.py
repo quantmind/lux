@@ -25,6 +25,7 @@ class WsClient:
     def __init__(self, transport):
         request = transport.handshake
         self.transport = transport
+        self.app = request.app
         self.started = time.time()
         self.address = request.get_client_address()
         session_id = request.urlargs.get('session_id')
