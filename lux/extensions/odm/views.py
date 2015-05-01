@@ -20,6 +20,8 @@ class CRUD(rest.RestRouter):
             return self.serialise(request, data)
 
     def get(self, request):
+        '''Get a list of models
+        '''
         backend = request.cache.auth_backend
         if backend.has_permission(request, self.model, rest.READ):
             limit = self.limit(request)
@@ -53,7 +55,8 @@ class CRUD(rest.RestRouter):
     def read(self, request):
         '''Read an instance
         '''
-        instance = self.manager.get(request, request.urlargs['id'])
+        odm = request.app.odm()
+        instance = odm.get(request, request.urlargs['id'])
         if not instance:
             raise Http404
         url = request.absolute_uri()

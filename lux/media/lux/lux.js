@@ -1,6 +1,6 @@
 //      Lux Library - v0.1.1
 
-//      Compiled 2015-04-28.
+//      Compiled 2015-05-01.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -2050,6 +2050,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                     $lux.log.error('Layout "' + field.layout + '" not available, cannot render form');
             };
             //
+            // Initialise the form scope
             this.initScope = function (scope, element, attrs) {
                 var data = getOptions(attrs);
 
@@ -2239,6 +2240,13 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                 }
             };
         });
+
+
+    angular.module('lux.grid', ['ngTouch', 'ui.grid'])
+
+        .controller('RestGrid', ['$scope', '$lux', function (scope, $lux) {
+
+        }]);
 
   // Create all modules and define dependencies to make sure they exist
     // and are loaded in the correct order to satisfy dependency injection

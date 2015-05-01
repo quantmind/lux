@@ -42,6 +42,7 @@
                 "luxjs/page/*.js",
                 "luxjs/forms/process.js",
                 "luxjs/forms/form.js",
+                "luxjs/grid/*.js",
                 "luxjs/users/*.js",
                 "luxjs/bootstrap.js",
                 "luxjs/blog/*.js",

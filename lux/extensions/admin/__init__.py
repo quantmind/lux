@@ -16,6 +16,8 @@ class Extension(lux.Extension):
     _config = [
         Parameter('ADMIN_URL', 'admin',
                   'Admin site url', True),
+        Parameter('ADMIN_SECTIONS', {},
+                  'Admin sections information'),
         Parameter('ADMIN_PERMISSIONS', 'admin',
                   'Admin permission name')]
 

@@ -35,48 +35,88 @@ class AdminRouter(lux.HtmlRouter):
         else:
             return callable(request)
 
-    def get_html(self, request):
-        doc = request.html_document
-        return request.app.template('partials/admin.html')
+    def get(self, request):
+        if request.url_data.get('template') == 'ui':
+            template = self.get_html(request)
+            request.response.content = template
+            return request.response
+        else:
+            admin = self.admin_root()
+            assert admin
+            doc = request.html_document
+            doc.jscontext['navigation'] = admin.sitemap(request.app)
+            return super().get(request)
 
-    def sitemap(self, request):
-        router = request.app_handler
-        while not isinstance(router, Admin):
+    def get_html(self, request):
+        return request.app.render_template('partials/admin.html')
+
+    def admin_root(self):
+        router = self
+        while router and not isinstance(router, Admin):
             router = router.parent
-        if router:
-            sitemap = []
-            for child in router.routes:
-                if isinstance(child, AdminModel):
-                    info = child.info(request.app)
-                    if info:
-                        sitemap.append(info)
-        return sitemap
+        return router
+
+    def angular_page(self, app, router, page):
+        '''Add angular router information (lux.extensions.angular)
+        '''
+        page['templateUrl'] = '%s?template=ui' % router.full_route
 
 
 class Admin(AdminRouter):
     '''Admin Root'''
+    _sitemap = None
+
+    def __init__(self, *args, **kwargs):
+        # set self as the angular root
+        self._angular_root = self
+        super().__init__(*args, **kwargs)
+
+    def sitemap(self, app):
+        if self._sitemap is None:
+            sections = {}
+            sitemap = []
+            for child in self.routes:
+                if isinstance(child, AdminModel):
+                    section, info = child.info(app)
+
+                    if section not in sections:
+                        items = []
+                        sections[section] = {'name': section,
+                                             'items': items}
+                        sitemap.append(sections[section])
+                    else:
+                        items = sections[section]['items']
+
+                    items.append(info)
+
+            self._sitemap = sitemap
+        return self._sitemap
 
 
 class AdminModel(AdminRouter):
+    section = None
+    icon = None
 
     def __init__(self, model, *args, **kwargs):
         self.model = model
         super().__init__('/%s' % self.model, *args, **kwargs)
 
     def info(self, app):
-        info = {}
-        info['label'] = nicename(self.model)
-        info['href'] = self.full_route.path
-        return info
+        '''Information for admin navigation
+        '''
+        info = {'title': nicename(self.model),
+                'name': nicename(self.model),
+                'href': self.full_route.path,
+                'icon': self.icon}
+        return self.section, info
+
+    def get_html(self, request):
+        return request.app.render_template('partials/admin-list.html')
 
     @route
     def add(self, request):
-        '''Add a new model'''
-        raise Http404
-
-    @route('<id>')
-    def read(self, request):
-        '''Add a new model'''
+        '''Add a new model
+        '''
         raise Http404
 
     @route('<id>')
