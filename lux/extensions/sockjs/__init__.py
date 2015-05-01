@@ -67,7 +67,6 @@ class WsApi:
             ws.logger.exception('Unhandlerd excption')
             ws.error_message(exc)
 
-
     def _ws_methods(self, app):
         for ext in app.extensions:
             for name in dir(ext):

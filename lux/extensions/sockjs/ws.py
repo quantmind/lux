@@ -11,7 +11,6 @@ LUX_MESSAGE = 'lux:message'
 LUX_ERROR = 'lux:error'
 
 
-
 class WsClient:
     '''Server side of a websocket client.
 
