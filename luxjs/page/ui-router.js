@@ -24,6 +24,11 @@
         var states = lux.context.states,
             pages = lux.context.pages;
 
+        //
+        //  Use this function to add/override the state
+        //  configuration of state ``name``.
+        //  * name, name of the state to add/update
+        //  * config, object or function returning an object.
         this.state = function (name, config) {
             if (pages) {
                 var page = pages[name];

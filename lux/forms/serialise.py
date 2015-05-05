@@ -120,14 +120,6 @@ class AngularLayout(AngularFieldset):
         form = self.form_class(*args, **kwargs)
         return AngularForm(self, form)
 
-    def __get__(self, form, instance_type=None):
-        if instance_type:
-            self.setup(instance_type)
-        if form is None:
-            return self
-        else:
-            return AngularForm(self, form)
-
     def setup(self, instance_type):
         if not self.form_class:
             self.form_class = instance_type

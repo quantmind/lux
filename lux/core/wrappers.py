@@ -20,6 +20,8 @@ __all__ = ['Html', 'WsgiRequest', 'Router', 'HtmlRouter',
 Html = wsgi.Html
 
 
+TEXT_CONTENT_TYPES = unique_tuple(('text/html', 'text/plain'))
+
 DEFAULT_CONTENT_TYPES = unique_tuple(('text/html', 'text/plain', 'text/csv'),
                                      JSON_CONTENT_TYPES)
 
@@ -82,32 +84,31 @@ class HtmlRouter(Router):
     with content management.
     '''
     in_nav = False
-    controller = None
     html_body_template = None
     form = None
     uirouter = None
     uimodules = None
     api_url = None
-    response_content_types = DEFAULT_CONTENT_TYPES
+    response_content_types = TEXT_CONTENT_TYPES
 
-    def get(self, request):
-        '''Return the html template used by the GET method
-        and content-type is text/html
-        '''
-        response = request.response
-        ct = response.content_type or ''
-        if ct.startswith('text/html'):
-            app = request.app
-            template = self.get_html_body_template(request.app)
+    def get(self, request, html=None):
+        # render the inner html
+        if html is None:
             html = self.get_html(request)
-            if isinstance(html, Html):
-                html = html.render(request)
-            context = {'html_main': html}
-            return app.html_response(request, template, context=context)
-        elif ct == 'application/json':
-            return self.get_json(request)
-        else:
-            return self.get_text(request)
+
+        if isinstance(html, Html):
+            html = html.render(request)
+
+        # This request is for the inner template only
+        if request.url_data.get('template') == 'ui':
+            request.response.content = html
+            return request.response
+
+        context = {'html_main': html}
+        self.context(request, context)
+        app = request.app
+        template = self.get_html_body_template(app)
+        return app.html_response(request, template, context=context)
 
     def get_html(self, request):
         '''Must be implemented by subclasses.
@@ -117,11 +118,8 @@ class HtmlRouter(Router):
         '''
         return ''
 
-    def get_json(self, request):
-        return '{}'
-
-    def get_text(self, request):
-        return ''
+    def context(self, request, context):
+        pass
 
     def get_html_body_template(self, app):
         '''Fetch the HTML template for the body part of this request
@@ -151,6 +149,11 @@ class HtmlRouter(Router):
         for r in self.routes:
             if isinstance(r, Router):
                 r.add_api_urls(request, api)
+
+    def angular_page(self, app, router, page):
+        '''Add angular router information (lux.extensions.angular)
+        '''
+        page['templateUrl'] = '%s?template=ui' % router.full_route
 
 
 class HeadMeta(object):

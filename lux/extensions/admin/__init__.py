@@ -7,7 +7,7 @@ needs to be specified.
 import lux
 from lux import Parameter
 
-from .admin import Admin, AdminModel, adminMap, register
+from .admin import Admin, AdminModel, CRUDAdmin, adminMap, register
 
 
 class Extension(lux.Extension):

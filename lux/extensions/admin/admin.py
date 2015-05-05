@@ -35,17 +35,13 @@ class AdminRouter(lux.HtmlRouter):
         else:
             return callable(request)
 
-    def get(self, request):
-        if request.url_data.get('template') == 'ui':
-            template = self.get_html(request)
-            request.response.content = template
-            return request.response
-        else:
-            admin = self.admin_root()
-            assert admin
-            doc = request.html_document
-            doc.jscontext['navigation'] = admin.sitemap(request.app)
-            return super().get(request)
+    def context(self, request, context):
+        '''Add the admin navigation to the javascript context
+        '''
+        admin = self.admin_root()
+        assert admin
+        doc = request.html_document
+        doc.jscontext['navigation'] = admin.sitemap(request.app)
 
     def get_html(self, request):
         return request.app.render_template('partials/admin.html')
@@ -55,11 +51,6 @@ class AdminRouter(lux.HtmlRouter):
         while router and not isinstance(router, Admin):
             router = router.parent
         return router
-
-    def angular_page(self, app, router, page):
-        '''Add angular router information (lux.extensions.angular)
-        '''
-        page['templateUrl'] = '%s?template=ui' % router.full_route
 
 
 class Admin(AdminRouter):
@@ -96,6 +87,7 @@ class Admin(AdminRouter):
 class AdminModel(AdminRouter):
     section = None
     icon = None
+    addForm = None
 
     def __init__(self, model, *args, **kwargs):
         self.model = model
@@ -113,13 +105,29 @@ class AdminModel(AdminRouter):
     def get_html(self, request):
         return request.app.render_template('partials/admin-list.html')
 
-    @route
+
+class CRUDAdmin(AdminModel):
+    '''An Admin model Router for adding and updating models
+    '''
+    addform = None
+    updateform = None
+    addtemplate = 'partials/admin-add.html'
+
+    @route()
     def add(self, request):
         '''Add a new model
         '''
-        raise Http404
+        form = self.addform
+        if not form:
+            raise Http404
+        html = form().as_form()
+        context = {'html_form': html.render()}
+        html = request.app.render_template(self.addtemplate, context)
+        return self.get(request, html=html)
 
     @route('<id>')
     def update(self, request):
         '''Add a new model'''
-        raise Http404
+        form = self.updateform or self.addform
+        if not form:
+            raise Http404
