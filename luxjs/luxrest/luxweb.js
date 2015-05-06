@@ -72,17 +72,18 @@
 
         //  override request and attach error callbacks
         api.request = function (method, opts, data) {
-            return request.call(api, method, opts, data)
-                        .error(function (data, status) {
-                            if (status === 401)
-                                api.login();
-                            else if (!status)
-                                $lux.log.error('Server down, could not complete request');
-                            else if (status === 404) {
-                                $lux.window.location.href = '/';
-                                $lux.window.reload();
-                            }
-                        });
+            var promise = request.call(api, method, opts, data);
+            promise.error(function (data, status) {
+                if (status === 401)
+                    api.login();
+                else if (!status)
+                    $lux.log.error('Server down, could not complete request');
+                else if (status === 404) {
+                    $lux.window.location.href = '/';
+                    $lux.window.reload();
+                }
+            });
+            return promise;
         };
 
         api.authentication = function (request) {

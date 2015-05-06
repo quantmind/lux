@@ -6,6 +6,7 @@ from lux.extensions import rest
 
 
 class CRUD(rest.RestRouter):
+    addform = None
 
     def __init__(self, model, url=None, *args, **kwargs):
         url = url or model
@@ -34,17 +35,14 @@ class CRUD(rest.RestRouter):
     def post(self, request):
         '''Create a new model
         '''
-        manager = self.manager
-        form_class = manager.form
-        if not form_class:
-            raise MethodNotAllowed
-        auth = request.cache.auth_backend
-        if auth and auth.has_permission(request, auth.CREATE, manager.model):
+        backend = request.cache.auth_backend
+        if backend.has_permission(request, self.model, rest.CREATE):
+            assert self.addform
             data, files = request.data_and_files()
-            form = form_class(request, data=data, files=files)
+            form = self.addform(request, data=data, files=files)
             if form.is_valid():
-                instance = manager.create_model(request, form.cleaned_data)
-                data = self.manager.instance_data(request, instance)
+                instance = self.create_model(request, form.cleaned_data)
+                data = self.serialise(request, instance)
                 request.response.status_code = 201
             else:
                 data = form.tojson()
@@ -98,3 +96,11 @@ class CRUD(rest.RestRouter):
             else:
                 raise Http404
         raise PermissionDenied
+
+    def create_model(self, request, data):
+        odm = request.app.odm()
+        model = odm[self.model]
+        with odm.begin() as session:
+            instance = model(**data)
+            session.add(instance)
+        return instance

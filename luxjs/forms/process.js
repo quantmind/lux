@@ -59,7 +59,8 @@
                 return;
             }
             //
-            promise.then(function (data, status) {
+            promise.then(function (response) {
+                var data = response.data;
                 if (data.messages) {
                     scope.addMessages(data.messages);
                 } else if (api) {
@@ -73,8 +74,10 @@
                     window.location.href = data.redirect || '/';
                 }
             },
-            function (data, status, headers) {
-                var messages, msg;
+            function (response) {
+                var data = response.data,
+                    status = response.status,
+                    messages, msg;
                 if (data) {
                     messages = data.messages;
                     if (!messages) {
@@ -85,7 +88,8 @@
                         }
                         messages = {};
                         scope.formMessages[FORMKEY] = [{message: msg, error: true}];
-                    }
+                    } else
+                        scope.addMessages(messages);
                 } else {
                     status = status || 501;
                     msg = 'Server error (' + status + ')';

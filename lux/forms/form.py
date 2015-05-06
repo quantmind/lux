@@ -344,7 +344,8 @@ instances with initial values.'''
         '''
         errors = self.errors
         data = {}
-        message = {'success': not errors}
+        message = {'success': not errors,
+                   'error': bool(errors)}
         for name, msg in self.errors.items():
             field = self.dfields.get(name)
             if field:

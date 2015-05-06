@@ -104,32 +104,20 @@
                     //
                     options: opts,
                     //
-                    error: function (data, status, headers) {
-                        if (isString(data)) {
-                            data = {error: true, message: data};
-                        }
-                        d.reject({
-                            'data': data,
-                            'status': status,
-                            'headers': headers
-                        });
+                    error: function (respose) {
+                        if (isString(respose.data))
+                            respose.data = {error: true, message: data};
+                        d.reject(respose);
                     },
                     //
-                    success: function (data, status, headers) {
-                        if (isString(data)) data = {message: data};
+                    success: function (response) {
+                        if (isString(response.data))
+                            respose.data = {message: data};
 
-                        if (data.error)
-                            d.reject({
-                                'data': data,
-                                'status': status,
-                                'headers': headers
-                            });
+                        if (!response.data || response.data.error)
+                            d.reject(response);
                         else
-                            d.resolve({
-                                'data': data,
-                                'status': status,
-                                'headers': headers
-                            });
+                            d.resolve(response);
                     }
                 });
             //
@@ -163,7 +151,7 @@
                     // Fetch the api urls
                     $lux.log.info('Fetching api info');
                     return $lux.http.get(api.baseUrl()).then(function (resp) {
-                        apiUrls = resp;
+                        apiUrls = resp.data;
                         api.call(request);
                     }, request.error);
                     //
@@ -184,7 +172,7 @@
 
             if (options.url) {
                 $lux.log.info('Executing HTTP ' + options.method + ' request @ ' + options.url);
-                $lux.http(options).success(request.success).error(request.error);
+                $lux.http(options).then(request.success, request.error);
             }
             else
                 request.error('Api url not available');

@@ -413,32 +413,20 @@ function(angular, root) {
                     //
                     options: opts,
                     //
-                    error: function (data, status, headers) {
-                        if (isString(data)) {
-                            data = {error: true, message: data};
-                        }
-                        d.reject({
-                            'data': data,
-                            'status': status,
-                            'headers': headers
-                        });
+                    error: function (respose) {
+                        if (isString(respose.data))
+                            respose.data = {error: true, message: data};
+                        d.reject(respose);
                     },
                     //
-                    success: function (data, status, headers) {
-                        if (isString(data)) data = {message: data};
+                    success: function (response) {
+                        if (isString(response.data))
+                            respose.data = {message: data};
 
-                        if (data.error)
-                            d.reject({
-                                'data': data,
-                                'status': status,
-                                'headers': headers
-                            });
+                        if (!response.data || response.data.error)
+                            d.reject(response);
                         else
-                            d.resolve({
-                                'data': data,
-                                'status': status,
-                                'headers': headers
-                            });
+                            d.resolve(response);
                     }
                 });
             //
@@ -472,7 +460,7 @@ function(angular, root) {
                     // Fetch the api urls
                     $lux.log.info('Fetching api info');
                     return $lux.http.get(api.baseUrl()).then(function (resp) {
-                        apiUrls = resp;
+                        apiUrls = resp.data;
                         api.call(request);
                     }, request.error);
                     //
@@ -493,7 +481,7 @@ function(angular, root) {
 
             if (options.url) {
                 $lux.log.info('Executing HTTP ' + options.method + ' request @ ' + options.url);
-                $lux.http(options).success(request.success).error(request.error);
+                $lux.http(options).then(request.success, request.error);
             }
             else
                 request.error('Api url not available');
@@ -1067,17 +1055,18 @@ function(angular, root) {
 
         //  override request and attach error callbacks
         api.request = function (method, opts, data) {
-            return request.call(api, method, opts, data)
-                        .error(function (data, status) {
-                            if (status === 401)
-                                api.login();
-                            else if (!status)
-                                $lux.log.error('Server down, could not complete request');
-                            else if (status === 404) {
-                                $lux.window.location.href = '/';
-                                $lux.window.reload();
-                            }
-                        });
+            var promise = request.call(api, method, opts, data);
+            promise.error(function (data, status) {
+                if (status === 401)
+                    api.login();
+                else if (!status)
+                    $lux.log.error('Server down, could not complete request');
+                else if (status === 404) {
+                    $lux.window.location.href = '/';
+                    $lux.window.reload();
+                }
+            });
+            return promise;
         };
 
         api.authentication = function (request) {
@@ -1552,7 +1541,8 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                 return;
             }
             //
-            promise.then(function (data, status) {
+            promise.then(function (response) {
+                var data = response.data;
                 if (data.messages) {
                     scope.addMessages(data.messages);
                 } else if (api) {
@@ -1566,8 +1556,10 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                     window.location.href = data.redirect || '/';
                 }
             },
-            function (data, status, headers) {
-                var messages, msg;
+            function (response) {
+                var data = response.data,
+                    status = response.status,
+                    messages, msg;
                 if (data) {
                     messages = data.messages;
                     if (!messages) {
@@ -1578,7 +1570,8 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                         }
                         messages = {};
                         scope.formMessages[FORMKEY] = [{message: msg, error: true}];
-                    }
+                    } else
+                        scope.addMessages(messages);
                 } else {
                     status = status || 501;
                     msg = 'Server error (' + status + ')';

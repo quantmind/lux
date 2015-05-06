@@ -27,9 +27,9 @@ class Options(object):
             return initial
 
     def clean(self, values, bfield):
-        choices = dict(self.choices())
+        choices = set((c[0] if isinstance(c, tuple) else c
+                       for c in self.all()))
         for v in values:
-            v = to_string(v)
             if v not in choices:
                 raise ValidationError('%s is not a valid choice' % v)
         return values
