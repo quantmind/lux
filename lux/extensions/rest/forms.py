@@ -14,13 +14,6 @@ class LoginForm(forms.Form):
     username = forms.CharField(required=True, minlength=6, maxlength=30)
     password = forms.PasswordField(required=True, minlength=6, maxlength=128)
 
-    layout = forms.Layout(
-        forms.Fieldset(all=True),
-        forms.Submit(
-            'Login',
-            disabled="form.$invalid"),
-        showLabels=False)
-
 
 class PasswordForm(forms.Form):
     password = forms.PasswordField(required=True, minlength=6, maxlength=128)
@@ -37,15 +30,6 @@ class PasswordForm(forms.Form):
 class CreateUserForm(PasswordForm):
     username = forms.CharField(required=True, minlength=6, maxlength=30)
     email = forms.EmailField(required=True)
-
-    layout = forms.Layout(
-        forms.Fieldset('username', 'email', 'password', 'password_repeat'),
-        forms.Submit(
-            'Sign up',
-            classes='btn btn-primary btn-block',
-            disabled="form.$invalid"),
-        showLabels=False,
-        directive='user-form')
 
 
 class ChangePasswordForm(PasswordForm):
