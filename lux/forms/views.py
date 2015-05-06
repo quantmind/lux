@@ -1,7 +1,7 @@
 from pulsar import MethodNotAllowed
 from pulsar.utils.httpurl import ENCODE_BODY_METHODS
 
-from .form import Form
+from .form import Form, Layout
 from ..core.wrappers import HtmlRouter
 
 
@@ -73,7 +73,7 @@ class WebFormRouter(HtmlRouter, FormMixin):
     def get_html(self, request):
         '''Handle the HTML page for login
         '''
-        form = self.fclass(request).layout
+        form = self.fclass(request)
         method = self.form_method or 'post'
         enctype = self.form_enctype or 'multipart/form-data'
         action = self.form_action or request.full_path()

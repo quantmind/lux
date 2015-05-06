@@ -18,7 +18,10 @@
     };
 
     //
-    //  Lux State Provider complements the python lux Html server
+    //  Lux State Provider
+    //	========================
+    //
+    //	Complements the python lux server
     function LuxStateProvider ($stateProvider, $urlRouterProvider) {
 
         var states = lux.context.states,
@@ -80,6 +83,8 @@
         .provider('luxState', ["$stateProvider", "$urlRouterProvider", LuxStateProvider])
         //
         .config(['$locationProvider', function ($locationProvider) {
+            //
+            //	Set-up HTML5 navigation if available
             if (lux.context.HTML5_NAVIGATION) {
                 $locationProvider.html5Mode(true).hashPrefix(lux.context.hashPrefix);
                 $(document.querySelector('#seo-view')).remove();

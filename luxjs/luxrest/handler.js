@@ -1,67 +1,4 @@
-    //
-    // Add this module if the API_URL in the root scope is a lux-rest API
-    angular.module('lux.restapi', ['lux.services'])
 
-        .run(['$rootScope', '$window', '$lux', function (scope, $window, $lux) {
-
-            // If the root scope has an API_URL register the client
-            if (scope.API_URL) {
-
-            	$lux.api(scope.API_URL, luxrest);
-
-                // Get the api client
-                scope.api = function () {
-                    return $lux.api(scope.API_URL);
-                };
-
-                // Get a user
-                scope.getUser = function () {
-                    var api = scope.api();
-                    if (api)
-                        return api.user();
-                };
-
-                scope.logout = function () {
-                    var api = scope.api();
-                    if (api && api.token()) {
-                        api.logout();
-                        $window.location.reload();
-                    }
-                };
-            }
-
-        }]);
-
-    function urlBase64Decode (str) {
-        var output = str.replace('-', '+').replace('_', '/');
-        switch (output.length % 4) {
-
-            case 0: { break; }
-        case 2: { output += '=='; break; }
-        case 3: { output += '='; break; }
-        default: {
-                throw 'Illegal base64url string!';
-            }
-        }
-        //polifyll https://github.com/davidchambers/Base64.js
-        return decodeURIComponent(escape(window.atob(output)));
-    }
-
-
-    lux.decodeJWToken = function (token) {
-        var parts = token.split('.');
-
-        if (parts.length !== 3) {
-            throw new Error('JWT must have 3 parts');
-        }
-
-        var decoded = urlBase64Decode(parts[1]);
-        if (!decoded) {
-            throw new Error('Cannot decode the token');
-        }
-
-        return JSON.parse(decoded);
-    };
     //
     //  API handler for lux rest api
     //
@@ -73,7 +10,7 @@
     //  --------------------------------------------------
     var luxrest = function (url, $lux) {
 
-    	var api = luxweb(url, $lux);
+        var api = luxweb(url, $lux);
 
         api.httpOptions = function (request) {
             var options = request.options,
@@ -119,7 +56,7 @@
         };
 
         // Add authentication token if available
-		api.authentication = function (request) {
+        api.authentication = function (request) {
             //
             // If the call is for the authorizations_url api, add callback to store the token
             if (request.name === 'authorizations_url' &&

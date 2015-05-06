@@ -22,7 +22,7 @@ class register:
 
 
 class AdminRouter(lux.HtmlRouter):
-
+    ''''''
     def response_wrapper(self, callable, request):
         app = request.app
         permission = app.config['ADMIN_PERMISSIONS']
@@ -39,9 +39,9 @@ class AdminRouter(lux.HtmlRouter):
         '''Add the admin navigation to the javascript context
         '''
         admin = self.admin_root()
-        assert admin
-        doc = request.html_document
-        doc.jscontext['navigation'] = admin.sitemap(request.app)
+        if admin:
+            doc = request.html_document
+            doc.jscontext['navigation'] = admin.sitemap(request.app)
 
     def get_html(self, request):
         return request.app.render_template('partials/admin.html')
@@ -54,7 +54,10 @@ class AdminRouter(lux.HtmlRouter):
 
 
 class Admin(AdminRouter):
-    '''Admin Root'''
+    '''Admin Root
+
+    This router containes all Admin router managing models
+    '''
     _sitemap = None
 
     def __init__(self, *args, **kwargs):
@@ -88,6 +91,8 @@ class AdminModel(AdminRouter):
     section = None
     icon = None
     addForm = None
+    '''Form for adding new models
+    '''
 
     def __init__(self, model, *args, **kwargs):
         self.model = model
@@ -118,16 +123,19 @@ class CRUDAdmin(AdminModel):
         '''Add a new model
         '''
         form = self.addform
-        if not form:
-            raise Http404
-        html = form().as_form()
-        context = {'html_form': html.render()}
-        html = request.app.render_template(self.addtemplate, context)
-        return self.get(request, html=html)
+        return self.get_form(request, form)
 
     @route('<id>')
     def update(self, request):
         '''Add a new model'''
         form = self.updateform or self.addform
+        return self.get_form(request, form, request.urlargs['id'])
+
+    def get_form(self, request, form, id=None):
         if not form:
             raise Http404
+        target = self.get_target(request, id)
+        html = form().as_form(action=target)
+        context = {'html_form': html.render()}
+        html = request.app.render_template(self.addtemplate, context)
+        return self.get(request, html=html)

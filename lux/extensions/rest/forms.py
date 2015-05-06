@@ -18,7 +18,6 @@ class LoginForm(forms.Form):
         forms.Fieldset(all=True),
         forms.Submit(
             'Login',
-            classes='btn btn-primary btn-block',
             disabled="form.$invalid"),
         showLabels=False)
 
@@ -31,7 +30,7 @@ class PasswordForm(forms.Form):
 
     layout = forms.Layout(
         forms.Fieldset('password', 'password_repeat'),
-        forms.Submit('Reset password', classes='btn btn-primary'),
+        forms.Submit('Reset password'),
         showLabels=False)
 
 

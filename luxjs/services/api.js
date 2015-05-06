@@ -4,11 +4,12 @@
         //
         .value('ApiTypes', {})
         //
-        .service('$lux', ['$location', '$q', '$http', '$log', '$timeout', 'ApiTypes',
-                function ($location, $q, $http, $log, $timeout, ApiTypes) {
+        .service('$lux', ['$location', '$window', '$q', '$http', '$log', '$timeout', 'ApiTypes',
+                function ($location, $window, $q, $http, $log, $timeout, ApiTypes) {
             var $lux = this;
 
             this.location = $location;
+            this.window = $window;
             this.log = $log;
             this.http = $http;
             this.q = $q;
@@ -39,15 +40,20 @@
         }]);
     //
     function wrapPromise (promise) {
+
         promise.success = function(fn) {
+
             return wrapPromise(this.then(function(response) {
-                return fn(response.data, response.status, response.headers);
+                var r = fn(response.data, response.status, response.headers);
+                return r === undefined ? response : r;
             }));
         };
 
         promise.error = function(fn) {
+
             return wrapPromise(this.then(null, function(response) {
-                return fn(response.data, response.status, response.headers);
+                var r = fn(response.data, response.status, response.headers);
+                return r === undefined ? response : r;
             }));
         };
 
@@ -156,10 +162,10 @@
                 } else {
                     // Fetch the api urls
                     $lux.log.info('Fetching api info');
-                    return $lux.http.get(api.baseUrl()).success(function (resp) {
+                    return $lux.http.get(api.baseUrl()).then(function (resp) {
                         apiUrls = resp;
                         api.call(request);
-                    }).error(request.error);
+                    }, request.error);
                     //
                 }
             }

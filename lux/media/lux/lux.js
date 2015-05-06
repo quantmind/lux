@@ -1,6 +1,6 @@
 //      Lux Library - v0.1.1
 
-//      Compiled 2015-05-01.
+//      Compiled 2015-05-06.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -313,11 +313,12 @@ function(angular, root) {
         //
         .value('ApiTypes', {})
         //
-        .service('$lux', ['$location', '$q', '$http', '$log', '$timeout', 'ApiTypes',
-                function ($location, $q, $http, $log, $timeout, ApiTypes) {
+        .service('$lux', ['$location', '$window', '$q', '$http', '$log', '$timeout', 'ApiTypes',
+                function ($location, $window, $q, $http, $log, $timeout, ApiTypes) {
             var $lux = this;
 
             this.location = $location;
+            this.window = $window;
             this.log = $log;
             this.http = $http;
             this.q = $q;
@@ -348,15 +349,20 @@ function(angular, root) {
         }]);
     //
     function wrapPromise (promise) {
+
         promise.success = function(fn) {
+
             return wrapPromise(this.then(function(response) {
-                return fn(response.data, response.status, response.headers);
+                var r = fn(response.data, response.status, response.headers);
+                return r === undefined ? response : r;
             }));
         };
 
         promise.error = function(fn) {
+
             return wrapPromise(this.then(null, function(response) {
-                return fn(response.data, response.status, response.headers);
+                var r = fn(response.data, response.status, response.headers);
+                return r === undefined ? response : r;
             }));
         };
 
@@ -465,10 +471,10 @@ function(angular, root) {
                 } else {
                     // Fetch the api urls
                     $lux.log.info('Fetching api info');
-                    return $lux.http.get(api.baseUrl()).success(function (resp) {
+                    return $lux.http.get(api.baseUrl()).then(function (resp) {
                         apiUrls = resp;
                         api.call(request);
-                    }).error(request.error);
+                    }, request.error);
                     //
                 }
             }
@@ -555,247 +561,6 @@ function(angular, root) {
                 getItems: function (page, state, stateParams) {}
             });
         }]);
-
-    //
-    //  API handler for lux web authentication
-    //  ---------------------------------------
-    angular.module('lux.web.api', ['lux.services'])
-
-        .run(['$lux', function ($lux) {
-            //
-            var csrf = {},
-                name = $(document.querySelector("meta[name=csrf-param]")).attr('content'),
-                csrf_token = $(document.querySelector("meta[name=csrf-token]")).attr('content');
-
-            if (name && csrf_token)
-                csrf[name] = csrf_token;
-
-            // A post method with CSRF parameter
-            $lux.post = function (url, data, cfg) {
-                var ct = cfg ? cfg.contentType : null,
-                    fd = this.formData(ct);
-                return this.http.post(url, fd(data), cfg);
-            };
-
-            //
-            // Change the form data depending on content type
-            $lux.formData = function (contentType) {
-
-                return function (data) {
-                    data = extend(data || {}, csrf);
-                    if (contentType === 'application/x-www-form-urlencoded')
-                        return $.param(data);
-                    else if (contentType === 'multipart/form-data') {
-                        var fd = new FormData();
-                        forEach(data, function (value, key) {
-                            fd.append(key, value);
-                        });
-                        return fd;
-                    } else {
-                        return data;
-                    }
-                };
-            };
-            //
-            if (scope.API_URL) {
-
-                $lux.api(scope.API_URL, luxweb);
-
-                // logout via post method
-                scope.logout = function(e, url) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    $lux.post(url).success(function (data) {
-                        if (data.redirect)
-                            window.location.replace(data.redirect);
-                    });
-                };
-            }
-        }]);
-
-
-    var luxweb = function (url, $lux) {
-
-    	var api = baseapi(url, $lux);
-
-    	api.authentication = function (request) {
-            //
-            if (lux.context.user_token) {
-                self.auth = {user_token: lux.context.user_token};
-            } else if (lux.context.user) {
-                $lux.log.info('Fetching authentication token');
-                //
-                $lux.post('/_token').success(function (data) {
-                    lux.context.user_token = data.token;
-                    self.auth = {user_token: lux.context.user_token};
-                    self.call(request);
-                }).error(request.error);
-                //
-                return request.deferred.promise;
-            } else {
-                self.auth = {};
-            }
-            //
-            // Add authentication token
-            if (lux.context.user_token) {
-                var headers = request.options.headers;
-                if (!headers)
-                    request.options.headers = headers = {};
-
-                headers.Authorization = 'Bearer ' + lux.context.user_token;
-            }
-        };
-
-        return api;
-    };
-
-    //
-    // Add this module if the API_URL in the root scope is a lux-rest API
-    angular.module('lux.restapi', ['lux.services'])
-
-        .run(['$rootScope', '$window', '$lux', function (scope, $window, $lux) {
-
-            // If the root scope has an API_URL register the client
-            if (scope.API_URL) {
-
-            	$lux.api(scope.API_URL, luxrest);
-
-                // Get the api client
-                scope.api = function () {
-                    return $lux.api(scope.API_URL);
-                };
-
-                // Get a user
-                scope.getUser = function () {
-                    var api = scope.api();
-                    if (api)
-                        return api.user();
-                };
-
-                scope.logout = function () {
-                    var api = scope.api();
-                    if (api && api.token()) {
-                        api.logout();
-                        $window.location.reload();
-                    }
-                };
-            }
-
-        }]);
-
-    function urlBase64Decode (str) {
-        var output = str.replace('-', '+').replace('_', '/');
-        switch (output.length % 4) {
-
-            case 0: { break; }
-        case 2: { output += '=='; break; }
-        case 3: { output += '='; break; }
-        default: {
-                throw 'Illegal base64url string!';
-            }
-        }
-        //polifyll https://github.com/davidchambers/Base64.js
-        return decodeURIComponent(escape(window.atob(output)));
-    }
-
-
-    lux.decodeJWToken = function (token) {
-        var parts = token.split('.');
-
-        if (parts.length !== 3) {
-            throw new Error('JWT must have 3 parts');
-        }
-
-        var decoded = urlBase64Decode(parts[1]);
-        if (!decoded) {
-            throw new Error('Cannot decode the token');
-        }
-
-        return JSON.parse(decoded);
-    };
-    //
-    //  API handler for lux rest api
-    //
-    //  This handler connects to lux-based rest apis and
-    //
-    //  * Perform authentication using username/email & password
-    //  * After authentication a JWT is received and stored in the localStorage or sessionStorage
-    //  * Optional second factor authentication
-    //  --------------------------------------------------
-    var luxrest = function (url, $lux) {
-
-    	var api = luxweb(url, $lux);
-
-        api.httpOptions = function (request) {
-            var options = request.options,
-                headers = options.headers;
-            if (!headers)
-                options.headers = headers = {};
-            headers['Content-Type'] = 'application/json';
-            options.url = request.baseUrl;
-        };
-
-        // Set/Get the JWT token
-        api.token = function (token) {
-            var key = 'luxrest - ' + api.baseUrl();
-
-            if (arguments.length) {
-                var decoded = lux.decodeJWToken(token);
-                if (decoded.storage === 'session')
-                    sessionStorage.setItem(key, token);
-                else
-                    localStorage.setItem(key, token);
-                return api;
-            } else {
-                token = localStorage.getItem(key);
-                if (!token) token = sessionStorage.getItem(key);
-                return token;
-            }
-        };
-
-        api.logout = function () {
-            var key = 'luxrest - ' + api.baseUrl();
-
-            localStorage.removeItem(key);
-            sessionStorage.removeItem(key);
-        };
-
-        api.user = function () {
-            var token = api.token();
-            if (token) {
-                var u = lux.decodeJWToken(token);
-                u.token = token;
-                return u;
-            }
-        };
-
-        // Add authentication token if available
-		api.authentication = function (request) {
-            //
-            // If the call is for the authorizations_url api, add callback to store the token
-            if (request.name === 'authorizations_url' &&
-                    request.options.url === request.baseUrl &&
-                    request.options.method === 'post') {
-
-                request.on.success(function(data, status) {
-                    api.token(data.token);
-                });
-
-            } else {
-                var jwt = api.token();
-
-                if (jwt) {
-                    var headers = request.options.headers;
-                    if (!headers)
-                        request.options.headers = headers = {};
-
-                    headers.Authorization = 'Bearer ' + jwt;
-                }
-            }
-        };
-
-        return api;
-    };
 
     //
     //  Hash scrolling service
@@ -1143,6 +908,280 @@ function(angular, root) {
                 scope.connectSockJs(scope.STREAM_URL);
         }]);
 
+
+    //
+    //  API handler for lux rest api
+    //
+    //  This handler connects to lux-based rest apis and
+    //
+    //  * Perform authentication using username/email & password
+    //  * After authentication a JWT is received and stored in the localStorage or sessionStorage
+    //  * Optional second factor authentication
+    //  --------------------------------------------------
+    var luxrest = function (url, $lux) {
+
+        var api = luxweb(url, $lux);
+
+        api.httpOptions = function (request) {
+            var options = request.options,
+                headers = options.headers;
+            if (!headers)
+                options.headers = headers = {};
+            headers['Content-Type'] = 'application/json';
+            options.url = request.baseUrl;
+        };
+
+        // Set/Get the JWT token
+        api.token = function (token) {
+            var key = 'luxrest - ' + api.baseUrl();
+
+            if (arguments.length) {
+                var decoded = lux.decodeJWToken(token);
+                if (decoded.storage === 'session')
+                    sessionStorage.setItem(key, token);
+                else
+                    localStorage.setItem(key, token);
+                return api;
+            } else {
+                token = localStorage.getItem(key);
+                if (!token) token = sessionStorage.getItem(key);
+                return token;
+            }
+        };
+
+        api.logout = function () {
+            var key = 'luxrest - ' + api.baseUrl();
+
+            localStorage.removeItem(key);
+            sessionStorage.removeItem(key);
+        };
+
+        api.user = function () {
+            var token = api.token();
+            if (token) {
+                var u = lux.decodeJWToken(token);
+                u.token = token;
+                return u;
+            }
+        };
+
+        // Add authentication token if available
+        api.authentication = function (request) {
+            //
+            // If the call is for the authorizations_url api, add callback to store the token
+            if (request.name === 'authorizations_url' &&
+                    request.options.url === request.baseUrl &&
+                    request.options.method === 'post') {
+
+                request.on.success(function(data, status) {
+                    api.token(data.token);
+                });
+
+            } else {
+                var jwt = api.token();
+
+                if (jwt) {
+                    var headers = request.options.headers;
+                    if (!headers)
+                        request.options.headers = headers = {};
+
+                    headers.Authorization = 'Bearer ' + jwt;
+                }
+            }
+        };
+
+        return api;
+    };
+
+
+    //
+    //	LUX API
+    //	===================
+    //
+    //  Angular module for interacting with lux-based REST APIs
+    angular.module('lux.web.api', ['lux.services'])
+
+        .run(['$lux', function ($lux) {
+            //
+            var csrf = {},
+                name = $(document.querySelector("meta[name=csrf-param]")).attr('content'),
+                csrf_token = $(document.querySelector("meta[name=csrf-token]")).attr('content');
+
+            if (name && csrf_token)
+                csrf[name] = csrf_token;
+
+            // A post method with CSRF parameter
+            $lux.post = function (url, data, cfg) {
+                var ct = cfg ? cfg.contentType : null,
+                    fd = this.formData(ct);
+                return this.http.post(url, fd(data), cfg);
+            };
+
+            //
+            // Change the form data depending on content type
+            $lux.formData = function (contentType) {
+
+                return function (data) {
+                    data = extend(data || {}, csrf);
+                    if (contentType === 'application/x-www-form-urlencoded')
+                        return $.param(data);
+                    else if (contentType === 'multipart/form-data') {
+                        var fd = new FormData();
+                        forEach(data, function (value, key) {
+                            fd.append(key, value);
+                        });
+                        return fd;
+                    } else {
+                        return data;
+                    }
+                };
+            };
+            //
+            if (scope.API_URL) {
+
+                $lux.api(scope.API_URL, luxweb);
+
+                // logout via post method
+                scope.logout = function(e, url) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    $lux.post(url).success(function (data) {
+                        if (data.redirect)
+                            window.location.replace(data.redirect);
+                    });
+                };
+            }
+        }]);
+
+
+    var luxweb = function (url, $lux) {
+
+        var api = baseapi(url, $lux),
+            request = api.request;
+
+        // Redirect to the LOGIN_URL
+        api.login = function () {
+            $lux.window.location.href = lux.context.LOGIN_URL;
+            $lux.window.reload();
+        };
+
+        //  override request and attach error callbacks
+        api.request = function (method, opts, data) {
+            return request.call(api, method, opts, data)
+                        .error(function (data, status) {
+                            if (status === 401)
+                                api.login();
+                            else if (!status)
+                                $lux.log.error('Server down, could not complete request');
+                            else if (status === 404) {
+                                $lux.window.location.href = '/';
+                                $lux.window.reload();
+                            }
+                        });
+        };
+
+        api.authentication = function (request) {
+            //
+            if (lux.context.user_token) {
+                self.auth = {user_token: lux.context.user_token};
+            } else if (lux.context.user) {
+                $lux.log.info('Fetching authentication token');
+                //
+                $lux.post('/_token').success(function (data) {
+                    lux.context.user_token = data.token;
+                    self.auth = {user_token: lux.context.user_token};
+                    self.call(request);
+                }).error(request.error);
+                //
+                return request.deferred.promise;
+            } else {
+                self.auth = {};
+            }
+            //
+            // Add authentication token
+            if (lux.context.user_token) {
+                var headers = request.options.headers;
+                if (!headers)
+                    request.options.headers = headers = {};
+
+                headers.Authorization = 'Bearer ' + lux.context.user_token;
+            }
+        };
+
+        return api;
+    };
+
+    //
+    // Add this module if the API_URL in the root scope is a lux-rest API
+    angular.module('lux.restapi', ['lux.services'])
+
+        .run(['$rootScope', '$window', '$lux', function (scope, $window, $lux) {
+
+            // If the root scope has an API_URL register the client
+            if (scope.API_URL) {
+
+                $lux.api(scope.API_URL, luxrest);
+
+                // Get the api client
+                scope.api = function () {
+                    return $lux.api(scope.API_URL);
+                };
+
+                // Get a user
+                scope.getUser = function () {
+                    var api = scope.api();
+                    if (api)
+                        return api.user();
+                };
+
+                scope.logout = function () {
+                    var api = scope.api();
+                    if (api && api.token()) {
+                        api.logout();
+                        $window.location.reload();
+                    }
+                };
+            }
+
+        }]);
+
+
+    //
+    //	Decode JWT
+    //	================
+    //
+    //	Decode a JASON Web Token and return the decoded object
+    lux.decodeJWToken = function (token) {
+        var parts = token.split('.');
+
+        if (parts.length !== 3) {
+            throw new Error('JWT must have 3 parts');
+        }
+
+        var decoded = urlBase64Decode(parts[1]);
+        if (!decoded) {
+            throw new Error('Cannot decode the token');
+        }
+
+        return JSON.parse(decoded);
+    };
+
+
+    function urlBase64Decode (str) {
+        var output = str.replace('-', '+').replace('_', '/');
+        switch (output.length % 4) {
+
+            case 0: { break; }
+        case 2: { output += '=='; break; }
+        case 3: { output += '='; break; }
+        default: {
+                throw 'Illegal base64url string!';
+            }
+        }
+        //polifyll https://github.com/davidchambers/Base64.js
+        return decodeURIComponent(escape(window.atob(output)));
+    }
+
 angular.module('templates-page', ['page/breadcrumbs.tpl.html']);
 
 angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function($templateCache) {
@@ -1345,12 +1384,20 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
     };
 
     //
-    //  Lux State Provider complements the python lux Html server
+    //  Lux State Provider
+    //	========================
+    //
+    //	Complements the python lux server
     function LuxStateProvider ($stateProvider, $urlRouterProvider) {
 
         var states = lux.context.states,
             pages = lux.context.pages;
 
+        //
+        //  Use this function to add/override the state
+        //  configuration of state ``name``.
+        //  * name, name of the state to add/update
+        //  * config, object or function returning an object.
         this.state = function (name, config) {
             if (pages) {
                 var page = pages[name];
@@ -1402,6 +1449,8 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
         .provider('luxState', ["$stateProvider", "$urlRouterProvider", LuxStateProvider])
         //
         .config(['$locationProvider', function ($locationProvider) {
+            //
+            //	Set-up HTML5 navigation if available
             if (lux.context.HTML5_NAVIGATION) {
                 $locationProvider.html5Mode(true).hashPrefix(lux.context.hashPrefix);
                 $(document.querySelector('#seo-view')).remove();
@@ -1442,97 +1491,102 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
             };
         }]);
 
-    // Default Form processing function
-    // If a submit element (input.submit or button) does not specify
-    // a ``click`` entry, this function is used
+    //
+    //	Form processor
+    //	=========================
+    //
+    //	Default Form processing function
+    // 	If a submit element (input.submit or button) does not specify
+    // 	a ``click`` entry, this function is used
     lux.processForm = function (options) {
 
-    	return function (e) {
-	        e.preventDefault();
-	        e.stopPropagation();
+        return function (e) {
+            e.preventDefault();
+            e.stopPropagation();
 
-	        var form = this[this.formName],
-	            model = this[this.formModelName],
-	            attrs = this.formAttrs,
-	            target = attrs.action,
-	            scope = this,
-	            FORMKEY = scope.formAttrs.FORMKEY,
-	            $lux = this.$lux,
-	            method = attrs.method || 'post',
-	            promise,
-	            api;
-	        //
-	        // Flag the form as submitted
-	        form.submitted = true;
-	        if (form.$invalid) {
-	            return;
-	        }
+            var form = this[this.formName],
+                model = this[this.formModelName],
+                attrs = this.formAttrs,
+                target = attrs.action,
+                scope = this,
+                FORMKEY = scope.formAttrs.FORMKEY,
+                $lux = this.$lux,
+                method = attrs.method || 'post',
+                promise,
+                api;
+            //
+            // Flag the form as submitted
+            form.submitted = true;
+            if (form.$invalid) {
+                return;
+            }
 
-	        // Get the api information if target is an object
-	        //	target
-	        //		- name:	api name
-	        //		- target: api target
-	        if (isObject(target)) api = $lux.api(target);
+            // Get the api information if target is an object
+            //	target
+            //		- name:	api name
+            //		- target: api target
+            if (isObject(target)) api = $lux.api(target);
 
-	        this.formMessages = {};
-	        //
-	        if (api) {
-	        	promise = api.request(method, target, model);
-	        } else if (target) {
-	            var enctype = attrs.enctype || '',
-	                ct = enctype.split(';')[0],
-	                options = {
-	                    url: target,
-	                    method: attrs.method || 'POST',
-	                    data: model,
-	                    transformRequest: $lux.formData(ct),
-	                };
-	            // Let the browser choose the content type
-	            if (ct === 'application/x-www-form-urlencoded' || ct === 'multipart/form-data') {
-	                options.headers = {
-	                    'content-type': undefined
-	                };
-	            }
-	            promise = $lux.http(options);
-	        } else {
-	            $lux.log.error('Could not process form. No target or api');
-	            return;
-	        }
-	        //
-	        promise.success(function(data, status) {
-	            if (data.messages) {
-	                scope.addMessages(data.messages);
-	            } else if (api) {
-	                // Created
-	                if (status === 201) {
-	                    scope.formMessages[FORMKEY] = [{message: 'Succesfully created'}];
-	                } else {
-	                    scope.formMessages[FORMKEY] = [{message: 'Succesfully updated'}];
-	                }
-	            } else {
-	                window.location.href = data.redirect || '/';
-	            }
-	        }).error(function(data, status, headers) {
-	            var messages, msg;
-	            if (data) {
-	                messages = data.messages;
-	                if (!messages) {
-	                    msg = data.message;
-	                    if (!msg) {
-	                        status = status || data.status || 501;
-	                        msg = 'Server error (' + data.status + ')';
-	                    }
-	                    messages = {};
-	                    scope.formMessages[FORMKEY] = [{message: msg, error: true}];
-	                }
-	            } else {
-	                status = status || 501;
-	                msg = 'Server error (' + data.status + ')';
-	                messages = {};
-	                scope.formMessages[FORMKEY] = [{message: msg, error: true}];
-	            }
-	        });
-	    };
+            this.formMessages = {};
+            //
+            if (api) {
+                promise = api.request(method, target, model);
+            } else if (target) {
+                var enctype = attrs.enctype || '',
+                    ct = enctype.split(';')[0],
+                    options = {
+                        url: target,
+                        method: attrs.method || 'POST',
+                        data: model,
+                        transformRequest: $lux.formData(ct),
+                    };
+                // Let the browser choose the content type
+                if (ct === 'application/x-www-form-urlencoded' || ct === 'multipart/form-data') {
+                    options.headers = {
+                        'content-type': undefined
+                    };
+                }
+                promise = $lux.http(options);
+            } else {
+                $lux.log.error('Could not process form. No target or api');
+                return;
+            }
+            //
+            promise.then(function (data, status) {
+                if (data.messages) {
+                    scope.addMessages(data.messages);
+                } else if (api) {
+                    // Created
+                    if (status === 201) {
+                        scope.formMessages[FORMKEY] = [{message: 'Succesfully created'}];
+                    } else {
+                        scope.formMessages[FORMKEY] = [{message: 'Succesfully updated'}];
+                    }
+                } else {
+                    window.location.href = data.redirect || '/';
+                }
+            },
+            function (data, status, headers) {
+                var messages, msg;
+                if (data) {
+                    messages = data.messages;
+                    if (!messages) {
+                        msg = data.message;
+                        if (!msg) {
+                            status = status || data.status || 501;
+                            msg = 'Server error (' + data.status + ')';
+                        }
+                        messages = {};
+                        scope.formMessages[FORMKEY] = [{message: msg, error: true}];
+                    }
+                } else {
+                    status = status || 501;
+                    msg = 'Server error (' + status + ')';
+                    messages = {};
+                    scope.formMessages[FORMKEY] = [{message: msg, error: true}];
+                }
+            });
+        };
     };
 
     //

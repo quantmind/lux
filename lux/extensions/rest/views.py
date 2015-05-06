@@ -1,6 +1,6 @@
 import lux
 from lux import route, HtmlRouter
-from lux.forms import Form, WebFormRouter, FormMixin
+from lux.forms import Form, WebFormRouter, FormMixin, Layout, Fieldset, Submit
 
 from pulsar import Http404, PermissionDenied, HttpRedirect, MethodNotAllowed
 from pulsar.apps.wsgi import Json, Router
@@ -106,7 +106,10 @@ class RestRouter(lux.Router):
 class Login(WebFormRouter):
     '''Adds login get ("text/html") and post handlers
     '''
-    default_form = LoginForm
+    default_form = Layout(LoginForm,
+                          Fieldset(all=True),
+                          Submit('Login', disabled="form.$invalid"),
+                          showLabels=False)
     template = 'login.html'
     redirect_to = '/'
 
@@ -136,7 +139,14 @@ class Login(WebFormRouter):
 
 class SignUp(WebFormRouter):
     template = 'signup.html'
-    default_form = CreateUserForm
+    default_form = Layout(CreateUserForm,
+                          Fieldset('username', 'email', 'password',
+                                   'password_repeat'),
+                          Submit('Sign up',
+                                 classes='btn btn-primary btn-block',
+                                 disabled="form.$invalid"),
+                          showLabels=False,
+                          directive='user-form')
     redirect_to = '/'
 
     def post(self, request):

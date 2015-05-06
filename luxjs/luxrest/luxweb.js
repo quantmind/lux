@@ -1,6 +1,9 @@
+
     //
-    //  API handler for lux web authentication
-    //  ---------------------------------------
+    //	LUX API
+    //	===================
+    //
+    //  Angular module for interacting with lux-based REST APIs
     angular.module('lux.web.api', ['lux.services'])
 
         .run(['$lux', function ($lux) {
@@ -58,9 +61,31 @@
 
     var luxweb = function (url, $lux) {
 
-    	var api = baseapi(url, $lux);
+        var api = baseapi(url, $lux),
+            request = api.request;
 
-    	api.authentication = function (request) {
+        // Redirect to the LOGIN_URL
+        api.login = function () {
+            $lux.window.location.href = lux.context.LOGIN_URL;
+            $lux.window.reload();
+        };
+
+        //  override request and attach error callbacks
+        api.request = function (method, opts, data) {
+            return request.call(api, method, opts, data)
+                        .error(function (data, status) {
+                            if (status === 401)
+                                api.login();
+                            else if (!status)
+                                $lux.log.error('Server down, could not complete request');
+                            else if (status === 404) {
+                                $lux.window.location.href = '/';
+                                $lux.window.reload();
+                            }
+                        });
+        };
+
+        api.authentication = function (request) {
             //
             if (lux.context.user_token) {
                 self.auth = {user_token: lux.context.user_token};

@@ -39,6 +39,7 @@
                 "luxjs/underscore.js",
                 "luxjs/utils.js",
                 "luxjs/services/*.js",
+                "luxjs/luxrest/*.js",
                 "luxjs/page/*.js",
                 "luxjs/forms/process.js",
                 "luxjs/forms/form.js",
