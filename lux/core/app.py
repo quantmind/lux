@@ -41,7 +41,7 @@ def execute_from_config(config_file, **params):
 
     :param config_file: the python dotted path to the config file for setting
         up a new :class:`App`. The config file should be located in the
-        python module which implements the :ref:`main application`
+        python module which implements the main application
         of the web site.
     '''
     return execute_app(App(config_file, **params))

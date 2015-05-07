@@ -1,15 +1,17 @@
 from lux.utils import test
 from lux import forms
+from lux.forms import Layout, Fieldset, Submit
 
 
 class TestAForm1(forms.Form):
     name = forms.CharField()
 
-    angular = forms.AngularLayout()
 
-    angular2 = forms.AngularLayout(
-        forms.AngularFieldset(all=True),
-        forms.AngularSubmit('done'))
+Layout1 = Layout(TestAForm1)
+
+Layout2 = Layout(TestAForm1,
+                 Fieldset(all=True),
+                 Submit('done'))
 
 
 class PageForm(forms.Form):
@@ -18,36 +20,37 @@ class PageForm(forms.Form):
     body = forms.CharField(type='textarea', required=False)
 
 
+PageForm1 = Layout(PageForm)
+
+
 class FormAngularLayoutTests(test.TestCase):
 
     def test_layout_class(self):
-        angular = TestAForm1.angular
-        self.assertTrue(isinstance(angular, forms.AngularLayout))
-        self.assertTrue(angular.form_class)
-        self.assertEqual(angular.form_class, TestAForm1)
-        self.assertEqual(len(angular.children), 1)
+        self.assertTrue(Layout1.form_class)
+        self.assertEqual(Layout1.form_class, TestAForm1)
+        self.assertEqual(len(Layout1.children), 1)
 
     def test_form_data(self):
-        form = TestAForm1()
-        data = form.angular.as_dict()
+        form = Layout1()
+        data = form.as_dict()
         self.assertEqual(len(data), 2)
         self.assertEqual(data['field']['type'], 'form')
         self.assertEqual(len(data['children']), 1)
 
     def test_render_form(self):
-        form = TestAForm1()
-        html = form.angular.as_form()
+        form = Layout1()
+        html = form.as_form()
         self.assertEqual(html.tag, 'lux-form')
         self.assertEqual(len(html.children), 1)
 
     def test_render_form_width_button(self):
-        form = TestAForm1()
-        data = form.angular2.as_dict()
+        form = Layout2()
+        data = form.as_dict()
         self.assertEqual(len(data['children']), 2)
 
     def test_textarea(self):
-        form = PageForm()
-        data = form.layout.as_dict()
+        form = PageForm1()
+        data = form.as_dict()
         self.assertEqual(len(data['children']), 1)
         data = data['children'][0]
         self.assertEqual(data['field']['type'], 'fieldset')
@@ -58,8 +61,8 @@ class FormAngularLayoutTests(test.TestCase):
         self.assertEqual(choice['field']['type'], 'select')
 
     def test_select_field(self):
-        form = PageForm()
-        data = form.layout.as_dict()
+        form = PageForm1()
+        data = form.as_dict()
         self.assertEqual(len(data['children']), 1)
         data = data['children'][0]
         self.assertEqual(data['field']['type'], 'fieldset')
@@ -69,12 +72,3 @@ class FormAngularLayoutTests(test.TestCase):
         options = markup['field']['options']
         self.assertEqual(len(options), 2)
         self.assertTrue(markup['field']['required'])
-
-    def __test_layout_create(self):
-        class TestForm(forms.Form):
-            name = forms.CharField()
-        form = TestForm()
-        html = form.layout()
-        self.assertEqual(html.tag, 'form')
-        txt = html.render()
-        self.assertTrue(txt)

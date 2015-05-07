@@ -1,7 +1,6 @@
 .. image:: http://quantmind.github.io/lux/media/luxsite/lux-banner.png
    :alt: Lux
-   :width: 80%
-
+   :width: 50%
 
 Lux is a library for developing web applications with Python and AngularJS.
 
@@ -13,14 +12,15 @@ Python Requirements
 **Hard requirements**
 
 * pulsar_
+* pytz_
+* dateutil_
 
 **Soft requirements**
 
-* sqlalchemy_
-* dateutil_
-* markdown_
-* sphinx_
-* psycopg2_ for object data mapping on psotgresql database
+* sqlalchemy_ used by ``lux.extensions.odm``
+* markdown_ used by ``lux.extensions.static``
+* sphinx_ used by ``lux.extensions.static``
+* pyjwt_ used by some authentication backends in ``lux.extensions.rest``
 
 Developing with lux.js
 ==========================
@@ -53,8 +53,11 @@ For testing postgreSQL create a new role::
 
 
 
-.. _pulsar: (https://github.com/quantmind/pulsar
+.. _pulsar: https://github.com/quantmind/pulsar
+.. _pytz: http://pytz.sourceforge.net/
 .. _dateutil: https://pypi.python.org/pypi/python-dateutil
+.. _sqlalchemy: http://www.sqlalchemy.org/
+.. _pyjwt: https://github.com/jpadilla/pyjwt
 .. _gruntjs: http://gruntjs.com/
 .. _nodejs: http://nodejs.org/
 .. _grunt: http://gruntjs.com/
