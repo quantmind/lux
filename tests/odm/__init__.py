@@ -1,6 +1,7 @@
 from datetime import datetime
 
 import lux
+from lux import forms
 from lux.extensions import odm
 
 from sqlalchemy import Column, Integer, String, Boolean, DateTime
@@ -18,12 +19,17 @@ class Extension(lux.Extension):
         return [CRUDTask('task', '/tasks')]
 
 
+class TaskForm(forms.Form):
+    subject = forms.CharField(required=True)
+    done = forms.CharField(default=False, required=False)
+
+
 class CRUDTask(odm.CRUD):
-    pass
+    addform = TaskForm
 
 
 class Task(odm.Model):
     id = Column(Integer, primary_key=True)
-    subject = Column(String(80), unique=True)
+    subject = Column(String(250))
     done = Column(Boolean, default=False)
     created = Column(DateTime, default=datetime.utcnow)

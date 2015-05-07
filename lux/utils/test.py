@@ -124,6 +124,13 @@ class TestMixin:
             value = value.attrs['content']
             return {name: value}
 
+    def json(self, response):
+        '''Get JSON object from response
+        '''
+        self.assertEqual(response.content_type,
+                         'application/json; charset=utf-8')
+        return json.loads(response.content[0].decode('utf-8'))
+
 
 class TestCase(unittest.TestCase, TestMixin):
     '''TestCase class for lux tests.

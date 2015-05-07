@@ -1,3 +1,5 @@
+import json
+
 from pulsar.apps.test import test_timeout
 
 from lux.utils import test
@@ -28,6 +30,12 @@ class TestSql(test.AppTestCase):
         request = self.client.get('/tasks')
         response = request.response
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.content_type,
-                         'application/json; charset=utf-8')
+        data = self.json(response)
+        self.assertIsInstance(data, list)
 
+    def test_create_task(self):
+        data = {'subject': 'This is my first task'}
+        request = self.client.post('/tasks', body=data,
+                                   content_type='application/json')
+        response = request.response
+        self.assertEqual(response.status_code, 201)

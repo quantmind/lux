@@ -4,6 +4,8 @@ from pulsar.apps.wsgi import Json
 from lux import route
 from lux.extensions import rest
 
+from .serialise import tojson
+
 
 class CRUD(rest.RestRouter):
     addform = None
@@ -104,3 +106,6 @@ class CRUD(rest.RestRouter):
             instance = model(**data)
             session.add(instance)
         return instance
+
+    def serialise_model(self, request, data, in_list=False):
+        return tojson(data)

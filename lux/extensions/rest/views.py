@@ -90,11 +90,13 @@ class RestRouter(lux.Router):
 
     def serialise(self, request, data):
         if isinstance(data, list):
-            return [self.serialise_object(request, o, True) for o in data]
+            return [self.serialise_model(request, o, True) for o in data]
         else:
-            return self.serialise_object(request, data)
+            return self.serialise_model(request, data)
 
-    def serialise_object(self, request, data, in_list=False):
+    def serialise_model(self, request, data, in_list=False):
+        '''Serialise on model
+        '''
         raise NotImplementedError
 
     def json(self, request, data):
