@@ -1,4 +1,4 @@
-.. image:: http://quantmind.github.io/lux/media/luxsite/lux-banner.png
+.. image:: http://quantmind.github.io/lux/media/luxsite/lux-banner.svg
    :alt: Lux
    :width: 50%
 
