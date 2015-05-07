@@ -1,9 +1,27 @@
-.. image:: http://quantmind.github.io/lux/media/luxsite/lux-banner.png
+.. image:: http://quantmind.github.io/lux/media/luxsite/lux-banner.svg
    :alt: Lux
    :width: 50%
 
-Lux is a library for developing web applications with Python and AngularJS.
+|
+|
 
+Lux is a library for developing web applications with Python and javascript frameworks such as AngularJS.
+
+:Master CI: |master-build|_ |coverage-master|
+:Dev CI: |dev-build|_ |coverage-dev|
+:Documentation: http://quantmind.github.io/lux/
+:Downloads: https://pypi.python.org/pypi/lux
+:Source: https://github.com/quantmind/lux
+
+.. |master-build| image:: https://img.shields.io/travis/quantmind/lux/master.svg
+.. _master-build: http://travis-ci.org/quantmind/lux
+.. |dev-build| image:: https://img.shields.io/travis/quantmind/lux/dev.svg
+.. _dev-build: http://travis-ci.org/quantmind/lux
+.. |coverage-master| image:: https://img.shields.io/coveralls/quantmind/lux/master.svg
+  :target: https://coveralls.io/r/quantmind/lux?branch=master
+.. |coverage-dev| image:: https://img.shields.io/coveralls/quantmind/lux/dev.svg
+  :target: https://coveralls.io/r/quantmind/lux?branch=dev
+  
 .. _requirements:
 
 Python Requirements
