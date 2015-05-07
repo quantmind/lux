@@ -219,7 +219,8 @@ class Extension(AuthBackend):
         return self._apply_all('get_user', request, **kwargs)
 
     def has_permission(self, request, target, level):
-        return self._apply_all('has_permission', request, target, level)
+        has = self._apply_all('has_permission', request, target, level)
+        return True if has is None else has
 
     def on_html_document(self, app, request, doc):
         add_ng_modules(doc, self.ngModules)

@@ -24,3 +24,10 @@ class TestSql(test.AppTestCase):
         self.assertEqual(user.first_name, 'Luca')
         self.assertFalse(user.is_superuser())
 
+    def test_get_tasks(self):
+        request = self.client.get('/tasks')
+        response = request.response
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content_type,
+                         'application/json; charset=utf-8')
+

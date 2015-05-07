@@ -9,6 +9,7 @@ from itertools import chain
 
 from sqlalchemy import MetaData, Table, inspect, event, exc
 from sqlalchemy.engine import create_engine
+from sqlalchemy.ext.declarative import declarative_base, declared_attr
 from sqlalchemy.ext.declarative import DeclarativeMeta
 from sqlalchemy.orm.session import Session
 
@@ -20,6 +21,16 @@ from pulsar.apps.greenio import wait
 _camelcase_re = re.compile(r'([A-Z]+)(?=[a-z0-9])')
 
 logger = logging.getLogger('lux.odm')
+
+
+class BaseModel(object):
+
+    @declared_attr
+    def __tablename__(self):
+        return self.__name__.lower()
+
+
+Model = declarative_base(cls=BaseModel)
 
 
 class Mapper:
