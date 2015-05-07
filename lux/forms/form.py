@@ -11,7 +11,8 @@ from pulsar.apps.wsgi import Html
 
 from .fields import Field, ValidationError
 from .formsets import FormSet
-from .serialise import Layout, FORMKEY
+
+FORMKEY = 'm__form'
 
 
 __all__ = ['FormType',
@@ -112,13 +113,9 @@ def get_form_meta_data(bases, attrs, with_base_fields=True):
 class FormType(type):
 
     def __new__(cls, name, bases, attrs):
-        layout = attrs.pop('layout', None)
         fields, inlines = get_form_meta_data(bases, attrs)
         attrs['base_fields'] = fields
         attrs['base_inlines'] = inlines
-        if layout is None:
-            layout = Layout()
-        attrs['layout'] = layout
         return super(FormType, cls).__new__(cls, name, bases, attrs)
 
 
@@ -530,34 +527,6 @@ class BoundField(object):
             self.form._cleaned_data[self.name] = value
         except ValidationError as err:
             form._form_message(form._errors, self.name, err)
-
-    def widget(self):
-        '''The instance for the field with bound data and attributes.
-        This is obtained from the :class:`Field.widget` factory.'''
-        field = self.field
-        data = field.get_widget_data(self)
-        fdata = self.form.get_widget_data(self)
-        attr = field.widget_attrs
-        if hasattr(attr, '__call__'):
-            attr = attr(self)
-        widget = field.html(self, data=data, **attr)
-        if fdata:
-            widget.data(fdata)
-        widget.attr({'id': self.id,
-                     'name': self.html_name,
-                     'title': self.help_text or self.label})
-        if field.required:
-            widget.attr('required', '')
-        widget.set_form_value(self.value)
-        return widget
-
-    def _data(self):
-        """Returns the data for this BoundField,
-or None if it wasn't given.
-        """
-        return self.field.widget.value_from_datadict(
-            self.form.data, self.form.files, self.html_name)
-    data = property(_data)
 
 
 def MakeForm(name, fields, **params):

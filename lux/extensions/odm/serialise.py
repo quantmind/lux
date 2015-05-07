@@ -31,7 +31,6 @@ def tojson(obj, exclude=None, decoder=None):
                 continue
         except Exception:
             continue
-        else:
-            fields[field] = data
+        fields[field] = data
     # a json-encodable dict
     return fields

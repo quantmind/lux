@@ -1,7 +1,7 @@
 from pulsar import MethodNotAllowed
 from pulsar.utils.httpurl import ENCODE_BODY_METHODS
 
-from .form import Form, Layout
+from .form import Form
 from ..core.wrappers import HtmlRouter
 
 

@@ -1,5 +1,10 @@
     //
-    // Add this module if the API_URL in the root scope is a lux-rest API
+    //	Angular Module for JS clients of Lux Rest APIs
+    //	====================================================
+    //
+    //	If the ``API_URL`` is defined at root scope, register the
+    //	javascript client with the $lux service and add functions to the root
+    //	scope to retrieve the api client handler and user informations
     angular.module('lux.restapi', ['lux.services'])
 
         .run(['$rootScope', '$window', '$lux', function (scope, $window, $lux) {
@@ -9,18 +14,19 @@
 
                 $lux.api(scope.API_URL, luxrest);
 
-                // Get the api client
+                //	Get the api client
                 scope.api = function () {
                     return $lux.api(scope.API_URL);
                 };
 
-                // Get a user
+                // 	Get the current user
                 scope.getUser = function () {
                     var api = scope.api();
                     if (api)
                         return api.user();
                 };
 
+                //	Logout the current user
                 scope.logout = function () {
                     var api = scope.api();
                     if (api && api.token()) {

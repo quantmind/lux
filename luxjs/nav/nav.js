@@ -31,9 +31,40 @@
 
     angular.module('lux.nav', ['templates-nav', 'lux.services', 'lux.bs'])
         //
-        .service('navService', ['$location', function ($location) {
+        .service('linkService', ['$location', function ($location) {
 
             this.initScope = function (scope, opts) {
+
+                scope.clickLink = function (e, link) {
+                    if (link.action) {
+                        var func = scope[link.action];
+                        if (func)
+                            func(e, link.href, link);
+                    }
+                };
+
+                // Check if a url is active
+                scope.activeLink = function (url) {
+                    var loc;
+                    if (url)
+                        url = typeof(url) === 'string' ? url : url.href || url.url;
+                    if (!url) return;
+                    if (isAbsolute.test(url))
+                        loc = $location.absUrl();
+                    else
+                        loc = $location.path();
+                    var rest = loc.substring(url.length),
+                        base = loc.substring(0, url.length),
+                        folder = url.substring(url.length-1) === '/';
+                    return base === url && (folder || (rest === '' || rest.substring(0, 1) === '/'));
+                };
+            };
+        }])
+
+        .service('navService', ['linkService', function (linkService) {
+
+            this.initScope = function (scope, opts) {
+
                 var navbar = extend({}, navBarDefaults, getOptions(opts));
                 if (!navbar.url)
                     navbar.url = '/';
@@ -42,15 +73,11 @@
                 navbar.container = navbar.fluid ? 'container-fluid' : 'container';
 
                 this.maybeCollapse(navbar);
-                scope.activeLink = this.activeLink;
-                scope.clickLink = function (e, link) {
-                    if (link.click) {
-                        var func = scope[link.click];
-                        if (func)
-                            func(e, link.href, link);
-                    }
-                };
+
+                linkService.initScope(scope);
+
                 scope.navbar = navbar;
+
                 return navbar;
             };
 
@@ -62,22 +89,6 @@
                 else
                     navbar.collapse = '';
                 return c !== navbar.collapse;
-            };
-
-            // Check if a url is active
-            this.activeLink = function (url) {
-                var loc;
-                if (url)
-                    url = typeof(url) === 'string' ? url : url.href || url.url;
-                if (!url) return;
-                if (isAbsolute.test(url))
-                    loc = $location.absUrl();
-                else
-                    loc = $location.path();
-                var rest = loc.substring(url.length),
-                    base = loc.substring(0, url.length),
-                    folder = url.substring(url.length-1) === '/';
-                return base === url && (folder || (rest === '' || rest.substring(0, 1) === '/'));
             };
         }])
         //

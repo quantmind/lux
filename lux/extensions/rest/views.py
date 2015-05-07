@@ -42,15 +42,6 @@ class RestRoot(lux.Router):
     def get(self, request):
         return Json(self.apis(request)).http_response(request)
 
-    def createManager(self, app, Manager, Model=None, Form=None):
-        '''Create a new model manager instance
-        '''
-        manager = Manager(Model, Form)
-        if not self.managers:
-            self.managers = {}
-        self.managers[Model] = manager
-        return manager
-
 
 class RestRouter(lux.Router):
     response_content_types = REST_CONTENT_TYPES
@@ -186,7 +177,11 @@ class SignUp(WebFormRouter):
 
 
 class ChangePassword(WebFormRouter):
-    default_form = ChangePasswordForm
+    default_form = Layout(ChangePasswordForm,
+                          Fieldset('old_password', 'password',
+                                   'password_repeat'),
+                          Submit('Update password'),
+                          showLabels=False)
 
     def post(self, request):
         '''Handle post data
@@ -201,7 +196,11 @@ class ChangePassword(WebFormRouter):
 class ForgotPassword(WebFormRouter):
     '''Adds login get ("text/html") and post handlers
     '''
-    default_form = EmailForm
+    default_form = Layout(EmailForm,
+                          Fieldset(all=True),
+                          Submit('Submit'),
+                          showLabels=False)
+
     template = 'forgot.html'
     reset_template = 'reset_password.html'
 

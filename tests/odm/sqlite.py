@@ -39,3 +39,9 @@ class TestSql(test.AppTestCase):
                                    content_type='application/json')
         response = request.response
         self.assertEqual(response.status_code, 201)
+        data = self.json(response)
+        self.assertIsInstance(data, dict)
+        self.assertTrue('id' in data)
+        self.assertEqual(data['subject'], 'This is my first task')
+        self.assertTrue('created' in data)
+        self.assertFalse(data['done'])
