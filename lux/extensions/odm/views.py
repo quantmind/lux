@@ -1,3 +1,5 @@
+from sqlalchemy.exc import DataError
+
 from pulsar import PermissionDenied
 from pulsar.apps.wsgi import Json
 
@@ -5,6 +7,7 @@ from lux import route
 from lux.extensions import rest
 
 from .serialise import tojson
+from .mapper import logger
 
 
 class CRUD(rest.RestRouter):
@@ -43,9 +46,15 @@ class CRUD(rest.RestRouter):
             data, files = request.data_and_files()
             form = self.addform(request, data=data, files=files)
             if form.is_valid():
-                instance = self.create_model(request, form.cleaned_data)
-                data = self.serialise(request, instance)
-                request.response.status_code = 201
+                try:
+                    instance = self.create_model(request, form.cleaned_data)
+                except DataError as exc:
+                    logger.exception('Could not create model')
+                    form.add_error_message(str(exc))
+                    data = form.tojson()
+                else:
+                    data = self.serialise(request, instance)
+                    request.response.status_code = 201
             else:
                 data = form.tojson()
             return Json(data).http_response(request)

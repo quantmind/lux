@@ -1,6 +1,6 @@
 //      Lux Library - v0.1.1
 
-//      Compiled 2015-05-07.
+//      Compiled 2015-05-08.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -1553,7 +1553,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                     scope.addMessages(data.messages);
                 } else if (api) {
                     // Created
-                    if (status === 201) {
+                    if (response.status === 201) {
                         scope.formMessages[FORMKEY] = [{message: 'Succesfully created'}];
                     } else {
                         scope.formMessages[FORMKEY] = [{message: 'Succesfully updated'}];
