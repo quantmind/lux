@@ -1553,7 +1553,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                     scope.addMessages(data.messages);
                 } else if (api) {
                     // Created
-                    if (status === 201) {
+                    if (response.status === 201) {
                         scope.formMessages[FORMKEY] = [{message: 'Succesfully created'}];
                     } else {
                         scope.formMessages[FORMKEY] = [{message: 'Succesfully updated'}];

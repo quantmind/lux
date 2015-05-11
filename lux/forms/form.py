@@ -262,8 +262,8 @@ class Form(metaclass=FormType):
     @property
     def fields(self):
         '''List of :class:`BoundField` instances after
-validation, if the form is bound, otherwise a list of :class:`BoundField`
-instances with initial values.'''
+        validation, if the form is bound, otherwise a list of
+        :class:`BoundField` instances with initial values.'''
         self._check_unwind()
         return self._fields
 

@@ -5,6 +5,9 @@
             angular: {
                 exports: "angular"
             },
+            "angular-strap-tpl": {
+                deps: ["angular", "angular-strap"]
+            },
             "google-analytics": {
                 exports: root.GoogleAnalyticsObject || "ga"
             },
