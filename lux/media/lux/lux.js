@@ -1,6 +1,6 @@
 //      Lux Library - v0.1.1
 
-//      Compiled 2015-05-07.
+//      Compiled 2015-05-11.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -887,7 +887,7 @@ function(angular, root) {
 
                     sock.onclose = function() {
                         delete websockets[url];
-                        log.warn('Connection with ' + websocket + ' CLOSED');
+                        log.warn('Connection with ' + url + ' CLOSED');
                     };
                 });
             };

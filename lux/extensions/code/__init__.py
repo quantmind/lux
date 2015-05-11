@@ -44,7 +44,6 @@ class Extension(lux.Extension):
 
 
 def add_css(all):
-    theme = all.config('CODE_HIGHLIGHT_THEME')
     css = all.css
     vars = all.variables
 
@@ -52,10 +51,11 @@ def add_css(all):
 
     katex(all)
 
-    if theme:
-        path = 'http:%s/styles/%s.min.css' % (CssLibraries['highlight'], theme)
-        css('body',
-            CssInclude(path))
+    path = lambda: 'http:%s/styles/%s.min.css' % (
+        CssLibraries['highlight'], all.config('CODE_HIGHLIGHT_THEME'))
+
+    css('body',
+        CssInclude(path))
 
     css('code.hljs.inline',
         display='inline',

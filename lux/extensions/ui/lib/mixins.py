@@ -742,6 +742,8 @@ class CssInclude(Mixin):
 
     def __call__(self, elem):
         path = self.path
+        if hasattr(path, '__call__'):
+            path = path()
         if path in CssLibraries:
             path = CssLibraries[path]
             if not path.endswith('.css'):

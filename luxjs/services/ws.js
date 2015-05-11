@@ -52,7 +52,7 @@
 
                     sock.onclose = function() {
                         delete websockets[url];
-                        log.warn('Connection with ' + websocket + ' CLOSED');
+                        log.warn('Connection with ' + url + ' CLOSED');
                     };
                 });
             };

@@ -479,6 +479,7 @@ class Css(CssBase):
 
     '''
     rendered = False
+    theme = None
     _app = None
     _css_libs = None
 
@@ -744,6 +745,7 @@ http://quantmind.github.io/lux/
 
     def dump(self, theme=None, dump_variables=False):
         root = self.root
+        root.theme = theme
         app = root.app
         if app:
             module = None
@@ -775,8 +777,7 @@ class Variables(object):
 
     If the body name-space is not available is automatically created.
     '''
-    reserved = (None, '_reserved', 'reserved', 'name', 'parent',
-                'current_theme')
+    reserved = (None, '_reserved', 'reserved', 'name', 'parent')
     MEDIAURL = '/media/'
 
     def __init__(self, parent=None, name=None):
