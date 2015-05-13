@@ -1,9 +1,10 @@
+from .errors import ValidationError
 
 __all__ = ['Options', 'OptionGroup']
 
 
 class Options(object):
-    '''Manage group of options for :class:`.ChoicField`
+    '''Manage group of options for :class:`.ChoiceField`
     '''
     def __init__(self, options):
         self._choices = options or ()
