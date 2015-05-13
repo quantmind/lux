@@ -51,11 +51,12 @@ def add_css(all):
 
     katex(all)
 
-    path = lambda: 'http:%s/styles/%s.min.css' % (
-        CssLibraries['highlight'], all.config('CODE_HIGHLIGHT_THEME'))
+    def stylepath():
+        return 'http:%s/styles/%s.min.css' % (
+            CssLibraries['highlight'], all.config('CODE_HIGHLIGHT_THEME'))
 
     css('body',
-        CssInclude(path))
+        CssInclude(stylepath))
 
     css('code.hljs.inline',
         display='inline',

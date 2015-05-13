@@ -71,7 +71,7 @@ class AuthMixin(PasswordMixin):
             if level <= READ:
                 return True
             else:
-                raise NotImplementedError
+                return False
 
     def create_user(self, request, username=None, password=None, email=None,
                     first_name=None, last_name=None, active=False,
