@@ -12,6 +12,7 @@ from .mapper import logger
 
 class CRUD(rest.RestRouter):
     addform = None
+    editform = None
 
     def __init__(self, model, url=None, *args, **kwargs):
         url = url or model
@@ -64,31 +65,26 @@ class CRUD(rest.RestRouter):
     def read(self, request):
         '''Read an instance
         '''
-        odm = request.app.odm()
-        instance = odm.get(request, request.urlargs['id'])
-        if not instance:
-            raise Http404
+        instance = self.get_model(request)
         url = request.absolute_uri()
-        data = self.manager.instance_data(request, instance, url=url)
+        data = self.serialise(request, instance)
         return Json(data).http_response(request)
 
     @route('<id>')
     def post_update(self, request):
-        manager = self.manager
-        instance = manager.get(request, request.urlargs['id'])
-        if not instance:
-            raise Http404
-        form_class = manager.form
+        instance = self.get_model(request)
+        form_class = self.editform or self.addform
         if not form_class:
             raise MethodNotAllowed
-        auth = request.cache.auth_backend
-        if auth.has_permission(request, auth.UPDATE, instance):
+
+        backend = request.cache.auth_backend
+        if backend.has_permission(request, self.model, rest.UPDATE):
             data, files = request.data_and_files()
             form = form_class(request, data=data, files=files)
             if form.is_valid(exclude_missing=True):
-                instance = manager.update_model(request, instance,
-                                                form.cleaned_data)
-                data = self.manager.instance(instance)
+                instance = self.update_model(request, instance,
+                                             form.cleaned_data)
+                data = self.serialise(request, instance)
             else:
                 data = form.tojson()
             return Json(data).http_response(request)
@@ -108,11 +104,29 @@ class CRUD(rest.RestRouter):
                 raise Http404
         raise PermissionDenied
 
+    def get_model(self, request):
+        odm = request.app.odm()
+        with odm.begin() as session:
+            query = session.query(odm[self.model])
+            try:
+                return query.get(request.urlargs['id'])
+            except NoResultFound:
+                raise Http404
+
     def create_model(self, request, data):
         odm = request.app.odm()
         model = odm[self.model]
         with odm.begin() as session:
             instance = model(**data)
+            session.add(instance)
+        return instance
+
+    def update_model(self, request, instance, data):
+        odm = request.app.odm()
+        model = odm[self.model]
+        with odm.begin() as session:
+            for key, value in data.items():
+                setattr(instance, key, value)
             session.add(instance)
         return instance
 
