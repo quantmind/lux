@@ -1,11 +1,15 @@
-/*jshint sub:true*/
 
-    angular.module('lux.grid', ['ngTouch', 'ui.grid'])
+    angular.module("lux.grid.mock", [])
 
-        .service('gridService', ['$lux', function ($lux) {
+        .config(['$provide', function ($provide) {
 
-            this.api_mock_data = {
-                'user': {
+            $provide.decorator('$httpBackend', angular.mock.e2e.$httpBackendDecorator);
+        }])
+
+        .run(['$httpBackend', function ($httpBackend) {
+
+            var api_mock_data = {
+                '/user': {
                     'columns': [
                         {field: 'id', displayName: 'ID'},
                         {field: 'user', displayName: 'user'},
@@ -19,7 +23,7 @@
                         'user': 'Adam',
                     }]
                 },
-                'group': {
+                '/group': {
                     'columns': [
                         {field: 'id', displayName: 'ID'},
                         {field: 'group', displayName: 'Group'}
@@ -32,7 +36,7 @@
                         'group': 'Staff',
                     }]
                 },
-                'exchange': {
+                '/exchange': {
                     'columns': [
                         {field: 'id', displayName: 'ID'},
                         {field: 'exchange', displayName: 'Exchange'},
@@ -40,38 +44,17 @@
                     ],
                     'rows': [{
                         'id': 1,
-                        'exchange': 'Admins',
+                        'exchange': 'BATS',
                         'price': 100,
                     }, {
                         'id': 2,
-                        'exchange': 'Staff',
+                        'exchange': 'ERIS',
                         'price': 200,
                     }]
                 }
             };
 
-            this.getModelData = function() {
-                var loc = window.location,
-                    path = loc.pathname,
-                    model = path.split('/').pop(-1),
-                    modelDefs;
-
-                if (this.api_mock_data.hasOwnProperty(model)) {
-                    modelDefs = this.api_mock_data[model];
-                    return modelDefs;
-                }
-            };
-
-        }])
-
-        .controller('RestGrid', ['$scope', '$lux', 'gridService', function (scope, $lux, gridService) {
-
-            var client = scope.api(),
-                gridData = gridService.getModelData();
-
-            scope.gridOptions = {
-                data: gridData.rows,
-                columnDefs: gridData.columns
-            };
-
+            for (var url in api_mock_data) {
+                $httpBackend.whenGET(url).respond(api_mock_data[url]);
+            }
         }]);
