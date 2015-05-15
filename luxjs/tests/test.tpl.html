@@ -8,9 +8,9 @@
   <link rel="stylesheet" type="text/css" href="<%= style %>">
 <% }) %>
 <script type="text/javascript">
-var require = {minify: true};
+var lux = {context: {MINIFIED_MEDIA: true}};
 </script>
-<script src="http://quantmind.github.io/require-config-js/require.config.min.js" type="text/javascript"></script>
+<script src="lux/media/lux/cfg.min.js" type="text/javascript"></script>
 <script src="http://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.14/require.min.js" type="text/javascript"></script>
  <% with (scripts) { %>
   <% [].concat(jasmine, boot, vendor, helpers).forEach(function(script){ %>
@@ -21,7 +21,8 @@ var require = {minify: true};
     // Delay onLoad function until we are ready
     var startTests = window.onload;
     window.onload = null;
-    require(['<%= [].concat(options.deps).join("', '") %>'], function() {
+    lux.config({});
+    lux.require(['<%= [].concat(options.deps).join("', '") %>'], function() {
         require(['<%= [].concat(scripts.specs,scripts.reporters).join("','") %>'], function(){
             startTests();
         });
