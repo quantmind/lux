@@ -52,41 +52,7 @@ def field_widget(tag, **defaults):
     return html_input
 
 
-class ModelMixin(object):
-    primary_key = False
-    index = False
-
-    def register_with_model(self, name, model):
-        '''Called during the creation of a the :class:`StdModel`
-        class when :class:`Metaclass` is initialised. It fills
-        :attr:`Field.name` and :attr:`Field.model`. This is an internal
-        function users should never call.'''
-        assert not self.name, 'Field %s is already registered' % self
-        self.name = name
-        self.store_name = self.get_store_name()
-        meta = model._meta
-        meta.dfields[name] = self
-        meta.converters[name] = self.clean
-        if self.primary_key:
-            meta.pk = self
-        self.add_to_fields(meta)
-
-    def add_to_fields(self, meta):
-        '''Add this :class:`Field` to the fields of :attr:`model`.
-        '''
-        meta.scalarfields.append(self)
-        if self.index:
-            meta.indexes.append(self)
-
-    def get_store_name(self):
-        '''Generate the :attr:`store_name` at runtime'''
-        return self.name
-
-    def get_value(self, model, value):
-        return value
-
-
-class Field(ModelMixin):
+class Field:
     '''Base class for all fields.
     Field are specified as attribute of a form, for example::
 
@@ -139,26 +105,15 @@ class Field(ModelMixin):
     wrong_value_message = standard_wrong_value_message
     attrs = None
 
-    def __init__(self, unique=False, primary_key=None, required=None,
+    def __init__(self, unique=False, required=None,
                  index=False, default=None,
                  validation_error=None, help_text=None,
                  label=None, widget=None, attrs=None,
                  attrname=None, wrong_value_message=None,
                  **kwargs):
         self.name = attrname
-        self.foreign_keys = ()
-        self.primary_key = (self.primary_key if primary_key is None else
-                            primary_key)
         self.default = default if default is not None else self.default
         self.required = required if required is not None else self.required
-        index = index if index is not None else self.index
-        if self.primary_key:
-            self.unique = True
-            self.required = True
-            self.index = True
-        else:
-            self.unique = unique
-            self.index = True if unique else index
         self.validation_error = (validation_error or self.validation_error or
                                  standard_validation_error)
         if wrong_value_message:
@@ -226,17 +181,6 @@ class Field(ModelMixin):
         if hasattr(default, '__call__'):
             default = default(model)
         return default
-
-    def from_instance_to_store(self, instance, store):
-        value = instance.get_raw(self.store_name)
-        if value in NOTHING:
-            value = self.get_default(instance)
-            if value not in NOTHING:
-                instance[self.store_name] = value
-        return self.to_store(value, store)
-
-    def to_store(self, value, store):
-        return value
 
     def to_json(self, value):
         return value
@@ -353,11 +297,6 @@ class DateTimeField(DateField):
         if isinstance(value, datetime) and not value.tzinfo:
             value = pytz.utc.localize(value)
         return value
-
-    def to_store(self, value, store):
-        value = self.todate(value)
-        if isinstance(value, datetime):
-            return store.datetime(value)
 
 
 class BooleanField(Field):

@@ -307,15 +307,6 @@ class Form(metaclass=FormType):
         '''
         pass
 
-    def http_response(self, request=None):
-        request = request or self.request
-        errors = self.errors
-        response = request.response
-        if response.content_type in JSON_CONTENT_TYPES:
-            data = self.tojson()
-            response.content = json.dumps(data)
-        return response
-
     def redirect(self, request=None, url=None, status=None):
         return smart_redirect(request or self.request, url, status)
 
@@ -326,13 +317,6 @@ class Form(metaclass=FormType):
     def add_error_message(self, message):
         '''Add an error message to the form'''
         self._form_message(self.errors, FORMKEY, message)
-
-    def save_as_new(self, commit=True):
-        if self.instance is not None:
-            self.instance.id = None
-            for fset in self.form_sets.values():
-                fset.set_save_as_new()
-        return self.save(commit=commit)
 
     def tojson(self):
         '''Return a json-serialisable dictionary of messages for form fields.
@@ -361,19 +345,6 @@ class Form(metaclass=FormType):
 
     def get_widget_data(self, bound_field):
         pass
-
-    @classmethod
-    def initials(cls):
-        '''Iterator over initial field values.
-
-        Check the :attr:`Field.initial` attribute for more information.
-        This class method can be useful when using forms outside web
-        applications.
-        '''
-        for name, field in cls.base_fields.items():
-            initial = field.get_initial(cls)
-            if initial is not None:
-                yield name, initial
 
     # INTERNALS
     def _check_unwind(self, raise_error=True):
