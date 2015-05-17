@@ -21,7 +21,7 @@ class Extension(lux.Extension):
 
 class TaskForm(forms.Form):
     subject = forms.CharField(required=True)
-    done = forms.CharField(default=False, required=False)
+    done = forms.BooleanField(default=False)
 
 
 class CRUDTask(odm.CRUD):

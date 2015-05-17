@@ -34,7 +34,39 @@ class TestSql(test.AppTestCase):
         self.assertIsInstance(data, list)
 
     def test_create_task(self):
-        data = {'subject': 'This is my first task'}
+        self._create_task()
+
+    def test_update_task(self):
+        task = self._create_task('This is another task')
+        # Update task
+        request = self.client.post('/tasks/%d' % task['id'],
+                                   body={'done': True},
+                                   content_type='application/json')
+        response = request.response
+        self.assertEqual(response.status_code, 200)
+        data = self.json(response)
+        self.assertEqual(data['id'], task['id'])
+        self.assertEqual(data['done'], True)
+        #
+        request = self.client.get('/tasks/%d' % task['id'])
+        response = request.response
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(data['id'], task['id'])
+        self.assertEqual(data['done'], True)
+
+    def test_delete_task(self):
+        task = self._create_task('A task to be deleted')
+        # Delete task
+        request = self.client.delete('/tasks/%d' % task['id'])
+        response = request.response
+        self.assertEqual(response.status_code, 204)
+        #
+        request = self.client.get('/tasks/%d' % task['id'])
+        response = request.response
+        self.assertEqual(response.status_code, 404)
+
+    def _create_task(self, txt='This is a task'):
+        data = {'subject': txt}
         request = self.client.post('/tasks', body=data,
                                    content_type='application/json')
         response = request.response
@@ -42,6 +74,7 @@ class TestSql(test.AppTestCase):
         data = self.json(response)
         self.assertIsInstance(data, dict)
         self.assertTrue('id' in data)
-        self.assertEqual(data['subject'], 'This is my first task')
+        self.assertEqual(data['subject'], txt)
         self.assertTrue('created' in data)
         self.assertFalse(data['done'])
+        return data

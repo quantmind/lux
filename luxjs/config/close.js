@@ -65,20 +65,4 @@
         require.config(cfg);
     };
 
-    lux.require = function () {
-        if (arguments.length && isArray(arguments[0]) && minify()) {
-            var deps = arguments[0],
-                cfg = require.config(),
-                min = minify() ? '.min' : '';
-
-            deps.forEach(function (dep, i) {
-                if (!cfg.paths[dep] && dep.substring(dep.length-3) !== end) {
-                    dep += min;
-                    deps[i] = dep;
-                }
-            });
-        }
-        return require.apply(root, arguments);
-    };
-
 }(this));

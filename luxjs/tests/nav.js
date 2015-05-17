@@ -22,26 +22,12 @@
             //expect(scope.navbar.items2).toBe(undefined);
         });
 
-        it("navbar directive defaults", inject(function($compile, $rootScope) {
-            var element = digest($compile, $rootScope, '<navbar></navbar>');
-            //
-            expect(element[0].tagName).toBe('NAVBAR');
-            expect(element.children().length).toBe(1);
-            //
-            var nav = angular.element(element.children()[0]);
-            //
-            expect(nav[0].tagName).toBe('NAV');
-            expect(nav.hasClass('navbar')).toBe(true);
-            expect(nav.hasClass('navbar-default')).toBe(true);
-            expect(nav.hasClass('navbar-static-top')).toBe(false);
-            expect(nav.hasClass('navbar-fixed-top')).toBe(false);
-            expect(nav.attr('id')).toBe('');
-        }));
-
-        it("navbar directive with data", inject(function($compile, $rootScope) {
+        it("navbar directive", inject(function($compile, $rootScope) {
             var template = '<navbar data-theme="inverse" data-id="navid3" data-top=1></navbar>',
-                element = digest($compile, $rootScope, template),
-                nav = angular.element(element.children()[0]);
+                element = digest($compile, $rootScope, template);
+
+            expect(element.children().length).toBe(1);
+            var nav = angular.element(element.children()[0]);
             //
             expect(nav[0].tagName).toBe('NAV');
             expect(nav.hasClass('navbar')).toBe(true);

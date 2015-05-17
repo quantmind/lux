@@ -1,6 +1,7 @@
 from sqlalchemy.exc import DataError
+from sqlalchemy.orm.exc import NoResultFound
 
-from pulsar import PermissionDenied
+from pulsar import PermissionDenied, Http404
 from pulsar.apps.wsgi import Json
 
 from lux import route
@@ -18,13 +19,6 @@ class CRUD(rest.RestRouter):
         url = url or model
         self.model = model
         super().__init__(url, *args, **kwargs)
-
-    def collection(self, request, limit, offset, text):
-        odm = request.app.odm()
-        with odm.begin() as session:
-            query = session.query(odm[self.model])
-            data = query.limit(limit).offset(offset).all()
-            return self.serialise(request, data)
 
     def get(self, request):
         '''Get a list of models
@@ -92,24 +86,29 @@ class CRUD(rest.RestRouter):
 
     @route('delete/<id>', method='delete')
     def delete(self, request):
-        manager = self.manager
-        instance = manager.get(request, request.urlargs['id'])
-        auth = request.cache.auth_backend
-        if auth.has_permission(request, auth.DELETE, instance or self.model):
-            if instance:
-                manager.delete_model(request, instance)
-                request.response.status_code = 204
-                return request.response
-            else:
-                raise Http404
+        instance = self.get_model(request)
+        backend = request.cache.auth_backend
+        if backend.has_permission(request, self.model, rest.DELETE):
+            with request.app.odm().begin() as session:
+                session.delete(instance)
+            request.response.status_code = 204
+            return request.response
         raise PermissionDenied
+
+    # RestView implementation
+    def collection(self, request, limit, offset, text):
+        odm = request.app.odm()
+        with odm.begin() as session:
+            query = session.query(odm[self.model])
+            data = query.limit(limit).offset(offset).all()
+            return self.serialise(request, data)
 
     def get_model(self, request):
         odm = request.app.odm()
         with odm.begin() as session:
             query = session.query(odm[self.model])
             try:
-                return query.get(request.urlargs['id'])
+                return query.filter_by(id=request.urlargs['id']).one()
             except NoResultFound:
                 raise Http404
 

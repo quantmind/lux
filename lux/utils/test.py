@@ -101,6 +101,10 @@ class testClient:
         return self.request(path=path, content_type=content_type,
                             body=body, **extra)
 
+    def delete(self, path=None, **extra):
+        extra['REQUEST_METHOD'] = 'DELETE'
+        return self.request(path=path, **extra)
+
 
 class TestMixin:
     config_file = 'tests.config'
