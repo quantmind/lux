@@ -16,7 +16,7 @@ EXTENSIONS = ['lux.extensions.base',
 class Extension(lux.Extension):
 
     def api_sections(self, app):
-        return [CRUDTask('task', '/tasks')]
+        return [CRUDTask('/tasks')]
 
 
 class TaskForm(forms.Form):
@@ -25,7 +25,7 @@ class TaskForm(forms.Form):
 
 
 class CRUDTask(odm.CRUD):
-    model = odm.RestModel('task')
+    model = odm.RestModel('task', TaskForm)
     addform = TaskForm
 
 

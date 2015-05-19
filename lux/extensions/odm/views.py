@@ -12,19 +12,15 @@ from .mapper import logger
 
 
 class CRUD(rest.RestRouter):
-    addform = None
-    editform = None
-
-    def __init__(self, model, url=None, *args, **kwargs):
-        url = url or model
-        self.model = model
-        super().__init__(url, *args, **kwargs)
+    model = None
+    '''An instance of :class:`.RestModel`'''
 
     def get(self, request):
         '''Get a list of models
         '''
         backend = request.cache.auth_backend
-        if backend.has_permission(request, self.model, rest.READ):
+        model = self.model
+        if backend.has_permission(request, model.name, rest.READ):
             limit = self.limit(request)
             offset = self.offset(request)
             text = self.query(request)
@@ -36,10 +32,11 @@ class CRUD(rest.RestRouter):
         '''Create a new model
         '''
         backend = request.cache.auth_backend
-        if backend.has_permission(request, self.model, rest.CREATE):
-            assert self.addform
+        model = self.model
+        if backend.has_permission(request, model.name, rest.CREATE):
+            assert model.addform
             data, files = request.data_and_files()
-            form = self.addform(request, data=data, files=files)
+            form = model.addform(request, data=data, files=files)
             if form.is_valid():
                 try:
                     instance = self.create_model(request, form.cleaned_data)
@@ -66,13 +63,14 @@ class CRUD(rest.RestRouter):
 
     @route('<id>')
     def post_update(self, request):
+        model = self.model
         instance = self.get_model(request)
-        form_class = self.editform or self.addform
+        form_class = model.editform or model.addform
         if not form_class:
             raise MethodNotAllowed
 
         backend = request.cache.auth_backend
-        if backend.has_permission(request, self.model, rest.UPDATE):
+        if backend.has_permission(request, model.name, rest.UPDATE):
             data, files = request.data_and_files()
             form = form_class(request, data=data, files=files)
             if form.is_valid(exclude_missing=True):
@@ -88,7 +86,7 @@ class CRUD(rest.RestRouter):
     def delete(self, request):
         instance = self.get_model(request)
         backend = request.cache.auth_backend
-        if backend.has_permission(request, self.model, rest.DELETE):
+        if backend.has_permission(request, self.model.name, rest.DELETE):
             with request.app.odm().begin() as session:
                 session.delete(instance)
             request.response.status_code = 204
@@ -98,15 +96,17 @@ class CRUD(rest.RestRouter):
     # RestView implementation
     def collection(self, request, limit, offset, text):
         odm = request.app.odm()
+        model = odm[self.model.name]
         with odm.begin() as session:
-            query = session.query(odm[self.model])
+            query = session.query(model)
             data = query.limit(limit).offset(offset).all()
             return self.serialise(request, data)
 
     def get_model(self, request):
         odm = request.app.odm()
+        model = odm[self.model.name]
         with odm.begin() as session:
-            query = session.query(odm[self.model])
+            query = session.query(model)
             try:
                 return query.filter_by(id=request.urlargs['id']).one()
             except NoResultFound:
@@ -114,7 +114,7 @@ class CRUD(rest.RestRouter):
 
     def create_model(self, request, data):
         odm = request.app.odm()
-        model = odm[self.model]
+        model = odm[self.model.name]
         with odm.begin() as session:
             instance = model(**data)
             session.add(instance)
@@ -122,7 +122,7 @@ class CRUD(rest.RestRouter):
 
     def update_model(self, request, instance, data):
         odm = request.app.odm()
-        model = odm[self.model]
+        model = odm[self.model.name]
         with odm.begin() as session:
             for key, value in data.items():
                 setattr(instance, key, value)

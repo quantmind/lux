@@ -14,6 +14,13 @@ class TestSql(test.AppTestCase):
         tables = odm.tables()
         self.assertTrue(tables)
 
+    def test_rest_model(self):
+        from tests.odm import CRUDTask
+        model = CRUDTask.model
+        self.assertEqual(model.name, 'task')
+        columns = model.columns(self.app)
+        self.assertTrue(columns)
+
     def test_simple_session(self):
         app = self.app
         odm = app.odm()
