@@ -12,11 +12,14 @@ adminMap = {}
 class register:
     '''Decorator to register an admin router class with
     REST model.
+
+    :param model: a string or a :class:`~lux.extensions.rest.RestModel`
     '''
-    def __init__(self, model, api_name=None):
+    def __init__(self, model, url=None):
         if not isinstance(model, rest.RestModel):
             model = rest.RestModel(model)
         self.model = model
+        self.url = url or self.model
         self.api_name = api_name
 
     @property
@@ -102,6 +105,8 @@ class AdminModel(AdminRouter):
     '''
     section = None
     icon = None
+    '''An icon for this Admin section
+    '''
     model = None
     '''An instance of a class:`~lux.extensions.rest.RestModel`
 

@@ -8,6 +8,7 @@ from pulsar.apps.wsgi import Json, Router
 from .forms import (LoginForm, CreateUserForm, ChangePasswordForm,
                     EmailForm, PasswordForm)
 from .user import AuthenticationError
+from .models import RestModel
 
 
 REST_CONTENT_TYPES = ['application/json']
@@ -35,11 +36,7 @@ class RestRoot(lux.Router):
     def apis(self, request):
         routes = {}
         for route in self.routes:
-            model = route.model
-            if not model:
-                request.logger.error('Rest Router %s without a model', route)
-            else:
-                routes[model.api_name] = request.absolute_uri(route.path())
+            routes[route.model.api_name] = request.absolute_uri(route.path())
         return routes
 
     def get(self, request):
@@ -51,6 +48,10 @@ class RestRouter(lux.Router):
     model = None
     '''Instance of a :class:`~lux.extensions.rest.RestModel`
     '''
+    def __init__(self, *args, **kwargs):
+        if not isinstance(self.model, RestModel):
+            raise NotImplementedError('REST model not available')
+        super().__init__(self.model.url, *args, **kwargs)
 
     def options(self, request):
         '''Handle the CORS preflight request

@@ -111,7 +111,7 @@ class TokenBackend(AuthMixin, backends.TokenBackend):
         backends.TokenBackend.on_config(self, app)
 
     def api_sections(self, app):
-        yield Authorization(app.config['AUTHORIZATION_URL'])
+        yield Authorization()
 
     def create_token(self, request, user):
         '''Create the token

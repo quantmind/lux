@@ -31,18 +31,12 @@ class TokenBackend(AuthBackend):
     .. _pyjwt: https://pypi.python.org/pypi/PyJWT
     .. _JWT: http://self-issued.info/docs/draft-ietf-oauth-json-web-token.html
     '''
-    _config = [
-        Parameter('AUTHORIZATION_URL', '/authorizations',
-                  'Url for authorizations',
-                  True),
-    ]
-
     def on_config(self, app):
         if not jwt:
             raise ImproperlyConfigured('JWT library not available')
 
     def api_sections(self, app):
-        yield Authorization(app.config['AUTHORIZATION_URL'])
+        yield Authorization()
 
     def request(self, request):
         '''Check for ``HTTP_AUTHORIZATION`` header and if it is available

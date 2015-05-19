@@ -16,7 +16,7 @@ EXTENSIONS = ['lux.extensions.base',
 class Extension(lux.Extension):
 
     def api_sections(self, app):
-        return [CRUDTask('/tasks')]
+        return [CRUDTask()]
 
 
 class TaskForm(forms.Form):

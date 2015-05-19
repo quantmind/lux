@@ -24,11 +24,12 @@ class RestModel:
     _loaded = False
 
     def __init__(self, name, form=None, editform=None, columns=None,
-                 api_name=None):
+                 url=None, api_name=None):
         self.name = name
         self.form = form
         self.editform = editform or form
-        self.api_name = api_name or make_api_name(name)
+        self.url = url or '%ss' % name
+        self.api_name = '%s_url' % self.url
         self._columns = columns
 
     def columns(self, app):
@@ -41,7 +42,3 @@ class RestModel:
 
     def _load_columns(self, app):
         return self._columns or []
-
-
-def make_api_name(name):
-    return '%ss_url' % name
