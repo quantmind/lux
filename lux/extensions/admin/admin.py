@@ -127,8 +127,7 @@ class CRUDAdmin(AdminModel):
     def add(self, request):
         '''Add a new model
         '''
-        form = self.form
-        return self.get_form(request, form)
+        return self.get_form(request, self.form)
 
     @route('<id>')
     def update(self, request):
@@ -139,7 +138,7 @@ class CRUDAdmin(AdminModel):
     def get_form(self, request, form, id=None):
         if not form:
             raise Http404
-        target = self.get_target(request, id)
+        target = self.model.get_target(request, id)
         html = form().as_form(action=target)
         context = {'html_form': html.render()}
         html = request.app.render_template(self.addtemplate, context)

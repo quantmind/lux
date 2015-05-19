@@ -22,3 +22,8 @@ class AdminTest(test.AppTestCase):
         request = self.client.get('/admin/blogs')
         response = request.response
         self.assertEqual(response.status_code, 200)
+
+    def test_add_view(self):
+        request = self.client.get('/admin/blogs/add')
+        response = request.response
+        self.assertEqual(response.status_code, 200)

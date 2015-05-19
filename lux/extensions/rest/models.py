@@ -40,5 +40,19 @@ class RestModel:
             self._columns = self._load_columns(app)
         return self._columns
 
+    def get_target(self, request, id=None):
+        '''Get a target for a form
+
+        Used by HTML Router to get information about the LUX REST API
+        of this Rest Model
+        '''
+        url = request.app.config.get('API_URL')
+        if not url:
+            return
+        target = {'url': url, 'name': self.api_name}
+        if id:
+            target['id'] = id
+        return target
+
     def _load_columns(self, app):
         return self._columns or []

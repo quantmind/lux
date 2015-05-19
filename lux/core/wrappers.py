@@ -106,15 +106,7 @@ class HtmlRouter(Router):
     form = None
     uirouter = None
     uimodules = None
-    api_type = 'luxrest'
-    '''Optional api type, if not specified it is assumed to be the
-    lux REST API and the url is given by the API_URL config
-    parameter
-    '''
-    api_name = None
-    '''Name used to obtain the api endpoint for interacting with
-    the underlying model.
-    '''
+    model = None
     response_content_types = TEXT_CONTENT_TYPES
 
     def get(self, request, html=None):
@@ -180,22 +172,6 @@ class HtmlRouter(Router):
         '''Add angular router information (lux.extensions.angular)
         '''
         page['templateUrl'] = '%s?template=ui' % router.full_route
-
-    def get_target(self, request, id=None):
-        '''Get a target for a form.
-
-        If the :attr:`api_name` is defined return an object used by
-        the javascript REST API client to configure its paths.
-        '''
-        # TODO: this is not great
-        if self.api_type == 'luxrest' and self.api_name:
-            url = request.app.config.get('API_URL')
-            if not url:
-                return
-            target = {'url': url, 'name': self.api_name}
-            if id:
-                target['id'] = id
-            return target
 
 
 class HeadMeta(object):
