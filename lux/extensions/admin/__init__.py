@@ -1,5 +1,5 @@
 '''
-Admin inteface.
+Extension for an Admin Web inteface.
 
 In order to use the Admin interface, the :setting:`ADMIN_URL`
 needs to be specified.

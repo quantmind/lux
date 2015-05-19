@@ -35,7 +35,11 @@ class RestRoot(lux.Router):
     def apis(self, request):
         routes = {}
         for route in self.routes:
-            routes['%s_url' % route.name] = request.absolute_uri(route.path())
+            model = route.model
+            if not model:
+                request.logger.error('Rest Router %s without a model', route)
+            else:
+                routes[model.api_name] = request.absolute_uri(route.path())
         return routes
 
     def get(self, request):
@@ -44,6 +48,9 @@ class RestRoot(lux.Router):
 
 class RestRouter(lux.Router):
     response_content_types = REST_CONTENT_TYPES
+    model = None
+    '''Instance of a :class:`~lux.extensions.rest.RestModel`
+    '''
 
     def options(self, request):
         '''Handle the CORS preflight request

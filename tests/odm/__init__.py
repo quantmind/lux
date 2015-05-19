@@ -26,7 +26,6 @@ class TaskForm(forms.Form):
 
 class CRUDTask(odm.CRUD):
     model = odm.RestModel('task', TaskForm)
-    addform = TaskForm
 
 
 class Task(odm.Model):

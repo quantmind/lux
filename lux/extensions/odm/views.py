@@ -12,8 +12,6 @@ from .mapper import logger
 
 
 class CRUD(rest.RestRouter):
-    model = None
-    '''An instance of :class:`.RestModel`'''
 
     def get(self, request):
         '''Get a list of models
@@ -34,9 +32,9 @@ class CRUD(rest.RestRouter):
         backend = request.cache.auth_backend
         model = self.model
         if backend.has_permission(request, model.name, rest.CREATE):
-            assert model.addform
+            assert model.form
             data, files = request.data_and_files()
-            form = model.addform(request, data=data, files=files)
+            form = model.form(request, data=data, files=files)
             if form.is_valid():
                 try:
                     instance = self.create_model(request, form.cleaned_data)
@@ -65,7 +63,7 @@ class CRUD(rest.RestRouter):
     def post_update(self, request):
         model = self.model
         instance = self.get_model(request)
-        form_class = model.editform or model.addform
+        form_class = model.editform or model.form
         if not form_class:
             raise MethodNotAllowed
 

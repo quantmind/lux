@@ -10,10 +10,18 @@ adminMap = {}
 
 
 class register:
-    '''Register an admin router class for a model
+    '''Decorator to register an admin router class with
+    REST model.
     '''
-    def __init__(self, name):
-        self.name = name
+    def __init__(self, model, api_name=None):
+        if not isinstance(model, rest.RestModel):
+            model = rest.RestModel(model)
+        self.model = model
+        self.api_name = api_name
+
+    @property
+    def name(self):
+        return self.model.name
 
     def __call__(self, cls):
         assert issubclass(cls, AdminModel)
@@ -22,7 +30,8 @@ class register:
 
 
 class AdminRouter(lux.HtmlRouter):
-    ''''''
+    '''Base class for all Admin Routers
+    '''
     def response_wrapper(self, callable, request):
         app = request.app
         permission = app.config['ADMIN_PERMISSIONS']
@@ -88,10 +97,16 @@ class Admin(AdminRouter):
 
 
 class AdminModel(AdminRouter):
+    '''Router for rendering an admin section relative to
+    a given rest model
+    '''
     section = None
     icon = None
-    addForm = None
-    '''Form for adding new models
+    model = None
+    '''An instance of a class:`~lux.extensions.rest.RestModel`
+
+    This object is used when creating information about the REST API
+    where to obtain model data
     '''
 
     def __init__(self, model, *args, **kwargs):
@@ -114,21 +129,21 @@ class AdminModel(AdminRouter):
 class CRUDAdmin(AdminModel):
     '''An Admin model Router for adding and updating models
     '''
-    addform = None
-    updateform = None
+    form = None
+    editform = None
     addtemplate = 'partials/admin-add.html'
 
     @route()
     def add(self, request):
         '''Add a new model
         '''
-        form = self.addform
+        form = self.form
         return self.get_form(request, form)
 
     @route('<id>')
     def update(self, request):
         '''Add a new model'''
-        form = self.updateform or self.addform
+        form = self.updateform or self.form
         return self.get_form(request, form, request.urlargs['id'])
 
     def get_form(self, request, form, id=None):

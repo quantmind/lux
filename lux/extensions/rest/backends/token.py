@@ -4,6 +4,7 @@ from pulsar import HttpException, MethodNotAllowed, ImproperlyConfigured
 from pulsar.apps.wsgi import Json
 
 from lux import Parameter
+from ..models import RestModel
 from ..views import RestRouter, AuthenticationError
 
 try:
@@ -111,7 +112,7 @@ class TokenBackend(AuthBackend):
 
 
 class Authorization(RestRouter):
-    form = LoginForm
+    model = RestModel('authorization', LoginForm)
 
     def post(self, request):
         '''Create a new Authorization token
@@ -120,7 +121,7 @@ class Authorization(RestRouter):
         if user.is_authenticated():
             raise MethodNotAllowed
 
-        form = self.form(request, data=request.body_data())
+        form = self.model.form(request, data=request.body_data())
 
         if form.is_valid():
             auth_backend = request.cache.auth_backend
