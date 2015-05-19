@@ -31,7 +31,6 @@ def csrf(method):
 class RestRoot(lux.Router):
     '''Api Root'''
     response_content_types = REST_CONTENT_TYPES
-    managers = None
 
     def apis(self, request):
         routes = {}
