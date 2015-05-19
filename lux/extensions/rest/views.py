@@ -43,8 +43,7 @@ class RestRoot(lux.Router):
         return Json(self.apis(request)).http_response(request)
 
 
-class RestRouter(lux.Router):
-    response_content_types = REST_CONTENT_TYPES
+class RestMixin:
     model = None
     '''Instance of a :class:`~lux.extensions.rest.RestModel`
     '''
@@ -52,6 +51,10 @@ class RestRouter(lux.Router):
         if not isinstance(self.model, RestModel):
             raise NotImplementedError('REST model not available')
         super().__init__(self.model.url, *args, **kwargs)
+
+
+class RestRouter(RestMixin, lux.Router):
+    response_content_types = REST_CONTENT_TYPES
 
     def options(self, request):
         '''Handle the CORS preflight request

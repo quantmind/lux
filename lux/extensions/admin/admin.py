@@ -15,21 +15,16 @@ class register:
 
     :param model: a string or a :class:`~lux.extensions.rest.RestModel`
     '''
-    def __init__(self, model, url=None):
+    def __init__(self, model):
         if not isinstance(model, rest.RestModel):
             model = rest.RestModel(model)
         self.model = model
-        self.url = url or self.model
-        self.api_name = api_name
-
-    @property
-    def name(self):
-        return self.model.name
 
     def __call__(self, cls):
         assert issubclass(cls, AdminModel)
         assert cls is not AdminModel
-        adminMap[self.name] = cls
+        cls.model = self.model
+        adminMap[self.model.name] = cls
 
 
 class AdminRouter(lux.HtmlRouter):
@@ -37,9 +32,9 @@ class AdminRouter(lux.HtmlRouter):
     '''
     def response_wrapper(self, callable, request):
         app = request.app
+        backend = request.cache.auth_backend
         permission = app.config['ADMIN_PERMISSIONS']
-        if permission:
-            backend = request.cache.auth_backend
+        if backend and permission:
             if backend.has_permission(request, permission, rest.READ):
                 return callable(request)
             else:
@@ -99,7 +94,7 @@ class Admin(AdminRouter):
         return self._sitemap
 
 
-class AdminModel(AdminRouter):
+class AdminModel(rest.RestMixin, AdminRouter):
     '''Router for rendering an admin section relative to
     a given rest model
     '''
@@ -107,22 +102,12 @@ class AdminModel(AdminRouter):
     icon = None
     '''An icon for this Admin section
     '''
-    model = None
-    '''An instance of a class:`~lux.extensions.rest.RestModel`
-
-    This object is used when creating information about the REST API
-    where to obtain model data
-    '''
-
-    def __init__(self, model, *args, **kwargs):
-        self.model = model
-        super().__init__('/%s' % self.model, *args, **kwargs)
-
     def info(self, app):
         '''Information for admin navigation
         '''
-        info = {'title': nicename(self.model),
-                'name': nicename(self.model),
+        name = nicename(self.model.name)
+        info = {'title': name,
+                'name': name,
                 'href': self.full_route.path,
                 'icon': self.icon}
         return self.section, info
