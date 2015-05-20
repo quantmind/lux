@@ -4,6 +4,7 @@ from pulsar.utils.html import nicename
 import lux
 from lux import route
 from lux.extensions import rest
+from lux.extensions.angular import grid
 
 # Override Default Admin Router for a model
 adminMap = {}
@@ -113,7 +114,12 @@ class AdminModel(rest.RestMixin, AdminRouter):
         return self.section, info
 
     def get_html(self, request):
-        return request.app.render_template('partials/admin-list.html')
+        model = self.model
+        app = request.app
+        options = dict(target=model.get_target(request),
+                       columns=model.columns(app))
+        context = {'grid': grid(options)}
+        return app.render_template('partials/admin-list.html', context)
 
 
 class CRUDAdmin(AdminModel):

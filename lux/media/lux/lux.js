@@ -1,6 +1,6 @@
 //      Lux Library - v0.1.1
 
-//      Compiled 2015-05-17.
+//      Compiled 2015-05-20.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -2297,7 +2297,41 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
 
     angular.module('lux.grid', ['ngTouch', 'ui.grid'])
 
-        .controller('RestGrid', ['$scope', '$lux', function (scope, $lux) {
+        // Directive to build Angular-UI grid options using Lux REST API
+        .directive('restGrid', ['$lux', function ($lux) {
+
+            // Pre-process grid options
+            function buildOptions (options) {
+
+                var api = $lux.api(options.target),
+                    columns = options.columns;
+
+                return {
+                    columnDefs: []
+                };
+            }
+
+
+            return {
+                restrict: 'A',
+                link: {
+                    pre: function (scope, element, attrs) {
+                        var scripts= element[0].getElementsByTagName('script');
+
+                        forEach(scripts, function (js) {
+                            globalEval(js.innerHTML);
+                        });
+
+                        var opts = attrs;
+                        if (attrs.restGrid) opts = {options: attrs.restGrid};
+
+                        opts = getOptions(opts);
+
+                        if (opts)
+                            scope.gridOptions = buildOptions(opts);
+                    }
+                }
+            };
 
         }]);
 

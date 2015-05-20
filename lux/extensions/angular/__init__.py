@@ -32,6 +32,7 @@ from pulsar.utils.httpurl import urlparse
 from pulsar.utils.html import escape
 
 from .ui import add_css
+from .components import grid
 
 
 def add_ng_modules(doc, modules):
