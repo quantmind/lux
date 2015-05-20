@@ -65,32 +65,4 @@
         require.config(cfg);
     };
 
-    lux.require = function () {
-        if (arguments.length && isArray(arguments[0]) && minify()) {
-            var deps = arguments[0],
-                cfg = require.config();
-
-            deps.forEach(function (dep, i) {
-                if (dep.substring(dep.length-3) !== end)
-                    dep += min;
-                deps[i] = dep;
-            });
-        }
-        return require.apply(root, arguments);
-    };
-
-    lux.define = function () {
-        if (arguments.length && isArray(arguments[1]) && minify()) {
-            var deps = arguments[1],
-                cfg = require.config();
-
-            deps.forEach(function (dep, i) {
-                if (dep.substring(dep.length-3) !== end)
-                    dep += min;
-                deps[i] = dep;
-            });
-        }
-        return define.apply(root, arguments);
-    };
-
 }(this));

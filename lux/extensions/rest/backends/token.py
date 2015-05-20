@@ -4,6 +4,7 @@ from pulsar import HttpException, MethodNotAllowed, ImproperlyConfigured
 from pulsar.apps.wsgi import Json
 
 from lux import Parameter
+from ..models import RestModel
 from ..views import RestRouter, AuthenticationError
 
 try:
@@ -30,18 +31,12 @@ class TokenBackend(AuthBackend):
     .. _pyjwt: https://pypi.python.org/pypi/PyJWT
     .. _JWT: http://self-issued.info/docs/draft-ietf-oauth-json-web-token.html
     '''
-    _config = [
-        Parameter('AUTHORIZATION_URL', '/authorizations',
-                  'Url for authorizations',
-                  True),
-    ]
-
     def on_config(self, app):
         if not jwt:
             raise ImproperlyConfigured('JWT library not available')
 
     def api_sections(self, app):
-        yield Authorization(app.config['AUTHORIZATION_URL'])
+        yield Authorization()
 
     def request(self, request):
         '''Check for ``HTTP_AUTHORIZATION`` header and if it is available
@@ -111,7 +106,7 @@ class TokenBackend(AuthBackend):
 
 
 class Authorization(RestRouter):
-    form = LoginForm
+    model = RestModel('authorization', LoginForm)
 
     def post(self, request):
         '''Create a new Authorization token
@@ -120,7 +115,7 @@ class Authorization(RestRouter):
         if user.is_authenticated():
             raise MethodNotAllowed
 
-        form = self.form(request, data=request.body_data())
+        form = self.model.form(request, data=request.body_data())
 
         if form.is_valid():
             auth_backend = request.cache.auth_backend

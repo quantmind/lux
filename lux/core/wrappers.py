@@ -1,11 +1,13 @@
 import json
 
+from pulsar import ImproperlyConfigured
 from pulsar.apps.wsgi import (route, wsgi_request, cached_property,
                               html_factory)
 from pulsar.apps import wsgi
 from pulsar.apps.wsgi import RouterParam, Router, render_error_debug
 from pulsar.apps.wsgi.utils import error_messages
-from pulsar.utils.httpurl import JSON_CONTENT_TYPES
+from pulsar.utils.httpurl import (JSON_CONTENT_TYPES, is_absolute_uri,
+                                  iri_to_uri)
 from pulsar.utils.structures import mapping_iterator
 
 from lux.utils import unique_tuple
@@ -57,10 +59,26 @@ class WsgiRequest(wsgi.WsgiRequest):
             raise NotImplementedError
         return cache
 
-    def has_permission(self, action, model):
-        '''Check if this request has permission on ``model`` to perform a
-        given ``action``'''
-        return self.app.permissions.has(self, action, model)
+    @property
+    def scheme(self):
+        '''Protocol scheme, one of ``http`` and ``https``
+        '''
+        HEADER = self.config['SECURE_PROXY_SSL_HEADER']
+        if HEADER:
+            try:
+                header, value = HEADER
+            except ValueError:
+                raise ImproperlyConfigured(
+                    'The SECURE_PROXY_SSL_HEADER setting must be a tuple '
+                    'containing two values.')
+            return 'https' if self.environ.get(header) == value else 'http'
+        return self.environ.get('HTTPS') == 'on'
+
+    @property
+    def is_secure(self):
+        '''``True`` if this request is via a TLS connection
+        '''
+        return self.scheme == 'https'
 
 
 wsgi.set_wsgi_request_class(WsgiRequest)
@@ -88,15 +106,7 @@ class HtmlRouter(Router):
     form = None
     uirouter = None
     uimodules = None
-    api_type = 'luxrest'
-    '''Optional api type, if not specified it is assumed to be the
-    lux REST API and the url is given by the API_URL config
-    parameter
-    '''
-    api_name = None
-    '''Name used to obtain the api endpoint for interacting with
-    the underlying model.
-    '''
+    model = None
     response_content_types = TEXT_CONTENT_TYPES
 
     def get(self, request, html=None):
@@ -162,19 +172,6 @@ class HtmlRouter(Router):
         '''Add angular router information (lux.extensions.angular)
         '''
         page['templateUrl'] = '%s?template=ui' % router.full_route
-
-    def get_target(self, request, id=None):
-        '''Get a target for a form
-        '''
-        # TODO: this is not great
-        if self.api_type == 'luxrest' and self.api_name:
-            url = request.app.config.get('API_URL')
-            if not url:
-                return
-            target = {'url': url, 'name': self.api_name}
-            if id:
-                target['id'] = id
-            return target
 
 
 class HeadMeta(object):

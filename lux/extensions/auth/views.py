@@ -18,7 +18,7 @@ class Authorization(token.Authorization):
         q = odm.token.filter_by(user_id=user.id).limit(limit).offset(offset)
         return self.serialise(request, q.all())
 
-    def serialise_object(self, request, data, in_list=False):
+    def serialise_model(self, request, data, in_list=False):
         data = {'id': data.id,
                 'user_id': data.user_id,
                 'created': data.created.isoformat(),

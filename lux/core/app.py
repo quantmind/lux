@@ -222,7 +222,10 @@ class Application(ConsoleParser, Extension, EventMixin):
         Parameter('MD_EXTENSIONS', ['extra', 'meta', 'toc'],
                   'List/tuple of markdown extensions'),
         Parameter('GREEN_POOL', 0,
-                  'Run the WSGI handle in a pool of greenlet')
+                  'Run the WSGI handle in a pool of greenlet'),
+        Parameter('SECURE_PROXY_SSL_HEADER', None,
+                  'A tuple representing a HTTP header/value combination that '
+                  'signifies a request is secure.')
         ]
 
     def __init__(self, callable, handler=True):

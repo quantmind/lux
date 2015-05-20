@@ -71,7 +71,7 @@ class AuthMixin(PasswordMixin):
             if level <= READ:
                 return True
             else:
-                raise NotImplementedError
+                return False
 
     def create_user(self, request, username=None, password=None, email=None,
                     first_name=None, last_name=None, active=False,
@@ -111,7 +111,7 @@ class TokenBackend(AuthMixin, backends.TokenBackend):
         backends.TokenBackend.on_config(self, app)
 
     def api_sections(self, app):
-        yield Authorization(app.config['AUTHORIZATION_URL'])
+        yield Authorization()
 
     def create_token(self, request, user):
         '''Create the token

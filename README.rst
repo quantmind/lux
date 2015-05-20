@@ -21,7 +21,7 @@ Lux is a library for developing web applications with Python and javascript fram
   :target: https://coveralls.io/r/quantmind/lux?branch=master
 .. |coverage-dev| image:: https://img.shields.io/coveralls/quantmind/lux/dev.svg
   :target: https://coveralls.io/r/quantmind/lux?branch=dev
-  
+
 .. _requirements:
 
 Python Requirements
@@ -35,7 +35,7 @@ Python Requirements
 
 **Soft requirements**
 
-* sqlalchemy_ used by ``lux.extensions.odm``
+* sqlalchemy_ and sqlalchemy_utils_ used by ``lux.extensions.odm``
 * markdown_ used by ``lux.extensions.static``
 * sphinx_ used by ``lux.extensions.static``
 * pyjwt_ used by some authentication backends in ``lux.extensions.rest``
@@ -75,6 +75,7 @@ For testing postgreSQL create a new role::
 .. _pytz: http://pytz.sourceforge.net/
 .. _dateutil: https://pypi.python.org/pypi/python-dateutil
 .. _sqlalchemy: http://www.sqlalchemy.org/
+.. _sqlalchemy_utils: http://sqlalchemy-utils.readthedocs.org/
 .. _pyjwt: https://github.com/jpadilla/pyjwt
 .. _gruntjs: http://gruntjs.com/
 .. _nodejs: http://nodejs.org/

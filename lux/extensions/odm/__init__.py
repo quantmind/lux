@@ -23,6 +23,7 @@ from .exc import *
 from .mapper import Mapper, Model
 from .serialise import tojson
 from .views import CRUD
+from .models import RestModel
 
 
 class Extension(lux.Extension):

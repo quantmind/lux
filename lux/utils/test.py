@@ -101,6 +101,10 @@ class testClient:
         return self.request(path=path, content_type=content_type,
                             body=body, **extra)
 
+    def delete(self, path=None, **extra):
+        extra['REQUEST_METHOD'] = 'DELETE'
+        return self.request(path=path, **extra)
+
 
 class TestMixin:
     config_file = 'tests.config'
@@ -123,6 +127,13 @@ class TestMixin:
             name = name.attrs['content']
             value = value.attrs['content']
             return {name: value}
+
+    def json(self, response):
+        '''Get JSON object from response
+        '''
+        self.assertEqual(response.content_type,
+                         'application/json; charset=utf-8')
+        return json.loads(response.content[0].decode('utf-8'))
 
 
 class TestCase(unittest.TestCase, TestMixin):

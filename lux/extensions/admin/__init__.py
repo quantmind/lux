@@ -1,5 +1,5 @@
 '''
-Admin inteface.
+Extension for an Admin Web inteface.
 
 In order to use the Admin interface, the :setting:`ADMIN_URL`
 needs to be specified.
@@ -25,6 +25,6 @@ class Extension(lux.Extension):
         admin = app.config['ADMIN_URL']
         if admin:
             self.admin = admin = Admin(admin)
-            for name, AdminRouterCls in adminMap.items():
-                admin.add_child(AdminRouterCls(name))
+            for AdminRouterCls in adminMap.values():
+                admin.add_child(AdminRouterCls())
             return [admin]

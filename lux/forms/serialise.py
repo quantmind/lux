@@ -9,10 +9,7 @@ from lux import Html
 from lux.utils.crypt import get_random_string
 
 
-__all__ = ['AngularFieldset', 'AngularSubmit', 'AngularLayout',
-           'Fieldset', 'Submit', 'Layout', 'Row']
-
-FORMKEY = 'm__form'
+__all__ = ['Fieldset', 'Submit', 'Layout', 'Row']
 
 
 def angular_fields(form_class, fields, missings):
@@ -57,7 +54,7 @@ class AngularFormElement(object):
         pass
 
 
-class AngularSubmit(AngularFormElement):
+class Submit(AngularFormElement):
     type = 'button'
 
     def __init__(self, label, name=None, **attrs):
@@ -71,7 +68,7 @@ class AngularSubmit(AngularFormElement):
         return {'field': self.attrs}
 
 
-class AngularFieldset(AngularFormElement):
+class Fieldset(AngularFormElement):
     type = 'fieldset'
 
     def __init__(self, *children, **attrs):
@@ -97,43 +94,34 @@ class AngularFieldset(AngularFormElement):
             self.children.append(field)
 
 
-class Row(AngularFieldset):
+class Row(Fieldset):
     type = 'div'
 
 
-class AngularLayout(AngularFieldset):
+class Layout(Fieldset):
     type = 'form'
     form_class = None
-    default_element = AngularFieldset
+    default_element = Fieldset
 
-    def __init__(self, *children, **attrs):
-        from lux.forms.form import FormType
-        form = None
-        if children and isinstance(children[0], FormType):
-            form = children[0]
-            children = children[1:]
+    def __init__(self, form, *children, **attrs):
         super().__init__(*children, **attrs)
-        if form:
-            self.setup(form)
+        self.setup(form)
 
     def __call__(self, *args, **kwargs):
         form = self.form_class(*args, **kwargs)
         return AngularForm(self, form)
 
     def setup(self, instance_type):
-        if not self.form_class:
-            self.form_class = instance_type
-            missings = list(self.form_class.base_fields)
-            children = self.children
-            self.children = []
-            for field in angular_fields(self.form_class, children, missings):
-                self.children.append(field)
-            if missings:
-                field = self.default_element(*missings)
-                field.setup(self.form_class, missings)
-                self.children.append(field)
-        elif self.form_class is not instance_type:
-            raise RuntimeError('Form layout element for multiple forms')
+        self.form_class = instance_type
+        missings = list(self.form_class.base_fields)
+        children = self.children
+        self.children = []
+        for field in angular_fields(self.form_class, children, missings):
+            self.children.append(field)
+        if missings:
+            field = self.default_element(*missings)
+            field.setup(self.form_class, missings)
+            self.children.append(field)
 
 
 class AngularForm(object):
@@ -171,7 +159,3 @@ class AngularForm(object):
 
 form_script = ('<script>if (!this.luxforms) {this.luxforms = {};} '
                'this.luxforms.%s = %s;</script>')
-
-Layout = AngularLayout
-Fieldset = AngularFieldset
-Submit = AngularSubmit

@@ -10,24 +10,31 @@ adminMap = {}
 
 
 class register:
-    '''Register an admin router class for a model
+    '''Decorator to register an admin router class with
+    REST model.
+
+    :param model: a string or a :class:`~lux.extensions.rest.RestModel`
     '''
-    def __init__(self, name):
-        self.name = name
+    def __init__(self, model):
+        if not isinstance(model, rest.RestModel):
+            model = rest.RestModel(model)
+        self.model = model
 
     def __call__(self, cls):
         assert issubclass(cls, AdminModel)
         assert cls is not AdminModel
-        adminMap[self.name] = cls
+        cls.model = self.model
+        adminMap[self.model.name] = cls
 
 
 class AdminRouter(lux.HtmlRouter):
-    ''''''
+    '''Base class for all Admin Routers
+    '''
     def response_wrapper(self, callable, request):
         app = request.app
+        backend = request.cache.auth_backend
         permission = app.config['ADMIN_PERMISSIONS']
-        if permission:
-            backend = request.cache.auth_backend
+        if backend and permission:
             if backend.has_permission(request, permission, rest.READ):
                 return callable(request)
             else:
@@ -87,22 +94,20 @@ class Admin(AdminRouter):
         return self._sitemap
 
 
-class AdminModel(AdminRouter):
+class AdminModel(rest.RestMixin, AdminRouter):
+    '''Router for rendering an admin section relative to
+    a given rest model
+    '''
     section = None
     icon = None
-    addForm = None
-    '''Form for adding new models
+    '''An icon for this Admin section
     '''
-
-    def __init__(self, model, *args, **kwargs):
-        self.model = model
-        super().__init__('/%s' % self.model, *args, **kwargs)
-
     def info(self, app):
         '''Information for admin navigation
         '''
-        info = {'title': nicename(self.model),
-                'name': nicename(self.model),
+        name = nicename(self.model.name)
+        info = {'title': name,
+                'name': name,
                 'href': self.full_route.path,
                 'icon': self.icon}
         return self.section, info
@@ -114,27 +119,26 @@ class AdminModel(AdminRouter):
 class CRUDAdmin(AdminModel):
     '''An Admin model Router for adding and updating models
     '''
-    addform = None
-    updateform = None
+    form = None
+    editform = None
     addtemplate = 'partials/admin-add.html'
 
     @route()
     def add(self, request):
         '''Add a new model
         '''
-        form = self.addform
-        return self.get_form(request, form)
+        return self.get_form(request, self.form)
 
     @route('<id>')
     def update(self, request):
         '''Add a new model'''
-        form = self.updateform or self.addform
+        form = self.updateform or self.form
         return self.get_form(request, form, request.urlargs['id'])
 
     def get_form(self, request, form, id=None):
         if not form:
             raise Http404
-        target = self.get_target(request, id)
+        target = self.model.get_target(request, id)
         html = form().as_form(action=target)
         context = {'html_form': html.render()}
         html = request.app.render_template(self.addtemplate, context)

@@ -16,7 +16,7 @@ class Command(lux.Command):
     help = "Build the style-sheet file from installed applications"
     option_list = (
         Setting('theme', ('--theme',), default='',
-                desc='Theme to use. Default is lux.'),
+                desc='Theme to use. .'),
         Setting('variables', ('--variables',), action='store_true',
                 default=False,
                 desc=('Dump the theme variables as json'

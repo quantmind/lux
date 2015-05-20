@@ -1,30 +1,24 @@
-from pulsar import PermissionDenied
+from sqlalchemy.exc import DataError
+from sqlalchemy.orm.exc import NoResultFound
+
+from pulsar import PermissionDenied, Http404
 from pulsar.apps.wsgi import Json
 
 from lux import route
 from lux.extensions import rest
 
+from .serialise import tojson
+from .mapper import logger
+
 
 class CRUD(rest.RestRouter):
-    addform = None
-
-    def __init__(self, model, url=None, *args, **kwargs):
-        url = url or model
-        self.model = model
-        super().__init__(url, *args, **kwargs)
-
-    def collection(self, request, limit, offset, text):
-        odm = request.app.odm()
-        with odm.begin() as session:
-            query = session.query(odm[self.model])
-            data = query.limit(limit).offset(offset).all()
-            return self.serialise(request, data)
 
     def get(self, request):
         '''Get a list of models
         '''
         backend = request.cache.auth_backend
-        if backend.has_permission(request, self.model, rest.READ):
+        model = self.model
+        if backend.has_permission(request, model.name, rest.READ):
             limit = self.limit(request)
             offset = self.offset(request)
             text = self.query(request)
@@ -36,14 +30,21 @@ class CRUD(rest.RestRouter):
         '''Create a new model
         '''
         backend = request.cache.auth_backend
-        if backend.has_permission(request, self.model, rest.CREATE):
-            assert self.addform
+        model = self.model
+        if backend.has_permission(request, model.name, rest.CREATE):
+            assert model.form
             data, files = request.data_and_files()
-            form = self.addform(request, data=data, files=files)
+            form = model.form(request, data=data, files=files)
             if form.is_valid():
-                instance = self.create_model(request, form.cleaned_data)
-                data = self.serialise(request, instance)
-                request.response.status_code = 201
+                try:
+                    instance = self.create_model(request, form.cleaned_data)
+                except DataError as exc:
+                    logger.exception('Could not create model')
+                    form.add_error_message(str(exc))
+                    data = form.tojson()
+                else:
+                    data = self.serialise(request, instance)
+                    request.response.status_code = 201
             else:
                 data = form.tojson()
             return Json(data).http_response(request)
@@ -53,31 +54,27 @@ class CRUD(rest.RestRouter):
     def read(self, request):
         '''Read an instance
         '''
-        odm = request.app.odm()
-        instance = odm.get(request, request.urlargs['id'])
-        if not instance:
-            raise Http404
+        instance = self.get_model(request)
         url = request.absolute_uri()
-        data = self.manager.instance_data(request, instance, url=url)
+        data = self.serialise(request, instance)
         return Json(data).http_response(request)
 
     @route('<id>')
     def post_update(self, request):
-        manager = self.manager
-        instance = manager.get(request, request.urlargs['id'])
-        if not instance:
-            raise Http404
-        form_class = manager.form
+        model = self.model
+        instance = self.get_model(request)
+        form_class = model.editform or model.form
         if not form_class:
             raise MethodNotAllowed
-        auth = request.cache.auth_backend
-        if auth.has_permission(request, auth.UPDATE, instance):
+
+        backend = request.cache.auth_backend
+        if backend.has_permission(request, model.name, rest.UPDATE):
             data, files = request.data_and_files()
             form = form_class(request, data=data, files=files)
             if form.is_valid(exclude_missing=True):
-                instance = manager.update_model(request, instance,
-                                                form.cleaned_data)
-                data = self.manager.instance(instance)
+                instance = self.update_model(request, instance,
+                                             form.cleaned_data)
+                data = self.serialise(request, instance)
             else:
                 data = form.tojson()
             return Json(data).http_response(request)
@@ -85,22 +82,50 @@ class CRUD(rest.RestRouter):
 
     @route('delete/<id>', method='delete')
     def delete(self, request):
-        manager = self.manager
-        instance = manager.get(request, request.urlargs['id'])
-        auth = request.cache.auth_backend
-        if auth.has_permission(request, auth.DELETE, instance or self.model):
-            if instance:
-                manager.delete_model(request, instance)
-                request.response.status_code = 204
-                return request.response
-            else:
-                raise Http404
+        instance = self.get_model(request)
+        backend = request.cache.auth_backend
+        if backend.has_permission(request, self.model.name, rest.DELETE):
+            with request.app.odm().begin() as session:
+                session.delete(instance)
+            request.response.status_code = 204
+            return request.response
         raise PermissionDenied
+
+    # RestView implementation
+    def collection(self, request, limit, offset, text):
+        odm = request.app.odm()
+        model = odm[self.model.name]
+        with odm.begin() as session:
+            query = session.query(model)
+            data = query.limit(limit).offset(offset).all()
+            return self.serialise(request, data)
+
+    def get_model(self, request):
+        odm = request.app.odm()
+        model = odm[self.model.name]
+        with odm.begin() as session:
+            query = session.query(model)
+            try:
+                return query.filter_by(id=request.urlargs['id']).one()
+            except NoResultFound:
+                raise Http404
 
     def create_model(self, request, data):
         odm = request.app.odm()
-        model = odm[self.model]
+        model = odm[self.model.name]
         with odm.begin() as session:
             instance = model(**data)
             session.add(instance)
         return instance
+
+    def update_model(self, request, instance, data):
+        odm = request.app.odm()
+        model = odm[self.model.name]
+        with odm.begin() as session:
+            for key, value in data.items():
+                setattr(instance, key, value)
+            session.add(instance)
+        return instance
+
+    def serialise_model(self, request, data, in_list=False):
+        return tojson(data)

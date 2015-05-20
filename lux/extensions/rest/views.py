@@ -8,6 +8,7 @@ from pulsar.apps.wsgi import Json, Router
 from .forms import (LoginForm, CreateUserForm, ChangePasswordForm,
                     EmailForm, PasswordForm)
 from .user import AuthenticationError
+from .models import RestModel
 
 
 REST_CONTENT_TYPES = ['application/json']
@@ -31,28 +32,28 @@ def csrf(method):
 class RestRoot(lux.Router):
     '''Api Root'''
     response_content_types = REST_CONTENT_TYPES
-    managers = None
 
     def apis(self, request):
         routes = {}
         for route in self.routes:
-            routes['%s_url' % route.name] = request.absolute_uri(route.path())
+            routes[route.model.api_name] = request.absolute_uri(route.path())
         return routes
 
     def get(self, request):
         return Json(self.apis(request)).http_response(request)
 
-    def createManager(self, app, Manager, Model=None, Form=None):
-        '''Create a new model manager instance
-        '''
-        manager = Manager(Model, Form)
-        if not self.managers:
-            self.managers = {}
-        self.managers[Model] = manager
-        return manager
+
+class RestMixin:
+    model = None
+    '''Instance of a :class:`~lux.extensions.rest.RestModel`
+    '''
+    def __init__(self, *args, **kwargs):
+        if not isinstance(self.model, RestModel):
+            raise NotImplementedError('REST model not available')
+        super().__init__(self.model.url, *args, **kwargs)
 
 
-class RestRouter(lux.Router):
+class RestRouter(RestMixin, lux.Router):
     response_content_types = REST_CONTENT_TYPES
 
     def options(self, request):
@@ -90,11 +91,13 @@ class RestRouter(lux.Router):
 
     def serialise(self, request, data):
         if isinstance(data, list):
-            return [self.serialise_object(request, o, True) for o in data]
+            return [self.serialise_model(request, o, True) for o in data]
         else:
-            return self.serialise_object(request, data)
+            return self.serialise_model(request, data)
 
-    def serialise_object(self, request, data, in_list=False):
+    def serialise_model(self, request, data, in_list=False):
+        '''Serialise on model
+        '''
         raise NotImplementedError
 
     def json(self, request, data):
@@ -184,7 +187,11 @@ class SignUp(WebFormRouter):
 
 
 class ChangePassword(WebFormRouter):
-    default_form = ChangePasswordForm
+    default_form = Layout(ChangePasswordForm,
+                          Fieldset('old_password', 'password',
+                                   'password_repeat'),
+                          Submit('Update password'),
+                          showLabels=False)
 
     def post(self, request):
         '''Handle post data
@@ -199,7 +206,11 @@ class ChangePassword(WebFormRouter):
 class ForgotPassword(WebFormRouter):
     '''Adds login get ("text/html") and post handlers
     '''
-    default_form = EmailForm
+    default_form = Layout(EmailForm,
+                          Fieldset(all=True),
+                          Submit('Submit'),
+                          showLabels=False)
+
     template = 'forgot.html'
     reset_template = 'reset_password.html'
 

@@ -41,8 +41,10 @@
             "angular": "//ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular",
             "angular-animate": "//ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular-animate",
             "angular-mocks": "//ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular-mocks.js",
+            "angular-sanitize": "//ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular-sanitize",
             "angular-touch": "//cdnjs.cloudflare.com/ajax/libs/angular.js/1.3.15/angular-touch",
             "angular-strap": "//cdnjs.cloudflare.com/ajax/libs/angular-strap/2.2.1/angular-strap",
+            "angular-strap-tpl": "//cdnjs.cloudflare.com/ajax/libs/angular-strap/2.2.1/angular-strap.tpl",
             "angular-ui-router": "//cdnjs.cloudflare.com/ajax/libs/angular-ui-router/0.2.14/angular-ui-router",
             "angular-ui-grid": "http://ui-grid.info/release/ui-grid-unstable",
             "angular-pusher": "//cdn.jsdelivr.net/angular.pusher/latest/pusher-angular.min.js",
@@ -73,6 +75,9 @@
             angular: {
                 exports: "angular"
             },
+            "angular-strap-tpl": {
+                deps: ["angular", "angular-strap"]
+            },
             "google-analytics": {
                 exports: root.GoogleAnalyticsObject || "ga"
             },
@@ -97,6 +102,7 @@
             }
         };
     }
+
 
     function newPaths (cfg) {
         var all = {},
@@ -162,34 +168,6 @@
         cfg.shim = extend(defaultShim(), cfg.shim);
         cfg.paths = newPaths(cfg);
         require.config(cfg);
-    };
-
-    lux.require = function () {
-        if (arguments.length && isArray(arguments[0]) && minify()) {
-            var deps = arguments[0],
-                cfg = require.config();
-
-            deps.forEach(function (dep, i) {
-                if (dep.substring(dep.length-3) !== end)
-                    dep += min;
-                deps[i] = dep;
-            });
-        }
-        return require.apply(root, arguments);
-    };
-
-    lux.define = function () {
-        if (arguments.length && isArray(arguments[1]) && minify()) {
-            var deps = arguments[1],
-                cfg = require.config();
-
-            deps.forEach(function (dep, i) {
-                if (dep.substring(dep.length-3) !== end)
-                    dep += min;
-                deps[i] = dep;
-            });
-        }
-        return define.apply(root, arguments);
     };
 
 }(this));

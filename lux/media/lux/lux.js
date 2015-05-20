@@ -1,6 +1,6 @@
 //      Lux Library - v0.1.1
 
-//      Compiled 2015-05-06.
+//      Compiled 2015-05-17.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -887,7 +887,7 @@ function(angular, root) {
 
                     sock.onclose = function() {
                         delete websockets[url];
-                        log.warn('Connection with ' + websocket + ' CLOSED');
+                        log.warn('Connection with ' + url + ' CLOSED');
                     };
                 });
             };
@@ -1101,7 +1101,12 @@ function(angular, root) {
     };
 
     //
-    // Add this module if the API_URL in the root scope is a lux-rest API
+    //	Angular Module for JS clients of Lux Rest APIs
+    //	====================================================
+    //
+    //	If the ``API_URL`` is defined at root scope, register the
+    //	javascript client with the $lux service and add functions to the root
+    //	scope to retrieve the api client handler and user informations
     angular.module('lux.restapi', ['lux.services'])
 
         .run(['$rootScope', '$window', '$lux', function (scope, $window, $lux) {
@@ -1111,18 +1116,19 @@ function(angular, root) {
 
                 $lux.api(scope.API_URL, luxrest);
 
-                // Get the api client
+                //	Get the api client
                 scope.api = function () {
                     return $lux.api(scope.API_URL);
                 };
 
-                // Get a user
+                // 	Get the current user
                 scope.getUser = function () {
                     var api = scope.api();
                     if (api)
                         return api.user();
                 };
 
+                //	Logout the current user
                 scope.logout = function () {
                     var api = scope.api();
                     if (api && api.token()) {
@@ -1547,7 +1553,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                     scope.addMessages(data.messages);
                 } else if (api) {
                     // Created
-                    if (status === 201) {
+                    if (response.status === 201) {
                         scope.formMessages[FORMKEY] = [{message: 'Succesfully created'}];
                     } else {
                         scope.formMessages[FORMKEY] = [{message: 'Succesfully updated'}];
@@ -2895,9 +2901,40 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
 
     angular.module('lux.nav', ['templates-nav', 'lux.services', 'lux.bs'])
         //
-        .service('navService', ['$location', function ($location) {
+        .service('linkService', ['$location', function ($location) {
 
             this.initScope = function (scope, opts) {
+
+                scope.clickLink = function (e, link) {
+                    if (link.action) {
+                        var func = scope[link.action];
+                        if (func)
+                            func(e, link.href, link);
+                    }
+                };
+
+                // Check if a url is active
+                scope.activeLink = function (url) {
+                    var loc;
+                    if (url)
+                        url = typeof(url) === 'string' ? url : url.href || url.url;
+                    if (!url) return;
+                    if (isAbsolute.test(url))
+                        loc = $location.absUrl();
+                    else
+                        loc = $location.path();
+                    var rest = loc.substring(url.length),
+                        base = loc.substring(0, url.length),
+                        folder = url.substring(url.length-1) === '/';
+                    return base === url && (folder || (rest === '' || rest.substring(0, 1) === '/'));
+                };
+            };
+        }])
+
+        .service('navService', ['linkService', function (linkService) {
+
+            this.initScope = function (scope, opts) {
+
                 var navbar = extend({}, navBarDefaults, getOptions(opts));
                 if (!navbar.url)
                     navbar.url = '/';
@@ -2906,15 +2943,11 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
                 navbar.container = navbar.fluid ? 'container-fluid' : 'container';
 
                 this.maybeCollapse(navbar);
-                scope.activeLink = this.activeLink;
-                scope.clickLink = function (e, link) {
-                    if (link.click) {
-                        var func = scope[link.click];
-                        if (func)
-                            func(e, link.href, link);
-                    }
-                };
+
+                linkService.initScope(scope);
+
                 scope.navbar = navbar;
+
                 return navbar;
             };
 
@@ -2926,22 +2959,6 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
                 else
                     navbar.collapse = '';
                 return c !== navbar.collapse;
-            };
-
-            // Check if a url is active
-            this.activeLink = function (url) {
-                var loc;
-                if (url)
-                    url = typeof(url) === 'string' ? url : url.href || url.url;
-                if (!url) return;
-                if (isAbsolute.test(url))
-                    loc = $location.absUrl();
-                else
-                    loc = $location.path();
-                var rest = loc.substring(url.length),
-                    base = loc.substring(0, url.length),
-                    folder = url.substring(url.length-1) === '/';
-                return base === url && (folder || (rest === '' || rest.substring(0, 1) === '/'));
             };
         }])
         //

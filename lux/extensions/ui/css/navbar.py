@@ -16,14 +16,12 @@ def add_css(all):
     #
     # STYLING
     navbar = vars.navbar
-    navbar.default.background = '#f8f8f8'
     #
     # NAVBAR (TOP)
     navbar.height = px(50)
     #
     # SIDEBAR
     sidebar = vars.sidebar
-    sidebar.default.border = '#E7E7E7'
     sidebar.width = px(250)
     min_width_collapse = px(cfg['NAVBAR_COLLAPSE_WIDTH'])
 
