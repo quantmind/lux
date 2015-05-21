@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from importlib import import_module
 from functools import wraps
 
+from pulsar import ImproperlyConfigured
 from pulsar.utils.pep import to_bytes, to_string
 from pulsar.utils.importer import module_attribute
 from pulsar.utils.httpurl import is_absolute_uri
@@ -17,6 +18,7 @@ from lux.extensions.angular import add_ng_modules
 
 from .user import *
 from .models import RestModel
+from .pagination import Pagination, Github
 from .views import (RestRoot, RestRouter, RestMixin, change_password,
                     RequirePermission)
 
@@ -113,7 +115,7 @@ class Extension(AuthBackend):
                   'The query key for full text search'),
         Parameter('API_OFFSET_KEY', 'offset', ''),
         Parameter('API_LIMIT_KEY', 'limit', ''),
-        Parameter('API_LIMIT_DEFAULT', 30,
+        Parameter('API_LIMIT_DEFAULT', 25,
                   'Default number of items returned when no limit '
                   'API_LIMIT_KEY available in the url'),
         Parameter('API_LIMIT_AUTH', 100,
@@ -121,7 +123,9 @@ class Extension(AuthBackend):
                    'authenticated')),
         Parameter('API_LIMIT_NOAUTH', 30,
                   ('Maximum number of items returned when user is '
-                   'not authenticated'))]
+                   'not authenticated')),
+        Parameter('PAGINATION', 'lux.extensions.rest.Pagination',
+                  'Pagination class')]
 
     ngModules = ['lux.users']
 
@@ -154,6 +158,12 @@ class Extension(AuthBackend):
         url = app.config['API_URL']
         # If the api url is not absolute, add the api middleware
         if not is_absolute_uri(url):
+            dotted_path = app.config['PAGINATION']
+            pagination = module_attribute(dotted_path)
+            if not pagination:
+                raise ImproperlyConfigured('Could not loaf paginator "%s"',
+                                           dotted_path)
+            app.pagination = pagination()
 
             # Add the preflight event
             events = ('on_preflight',)

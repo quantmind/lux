@@ -26,8 +26,12 @@ class CRUD(rest.RestRouter):
             return Json(data).http_response(request)
         raise PermissionDenied
 
-    @route()
+    @route(method=('get', 'options'))
     def metadata(self, request):
+        if request.method == 'OPTIONS':
+            request.app.fire('on_preflight', request)
+            return request.response
+
         backend = request.cache.auth_backend
         model = self.model
         if backend.has_permission(request, model.name, rest.READ):
@@ -102,12 +106,16 @@ class CRUD(rest.RestRouter):
 
     # RestView implementation
     def collection(self, request, limit, offset, text):
-        odm = request.app.odm()
+        app = request.app
+        odm = app.odm()
         model = odm[self.model.name]
+
         with odm.begin() as session:
             query = session.query(model)
+            total = query.count()
             data = query.limit(limit).offset(offset).all()
-            return self.serialise(request, data)
+            data = self.serialise(request, data)
+            return app.pagination(request, data, total, limit, offset)
 
     def get_model(self, request):
         odm = request.app.odm()

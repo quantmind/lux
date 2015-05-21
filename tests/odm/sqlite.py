@@ -38,7 +38,9 @@ class TestSql(test.AppTestCase):
         response = request.response
         self.assertEqual(response.status_code, 200)
         data = self.json(response)
-        self.assertIsInstance(data, list)
+        self.assertIsInstance(data, dict)
+        result = data['result']
+        self.assertIsInstance(result, list)
 
     def test_metadata(self):
         request = self.client.get('/tasks/metadata')
