@@ -1,53 +1,107 @@
-    //
-    //  Module for interacting with API to fetch model data and display it
-    angular.module('lux.grid', ['ngTouch', 'ui.grid'])
-        //
-        .service('gridService', ['$lux', function ($lux, $http) {
 
-            String.prototype.capitalize = function() {
-                return this.charAt(0).toUpperCase() + this.slice(1);
-            };
+    angular.module('lux.grid', ['ngTouch', 'ui.grid', 'ui.grid.pagination', 'ui.grid.selection'])
 
-            this.buildColumnDefs = function(fields) {
-                var columns = [];
+        // Directive to build Angular-UI grid options using Lux REST API
+        .directive('restGrid', ['$lux', '$window', function ($lux, $window) {
 
-                angular.forEach(fields, function(_, key) {
-                    columns.push({
-                        field: key,
-                        displayName: key.split('_').join(' ').capitalize()
-                    });
+            var paginationSize = 10;
+
+            // Get grid data
+            function getData (scope, options) {
+
+                var api = $lux.api(options.target);
+
+                //console.log(options.target.name);
+
+                api.get({url: '/metadata'}).success(function(data) {
+                    console.log(data);
                 });
 
-                return columns;
-            };
+                api.get(options.target).success(function(data) {
+                    scope.gridOptions.totalItems = data.length;
+                });
 
-            this.getModelUrl = function() {
-                var loc = window.location,
-                    path = loc.pathname,
-                    modelname = path.split('/').pop(-1);
+                api.get(options.target, {limit:paginationSize}).success(function(data) {
+                    scope.gridOptions.data = data;
+                });
+            }
 
-                return modelname + '_url';
-            };
 
-        }])
-        //
-        .controller('RestGrid', ['$scope', '$lux', 'gridService', function (scope, $lux, gridService) {
 
-            var modelUrl = gridService.getModelUrl(),
-                client = scope.api(),
-                target = {
-                    url: scope.API_URL,
-                    name: modelUrl
+            // Get specified page
+            function getPage (scope, options, pageNumber) {
+
+                var api = $lux.api(options.target),
+                    params = {
+                        limit: paginationSize,
+                        offset: paginationSize*(pageNumber - 1)
+                    };
+
+                api.get(options.target, params).success(function(data) {
+                    scope.gridOptions.data = data;
+                });
+            }
+
+            // Pre-process grid options
+            function buildOptions (scope, options) {
+
+                scope.objectUrl = function(objectId) {
+                    return $window.location + '/' + objectId;
                 };
 
-            scope.gridOptions = {
-                data: [],
-                columnDefs: []
-            };
+                var api = $lux.api(options.target),
+                    columns = [];
 
-            client.get(target).success(function(data) {
-                scope.gridOptions.data = data;
-                scope.gridOptions.columnDefs = gridService.buildColumnDefs(data[0]);
-            });
+                angular.forEach(options.columns, function(col) {
+                    var column = {
+                        field: col.field,
+                        displayName: col.displayName,
+                        enableSorting: col.sortable,
+                        type: col.type,
+                    };
+
+                    if (col.field === 'id')
+                        column.cellTemplate = '<div class="ui-grid-cell-contents"><a ng-href="{{grid.appScope.objectUrl(COL_FIELD)}}">{{COL_FIELD}}</a></div>';
+
+                    columns.push(column);
+                });
+
+                return {
+                    paginationPageSizes: [paginationSize],
+                    paginationPageSize: paginationSize,
+                    useExternalPagination: true,
+                    columnDefs: columns,
+                    rowHeight: 30,
+                    onRegisterApi: function(gridApi) {
+                        scope.gridApi = gridApi;
+                        scope.gridApi.pagination.on.paginationChanged(scope, function(currentPage) {
+                            getPage(scope, options, currentPage);
+                        });
+                    }
+                };
+            }
+
+            return {
+                restrict: 'A',
+                link: {
+                    pre: function (scope, element, attrs) {
+                        var scripts= element[0].getElementsByTagName('script');
+
+                        forEach(scripts, function (js) {
+                            globalEval(js.innerHTML);
+                        });
+
+                        var opts = attrs;
+                        if (attrs.restGrid) opts = {options: attrs.restGrid};
+
+                        opts = getOptions(opts);
+
+                        if (opts)
+                            scope.gridOptions = buildOptions(scope, opts);
+
+                        getData(scope, opts);
+                    },
+                },
+            };
 
         }]);
