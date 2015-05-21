@@ -31,8 +31,8 @@ class CRUD(rest.RestRouter):
         backend = request.cache.auth_backend
         model = self.model
         if backend.has_permission(request, model.name, rest.READ):
-            columns = model.columns(request.app)
-            return Json(columns).http_response(request)
+            meta = self.meta(request)
+            return Json(meta).http_response(request)
         raise PermissionDenied
 
     def post(self, request):
@@ -138,3 +138,12 @@ class CRUD(rest.RestRouter):
 
     def serialise_model(self, request, data, in_list=False):
         return tojson(data)
+
+    def meta(self, request):
+        meta = super().meta(request)
+        odm = request.app.odm()
+        model = odm[self.model.name]
+        with odm.begin() as session:
+            query = session.query(model)
+            meta['total'] = query.count()
+        return meta

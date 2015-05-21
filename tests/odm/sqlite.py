@@ -45,7 +45,8 @@ class TestSql(test.AppTestCase):
         response = request.response
         self.assertEqual(response.status_code, 200)
         data = self.json(response)
-        self.assertIsInstance(data, list)
+        self.assertIsInstance(data, dict)
+        self.assertIsInstance(data['columns'], list)
 
     def test_create_task(self):
         self._create_task()

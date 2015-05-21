@@ -24,9 +24,7 @@
             //
             // Flag the form as submitted
             form.submitted = true;
-            if (form.$invalid) {
-                return;
-            }
+            if (form.$invalid) return;
 
             // Get the api information if target is an object
             //	target
