@@ -323,6 +323,7 @@ function(angular, root) {
             this.http = $http;
             this.q = $q;
             this.timeout = $timeout;
+            this.apiUrls = {};
             //  Create a client api
             //  -------------------------
             //
@@ -333,18 +334,18 @@ function(angular, root) {
             //  type: optional api type (default is ``lux``)
             this.api = function (url, api) {
                 if (arguments.length === 1) {
-                    var clone = false;
+                    var defaults;
                     if (isObject(url)) {
-                        clone = url;
+                        defaults = url;
                         url = url.url;
                     }
                     api = ApiTypes[url];
                     if (!api)
                         $lux.log.error('Api client for "' + url + '" is not available');
                     else
-                        return clone ? api.clone(clone) : api;
+                        return api(url, this).defaults(defaults);
                 } else if (arguments.length === 2) {
-                    ApiTypes[url] = api(url, this);
+                    ApiTypes[url] = api;
                     return this;
                 }
             };
@@ -371,12 +372,15 @@ function(angular, root) {
         return promise;
     }
 
-    var
-
-    ENCODE_URL_METHODS = ['delete', 'get', 'head', 'options'],
-
-    requestMixin = function (api, $lux) {
-        var defaults;
+    var ENCODE_URL_METHODS = ['delete', 'get', 'head', 'options'];
+    //
+    //  Lux API Interface for REST
+    //
+    var baseapi = function (url, $lux) {
+        //
+        //  Object containing the urls for the api.
+        var api = {},
+            defaults;
 
         //
         // Get/Set defaults options for requests
@@ -384,6 +388,26 @@ function(angular, root) {
             if (!arguments.length) return defaults;
             defaults = _;
             return api;
+        };
+
+        //
+        // API base url
+        api.baseUrl  = function () {
+            return url;
+        };
+
+        // calculate the url for an API call
+        api.httpOptions = function (request) {};
+
+        // This function can be used to add authentication
+        api.authentication = function (request) {};
+        //
+        api.get = function (opts, data) {
+            return api.request('get', opts, data);
+        };
+        //
+        api.post = function (opts, data) {
+            return api.request('post', opts, data);
         };
 
         //
@@ -429,7 +453,6 @@ function(angular, root) {
                 });
             //
             delete opts.name;
-            opts.method = opts.method.toLowerCase();
             if (opts.url === api.baseUrl())
                 delete opts.url;
             //
@@ -438,43 +461,6 @@ function(angular, root) {
             return request.on;
         };
 
-        return api;
-    };
-    //
-    //  Lux API Interface for REST
-    //
-    var baseapi = function (url, $lux) {
-        //
-        //  Object containing the urls for the api.
-        var api = requestMixin({}, $lux),
-            apiUrls;
-
-        //
-        api.clone = function (defaults) {
-            var clone = requestMixin(extend({}, api), $lux);
-            return clone.defaults(defaults);
-        };
-        //
-        // API base url
-        api.baseUrl  = function () {
-            return url;
-        };
-
-        // calculate the url for an API call
-        api.httpOptions = function (request) {
-            request.options.url = request.baseUrl;
-        };
-
-        // This function can be used to add authentication
-        api.authentication = function (request) {};
-        //
-        api.get = function (opts, data) {
-            return api.request('get', opts, data);
-        };
-        //
-        api.post = function (opts, data) {
-            return api.request('post', opts, data);
-        };
         //
         //  Execute an API call for a given request
         //  This method is hardly used directly,
@@ -484,6 +470,8 @@ function(angular, root) {
         api.call = function (request) {
             //
             if (!request.baseUrl && request.name) {
+                var apiUrls = $lux.apiUrls[url];
+
                 if (apiUrls) {
                     request.baseUrl = apiUrls[request.name];
                     //
@@ -496,7 +484,7 @@ function(angular, root) {
                     // Fetch the api urls
                     $lux.log.info('Fetching api info');
                     return $lux.http.get(api.baseUrl()).then(function (resp) {
-                        apiUrls = resp.data;
+                        $lux.apiUrls[url] = resp.data;
                         api.call(request);
                     }, request.error);
                     //
@@ -505,6 +493,15 @@ function(angular, root) {
 
             if (!request.baseUrl)
                 request.baseUrl = api.baseUrl();
+
+            var opts = request.options;
+
+            if (!opts.url) {
+                var href = request.baseUrl;
+                if (opts.path)
+                    href = request.baseUrl + opts.path;
+                opts.url = href;
+            }
 
             api.httpOptions(request);
 
@@ -952,7 +949,6 @@ function(angular, root) {
             if (!headers)
                 options.headers = headers = {};
             headers['Content-Type'] = 'application/json';
-            options.url = request.baseUrl;
         };
 
         // Set/Get the JWT token
@@ -1548,9 +1544,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
             //
             // Flag the form as submitted
             form.submitted = true;
-            if (form.$invalid) {
-                return;
-            }
+            if (form.$invalid) return;
 
             // Get the api information if target is an object
             //	target
@@ -2331,22 +2325,86 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
         });
 
 
-    angular.module('lux.grid', ['ngTouch', 'ui.grid'])
+    angular.module('lux.grid', ['ngTouch', 'ui.grid', 'ui.grid.pagination', 'ui.grid.selection'])
 
         // Directive to build Angular-UI grid options using Lux REST API
-        .directive('restGrid', ['$lux', function ($lux) {
+        .directive('restGrid', ['$lux', '$window', function ($lux, $window) {
 
-            // Pre-process grid options
-            function buildOptions (options) {
+            var paginationSize = 10;
 
-                var api = $lux.api(options.target),
-                    columns = options.columns;
+            // Get grid data
+            function getData (scope, options) {
 
-                return {
-                    columnDefs: []
-                };
+                var api = $lux.api(options.target);
+
+                //console.log(options.target.name);
+
+                api.get({path: '/metadata'}).success(function(data) {
+                    var columns = data.columns;
+
+                    paginationSize = data['default-limit'];
+
+                    api.get({}, {limit:paginationSize}).success(function(data) {
+                        scope.gridOptions.totalItems = data.total;
+                        scope.gridOptions.data = data.result;
+                    });
+                });
             }
 
+
+
+            // Get specified page
+            function getPage (scope, options, pageNumber) {
+
+                var api = $lux.api(options.target),
+                    params = {
+                        limit: paginationSize,
+                        offset: paginationSize*(pageNumber - 1)
+                    };
+
+                api.get(options.target, params).success(function(data) {
+                    scope.gridOptions.data = data;
+                });
+            }
+
+            // Pre-process grid options
+            function buildOptions (scope, options) {
+
+                scope.objectUrl = function(objectId) {
+                    return $window.location + '/' + objectId;
+                };
+
+                var api = $lux.api(options.target),
+                    columns = [];
+
+                angular.forEach(options.columns, function(col) {
+                    var column = {
+                        field: col.field,
+                        displayName: col.displayName,
+                        enableSorting: col.sortable,
+                        type: col.type,
+                    };
+
+                    if (col.field === 'id')
+                        column.cellTemplate = '<div class="ui-grid-cell-contents"><a ng-href="{{grid.appScope.objectUrl(COL_FIELD)}}">{{COL_FIELD}}</a></div>';
+
+                    columns.push(column);
+                });
+
+                return {
+                    paginationPageSizes: [paginationSize],
+                    paginationPageSize: paginationSize,
+                    useExternalPagination: true,
+                    columnDefs: columns,
+                    rowHeight: 30,
+                    onRegisterApi: function(gridApi) {
+                        scope.gridApi = gridApi;
+                        scope.gridApi.pagination.on.paginationChanged(scope, function(currentPage) {
+                            getPage(scope, options, currentPage);
+                        });
+                    }
+                };
+            }
 
             return {
                 restrict: 'A',
@@ -2364,9 +2422,11 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                         opts = getOptions(opts);
 
                         if (opts)
-                            scope.gridOptions = buildOptions(opts);
-                    }
-                }
+                            scope.gridOptions = buildOptions(scope, opts);
+
+                        getData(scope, opts);
+                    },
+                },
             };
 
         }]);

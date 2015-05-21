@@ -18,7 +18,6 @@
             if (!headers)
                 options.headers = headers = {};
             headers['Content-Type'] = 'application/json';
-            options.url = request.baseUrl;
         };
 
         // Set/Get the JWT token

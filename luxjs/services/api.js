@@ -14,6 +14,7 @@
             this.http = $http;
             this.q = $q;
             this.timeout = $timeout;
+            this.apiUrls = {};
             //  Create a client api
             //  -------------------------
             //
@@ -24,18 +25,18 @@
             //  type: optional api type (default is ``lux``)
             this.api = function (url, api) {
                 if (arguments.length === 1) {
-                    var clone = false;
+                    var defaults;
                     if (isObject(url)) {
-                        clone = url;
+                        defaults = url;
                         url = url.url;
                     }
                     api = ApiTypes[url];
                     if (!api)
                         $lux.log.error('Api client for "' + url + '" is not available');
                     else
-                        return clone ? api.clone(clone) : api;
+                        return api(url, this).defaults(defaults);
                 } else if (arguments.length === 2) {
-                    ApiTypes[url] = api(url, this);
+                    ApiTypes[url] = api;
                     return this;
                 }
             };
@@ -62,12 +63,15 @@
         return promise;
     }
 
-    var
-
-    ENCODE_URL_METHODS = ['delete', 'get', 'head', 'options'],
-
-    requestMixin = function (api, $lux) {
-        var defaults;
+    var ENCODE_URL_METHODS = ['delete', 'get', 'head', 'options'];
+    //
+    //  Lux API Interface for REST
+    //
+    var baseapi = function (url, $lux) {
+        //
+        //  Object containing the urls for the api.
+        var api = {},
+            defaults;
 
         //
         // Get/Set defaults options for requests
@@ -75,6 +79,26 @@
             if (!arguments.length) return defaults;
             defaults = _;
             return api;
+        };
+
+        //
+        // API base url
+        api.baseUrl  = function () {
+            return url;
+        };
+
+        // calculate the url for an API call
+        api.httpOptions = function (request) {};
+
+        // This function can be used to add authentication
+        api.authentication = function (request) {};
+        //
+        api.get = function (opts, data) {
+            return api.request('get', opts, data);
+        };
+        //
+        api.post = function (opts, data) {
+            return api.request('post', opts, data);
         };
 
         //
@@ -120,7 +144,6 @@
                 });
             //
             delete opts.name;
-            opts.method = opts.method.toLowerCase();
             if (opts.url === api.baseUrl())
                 delete opts.url;
             //
@@ -129,43 +152,6 @@
             return request.on;
         };
 
-        return api;
-    };
-    //
-    //  Lux API Interface for REST
-    //
-    var baseapi = function (url, $lux) {
-        //
-        //  Object containing the urls for the api.
-        var api = requestMixin({}, $lux),
-            apiUrls;
-
-        //
-        api.clone = function (defaults) {
-            var clone = requestMixin(extend({}, api), $lux);
-            return clone.defaults(defaults);
-        };
-        //
-        // API base url
-        api.baseUrl  = function () {
-            return url;
-        };
-
-        // calculate the url for an API call
-        api.httpOptions = function (request) {
-            request.options.url = request.baseUrl;
-        };
-
-        // This function can be used to add authentication
-        api.authentication = function (request) {};
-        //
-        api.get = function (opts, data) {
-            return api.request('get', opts, data);
-        };
-        //
-        api.post = function (opts, data) {
-            return api.request('post', opts, data);
-        };
         //
         //  Execute an API call for a given request
         //  This method is hardly used directly,
@@ -175,6 +161,8 @@
         api.call = function (request) {
             //
             if (!request.baseUrl && request.name) {
+                var apiUrls = $lux.apiUrls[url];
+
                 if (apiUrls) {
                     request.baseUrl = apiUrls[request.name];
                     //
@@ -187,7 +175,7 @@
                     // Fetch the api urls
                     $lux.log.info('Fetching api info');
                     return $lux.http.get(api.baseUrl()).then(function (resp) {
-                        apiUrls = resp.data;
+                        $lux.apiUrls[url] = resp.data;
                         api.call(request);
                     }, request.error);
                     //
@@ -196,6 +184,15 @@
 
             if (!request.baseUrl)
                 request.baseUrl = api.baseUrl();
+
+            var opts = request.options;
+
+            if (!opts.url) {
+                var href = request.baseUrl;
+                if (opts.path)
+                    href = request.baseUrl + opts.path;
+                opts.url = href;
+            }
 
             api.httpOptions(request);
 
