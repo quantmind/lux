@@ -30,7 +30,11 @@ def csrf(method):
 
 
 class RestRoot(lux.Router):
-    '''Api Root'''
+    '''Api Root
+
+    Provide a get method for displaying a dictionary of api names - api urls
+    key - value pairs
+    '''
     response_content_types = REST_CONTENT_TYPES
 
     def apis(self, request):

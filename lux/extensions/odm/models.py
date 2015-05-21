@@ -35,16 +35,20 @@ class RestModel(rest.RestModel):
 
 
 def column_info(name, col):
+    type, sortable = python_type(col.type)
     info = {'name': name,
             'field': col.name,
             'displayName': nicename(name),
-            'sortable': True,
-            'type': python_type(col.type)}
+            'sortable': sortable,
+            'type': type}
     return info
 
 
 def python_type(t):
-    return _types.get(t.python_type, 'string')
+    try:
+        return _types.get(t.python_type, 'string'), True
+    except NotImplementedError:
+        return t.__class__.__name__.lower(), False
 
 
 _types = {int: 'integer',

@@ -33,10 +33,9 @@ class EmailBackend(lux.EmailBackend):
         num_sent = 0
         try:
             connection = self._open()
-            if connection:
-                for message in messages:
-                    num_sent += self._send(connection, message)
-                self._close(connection)
+            for message in messages:
+                num_sent += self._send(connection, message)
+            self._close(connection)
         except ConnectionRefusedError:
             self.app.logger.error('Could not connect to mail server',
                                   extra={'mail': True})

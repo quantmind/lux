@@ -40,6 +40,13 @@ class TestSql(test.AppTestCase):
         data = self.json(response)
         self.assertIsInstance(data, list)
 
+    def test_metadata(self):
+        request = self.client.get('/tasks/metadata')
+        response = request.response
+        self.assertEqual(response.status_code, 200)
+        data = self.json(response)
+        self.assertIsInstance(data, list)
+
     def test_create_task(self):
         self._create_task()
 

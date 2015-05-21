@@ -26,6 +26,15 @@ class CRUD(rest.RestRouter):
             return Json(data).http_response(request)
         raise PermissionDenied
 
+    @route()
+    def metadata(self, request):
+        backend = request.cache.auth_backend
+        model = self.model
+        if backend.has_permission(request, model.name, rest.READ):
+            columns = model.columns(request.app)
+            return Json(columns).http_response(request)
+        raise PermissionDenied
+
     def post(self, request):
         '''Create a new model
         '''
