@@ -19,6 +19,11 @@ class EmailBackend(lux.EmailBackend):
         return msg
 
     def send_mails(self, messages):
+        '''Send emails in the event loop executor.
+
+        :param messages: list of messages to send
+        :return: a Future object
+        '''
         return asyncio.get_event_loop().run_in_executor(
             None, self._send_mails, messages)
 
@@ -32,7 +37,10 @@ class EmailBackend(lux.EmailBackend):
                 for message in messages:
                     num_sent += self._send(connection, message)
                 self._close(connection)
-        except Exception:
+        except ConnectionRefusedError:
+            self.app.logger.error('Could not connect to mail server',
+                                  extra={'mail': True})
+        except smtplib.SMTPException:
             self.app.logger.exception('Error while sending mail',
                                       extra={'mail': True})
         return num_sent
@@ -46,25 +54,20 @@ class EmailBackend(lux.EmailBackend):
         connection_class = smtplib.SMTP
         # If local_hostname is not specified, socket.getfqdn() gets used.
         # For performance, we use the cached FQDN for local_hostname.
-        connection_params = {'local_hostname': DNS_NAME.get_fqdn()}
+        connection = connection_class(
+            cfg['EMAIL_HOST'], cfg['EMAIL_PORT'],
+            local_hostname=DNS_NAME.get_fqdn())
 
-        try:
-            connection = connection_class(
-                cfg['EMAIL_HOST'], cfg['EMAIL_PORT'], **connection_params)
+        if cfg['EMAIL_USE_TLS']:
+            connection.ehlo()
+            connection.starttls(keyfile=cfg['EMAIL_TLS_KEYFILE'],
+                                certfile=cfg['EMAIL_TLS_CERTFILE'])
+            connection.ehlo()
 
-            if cfg['EMAIL_USE_TLS']:
-                connection.ehlo()
-                connection.starttls(keyfile=cfg['EMAIL_TLS_KEYFILE'],
-                                    certfile=cfg['EMAIL_TLS_CERTFILE'])
-                connection.ehlo()
-
-            if cfg['EMAIL_HOST_USER'] and cfg['EMAIL_HOST_PASSWORD']:
-                connection.login(cfg['EMAIL_HOST_USER'],
-                                 cfg['EMAIL_HOST_PASSWORD'])
-            return connection
-        except smtplib.SMTPException:
-            self.app.logger.exception('Error while connecting to SMTP server',
-                                      extra={'mail': True})
+        if cfg['EMAIL_HOST_USER'] and cfg['EMAIL_HOST_PASSWORD']:
+            connection.login(cfg['EMAIL_HOST_USER'],
+                             cfg['EMAIL_HOST_PASSWORD'])
+        return connection
 
     def _send(self, connection, email_message):
         """A helper method that does the actual sending."""

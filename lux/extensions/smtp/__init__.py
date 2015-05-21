@@ -11,7 +11,7 @@ class Extension(lux.Extension):
     _config = [
         # Override default email backend
         Parameter('EMAIL_BACKEND', 'lux.extensions.smtp.EmailBackend',
-                  'Default locale'),
+                  'Default email backend'),
         Parameter('EMAIL_HOST', '', 'SMTP email host'),
         Parameter('EMAIL_PORT', 465, 'SMTP email port'),
         Parameter('EMAIL_HOST_USER', '', 'SMTP email host user'),

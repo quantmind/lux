@@ -1,6 +1,7 @@
 from lux.utils import test
 from lux.extensions.admin import Admin
 
+
 class AdminTest(test.AppTestCase):
     config_file = 'tests.admin'
 

@@ -39,8 +39,6 @@ def test_app(test, config_file=None, argv=None, **params):
     '''
     kwargs = test.config_params.copy()
     kwargs.update(params)
-    if 'EMAIL_BACKEND' not in kwargs:
-        kwargs['EMAIL_BACKEND'] = 'lux.core.mail.LocalMemory'
     if 'SECRET_KEY' not in kwargs:
         kwargs['SECRET_KEY'] = generate_secret()
     config_file = config_file or test.config_file

@@ -39,6 +39,7 @@ Python Requirements
 * markdown_ used by ``lux.extensions.static``
 * sphinx_ used by ``lux.extensions.static``
 * pyjwt_ used by some authentication backends in ``lux.extensions.rest``
+* pbkdf2_ as an optional password encryption algorithm in ``lux.extensions.rest``
 
 Developing with lux.js
 ==========================
@@ -77,6 +78,7 @@ For testing postgreSQL create a new role::
 .. _sqlalchemy: http://www.sqlalchemy.org/
 .. _sqlalchemy_utils: http://sqlalchemy-utils.readthedocs.org/
 .. _pyjwt: https://github.com/jpadilla/pyjwt
+.. _pbkdf2: https://pypi.python.org/pypi/pbkdf2
 .. _gruntjs: http://gruntjs.com/
 .. _nodejs: http://nodejs.org/
 .. _grunt: http://gruntjs.com/
