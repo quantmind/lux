@@ -31,3 +31,26 @@ class TestMedia(test.TestCase):
             transition: opacity 0.3s linear, top 0.3s ease-out;
 }
 ''')
+
+    def test_transform(self):
+        all = Css()
+        css = all.css
+        css('.shift-right',
+            Transform(x=px(100)))
+        txt = all.render()
+        self.assertTrue('translateX(100px)' in txt)
+
+        all = Css()
+        css = all.css
+        css('.shift-up',
+            Transform(y=px(100)))
+        txt = all.render()
+        self.assertTrue('translateY(100px)' in txt)
+
+        all = Css()
+        css = all.css
+        css('.shift-up',
+            Transform(x=px(50), y=px(100), scale=2))
+        txt = all.render()
+        self.assertTrue('translate(50px,100px)' in txt)
+        self.assertTrue('scale(2)' in txt)

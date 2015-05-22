@@ -47,7 +47,7 @@ class TestMixins(test.TestCase):
 }
 ''')
 
-    def __test_clickable(self):
+    def test_clickable(self):
         all = Css()
         b = Clickable(default={'background': '#111'},
                       hover={'background': '#555'})
@@ -60,32 +60,16 @@ class TestMixins(test.TestCase):
         s = all.css('.blax', b)
         text = s.render()
         self.assertTrue('.blax {' in text)
-        self.assertTrue('.blax:hover {' in text)
-        self.assertTrue('.blax.hover {' in text)
-        self.assertFalse('.blax:active {' in text)
-        self.assertFalse('.blax.active {' in text)
+        self.assertTrue('.blax:hover' in text)
+        self.assertTrue('.blax.hover' in text)
+        self.assertFalse('.blax:active' in text)
+        self.assertFalse('.blax.active' in text)
         self.assertFalse('border' in text)
 
-    def __test_clearfix(self):
+    def test_clearfix(self):
         all = Css()
         s = all.css('.bla',
-                    Clearfix(),
-                    display='block')
+                    Clearfix())
         text = s.render()
-        self.assertTrue('*zoom: 1;' in text)
-        self.assertEqual(text, '''.bla {
-    display: block;
-    *zoom: 1;
-}
-
-.bla:before {
-    content: "";
-    display: table;
-}
-
-.bla:after {
-    content: "";
-    display: table;
-    clear: both;
-}
-''')
+        self.assertTrue('.bla:before {' in text)
+        self.assertTrue('.bla:after {' in text)
