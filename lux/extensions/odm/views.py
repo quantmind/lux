@@ -11,7 +11,63 @@ from .serialise import tojson
 from .mapper import logger
 
 
-class CRUD(rest.RestRouter):
+class RestRouter(rest.RestRouter):
+    '''A REST Router base on database models
+    '''
+    # RestView implementation
+    def collection(self, request, limit, offset, text):
+        app = request.app
+        odm = app.odm()
+        model = odm[self.model.name]
+
+        with odm.begin() as session:
+            query = session.query(model)
+            total = query.count()
+            data = query.limit(limit).offset(offset).all()
+            data = self.serialise(request, data)
+            return app.pagination(request, data, total, limit, offset)
+
+    def get_model(self, request):
+        odm = request.app.odm()
+        model = odm[self.model.name]
+        with odm.begin() as session:
+            query = session.query(model)
+            try:
+                return query.filter_by(id=request.urlargs['id']).one()
+            except NoResultFound:
+                raise Http404
+
+    def create_model(self, request, data):
+        odm = request.app.odm()
+        model = odm[self.model.name]
+        with odm.begin() as session:
+            instance = model(**data)
+            session.add(instance)
+        return instance
+
+    def update_model(self, request, instance, data):
+        odm = request.app.odm()
+        model = odm[self.model.name]
+        with odm.begin() as session:
+            for key, value in data.items():
+                setattr(instance, key, value)
+            session.add(instance)
+        return instance
+
+    def serialise_model(self, request, data, in_list=False):
+        return tojson(data)
+
+    def meta(self, request):
+        meta = super().meta(request)
+        odm = request.app.odm()
+        model = odm[self.model.name]
+        with odm.begin() as session:
+            query = session.query(model)
+            meta['total'] = query.count()
+        return meta
+
+
+class CRUD(RestRouter):
 
     def get(self, request):
         '''Get a list of models
@@ -103,55 +159,3 @@ class CRUD(rest.RestRouter):
             request.response.status_code = 204
             return request.response
         raise PermissionDenied
-
-    # RestView implementation
-    def collection(self, request, limit, offset, text):
-        app = request.app
-        odm = app.odm()
-        model = odm[self.model.name]
-
-        with odm.begin() as session:
-            query = session.query(model)
-            total = query.count()
-            data = query.limit(limit).offset(offset).all()
-            data = self.serialise(request, data)
-            return app.pagination(request, data, total, limit, offset)
-
-    def get_model(self, request):
-        odm = request.app.odm()
-        model = odm[self.model.name]
-        with odm.begin() as session:
-            query = session.query(model)
-            try:
-                return query.filter_by(id=request.urlargs['id']).one()
-            except NoResultFound:
-                raise Http404
-
-    def create_model(self, request, data):
-        odm = request.app.odm()
-        model = odm[self.model.name]
-        with odm.begin() as session:
-            instance = model(**data)
-            session.add(instance)
-        return instance
-
-    def update_model(self, request, instance, data):
-        odm = request.app.odm()
-        model = odm[self.model.name]
-        with odm.begin() as session:
-            for key, value in data.items():
-                setattr(instance, key, value)
-            session.add(instance)
-        return instance
-
-    def serialise_model(self, request, data, in_list=False):
-        return tojson(data)
-
-    def meta(self, request):
-        meta = super().meta(request)
-        odm = request.app.odm()
-        model = odm[self.model.name]
-        with odm.begin() as session:
-            query = session.query(model)
-            meta['total'] = query.count()
-        return meta
