@@ -48,6 +48,6 @@ Layout
 from .fields import *
 from .errors import *
 from .formsets import FormSet
-from .form import Form
+from .form import *
 from .serialise import *
 from .views import FormMixin, WebFormRouter

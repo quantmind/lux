@@ -258,7 +258,8 @@ class LuxSession(Session):
     def __init__(self, mapper, **options):
         #: The application that this session belongs to.
         self.mapper = mapper
-        # self.register()
+        if self.app.config['DATABASE_SESSION_SIGNALS']:
+            self.register()
         super().__init__(**options)
 
     @property
@@ -322,20 +323,6 @@ class LuxSession(Session):
         # d.clear()
 
 
-def model_label(attrs):
-    label = attrs.pop('__label__', None)
-    if not label and '__module__' in attrs:
-        bits = attrs['__module__'].split('.')
-        label = bits.pop()
-        if label == 'models':
-            label = bits.pop()
-    return label
-
-
-def model_name(name):
-    return _camelcase_re.sub(_join, name).lstrip('_')
-
-
 def module_iterator(application):
     '''Iterate over applications modules
     '''
@@ -359,10 +346,3 @@ def module_iterator(application):
     else:
         for app in application:
             yield from module_iterator(app)
-
-
-def _join(match):
-    word = match.group()
-    if len(word) > 1:
-        return ('_%s_%s' % (word[:-1], word[-1])).lower()
-    return '_' + word.lower()

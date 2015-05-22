@@ -17,6 +17,10 @@ class ManyToManyError(RuntimeError):
     pass
 
 
+class FormError(RuntimeError):
+    pass
+
+
 class FieldError(Exception):
     pass
 

@@ -105,13 +105,11 @@ class Field:
     wrong_value_message = standard_wrong_value_message
     attrs = None
 
-    def __init__(self, unique=False, required=None,
-                 index=False, default=None,
+    def __init__(self, name=None, required=None, default=None,
                  validation_error=None, help_text=None,
                  label=None, widget=None, attrs=None,
-                 attrname=None, wrong_value_message=None,
-                 **kwargs):
-        self.name = attrname
+                 wrong_value_message=None, **kwargs):
+        self.name = name
         self.default = default if default is not None else self.default
         self.required = required if required is not None else self.required
         self.validation_error = (validation_error or self.validation_error or
@@ -377,6 +375,7 @@ class EmailField(CharField):
 
 
 class HiddenField(CharField):
+    attrs = {'type': 'hidden'}
 
     def to_json(self, value):
         pass

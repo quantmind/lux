@@ -31,7 +31,9 @@ class Extension(lux.Extension):
     '''
     _config = [
         Parameter('DATASTORE', None,
-                  'Dictionary for mapping models to their back-ends database')
+                  'Dictionary for mapping models to their back-ends database'),
+        Parameter('DATABASE_SESSION_SIGNALS', True,
+                  'Register event handlers for database session')
     ]
 
     def on_config(self, app):

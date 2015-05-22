@@ -4,7 +4,7 @@ from itertools import zip_longest
 from pulsar.utils.string import to_string
 from pulsar.apps.wsgi import html_factory
 
-from .fields import CharField, ValidationError
+from .fields import HiddenField, ValidationError
 
 
 __all__ = ['FormSet']
@@ -15,32 +15,30 @@ HiddenInput = html_factory('input', type='hidden')
 
 class FormSet(object):
     '''A factory class for foreign keys model fields. Instances
-of this class are declared in the body of a :class:`Form`.
+    of this class are declared in the body of a :class:`Form`.
 
-:parameter form_class: A :class:`Form` class which generates forms.
-:parameter model: A model class which generate instances from form data.
-:parameter related_name: The field attribute name in ``model`` which
-    specifies the related model.
-:parameter clean: A function which takes the formset instance as parameter
-    and perform the last validation check on all forms.
+    :param form_class: A :class:`Form` class which generates forms.
+    :param model: A model class which generate instances from form data.
+    :param related_name: The field attribute name in ``model`` which
+        specifies the related model.
+    :param clean: A function which takes the formset instance as parameter
+        and perform the last validation check on all forms.
 
-    Default ``None``.
-:parameter instances_from_related: a callable for retrieving instances
-    from the related instance.
+        Default ``None``.
+    :param instances_from_related: a callable for retrieving instances
+        from the related instance.
 
-    Default ``None``.
+        Default ``None``.
+    :param initial_length: The initial number of forms. This is the number
+        of forms when no instance is available. By setting this number to ``0``
+        there won't be any forms when no related instance is available.
 
-:parameter initial_length: The initial number of forms. This is the number
-    of forms when no instance is available. By setting this number to ``0``
-    there won't be any forms when no related instance is available.
+        Default ``3``.
+    :param extra_length: When a related instance is available, this is the
+        number of extra form to add to the formset.
 
-    Default ``3``.
-
-:parameter extra_length: When a related instance is available, this is the
-    number of extra form to add to the formset.
-
-    Default ``3``.
-'''
+        Default ``3``.
+    '''
     creation_counter = 0
     NUMBER_OF_FORMS_CODE = 'NUMBER_OF_FORMS'
 
@@ -53,15 +51,13 @@ of this class are declared in the body of a :class:`Form`.
                  extra_length=3,
                  instances_from_related=None):
         self.form_class = form_class
-        self.model = model
-        self.mapper = orms.mapper(model)
         self.related_name = related_name
         self.clean = clean
         self.instances_from_related = instances_from_related
         base_fields = self.form_class.base_fields
         # Add the id field if not already available
         if 'id' not in base_fields:
-            base_fields['id'] = CharField(required=False, widget=HiddenInput())
+            base_fields['id'] = HiddenField(required=False)
         self.name = None
         self.creation_counter = FormSet.creation_counter
         self.initial_length = initial_length
