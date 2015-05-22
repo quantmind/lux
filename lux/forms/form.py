@@ -130,7 +130,6 @@ class Form(metaclass=FormType):
     :parameter files: dictionary type object containing files to upload.
     :parameter initial: set the :attr:`initial` attribute.
     :parameter prefix: set the :attr:`prefix` attribute.
-    :parameter manager: An optional manager for a database model.
     :parameter instance: An optional instance of a model class.
     :parameter request: Optional client request.
 
@@ -186,7 +185,7 @@ class Form(metaclass=FormType):
     .. _descriptor: http://users.rcn.com/python/download/Descriptor.htm
     '''
     def __init__(self, request=None, data=None, files=None, initial=None,
-                 prefix=None, manager=None, instance=None):
+                 prefix=None, instance=None):
         self.request = request
         self.is_bound = data is not None or files is not None
         self.rawdata = data if data is None else dict(data.items())
@@ -201,7 +200,6 @@ class Form(metaclass=FormType):
         self.instance = instance
         self.messages = {}
         self.changed = False
-        self.manager = manager
         self.form_sets = {}
         for name, fset in self.inlines.items():
             self.form_sets[name] = fset(self)
@@ -210,14 +208,6 @@ class Form(metaclass=FormType):
             self._fill_initial()
         if request:
             request.app.fire('on_form', self)
-
-    @property
-    def model(self):
-        return self.manager.model if self.manager is not None else None
-
-    @property
-    def _loop(self):
-        return getattr(self.request, '_loop', None)
 
     def is_valid(self, exclude_missing=False):
         '''Asynchronous check if this :class:`Form` is valid.

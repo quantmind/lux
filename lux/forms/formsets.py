@@ -4,7 +4,8 @@ from itertools import zip_longest
 from pulsar.utils.string import to_string
 from pulsar.apps.wsgi import html_factory
 
-from .fields import HiddenField, ValidationError
+from .fields import HiddenField
+from .errors import ValidationError, FormError
 
 
 __all__ = ['FormSet']
@@ -40,7 +41,7 @@ class FormSet(object):
         Default ``3``.
     '''
     creation_counter = 0
-    NUMBER_OF_FORMS_CODE = 'NUMBER_OF_FORMS'
+    NUMBER_OF_FORMS_CODE = 'num_forms'
 
     def __init__(self,
                  form_class,
@@ -87,48 +88,64 @@ class FormSet(object):
         self._unwind()
         return self._forms
 
+    def is_valid(self, exclude_missing=False):
+        self._unwind()
+        return bool(self._errors)
+
     def _unwind(self):
         if hasattr(self, '_forms'):
             return
         related_form = self.related_form
         if related_form is None:
-            raise ValueError('Related form not specified')
-        self.prefix = '{0}_{1}_'.format(related_form.prefix or '', self.name)
+            raise FormError('Related form not specified')
+        prefix = ''
+        if related_form.prefix:
+            prefix = '%s_' % related_form.prefix
+        prefix = '%s%s_' % (prefix, self.name)
+        self.prefix = prefix
         errors = self._errors = {}
         forms = self._forms = []
         is_bound = self.is_bound
-        nf = '{0}{1}'.format(self.prefix, self.NUMBER_OF_FORMS_CODE)
+        nf = '%s%s' % (self.prefix, self.NUMBER_OF_FORMS_CODE)
         instances = []
-        if is_bound:
-            if nf not in related_form.rawdata:
-                raise ValidationError(
-                    'Could not find number of "{0}" forms'.format(self.name))
-            num_forms = int(related_form.rawdata[nf])
+
+        try:
+
+            if is_bound:
+                if nf not in related_form.rawdata:
+                    raise ValidationError(
+                        'Could not find number of "%s" forms' % self.name)
+                num_forms = int(related_form.rawdata[nf])
+            else:
+                related = related_form.instance
+                num_forms = 0
+                if related is not None and related.id:
+                    if self.instances_from_related:
+                        instances = self.instances_from_related(related)
+                    else:
+                        instances = self.mapper.filter(
+                            **{self.related_name: related})
+                    instances = list(instances)
+                    num_forms = self.extra_length + len(instances)
+                num_forms = max(num_forms, self.initial_length)
+            self.num_forms = HiddenInput(name=nf, value=num_forms)
+
+            for idx, instance in zip_longest(range(num_forms), instances):
+                f = self.get_form(self.prefix, idx, instance)
+                if f is not None:
+                    forms.append(f)
+                    errors.update(f.errors)
+
+        except ValidationError as err:
+            self.related_form.add_error_message(err)
+            errors['form'] = err
+
         else:
-            related = related_form.instance
-            num_forms = 0
-            if related is not None and related.id:
-                if self.instances_from_related:
-                    instances = self.instances_from_related(related)
-                else:
-                    instances = self.mapper.filter(
-                        **{self.related_name: related})
-                instances = list(instances)
-                num_forms = self.extra_length + len(instances)
-            num_forms = max(num_forms, self.initial_length)
-        self.num_forms = HiddenInput(name=nf, value=num_forms)
-
-        for idx, instance in zip_longest(range(num_forms), instances):
-            f = self.get_form(self.prefix, idx, instance)
-            if f is not None:
-                forms.append(f)
-                errors.update(f.errors)
-
-        if is_bound and not errors and self.clean:
-            try:
-                self.clean(self)
-            except ValidationError as e:
-                self.form.add_error(to_string(e))
+            if is_bound and not errors and self.clean:
+                try:
+                    self.clean(self)
+                except ValidationError as err:
+                    self.form.add_error(err)
 
     def get_form(self, prefix, idx, instance=None):
         related_form = self.related_form
@@ -153,22 +170,3 @@ class FormSet(object):
             if not f.changed:
                 f._errors = {}
         return f
-
-    def clean(self):
-        '''Equivalent to the :meth:`Form.clean` method, it
-is the last step in the validation process for a set of related forms.
-This method can be overridden in the constructor.'''
-        pass
-
-    def submit(self):
-        related_form = self.related_form
-        for form in self.forms:
-            if form.changed:
-                form.cleaned_data[self.related_name] = related_form.instance
-                form.submit()
-
-    def set_save_as_new(self):
-        for form in self.forms:
-            if form.changed:
-                form.instance.id = None
-                form.cleaned_data.pop('id', None)

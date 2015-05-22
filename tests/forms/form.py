@@ -18,16 +18,12 @@ class FormTests(test.TestCase):
     def test_empty(self):
         form = SimpleForm()
         self.assertFalse(form.instance)
-        self.assertFalse(form.manager)
-        self.assertFalse(form.model)
         self.assertFalse(form.request)
         self.assertFalse(form.is_bound)
 
     def test_empty_bound(self):
         form = SimpleForm(data={})
         self.assertFalse(form.instance)
-        self.assertFalse(form.manager)
-        self.assertFalse(form.model)
         self.assertFalse(form.request)
         self.assertTrue(form.is_bound)
         self.assertFalse(form.is_valid())
