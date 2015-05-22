@@ -73,3 +73,10 @@ class TestMixins(test.TestCase):
         text = s.render()
         self.assertTrue('.bla:before {' in text)
         self.assertTrue('.bla:after {' in text)
+
+    def test_opacity(self):
+        all = Css()
+        s = all.css('.bla',
+                    Opacity(0.3))
+        text = s.render()
+        self.assertTrue('opacity' in text)
