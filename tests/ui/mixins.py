@@ -80,3 +80,45 @@ class TestMixins(test.TestCase):
                     Opacity(0.3))
         text = s.render()
         self.assertTrue('opacity' in text)
+
+    def test_inline_block(self):
+        all = Css()
+        s = all.css('.bla',
+                    InlineBlock())
+        text = s.render()
+        self.assertTrue('display' in text)
+        self.assertTrue('zoom' in text)
+        self.assertTrue('*display' in text)
+
+    def test_center_block(self):
+        all = Css()
+        s = all.css('.bla',
+                    CenterBlock())
+        text = s.render()
+        self.assertTrue('display' in text)
+        self.assertTrue('margin-left' in text)
+        self.assertTrue('margin-right' in text)
+
+    def test_text_overflow(self):
+        all = Css()
+        s = all.css('.bla',
+                    Textoverflow())
+        text = s.render()
+        self.assertTrue('overflow' in text)
+        self.assertTrue('text-overflow' in text)
+        self.assertTrue('white-space' in text)
+
+    def test_box_sizing(self):
+        all = Css()
+        s = all.css('.bla',
+                    BoxSizing('content-box'))
+        text = s.render()
+        self.assertTrue('box-sizing' in text)
+
+    def test_gradient(self):
+        all = Css()
+        s = all.css('.bla',
+                    Gradient('h', '#000', '#fff'))
+        text = s.render()
+        self.assertTrue('background-color' in text)
+        self.assertTrue('background-image' in text)

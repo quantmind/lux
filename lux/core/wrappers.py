@@ -47,17 +47,14 @@ class WsgiRequest(wsgi.WsgiRequest):
         '''Shortcut to app logger'''
         return self.cache.app.logger
 
+    @property
+    def cache_server(self):
+        return self.cache.app.cache_server
+
     @cached_property
     def html_document(self):
         '''The HTML document for this request.'''
         return self.app.html_document(self)
-
-    @cached_property
-    def cache_server(self):
-        cache = self.config['CACHE_SERVER']
-        if isinstance(cache, str):
-            raise NotImplementedError
-        return cache
 
     @property
     def scheme(self):

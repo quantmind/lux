@@ -18,6 +18,7 @@ from .extension import Extension, Parameter, EventHandler, EventMixin
 from .wrappers import wsgi_request, HeadMeta, error_handler
 from .engines import template_engine
 from .cms import CMS
+from .cache import create_store
 
 
 __all__ = ['App',
@@ -202,7 +203,7 @@ class Application(ConsoleParser, Extension, EventMixin):
                    'lux': 'https://github.com/quantmind/lux',
                    'pulsar': 'http://pythonhosted.org/pulsar'},
                   'Links used throughout the web site'),
-        Parameter('CACHE_SERVER', None,
+        Parameter('CACHE_SERVER', 'dummy://',
                   ('Cache server, can be a connection string to a valid '
                    'datastore which support the cache protocol or an object '
                    'supporting the cache protocol')),
@@ -269,6 +270,15 @@ class Application(ConsoleParser, Extension, EventMixin):
     def _loop(self):
         if self._worker:
             return self._worker._loop
+
+    @lazyproperty
+    def cache_server(self):
+        '''Return the Cache handler
+        '''
+        cache = self.config['CACHE_SERVER']
+        if isinstance(cache, str):
+            cache = create_store(cache).client()
+        return cache
 
     def get_handler(self):
         if self.handler is None:

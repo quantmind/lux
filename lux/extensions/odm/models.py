@@ -25,7 +25,7 @@ class RestModel(rest.RestModel):
                     if isinstance(data, datetime) and not data.tzinfo:
                         data = pytz.utc.localize(data)
                     data = data.isoformat()
-                else: # Test Json
+                else:   # Test Json
                     json.dumps(data)
             except TypeError:
                 continue
