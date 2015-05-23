@@ -15,7 +15,6 @@ from sqlalchemy.orm.session import Session
 
 from pulsar import ImproperlyConfigured
 from pulsar.apps.data import Store, create_store
-from pulsar.apps.greenio import wait
 
 
 _camelcase_re = re.compile(r'([A-Z]+)(?=[a-z0-9])')
@@ -170,6 +169,7 @@ class Mapper:
 
     def _database_create(self, engine, dbname):
         if isinstance(engine, Store):
+            from pulsar.apps.greenio import wait
             return wait(engine.database_create(dbname))
         elif engine.name != 'sqlite':
             conn = engine.connect()
