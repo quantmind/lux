@@ -21,7 +21,6 @@ from pulsar.utils.log import LocalMixin
 
 from .exc import *
 from .mapper import Mapper, Model
-from .serialise import tojson
 from .views import CRUD, RestRouter
 from .models import RestModel
 

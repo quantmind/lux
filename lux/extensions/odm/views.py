@@ -7,7 +7,6 @@ from pulsar.apps.wsgi import Json
 from lux import route
 from lux.extensions import rest
 
-from .serialise import tojson
 from .mapper import logger
 
 
@@ -53,9 +52,6 @@ class RestRouter(rest.RestRouter):
                 setattr(instance, key, value)
             session.add(instance)
         return instance
-
-    def serialise_model(self, request, data, in_list=False):
-        return tojson(data)
 
     def meta(self, request):
         meta = super().meta(request)

@@ -1,4 +1,7 @@
+import json
 from datetime import date, datetime
+
+import pytz
 
 from sqlalchemy_utils.functions import get_columns
 
@@ -10,6 +13,26 @@ from lux.extensions import rest
 class RestModel(rest.RestModel):
     '''A rest model based on SqlAlchemy ORM
     '''
+    def tojson(self, obj, exclude=None):
+        exclude = set(exclude or ())
+        columns = get_columns(obj)
+
+        fields = {}
+        for field in columns:
+            try:
+                data = obj.__getattribute__(field.name)
+                if isinstance(data, date):
+                    if isinstance(data, datetime) and not data.tzinfo:
+                        data = pytz.utc.localize(data)
+                    data = data.isoformat()
+                else: # Test Json
+                    json.dumps(data)
+            except TypeError:
+                continue
+            if data is not None:
+                fields[field.name] = data
+        # a json-encodable dict
+        return fields
 
     def _load_columns(self, app):
         '''List of column definitions
