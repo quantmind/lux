@@ -4,28 +4,22 @@
         // Directive to build Angular-UI grid options using Lux REST API
         .directive('restGrid', ['$lux', '$window', function ($lux, $window) {
 
-            var paginationSize = 10;
+            var paginationSize = 25;
 
-            // Get grid data
-            function getData (scope, options) {
+            // Get initial data
+            function getInitialData (scope, options) {
 
                 var api = $lux.api(options.target);
 
-                //console.log(options.target.name);
+                api.get({path: '/metadata'}).success(function(resp) {
+                    paginationSize = resp['default-limit'];
 
-                api.get({path: '/metadata'}).success(function(data) {
-                    var columns = data.columns;
-
-                    paginationSize = data['default-limit'];
-
-                    api.get({}, {limit:paginationSize}).success(function(data) {
-                        scope.gridOptions.totalItems = data.total;
-                        scope.gridOptions.data = data.result;
+                    api.get({}, {limit:paginationSize}).success(function(resp) {
+                        scope.gridOptions.totalItems = resp.total;
+                        scope.gridOptions.data = resp.result;
                     });
                 });
             }
-
-
 
             // Get specified page
             function getPage (scope, options, pageNumber) {
@@ -36,8 +30,9 @@
                         offset: paginationSize*(pageNumber - 1)
                     };
 
-                api.get(options.target, params).success(function(data) {
-                    scope.gridOptions.data = data;
+                api.get(options.target, params).success(function(resp) {
+                    scope.gridOptions.totalItems = resp.total;
+                    scope.gridOptions.data = resp.result;
                 });
             }
 
@@ -48,36 +43,55 @@
                     return $window.location + '/' + objectId;
                 };
 
-                var api = $lux.api(options.target),
-                    columns = [];
+                function getColumnType(type) {
+                    switch (type) {
+                        case 'integer':     return 'number';
+                        case 'datetime':    return 'date';
+                        default:            return type;
+                    }
+                }
 
-                angular.forEach(options.columns, function(col) {
-                    var column = {
-                        field: col.field,
-                        displayName: col.displayName,
-                        enableSorting: col.sortable,
-                        type: col.type,
+                var api = $lux.api(options.target),
+                    columns = [],
+                    gridOptions = {
+                        paginationPageSizes: [paginationSize],
+                        paginationPageSize: paginationSize,
+                        useExternalPagination: true,
+                        enableFiltering: true,
+                        columnDefs: [],
+                        rowHeight: 30,
+                        onRegisterApi: function(gridApi) {
+                            scope.gridApi = gridApi;
+                            scope.gridApi.pagination.on.paginationChanged(scope, function(currentPage) {
+                                getPage(scope, options, currentPage);
+                            });
+
+                            angular.forEach(options.columns, function(col) {
+                                var column = {
+                                    field: col.field,
+                                    displayName: col.displayName,
+                                    type: getColumnType(col.type),
+                                    enableSorting: col.sortable,
+                                    enableFiltering: col.filter,
+                                };
+
+                                if (column.field === 'id')
+                                    column.cellTemplate = '<div class="ui-grid-cell-contents"><a ng-href="{{grid.appScope.objectUrl(COL_FIELD)}}">{{COL_FIELD}}</a></div>';
+
+                                if (column.type === 'date') {
+                                    column.sortingAlgorithm = function(a, b) {
+                                        var dt1 = new Date(a.replace(/"/g, "")).getTime(),
+                                            dt2 = new Date(b.replace(/"/g, "")).getTime();
+                                        return dt1 === dt2 ? 0 : (dt1 < dt2 ? -1 : 1);
+                                    };
+                                }
+
+                                gridOptions.columnDefs.push(column);
+                            });
+                        }
                     };
 
-                    if (col.field === 'id')
-                        column.cellTemplate = '<div class="ui-grid-cell-contents"><a ng-href="{{grid.appScope.objectUrl(COL_FIELD)}}">{{COL_FIELD}}</a></div>';
-
-                    columns.push(column);
-                });
-
-                return {
-                    paginationPageSizes: [paginationSize],
-                    paginationPageSize: paginationSize,
-                    useExternalPagination: true,
-                    columnDefs: columns,
-                    rowHeight: 30,
-                    onRegisterApi: function(gridApi) {
-                        scope.gridApi = gridApi;
-                        scope.gridApi.pagination.on.paginationChanged(scope, function(currentPage) {
-                            getPage(scope, options, currentPage);
-                        });
-                    }
-                };
+                return gridOptions;
             }
 
             return {
@@ -98,7 +112,7 @@
                         if (opts)
                             scope.gridOptions = buildOptions(scope, opts);
 
-                        getData(scope, opts);
+                        getInitialData(scope, opts);
                     },
                 },
             };

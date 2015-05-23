@@ -1,6 +1,6 @@
-//      Lux Library - v0.1.1
+//      Lux Library - v0.2.0
 
-//      Compiled 2015-05-21.
+//      Compiled 2015-05-23.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
