@@ -1,1 +1,1 @@
-from .backends import TokenBackend
+from .backends import TokenBackend, SessionBackend

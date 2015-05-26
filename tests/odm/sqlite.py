@@ -2,6 +2,8 @@ import json
 
 from pulsar.apps.test import test_timeout
 
+from dateutil.parser import parse
+
 from lux.utils import test
 
 
@@ -81,6 +83,33 @@ class TestSql(test.AppTestCase):
         request = self.client.get('/tasks/%d' % task['id'])
         response = request.response
         self.assertEqual(response.status_code, 404)
+
+    def test_get_sortby(self):
+        self._create_task('We want to sort 1')
+        self._create_task('We want to sort 2')
+        request = self.client.get('/tasks?sortby=created')
+        response = request.response
+        self.assertEqual(response.status_code, 200)
+        data = self.json(response)
+        self.assertIsInstance(data, dict)
+        result = data['result']
+        self.assertIsInstance(result, list)
+        for task1, task2 in zip(result, result[1:]):
+            dt1 = parse(task1['created'])
+            dt2 = parse(task2['created'])
+            self.assertTrue(dt2 > dt1)
+        #
+        request = self.client.get('/tasks?sortby=created:desc')
+        response = request.response
+        self.assertEqual(response.status_code, 200)
+        data = self.json(response)
+        self.assertIsInstance(data, dict)
+        result = data['result']
+        self.assertIsInstance(result, list)
+        for task1, task2 in zip(result, result[1:]):
+            dt1 = parse(task1['created'])
+            dt2 = parse(task2['created'])
+            self.assertTrue(dt2 < dt1)
 
     def _create_task(self, txt='This is a task'):
         data = {'subject': txt}

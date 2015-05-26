@@ -1,5 +1,6 @@
 from sqlalchemy.exc import DataError
 from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy import desc
 
 from pulsar import PermissionDenied, Http404
 from pulsar.apps.wsgi import Json
@@ -8,6 +9,9 @@ from lux import route
 from lux.extensions import rest
 
 from .mapper import logger
+
+
+DIRECTIONS = ('asc', 'desc')
 
 
 class RestRouter(rest.RestRouter):
@@ -21,7 +25,9 @@ class RestRouter(rest.RestRouter):
 
         with odm.begin() as session:
             query = session.query(model)
+            query = self.filter(request, query, text)
             total = query.count()
+            query = self.sortby(request, query)
             data = query.limit(limit).offset(offset).all()
             data = self.serialise(request, data)
             return app.pagination(request, data, total, limit, offset)
@@ -61,6 +67,25 @@ class RestRouter(rest.RestRouter):
             query = session.query(model)
             meta['total'] = query.count()
         return meta
+
+    def filter(self, request, query, text):
+        return query
+
+    def sortby(self, request, query):
+        sortby = request.url_data.get('sortby')
+        if sortby:
+            if not isinstance(sortby, list):
+                sortby = (sortby,)
+            for entry in sortby:
+                direction = None
+                if ':' in entry:
+                    entry, direction = entry.split(':')
+                if direction not in DIRECTIONS:
+                    direction = DIRECTIONS[0]
+                if direction == 'desc':
+                    entry = desc(entry)
+                query = query.order_by(entry)
+        return query
 
 
 class CRUD(RestRouter):
