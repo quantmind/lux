@@ -80,11 +80,12 @@
 
                                 if (column.type === 'date') {
                                     column.sortingAlgorithm = function(a, b) {
-                                        var dt1 = new Date(a.replace(/"/g, "")).getTime(),
-                                            dt2 = new Date(b.replace(/"/g, "")).getTime();
+                                        var dt1 = new Date(a).getTime(),
+                                            dt2 = new Date(b).getTime();
                                         return dt1 === dt2 ? 0 : (dt1 < dt2 ? -1 : 1);
                                     };
-                                }
+                                } else if (column.type === 'boolean')
+                                    column.cellTemplate = '<div class="ui-grid-cell-contents"><i ng-class="{{COL_FIELD == true}} ? \'fa fa-check-circle text-success\' : \'fa fa-times-circle text-danger\'"></i></div>';
 
                                 gridOptions.columnDefs.push(column);
                             });
