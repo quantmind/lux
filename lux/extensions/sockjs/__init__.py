@@ -23,7 +23,8 @@ class Extension(lux.Extension):
     ]
 
     def on_config(self, app):
-        app.add_events(('on_websocket_open', 'on_websocket_message',
+        app.add_events(('on_websocket_open',
+                        'on_websocket_message',
                         'on_websocket_close'))
 
     def middleware(self, app):
@@ -34,6 +35,10 @@ class Extension(lux.Extension):
         return [socketio]
 
     def on_loaded(self, app):
+        '''Once the application has loaded, create the pub/sub
+        handler used to publish messages to channels as
+        well as subscribe to channels
+        '''
         pubsub_store = app.config['PUBSUB_STORE']
         if pubsub_store:
             self.pubsub_store = create_store(pubsub_store)
@@ -68,6 +73,10 @@ class WsApi:
             ws.error_message(exc)
 
     def _ws_methods(self, app):
+        '''Search for web-socket rpc-handlers in all registered extensions.
+
+        A websocket handler is a method prefixed by ``ws_``.
+        '''
         for ext in app.extensions:
             for name in dir(ext):
                 if name.startswith('ws_'):
