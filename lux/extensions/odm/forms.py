@@ -24,4 +24,3 @@ class RelationshipField(MultipleMixin, forms.Field):
                 raise forms.ValidationError(
                     self.validation_error.format(self.model))
             return instance.id
-
