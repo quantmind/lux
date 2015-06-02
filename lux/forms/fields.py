@@ -186,8 +186,9 @@ class Field:
     def html_name(self, prefix=None):
         return '%s%s' % (prefix, self.name) if prefix else self.name
 
-    def getattrs(self):
-        '''Dictionary of attributes for the Html; element.'''
+    def getattrs(self, form=None):
+        '''Dictionary of attributes for the Html element.
+        '''
         return self.attrs.copy()
 
 
@@ -335,19 +336,13 @@ class ChoiceField(Field, MultipleMixin):
     '''A :class:`Field` which validates against a set of ``options``.
 
     It has several additional attributes which can be specified
-    via the :class:`ChoiceFieldOptions` class.
-
-    .. attribute:: options
-
-        An instance of :class:`ChoiceFieldOptions` or any of the
-        possible values for the :attr:`ChoiceFieldOptions.query`
-        attribute.
+    via the :class:`Options` class.
     '''
     attrs = {'type': 'select'}
 
-    def getattrs(self):
-        attrs = super().getattrs()
-        attrs['options'] = self.options.all()
+    def getattrs(self, form=None):
+        attrs = super().getattrs(form)
+        attrs['options'] = self.options.all(form)
         return attrs
 
     def value_from_instance(self, instance):

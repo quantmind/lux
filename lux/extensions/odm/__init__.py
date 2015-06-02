@@ -23,6 +23,7 @@ from .exc import *
 from .mapper import Mapper, Model
 from .views import CRUD, RestRouter
 from .models import RestModel
+from .forms import RelationshipField
 
 
 class Extension(lux.Extension):

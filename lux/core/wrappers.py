@@ -168,7 +168,7 @@ class HtmlRouter(Router):
     def angular_page(self, app, router, page):
         '''Add angular router information (lux.extensions.angular)
         '''
-        page['templateUrl'] = '%s?template=ui' % router.full_route
+        page['templateUrl'] = '%s?template=ui' % page['url']
 
 
 class HeadMeta(object):

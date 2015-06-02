@@ -17,7 +17,7 @@ class FieldTests(test.TestCase):
         attrs = field.getattrs()
         self.assertEqual(attrs['options'], ('bla', 'foo'))
 
-    def test_ChoiceFieldOptions(self):
+    def test_ChoiceField_Options(self):
         opts = [{'value': 'a', 'repr': 'foo'},
                 {'value': 'b', 'repr': 'hello'}]
         field = forms.ChoiceField(options=opts)
@@ -29,3 +29,12 @@ class FieldTests(test.TestCase):
         field = forms.ChoiceField(options=opts)
         self.assertEqual(field.options.all(), opts)
         self.assertEqual(field.options.get_initial(), 'uno')
+
+    def test_options_call(self):
+        result = ((1, 'uno'), (2, 'due'), (3, 'tre'))
+        def opts(form):
+            self.assertEqual(form, None)
+            return result
+
+        field = forms.ChoiceField(options=opts)
+        self.assertEqual(field.options.all(), result)
