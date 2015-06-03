@@ -16,8 +16,7 @@ class. For example, this is a form for submitting an issue::
 
     class IssueForm(forms.Form):
         name = forms.CharField()
-        description = forms.CharField(required=False,
-                                      widget=html_factory('textarea'))
+        description = forms.TextField(required=False)
         labels = forms.CharField(required=False)
 
         layout = forms.Layout(style='horizontal')

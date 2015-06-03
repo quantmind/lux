@@ -27,8 +27,11 @@ class TestSql(test.AppTestCase):
         self.assertFalse(data['done'])
         return data
 
-    def _create_person(self, name):
-        request = self.client.post('/people', body={'name': name},
+    def _create_person(self, username, name=None):
+        name = name or username
+        request = self.client.post('/people',
+                                   body={'username': username,
+                                         'name': name},
                                    content_type='application/json')
         response = request.response
         self.assertEqual(response.status_code, 201)
@@ -164,3 +167,15 @@ class TestSql(test.AppTestCase):
         error = data['messages']['assigned'][0]
         self.assertEqual(error['message'], 'Invalid person')
 
+    def test_unique_field(self):
+        person = self._create_person('spiderman1', 'luca')
+        data = dict(username='spiderman1', name='john')
+        request = self.client.post('/people', body=data,
+                                   content_type='application/json')
+        response = request.response
+        self.assertEqual(response.status_code, 200)
+        data = self.json(response)
+        self.assertFalse(data['success'])
+        self.assertTrue(data['error'])
+        error = data['messages']['username'][0]
+        self.assertEqual(error['message'], 'spiderman1 not available')

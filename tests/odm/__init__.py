@@ -26,6 +26,8 @@ class TaskForm(forms.Form):
 
 
 class PersonForm(forms.Form):
+    model = 'person'
+    username = forms.CharField(validator=odm.UniqueField())
     name = forms.CharField(required=True)
 
 
@@ -39,6 +41,7 @@ class CRUDPerson(odm.CRUD):
 
 class Person(odm.Model):
     id = Column(Integer, primary_key=True)
+    username = Column(String(250), unique=True)
     name = Column(String(250))
 
 
