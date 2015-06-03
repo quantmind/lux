@@ -88,6 +88,7 @@ class Extension(lux.Extension):
     _global_context = None
 
     def middleware(self, app):
+        app.thread_pool = False
         app.require('lux.extensions.angular')
         html5 = app.config['HTML5_NAVIGATION']
         path = app.config['MEDIA_URL']

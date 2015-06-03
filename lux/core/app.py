@@ -9,7 +9,8 @@ import pulsar
 from pulsar import ImproperlyConfigured
 from pulsar.utils.httpurl import remove_double_slash
 from pulsar.apps.wsgi import (WsgiHandler, HtmlDocument, test_wsgi_environ,
-                              LazyWsgi, wait_for_body_middleware)
+                              LazyWsgi, wait_for_body_middleware,
+                              middleware_in_executor)
 from pulsar.utils.log import lazyproperty
 from pulsar.utils.importer import module_attribute
 
@@ -146,6 +147,7 @@ class Application(ConsoleParser, Extension, EventMixin):
     admin = None
     handler = None
     auth_backend = None
+    thread_pool = True
     _worker = None
     _WsgiHandler = WsgiHandler
     _config = [
@@ -286,10 +288,15 @@ class Application(ConsoleParser, Extension, EventMixin):
             self.cms = CMS(self)
             self.handler = self._build_handler()
             self.fire('on_loaded')
+            wsgi = None
             if self.green_pool:
-                green = WsgiGreen(self.handler, self.green_pool)
                 self.logger.info('Setup green Wsgi handler')
-                self.handler = WsgiHandler((wait_for_body_middleware, green),
+                wsgi = WsgiGreen(self.handler, self.green_pool)
+            elif self.thread_pool:
+                wsgi = middleware_in_executor(self.handler)
+
+            if wsgi:
+                self.handler = WsgiHandler((wait_for_body_middleware, wsgi),
                                            async=True)
         return self.handler
 

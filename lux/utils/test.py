@@ -81,7 +81,7 @@ class testClient:
 
     def request(self, **params):
         request, sr = self.request_start_response(**params)
-        response = self.app(request.environ, sr)
+        response = yield from self.app(request.environ, sr)
         return request
 
     def get(self, path=None, **extra):

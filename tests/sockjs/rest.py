@@ -13,20 +13,20 @@ class TestSockJSRestApp(test.AppTestCase):
         self.assertIsInstance(handler, LuxWs)
 
     def test_get(self):
-        request = self.client.get('/testws')
+        request = yield from self.client.get('/testws')
         response = request.response
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.content_type,
                          'text/plain; charset=utf-8')
 
     def test_info(self):
-        request = self.client.get('/testws/info')
+        request = yield from self.client.get('/testws/info')
         response = request.response
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.content_type,
                          'application/json; charset=utf-8')
 
     def test_websocket(self):
-        request = self.client.get('/testws/websocket')
+        request = yield from self.client.get('/testws/websocket')
         response = request.response
         self.assertEqual(response.status_code, 400)
