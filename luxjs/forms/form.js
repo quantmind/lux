@@ -106,8 +106,14 @@
 
                     scope.info = info;
 
-                    if (info)
-                        renderer = this[info.element];
+                    if (info) {
+                        if (info.hasOwnProperty('type'))
+                            renderer = this[info.type];
+
+                        if (!renderer) {
+                            renderer = this[info.element];
+                        }
+                    }
 
                     if (!renderer)
                         renderer = this.renderNotSupported;
@@ -202,17 +208,23 @@
 
                     var field = scope.field,
                         info = scope.info,
-                        input = angular.element($document[0].createElement(info.element)).addClass(this.inputClass),
-                        label = angular.element($document[0].createElement('label')),
+                        input = angular.element($document[0].createElement(info.element)),
+                        label = angular.element($document[0].createElement('label')).attr('for', field.id),
+                        span = angular.element($document[0].createElement('span'))
+                                    .css('margin-left', '5px')
+                                    .css('position', 'relative')
+                                    .css('bottom', '2px')
+                                    .html(field.label),
                         element = angular.element($document[0].createElement('div')).addClass(this.element);
 
                     input.attr('ng-model', scope.formModelName + '.' + field.name);
 
-                    forEach(InputAttributes, function (name) {
+                    forEach(inputAttributes, function (name) {
                         if (field[name]) input.attr(name, field[name]);
                     });
 
-                    return this.onChange(scope, element.append(label.append(input)));
+                    label.append(input).append(span);
+                    return this.onChange(scope, element.append(label));
                 },
                 //
                 checkbox: function (scope) {
