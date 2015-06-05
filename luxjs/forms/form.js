@@ -361,8 +361,7 @@
                         p = $($document[0].createElement('p'))
                                 .attr('ng-show', '(' + submitted + ' || ' + dirty + ') && ' + invalid)
                                 .addClass('text-danger error-block')
-                                .addClass(scope.formErrorClass)
-                                .html('{{formErrors.' + field.name + '}}'),
+                                .addClass(scope.formErrorClass),
                         value,
                         attrname;
                     // Loop through validation attributes
@@ -379,13 +378,22 @@
                     });
 
                     // Add the invalid handler if not available
-                    var errors = p.children().length;
+                    /*var errors = p.children().length;
                     if (errors === (field.required ? 1 : 0)) {
                         var name = '$invalid';
                         if (errors)
                             name += ' && !' + [scope.formName, field.name, '$error.required'].join('.');
                         p.append(this.fieldErrorElement(scope, name, self.errorMessage(scope, 'invalid')));
-                    }
+                    }*/
+
+                    // Add the invalid handler for server side errors
+                    var name = '$invalid';
+                        name += ' && !' + [scope.formName, field.name, '$error.required'].join('.');
+                        p.append(
+                            this.fieldErrorElement(scope, name, self.errorMessage(scope, 'invalid'))
+                            .html('{{formErrors.' + field.name + '}}')
+                        );
+
                     return element.append(p);
                 },
                 //
@@ -443,7 +451,7 @@
                 //
                 // Return the function to handle form processing
                 processForm: function (scope) {
-                	return scope.processForm || lux.processForm();
+                    return scope.processForm || lux.processForm();
                 },
                 //
                 _select: function (tag, element) {
@@ -573,6 +581,16 @@
                     scope.addMessages = function (messages) {
                         forEach(messages, function (messages, field) {
                             scope.formMessages[field] = messages;
+
+                            var msg = '';
+                            forEach(messages, function(error) {
+                                msg += error.message;
+                                if (messages.length > 1)
+                                    msg += '</br>';
+                            });
+
+                            scope.formErrors[field] = msg;
+                            scope[scope.formName][field].$invalid = true;
                         });
                     };
 
@@ -621,7 +639,10 @@
             };
 
             this.processForm = function(scope) {
-                //
+                // Clear form errors and messages
+                scope.formMessages = [];
+                scope.formErrors = [];
+
                 if (scope.form.$invalid) {
                     return $scope.showErrors();
                 }
