@@ -33,6 +33,7 @@ class ValidationError(ValueError):
         Name of the :class:`Field` which this error refers to.
     '''
     msg = 'Invalid value'
+
     def __init__(self, msg=None, field_name=None):
         super().__init__(msg or self.msg)
         self.field_name = field_name
