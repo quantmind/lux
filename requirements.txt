@@ -1,4 +1,4 @@
 python-dateutil
 pytz
-pulsar
+-e git@github.com:quantmind/pulsar-odm.git
 -e .

@@ -5,10 +5,10 @@ from sqlalchemy import desc
 from pulsar import PermissionDenied, Http404
 from pulsar.apps.wsgi import Json
 
+import odm
+
 from lux import route
 from lux.extensions import rest
-
-from .mapper import logger
 
 
 DIRECTIONS = ('asc', 'desc')
@@ -129,7 +129,7 @@ class CRUD(RestRouter):
                 try:
                     instance = self.create_model(request, form.cleaned_data)
                 except DataError as exc:
-                    logger.exception('Could not create model')
+                    odm.logger.exception('Could not create model')
                     form.add_error_message(str(exc))
                     data = form.tojson()
                 else:

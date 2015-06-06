@@ -42,8 +42,7 @@ class TestSql(test.AppTestCase):
         return data
 
     def test_odm(self):
-        odm = self.app.odm()
-        tables = odm.tables()
+        tables = yield from self.app.odm.tables()
         self.assertTrue(tables)
 
     def test_rest_model(self):
@@ -60,6 +59,7 @@ class TestSql(test.AppTestCase):
         columns = model.columns(self.app)
         self.assertTrue(columns)
 
+    @test.green
     def test_simple_session(self):
         app = self.app
         odm = app.odm()

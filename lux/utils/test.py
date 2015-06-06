@@ -167,16 +167,6 @@ class TestCase(unittest.TestCase, TestMixin):
         self.assertEqual(cmd.name, command)
         return cmd
 
-    def database_drop(self):
-        if self.apps:
-            for app in self.apps:
-                if hasattr(app, 'mapper'):
-                    from lux.extensions.odm import database_drop
-                    yield from database_drop(app)
-
-    def tearDown(self):
-        return self.database_drop()
-
 
 class AppTestCase(unittest.TestCase, TestMixin):
     '''Test calss for testing applications
@@ -195,11 +185,9 @@ class AppTestCase(unittest.TestCase, TestMixin):
             return cls.setupdb()
 
     @classmethod
-    @green
     def tearDownClass(cls):
         if cls.odm:
-            cls.app.odm().close()
-            cls.odm().database_drop(database=cls.dbname)
+            return cls.dropdb()
 
     @classmethod
     def dbname(cls, engine):
@@ -210,10 +198,16 @@ class AppTestCase(unittest.TestCase, TestMixin):
     @classmethod
     @green
     def setupdb(cls):
-        logger.info('Create test databases')
         cls.app.odm = cls.odm.database_create(database=cls.dbname)
         logger.info('Create test tables')
         cls.app.odm().table_create()
+
+    @classmethod
+    @green
+    def dropdb(cls):
+        logger.info('Drop databases')
+        cls.app.odm().close()
+        cls.odm().database_drop(database=cls.dbname)
 
 
 class TestServer(unittest.TestCase, TestMixin):
