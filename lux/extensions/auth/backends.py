@@ -1,4 +1,8 @@
+import uuid
+
 from sqlalchemy.orm.exc import NoResultFound
+
+from pulsar.utils.structures import AttributeDictionary
 
 from lux.extensions.rest import (PasswordMixin, backends, normalise_email,
                                  AuthenticationError, READ)
@@ -121,33 +125,48 @@ class TokenBackend(AuthMixin, backends.TokenBackend):
         ip_adderss = request.get_client_address()
 
         with odm.begin() as session:
-            token = odm.token(user_id=user.id,
+            token = odm.token(id=uuid.uuid4(),
+                              user_id=user.id,
                               ip_adderss=ip_adderss,
                               user_agent=self.user_agent(request, 80))
             session.add(token)
 
-        payload['token_id'] = token.id
+        payload['token_id'] = token.id.hex
         payload['username'] = user.username
         return self.encode_payload(request, payload)
 
 
 class SessionBackend(AuthMixin, backends.SessionBackend):
     '''An authentication backend based on sessions stored in the
-    cache server and user in SqlAlchemy
+    cache server and user on the ODM
     '''
     def get_session(self, key):
-        return self.app.cache_server.hmget('session:%s' % key)
+        return self.app.cache_server.get(self._key(key))
 
     def session_key(self, session):
         '''Session key from session object
         '''
         return session['id']
 
-    def session_save(self, session):
-        key = 'session:%s' % session['id']
-        self.app.cache_server.hmset(key, session)
+    def session_save(self, request, session):
+        session = session.copy()
+        session.pop(user)
+        request.app.cache_server.set(self._key(session['id']), session)
 
-    def session_create(self, request, user=None, expiry=None):
+    def session_create(self, request, id=None, user=None, expiry=None):
         '''Create a new session
         '''
-        raise NotImplementedError
+        if not id:
+            id = uuid.uuid4().hex
+        if not expiry:
+            expiry = self.session_expiry(request)
+        session = AttributeDictionary(id=id)
+        if expiry:
+            session.expiry = expiry.isoformat()
+        if user:
+            session.user_id = user.id
+            session.user = user
+        return session
+
+    def _key(self, id):
+        return 'session:%s' % id

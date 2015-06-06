@@ -1,3 +1,5 @@
+import lux
+
 
 EXTENSIONS = ['lux.extensions.base',
               'lux.extensions.odm',

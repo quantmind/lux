@@ -68,6 +68,8 @@ class AuthBackend(lux.Extension):
         pass
 
     def session_expiry(self, request):
+        '''Expiry for a session or a token
+        '''
         session_expiry = request.config['SESSION_EXPIRY']
         if session_expiry:
             return datetime.now() + timedelta(seconds=session_expiry)
@@ -96,7 +98,7 @@ class Extension(AuthBackend):
                   'Salt size for encription algorithm'),
         Parameter('SESSION_MESSAGES', True, 'Handle session messages'),
         Parameter('SESSION_EXPIRY', 7*24*60*60,
-                  'Expiry for a session in seconds.'),
+                  'Expiry for a session/token in seconds.'),
         Parameter('CHECK_USERNAME', lambda u: True,
                   'Check if the username is valid'),
         Parameter('PERMISSION_LEVELS', {'read': 10,

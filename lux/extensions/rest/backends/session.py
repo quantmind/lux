@@ -64,10 +64,10 @@ class SessionBackend(BrowserBackend):
         '''
         raise NotImplementedError
 
-    def session_save(self, session):
+    def session_save(self, request, session):
         raise NotImplementedError
 
-    def session_create(self, request, user, expiry):
+    def session_create(self, request, **kw):
         '''Create a new session
         '''
         raise NotImplementedError
@@ -101,7 +101,8 @@ class SessionBackend(BrowserBackend):
         if session_key:
             session = self.get_session(session_key.value)
         if not session:
-            session = self.session_create(request, None, self._expiry(request))
+            expiry = self.session_expiry(request)
+            session = self.session_create(request, expiry=expiry)
         request.cache.session = session
         if session.user:
             request.cache.user = session.user
@@ -119,7 +120,7 @@ class SessionBackend(BrowserBackend):
                     response.set_cookie(key, value=str(id), httponly=True,
                                         expires=session.expiry)
 
-            self.session_save(session)
+            self.session_save(request, session)
         return response
 
     # CSRF
@@ -166,7 +167,7 @@ class SessionBackend(BrowserBackend):
                 raise AuthenticationError('Invalid username or password')
         if not user.is_active():
             return self.inactive_user_login(request, user)
-        request.cache.session = self.session_create(request, user)
+        request.cache.session = self.session_create(request, user=user)
         request.cache.user = user
         return user
 
@@ -230,10 +231,6 @@ class SessionBackend(BrowserBackend):
         request.cache.session.info(message)
 
     # INTERNALS
-    def _expiry(self, request):
-        days = request.config['ACCOUNT_ACTIVATION_DAYS']
-        return datetime.now() + timedelta(days=days)
-
     def _dismiss_message(self, request):
         response = request.response
         if response.content_type in lux.JSON_CONTENT_TYPES:
