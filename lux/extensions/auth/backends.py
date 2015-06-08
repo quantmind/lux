@@ -118,9 +118,11 @@ class TokenBackend(AuthMixin, backends.TokenBackend):
         '''
         odm = request.app.odm()
         payload = self.jwt_payload(request, user)
+        # FIXME: typo in ip_address
         ip_adderss = request.get_client_address()
 
         with odm.begin() as session:
+            # FIXME: typo in ip_address
             token = odm.token(user_id=user.id,
                               ip_adderss=ip_adderss,
                               user_agent=self.user_agent(request, 80))
