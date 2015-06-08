@@ -4,7 +4,8 @@ from pulsar.utils.slugify import slugify
 
 import lux
 from lux import forms, HtmlRouter
-from lux.extensions import odm
+from lux.extensions import odm, admin
+from lux.forms import Layout, Fieldset, Submit
 
 
 class PageForm(forms.Form):
@@ -12,10 +13,12 @@ class PageForm(forms.Form):
     title = forms.CharField()
     description = forms.TextField(required=False)
     template_id = odm.RelationshipField('template', label='template')
-    layout = forms.TextField()
+    published = forms.BooleanField(required=False)
+    layout = forms.TextField(required=False)
 
 
 class TemplateForm(forms.Form):
+    title = forms.CharField()
     body = forms.TextField()
 
 
@@ -34,25 +37,28 @@ class TemplateCRUD(odm.CRUD):
 
 
 class AnyPage(HtmlRouter):
-
+    '''Router for serving all path after a given base path
+    '''
     def __init__(self, route='', **kwargs):
         route += '/<path:path>'
         super().__init__(route, **kwargs)
 
-    def cms(self, request):
+    def cms(self, app):
+        '''Obtain the cms handler for this Router
+        '''
         key = ':'.join(b[1] for b in self.full_route.breadcrumbs[:-1])
         path = self.full_route.path
         if key:
-            return CMS(request.app, slugify(key))
+            return CMS(app, slugify(key))
         else:
-            cms = request.app.cms
+            cms = app.cms
             if not isinstance(cms, CMS):
-                request.app.cms = cms = CMS(request.app)
+                app.cms = cms = CMS(app)
             return cms
 
     def get_html(self, request):
         path = request.urlargs['path']
-        page = self.cms(request).page(path)
+        page = self.cms(request.app).page(path)
         if not page:
             raise Http404
 
@@ -62,7 +68,8 @@ class CMS(lux.CMS):
     '''
     def template(self, path):
         page = self.page(path)
-        return page['template']
+        if page:
+            return page['template']
 
     def page(self, path):
         '''Obtain a page object from a path
@@ -80,10 +87,51 @@ class CMS(lux.CMS):
                 return page
 
     def build_map(self):
-        return self.app.api.get('pages')
+        key = self.key or ''
+        response = self.app.api.get('/html_pages?filterby=root:eq:%s' % key)
+        if response.status_code == 200:
+            data = response.json()
+            return data['result']
+        else:
+            try:
+                response.raise_for_status()
+            except Exception:
+                self.app.logger.exception('Could not load sitemap')
+            return []
 
     def cache_key(self):
         key = 'cms:sitemap'
         if self.key:
             key = '%s:%s' (key, self.key)
         return key
+
+
+#    CLASSES FOR ADMIN
+class CmsAdmin(admin.CRUDAdmin):
+    '''Admin views for the cms
+    '''
+    section = 'cms'
+
+
+@admin.register(PageCRUD.model)
+class PageAdmin(CmsAdmin):
+    '''Admin views for html pages
+    '''
+    icon = 'fa fa-sitemap'
+    form = Layout(PageForm,
+                  Fieldset(all=True),
+                  Submit('Add new page'))
+    editform = Layout(PageForm,
+                      Fieldset(all=True),
+                      Submit('Update page'))
+
+
+@admin.register(TemplateCRUD.model)
+class TemplateAdmin(CmsAdmin):
+    icon = 'fa fa-file-code-o'
+    form = Layout(TemplateForm,
+                  Fieldset(all=True),
+                  Submit('Add new template'))
+    editform = Layout(TemplateForm,
+                      Fieldset(all=True),
+                      Submit('Update template'))

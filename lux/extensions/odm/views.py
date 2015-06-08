@@ -87,6 +87,22 @@ class RestRouter(rest.RestRouter):
                 query = query.order_by(entry)
         return query
 
+    def filter(self, request, query, text):
+        filterby = request.url_data.get('filterby')
+        if filterby:
+            if not isinstance(filterby, list):
+                filterby = (filterby,)
+            for entry in filterby:
+                bits = entry.split(':')
+                if len(bits) == 3:
+                    query = self._do_filter(query, *bits)
+        return query
+
+    def _do_filter(self, query, field, op, value):
+        if op == 'eq':
+            query = query.filter_by(**{field: value})
+        return query
+
 
 class CRUD(RestRouter):
 

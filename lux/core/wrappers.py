@@ -136,10 +136,13 @@ class HtmlRouter(Router):
     def context(self, request, context):
         pass
 
+    def cms(self, app):
+        return app.cms
+
     def get_html_body_template(self, app):
         '''Fetch the HTML template for the body part of this request
         '''
-        cms = app.cms
+        cms = self.cms(app)
         template = (cms.template(self.full_route.path) or
                     self.html_body_template)
         if not template:

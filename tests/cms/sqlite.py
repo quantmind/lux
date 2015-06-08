@@ -14,7 +14,7 @@ class TestSql(test.AppTestCase):
     def _create_page(self, path='', title='a page', template=None,
                      layout=None):
         if template is None:
-            data = dict(body='$html_main')
+            data = dict(body='$html_main', title='simple')
             request = yield from self.client.post(
                 '/api/html_templates',
                 body=data,

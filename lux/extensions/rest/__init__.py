@@ -19,6 +19,7 @@ from lux.extensions.angular import add_ng_modules
 from .user import *
 from .models import RestModel
 from .pagination import Pagination, Github
+from .client import ApiClient
 from .views import (RestRoot, RestRouter, RestMixin, change_password,
                     RequirePermission)
 
@@ -126,6 +127,9 @@ class Extension(AuthBackend):
         Parameter('API_LIMIT_NOAUTH', 30,
                   ('Maximum number of items returned when user is '
                    'not authenticated')),
+        Parameter('API_AUTHENTICATION_TOKEN', None,
+                  'Authentication token for the api. This is used by '
+                  'a lux application accessing a lux api'),
         Parameter('PAGINATION', 'lux.extensions.rest.Pagination',
                   'Pagination class')]
 
@@ -173,7 +177,7 @@ class Extension(AuthBackend):
             for backend in self.backends:
                 app.bind_events(backend, events)
 
-            app.api = api = RestRoot(url)
+            api = RestRoot(url)
             middleware.append(api)
             app.config['API_URL'] = str(api.route)
             for extension in app.extensions.values():
@@ -181,7 +185,7 @@ class Extension(AuthBackend):
                 if api_sections:
                     for router in api_sections(app):
                         api.add_child(router)
-
+        app.api = ApiClient(app)
         return middleware
 
     def response_middleware(self, app):

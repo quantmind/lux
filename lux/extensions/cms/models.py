@@ -17,8 +17,11 @@ class Page(odm.Model):
     layout = Column(JSONType)
     published = Column(Boolean, default=False)
     updated = Column(DateTime, default=datetime.utcnow)
+    root = Column(String(256))
+    '''An identifier for a group of pages.'''
 
 
 class Template(odm.Model):
     id = Column(Integer, primary_key=True)
+    title = Column(String(256))
     body = Column(Text)
