@@ -1,7 +1,6 @@
 psycopg2
 sqlalchemy_utils
 alembic
-cython
 unidecode
 markdown
 sphinx
