@@ -16,7 +16,7 @@ class Command(lux.Command):
     option_list = (
         Setting('command', nargs='*', default=None, desc='Alembic command'),
         Setting('branch', ('-b', '--branch'), default=None, nargs='?',
-                desc='Brach label for auto, revision and merge command',
+                desc='Branch label for auto, revision and merge command',
                 meta='LABEL'),
         Setting('list', ('-l', '--list'), default=None, action='store_true',
                 desc='List available Alembic commands'),
@@ -42,7 +42,7 @@ class Command(lux.Command):
         if opt.command:
             cmd = opt.command[0]
             if cmd not in self.commands:
-                raise CommandError('Unrecognized command: %s\n' \
+                raise CommandError('Unrecognized command: %s\n'
                                    % opt.command[0] + list_msg)
             if cmd in ('auto', 'revision', 'merge') and not opt.msg:
                 raise CommandError('Missing [-m] parameter for: %s' % cmd)
@@ -57,7 +57,7 @@ class Command(lux.Command):
     def get_config(self):
         '''
         Programmatically create Alembic config. To determine databases,
-        DATASTORE from project's config file is used. To customalize Alembic
+        DATASTORE from project's config file is used. To customize Alembic
         use MIGRATIONS in you config file.
 
         Example:
@@ -82,7 +82,7 @@ class Command(lux.Command):
         https://alembic.readthedocs.org/en/latest/index.html
         '''
         from alembic.config import Config
-        # Brecause we are using custom template, we need to change default
+        # Because we are using custom template, we need to change default
         # implementation of get_template_directory() to make it pointing
         # to template stored in lux, we need to do this hack
         Config.get_template_directory = self.get_lux_template_directory
@@ -130,7 +130,7 @@ class Command(lux.Command):
             dirname = config.get_main_option('script_location')
             # line 63 will be executed in:
             # https://github.com/zzzeek/alembic/blob/master/alembic/command.py
-            # since we do not use any *.ini file, we simply silance error
+            # since we do not use any *.ini file, we simply silence error
             # about referenced before assignment as it have no negative impact.
             try:
                 alembic_cmd.init(config, dirname, template='lux')
