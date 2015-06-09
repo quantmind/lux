@@ -1,11 +1,12 @@
-markdown
+psycopg2
 sqlalchemy_utils
+alembic
 cython
 unidecode
+markdown
 sphinx
 pyyaml
 pyjwt
 beautifulsoup4
 rethinkdb
-psycopg2
 -e git+https://github.com/quantmind/pulsar-odm.git@master#egg=odm
