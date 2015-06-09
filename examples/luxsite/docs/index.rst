@@ -1,4 +1,4 @@
-================
+x`================
 Contents
 ================
 
@@ -8,6 +8,7 @@ Contents
    tutorials/index
    api/index
    js/index
+   migrations/index
    changelog
 
 
