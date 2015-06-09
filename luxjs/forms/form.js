@@ -641,7 +641,8 @@
                                 post: function (scope, element) {
                                     // create the form
                                     renderer.createForm(scope, element);
-                                    scope.$emit('formReady', scope[scope.formModelName]);
+                                    // Emit the form upwards through the scope hierarchy
+                                    scope.$emit('formReady', scope[scope.formModelName], scope);
                                 }
                             };
                         }

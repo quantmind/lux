@@ -129,3 +129,25 @@ class TokenBackend(AuthMixin, backends.TokenBackend):
         payload['token_id'] = token.id
         payload['username'] = user.username
         return self.encode_payload(request, payload)
+
+
+class SessionBackend(AuthMixin, backends.SessionBackend):
+    '''An authentication backend based on sessions stored in the
+    cache server and user in SqlAlchemy
+    '''
+    def get_session(self, key):
+        return self.app.cache_server.hmget('session:%s' % key)
+
+    def session_key(self, session):
+        '''Session key from session object
+        '''
+        return session['id']
+
+    def session_save(self, session):
+        key = 'session:%s' % session['id']
+        self.app.cache_server.hmset(key, session)
+
+    def session_create(self, request, user=None, expiry=None):
+        '''Create a new session
+        '''
+        raise NotImplementedError

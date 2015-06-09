@@ -70,6 +70,18 @@
             $lux.window.reload();
         };
 
+        //
+        //  Fired when a lux form uses this api to post data
+        //  Check the run method in the "lux.services" module for more info
+        api.formReady = function (model, formScope) {
+            var id = api.defaults().id;
+            if (id) {
+                api.get({path: '/' + id}).success(function (data) {
+                    angular.extend(form, data);
+                });
+            }
+        };
+
         //  override request and attach error callbacks
         api.request = function (method, opts, data) {
             var promise = request.call(api, method, opts, data);

@@ -107,7 +107,7 @@ class RestRouter(RestMixin, lux.Router):
     def serialise_model(self, request, data, in_list=False):
         '''Serialise on model
         '''
-        raise NotImplementedError
+        return self.model.tojson(data)
 
     def json(self, request, data):
         '''Return a response as application/json

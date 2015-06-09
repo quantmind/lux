@@ -45,14 +45,6 @@ class SessionBackend(BrowserBackend):
             token = form.rawdata.get(param)
             backend.validate_csrf_token(form.request, token)
 
-    def _init(self):
-        cfg = self.config
-        self.session_cookie_name = cfg['SESSION_COOKIE_NAME']
-        self.session_expiry = cfg['SESSION_EXPIRY']
-        self.check_username = cfg['CHECK_USERNAME']
-        self.csrf_expiry = cfg['CSRF_EXPIRY']
-        self.jwt = jwt
-
     def wsgi(self):
         wsgi = [self]
         cfg = self.config
@@ -75,7 +67,7 @@ class SessionBackend(BrowserBackend):
     def session_save(self, session):
         raise NotImplementedError
 
-    def session_create(self, request, user=None, expiry=None):
+    def session_create(self, request, user, expiry):
         '''Create a new session
         '''
         raise NotImplementedError
@@ -103,13 +95,13 @@ class SessionBackend(BrowserBackend):
 
     # MIDDLEWARE
     def request(self, request):
-        key = self.config['SESSION_COOKIE_NAME']
+        key = request.config['SESSION_COOKIE_NAME']
         session_key = request.cookies.get(key)
         session = None
         if session_key:
             session = self.get_session(session_key.value)
         if not session:
-            session = self.session_create(request)
+            session = self.session_create(request, None, self._expiry(request))
         request.cache.session = session
         if session.user:
             request.cache.user = session.user
@@ -238,6 +230,10 @@ class SessionBackend(BrowserBackend):
         request.cache.session.info(message)
 
     # INTERNALS
+    def _expiry(self, request):
+        days = request.config['ACCOUNT_ACTIVATION_DAYS']
+        return datetime.now() + timedelta(days=days)
+
     def _dismiss_message(self, request):
         response = request.response
         if response.content_type in lux.JSON_CONTENT_TYPES:

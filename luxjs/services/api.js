@@ -4,6 +4,24 @@
         //
         .value('ApiTypes', {})
         //
+        .run(['$rootScope', '$lux', function (scope, $lux) {
+            //
+            //  Listen for a Lux form to be available
+            //  If it uses the api for posting, register with it
+            scope.$on('formReady', function (e, model, formScope) {
+                var attrs = formScope.formAttrs,
+                    action = attrs ? attrs.action : null;
+                if (isObject(action)) {
+                    var api = $lux.api(action);
+                    if (api) {
+                        $lux.log.info('Form ' + formScope.formModelName + ' registered with "' +
+                            api.toString() + '" api');
+                        api.formReady(model, formScope);
+                    }
+                }
+            });
+        }])
+        //
         .service('$lux', ['$location', '$window', '$q', '$http', '$log', '$timeout', 'ApiTypes',
                 function ($location, $window, $q, $http, $log, $timeout, ApiTypes) {
             var $lux = this;
@@ -71,16 +89,26 @@
         //
         //  Object containing the urls for the api.
         var api = {},
-            defaults;
+            defaults = {};
 
+        api.toString = function () {
+            if (defaults && defaults.name)
+                return api.baseUrl() + '/' + defaults.name;
+            else
+                return api.baseUrl();
+        };
         //
         // Get/Set defaults options for requests
         api.defaults = function (_) {
             if (!arguments.length) return defaults;
-            defaults = _;
+            if (_)
+                defaults = _;
             return api;
         };
 
+        api.formReady = function (model, formScope) {
+            $ux.log.error('Cannot handle form ready');
+        };
         //
         // API base url
         api.baseUrl  = function () {

@@ -1,40 +1,40 @@
 {
     "name": "lux",
-    "repository": {
-        "url": "https://github.com/quantmind/lux",
-        "type": "git"
-    },
     "title": "Lux Library",
-    "author": {
-        "email": "luca.sbardella@gmail.com",
-        "name": "Luca Sbardella"
-    },
-    "keywords": [],
-    "version": "0.1.1",
     "contributors": [],
     "scripts": {
         "test": "grunt jasmine"
     },
+    "version": "0.2.0",
+    "homepage": "http://quantmind.github.io/lux",
     "licenses": [
         {
             "type": "BSD"
         }
     ],
+    "repository": {
+        "url": "https://github.com/quantmind/lux",
+        "type": "git"
+    },
+    "description": "python web toolkit",
+    "devDependencies": {
+        "grunt-contrib-jshint": "",
+        "grunt-contrib-concat": "",
+        "grunt-contrib-jasmine": "",
+        "grunt-docco": "",
+        "benchmark": "",
+        "grunt-html2js": "",
+        "grunt-contrib-uglify": "",
+        "grunt": "",
+        "docco": "",
+        "grunt-contrib-copy": ""
+    },
+    "keywords": [],
+    "author": {
+        "name": "Luca Sbardella",
+        "email": "luca.sbardella@gmail.com"
+    },
     "dependencies": {
         "angular-jwt": ""
-    },
-    "devDependencies": {
-        "grunt": "",
-        "grunt-docco": "",
-        "grunt-contrib-jshint": "",
-        "benchmark": "",
-        "grunt-contrib-uglify": "",
-        "grunt-contrib-jasmine": "",
-        "grunt-html2js": "",
-        "grunt-contrib-concat": "",
-        "grunt-contrib-copy": "",
-        "docco": ""
-    },
-    "homepage": "http://quantmind.github.io/lux",
-    "description": "python web toolkit"
+    }
 }

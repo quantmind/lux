@@ -32,6 +32,9 @@ class RestModel:
         self.api_name = '%s_url' % self.url
         self._columns = columns
 
+    def tojson(self, obj, exclude=None, decoder=None):
+        raise NotImplementedError
+
     def columns(self, app):
         '''Return a list fields describing the entries for a given model
         instance'''

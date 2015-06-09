@@ -10,7 +10,6 @@ __all__ = ['Animation',
            'CenterBlock',
            'InlineBlock',
            'Textoverflow',
-           'clear_anchor',
            'fixtop',
            'Border',
            'Shadow',
@@ -148,16 +147,6 @@ class Textoverflow(Mixin):
         elem['overflow'] = 'hidden'
         elem['text-overflow'] = 'ellipsis'
         elem['white-space'] = 'nowrap'
-
-
-class clear_anchor(Mixin):
-
-    def __call__(self, elem):
-        elem.css('a',
-                 text_decoration='none',
-                 color='inherit',
-                 font_weight='inherit',
-                 cursor='inherit')
 
 
 # ################################################ FIXTOP

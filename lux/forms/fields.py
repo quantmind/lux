@@ -105,13 +105,11 @@ class Field:
     wrong_value_message = standard_wrong_value_message
     attrs = None
 
-    def __init__(self, unique=False, required=None,
-                 index=False, default=None,
+    def __init__(self, name=None, required=None, default=None,
                  validation_error=None, help_text=None,
                  label=None, widget=None, attrs=None,
-                 attrname=None, wrong_value_message=None,
-                 **kwargs):
-        self.name = attrname
+                 wrong_value_message=None, **kwargs):
+        self.name = name
         self.default = default if default is not None else self.default
         self.required = required if required is not None else self.required
         self.validation_error = (validation_error or self.validation_error or
@@ -188,8 +186,9 @@ class Field:
     def html_name(self, prefix=None):
         return '%s%s' % (prefix, self.name) if prefix else self.name
 
-    def getattrs(self):
-        '''Dictionary of attributes for the Html; element.'''
+    def getattrs(self, form=None):
+        '''Dictionary of attributes for the Html element.
+        '''
         return self.attrs.copy()
 
 
@@ -337,19 +336,13 @@ class ChoiceField(Field, MultipleMixin):
     '''A :class:`Field` which validates against a set of ``options``.
 
     It has several additional attributes which can be specified
-    via the :class:`ChoiceFieldOptions` class.
-
-    .. attribute:: options
-
-        An instance of :class:`ChoiceFieldOptions` or any of the
-        possible values for the :attr:`ChoiceFieldOptions.query`
-        attribute.
+    via the :class:`Options` class.
     '''
     attrs = {'type': 'select'}
 
-    def getattrs(self):
-        attrs = super().getattrs()
-        attrs['options'] = self.options.all()
+    def getattrs(self, form=None):
+        attrs = super().getattrs(form)
+        attrs['options'] = self.options.all(form)
         return attrs
 
     def value_from_instance(self, instance):
@@ -377,6 +370,7 @@ class EmailField(CharField):
 
 
 class HiddenField(CharField):
+    attrs = {'type': 'hidden'}
 
     def to_json(self, value):
         pass

@@ -21,9 +21,9 @@ from pulsar.utils.log import LocalMixin
 
 from .exc import *
 from .mapper import Mapper, Model
-from .serialise import tojson
-from .views import CRUD
+from .views import CRUD, RestRouter
 from .models import RestModel
+from .forms import RelationshipField
 
 
 class Extension(lux.Extension):
@@ -31,7 +31,9 @@ class Extension(lux.Extension):
     '''
     _config = [
         Parameter('DATASTORE', None,
-                  'Dictionary for mapping models to their back-ends database')
+                  'Dictionary for mapping models to their back-ends database'),
+        Parameter('DATABASE_SESSION_SIGNALS', True,
+                  'Register event handlers for database session')
     ]
 
     def on_config(self, app):

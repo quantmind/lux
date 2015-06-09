@@ -47,7 +47,12 @@
             return this;
         };
 
-        // Setup $stateProvider
+        //
+        //  Setup $stateProvider
+        //  =========================
+        //
+        //  This method should be called by the application, once it has setup
+        //  all the states via the ``state`` method.
         this.setup = function () {
             //
             if (pages) {

@@ -34,8 +34,8 @@ with open('package.json', 'w') as f:
 
 # Run setup.py
 script = os.path.abspath(setup.__file__)
-argv = [script, 'sdist'] + sys.argv[1:]
-setup.run(argv=argv)
+sys.argv = [script, 'sdist'] + sys.argv[1:]
+setup.run()
 
 
 print('%s %s ready!' % (pkg['name'], lux.__version__))

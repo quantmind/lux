@@ -156,8 +156,10 @@ def add_to_sitemap(sitemap, app, doc, router, parent=None, angular=None):
     # path for the current router
     path = router_href(app, router.full_route)
 
-    # Set the angukar router
-    if hasattr(router, 'angular_page'):
+    # Set the angular router if the router has a callable method
+    # named angular_page
+    if (hasattr(router, 'angular_page') and
+            hasattr(router.angular_page, '__call__')):
         angular = router
 
     name = router.name

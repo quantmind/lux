@@ -9,7 +9,8 @@ from pulsar.utils.html import nicename, NOTHING
 from pulsar.utils.httpurl import JSON_CONTENT_TYPES
 from pulsar.apps.wsgi import Html
 
-from .fields import Field, ValidationError
+from .errors import ValidationError, FormError
+from .fields import Field
 from .formsets import FormSet
 
 FORMKEY = 'm__form'
@@ -20,11 +21,8 @@ __all__ = ['FormType',
            'BoundField',
            'FieldList',
            'MakeForm',
-           'smart_redirect']
-
-
-class FormError(Exception):
-    pass
+           'smart_redirect',
+           'FORMKEY']
 
 
 def smart_redirect(request, url=None, status=None):
@@ -115,7 +113,7 @@ class FormType(type):
     def __new__(cls, name, bases, attrs):
         fields, inlines = get_form_meta_data(bases, attrs)
         attrs['base_fields'] = fields
-        attrs['base_inlines'] = inlines
+        attrs['inlines'] = inlines
         return super(FormType, cls).__new__(cls, name, bases, attrs)
 
 
@@ -132,7 +130,6 @@ class Form(metaclass=FormType):
     :parameter files: dictionary type object containing files to upload.
     :parameter initial: set the :attr:`initial` attribute.
     :parameter prefix: set the :attr:`prefix` attribute.
-    :parameter manager: An optional manager for a database model.
     :parameter instance: An optional instance of a model class.
     :parameter request: Optional client request.
 
@@ -188,7 +185,7 @@ class Form(metaclass=FormType):
     .. _descriptor: http://users.rcn.com/python/download/Descriptor.htm
     '''
     def __init__(self, request=None, data=None, files=None, initial=None,
-                 prefix=None, manager=None, instance=None):
+                 prefix=None, instance=None):
         self.request = request
         self.is_bound = data is not None or files is not None
         self.rawdata = data if data is None else dict(data.items())
@@ -203,24 +200,14 @@ class Form(metaclass=FormType):
         self.instance = instance
         self.messages = {}
         self.changed = False
-        self.manager = manager
         self.form_sets = {}
-        for name, fset in self.base_inlines.items():
+        for name, fset in self.inlines.items():
             self.form_sets[name] = fset(self)
         self.forms = []
-        self.inputs = []
         if not self.is_bound:
             self._fill_initial()
         if request:
             request.app.fire('on_form', self)
-
-    @property
-    def model(self):
-        return self.manager.model if self.manager is not None else None
-
-    @property
-    def _loop(self):
-        return getattr(self.request, '_loop', None)
 
     def is_valid(self, exclude_missing=False):
         '''Asynchronous check if this :class:`Form` is valid.
@@ -273,10 +260,6 @@ class Form(metaclass=FormType):
         self._check_unwind()
         return self._fields_dict
 
-    def add_input(self, name, type='hidden', **params):
-        '''Add an input to the additional :attr:`inputs` to the form.'''
-        self.inputs.append(Html('input', type=type, name=name, **params))
-
     def value_from_instance(self, instance, name, value):
         '''Extracting an attribute value from an ``instance``.
 
@@ -293,9 +276,6 @@ class Form(metaclass=FormType):
             if hasattr(value, '__call__'):
                 value = value()
         return value
-
-    def additional_data(self):
-        return None
 
     def clean(self):
         '''The form clean method.
@@ -343,9 +323,6 @@ class Form(metaclass=FormType):
             message['messages'] = data
         return message
 
-    def get_widget_data(self, bound_field):
-        pass
-
     # INTERNALS
     def _check_unwind(self, raise_error=True):
         if not hasattr(self, '_data'):
@@ -369,7 +346,7 @@ class Form(metaclass=FormType):
                 try:
                     self.clean()
                 except ValidationError as err:
-                    self._form_message(self._errors, FORMKEY, err)
+                    self.add_error_message(err)
             if self._errors:
                 del self._cleaned_data
 
@@ -500,9 +477,8 @@ class BoundField(object):
             form._form_message(form._errors, self.name, err)
 
 
-def MakeForm(name, fields, **params):
-    '''Create a form class from a list of fields'''
-    if not isinstance(fields, Mapping):
-        fields = ((f.name, f) for f in fields)
-    params.update(fields)
+def MakeForm(name, *fields, **params):
+    '''Create a form class from fields
+    '''
+    params.update(((f.name, f) for f in fields))
     return FormType(name, (Form,), params)

@@ -116,8 +116,7 @@ class AdminModel(rest.RestMixin, AdminRouter):
     def get_html(self, request):
         model = self.model
         app = request.app
-        options = dict(target=model.get_target(request),
-                       columns=model.columns(app))
+        options = dict(target=model.get_target(request))
         context = {'grid': grid(options)}
         return app.render_template('partials/admin-list.html', context)
 
@@ -126,7 +125,7 @@ class CRUDAdmin(AdminModel):
     '''An Admin model Router for adding and updating models
     '''
     form = None
-    editform = None
+    updateform = None
     addtemplate = 'partials/admin-add.html'
 
     @route()
@@ -137,7 +136,8 @@ class CRUDAdmin(AdminModel):
 
     @route('<id>')
     def update(self, request):
-        '''Add a new model'''
+        '''Edit an existing model
+        '''
         form = self.updateform or self.form
         return self.get_form(request, form, request.urlargs['id'])
 

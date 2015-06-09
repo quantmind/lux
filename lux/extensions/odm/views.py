@@ -1,5 +1,6 @@
 from sqlalchemy.exc import DataError
 from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy import desc
 
 from pulsar import PermissionDenied, Http404
 from pulsar.apps.wsgi import Json
@@ -7,11 +8,87 @@ from pulsar.apps.wsgi import Json
 from lux import route
 from lux.extensions import rest
 
-from .serialise import tojson
 from .mapper import logger
 
 
-class CRUD(rest.RestRouter):
+DIRECTIONS = ('asc', 'desc')
+
+
+class RestRouter(rest.RestRouter):
+    '''A REST Router base on database models
+    '''
+    # RestView implementation
+    def collection(self, request, limit, offset, text):
+        app = request.app
+        odm = app.odm()
+        model = odm[self.model.name]
+
+        with odm.begin() as session:
+            query = session.query(model)
+            query = self.filter(request, query, text)
+            total = query.count()
+            query = self.sortby(request, query)
+            data = query.limit(limit).offset(offset).all()
+            data = self.serialise(request, data)
+            return app.pagination(request, data, total, limit, offset)
+
+    def get_model(self, request):
+        odm = request.app.odm()
+        model = odm[self.model.name]
+        with odm.begin() as session:
+            query = session.query(model)
+            try:
+                return query.filter_by(id=request.urlargs['id']).one()
+            except NoResultFound:
+                raise Http404
+
+    def create_model(self, request, data):
+        odm = request.app.odm()
+        model = odm[self.model.name]
+        with odm.begin() as session:
+            instance = model(**data)
+            session.add(instance)
+        return instance
+
+    def update_model(self, request, instance, data):
+        odm = request.app.odm()
+        model = odm[self.model.name]
+        with odm.begin() as session:
+            for key, value in data.items():
+                setattr(instance, key, value)
+            session.add(instance)
+        return instance
+
+    def meta(self, request):
+        meta = super().meta(request)
+        odm = request.app.odm()
+        model = odm[self.model.name]
+        with odm.begin() as session:
+            query = session.query(model)
+            meta['total'] = query.count()
+        return meta
+
+    def filter(self, request, query, text):
+        return query
+
+    def sortby(self, request, query):
+        sortby = request.url_data.get('sortby')
+        if sortby:
+            if not isinstance(sortby, list):
+                sortby = (sortby,)
+            for entry in sortby:
+                direction = None
+                if ':' in entry:
+                    entry, direction = entry.split(':')
+                if direction not in DIRECTIONS:
+                    direction = DIRECTIONS[0]
+                if direction == 'desc':
+                    entry = desc(entry)
+                query = query.order_by(entry)
+        return query
+
+
+class CRUD(RestRouter):
 
     def get(self, request):
         '''Get a list of models
@@ -103,55 +180,3 @@ class CRUD(rest.RestRouter):
             request.response.status_code = 204
             return request.response
         raise PermissionDenied
-
-    # RestView implementation
-    def collection(self, request, limit, offset, text):
-        app = request.app
-        odm = app.odm()
-        model = odm[self.model.name]
-
-        with odm.begin() as session:
-            query = session.query(model)
-            total = query.count()
-            data = query.limit(limit).offset(offset).all()
-            data = self.serialise(request, data)
-            return app.pagination(request, data, total, limit, offset)
-
-    def get_model(self, request):
-        odm = request.app.odm()
-        model = odm[self.model.name]
-        with odm.begin() as session:
-            query = session.query(model)
-            try:
-                return query.filter_by(id=request.urlargs['id']).one()
-            except NoResultFound:
-                raise Http404
-
-    def create_model(self, request, data):
-        odm = request.app.odm()
-        model = odm[self.model.name]
-        with odm.begin() as session:
-            instance = model(**data)
-            session.add(instance)
-        return instance
-
-    def update_model(self, request, instance, data):
-        odm = request.app.odm()
-        model = odm[self.model.name]
-        with odm.begin() as session:
-            for key, value in data.items():
-                setattr(instance, key, value)
-            session.add(instance)
-        return instance
-
-    def serialise_model(self, request, data, in_list=False):
-        return tojson(data)
-
-    def meta(self, request):
-        meta = super().meta(request)
-        odm = request.app.odm()
-        model = odm[self.model.name]
-        with odm.begin() as session:
-            query = session.query(model)
-            meta['total'] = query.count()
-        return meta

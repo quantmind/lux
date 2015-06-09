@@ -47,7 +47,7 @@ class TestMixins(test.TestCase):
 }
 ''')
 
-    def __test_clickable(self):
+    def test_clickable(self):
         all = Css()
         b = Clickable(default={'background': '#111'},
                       hover={'background': '#555'})
@@ -60,32 +60,65 @@ class TestMixins(test.TestCase):
         s = all.css('.blax', b)
         text = s.render()
         self.assertTrue('.blax {' in text)
-        self.assertTrue('.blax:hover {' in text)
-        self.assertTrue('.blax.hover {' in text)
-        self.assertFalse('.blax:active {' in text)
-        self.assertFalse('.blax.active {' in text)
+        self.assertTrue('.blax:hover' in text)
+        self.assertTrue('.blax.hover' in text)
+        self.assertFalse('.blax:active' in text)
+        self.assertFalse('.blax.active' in text)
         self.assertFalse('border' in text)
 
-    def __test_clearfix(self):
+    def test_clearfix(self):
         all = Css()
         s = all.css('.bla',
-                    Clearfix(),
-                    display='block')
+                    Clearfix())
         text = s.render()
-        self.assertTrue('*zoom: 1;' in text)
-        self.assertEqual(text, '''.bla {
-    display: block;
-    *zoom: 1;
-}
+        self.assertTrue('.bla:before {' in text)
+        self.assertTrue('.bla:after {' in text)
 
-.bla:before {
-    content: "";
-    display: table;
-}
+    def test_opacity(self):
+        all = Css()
+        s = all.css('.bla',
+                    Opacity(0.3))
+        text = s.render()
+        self.assertTrue('opacity' in text)
 
-.bla:after {
-    content: "";
-    display: table;
-    clear: both;
-}
-''')
+    def test_inline_block(self):
+        all = Css()
+        s = all.css('.bla',
+                    InlineBlock())
+        text = s.render()
+        self.assertTrue('display' in text)
+        self.assertTrue('zoom' in text)
+        self.assertTrue('*display' in text)
+
+    def test_center_block(self):
+        all = Css()
+        s = all.css('.bla',
+                    CenterBlock())
+        text = s.render()
+        self.assertTrue('display' in text)
+        self.assertTrue('margin-left' in text)
+        self.assertTrue('margin-right' in text)
+
+    def test_text_overflow(self):
+        all = Css()
+        s = all.css('.bla',
+                    Textoverflow())
+        text = s.render()
+        self.assertTrue('overflow' in text)
+        self.assertTrue('text-overflow' in text)
+        self.assertTrue('white-space' in text)
+
+    def test_box_sizing(self):
+        all = Css()
+        s = all.css('.bla',
+                    BoxSizing('content-box'))
+        text = s.render()
+        self.assertTrue('box-sizing' in text)
+
+    def test_gradient(self):
+        all = Css()
+        s = all.css('.bla',
+                    Gradient('h', '#000', '#fff'))
+        text = s.render()
+        self.assertTrue('background-color' in text)
+        self.assertTrue('background-image' in text)
