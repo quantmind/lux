@@ -20,27 +20,27 @@ class AdminTest(test.AppTestCase):
         self.assertEqual(blog['href'], '/admin/blogs')
 
     def test_admin_home_view(self):
-        request = self.client.get('/admin')
+        request = yield from self.client.get('/admin')
         response = request.response
         self.assertEqual(response.status_code, 200)
 
     def test_list_view(self):
-        request = self.client.get('/admin/blogs')
+        request = yield from self.client.get('/admin/blogs')
         response = request.response
         self.assertEqual(response.status_code, 200)
 
     def test_add_view(self):
-        request = self.client.get('/admin/blogs/add')
+        request = yield from self.client.get('/admin/blogs/add')
         response = request.response
         self.assertEqual(response.status_code, 200)
 
     def test_edit_view(self):
-        request = self.client.get('/admin/blogs/1')
+        request = yield from self.client.get('/admin/blogs/1')
         response = request.response
         self.assertEqual(response.status_code, 200)
 
     def test_angular_sitemap(self):
-        request = self.client.get('/admin/blogs')
+        request = yield from self.client.get('/admin/blogs')
         jscontext = request.html_document.jscontext
         pages = jscontext.get('pages')
         self.assertTrue(pages)

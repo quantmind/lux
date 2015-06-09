@@ -14,8 +14,7 @@ from .options import *
 from .errors import *
 
 
-__all__ = ['field_widget',
-           'Field',
+__all__ = ['Field',
            'CharField',
            'TextField',
            'BooleanField',
@@ -37,21 +36,6 @@ def standard_wrong_value_message(field, value):
     return '%s is not a valid value' % value
 
 
-def field_widget(tag, **defaults):
-    '''Returns an :class:`Html` factory function for ``tag`` and a given
-    dictionary of ``defaults`` parameters. For example::
-
-    >>> input_factory = field_widget('input', type='text')
-    >>> html = input_factory(value='bla')
-
-    '''
-    def html_input(self, *children, **params):
-        p = defaults.copy()
-        p.update(params)
-        return Html(tag, *children, **p)
-    return html_input
-
-
 class Field:
     '''Base class for all fields.
     Field are specified as attribute of a form, for example::
@@ -65,9 +49,6 @@ class Field:
 
     :parameter default: set the :attr:`default` attribute.
     :parameter initial: set the :attr:`initial` attribute.
-    :parameter widget: Optional callable to override the :attr:`widget`
-        attribute. If supplied it must accept this field as first parameter.
-        Check the :func:`field_widget` factory for an example signature.
     :parameter wrong_value_message: callable which receive the field and
         the field value when to produce a message when the ``value``
         did not validate.
@@ -87,18 +68,11 @@ class Field:
 
         Default: ``None``.
 
-    .. attribute:: widget
-
-        Factory of :class:`~pulsar.apps.wsgi.Html` objects.
-
-        Default: ``None``.
-
     .. attribute:: attrs
 
         dictionary of attributes.
     '''
     default = None
-    widget = None
     required = True
     creation_counter = 0
     validation_error = standard_validation_error
@@ -107,7 +81,7 @@ class Field:
 
     def __init__(self, name=None, required=None, default=None,
                  validation_error=None, help_text=None,
-                 label=None, widget=None, attrs=None,
+                 label=None, attrs=None, validator=None,
                  wrong_value_message=None, **kwargs):
         self.name = name
         self.default = default if default is not None else self.default
@@ -118,8 +92,7 @@ class Field:
             self.wrong_value_message = wrong_value_message
         self.help_text = escape(help_text)
         self.label = label
-        if widget:
-            self.widget = lambda *args, **kwargs: widget(self, *args, **kwargs)
+        self.validator = validator
         self.attrs = dict(self.attrs or ())
         self.attrs.update(attrs or ())
         self.attrs['required'] = self.required
@@ -134,10 +107,9 @@ class Field:
         return self.name if self.name else self.__class__.__name__
     __str__ = __repr__
 
-    def handle_params(self, validator=None, **kwargs):
+    def handle_params(self, **kwargs):
         '''Called during initialization for handling extra key-valued
         parameters.'''
-        self.validator = validator
         self.attrs.update(kwargs)
 
     def value_from_datadict(self, data, files, key):
@@ -158,20 +130,20 @@ class Field:
         '''
         raise ValueError
 
-    def clean(self, value, instance):
+    def clean(self, value, bfield):
         '''Clean the field value'''
-        if self.validator:
-            return self.validator(value, instance)
         if value in NOTHING:
-            value = self.get_default(instance)
+            value = self.get_default(bfield)
             if self.required and value in NOTHING:
                 raise ValidationError(
                     self.validation_error.format(self.name, value))
             elif not self.required:
                 return value
-        return self._clean(value, instance)
+        if self.validator:
+            value = self.validator(value, bfield)
+        return self._clean(value, bfield)
 
-    def _clean(self, value, instance):
+    def _clean(self, value, bfield):
         return value
 
     def get_default(self, model):

@@ -184,6 +184,8 @@ class Form(metaclass=FormType):
 
     .. _descriptor: http://users.rcn.com/python/download/Descriptor.htm
     '''
+    model = None
+
     def __init__(self, request=None, data=None, files=None, initial=None,
                  prefix=None, instance=None):
         self.request = request

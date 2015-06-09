@@ -61,14 +61,14 @@ class TestSqlite(test.AppTestCase):
         self.assertTrue(user.is_active())
 
     def test_get(self):
-        request = self.client.get('/')
+        request = yield from self.client.get('/')
         response = request.response
         self.assertEqual(response.status_code, 200)
         user = request.cache.user
         self.assertFalse(user.is_authenticated())
 
     def test_authorizations(self):
-        request = self.client.get('/authorizations')
+        request = yield from self.client.get('/authorizations')
         response = request.response
         self.assertEqual(response.status_code, 401)
         user = request.cache.user
@@ -77,9 +77,9 @@ class TestSqlite(test.AppTestCase):
     def test_login_fail(self):
         data = {'username': 'jdshvsjhvcsd',
                 'password': 'dksjhvckjsahdvsf'}
-        request = self.client.post('/authorizations',
-                                   content_type='application/json',
-                                   body=data)
+        request = yield from self.client.post('/authorizations',
+                                              content_type='application/json',
+                                              body=data)
         response = request.response
         self.assertEqual(response.status_code, 200)
         user = request.cache.user
@@ -90,18 +90,19 @@ class TestSqlite(test.AppTestCase):
     def test_create_superuser_command_and_token(self):
         username = 'ghghghgh'
         password = 'dfbjdhbvdjbhv'
-        user = self.client.run_command('create_superuser',
-                                       ['--username', username,
-                                        '--email', 'sjhcsecds@sjdbcsjdc.com',
-                                        '--password', password])
+        user = self.client.run_command(
+            'create_superuser',
+            ['--username', username,
+             '--email', 'sjhcsecds@sjdbcsjdc.com',
+             '--password', password])
         self.assertEqual(user.username, username)
         self.assertNotEqual(user.password, password)
 
         # Get new token
-        request = self.client.post('/authorizations',
-                                   content_type='application/json',
-                                   body={'username': username,
-                                         'password': password})
+        request = yield from self.client.post('/authorizations',
+                                              content_type='application/json',
+                                              body={'username': username,
+                                                    'password': password})
         response = request.response
         self.assertEqual(response.status_code, 201)
         user = request.cache.user

@@ -15,8 +15,8 @@ class TestSql(test.AppTestCase):
         data = {'subject': txt}
         if person:
             data['assigned'] = person['id']
-        request = self.client.post('/tasks', body=data,
-                                   content_type='application/json')
+        request = yield from self.client.post(
+            '/tasks', body=data, content_type='application/json')
         response = request.response
         self.assertEqual(response.status_code, 201)
         data = self.json(response)
@@ -27,9 +27,12 @@ class TestSql(test.AppTestCase):
         self.assertFalse(data['done'])
         return data
 
-    def _create_person(self, name):
-        request = self.client.post('/people', body={'name': name},
-                                   content_type='application/json')
+    def _create_person(self, username, name=None):
+        name = name or username
+        request = yield from self.client.post(
+            '/people',
+            body={'username': username, 'name': name},
+            content_type='application/json')
         response = request.response
         self.assertEqual(response.status_code, 201)
         data = self.json(response)
@@ -70,7 +73,7 @@ class TestSql(test.AppTestCase):
         self.assertFalse(user.is_superuser())
 
     def test_get_tasks(self):
-        request = self.client.get('/tasks')
+        request = yield from self.client.get('/tasks')
         response = request.response
         self.assertEqual(response.status_code, 200)
         data = self.json(response)
@@ -79,7 +82,7 @@ class TestSql(test.AppTestCase):
         self.assertIsInstance(result, list)
 
     def test_metadata(self):
-        request = self.client.get('/tasks/metadata')
+        request = yield from self.client.get('/tasks/metadata')
         response = request.response
         self.assertEqual(response.status_code, 200)
         data = self.json(response)
@@ -87,41 +90,42 @@ class TestSql(test.AppTestCase):
         self.assertIsInstance(data['columns'], list)
 
     def test_create_task(self):
-        self._create_task()
+        return self._create_task()
 
     def test_update_task(self):
-        task = self._create_task('This is another task')
+        task = yield from self._create_task('This is another task')
         # Update task
-        request = self.client.post('/tasks/%d' % task['id'],
-                                   body={'done': True},
-                                   content_type='application/json')
+        request = yield from self.client.post(
+            '/tasks/%d' % task['id'],
+            body={'done': True},
+            content_type='application/json')
         response = request.response
         self.assertEqual(response.status_code, 200)
         data = self.json(response)
         self.assertEqual(data['id'], task['id'])
         self.assertEqual(data['done'], True)
         #
-        request = self.client.get('/tasks/%d' % task['id'])
+        request = yield from self.client.get('/tasks/%d' % task['id'])
         response = request.response
         self.assertEqual(response.status_code, 200)
         self.assertEqual(data['id'], task['id'])
         self.assertEqual(data['done'], True)
 
     def test_delete_task(self):
-        task = self._create_task('A task to be deleted')
+        task = yield from self._create_task('A task to be deleted')
         # Delete task
-        request = self.client.delete('/tasks/%d' % task['id'])
+        request = yield from self.client.delete('/tasks/%d' % task['id'])
         response = request.response
         self.assertEqual(response.status_code, 204)
         #
-        request = self.client.get('/tasks/%d' % task['id'])
+        request = yield from self.client.get('/tasks/%d' % task['id'])
         response = request.response
         self.assertEqual(response.status_code, 404)
 
     def test_get_sortby(self):
-        self._create_task('We want to sort 1')
-        self._create_task('We want to sort 2')
-        request = self.client.get('/tasks?sortby=created')
+        yield from self._create_task('We want to sort 1')
+        yield from self._create_task('We want to sort 2')
+        request = yield from self.client.get('/tasks?sortby=created')
         response = request.response
         self.assertEqual(response.status_code, 200)
         data = self.json(response)
@@ -133,7 +137,7 @@ class TestSql(test.AppTestCase):
             dt2 = parse(task2['created'])
             self.assertTrue(dt2 > dt1)
         #
-        request = self.client.get('/tasks?sortby=created:desc')
+        request = yield from self.client.get('/tasks?sortby=created:desc')
         response = request.response
         self.assertEqual(response.status_code, 200)
         data = self.json(response)
@@ -146,15 +150,15 @@ class TestSql(test.AppTestCase):
             self.assertTrue(dt2 < dt1)
 
     def test_relationship_field(self):
-        person = self._create_person('spiderman')
-        task = self._create_task('climb a wall a day', person)
+        person = yield from self._create_person('spiderman')
+        task = yield from self._create_task('climb a wall a day', person)
         self.assertTrue('assigned' in task)
 
     def test_relationship_field_failed(self):
         data = {'subject': 'climb a wall a day',
                 'assigned': 6868897}
-        request = self.client.post('/tasks', body=data,
-                                   content_type='application/json')
+        request = yield from self.client.post('/tasks', body=data,
+                                              content_type='application/json')
         response = request.response
         self.assertEqual(response.status_code, 200)
         data = self.json(response)
@@ -164,3 +168,15 @@ class TestSql(test.AppTestCase):
         error = data['messages']['assigned'][0]
         self.assertEqual(error['message'], 'Invalid person')
 
+    def test_unique_field(self):
+        person = yield from self._create_person('spiderman1', 'luca')
+        data = dict(username='spiderman1', name='john')
+        request = yield from self.client.post('/people', body=data,
+                                              content_type='application/json')
+        response = request.response
+        self.assertEqual(response.status_code, 200)
+        data = self.json(response)
+        self.assertFalse(data['success'])
+        self.assertTrue(data['error'])
+        error = data['messages']['username'][0]
+        self.assertEqual(error['message'], 'spiderman1 not available')
