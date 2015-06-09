@@ -8,4 +8,4 @@ pyjwt
 beautifulsoup4
 rethinkdb
 psycopg2
--e git@github.com:quantmind/pulsar-odm.git@master#egg=odm
+-e git+https://github.com/quantmind/pulsar-odm.git@master#egg=odm
