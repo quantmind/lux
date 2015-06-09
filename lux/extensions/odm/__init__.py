@@ -1,18 +1,13 @@
 '''
-Lux extension for integrating SQL and NoSQL into applications.
+Lux extension for integrating SQL and NoSQL databases into applications.
 
 The extension create create a new application attribute called ``odm``
 which can be used to access object data mappers for different backend.
-To access the ``sql`` mapper:
 
-    sql = app.odm('sql')
+It requires the :mod:`lux.extensions.rest` module and pulsar-odm_ which is
+built on top of sqlalchemy, pulsar and greenlet.
 
-in a router handler:
-
-    def get(self, request):
-        sql = request.app.odm('sql')
-        with sql.session().begin() as session:
-            ...
+_ ..pulsar-odm: https://github.com/quantmind/pulsar-odm
 '''
 import lux
 from lux import Parameter
