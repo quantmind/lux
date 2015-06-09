@@ -1,7 +1,9 @@
 from pulsar.apps.wsgi import Json
+from pulsar import PermissionDenied
 from lux.extensions.rest import RestRouter
 from lux.extensions.rest.backends import token
-
+from lux import route
+from lux.extensions import rest
 
 class Authorization(token.Authorization):
 
@@ -30,3 +32,16 @@ class Authorization(token.Authorization):
                 # Consider using simplejson / for_json instead ?
                 'ip_adderss': str(data.ip_adderss)}
         return data
+
+    @route(method=('get', 'options'))
+    def metadata(self, request):
+        if request.method == 'OPTIONS':
+            request.app.fire('on_preflight', request)
+            return request.response
+
+        backend = request.cache.auth_backend
+        model = self.model
+        if backend.has_permission(request, model.name, rest.READ):
+            meta = self.meta(request)
+            return Json(meta).http_response(request)
+        raise PermissionDenied
