@@ -87,3 +87,14 @@ class FormTests(test.TestCase):
         self.assertEqual(message['message'], 'wrong data')
         self.assertTrue(message['error'])
         self.assertEqual(len(form.data), 2)
+
+    def test_charfield_error(self):
+        class failconvert:
+            def __str__(self):
+                raise Exception
+
+        form = SimpleForm(data=dict(name=failconvert()))
+        self.assertFalse(form.is_valid())
+        result = form.tojson()
+        self.assertEqual(result['messages']['name'][0]['message'],
+                         'Invalid value')

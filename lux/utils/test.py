@@ -158,45 +158,14 @@ class TestCase(unittest.TestCase, TestMixin):
         start_response = mock.MagicMock()
         return request, start_response
 
-    def request(self, app=None, **params):
+    def fetch_command(self, command, app=None):
+        '''Fetch a command.'''
         if not app:
             app = self.application()
-        request, sr = self.request_start_response(app, **params)
-        response = app(request.environ, sr)
-        self.assertEqual(response, request.response)
-        return request
-
-    def run_command(self, app, *args, **kwargs):
-        if not args:
-            command = app
-            app = self.application()
-        else:
-            command = args[0]
-        argv = args[1] if len(args) == 2 else []
-        cmd = app.get_command(command)
-        self.assertTrue(cmd.logger)
-        self.assertEqual(cmd.name, command)
-        return cmd(argv, **kwargs)
-
-    def fetch_command(self, command, out=None):
-        '''Fetch a command.'''
-        app = self.application()
         cmd = app.get_command(command)
         self.assertTrue(cmd.logger)
         self.assertEqual(cmd.name, command)
         return cmd
-
-    def post(self, app=None, path=None, content_type=None, body=None,
-             headers=None, **extra):
-        extra['REQUEST_METHOD'] = 'POST'
-        headers = headers or []
-        if body and not isinstance(body, bytes):
-            if content_type is None:
-                body, content_type = encode_multipart_formdata(body)
-        if content_type:
-            headers.append(('content-type', content_type))
-        return self.request(app, path=path, headers=headers,
-                            body=body, **extra)
 
     def database_drop(self):
         if self.apps:
