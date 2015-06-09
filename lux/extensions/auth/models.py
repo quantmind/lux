@@ -13,7 +13,6 @@ from sqlalchemy import (Column, Integer, String, Table, ForeignKey, Boolean,
 from sqlalchemy_utils import ChoiceType, IPAddressType, UUIDType
 
 from lux.extensions.rest import UserMixin
-from celery.worker.strategy import default
 
 
 info = {'bind_label': 'auth'}

@@ -9,4 +9,4 @@ pyyaml
 pyjwt
 beautifulsoup4
 rethinkdb
--e git+https://github.com/quantmind/pulsar-odm.git@master#egg=odm
+-e git+https://github.com/quantmind/pulsar-odm.git@master#egg=pulsar-odm

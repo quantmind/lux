@@ -13,7 +13,6 @@ from pulsar.utils.httpurl import is_absolute_uri
 import lux
 from lux import Parameter, Router
 from lux.core.wrappers import wsgi_request
-from lux.utils.http import same_origin
 from lux.extensions.angular import add_ng_modules
 
 from .user import *
