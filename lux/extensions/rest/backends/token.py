@@ -26,6 +26,9 @@ class Http401(HttpException):
 class TokenBackend(AuthBackend):
     '''Backend based on JWT_
 
+    Once a ``jtw`` is created, authetication is achieved by setting
+    the ``Authorization`` header to ``Bearer jwt``.
+
     Requires pyjwt_ package.
 
     .. _pyjwt: https://pypi.python.org/pypi/PyJWT
@@ -94,6 +97,8 @@ class TokenBackend(AuthBackend):
         return self.encode_payload(self.jwt_payload(request, user))
 
     def jwt_payload(self, request, user):
+        '''Add user-related payload to the JWT
+        '''
         expiry = self.session_expiry(request)
         payload = {'user_id': user.id,
                    'superuser': user.is_superuser()}
@@ -109,7 +114,8 @@ class Authorization(RestRouter):
     model = RestModel('authorization', LoginForm)
 
     def post(self, request):
-        '''Create a new Authorization token
+        '''Anthenticate the user and create a new Authorization token
+        if succesful
         '''
         user = request.cache.user
         if user.is_authenticated():

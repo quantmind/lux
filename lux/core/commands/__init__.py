@@ -113,6 +113,8 @@ class Command(ConsoleParser):
     def __call__(self, argv, **params):
         app = self.pulsar_app(argv)
         app()
+        # make sure the handler is created
+        self.app.get_handler()
         return self.run_until_complete(app.cfg, **params)
 
     def get_version(self):

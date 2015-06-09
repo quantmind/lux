@@ -28,6 +28,8 @@ from .forms import RelationshipField, UniqueField
 
 class Extension(lux.Extension):
     '''Object data mapper extension
+
+    Uses pulsar-odm for sychronous & asynchronous data mappers
     '''
     _config = [
         Parameter('DATASTORE', None,
@@ -39,6 +41,14 @@ class Extension(lux.Extension):
     def on_config(self, app):
         '''Initialise Object Data Mapper'''
         app.odm = Odm(app, app.config['DATASTORE'])
+
+    def on_loaded(self, app):
+        '''When the application load, choose the
+        concurrency paradigm
+        '''
+        odm = app.odm()
+        if odm.is_green and not app.config['GREEN_POOL']:
+            app.config['GREEN_POOL'] = 50
 
 
 class Odm(LocalMixin):
@@ -62,3 +72,11 @@ class Odm(LocalMixin):
         odm = Odm(self.app, self.binds)
         odm.local.mapper = self().database_create(database, **params)
         return odm
+
+    def tables(self):
+        odm = self()
+        if self.app.green_pool:
+            tables = yield from self.app.green_pool.submit(odm.tables)
+        else:
+            tables = odm.tables()
+        return tables

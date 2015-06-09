@@ -8,72 +8,41 @@ from lux.utils import test
 
 
 class TestSql(test.AppTestCase):
-    config_file = 'tests.odm'
+    config_file = 'tests.cms'
     config_params = {'DATASTORE': 'sqlite://'}
 
-    def _create_task(self, txt='This is a task', person=None):
-        data = {'subject': txt}
-        if person:
-            data['assigned'] = person['id']
+    def _create_page(self, path='', title='a page', template=None,
+                     layout=None):
+        if template is None:
+            data = dict(body='$html_main', title='simple')
+            request = yield from self.client.post(
+                '/api/html_templates',
+                body=data,
+                content_type='application/json')
+            response = request.response
+            self.assertEqual(response.status_code, 201)
+            data = self.json(response)
+            template = data['id']
+        if not layout:
+            layout = json.dumps({})
+        data = dict(path=path, title=title, template_id=template,
+                    layout=layout)
         request = yield from self.client.post(
-            '/tasks', body=data, content_type='application/json')
+            '/api/html_pages', body=data, content_type='application/json')
         response = request.response
         self.assertEqual(response.status_code, 201)
         data = self.json(response)
         self.assertIsInstance(data, dict)
         self.assertTrue('id' in data)
-        self.assertEqual(data['subject'], txt)
-        self.assertTrue('created' in data)
-        self.assertFalse(data['done'])
-        return data
-
-    def _create_person(self, username, name=None):
-        name = name or username
-        request = yield from self.client.post(
-            '/people',
-            body={'username': username, 'name': name},
-            content_type='application/json')
-        response = request.response
-        self.assertEqual(response.status_code, 201)
-        data = self.json(response)
-        self.assertIsInstance(data, dict)
-        self.assertTrue('id' in data)
-        self.assertEqual(data['name'], name)
+        self.assertEqual(data['title'], title)
         return data
 
     def test_odm(self):
         tables = yield from self.app.odm.tables()
         self.assertTrue(tables)
 
-    def test_rest_model(self):
-        from tests.odm import CRUDTask, CRUDPerson
-        model = CRUDTask.model
-        self.assertEqual(model.name, 'task')
-        columns = model.columns(self.app)
-        self.assertTrue(columns)
-
-        model = CRUDPerson.model
-        self.assertEqual(model.name, 'person')
-        self.assertEqual(model.url, 'people')
-        self.assertEqual(model.api_name, 'people_url')
-        columns = model.columns(self.app)
-        self.assertTrue(columns)
-
-    @test.green
-    def test_simple_session(self):
-        app = self.app
-        odm = app.odm()
-        with odm.begin() as session:
-            self.assertEqual(session.app, app)
-            user = odm.user(first_name='Luca')
-            session.add(user)
-
-        self.assertTrue(user.id)
-        self.assertEqual(user.first_name, 'Luca')
-        self.assertFalse(user.is_superuser())
-
-    def test_get_tasks(self):
-        request = yield from self.client.get('/tasks')
+    def test_get_pages(self):
+        request = yield from self.client.get('/api/html_pages')
         response = request.response
         self.assertEqual(response.status_code, 200)
         data = self.json(response)
@@ -82,15 +51,18 @@ class TestSql(test.AppTestCase):
         self.assertIsInstance(result, list)
 
     def test_metadata(self):
-        request = yield from self.client.get('/tasks/metadata')
+        request = yield from self.client.get('/api/html_pages/metadata')
         response = request.response
         self.assertEqual(response.status_code, 200)
         data = self.json(response)
         self.assertIsInstance(data, dict)
         self.assertIsInstance(data['columns'], list)
 
-    def test_create_task(self):
-        return self._create_task()
+    def test_create_page(self):
+        return self._create_page()
+
+
+class d:
 
     def test_update_task(self):
         task = yield from self._create_task('This is another task')

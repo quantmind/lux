@@ -72,7 +72,8 @@
 
         //
         //  Fired when a lux form uses this api to post data
-        //  Check the run method in the "lux.services" module for more info
+        //
+        //  Check the run method in the "lux.services" module for more information
         api.formReady = function (model, formScope) {
             var id = api.defaults().id;
             if (id) {
