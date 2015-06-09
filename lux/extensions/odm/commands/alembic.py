@@ -11,8 +11,7 @@ class Command(lux.Command):
     help = 'Alembic commands for migrating database.'
 
     commands = ['auto', 'branches', 'current', 'downgrade', 'heads', 'history',
-                'init', 'merge', 'revision', 'show', 'stamp',
-                'upgrade']
+                'init', 'merge', 'revision', 'show', 'stamp', 'upgrade']
 
     option_list = (
         Setting('command', nargs='*', default=None, desc='Alembic command'),
@@ -74,16 +73,13 @@ class Command(lux.Command):
                 'sqlalchemy.url': 'driver://user:pass@localhost/dbname',
             },
             'logging': {
-                ### Dictionary Schema Details ###
+                'path': '<path_to_logging_config>',
             }
         }
 
         For more information about possible options, please visit Alembic
         documentation:
         https://alembic.readthedocs.org/en/latest/index.html
-
-        For logging dictionary schema visit:
-        https://docs.python.org/3/library/logging.config.html
         '''
         from alembic.config import Config
         # Brecause we are using custom template, we need to change default
@@ -127,8 +123,10 @@ class Command(lux.Command):
         from alembic import command as alembic_cmd
 
         config = self.get_config()
+        # command consume any number of parameters but first is command name
+        cmd = opt.command.pop(0)
         # init command needs to point to lux template, not alembic default
-        if opt.command[0] == 'init':
+        if cmd == 'init':
             dirname = config.get_main_option('script_location')
             # line 63 will be executed in:
             # https://github.com/zzzeek/alembic/blob/master/alembic/command.py
@@ -138,5 +136,25 @@ class Command(lux.Command):
                 alembic_cmd.init(config, dirname, template='lux')
             except UnboundLocalError:
                 pass
-        if opt.command[0] == 'current':
-            alembic_cmd.current(config)
+        # merge required two revision name
+        elif cmd == 'merge':
+            if len(opt.command) != 2:
+                raise CommandError('Command: %s required revisions id.' % cmd)
+            alembic_cmd.merge(config, *opt.command, message=opt.msg,
+                              branch_label=opt.branch)
+        elif cmd == 'revision':
+            alembic_cmd.revision(config, message=opt.msg,
+                                 branch_label=opt.branch)
+        # auto command is a shortcut for `revision --autogenerate`
+        elif cmd == 'auto':
+            alembic_cmd.revision(config, autogenerate=True, message=opt.msg,
+                                 branch_label=opt.branch)
+        # this commands required revision name, but do not take any message or
+        # branch labels
+        elif cmd in ('show', 'stamp', 'upgrade'):
+            if len(opt.command) != 1:
+                raise CommandError('Command: %s required revision id' % cmd)
+            getattr(alembic_cmd, cmd)(config, *opt.command)
+        else:
+            # execute commands without any additional params
+            getattr(alembic_cmd, cmd)(config)
