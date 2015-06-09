@@ -89,14 +89,14 @@ class Extension(AuthBackend):
         Parameter('CRYPT_ALGORITHM',
                   'lux.utils.crypt.arc4',
                   'Python dotted path to module which provides the '
-                  '``encrypt`` and ``descript`` method for password and '
-                  'sensitive data encryption/decription'),
+                  '``encrypt`` and, optionally, ``decrypt`` method for '
+                  'password and sensitive data encryption/decryption'),
         Parameter('SECRET_KEY',
                   'secret-key',
-                  'A string or bytes used for encripting data. Must be unique '
+                  'A string or bytes used for encrypting data. Must be unique '
                   'to the application and long and random enough'),
         Parameter('AUTH_SALT_SIZE', 8,
-                  'Salt size for encription algorithm'),
+                  'Salt size for encryption algorithm'),
         Parameter('SESSION_MESSAGES', True, 'Handle session messages'),
         Parameter('SESSION_EXPIRY', 7*24*60*60,
                   'Expiry for a session/token in seconds.'),

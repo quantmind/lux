@@ -54,10 +54,10 @@ class AuthMixin(PasswordMixin):
                     user = query.filter_by(email=normalise_email(email)).one()
                 else:
                     raise AuthenticationError('Invalid credentials')
-                if user and self.decript(user.password) == password:
+                if user and self.crypt_verify(user.password, password):
                     return user
                 else:
-                    raise odm.ModelNotFound
+                    raise NoResultFound
             except NoResultFound:
                 if username:
                     raise AuthenticationError('Invalid username or password')
