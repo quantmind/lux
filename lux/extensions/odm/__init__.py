@@ -30,7 +30,9 @@ class Extension(lux.Extension):
         Parameter('DATASTORE', None,
                   'Dictionary for mapping models to their back-ends database'),
         Parameter('DATABASE_SESSION_SIGNALS', True,
-                  'Register event handlers for database session')
+                  'Register event handlers for database session'),
+        Parameter('MIGRATIONS', None,
+                  'Dictionary for mapping alembic settings')
     ]
 
     def on_config(self, app):
