@@ -1,5 +1,4 @@
 from pulsar.apps.wsgi import Json
-from pulsar import PermissionDenied
 from lux.extensions.rest import RestRouter
 from lux.extensions.rest.backends import token
 from lux import route
