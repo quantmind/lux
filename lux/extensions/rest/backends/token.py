@@ -97,7 +97,7 @@ class TokenBackend(AuthBackend):
             response['Access-Control-Allow-Headers'] = headers
         response['Access-Control-Allow-Methods'] = methods
 
-    def create_token(self, request, user):
+    def create_token(self, request, user, **kwargs):
         '''Create the token
         '''
         payload = self.jwt_payload(request, user)

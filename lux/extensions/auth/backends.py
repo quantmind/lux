@@ -87,7 +87,6 @@ class AuthMixin(PasswordMixin):
         assert username or email
 
         with odm.begin() as session:
-
             if not username:
                 username = email
 
@@ -111,16 +110,20 @@ class AuthMixin(PasswordMixin):
 class TokenBackend(AuthMixin, backends.TokenBackend):
     '''Authentication backend based on JSON Web Token
     '''
+
     def on_config(self, app):
         super().on_config(app)
         backends.TokenBackend.on_config(self, app)
 
-    def create_token(self, request, user, is_session_token=True):
+    def create_token(self, request, user, **kwargs):
         '''Create the token
         '''
         odm = request.app.odm()
         payload = self.jwt_payload(request, user)
         ip_address = request.get_client_address()
+
+        is_session_token = kwargs[
+            'is_session_token'] if 'is_session_token' in kwargs else True
 
         with odm.begin() as session:
             token = odm.token(id=uuid.uuid4(),
@@ -139,6 +142,7 @@ class SessionBackend(AuthMixin, backends.SessionBackend):
     '''An authentication backend based on sessions stored in the
     cache server and user on the ODM
     '''
+
     def get_session(self, key):
         return self.app.cache_server.get(self._key(key))
 
