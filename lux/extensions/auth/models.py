@@ -106,7 +106,6 @@ class Token(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('user.id'))
     created = Column(DateTime, default=datetime.utcnow)
-    # FIXME: typo in ip_address
-    ip_adderss = Column(IPAddressType)
+    ip_address = Column(IPAddressType)
     user_agent = Column(String(80))
     last_access = Column(DateTime, default=datetime.utcnow)

@@ -28,9 +28,8 @@ class Authorization(token.Authorization):
                 'created': data.created.isoformat(),
                 'last_access': data.last_access.isoformat(),
                 'user_agent': data.user_agent,
-                # FIXME: typo in ip_address
                 # Consider using simplejson / for_json instead ?
-                'ip_adderss': str(data.ip_adderss)}
+                'ip_address': str(data.ip_address)}
         return data
 
     @route(method=('get', 'options'))
