@@ -122,15 +122,12 @@ class TokenBackend(AuthMixin, backends.TokenBackend):
         payload = self.jwt_payload(request, user)
         ip_address = request.get_client_address()
 
-        is_session_token = kwargs[
-            'is_session_token'] if 'is_session_token' in kwargs else True
-
         with odm.begin() as session:
             token = odm.token(id=uuid.uuid4(),
                               user_id=user.id,
                               ip_address=ip_address,
                               user_agent=self.user_agent(request, 80),
-                              session=is_session_token)
+                              **kwargs)
             session.add(token)
 
         payload['token_id'] = token.id.hex
