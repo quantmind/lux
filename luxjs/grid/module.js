@@ -53,7 +53,7 @@
             // Get initial data
             function getInitialData (scope) {
                 var api = $lux.api(scope.options.target),
-                    sub_path = scope.options.path || '';
+                    sub_path = scope.options.target.path || '';
 
                 api.get({path: sub_path + '/metadata'}).success(function(resp) {
                     paginationOptions.limit = resp['default-limit'];
