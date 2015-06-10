@@ -43,7 +43,7 @@ class RestModel:
             self._columns = self._load_columns(app)
         return self._columns
 
-    def get_target(self, request, id=None):
+    def get_target(self, request, **extra_data):
         '''Get a target for a form
 
         Used by HTML Router to get information about the LUX REST API
@@ -53,8 +53,7 @@ class RestModel:
         if not url:
             return
         target = {'url': url, 'name': self.api_name}
-        if id:
-            target['id'] = id
+        target.update(**extra_data)
         return target
 
     def _load_columns(self, app):
