@@ -7,8 +7,6 @@ from pulsar.utils.structures import AttributeDictionary
 from lux.extensions.rest import (PasswordMixin, backends, normalise_email,
                                  AuthenticationError, READ)
 
-from .views import Authorization
-
 
 class AuthMixin(PasswordMixin):
     '''Mixin to implement authentication backend based on
@@ -116,9 +114,6 @@ class TokenBackend(AuthMixin, backends.TokenBackend):
     def on_config(self, app):
         super().on_config(app)
         backends.TokenBackend.on_config(self, app)
-
-    def api_sections(self, app):
-        yield Authorization()
 
     def create_token(self, request, user):
         '''Create the token

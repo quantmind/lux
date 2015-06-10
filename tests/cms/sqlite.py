@@ -7,6 +7,7 @@ from dateutil.parser import parse
 from lux.utils import test
 
 
+@test_timeout(20)
 class TestSql(test.AppTestCase):
     config_file = 'tests.cms'
     config_params = {'DATASTORE': 'sqlite://'}
