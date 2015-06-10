@@ -30,23 +30,7 @@ db_names = config.get_main_option('databases')
 #       'engine1':mymodel.metadata,
 #       'engine2':mymodel.metadata,
 # }
-target_metadata = {}
-try:
-    # metadata section should be provided in MIGRATIONS
-    meta = config.get_section('metadata')
-    # get_section return additional key: `here`
-    meta.pop('here')
-    for key, value in meta.items():
-        value = value.split('.')
-        base = value.pop()
-        try:
-            model = __import__('.'.join(value), fromlist=[base])
-            Base = getattr(model, base)
-            target_metadata.update({key: Base.metadata})
-        except ImportError:
-            pass
-except:
-    pass
+target_metadata = {name: meta for name, meta in config.metadata.items()}
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
