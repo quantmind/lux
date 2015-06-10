@@ -13,6 +13,9 @@ EXTENSIONS = ['lux.extensions.base',
               'lux.extensions.auth']
 
 
+AUTHENTICATION_BACKENDS = ['lux.extensions.auth.TokenBackend']
+
+
 class Extension(lux.Extension):
 
     def api_sections(self, app):

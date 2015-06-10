@@ -1,6 +1,6 @@
 //      Lux Library - v0.2.0
 
-//      Compiled 2015-06-03.
+//      Compiled 2015-06-05.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -809,7 +809,8 @@ function(angular, root) {
 
         //
         //  Fired when a lux form uses this api to post data
-        //  Check the run method in the "lux.services" module for more info
+        //
+        //  Check the run method in the "lux.services" module for more information
         api.formReady = function (model, formScope) {
             var id = api.defaults().id;
             if (id) {
@@ -2026,8 +2027,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                         p = $($document[0].createElement('p'))
                                 .attr('ng-show', '(' + submitted + ' || ' + dirty + ') && ' + invalid)
                                 .addClass('text-danger error-block')
-                                .addClass(scope.formErrorClass)
-                                .html('{{formErrors.' + field.name + '}}'),
+                                .addClass(scope.formErrorClass),
                         value,
                         attrname;
                     // Loop through validation attributes
@@ -2044,13 +2044,22 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                     });
 
                     // Add the invalid handler if not available
-                    var errors = p.children().length;
+                    /*var errors = p.children().length;
                     if (errors === (field.required ? 1 : 0)) {
                         var name = '$invalid';
                         if (errors)
                             name += ' && !' + [scope.formName, field.name, '$error.required'].join('.');
                         p.append(this.fieldErrorElement(scope, name, self.errorMessage(scope, 'invalid')));
-                    }
+                    }*/
+
+                    // Add the invalid handler for server side errors
+                    var name = '$invalid';
+                        name += ' && !' + [scope.formName, field.name, '$error.required'].join('.');
+                        p.append(
+                            this.fieldErrorElement(scope, name, self.errorMessage(scope, 'invalid'))
+                            .html('{{formErrors.' + field.name + '}}')
+                        );
+
                     return element.append(p);
                 },
                 //
@@ -2108,7 +2117,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                 //
                 // Return the function to handle form processing
                 processForm: function (scope) {
-                	return scope.processForm || lux.processForm();
+                    return scope.processForm || lux.processForm();
                 },
                 //
                 _select: function (tag, element) {
@@ -2238,6 +2247,16 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                     scope.addMessages = function (messages) {
                         forEach(messages, function (messages, field) {
                             scope.formMessages[field] = messages;
+
+                            var msg = '';
+                            forEach(messages, function(error) {
+                                msg += error.message;
+                                if (messages.length > 1)
+                                    msg += '</br>';
+                            });
+
+                            scope.formErrors[field] = msg;
+                            scope[scope.formName][field].$invalid = true;
                         });
                     };
 
@@ -2286,7 +2305,10 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
             };
 
             this.processForm = function(scope) {
-                //
+                // Clear form errors and messages
+                scope.formMessages = [];
+                scope.formErrors = [];
+
                 if (scope.form.$invalid) {
                     return $scope.showErrors();
                 }
@@ -2393,13 +2415,55 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                 sizes: [25, 50, 100],
             };
 
-            // Get initial data
-            function getInitialData (scope, options) {
+            function parseColumns(columns) {
+                var columnDefs = [];
 
-                var api = $lux.api(options.target);
+                angular.forEach(columns, function(col) {
+                    var column = {
+                        field: col.field,
+                        displayName: col.displayName,
+                        type: getColumnType(col.type),
+                    };
+
+                    if (!col.sortable)
+                        column.enableSorting = false;
+
+                    if (!col.filter)
+                        column.enableFiltering = false;
+
+                    if (column.field === 'id')
+                        column.cellTemplate = '<div class="ui-grid-cell-contents"><a ng-href="{{grid.appScope.objectUrl(COL_FIELD)}}">{{COL_FIELD}}</a></div>';
+
+                    if (column.type === 'date') {
+                        column.sortingAlgorithm = function(a, b) {
+                            var dt1 = new Date(a).getTime(),
+                                dt2 = new Date(b).getTime();
+                            return dt1 === dt2 ? 0 : (dt1 < dt2 ? -1 : 1);
+                        };
+                    } else if (column.type === 'boolean') {
+                        column.cellTemplate = '<div class="ui-grid-cell-contents"><i ng-class="{{COL_FIELD == true}} ? \'fa fa-check-circle text-success\' : \'fa fa-times-circle text-danger\'"></i></div>';
+
+                        if (col.filter) {
+                            column.filter = {
+                                type: uiGridConstants.filter.SELECT,
+                                selectOptions: [{ value: 'true', label: 'True' }, { value: 'false', label: 'False'}],
+                            };
+                        }
+                    }
+                    columnDefs.push(column);
+                });
+
+                return columnDefs;
+            }
+
+            // Get initial data
+            function getInitialData (scope) {
+                var api = $lux.api(scope.options.target);
 
                 api.get({path: '/metadata'}).success(function(resp) {
                     paginationOptions.limit = resp['default-limit'];
+
+                    scope.gridOptions.columnDefs = parseColumns(resp.columns);
 
                     api.get({}, {limit: paginationOptions.limit}).success(function(resp) {
                         scope.gridOptions.totalItems = resp.total;
@@ -2429,30 +2493,31 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                 });
             }
 
+            // Return column type accirding to type
+            function getColumnType(type) {
+                switch (type) {
+                    case 'integer':     return 'number';
+                    case 'datetime':    return 'date';
+                    default:            return type;
+                }
+            }
+
             // Pre-process grid options
             function buildOptions (scope, options) {
+                scope.options = options;
 
                 scope.objectUrl = function(objectId) {
                     return $window.location + '/' + objectId;
                 };
 
-                function getColumnType(type) {
-                    switch (type) {
-                        case 'integer':     return 'number';
-                        case 'datetime':    return 'date';
-                        default:            return type;
-                    }
-                }
-
                 var api = $lux.api(options.target),
-                    columns = [],
                     gridOptions = {
                         paginationPageSizes: paginationOptions.sizes,
                         paginationPageSize: paginationOptions.limit,
+                        enableFiltering: true,
+                        enableRowHeaderSelection: false,
                         useExternalPagination: true,
                         useExternalSorting: true,
-                        enableFiltering: true,
-                        columnDefs: [],
                         rowHeight: 30,
                         onRegisterApi: function(gridApi) {
                             scope.gridApi = gridApi;
@@ -2484,36 +2549,6 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                                     }
                                 }
                             });
-
-                            angular.forEach(options.columns, function(col) {
-                                var column = {
-                                    field: col.field,
-                                    displayName: col.displayName,
-                                    type: getColumnType(col.type),
-                                    enableSorting: col.sortable,
-                                    enableFiltering: col.filter,
-                                };
-
-                                if (column.field === 'id')
-                                    column.cellTemplate = '<div class="ui-grid-cell-contents"><a ng-href="{{grid.appScope.objectUrl(COL_FIELD)}}">{{COL_FIELD}}</a></div>';
-
-                                if (column.type === 'date') {
-                                    column.sortingAlgorithm = function(a, b) {
-                                        var dt1 = new Date(a).getTime(),
-                                            dt2 = new Date(b).getTime();
-                                        return dt1 === dt2 ? 0 : (dt1 < dt2 ? -1 : 1);
-                                    };
-                                } else if (column.type === 'boolean') {
-                                    column.cellTemplate = '<div class="ui-grid-cell-contents"><i ng-class="{{COL_FIELD == true}} ? \'fa fa-check-circle text-success\' : \'fa fa-times-circle text-danger\'"></i></div>';
-
-                                    column.filter = {
-                                        type: uiGridConstants.filter.SELECT,
-                                        selectOptions: [{ value: 'true', label: 'True' }, { value: 'false', label: 'False'}],
-                                    };
-                                }
-
-                                gridOptions.columnDefs.push(column);
-                            });
                         }
                     };
 
@@ -2535,10 +2570,10 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
 
                         opts = getOptions(opts);
 
-                        if (opts)
+                        if (opts) {
                             scope.gridOptions = buildOptions(scope, opts);
-
-                        getInitialData(scope, opts);
+                            getInitialData(scope);
+                        }
                     },
                 },
             };

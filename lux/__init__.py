@@ -10,6 +10,6 @@ PACKAGE_DIR = os.path.dirname(os.path.abspath(__file__))
 if os.environ.get('lux_install_running') != 'yes':
     from pulsar.utils.version import get_version
 
-    __version__ = version = get_version(VERSION)
+    __version__ = version = get_version(VERSION, __file__)
 
     from .core import *

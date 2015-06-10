@@ -72,5 +72,5 @@ def decrypt(ciphertext, key):
         return ''
 
 
-def verify(value, encripted_value, key):
-    return value == decrypt(encripted_value, key)
+def verify(encrypted, raw, key, salt_size=8):
+    return raw == decrypt(encrypted, key)

@@ -13,12 +13,12 @@ from pulsar.utils.httpurl import is_absolute_uri
 import lux
 from lux import Parameter, Router
 from lux.core.wrappers import wsgi_request
-from lux.utils.http import same_origin
 from lux.extensions.angular import add_ng_modules
 
 from .user import *
 from .models import RestModel
 from .pagination import Pagination, Github
+from .client import ApiClient
 from .views import (RestRoot, RestRouter, RestMixin, change_password,
                     RequirePermission)
 
@@ -68,6 +68,8 @@ class AuthBackend(lux.Extension):
         pass
 
     def session_expiry(self, request):
+        '''Expiry for a session or a token
+        '''
         session_expiry = request.config['SESSION_EXPIRY']
         if session_expiry:
             return datetime.now() + timedelta(seconds=session_expiry)
@@ -86,17 +88,17 @@ class Extension(AuthBackend):
         Parameter('CRYPT_ALGORITHM',
                   'lux.utils.crypt.arc4',
                   'Python dotted path to module which provides the '
-                  '``encrypt`` and ``descript`` method for password and '
-                  'sensitive data encryption/decription'),
+                  '``encrypt`` and, optionally, ``decrypt`` method for '
+                  'password and sensitive data encryption/decryption'),
         Parameter('SECRET_KEY',
                   'secret-key',
-                  'A string or bytes used for encripting data. Must be unique '
+                  'A string or bytes used for encrypting data. Must be unique '
                   'to the application and long and random enough'),
         Parameter('AUTH_SALT_SIZE', 8,
-                  'Salt size for encription algorithm'),
+                  'Salt size for encryption algorithm'),
         Parameter('SESSION_MESSAGES', True, 'Handle session messages'),
         Parameter('SESSION_EXPIRY', 7*24*60*60,
-                  'Expiry for a session in seconds.'),
+                  'Expiry for a session/token in seconds.'),
         Parameter('CHECK_USERNAME', lambda u: True,
                   'Check if the username is valid'),
         Parameter('PERMISSION_LEVELS', {'read': 10,
@@ -124,6 +126,9 @@ class Extension(AuthBackend):
         Parameter('API_LIMIT_NOAUTH', 30,
                   ('Maximum number of items returned when user is '
                    'not authenticated')),
+        Parameter('API_AUTHENTICATION_TOKEN', None,
+                  'Authentication token for the api. This is used by '
+                  'a lux application accessing a lux api'),
         Parameter('PAGINATION', 'lux.extensions.rest.Pagination',
                   'Pagination class')]
 
@@ -171,7 +176,7 @@ class Extension(AuthBackend):
             for backend in self.backends:
                 app.bind_events(backend, events)
 
-            app.api = api = RestRoot(url)
+            api = RestRoot(url)
             middleware.append(api)
             app.config['API_URL'] = str(api.route)
             for extension in app.extensions.values():
@@ -179,7 +184,7 @@ class Extension(AuthBackend):
                 if api_sections:
                     for router in api_sections(app):
                         api.add_child(router)
-
+        app.api = ApiClient(app)
         return middleware
 
     def response_middleware(self, app):
