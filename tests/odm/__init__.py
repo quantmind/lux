@@ -19,7 +19,7 @@ AUTHENTICATION_BACKENDS = ['lux.extensions.auth.TokenBackend']
 class Extension(lux.Extension):
 
     def api_sections(self, app):
-        return [CRUDTask(), CRUDPerson()]
+        return [CRUDTask(), CRUDPerson(), UserCRUD()]
 
 
 class TaskForm(forms.Form):
@@ -34,12 +34,33 @@ class PersonForm(forms.Form):
     name = forms.CharField(required=True)
 
 
+class UserForm(forms.Form):
+    username = forms.CharField()
+    email = forms.EmailField()
+    first_name = forms.CharField(required=False)
+    last_name = forms.CharField(required=False)
+    superuser = forms.BooleanField()
+    active = forms.BooleanField()
+
+
 class CRUDTask(odm.CRUD):
     model = odm.RestModel('task', TaskForm)
 
 
 class CRUDPerson(odm.CRUD):
     model = odm.RestModel('person', PersonForm, url='people')
+
+
+class UserCRUD(odm.CRUD):
+    '''Test custom CRUD view and RestModel
+    '''
+    model = odm.RestModel('user',
+                          UserForm,
+                          columns=('username', 'active', 'superuser'),
+                          exclude=('password', 'permissions'))
+
+    def serialise_model(self, request, data, in_list=False):
+        return self.model.tojson(request, data, exclude=('superuser',))
 
 
 class Person(odm.Model):
