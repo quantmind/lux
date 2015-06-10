@@ -108,7 +108,7 @@ class Token(Base):
     id = Column(UUIDType(binary=False), primary_key=True)
     user_id = Column(Integer, ForeignKey('user.id'))
     created = Column(DateTime, default=datetime.utcnow)
-    ip_adderss = Column(IPAddressType)
+    ip_address = Column(IPAddressType)
     user_agent = Column(String(80))
     last_access = Column(DateTime, default=datetime.utcnow)
     # when true, this is a session token, otherwise it is a personal token

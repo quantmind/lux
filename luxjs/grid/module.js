@@ -52,14 +52,15 @@
 
             // Get initial data
             function getInitialData (scope) {
-                var api = $lux.api(scope.options.target);
+                var api = $lux.api(scope.options.target),
+                    sub_path = scope.options.target.path || '';
 
-                api.get({path: '/metadata'}).success(function(resp) {
+                api.get({path: sub_path + '/metadata'}).success(function(resp) {
                     paginationOptions.limit = resp['default-limit'];
 
                     scope.gridOptions.columnDefs = parseColumns(resp.columns);
 
-                    api.get({}, {limit: paginationOptions.limit}).success(function(resp) {
+                    api.get({path: sub_path}, {limit: paginationOptions.limit}).success(function(resp) {
                         scope.gridOptions.totalItems = resp.total;
                         scope.gridOptions.data = resp.result;
                     });

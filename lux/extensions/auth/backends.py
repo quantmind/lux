@@ -125,12 +125,12 @@ class TokenBackend(AuthMixin, backends.TokenBackend):
         '''
         odm = request.app.odm()
         payload = self.jwt_payload(request, user)
-        ip_adderss = request.get_client_address()
+        ip_address = request.get_client_address()
 
         with odm.begin() as session:
             token = odm.token(id=uuid.uuid4(),
                               user_id=user.id,
-                              ip_adderss=ip_adderss,
+                              ip_address=ip_address,
                               user_agent=self.user_agent(request, 80))
             session.add(token)
 
