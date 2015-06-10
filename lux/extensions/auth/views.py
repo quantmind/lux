@@ -4,6 +4,7 @@ from lux.extensions.rest.backends import token
 from lux import route
 from lux.extensions import rest
 
+
 class Authorization(token.Authorization):
 
     def get(self, request):
