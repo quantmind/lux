@@ -106,7 +106,7 @@ class TokenBackend(AuthBackend):
 
 
 class Authorization(RestRouter):
-    model = RestModel('authorization', LoginForm, columns=[{'field': 'ip_address', 'name': 'ip_address', 'displayName': 'IP address', 'type': 'string'}])
+    model = RestModel('authorization', LoginForm)
 
     def post(self, request):
         '''Create a new Authorization token
