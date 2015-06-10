@@ -14,9 +14,9 @@ class TestSqlite(test.AppTestCase):
         self.assertTrue(backend)
         self.assertTrue(backend.backends)
 
+    @test.green
     def test_get_user_none(self):
         backend = self.app.auth_backend
-
         request = self.app.wsgi_request()
         user = backend.get_user(request, user_id=18098098)
         self.assertEqual(user, None)
@@ -25,6 +25,7 @@ class TestSqlite(test.AppTestCase):
         user = backend.get_user(request, username='dhvfvhsdfgvhfd')
         self.assertEqual(user, None)
 
+    @test.green
     def test_create_user(self):
         backend = self.app.auth_backend
         request = self.app.wsgi_request()
@@ -46,6 +47,7 @@ class TestSqlite(test.AppTestCase):
 
         self.assertTrue(user.is_active())
 
+    @test.green
     def test_create_superuser(self):
         backend = self.app.auth_backend
         request = self.app.wsgi_request()
@@ -90,11 +92,9 @@ class TestSqlite(test.AppTestCase):
     def test_create_superuser_command_and_token(self):
         username = 'ghghghgh'
         password = 'dfbjdhbvdjbhv'
-        user = self.client.run_command(
-            'create_superuser',
-            ['--username', username,
-             '--email', 'sjhcsecds@sjdbcsjdc.com',
-             '--password', password])
+        user = yield from self.create_superuser(username,
+                                                'sjhcsecds@sjdbcsjdc.com',
+                                                password)
         self.assertEqual(user.username, username)
         self.assertNotEqual(user.password, password)
 

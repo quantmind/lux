@@ -1,3 +1,5 @@
+'''Utilities for testing Lux applications
+'''
 import unittest
 import string
 import logging
@@ -5,7 +7,7 @@ import json
 from unittest import mock
 from io import StringIO
 
-from pulsar import send
+from pulsar import send, get_event_loop
 from pulsar.utils.httpurl import encode_multipart_formdata
 from pulsar.utils.string import random_string
 from pulsar.apps.test import test_timeout
@@ -23,13 +25,24 @@ def randomname(prefix=None):
 
 
 def green(test_fun):
+    '''Decorator to run a test function in the lux application green_pool
+    if available, otherwise in the event loop executor.
 
+    In both cases it returns a :class:`~asyncio.Future`.
+
+    This decorator should not be used for functions returning a coroutine
+    or a :class:`~asyncio.Future`.
+    '''
     def _(o):
-        pool = o.app.green_pool
+        try:
+            pool = o.app.green_pool
+        except AttributeError:
+            pool = None
         if pool:
             return pool.submit(test_fun, o)
         else:
-            return test_fun(o)
+            loop = get_event_loop()
+            return loop.run_in_executor(None, test_fun, o)
 
     return _
 
@@ -57,8 +70,9 @@ def test_app(test, config_file=None, argv=None, **params):
     return app
 
 
-class testClient:
-
+class TestClient:
+    '''An utility for simulating lux clients
+    '''
     def __init__(self, app):
         self.app = app
 
@@ -81,7 +95,7 @@ class testClient:
 
     def request(self, **params):
         request, sr = self.request_start_response(**params)
-        response = yield from self.app(request.environ, sr)
+        yield from self.app(request.environ, sr)
         return request
 
     def get(self, path=None, **extra):
@@ -179,7 +193,7 @@ class AppTestCase(unittest.TestCase, TestMixin):
         # Create the application
         cls.dbs = {}
         cls.app = test_app(cls)
-        cls.client = testClient(cls.app)
+        cls.client = TestClient(cls.app)
         if hasattr(cls.app, 'odm'):
             cls.odm = cls.app.odm
             return cls.setupdb()
@@ -208,6 +222,14 @@ class AppTestCase(unittest.TestCase, TestMixin):
         logger.info('Drop databases')
         cls.app.odm().close()
         cls.odm().database_drop(database=cls.dbname)
+
+    def create_superuser(self, username, email, password):
+        '''A shortcut for the create_superuser command
+        '''
+        return self.client.run_command('create_superuser',
+                                       ['--username', username,
+                                        '--email', email,
+                                        '--password', password])
 
 
 class TestServer(unittest.TestCase, TestMixin):

@@ -1,7 +1,3 @@
-import json
-
-from pulsar.apps.test import test_timeout
-
 from dateutil.parser import parse
 
 from lux.utils import test
@@ -169,7 +165,7 @@ class TestSql(test.AppTestCase):
         self.assertEqual(error['message'], 'Invalid person')
 
     def test_unique_field(self):
-        person = yield from self._create_person('spiderman1', 'luca')
+        yield from self._create_person('spiderman1', 'luca')
         data = dict(username='spiderman1', name='john')
         request = yield from self.client.post('/people', body=data,
                                               content_type='application/json')

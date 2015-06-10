@@ -15,8 +15,7 @@ class AuthMixin(PasswordMixin):
     SQLAlchemy models
     '''
 
-    def get_user(self, request, user_id=None, username=None, email=None,
-                 **kw):
+    def get_user(self, request, user_id=None, username=None, email=None, **kw):
         '''Securely fetch a user by id, username or email
 
         Returns user or nothing
@@ -80,6 +79,10 @@ class AuthMixin(PasswordMixin):
     def create_user(self, request, username=None, password=None, email=None,
                     first_name=None, last_name=None, active=False,
                     superuser=False, **kwargs):
+        '''Create a new user.
+
+        Either ``username`` or ``email`` must be provided.
+        '''
         odm = request.app.odm()
 
         email = normalise_email(email)
