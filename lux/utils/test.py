@@ -83,11 +83,14 @@ class TestClient:
 
     def request_start_response(self, path=None, HTTP_ACCEPT=None,
                                headers=None, body=None, content_type=None,
-                               **extra):
+                               token=None, **extra):
         extra['HTTP_ACCEPT'] = HTTP_ACCEPT or '*/*'
         if content_type:
             headers = headers or []
             headers.append(('content-type', content_type))
+        if token:
+            headers = headers or []
+            headers.append(('Authorization', 'Bearer %s' % token))
         request = self.app.wsgi_request(path=path, headers=headers, body=body,
                                         extra=extra)
         start_response = mock.MagicMock()
@@ -215,6 +218,7 @@ class AppTestCase(unittest.TestCase, TestMixin):
         cls.app.odm = cls.odm.database_create(database=cls.dbname)
         logger.info('Create test tables')
         cls.app.odm().table_create()
+        cls.populatedb()
 
     @classmethod
     @green
@@ -222,6 +226,10 @@ class AppTestCase(unittest.TestCase, TestMixin):
         logger.info('Drop databases')
         cls.app.odm().close()
         cls.odm().database_drop(database=cls.dbname)
+
+    @classmethod
+    def populatedb(cls):
+        pass
 
     def create_superuser(self, username, email, password):
         '''A shortcut for the create_superuser command

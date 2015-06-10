@@ -9,7 +9,7 @@ from ..views import RestRouter, AuthenticationError
 
 try:
     import jwt
-except ImportError:
+except ImportError:     # pragma    nocover
     jwt = None
 
 from .. import AuthBackend
@@ -40,7 +40,7 @@ class TokenBackend(AuthBackend):
     ]
 
     def on_config(self, app):
-        if not jwt:
+        if not jwt:     # pragma    nocover
             raise ImproperlyConfigured('JWT library not available')
 
     def api_sections(self, app):
