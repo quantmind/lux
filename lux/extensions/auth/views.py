@@ -18,10 +18,10 @@ class Authorization(token.Authorization):
         with odm.begin() as session:
             q = session.query(odm.token)
             res = q.filter_by(user_id=user.id).limit(limit).offset(offset)
-            data = [self.make_model_jsonable(request, row) for row in res]
+            data = self.serialise(request, res.all())
             return Json(data).http_response(request)
 
-    def make_model_jsonable(self, request, data, in_list=False):
+    def serialise_model(self, request, data, in_list=False):
         data = {'id': data.id,
                 'user_id': data.user_id,
                 'created': data.created.isoformat(),
