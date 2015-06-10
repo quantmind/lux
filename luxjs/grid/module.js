@@ -9,13 +9,55 @@
                 sizes: [25, 50, 100],
             };
 
-            // Get initial data
-            function getInitialData (scope, options) {
+            function parseColumns(columns) {
+                var columnDefs = [];
 
-                var api = $lux.api(options.target);
+                angular.forEach(columns, function(col) {
+                    var column = {
+                        field: col.field,
+                        displayName: col.displayName,
+                        type: getColumnType(col.type),
+                    };
+
+                    if (!col.sortable)
+                        column.enableSorting = false;
+
+                    if (!col.filter)
+                        column.enableFiltering = false;
+
+                    if (column.field === 'id')
+                        column.cellTemplate = '<div class="ui-grid-cell-contents"><a ng-href="{{grid.appScope.objectUrl(COL_FIELD)}}">{{COL_FIELD}}</a></div>';
+
+                    if (column.type === 'date') {
+                        column.sortingAlgorithm = function(a, b) {
+                            var dt1 = new Date(a).getTime(),
+                                dt2 = new Date(b).getTime();
+                            return dt1 === dt2 ? 0 : (dt1 < dt2 ? -1 : 1);
+                        };
+                    } else if (column.type === 'boolean') {
+                        column.cellTemplate = '<div class="ui-grid-cell-contents"><i ng-class="{{COL_FIELD == true}} ? \'fa fa-check-circle text-success\' : \'fa fa-times-circle text-danger\'"></i></div>';
+
+                        if (col.filter) {
+                            column.filter = {
+                                type: uiGridConstants.filter.SELECT,
+                                selectOptions: [{ value: 'true', label: 'True' }, { value: 'false', label: 'False'}],
+                            };
+                        }
+                    }
+                    columnDefs.push(column);
+                });
+
+                return columnDefs;
+            }
+
+            // Get initial data
+            function getInitialData (scope) {
+                var api = $lux.api(scope.options.target);
 
                 api.get({path: '/metadata'}).success(function(resp) {
                     paginationOptions.limit = resp['default-limit'];
+
+                    scope.gridOptions.columnDefs = parseColumns(resp.columns);
 
                     api.get({}, {limit: paginationOptions.limit}).success(function(resp) {
                         scope.gridOptions.totalItems = resp.total;
@@ -45,30 +87,31 @@
                 });
             }
 
+            // Return column type accirding to type
+            function getColumnType(type) {
+                switch (type) {
+                    case 'integer':     return 'number';
+                    case 'datetime':    return 'date';
+                    default:            return type;
+                }
+            }
+
             // Pre-process grid options
             function buildOptions (scope, options) {
+                scope.options = options;
 
                 scope.objectUrl = function(objectId) {
                     return $window.location + '/' + objectId;
                 };
 
-                function getColumnType(type) {
-                    switch (type) {
-                        case 'integer':     return 'number';
-                        case 'datetime':    return 'date';
-                        default:            return type;
-                    }
-                }
-
                 var api = $lux.api(options.target),
-                    columns = [],
                     gridOptions = {
                         paginationPageSizes: paginationOptions.sizes,
                         paginationPageSize: paginationOptions.limit,
+                        enableFiltering: true,
+                        enableRowHeaderSelection: false,
                         useExternalPagination: true,
                         useExternalSorting: true,
-                        enableFiltering: true,
-                        columnDefs: [],
                         rowHeight: 30,
                         onRegisterApi: function(gridApi) {
                             scope.gridApi = gridApi;
@@ -100,36 +143,6 @@
                                     }
                                 }
                             });
-
-                            angular.forEach(options.columns, function(col) {
-                                var column = {
-                                    field: col.field,
-                                    displayName: col.displayName,
-                                    type: getColumnType(col.type),
-                                    enableSorting: col.sortable,
-                                    enableFiltering: col.filter,
-                                };
-
-                                if (column.field === 'id')
-                                    column.cellTemplate = '<div class="ui-grid-cell-contents"><a ng-href="{{grid.appScope.objectUrl(COL_FIELD)}}">{{COL_FIELD}}</a></div>';
-
-                                if (column.type === 'date') {
-                                    column.sortingAlgorithm = function(a, b) {
-                                        var dt1 = new Date(a).getTime(),
-                                            dt2 = new Date(b).getTime();
-                                        return dt1 === dt2 ? 0 : (dt1 < dt2 ? -1 : 1);
-                                    };
-                                } else if (column.type === 'boolean') {
-                                    column.cellTemplate = '<div class="ui-grid-cell-contents"><i ng-class="{{COL_FIELD == true}} ? \'fa fa-check-circle text-success\' : \'fa fa-times-circle text-danger\'"></i></div>';
-
-                                    column.filter = {
-                                        type: uiGridConstants.filter.SELECT,
-                                        selectOptions: [{ value: 'true', label: 'True' }, { value: 'false', label: 'False'}],
-                                    };
-                                }
-
-                                gridOptions.columnDefs.push(column);
-                            });
                         }
                     };
 
@@ -151,10 +164,10 @@
 
                         opts = getOptions(opts);
 
-                        if (opts)
+                        if (opts) {
                             scope.gridOptions = buildOptions(scope, opts);
-
-                        getInitialData(scope, opts);
+                            getInitialData(scope);
+                        }
                     },
                 },
             };

@@ -7,9 +7,10 @@
 import sys
 import argparse
 import logging
+from functools import partial
 
 from pulsar import (Setting, get_event_loop, Application, ImproperlyConfigured,
-                    asyncio, Config, get_actor, is_async)
+                    asyncio, Config, get_actor)
 from pulsar.utils.config import Loglevel, Debug, LogHandlers
 
 from lux import __version__
@@ -113,6 +114,8 @@ class Command(ConsoleParser):
     def __call__(self, argv, **params):
         app = self.pulsar_app(argv)
         app()
+        # make sure the handler is created
+        self.app.get_handler()
         return self.run_until_complete(app.cfg, **params)
 
     def get_version(self):
@@ -139,15 +142,13 @@ class Command(ConsoleParser):
         Most commands are run using this method.
         '''
         pool = self.app.green_pool
+        loop = get_event_loop()
+        run = partial(self.run, options, **params)
         if pool:
-            loop = pool._loop
-            result = pool.submit(self.run, options, **params)
-            if not loop.is_running():
-                return loop.run_until_complete(result)
-            else:
-                return result
+            result = pool.submit(run)
         else:
-            return self.run(options, **params)
+            result = loop.run_in_executor(None, run)
+        return result if loop.is_running() else loop.run_until_complete(result)
 
     @property
     def logger(self):

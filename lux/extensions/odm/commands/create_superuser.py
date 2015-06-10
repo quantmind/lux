@@ -115,7 +115,7 @@ class Command(lux.Command):
                                              email=normalise_email(email),
                                              password=password)
         if user:
-            self.write("Superuser %s created successfully.\n" % user)
+            self.write("Superuser %s created successfully.\n" % user.username)
         else:
             self.write_err("ERROR: could not create superuser")
 

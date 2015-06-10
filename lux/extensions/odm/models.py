@@ -19,6 +19,8 @@ class RestModel(rest.RestModel):
 
         fields = {}
         for field in columns:
+            if field.name in exclude:
+                continue
             try:
                 data = obj.__getattribute__(field.name)
                 if isinstance(data, date):

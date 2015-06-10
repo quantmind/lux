@@ -1,5 +1,3 @@
-import logging
-
 import pulsar
 from pulsar.apps import wsgi
 from pulsar.utils.log import clear_logger

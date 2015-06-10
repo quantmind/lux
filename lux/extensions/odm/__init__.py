@@ -1,18 +1,13 @@
 '''
-Lux extension for integrating SQL and NoSQL into applications.
+Lux extension for integrating SQL and NoSQL databases into applications.
 
 The extension create create a new application attribute called ``odm``
 which can be used to access object data mappers for different backend.
-To access the ``sql`` mapper:
 
-    sql = app.odm('sql')
+It requires the :mod:`lux.extensions.rest` module and pulsar-odm_ which is
+built on top of sqlalchemy, pulsar and greenlet.
 
-in a router handler:
-
-    def get(self, request):
-        sql = request.app.odm('sql')
-        with sql.session().begin() as session:
-            ...
+_ ..pulsar-odm: https://github.com/quantmind/pulsar-odm
 '''
 import lux
 from lux import Parameter
@@ -28,6 +23,8 @@ from .forms import RelationshipField, UniqueField
 
 class Extension(lux.Extension):
     '''Object data mapper extension
+
+    Uses pulsar-odm for sychronous & asynchronous data mappers
     '''
     _config = [
         Parameter('DATASTORE', None,
@@ -41,6 +38,14 @@ class Extension(lux.Extension):
     def on_config(self, app):
         '''Initialise Object Data Mapper'''
         app.odm = Odm(app, app.config['DATASTORE'])
+
+    def on_loaded(self, app):
+        '''When the application load, choose the
+        concurrency paradigm
+        '''
+        odm = app.odm()
+        if odm.is_green and not app.config['GREEN_POOL']:
+            app.config['GREEN_POOL'] = 50
 
 
 class Odm(LocalMixin):
@@ -64,3 +69,11 @@ class Odm(LocalMixin):
         odm = Odm(self.app, self.binds)
         odm.local.mapper = self().database_create(database, **params)
         return odm
+
+    def tables(self):
+        odm = self()
+        if self.app.green_pool:
+            tables = yield from self.app.green_pool.submit(odm.tables)
+        else:
+            tables = odm.tables()
+        return tables

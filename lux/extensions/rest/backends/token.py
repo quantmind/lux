@@ -9,7 +9,7 @@ from ..views import RestRouter, AuthenticationError
 
 try:
     import jwt
-except ImportError:
+except ImportError:     # pragma    nocover
     jwt = None
 
 from .. import AuthBackend
@@ -26,13 +26,21 @@ class Http401(HttpException):
 class TokenBackend(AuthBackend):
     '''Backend based on JWT_
 
+    Once a ``jtw`` is created, authetication is achieved by setting
+    the ``Authorization`` header to ``Bearer jwt``.
+
     Requires pyjwt_ package.
 
     .. _pyjwt: https://pypi.python.org/pypi/PyJWT
     .. _JWT: http://self-issued.info/docs/draft-ietf-oauth-json-web-token.html
     '''
+    _config = [
+        Parameter('CORS_ALLOWED_METHODS', 'GET, PUT, POST, DELETE, HEAD',
+                  'Access-Control-Allow-Methods for CORS')
+    ]
+
     def on_config(self, app):
-        if not jwt:
+        if not jwt:     # pragma    nocover
             raise ImproperlyConfigured('JWT library not available')
 
     def api_sections(self, app):
@@ -77,6 +85,7 @@ class TokenBackend(AuthBackend):
         '''Preflight handler
         '''
         headers = request.get('HTTP_ACCESS_CONTROL_REQUEST_HEADERS')
+        methods = app.config['CORS_ALLOWED_METHODS']
         response = request.response
         origin = request.get('HTTP_ORIGIN', '*')
 
@@ -86,6 +95,7 @@ class TokenBackend(AuthBackend):
         response['Access-Control-Allow-Origin'] = origin
         if headers:
             response['Access-Control-Allow-Headers'] = headers
+        response['Access-Control-Allow-Methods'] = methods
 
     def create_token(self, request, user):
         '''Create the token
@@ -94,6 +104,8 @@ class TokenBackend(AuthBackend):
         return self.encode_payload(self.jwt_payload(request, user))
 
     def jwt_payload(self, request, user):
+        '''Add user-related payload to the JWT
+        '''
         expiry = self.session_expiry(request)
         payload = {'user_id': user.id,
                    'superuser': user.is_superuser()}
@@ -109,7 +121,8 @@ class Authorization(RestRouter):
     model = RestModel('authorization', LoginForm)
 
     def post(self, request):
-        '''Create a new Authorization token
+        '''Anthenticate the user and create a new Authorization token
+        if succesful
         '''
         user = request.cache.user
         if user.is_authenticated():

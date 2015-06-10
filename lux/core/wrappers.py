@@ -6,12 +6,10 @@ from pulsar.apps.wsgi import (route, wsgi_request, cached_property,
 from pulsar.apps import wsgi
 from pulsar.apps.wsgi import RouterParam, Router, render_error_debug
 from pulsar.apps.wsgi.utils import error_messages
-from pulsar.utils.httpurl import (JSON_CONTENT_TYPES, is_absolute_uri,
-                                  iri_to_uri)
+from pulsar.utils.httpurl import JSON_CONTENT_TYPES
 from pulsar.utils.structures import mapping_iterator
 
 from lux.utils import unique_tuple
-from pulsar.utils.exceptions import MethodNotAllowed
 
 __all__ = ['Html', 'WsgiRequest', 'Router', 'HtmlRouter',
            'JsonRouter', 'route', 'wsgi_request',
@@ -136,10 +134,13 @@ class HtmlRouter(Router):
     def context(self, request, context):
         pass
 
+    def cms(self, app):
+        return app.cms
+
     def get_html_body_template(self, app):
         '''Fetch the HTML template for the body part of this request
         '''
-        cms = app.cms
+        cms = self.cms(app)
         template = (cms.template(self.full_route.path) or
                     self.html_body_template)
         if not template:

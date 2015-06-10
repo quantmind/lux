@@ -14,6 +14,9 @@ install:
   - pip install -r requirements.txt
   - npm install
 
+addons:
+  postgresql: "9.4"
+
 before_script:
   - psql -U postgres -c "CREATE USER lux WITH PASSWORD 'luxtest';"
   - psql -U postgres -c "ALTER USER lux CREATEDB;"

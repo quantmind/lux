@@ -147,7 +147,11 @@ class Anonymous(UserMixin):
 
 
 class PasswordMixin:
+    '''Adds password encryption to an authentication backend.
 
+    It has two basic methods,
+    :meth:`.encrypt` and :meth:`.decrypt`.
+    '''
     def on_config(self, app):
         cfg = app.config
         self.encoding = cfg['ENCODING']
@@ -156,22 +160,34 @@ class PasswordMixin:
         algorithm = cfg['CRYPT_ALGORITHM']
         self.crypt_module = import_module(algorithm)
 
-    def decript(self, password=None):
-        if password:
-            p = self.crypt_module.decrypt(to_bytes(password, self.encoding),
-                                          self.secret_key)
-            return to_string(p, self.encoding)
-        else:
-            return UNUSABLE_PASSWORD
+    def encrypt(self, string_or_bytes):
+        '''Encrypt ``string_or_bytes`` using the algorithm specified
+        in the :setting:`CRYPT_ALGORITHM` setting.
 
-    def encript(self, password):
-        p = self.crypt_module.encrypt(to_bytes(password, self.encoding),
-                                      self.secret_key, self.salt_size)
-        return to_string(p, self.encoding)
+        Return an encrypted string
+        '''
+        b = to_bytes(string_or_bytes, self.encoding)
+        p = self.crypt_module.encrypt(b, self.secret_key, self.salt_size)
+        return p.decode(self.encoding)
+
+    def crypt_verify(self, encrypted, raw):
+        '''Verify if the ``raw`` string match the ``encrypted`` string
+        '''
+        return self.crypt_module.verify(to_bytes(encrypted),
+                                        to_bytes(raw),
+                                        self.secret_key,
+                                        self.salt_size)
+
+    def decrypt(self, string_or_bytes):
+        b = to_bytes(string_or_bytes, self.encoding)
+        p = self.crypt_module.decrypt(b, self.secret_key)
+        return p.decode(self.encoding)
 
     def password(self, raw_password=None):
+        '''Return an encrypted password
+        '''
         if raw_password:
-            return self.encript(raw_password)
+            return self.encrypt(raw_password)
         else:
             return UNUSABLE_PASSWORD
 
