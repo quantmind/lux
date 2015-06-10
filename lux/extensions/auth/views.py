@@ -6,7 +6,6 @@ from lux.extensions import rest
 
 
 class Authorization(token.Authorization):
-
     def get(self, request):
         '''List all authorizations for the authenticated user
         '''
