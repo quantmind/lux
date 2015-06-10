@@ -115,7 +115,7 @@ class TokenBackend(AuthMixin, backends.TokenBackend):
         super().on_config(app)
         backends.TokenBackend.on_config(self, app)
 
-    def create_token(self, request, user):
+    def create_token(self, request, user, is_session_token=True):
         '''Create the token
         '''
         odm = request.app.odm()
@@ -126,7 +126,8 @@ class TokenBackend(AuthMixin, backends.TokenBackend):
             token = odm.token(id=uuid.uuid4(),
                               user_id=user.id,
                               ip_address=ip_address,
-                              user_agent=self.user_agent(request, 80))
+                              user_agent=self.user_agent(request, 80),
+                              session=is_session_token)
             session.add(token)
 
         payload['token_id'] = token.id.hex
