@@ -67,9 +67,9 @@ lux.processForm = function (options) {
                     } else if (api) {
                         // Created
                         if (response.status === 201) {
-                            scope.formMessages[FORMKEY] = [{message: 'Succesfully created'}];
+                            scope.formMessages[FORMKEY] = [{message: 'Successfully created'}];
                         } else {
-                            scope.formMessages[FORMKEY] = [{message: 'Succesfully updated'}];
+                            scope.formMessages[FORMKEY] = [{message: 'Successfully updated'}];
                         }
                     } else {
                         window.location.href = data.redirect || '/';
