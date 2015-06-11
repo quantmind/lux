@@ -95,19 +95,18 @@ class Command(lux.Command):
         alembic_cfg.set_main_option('script_location', migration_dir)
         # get database(s) name(s) and location(s)
         odm = self.app.odm()
-        databases = dict(odm.keys_engines())
         #
-        names = (repr(e.url) for e in databases.values())
+        names = (repr(e.url) for e in odm.engines())
         alembic_cfg.set_main_option("databases", ','.join(names))
         # set section for each found database
-        for engine in databases.values():
+        for engine in odm.engines():
             name = repr(engine.url)
             alembic_cfg.set_section_option(name, 'sqlalchemy.url',
                                            str(engine.url))
         # create empty logging section to avoid raising errors in env.py
         alembic_cfg.set_section_option('logging', 'path', '')
         # obtain the metadata required for `auto` command
-        self.get_metadata(alembic_cfg, databases)
+        self.get_metadata(alembic_cfg)
 
         # get rest of settings from project config. This may overwrite
         # already existing options (especially if different migration dir
@@ -166,7 +165,7 @@ class Command(lux.Command):
             # execute commands without any additional params
             getattr(alembic_cmd, cmd)(config)
 
-    def get_metadata(self, config, databases):
+    def get_metadata(self, config):
         '''
         MetaData object stored in odm extension contains aggregated data
         from all databases defined in project. This function splits the data
