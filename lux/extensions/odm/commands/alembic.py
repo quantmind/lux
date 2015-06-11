@@ -32,7 +32,7 @@ class Command(lux.Command):
         # alembic package is required to run any migration related command
         try:
             import alembic
-        except ImportError: # pragma nocover
+        except ImportError:  # pragma nocover
             raise CommandError('Alembic package is not installed')
 
         list_msg = 'Put [-l] for available commands'
