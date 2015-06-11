@@ -128,6 +128,10 @@
         api.post = function (opts, data) {
             return api.request('post', opts, data);
         };
+        //
+        api.delete = function (opts, data) {
+            return api.request('delete', opts, data);
+        };
 
         //
         // Perform the actual request and return a promise
@@ -154,15 +158,15 @@
                     //
                     options: opts,
                     //
-                    error: function (respose) {
-                        if (isString(respose.data))
-                            respose.data = {error: true, message: data};
-                        d.reject(respose);
+                    error: function (response) {
+                        if (isString(response.data))
+                            response.data = {error: true, message: data};
+                        d.reject(response);
                     },
                     //
                     success: function (response) {
                         if (isString(response.data))
-                            respose.data = {message: data};
+                            response.data = {message: data};
 
                         if (!response.data || response.data.error)
                             d.reject(response);
