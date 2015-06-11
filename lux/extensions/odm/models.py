@@ -4,9 +4,10 @@ from datetime import date, datetime
 import pytz
 
 from sqlalchemy import Column
-from sqlalchemy_utils.functions import get_columns
 
 from pulsar.utils.html import nicename
+
+from odm.utils import get_columns
 
 from lux.extensions import rest
 
