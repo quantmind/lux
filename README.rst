@@ -35,7 +35,7 @@ Python Requirements
 
 **Soft requirements**
 
-* sqlalchemy_ and sqlalchemy_utils_ used by ``lux.extensions.odm``
+* sqlalchemy_ and pulsar-odm_ used by ``lux.extensions.odm``
 * markdown_ used by ``lux.extensions.static``
 * sphinx_ used by ``lux.extensions.static``
 * pyjwt_ used by some authentication backends in ``lux.extensions.rest``
@@ -76,7 +76,7 @@ For testing postgreSQL create a new role::
 .. _pytz: http://pytz.sourceforge.net/
 .. _dateutil: https://pypi.python.org/pypi/python-dateutil
 .. _sqlalchemy: http://www.sqlalchemy.org/
-.. _sqlalchemy_utils: http://sqlalchemy-utils.readthedocs.org/
+.. _pulsar-odm: https://github.com/quantmind/pulsar-odm
 .. _pyjwt: https://github.com/jpadilla/pyjwt
 .. _pbkdf2: https://pypi.python.org/pypi/pbkdf2
 .. _gruntjs: http://gruntjs.com/

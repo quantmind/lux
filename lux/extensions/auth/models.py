@@ -1,7 +1,5 @@
 '''
 SQLAlchemy models for Authentications
-
-Requires sqlalchemy_utils
 '''
 import enum
 from datetime import datetime
@@ -10,7 +8,8 @@ from sqlalchemy.ext.declarative import declarative_base, declared_attr
 from sqlalchemy.orm import relationship
 from sqlalchemy import (Column, Integer, String, Table, ForeignKey, Boolean,
                         DateTime)
-from sqlalchemy_utils import ChoiceType, IPAddressType, UUIDType
+
+from odm.types import ChoiceType, IPAddressType, UUIDType
 
 from lux.extensions.rest import UserMixin
 

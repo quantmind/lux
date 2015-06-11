@@ -25,15 +25,9 @@ class TemplateForm(forms.Form):
 class PageCRUD(odm.CRUD):
     model = odm.RestModel('page', PageForm, url='html_pages')
 
-    def serialise_model(self, request, data, in_list=False):
-        return self.model.tojson(data)
-
 
 class TemplateCRUD(odm.CRUD):
     model = odm.RestModel('template', TemplateForm, url='html_templates')
-
-    def serialise_model(self, request, data, in_list=False):
-        return self.model.tojson(data)
 
 
 class AnyPage(HtmlRouter):
