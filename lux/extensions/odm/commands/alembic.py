@@ -177,7 +177,7 @@ class Command(lux.Command):
         metadata = {}
 
         for table, engine in odm.binds.items():
-            url = str(engine.url)
+            url = repr(engine.url)
             if url not in metadata:
                 metadata[url] = MetaData()
             table.tometadata(metadata[url])
