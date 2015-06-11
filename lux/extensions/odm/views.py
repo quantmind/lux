@@ -35,11 +35,14 @@ class RestRouter(rest.RestRouter):
     def get_model(self, request):
         odm = request.app.odm()
         model = odm[self.model.name]
+        args = request.urlargs
+        if not args:    # pragma    nocover
+            raise Http404
         with odm.begin() as session:
             query = session.query(model)
             try:
-                return query.filter_by(id=request.urlargs['id']).one()
-            except NoResultFound:
+                return query.filter_by(**args).one()
+            except (DataError, NoResultFound):
                 raise Http404
 
     def create_model(self, request, data):
