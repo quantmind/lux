@@ -49,12 +49,15 @@ class RestModel:
     _loaded = False
 
     def __init__(self, name, form=None, editform=None, columns=None,
-                 url=None, api_name=None, exclude=None):
+                 url=None, api_name=None, exclude=None,
+                 api_url=True, html_url=None):
         self.name = name
         self.form = form
         self.editform = editform or form
         self.url = url or '%ss' % name
         self.api_name = '%s_url' % self.url
+        self._api_url = api_url
+        self._html_url = html_url
         self._columns = columns
         self._exclude = frozenset(exclude or ())
 

@@ -6,8 +6,8 @@ class TestWrappers(test.TestCase):
     def test_dummy_cache(self):
         app = self.application()
         cache = app.cache_server
-        from lux.core.cache import DummyStore
-        self.assertIsInstance(cache, DummyStore)
+        from lux.core.cache import Cache
+        self.assertIsInstance(cache, Cache)
         self.assertEqual(cache.ping(), True)
         self.assertEqual(cache.hmget('bla'), None)
         cache.hmset('foo', {'name': 'pippo'})

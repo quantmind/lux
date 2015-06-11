@@ -19,7 +19,7 @@ from .extension import Extension, Parameter, EventMixin
 from .wrappers import wsgi_request, HeadMeta, error_handler
 from .engines import template_engine
 from .cms import CMS
-from .cache import create_store
+from .cache import create_cache
 
 
 __all__ = ['App',
@@ -277,10 +277,7 @@ class Application(ConsoleParser, Extension, EventMixin):
     def cache_server(self):
         '''Return the Cache handler
         '''
-        cache = self.config['CACHE_SERVER']
-        if isinstance(cache, str):
-            cache = create_store(cache).client()
-        return cache
+        return create_cache(self, self.config['CACHE_SERVER'])
 
     def get_handler(self):
         if self.handler is None:

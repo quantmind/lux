@@ -19,7 +19,7 @@ class RestModel(rest.RestModel):
     '''A rest model based on SqlAlchemy ORM
     '''
     def tojson(self, request, obj, exclude=None):
-        '''Overrode the method from the base class.
+        '''Override the method from the base class.
 
         It uses sqlalchemy model information about columns
         '''

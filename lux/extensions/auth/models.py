@@ -9,7 +9,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy import (Column, Integer, String, Table, ForeignKey, Boolean,
                         DateTime)
 
-from odm.types import ChoiceType, IPAddressType, UUIDType
+from odm.types import IPAddressType, UUIDType, JSONType
 
 from lux.extensions.rest import UserMixin
 
@@ -28,14 +28,6 @@ class BaseModel(object):
 Base = declarative_base(cls=BaseModel)
 
 
-users_permissions = Table(
-    'users_permissions',
-    Base.metadata,
-    Column('user_id', Integer, ForeignKey('user.id')),
-    Column('permission_id', Integer, ForeignKey('permission.id')),
-    info=info
-)
-
 users_groups = Table(
     'users_groups',
     Base.metadata,
@@ -43,6 +35,7 @@ users_groups = Table(
     Column('group_id', Integer, ForeignKey('group.id')),
     info=info
 )
+
 
 groups_permissions = Table(
     'groups_permissions',
@@ -60,7 +53,6 @@ class User(Base, UserMixin):
     last_name = Column(String(30))
     email = Column(String(120), unique=True)
     password = Column(String(120))
-    permissions = relationship("Permission", secondary=users_permissions)
     groups = relationship("Group", secondary=users_groups)
     active = Column(Boolean)
     superuser = Column(Boolean)
@@ -97,8 +89,9 @@ PermissionType.can_remove.label = 'Can remove'
 
 class Permission(Base):
     id = Column(Integer, primary_key=True)
-    type = Column(ChoiceType(PermissionType))
-    content_table_name = Column(String(120))
+    name = Column(String(120), unique=True)
+    description = Column(String(120), unique=True)
+    policy = Column(JSONType)
 
 
 class Token(Base):
