@@ -115,6 +115,23 @@ class TokenBackend(AuthMixin, backends.TokenBackend):
         super().on_config(app)
         backends.TokenBackend.on_config(self, app)
 
+    def get_user(self, request, user_id=None, token_id=None, **kwargs):
+        """
+        Securely fetch a user by id, username or email, with
+        token UUID validation
+
+        Returns user or nothing
+        """
+
+        odm = request.app.odm()
+
+        with odm.begin() as session:
+            query = session.query(odm.token)
+            item = query.filter_by(user_id=user_id,
+                                   id=token_id).first()
+            if item is not None:
+                return super().get_user(request, user_id=user_id, **kwargs)
+
     def create_token(self, request, user, **kwargs):
         '''Create the token
         '''
