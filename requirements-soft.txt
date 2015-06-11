@@ -1,5 +1,4 @@
 psycopg2
-sqlalchemy_utils
 alembic
 unidecode
 markdown
@@ -8,5 +7,5 @@ pyyaml
 pyjwt
 beautifulsoup4
 rethinkdb
--e git+https://github.com/quantmind/pulsar-odm.git@master#egg=pulsar-odm
+-e git+https://github.com/quantmind/pulsar-odm.git@dev#egg=pulsar-odm
 -e git+https://github.com/quantmind/pulsar.git@dev#egg=pulsar

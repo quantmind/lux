@@ -2,7 +2,7 @@ from datetime import datetime
 
 import odm
 
-from sqlalchemy_utils import JSONType
+from odm.types import JSONType
 
 from sqlalchemy import (Column, Integer, String, Text, Boolean, ForeignKey,
                         DateTime)

@@ -1,8 +1,8 @@
 '''
 Lux extension for integrating SQL and NoSQL databases into applications.
 
-The extension create create a new application attribute called ``odm``
-which can be used to access object data mappers for different backend.
+The extension create a new application method called ``odm``
+which can be used to access object data mapper for different backend.
 
 It requires the :mod:`lux.extensions.rest` module and pulsar-odm_ which is
 built on top of sqlalchemy, pulsar and greenlet.
@@ -30,7 +30,9 @@ class Extension(lux.Extension):
         Parameter('DATASTORE', None,
                   'Dictionary for mapping models to their back-ends database'),
         Parameter('DATABASE_SESSION_SIGNALS', True,
-                  'Register event handlers for database session')
+                  'Register event handlers for database session'),
+        Parameter('MIGRATIONS', None,
+                  'Dictionary for mapping alembic settings')
     ]
 
     def on_config(self, app):

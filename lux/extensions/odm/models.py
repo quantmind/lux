@@ -3,26 +3,36 @@ from datetime import date, datetime
 
 import pytz
 
-from sqlalchemy_utils.functions import get_columns
+from sqlalchemy import Column
 
 from pulsar.utils.html import nicename
 
+from odm.utils import get_columns
+
 from lux.extensions import rest
+
+
+RestColumn = rest.RestColumn
 
 
 class RestModel(rest.RestModel):
     '''A rest model based on SqlAlchemy ORM
     '''
-    def tojson(self, obj, exclude=None):
+    def tojson(self, request, obj, exclude=None):
+        '''Overrode the method from the base class.
+
+        It uses sqlalchemy model information about columns
+        '''
         exclude = set(exclude or ())
-        columns = get_columns(obj)
+        columns = self.columns(request.app)
 
         fields = {}
-        for field in columns:
-            if field.name in exclude:
+        for col in columns:
+            name = col['name']
+            if name in exclude:
                 continue
             try:
-                data = obj.__getattribute__(field.name)
+                data = obj.__getattribute__(name)
                 if isinstance(data, date):
                     if isinstance(data, datetime) and not data.tzinfo:
                         data = pytz.utc.localize(data)
@@ -32,7 +42,7 @@ class RestModel(rest.RestModel):
             except TypeError:
                 continue
             if data is not None:
-                fields[field.name] = data
+                fields[name] = data
         # a json-encodable dict
         return fields
 
@@ -45,16 +55,20 @@ class RestModel(rest.RestModel):
         columns = []
 
         for info in input_columns:
-            name = info['name']
-            col = cols.pop(name, None)
-            if col:
-                default = column_info(name, col)
-                default.update(info)
-                info = default
+            col = RestColumn.make(info)
+            dbcol = cols.pop(col.name, None)
+            # If a database column
+            if isinstance(dbcol, Column):
+                info = column_info(col.name, dbcol)
+                info.update(col.as_dict())
+            else:
+                info = col.as_dict()
+
             columns.append(info)
 
         for name, col in cols.items():
-            columns.append(column_info(name, col))
+            if name not in self._exclude:
+                columns.append(column_info(name, col))
 
         return columns
 
@@ -75,6 +89,7 @@ def column_info(name, col):
             'sortable': sortable,
             'filter': filter,
             'type': type}
+
     return info
 
 

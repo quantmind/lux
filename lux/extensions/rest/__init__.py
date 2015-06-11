@@ -16,7 +16,7 @@ from lux.core.wrappers import wsgi_request
 from lux.extensions.angular import add_ng_modules
 
 from .user import *
-from .models import RestModel
+from .models import RestModel, RestColumn
 from .pagination import Pagination, Github
 from .client import ApiClient
 from .views import (RestRoot, RestRouter, RestMixin, change_password,

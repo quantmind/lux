@@ -1,3 +1,29 @@
+from collections import namedtuple
+
+
+class RestColumn:
+    '''A class for specifing attributes of a REST column/field
+    for a model
+    '''
+    def __init__(self, name, sortable=None, filter=None):
+        self.name = name
+        self.sortable = sortable
+        self.filter = filter
+
+    @classmethod
+    def make(cls, col):
+        if isinstance(col, RestColumn):
+            return col
+        assert isinstance(col, str), 'Not a string'
+        return cls(col)
+
+    def __repr__(self):     # pragma    nocover
+        return self.name
+    __str__ = __repr__
+
+    def as_dict(self):
+        return dict(((k, v) for k, v in self.__dict__.items()
+                     if v is not None))
 
 
 class RestModel:
@@ -20,19 +46,22 @@ class RestModel:
 
         Form class for this REST model in editing mode
     '''
-    _columns = None
     _loaded = False
 
     def __init__(self, name, form=None, editform=None, columns=None,
-                 url=None, api_name=None):
+                 url=None, api_name=None, exclude=None):
         self.name = name
         self.form = form
         self.editform = editform or form
         self.url = url or '%ss' % name
         self.api_name = '%s_url' % self.url
         self._columns = columns
+        self._exclude = frozenset(exclude or ())
 
-    def tojson(self, obj, exclude=None, decoder=None):
+    def tojson(self, request, object, exclude=None, decoder=None):
+        '''Convert a model ``object`` into a JSON serializable
+        dictionary
+        '''
         raise NotImplementedError
 
     def columns(self, app):

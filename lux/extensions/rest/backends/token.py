@@ -97,11 +97,10 @@ class TokenBackend(AuthBackend):
             response['Access-Control-Allow-Headers'] = headers
         response['Access-Control-Allow-Methods'] = methods
 
-    def create_token(self, request, user, **kwargs):
-        '''Create the token
+    def create_token(self, request, user, **kwargs):    # pragma    nocover
+        '''Create the JWT
         '''
-        payload = self.jwt_payload(request, user)
-        return self.encode_payload(self.jwt_payload(request, user))
+        raise NotImplementedError
 
     def jwt_payload(self, request, user):
         '''Add user-related payload to the JWT
