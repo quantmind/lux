@@ -95,14 +95,16 @@ class Command(lux.Command):
         alembic_cfg.set_main_option('script_location', migration_dir)
         # get database(s) name(s) and location(s)
         odm = self.app.odm()
-        #
-        names = (repr(e.url) for e in odm.engines())
-        alembic_cfg.set_main_option("databases", ','.join(names))
+        databases = []
         # set section for each found database
-        for engine in odm.engines():
-            name = repr(engine.url)
+        for name, engine in odm.keys_engines():
+            if not name:
+                name = 'default'
+            databases.append(name)
             alembic_cfg.set_section_option(name, 'sqlalchemy.url',
                                            str(engine.url))
+        # put databases in main options
+        alembic_cfg.set_main_option("databases", ','.join(databases))
         # create empty logging section to avoid raising errors in env.py
         alembic_cfg.set_section_option('logging', 'path', '')
         # obtain the metadata required for `auto` command
@@ -140,7 +142,7 @@ class Command(lux.Command):
             # about referenced before assignment as it have no negative impact.
             try:
                 alembic_cmd.init(config, dirname, template='lux')
-            except UnboundLocalError:
+            except UnboundLocalError:  # pragma nocover
                 pass
         # merge required two revision name
         elif cmd == 'merge':
@@ -175,10 +177,12 @@ class Command(lux.Command):
         odm = self.app.odm()
         metadata = {}
 
-        for table, engine in odm.binds.items():
-            url = repr(engine.url)
-            if url not in metadata:
-                metadata[url] = MetaData()
-            table.tometadata(metadata[url])
+        for key, db_engine in odm.keys_engines():
+            if not key:
+                key = 'default'
+            metadata[key] = meta = MetaData()
+            for table, engine in odm.binds.items():
+                if engine == db_engine:
+                    table.tometadata(meta)
 
         config.metadata = metadata
