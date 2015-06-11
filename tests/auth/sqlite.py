@@ -5,6 +5,7 @@ from pulsar.apps.test import test_timeout
 from lux.utils import test
 
 
+@test_timeout(20)
 class TestSqlite(test.AppTestCase):
     config_file = 'tests.auth'
     config_params = {'DATASTORE': 'sqlite://'}
@@ -66,13 +67,6 @@ class TestSqlite(test.AppTestCase):
         request = yield from self.client.get('/')
         response = request.response
         self.assertEqual(response.status_code, 200)
-        user = request.cache.user
-        self.assertFalse(user.is_authenticated())
-
-    def test_authorizations(self):
-        request = yield from self.client.get('/authorizations')
-        response = request.response
-        self.assertEqual(response.status_code, 401)
         user = request.cache.user
         self.assertFalse(user.is_authenticated())
 

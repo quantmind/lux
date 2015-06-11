@@ -1,8 +1,11 @@
 from dateutil.parser import parse
 
+from pulsar.apps.test import test_timeout
+
 from lux.utils import test
 
 
+@test_timeout(20)
 class TestSql(test.AppTestCase):
     config_file = 'tests.odm'
     config_params = {'DATASTORE': 'sqlite://'}
@@ -109,7 +112,9 @@ class TestSql(test.AppTestCase):
         self.assertEqual(response.status_code, 200)
         data = self.json(response)
         self.assertIsInstance(data, dict)
-        self.assertIsInstance(data['columns'], list)
+        columns = data['columns']
+        self.assertIsInstance(columns, list)
+        self.assertEqual(len(columns), 5)
 
     def test_create_task(self):
         token = yield from self._token()
@@ -227,3 +232,12 @@ class TestSql(test.AppTestCase):
         self.assertTrue(data['error'])
         error = data['messages']['username'][0]
         self.assertEqual(error['message'], 'spiderman1 not available')
+
+    def test_metadata_custom(self):
+        request = yield from self.client.get('/users/metadata',
+                                              content_type='application/json')
+        response = request.response
+        self.assertEqual(response.status_code, 200)
+        data = self.json(response)
+        columns = data['columns']
+        self.assertEqual(len(columns), 8)

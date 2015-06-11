@@ -1,7 +1,5 @@
 '''
 SQLAlchemy models for Authentications
-
-Requires sqlalchemy_utils
 '''
 import enum
 from datetime import datetime
@@ -10,7 +8,8 @@ from sqlalchemy.ext.declarative import declarative_base, declared_attr
 from sqlalchemy.orm import relationship
 from sqlalchemy import (Column, Integer, String, Table, ForeignKey, Boolean,
                         DateTime)
-from sqlalchemy_utils import ChoiceType, IPAddressType, UUIDType
+
+from odm.types import ChoiceType, IPAddressType, UUIDType
 
 from lux.extensions.rest import UserMixin
 
@@ -108,7 +107,7 @@ class Token(Base):
     id = Column(UUIDType(binary=False), primary_key=True)
     user_id = Column(Integer, ForeignKey('user.id'))
     created = Column(DateTime, default=datetime.utcnow)
-    ip_adderss = Column(IPAddressType)
+    ip_address = Column(IPAddressType)
     user_agent = Column(String(80))
     last_access = Column(DateTime, default=datetime.utcnow)
     # when true, this is a session token, otherwise it is a personal token
