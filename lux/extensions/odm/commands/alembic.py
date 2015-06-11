@@ -1,6 +1,4 @@
 import os
-import os.path
-from copy import deepcopy
 
 from pulsar import Setting
 
@@ -96,14 +94,16 @@ class Command(lux.Command):
         # where to place alembic env
         alembic_cfg.set_main_option('script_location', migration_dir)
         # get database(s) name(s) and location(s)
-        databases = self.app.config.get('DATASTORE')
-        # in case there is only one database
-        if isinstance(databases, str):
-            databases = {'default': databases}
-        alembic_cfg.set_main_option("databases", ','.join(databases.keys()))
+        odm = self.app.odm()
+        databases = dict(odm.keys_engines())
+        #
+        names = (repr(e.url) for e in databases.values())
+        alembic_cfg.set_main_option("databases", ','.join(names))
         # set section for each found database
-        for name, location in databases.items():
-            alembic_cfg.set_section_option(name, 'sqlalchemy.url', location)
+        for engine in databases.values():
+            name = repr(engine.url)
+            alembic_cfg.set_section_option(name, 'sqlalchemy.url',
+                                           str(engine.url))
         # create empty logging section to avoid raising errors in env.py
         alembic_cfg.set_section_option('logging', 'path', '')
         # obtain the metadata required for `auto` command
@@ -172,27 +172,14 @@ class Command(lux.Command):
         from all databases defined in project. This function splits the data
         to correspond with related database only.
         '''
+        from sqlalchemy import MetaData
         odm = self.app.odm()
-        db = {}
         metadata = {}
-        # databases dict contains database name as key and url as value
-        # do revers so db dict will contains last part of url as key and
-        # database name as value
-        for name, url in databases.items():
-            db[url.rsplit('/')[-1]] = name
-            # copy whole metadata and assign to each database name
-            metadata[name] = deepcopy(odm.metadata)
 
-        # here is a place where we are removing tables that not correspond
-        # with particular database
-        for db_name, meta in metadata.items():
-            # differentiation is base on information stored in `binds` object
-            # where we have a mapping of each table and engine
-            for table, engine in odm.binds.items():
-                name = str(engine.url).rsplit('/')[-1]
-                # if obtained table is not assign to engine remove it from
-                # metadata container
-                if db_name != db[name]:
-                    meta.remove(table)
+        for table, engine in odm.binds.items():
+            url = str(engine.url)
+            if url not in metadata:
+                metadata[url] = MetaData()
+            table.tometadata(metadata[url])
 
         config.metadata = metadata

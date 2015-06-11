@@ -15,7 +15,10 @@ class TestMigrationsCommands(test.TestCase):
     '''
     config_file = 'tests.odm'
     config_params = {
-        'DATASTORE': 'sqlite://',
+        'DATASTORE': {
+            'default': 'sqlite://',
+            'auth': 'postgresql://lux:luxtest@127.0.0.1:5432/luxtests'
+        },
         'MIGRATIONS': {
             'alembic': {
                 'script_location': os.path.join(os.getcwd(), 'migrations')
