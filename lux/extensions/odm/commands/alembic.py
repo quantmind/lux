@@ -38,8 +38,9 @@ class Command(lux.Command):
         list_msg = 'Put [-l] for available commands'
 
         if opt.list:
-            self.write(('Available commands:\n%s' % ', '.join(self.commands)))
-            return
+            availabe = 'Available commands:\n%s' % ', '.join(self.commands)
+            self.write(availabe)
+            return availabe
         if opt.command:
             cmd = opt.command[0]
             if cmd not in self.commands:
@@ -48,7 +49,7 @@ class Command(lux.Command):
             if cmd in ('auto', 'revision', 'merge') and not opt.msg:
                 raise CommandError('Missing [-m] parameter for: %s' % cmd)
             self.run_alembic_cmd(opt)
-            return
+            return True
         raise CommandError(list_msg)
 
     def get_lux_template_directory(self):
@@ -96,6 +97,9 @@ class Command(lux.Command):
         alembic_cfg.set_main_option('script_location', migration_dir)
         # get database(s) name(s) and location(s)
         databases = self.app.config.get('DATASTORE')
+        # in case there is only one database
+        if isinstance(databases, str):
+            databases = {'default': databases}
         alembic_cfg.set_main_option("databases", ','.join(databases.keys()))
         # set section for each found database
         for name, location in databases.items():
