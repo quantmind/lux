@@ -60,7 +60,7 @@ lux.processForm = function (options) {
         promise.then(function (response) {
                 var data = response.data;
                 var hookName = scope.formAttrs.resultHandler;
-                var processedByHook = hookName && scope.$parent[hookName](data);
+                var processedByHook = hookName && scope.$parent[hookName](response);
                 if (!processedByHook) {
                     if (data.messages) {
                         scope.addMessages(data.messages);
