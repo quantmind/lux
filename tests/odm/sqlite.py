@@ -1,7 +1,3 @@
-import json
-
-from pulsar.apps.test import test_timeout
-
 from dateutil.parser import parse
 
 from lux.utils import test
@@ -10,13 +6,38 @@ from lux.utils import test
 class TestSql(test.AppTestCase):
     config_file = 'tests.odm'
     config_params = {'DATASTORE': 'sqlite://'}
+    credentials = {'username': 'pippo',
+                   'password': 'pluto'}
 
-    def _create_task(self, txt='This is a task', person=None):
+    @classmethod
+    def populatedb(cls):
+        backend = cls.app.auth_backend
+        backend.create_superuser(cls.app.wsgi_request(),
+                                 email='pippo@pippo.com',
+                                 first_name='Pippo',
+                                 **cls.credentials)
+
+    def _token(self):
+        '''Create an authentication token
+        '''
+        request = yield from self.client.post('/authorizations',
+                                              content_type='application/json',
+                                              body=self.credentials)
+        response = request.response
+        self.assertEqual(response.status_code, 201)
+        user = request.cache.user
+        self.assertFalse(user.is_authenticated())
+        data = self.json(response)
+        self.assertTrue('token' in data)
+        return data['token']
+
+    def _create_task(self, token, txt='This is a task', person=None):
         data = {'subject': txt}
         if person:
             data['assigned'] = person['id']
         request = yield from self.client.post(
-            '/tasks', body=data, content_type='application/json')
+            '/tasks', body=data, token=token,
+            content_type='application/json')
         response = request.response
         self.assertEqual(response.status_code, 201)
         data = self.json(response)
@@ -27,11 +48,12 @@ class TestSql(test.AppTestCase):
         self.assertFalse(data['done'])
         return data
 
-    def _create_person(self, username, name=None):
+    def _create_person(self, token, username, name=None):
         name = name or username
         request = yield from self.client.post(
             '/people',
             body={'username': username, 'name': name},
+            token=token,
             content_type='application/json')
         response = request.response
         self.assertEqual(response.status_code, 201)
@@ -90,15 +112,27 @@ class TestSql(test.AppTestCase):
         self.assertIsInstance(data['columns'], list)
 
     def test_create_task(self):
-        return self._create_task()
+        token = yield from self._token()
+        yield from self._create_task(token)
 
     def test_update_task(self):
-        task = yield from self._create_task('This is another task')
+        token = yield from self._token()
+        task = yield from self._create_task(token, 'This is another task')
         # Update task
         request = yield from self.client.post(
             '/tasks/%d' % task['id'],
             body={'done': True},
             content_type='application/json')
+
+        response = request.response
+        self.assertEqual(response.status_code, 403)
+        #
+        # Update task
+        request = yield from self.client.post(
+            '/tasks/%d' % task['id'],
+            body={'done': True}, token=token,
+            content_type='application/json')
+
         response = request.response
         self.assertEqual(response.status_code, 200)
         data = self.json(response)
@@ -112,9 +146,15 @@ class TestSql(test.AppTestCase):
         self.assertEqual(data['done'], True)
 
     def test_delete_task(self):
-        task = yield from self._create_task('A task to be deleted')
+        token = yield from self._token()
+        task = yield from self._create_task(token, 'A task to be deleted')
         # Delete task
         request = yield from self.client.delete('/tasks/%d' % task['id'])
+        response = request.response
+        self.assertEqual(response.status_code, 403)
+        # Delete task
+        request = yield from self.client.delete('/tasks/%d' % task['id'],
+                                                token=token)
         response = request.response
         self.assertEqual(response.status_code, 204)
         #
@@ -123,8 +163,9 @@ class TestSql(test.AppTestCase):
         self.assertEqual(response.status_code, 404)
 
     def test_get_sortby(self):
-        yield from self._create_task('We want to sort 1')
-        yield from self._create_task('We want to sort 2')
+        token = yield from self._token()
+        yield from self._create_task(token, 'We want to sort 1')
+        yield from self._create_task(token, 'We want to sort 2')
         request = yield from self.client.get('/tasks?sortby=created')
         response = request.response
         self.assertEqual(response.status_code, 200)
@@ -150,14 +191,18 @@ class TestSql(test.AppTestCase):
             self.assertTrue(dt2 < dt1)
 
     def test_relationship_field(self):
-        person = yield from self._create_person('spiderman')
-        task = yield from self._create_task('climb a wall a day', person)
+        token = yield from self._token()
+        person = yield from self._create_person(token, 'spiderman')
+        task = yield from self._create_task(token, 'climb a wall a day',
+                                            person)
         self.assertTrue('assigned' in task)
 
     def test_relationship_field_failed(self):
+        token = yield from self._token()
         data = {'subject': 'climb a wall a day',
                 'assigned': 6868897}
         request = yield from self.client.post('/tasks', body=data,
+                                              token=token,
                                               content_type='application/json')
         response = request.response
         self.assertEqual(response.status_code, 200)
@@ -169,9 +214,11 @@ class TestSql(test.AppTestCase):
         self.assertEqual(error['message'], 'Invalid person')
 
     def test_unique_field(self):
-        person = yield from self._create_person('spiderman1', 'luca')
+        token = yield from self._token()
+        yield from self._create_person(token, 'spiderman1', 'luca')
         data = dict(username='spiderman1', name='john')
         request = yield from self.client.post('/people', body=data,
+                                              token=token,
                                               content_type='application/json')
         response = request.response
         self.assertEqual(response.status_code, 200)

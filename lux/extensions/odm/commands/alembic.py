@@ -1,5 +1,6 @@
 import os
 import os.path
+from copy import deepcopy
 
 from pulsar import Setting
 
@@ -31,14 +32,15 @@ class Command(lux.Command):
         # alembic package is required to run any migration related command
         try:
             import alembic
-        except ImportError:
+        except ImportError:  # pragma nocover
             raise CommandError('Alembic package is not installed')
 
         list_msg = 'Put [-l] for available commands'
 
         if opt.list:
-            self.write(('Available commands:\n%s' % ', '.join(self.commands)))
-            return
+            availabe = 'Available commands:\n%s' % ', '.join(self.commands)
+            self.write(availabe)
+            return availabe
         if opt.command:
             cmd = opt.command[0]
             if cmd not in self.commands:
@@ -47,7 +49,7 @@ class Command(lux.Command):
             if cmd in ('auto', 'revision', 'merge') and not opt.msg:
                 raise CommandError('Missing [-m] parameter for: %s' % cmd)
             self.run_alembic_cmd(opt)
-            return
+            return True
         raise CommandError(list_msg)
 
     def get_lux_template_directory(self):
@@ -95,12 +97,17 @@ class Command(lux.Command):
         alembic_cfg.set_main_option('script_location', migration_dir)
         # get database(s) name(s) and location(s)
         databases = self.app.config.get('DATASTORE')
+        # in case there is only one database
+        if isinstance(databases, str):
+            databases = {'default': databases}
         alembic_cfg.set_main_option("databases", ','.join(databases.keys()))
         # set section for each found database
         for name, location in databases.items():
             alembic_cfg.set_section_option(name, 'sqlalchemy.url', location)
         # create empty logging section to avoid raising errors in env.py
         alembic_cfg.set_section_option('logging', 'path', '')
+        # obtain the metadata required for `auto` command
+        self.get_metadata(alembic_cfg, databases)
 
         # get rest of settings from project config. This may overwrite
         # already existing options (especially if different migration dir
@@ -158,3 +165,34 @@ class Command(lux.Command):
         else:
             # execute commands without any additional params
             getattr(alembic_cmd, cmd)(config)
+
+    def get_metadata(self, config, databases):
+        '''
+        MetaData object stored in odm extension contains aggregated data
+        from all databases defined in project. This function splits the data
+        to correspond with related database only.
+        '''
+        odm = self.app.odm()
+        db = {}
+        metadata = {}
+        # databases dict contains database name as key and url as value
+        # do revers so db dict will contains last part of url as key and
+        # database name as value
+        for name, url in databases.items():
+            db[url.rsplit('/')[-1]] = name
+            # copy whole metadata and assign to each database name
+            metadata[name] = deepcopy(odm.metadata)
+
+        # here is a place where we are removing tables that not correspond
+        # with particular database
+        for db_name, meta in metadata.items():
+            # differentiation is base on information stored in `binds` object
+            # where we have a mapping of each table and engine
+            for table, engine in odm.binds.items():
+                name = str(engine.url).rsplit('/')[-1]
+                # if obtained table is not assign to engine remove it from
+                # metadata container
+                if db_name != db[name]:
+                    meta.remove(table)
+
+        config.metadata = metadata

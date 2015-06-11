@@ -103,6 +103,8 @@ class Permission(Base):
 
 
 class Token(Base):
+    '''A model for an Authentification Token
+    '''
     id = Column(UUIDType(binary=False), primary_key=True)
     user_id = Column(Integer, ForeignKey('user.id'))
     created = Column(DateTime, default=datetime.utcnow)

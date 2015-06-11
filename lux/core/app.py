@@ -15,7 +15,7 @@ from pulsar.utils.log import lazyproperty
 from pulsar.utils.importer import module_attribute
 
 from .commands import ConsoleParser, CommandError
-from .extension import Extension, Parameter, EventHandler, EventMixin
+from .extension import Extension, Parameter, EventMixin
 from .wrappers import wsgi_request, HeadMeta, error_handler
 from .engines import template_engine
 from .cms import CMS

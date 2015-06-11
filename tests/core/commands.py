@@ -9,10 +9,13 @@ from lux.utils import test
 class CommandTests(test.TestCase):
     config_file = 'tests.config'
 
+    @test.test_timeout(30)
+    @test.green
     def test_startproject(self):
         command = self.fetch_command('start_project')
         self.assertTrue(command.help)
-        name = 'testproject'
+        name = test.randomname('sp')
+        target = None
         try:
             command([name])
             target = command.target
@@ -21,7 +24,8 @@ class CommandTests(test.TestCase):
             self.assertTrue(path.isfile(path.join(target, 'Gruntfile.js')))
             self.assertTrue(path.isdir(path.join(target, name)))
         finally:
-            shutil.rmtree(target)
+            if target:
+                shutil.rmtree(target)
 
     def test_serve(self):
         command = self.fetch_command('serve')
@@ -30,6 +34,7 @@ class CommandTests(test.TestCase):
         app = command(['-b', ':9000'], start=False)
         self.assertEqual(app, command.app)
 
+    @test.green
     def test_generate_key(self):
         command = self.fetch_command('generate_secret_key')
         self.assertTrue(command.help)
@@ -40,6 +45,7 @@ class CommandTests(test.TestCase):
         key = command(['--hex'])
         self.assertTrue(len(key) > 50)
 
+    @test.green
     def test_show_parameters(self):
         command = self.fetch_command('show_parameters')
         self.assertTrue(command.help)
