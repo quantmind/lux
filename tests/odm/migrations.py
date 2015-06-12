@@ -95,3 +95,12 @@ class TestMigrationsCommands(test.TestCase):
         self.assertIsInstance(metadata, dict)
         for value in metadata.values():
             self.assertIsInstance(value, MetaData)
+
+    def test_get_lux_template_directory(self):
+        cmd = self.cmd()
+        template_path = cmd.get_lux_template_directory()
+        path = os.path.join(
+            os.getcwd(),
+            'lux/extensions/odm/commands/../template/'
+        )
+        self.assertEqual(template_path, path)
