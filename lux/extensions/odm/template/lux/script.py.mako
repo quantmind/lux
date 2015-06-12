@@ -20,6 +20,9 @@ import sqlalchemy as sa
 import sqlalchemy_utils
 ${imports if imports else ""}
 
+import odm
+
+
 def upgrade(engine_name):
     globals()["upgrade_%s" % engine_name]()
 
