@@ -61,6 +61,7 @@ ANGULAR_VIEW_ANIMATE = 'animate-fade'
 bind = ':5020'
 workers = 0
 
+
 class Extension(lux.Extension):
 
     def middleware(self, app):

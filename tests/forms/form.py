@@ -1,3 +1,5 @@
+from datetime import date, datetime
+
 from lux.utils import test
 from lux import forms
 
@@ -5,6 +7,9 @@ from lux import forms
 class SimpleForm(forms.Form):
     name = forms.CharField()
     email = forms.CharField(required=False)
+    rank = forms.IntegerField(required=False)
+    dt = forms.DateField(required=False)
+    timestamp = forms.DateTimeField(required=False)
 
 
 class FailForm(SimpleForm):
@@ -34,7 +39,7 @@ class FormTests(test.TestCase):
         form = SimpleForm(data={'name': 'luca'})
         self.assertTrue(form.is_valid())
         self.assertTrue(form.changed)
-        self.assertEqual(len(form.cleaned_data), 2)
+        self.assertEqual(len(form.cleaned_data), 1)
         self.assertEqual(form.cleaned_data['name'], 'luca')
         form = SimpleForm(data={'name': 'luca', 'email': 'luca@bla.com'})
         self.assertTrue(form.is_valid())
@@ -51,8 +56,8 @@ class FormTests(test.TestCase):
                           data={'name': 'luca', 'email': ''})
         self.assertTrue(form.is_valid())
         self.assertTrue(form.changed)
-        self.assertEqual(len(form.cleaned_data), 2)
-        self.assertEqual(form.cleaned_data['email'], '')
+        self.assertEqual(len(form.cleaned_data), 1)
+        self.assertFalse('email' in form.cleaned_data)
 
     def test_not_changed(self):
         data = {'name': 'luca', 'email': 'luca@bla.com'}
@@ -98,3 +103,40 @@ class FormTests(test.TestCase):
         result = form.tojson()
         self.assertEqual(result['messages']['name'][0]['message'],
                          'Invalid value')
+
+    def test_integer_field(self):
+        form = SimpleForm(data=dict(name='luca', rank='1'))
+        self.assertTrue(form.is_valid())
+        self.assertEqual(len(form.cleaned_data), 2)
+        self.assertEqual(form.cleaned_data['rank'], 1)
+        #
+        form = SimpleForm(data=dict(name='luca', rank='1,045'))
+        self.assertTrue(form.is_valid())
+        self.assertEqual(len(form.cleaned_data), 2)
+        self.assertEqual(form.cleaned_data['rank'], 1045)
+
+    def test_integer_field_error(self):
+        form = SimpleForm(data=dict(name='luca', rank='foo'))
+        self.assertFalse(form.is_valid())
+        result = form.tojson()
+        self.assertEqual(result['messages']['rank'][0]['message'],
+                         '"foo" is not a valid number')
+
+    def test_date_field(self):
+        dt = date.today()
+        form = SimpleForm(data=dict(name='luca', dt=dt.isoformat()))
+        self.assertTrue(form.is_valid())
+        self.assertEqual(len(form.cleaned_data), 2)
+        self.assertEqual(form.cleaned_data['dt'], dt)
+        #
+        form = SimpleForm(data=dict(name='luca', dt=dt.strftime("%d %B %Y")))
+        self.assertTrue(form.is_valid())
+        self.assertEqual(len(form.cleaned_data), 2)
+        self.assertEqual(form.cleaned_data['dt'], dt)
+
+    def test_date_field_error(self):
+        form = SimpleForm(data=dict(name='luca', dt='xyz'))
+        self.assertFalse(form.is_valid())
+        result = form.tojson()
+        self.assertEqual(result['messages']['dt'][0]['message'],
+                         '"xyz" is not a valid date')

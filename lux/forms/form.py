@@ -474,7 +474,8 @@ class BoundField(object):
             if hasattr(form, func_name):
                 self.value = getattr(self.form, func_name)(value)
             self.value = value
-            self.form._cleaned_data[self.name] = value
+            if value not in NOTHING:
+                self.form._cleaned_data[self.name] = value
         except ValidationError as err:
             form._form_message(form._errors, self.name, err)
 

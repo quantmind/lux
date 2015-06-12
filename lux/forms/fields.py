@@ -136,7 +136,7 @@ class Field:
             value = self.get_default(bfield)
             if self.required and value in NOTHING:
                 raise ValidationError(
-                    self.validation_error.format(self.name, value))
+                    self.validation_error.format(value))
             elif not self.required:
                 return value
         if self.validator:
@@ -218,7 +218,7 @@ class TextField(Field):
 
 class IntegerField(Field):
     attrs = {'type': 'number'}
-    convert_error = 'Could not convert {0} to a valid number'
+    validation_error = '"{0}" is not a valid number'
     totype = int
 
     def _clean(self, value, instance):
@@ -229,7 +229,7 @@ class IntegerField(Field):
         try:
             return self.totype(value)
         except Exception:
-            raise ValidationError(self.convert_error.format(value))
+            raise ValidationError(self.validation_error.format(value))
 
 
 class FloatField(IntegerField):
@@ -240,6 +240,7 @@ class FloatField(IntegerField):
 
 class DateField(IntegerField):
     attrs = {'type': 'date'}
+    validation_error = '"{0}" is not a valid date'
 
     def _clean(self, value, instance):
         if not isinstance(value, date):
@@ -247,7 +248,7 @@ class DateField(IntegerField):
                 value = dateparser(value)
             except Exception:
                 raise ValidationError(
-                    self.validation_error.format(bfield, value))
+                    self.validation_error.format(value))
         return self.todate(value)
 
     def todate(self, value):
