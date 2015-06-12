@@ -26,7 +26,7 @@ STATIC_LOCATION = os.path.abspath('../../docs/luxsite')
 MD_EXTENSIONS = ['extra', 'meta', 'toc']
 CODE_HIGHLIGHT_THEME = 'zenburn'
 FAVICON = 'luxsite/favicon.ico'
-REQUIREJS = ('luxsite/luxsite',)
+SCRIPTS = ('luxsite/luxsite',)
 HTML_LINKS = ({'href': 'luxsite/lux-114.png',
                'sizes': '57x57',
                'rel': 'apple-touch-icon'},
@@ -58,7 +58,8 @@ LINKS = {'Python': 'https://www.python.org/',
 # ANGULARJS CONFIGURATION
 HTML5_NAVIGATION = True
 ANGULAR_VIEW_ANIMATE = 'animate-fade'
-
+bind = ':5020'
+workers = 0
 
 class Extension(lux.Extension):
 

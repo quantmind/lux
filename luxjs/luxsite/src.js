@@ -1,4 +1,10 @@
-require(rcfg.min(['lux/lux', 'angular-ui-router', 'angular-strap', 'angular-animate']), function (lux) {
+lux.config({
+    paths: {
+        lux: 'lux/lux'
+    }
+});
+
+require(['lux', 'angular-ui-router', 'angular-strap', 'angular-animate'], function (lux) {
     var url = lux.context.url;
     lux.extend({
         scroll: {

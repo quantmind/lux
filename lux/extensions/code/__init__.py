@@ -23,6 +23,7 @@ information.
 '''
 import lux
 from lux import Parameter
+from lux.extensions.angular import add_ng_modules
 from lux.extensions.ui import *
 
 
@@ -38,9 +39,7 @@ class Extension(lux.Extension):
                   'highlight.js theme')]
 
     def on_html_document(self, app, request, doc):
-        ngmodules = set(doc.jscontext.get('ngModules', ()))
-        ngmodules.add('highlight')
-        doc.jscontext['ngModules'] = list(ngmodules)
+        add_ng_modules(doc, ('highlight',))
 
 
 def add_css(all):

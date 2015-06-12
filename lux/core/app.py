@@ -177,8 +177,9 @@ class Application(ConsoleParser, Extension, EventMixin):
         Parameter('COPYRIGHT', 'Lux',
                   'Site Copyright', True),
         Parameter('REQUIREJS_URL',
-                  "//cdnjs.cloudflare.com/ajax/libs/require.js/2.1.17/require",
-                  'Default url for requirejs'),
+                  "//cdnjs.cloudflare.com/ajax/libs/require.js/2.1.18/require",
+                  'Default url for requirejs. Set to None if no requirejs '
+                  'is needed by your application'),
         Parameter('REQUIREJS', (),
                   'Default Required javascript. Loaded via requirejs.'),
         Parameter('ASSET_PROTOCOL', '',
@@ -349,15 +350,15 @@ class Application(ConsoleParser, Extension, EventMixin):
         lang = cfg['LOCALE'][:2]
         doc.attr('lang', lang)
         #
+        # Head
         head = doc.head
+        # Add requirejs if url available
+        requirejs = cfg['REQUIREJS_URL']
+        if requirejs:
+            head.scripts.append(requirejs)
+
         for script in cfg['SCRIPTS']:
             head.scripts.append(script)
-        #
-        required = cfg['REQUIREJS']
-        if required:
-            head.scripts.append(cfg['REQUIREJS_URL'])
-            head.scripts.require.extend((media_path+r[1:] if r.startswith('.')
-                                         else r for r in required))
         #
         for entry in cfg['HTML_META'] or ():
             head.add_meta(**entry)

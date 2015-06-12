@@ -87,6 +87,9 @@
             lux: {
                 deps: ["angular"]
             },
+            'ui-bootstrap': {
+                deps: ["angular"]
+            },
             restangular: {
                 deps: ["angular"]
             },

@@ -1,5 +1,5 @@
 '''
-This extension does not provide any middleware but it is required
+This extension does not provide any middleware per-se but it is required
 when using :ref:`lux.js <jsapi>` javascript module and
 provides the link between AngularJS_ and Python.
 
@@ -42,6 +42,9 @@ def add_ng_modules(doc, modules):
         doc.jscontext['ngModules'] = tuple(ngmodules)
 
 
+UIROUTER = ('lux.ui.router',)
+
+
 class Extension(lux.Extension):
 
     _config = [
@@ -62,6 +65,7 @@ class Extension(lux.Extension):
 
         # Use HTML5 navigation and angular router
         if app.config['HTML5_NAVIGATION']:
+            add_ng_modules(doc, UIROUTER)
             root = angular_root(app, router)
 
             doc.body.data({'ng-model': 'page',
