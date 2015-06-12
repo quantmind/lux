@@ -11,6 +11,14 @@
             "src": "luxjs/page/*.tpl.html",
             "dest": "luxjs/page/page-template.js"
         },
+        "message": {
+            "src": "luxjs/message/*.tpl.html",
+            "dest": "luxjs/message/message-template.js"
+        },
+        "grid": {
+            "src": "luxjs/grid/*.tpl.html",
+            "dest": "luxjs/grid/grid-template.js"
+        },
         "blog": {
             "src": "luxjs/blog/*.tpl.html",
             "dest": "luxjs/blog/blog-template.js"
