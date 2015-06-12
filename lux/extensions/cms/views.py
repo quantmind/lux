@@ -69,10 +69,15 @@ class CMS(lux.CMS):
         '''Obtain a page object from a path
         '''
         key = self.cache_key()
-        sitemap = self.app.cache_server.get(key)
+        try:
+            sitemap = self.app.cache_server.get_json(key)
+            assert isinstance(sitemap, list)
+        except Exception:
+            sitemap = None
+
         if not sitemap:
             sitemap = self.build_map()
-            self.app.cache_server.set(key, sitemap)
+            self.app.cache_server.set_json(key, sitemap)
 
         for page in sitemap:
             route = Route(page['path'])

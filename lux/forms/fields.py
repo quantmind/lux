@@ -30,10 +30,7 @@ __all__ = ['Field',
 
 
 standard_validation_error = '{0} is required'
-
-
-def standard_wrong_value_message(field, value):
-    return '%s is not a valid value' % value
+standard_required_error = 'required'
 
 
 class Field:
@@ -45,13 +42,6 @@ class Field:
         class MyForm(odm.Model):
             name = forms.CharField()
             age = forms.IntegerField()
-
-
-    :parameter default: set the :attr:`default` attribute.
-    :parameter initial: set the :attr:`initial` attribute.
-    :parameter wrong_value_message: callable which receive the field and
-        the field value when to produce a message when the ``value``
-        did not validate.
 
     .. attribute:: required
 
@@ -68,6 +58,14 @@ class Field:
 
         Default: ``None``.
 
+    .. attribute:: required_error
+
+        Template string for validation errors when no value is given
+
+    .. attribute:: validation_error
+
+        Template string for validation errors
+
     .. attribute:: attrs
 
         dictionary of attributes.
@@ -75,21 +73,19 @@ class Field:
     default = None
     required = True
     creation_counter = 0
+    required_error = standard_required_error
     validation_error = standard_validation_error
-    wrong_value_message = standard_wrong_value_message
     attrs = None
 
     def __init__(self, name=None, required=None, default=None,
                  validation_error=None, help_text=None,
                  label=None, attrs=None, validator=None,
-                 wrong_value_message=None, **kwargs):
+                 required_error=None, **kwargs):
         self.name = name
         self.default = default if default is not None else self.default
         self.required = required if required is not None else self.required
-        self.validation_error = (validation_error or self.validation_error or
-                                 standard_validation_error)
-        if wrong_value_message:
-            self.wrong_value_message = wrong_value_message
+        self.validation_error = validation_error or self.validation_error
+        self.required_error = required_error or self.required_error
         self.help_text = escape(help_text)
         self.label = label
         self.validator = validator
@@ -135,8 +131,7 @@ class Field:
         if value in NOTHING:
             value = self.get_default(bfield)
             if self.required and value in NOTHING:
-                raise ValidationError(
-                    self.validation_error.format(value))
+                raise ValidationError(self.required_error.format(value))
             elif not self.required:
                 return value
         if self.validator:

@@ -1,7 +1,9 @@
+import json
 from functools import wraps
 
-from pulsar.apps.data import parse_store_url
+from pulsar.apps.data import parse_store_url, create_store
 from pulsar.utils.importer import module_attribute
+from pulsar.utils.string import to_string
 from pulsar import ImproperlyConfigured
 
 
@@ -11,6 +13,7 @@ data_caches = {}
 class Cache:
 
     def __init__(self, app, name, url):
+        self.app = app
         self.name = name
 
     def ping(self):
@@ -28,17 +31,47 @@ class Cache:
     def hmget(self, key, *fields):
         pass
 
+    def set_json(self, key, value, timeout=None):
+        value = json.dumps(to_string(value))
+        self.set(key, value, timeout=timeout)
+
+    def get_json(self, key):
+        value = self.get(key)
+        if value is not None:
+            try:
+                return json.loads(to_string(value))
+            except Exception:
+                self.app.logger.warning('Could not convert to JSON: %s',
+                                        value)
+
 
 class RedisCache(Cache):
 
-    def __init__(self, app, url):
-        self.app = app
+    def __init__(self, app, scheme, url):
+        super().__init__(app, scheme, url)
+        if app.green_pool:
+            from pulsar.apps.greenio import wait
+            self._wait = wait
+            self.client = create_store(url).client()
+        else:
+            import redis
+            self.client = redis.StrictRedis.from_url(url)
+            raise NotImplementedError
 
     def set(self, key, value, timeout=None):
-        return wait(self.client.set(key, value, timeout=timeout))
+        self._wait(self.client.set(key, value, timeout))
 
-    def set(self, key):
-        return wait(self.client.get(key))
+    def get(self, key):
+        return self._wait(self.client.get(key))
+
+    def hmset(self, key, iterable, timeout=None):
+        self._wait(self.client.hmset(key, iterable, timeout))
+
+    def hmget(self, key, *fields):
+        return self._wait(self.client.hmset(key, *fields))
+
+    def _wait(self, value):
+        return value
 
 
 def create_cache(app, url):

@@ -1,5 +1,7 @@
 from datetime import date, datetime
 
+import pytz
+
 from lux.utils import test
 from lux import forms
 
@@ -110,6 +112,11 @@ class FormTests(test.TestCase):
         self.assertEqual(len(form.cleaned_data), 2)
         self.assertEqual(form.cleaned_data['rank'], 1)
         #
+        form = SimpleForm(data=dict(name='luca', rank=1.2))
+        self.assertTrue(form.is_valid())
+        self.assertEqual(len(form.cleaned_data), 2)
+        self.assertEqual(form.cleaned_data['rank'], 1)
+        #
         form = SimpleForm(data=dict(name='luca', rank='1,045'))
         self.assertTrue(form.is_valid())
         self.assertEqual(len(form.cleaned_data), 2)
@@ -139,4 +146,18 @@ class FormTests(test.TestCase):
         self.assertFalse(form.is_valid())
         result = form.tojson()
         self.assertEqual(result['messages']['dt'][0]['message'],
+                         '"xyz" is not a valid date')
+
+    def test_datetime_field(self):
+        dt = datetime.now()
+        form = SimpleForm(data=dict(name='luca', timestamp=dt.isoformat()))
+        self.assertTrue(form.is_valid())
+        self.assertEqual(len(form.cleaned_data), 2)
+        self.assertEqual(form.cleaned_data['timestamp'], pytz.utc.localize(dt))
+
+    def test_datetime_field_error(self):
+        form = SimpleForm(data=dict(name='luca', timestamp='xyz'))
+        self.assertFalse(form.is_valid())
+        result = form.tojson()
+        self.assertEqual(result['messages']['timestamp'][0]['message'],
                          '"xyz" is not a valid date')
