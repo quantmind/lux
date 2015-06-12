@@ -27,6 +27,7 @@ Include ``lux.extensions.angular`` into the :setting:`EXTENSIONS` list in your
 import lux
 from lux import Parameter, RouterParam
 
+from pulsar import Http404
 from pulsar.apps.wsgi import MediaMixin, Html, route
 from pulsar.utils.httpurl import urlparse
 from pulsar.utils.html import escape
@@ -40,6 +41,25 @@ def add_ng_modules(doc, modules):
         ngmodules = set(doc.jscontext.get('ngModules', ()))
         ngmodules.update(modules)
         doc.jscontext['ngModules'] = tuple(ngmodules)
+
+
+def ng_template(request, *args):
+    '''Check if a request is for a angular template
+
+    An angular template request has the template=ui
+    query string in it
+    '''
+    if not (request.config.get('HTML5_NAVIGATION') and
+            request.url_data.get('template') == 'ui'):
+        return
+    urlargs = request.urlargs
+    if urlargs:
+        urlargs = urlargs.copy()
+        for arg in args:
+            if urlargs.pop(arg) != arg:
+                raise Http404
+    if not urlargs:
+        return True
 
 
 UIROUTER = ('lux.ui.router',)
