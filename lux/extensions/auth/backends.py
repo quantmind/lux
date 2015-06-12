@@ -124,16 +124,19 @@ class TokenBackend(AuthMixin, backends.TokenBackend):
         Returns user or nothing
         """
 
-        odm = request.app.odm()
+        if token_id:
+            odm = request.app.odm()
 
-        with odm.begin() as session:
-            query = session.query(odm.token)
-            query = query.filter_by(user_id=user_id,
-                                    id=token_id)
-            query.update({'last_access': datetime.utcnow()},
-                         synchronize_session=False)
-            if query.first() is not None:
-                return super().get_user(request, user_id=user_id, **kwargs)
+            with odm.begin() as session:
+                query = session.query(odm.token)
+                query = query.filter_by(user_id=user_id,
+                                        id=token_id)
+                query.update({'last_access': datetime.utcnow()},
+                             synchronize_session=False)
+                if query.first() is not None:
+                    return super().get_user(request, user_id=user_id, **kwargs)
+        else:
+            return super().get_user(request, user_id=user_id, **kwargs)
 
     def create_token(self, request, user, **kwargs):
         '''Create the token
