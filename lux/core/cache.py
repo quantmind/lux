@@ -32,7 +32,7 @@ class Cache:
         pass
 
     def set_json(self, key, value, timeout=None):
-        value = json.dumps(to_string(value))
+        value = json.dumps(value)
         self.set(key, value, timeout=timeout)
 
     def get_json(self, key):

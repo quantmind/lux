@@ -50,4 +50,4 @@ class AdminTest(test.AppTestCase):
         self.assertTrue(updates)
         self.assertEqual(updates['url'], '/admin/blogs/:id')
         self.assertEqual(updates['templateUrl'],
-                         '/admin/blogs/:id?template=ui')
+                         '/admin/blogs/id?template=ui')

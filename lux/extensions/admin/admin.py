@@ -4,7 +4,7 @@ from pulsar.utils.html import nicename
 import lux
 from lux import route
 from lux.extensions import rest
-from lux.extensions.angular import grid
+from lux.extensions.angular import grid, ng_template
 
 # Override Default Admin Router for a model
 adminMap = {}
@@ -138,8 +138,11 @@ class CRUDAdmin(AdminModel):
     def update(self, request):
         '''Edit an existing model
         '''
+        id = request.urlargs['id']
+        if ng_template(request, 'id'):
+            id = None
         form = self.updateform or self.form
-        return self.get_form(request, form, request.urlargs['id'])
+        return self.get_form(request, form, id=id)
 
     def get_form(self, request, form, id=None):
         if not form:
