@@ -110,7 +110,7 @@ angular.module('lux.message', ['templates-message'])
                     });
 
                     $rootScope.$on('messageAdded', function (){
-                       renderMessages();
+                        renderMessages();
                     });
                 }
             }

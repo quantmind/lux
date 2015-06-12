@@ -437,6 +437,10 @@ function(angular, root) {
         api.post = function (opts, data) {
             return api.request('post', opts, data);
         };
+        //
+        api.delete = function (opts, data) {
+            return api.request('delete', opts, data);
+        };
 
         //
         // Perform the actual request and return a promise
@@ -463,15 +467,15 @@ function(angular, root) {
                     //
                     options: opts,
                     //
-                    error: function (respose) {
-                        if (isString(respose.data))
-                            respose.data = {error: true, message: data};
-                        d.reject(respose);
+                    error: function (response) {
+                        if (isString(response.data))
+                            response.data = {error: true, message: data};
+                        d.reject(response);
                     },
                     //
                     success: function (response) {
                         if (isString(response.data))
-                            respose.data = {message: data};
+                            response.data = {message: data};
 
                         if (!response.data || response.data.error)
                             d.reject(response);
@@ -2411,31 +2415,225 @@ lux.processForm = function (options) {
             };
         });
 
+angular.module('templates-message', ['message/message.tpl.html']);
 
-    angular.module('lux.grid', ['ngTouch', 'ui.grid', 'ui.grid.pagination', 'ui.grid.selection'])
+angular.module("message/message.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("message/message.tpl.html",
+    "<div>\n" +
+    "    <div class=\"alert alert-{{ message.type }}\" role=\"alert\" ng-repeat=\"message in messages  track by $index | limitTo: limit\" ng-if=\"! ( !debug()  && message.type === 'warning' ) \">\n" +
+    "        <a href=\"#\" class=\"close\" ng-click=\"removeMessage(message)\">&times;</a>\n" +
+    "        {{ message.text }}\n" +
+    "    </div>\n" +
+    "</div>\n" +
+    "");
+}]);
 
+//
+//  Message module
+//
+//  Usage:
+//
+//  html:
+//    limit - maximum number of messages to show, by default 5
+//    <message limit="10"></message>
+//
+//  js:
+//    angular.module('app', ['app.view'])
+//    .controller('AppController', ['$scope', '$message', function ($scope, $message) {
+//                $message.setDebugMode(true);
+//                $message.debug('debug message');
+//                $message.error('error message');
+//                $message.success('success message');
+//                $message.info('info message');
+//
+//            }])
+angular.module('lux.message', ['templates-message'])
+    //
+    //  Service for messages
+    //
+    .service('$message', ['$log',  '$rootScope', function ($log, $rootScope) {
+        return {
+            getMessages: function () {
+                if( ! this.getStorage().getItem('messages') ){
+                    return [];
+                }
+                return JSON.parse(this.getStorage().getItem('messages')).reverse();
+
+            },
+            setMessages: function (messages) {
+               this.getStorage().messages = JSON.stringify(messages);
+            },
+            pushMessage: function (message) {
+                var messages = this.getMessages();
+                message.id = messages.length;
+                messages.push(message);
+                this.setMessages(messages);
+                $log.log('(message):'+ message.type + ' "' + message.text + '"');
+                $rootScope.$emit('messageAdded');
+            },
+            removeMessage: function (message) {
+                var messages = this.getMessages();
+                messages = messages.filter(function (value) {
+                    return value.id !== message.id;
+                });
+                this.setMessages(messages);
+            },
+            getDebugMode: function () {
+                return !! JSON.parse(window.localStorage.getItem('debug'));
+            },
+            setDebugMode: function (value) {
+                window.localStorage.debug = JSON.stringify(value);
+            },
+            setStorage: function (storage) {
+                window.localStorage.messagesStorage = storage;
+            },
+            getStorage: function () {
+                if( window.localStorage.getItem('messagesStorage') === 'session' ){
+                    return window.sessionStorage;
+                }
+                return window.localStorage;
+
+            },
+            info: function (text) {
+                this.pushMessage({type: 'info', text: text});
+            },
+            error: function (text) {
+                this.pushMessage({type: 'danger', text: text});
+            },
+            debug: function (text) {
+                this.pushMessage({type: 'warning', text: text});
+            },
+            success: function (text) {
+                this.pushMessage({type: 'success', text: text});
+            }
+
+        };
+    }])
+    //
+    // Directive for displaying messages
+    //
+    .directive('message', ['$message', '$rootScope', '$log', function ($message, $rootScope, $log) {
+        return {
+            restrict: 'AE',
+            replace: true,
+            templateUrl: "message/message.tpl.html",
+            link: {
+                post: function ($scope, element, attrs) {
+                    var renderMessages = function () {
+                        $scope.messages = $message.getMessages();
+                    };
+                    renderMessages();
+
+                    $scope.limit = !!attrs.limit ? parseInt(attrs.limit) : 5; //5 messages to show by default
+
+                    $scope.debug = function(){
+                        return $message.getDebugMode();
+                    };
+
+                    $scope.removeMessage = function (message) {
+                        $message.removeMessage(message);
+                        renderMessages();
+                    };
+
+                    $rootScope.$on('$viewContentLoaded', function () {
+                        renderMessages();
+                    });
+
+                    $rootScope.$on('messageAdded', function (){
+                        renderMessages();
+                    });
+                }
+            }
+        };
+    }]);
+
+
+angular.module('templates-grid', ['grid/modal.empty.tpl.html', 'grid/modal.tpl.html']);
+
+angular.module("grid/modal.empty.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("grid/modal.empty.tpl.html",
+    "<div class=\"modal\" tabindex=\"-1\" role=\"dialog\" aria-hidden=\"true\">\n" +
+    "  <div class=\"modal-dialog\">\n" +
+    "    <div class=\"modal-content\">\n" +
+    "      <div class=\"modal-header\" ng-show=\"title\">\n" +
+    "        <button type=\"button\" class=\"close\" aria-label=\"Close\" ng-click=\"$hide()\"><span aria-hidden=\"true\">&times;</span></button>\n" +
+    "        <h4 class=\"modal-title\" ng-bind-html=\"title\"></h4>\n" +
+    "      </div>\n" +
+    "      <div class=\"modal-body\" ng-bind=\"content\"></div>\n" +
+    "      <div class=\"modal-footer\">\n" +
+    "        <button type=\"button\" class=\"btn btn-default\" ng-click=\"$hide()\">Close</button>\n" +
+    "      </div>\n" +
+    "    </div>\n" +
+    "  </div>\n" +
+    "</div>\n" +
+    "");
+}]);
+
+angular.module("grid/modal.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("grid/modal.tpl.html",
+    "<div class=\"modal\" tabindex=\"-1\" role=\"dialog\" aria-hidden=\"true\">\n" +
+    "  <div class=\"modal-dialog\">\n" +
+    "    <div class=\"modal-content\">\n" +
+    "      <div class=\"modal-header\" ng-show=\"title\">\n" +
+    "        <button type=\"button\" class=\"close\" aria-label=\"Close\" ng-click=\"$hide()\"><span aria-hidden=\"true\">&times;</span></button>\n" +
+    "        <h4 class=\"modal-title\" ng-bind-html=\"title\"></h4>\n" +
+    "      </div>\n" +
+    "      <div class=\"modal-body\" ng-bind=\"content\"></div>\n" +
+    "      <div class=\"modal-footer\">\n" +
+    "        <button type=\"button\" class=\"btn btn-default\" ng-click=\"$hide()\">No</button>\n" +
+    "        <button type=\"button\" class=\"btn btn-primary\" ng-click=\"ok()\">Yes</button>\n" +
+    "      </div>\n" +
+    "    </div>\n" +
+    "  </div>\n" +
+    "</div>\n" +
+    "");
+}]);
+
+
+    angular.module('lux.grid', ['lux.message', 'templates-grid', 'ngTouch', 'ui.grid', 'ui.grid.pagination', 'ui.grid.selection'])
+        //
+        .constant('gridDefaults', {
+            showMenu: true,
+            gridMenu: {
+                'create': {
+                    title: 'Add',
+                    icon: 'fa fa-plus'
+                },
+                'delete': {
+                    title: 'Delete',
+                    icon: 'fa fa-trash'
+                }
+            }
+        })
+        //
         // Directive to build Angular-UI grid options using Lux REST API
-        .directive('restGrid', ['$lux', '$window', 'uiGridConstants', function ($lux, $window, uiGridConstants) {
+        .directive('restGrid', ['$lux', '$window', '$modal', '$state', '$q', '$message', 'uiGridConstants', 'gridDefaults',
+            function ($lux, $window, $modal, $state, $q, $message, uiGridConstants, gridDefaults) {
 
             var paginationOptions = {
-                limit: 25,
-                sizes: [25, 50, 100],
-            };
+                    sizes: [25, 50, 100]
+                },
+                gridState = {
+                    page: 1,
+                    limit: 25,
+                    offset: 0,
+                };
 
             function parseColumns(columns) {
-                var columnDefs = [];
+                var columnDefs = [],
+                    column;
 
                 angular.forEach(columns, function(col) {
-                    var column = {
+                    column = {
                         field: col.field,
                         displayName: col.displayName,
                         type: getColumnType(col.type),
                     };
 
-                    if (!col.sortable)
+                    if (!col.hasOwnProperty('sortable'))
                         column.enableSorting = false;
 
-                    if (!col.filter)
+                    if (!col.hasOwnProperty('filter'))
                         column.enableFiltering = false;
 
                     if (column.field === 'id')
@@ -2450,7 +2648,7 @@ lux.processForm = function (options) {
                     } else if (column.type === 'boolean') {
                         column.cellTemplate = '<div class="ui-grid-cell-contents"><i ng-class="{{COL_FIELD == true}} ? \'fa fa-check-circle text-success\' : \'fa fa-times-circle text-danger\'"></i></div>';
 
-                        if (col.filter) {
+                        if (col.hasOwnProperty('filter')) {
                             column.filter = {
                                 type: uiGridConstants.filter.SELECT,
                                 selectOptions: [{ value: 'true', label: 'True' }, { value: 'false', label: 'False'}],
@@ -2469,34 +2667,21 @@ lux.processForm = function (options) {
                     sub_path = scope.options.target.path || '';
 
                 api.get({path: sub_path + '/metadata'}).success(function(resp) {
-                    paginationOptions.limit = resp['default-limit'];
+                    gridState.limit = resp['default-limit'];
 
                     scope.gridOptions.columnDefs = parseColumns(resp.columns);
 
-                    api.get({path: sub_path}, {limit: paginationOptions.limit}).success(function(resp) {
+                    api.get({path: sub_path}, {limit: gridState.limit}).success(function(resp) {
                         scope.gridOptions.totalItems = resp.total;
                         scope.gridOptions.data = resp.result;
                     });
                 });
             }
 
-            // Get specified page
-            function getPage (scope, api, pageNumber, pageSize) {
-
-                var params = {
-                    limit: pageSize,
-                    offset: pageSize*(pageNumber - 1)
-                };
-
+            // Get specified page using params
+            function getPage(scope, api, params) {
                 api.get({}, params).success(function(resp) {
                     scope.gridOptions.totalItems = resp.total;
-                    scope.gridOptions.data = resp.result;
-                });
-            }
-
-            // Get current page using query string
-            function getPageByParams(scope, api, params) {
-                api.get({}, params).success(function(resp) {
                     scope.gridOptions.data = resp.result;
                 });
             }
@@ -2510,6 +2695,88 @@ lux.processForm = function (options) {
                 }
             }
 
+            function addGridMenu(scope, api, gridOptions) {
+                var menu = [],
+                    stateName = $state.current.url.split('/').pop(-1),
+                    model = stateName.slice(0, -1),
+                    modalScope = scope.$new(true),
+                    modal,
+                    title;
+
+                scope.create = function($event) {
+                    $state.go($state.current.name + '_add');
+                };
+
+                scope.delete = function($event) {
+                    var modalTitle, modalContent,
+                        pk = gridOptions.columnDefs[0].field,
+                        icon = '<i class="fa fa-trash"></i>',
+                        modalTemplate = 'grid/modal.tpl.html',
+                        results = [],
+                        success = false;
+
+                    scope.selected = scope.gridApi.selection.getSelectedRows();
+
+                    if (!scope.selected.length) {
+                        modalTitle = icon + ' Lack of ' + stateName + ' to delete';
+                        modalContent = 'Please, select some ' + stateName + '.';
+                        modalTemplate = 'grid/modal.empty.tpl.html';
+                    } else {
+                        modalTitle = icon + ' Delete ' + stateName;
+                        modalContent = 'Are you sure you want to delete ' + stateName;
+
+                        forEach(scope.selected, function(item) {
+                            results.push(item[pk]);
+                        });
+
+                        results = results.join(',');
+                        modalContent += ' ' + results + '? This cannot be undone!';
+                    }
+
+                    modal = $modal({scope: modalScope, title: modalTitle, content: modalContent, template: modalTemplate, show: true});
+
+                    modalScope.ok = function() {
+                        var defer = $q.defer();
+                        forEach(scope.selected, function(item, _) {
+                            api.delete({path: '/' + item[pk]})
+                                .success(function(resp) {
+                                    success = true;
+                                    defer.resolve(success);
+                                });
+                        });
+
+                        defer.promise.then(function() {
+                            if (success) {
+                                getPage(scope, api, gridState);
+                                $message.success('Successfully deleted ' + stateName + ' ' + results);
+                            } else
+                                $message.error('Error while deleting ' + stateName + ' ' + results);
+
+                            modal.hide();
+                        });
+                    };
+                };
+
+                forEach(gridDefaults.gridMenu, function(item, key) {
+                    title = item.title;
+
+                    if (key === 'create')
+                        title += ' ' + model;
+
+                    menu.push({
+                        title: title,
+                        icon: item.icon,
+                        action: scope[key]
+                    });
+                });
+
+                extend(gridOptions, {
+                    enableGridMenu: true,
+                    gridMenuShowHideColumns: false,
+                    gridMenuCustomItems: menu
+                });
+            }
+
             // Pre-process grid options
             function buildOptions (scope, options) {
                 scope.options = options;
@@ -2521,7 +2788,7 @@ lux.processForm = function (options) {
                 var api = $lux.api(options.target),
                     gridOptions = {
                         paginationPageSizes: paginationOptions.sizes,
-                        paginationPageSize: paginationOptions.limit,
+                        paginationPageSize: gridState.limit,
                         enableFiltering: true,
                         enableRowHeaderSelection: false,
                         useExternalPagination: true,
@@ -2530,35 +2797,41 @@ lux.processForm = function (options) {
                         onRegisterApi: function(gridApi) {
                             scope.gridApi = gridApi;
                             scope.gridApi.pagination.on.paginationChanged(scope, function(pageNumber, pageSize) {
-                                getPage(scope, api, pageNumber, pageSize);
+                                gridState.page = pageNumber;
+                                gridState.limit = pageSize;
+                                gridState.offset = pageSize*(pageNumber - 1);
+
+                                getPage(scope, api, gridState);
                             });
 
                             scope.gridApi.core.on.sortChanged(scope, function(grid, sortColumns) {
-                                var params = {};
+                                if( sortColumns.length === 0) {
+                                    delete gridState.sortby;
+                                    getPage(scope, api, gridState);
+                                } else {
+                                    // Build query string for sorting
+                                    angular.forEach(sortColumns, function(column) {
+                                        gridState.sortby = column.name + ':' + column.sort.direction;
+                                    });
 
-                                // Build query string for sorting
-                                angular.forEach(sortColumns, function(column) {
-                                    params.sortby = column.name + ':' + column.sort.direction;
-                                });
-
-                                if( sortColumns.length === 0)
-                                    getPageByParams(scope, api, params);
-                                else {
                                     switch( sortColumns[0].sort.direction ) {
                                         case uiGridConstants.ASC:
-                                            getPageByParams(scope, api, params);
+                                            getPage(scope, api, gridState);
                                             break;
                                         case uiGridConstants.DESC:
-                                            getPageByParams(scope, api, params);
+                                            getPage(scope, api, gridState);
                                             break;
                                         case undefined:
-                                            getPageByParams(scope, api, params);
+                                            getPage(scope, api, gridState);
                                             break;
                                     }
                                 }
                             });
                         }
                     };
+
+                if (gridDefaults.showMenu)
+                    addGridMenu(scope, api, gridOptions);
 
                 return gridOptions;
             }
