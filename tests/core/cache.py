@@ -1,7 +1,13 @@
 from unittest import skipUnless
 
+try:
+    from redis import StrictRedis
+except ImportError:
+    StrictRedis = None
+
 from pulsar import ImproperlyConfigured
 from pulsar.apps.test import check_server
+from pulsar.apps.data.redis.client import RedisClient
 
 from lux.utils import test
 
@@ -31,14 +37,18 @@ class TestWrappers(test.TestCase):
 
 @skipUnless(REDIS_OK, 'Requires a running Redis server')
 class TestRedisCache(test.AppTestCase):
-    config_params = {'CACHE_SERVER': 'sqlite://'}
+    config_params = {'GREEN_POOL': 20}
+    ClientClass = RedisClient
 
     @classmethod
     def setUpClass(cls):
         redis = 'redis://%s' % cls.cfg.redis_server
-        cls.config_params = {'CACHE_SERVER': redis,
-                             'GREEN_POOL': 20}
+        cls.config_params.update({'CACHE_SERVER': redis})
         return super().setUpClass()
+
+    def test_client(self):
+        cache = self.app.cache_server
+        self.assertTrue(cache.client, self.ClientClass)
 
     @test.green
     def test_redis_cache(self):
@@ -49,3 +59,19 @@ class TestRedisCache(test.AppTestCase):
         data = {'name': 'pippo', 'age': 4}
         self.assertEqual(cache.set_json(key, data), None)
         self.assertEqual(cache.get_json(key), data)
+
+    @test.green
+    def test_get_json(self):
+        cache = self.app.cache_server
+        self.assertEqual(cache.name, 'redis')
+        key = test.randomname()
+        self.assertEqual(cache.set(key, '{bad-json}'), None)
+        self.assertEqual(cache.get_json(key), None)
+        self.assertEqual(cache.get(key), b'{bad-json}')
+
+
+@skipUnless(REDIS_OK and StrictRedis, ('Requires a running Redis server and '
+                                       'redis python client'))
+class TestRedisCacheSync(TestRedisCache):
+    config_params = {}
+    ClientClass = StrictRedis

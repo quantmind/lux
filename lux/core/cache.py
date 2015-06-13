@@ -56,7 +56,6 @@ class RedisCache(Cache):
         else:
             import redis
             self.client = redis.StrictRedis.from_url(url)
-            raise NotImplementedError
 
     def set(self, key, value, timeout=None):
         self._wait(self.client.set(key, value, timeout))

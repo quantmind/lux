@@ -7,5 +7,6 @@ pyyaml
 pyjwt
 beautifulsoup4
 rethinkdb
+redis
 -e git+https://github.com/quantmind/pulsar-odm.git@dev#egg=pulsar-odm
 -e git+https://github.com/quantmind/pulsar.git@dev#egg=pulsar
