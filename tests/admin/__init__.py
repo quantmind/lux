@@ -10,8 +10,7 @@ EXTENSIONS = ['lux.extensions.base',
 
 HTML5_NAVIGATION = True
 API_URL = 'api'
-AUTHENTICATION_BACKENDS = ['lux.extensions.auth.TokenBackend',
-                           'lux.extensions.auth.SessionBackend']
+AUTHENTICATION_BACKENDS = ['lux.extensions.auth.TokenBackend']
 
 
 class Extension(lux.Extension):

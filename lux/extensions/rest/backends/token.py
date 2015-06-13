@@ -1,19 +1,17 @@
 import time
 
-from pulsar import HttpException, MethodNotAllowed, ImproperlyConfigured
+from pulsar import HttpException, ImproperlyConfigured
 from pulsar.apps.wsgi import Json
-
-from lux import Parameter
-from ..models import RestModel
-from ..views import RestRouter, AuthenticationError
 
 try:
     import jwt
 except ImportError:     # pragma    nocover
     jwt = None
 
+from lux import Parameter
+
+from ..views import Authorization
 from .. import AuthBackend
-from ..forms import LoginForm
 
 
 class Http401(HttpException):
@@ -44,6 +42,8 @@ class TokenBackend(AuthBackend):
             raise ImproperlyConfigured('JWT library not available')
 
     def api_sections(self, app):
+        '''At the authorization router to the api
+        '''
         yield Authorization()
 
     def request(self, request):
@@ -81,6 +81,15 @@ class TokenBackend(AuthBackend):
     def response_middleware(self, app):
         return [self.response]
 
+    def login(self, request, user):
+        token = self.create_token(request, user)
+        token = token.decode('utf-8')
+        request.response.status_code = 201
+        return Json({'token': token}).http_response(request)
+
+    def logout(self, request):
+        return Json({'authenticated': False}).http_response(request)
+
     def on_preflight(self, app, request):
         '''Preflight handler
         '''
@@ -114,32 +123,3 @@ class TokenBackend(AuthBackend):
 
     def encode_payload(self, request, payload):
         return jwt.encode(payload, request.config['SECRET_KEY'])
-
-
-class Authorization(RestRouter):
-    model = RestModel('authorization', LoginForm)
-
-    def post(self, request):
-        '''Anthenticate the user and create a new Authorization token
-        if succesful
-        '''
-        user = request.cache.user
-        if user.is_authenticated():
-            raise MethodNotAllowed
-
-        form = self.model.form(request, data=request.body_data())
-
-        if form.is_valid():
-            auth_backend = request.cache.auth_backend
-            try:
-                user = auth_backend.authenticate(request, **form.cleaned_data)
-                auth_backend.login(request, user)
-            except AuthenticationError as e:
-                form.add_error_message(str(e))
-            else:
-                token = auth_backend.create_token(request, user)
-                token = token.decode('utf-8')
-                request.response.status_code = 201
-                return Json({'token': token}).http_response(request)
-
-        return Json(form.tojson()).http_response(request)

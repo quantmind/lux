@@ -1,4 +1,7 @@
 
+__all__ = ['EmailBackend']
+
+
 class EmailBackend(object):
 
     def __init__(self, app):
@@ -24,7 +27,7 @@ class EmailBackend(object):
 class LocalMemory(EmailBackend):
 
     def send_mails(self, messages):
-        if not hasattr(app, '_outbox'):
-            app._outbox = []
-        app._outbox.extend(messages)
+        if not hasattr(self.app, '_outbox'):
+            self.app._outbox = []
+        self.app._outbox.extend(messages)
         return len(messages)

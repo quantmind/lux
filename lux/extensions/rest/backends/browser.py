@@ -1,13 +1,14 @@
-from lux import Parameter
-
 from pulsar.utils.httpurl import is_absolute_uri
 
+from lux import Parameter
+from lux.extensions.angular import add_ng_modules
+
 from .. import AuthBackend, luxrest
-from ..views import Login, Logout, SignUp, ForgotPassword
+from ..views import Login, SignUp, ForgotPassword
 
 
 class BrowserBackend(AuthBackend):
-    '''Authentication backend for rendering Forms
+    '''Authentication backend for rendering Forms in the Browser
 
     It can be used by web servers delegating authentication to a backend API
     or handling authentication on the same site.
@@ -25,22 +26,22 @@ class BrowserBackend(AuthBackend):
     def middleware(self, app):
         middleware = []
         cfg = app.config
-        api_url = cfg['API_URL']
+        api = cfg['API_URL']
 
-        # If the API_URL is absolute, pass the luxrest api name for the
-        # processForm
-        if is_absolute_uri(api_url):
-            if cfg['LOGIN_URL']:
-                url = luxrest(api_url, 'authorizations_url')
-                middleware.append(Login(cfg['LOGIN_URL'], post=url))
-
-        else:
-            if cfg['LOGIN_URL']:
-                middleware.append(Login(cfg['LOGIN_URL']))
-                middleware.append(Logout(cfg['LOGOUT_URL']))
+        if cfg['LOGIN_URL']:
+            action = luxrest(api, 'authorizations_url')
+            middleware.append(Login(cfg['LOGIN_URL'], form_action=action))
 
         if cfg['REGISTER_URL']:
             middleware.append(SignUp(cfg['REGISTER_URL']))
+
         if cfg['RESET_PASSWORD_URL']:
             middleware.append(ForgotPassword(cfg['RESET_PASSWORD_URL']))
+
         return middleware
+
+    def on_html_document(self, app, request, doc):
+        if is_absolute_uri(app.config['API_URL']):
+            add_ng_modules(doc, 'lux.restapi')
+        else:
+            add_ng_modules(doc, 'lux.webapi')

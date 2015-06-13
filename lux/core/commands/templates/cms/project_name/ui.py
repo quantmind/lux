@@ -1,9 +1,8 @@
-from lux.extensions.ui.lib import *
+from lux.extensions.ui.lib import *     # noqa
 
 
 def add_css(all):
     css = all.css
-    media = all.app.config['MEDIA_URL']
     vars = all.variables
 
     vars.background_color = '#FAFAFA'

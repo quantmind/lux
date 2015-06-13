@@ -3,65 +3,73 @@ Extension for Restful web services
 '''
 from datetime import datetime, timedelta
 from importlib import import_module
-from functools import wraps
 
 from pulsar import ImproperlyConfigured
-from pulsar.utils.pep import to_bytes, to_string
 from pulsar.utils.importer import module_attribute
 from pulsar.utils.httpurl import is_absolute_uri
 
 import lux
-from lux import Parameter, Router
+from lux import Parameter
 from lux.core.wrappers import wsgi_request
 from lux.extensions.angular import add_ng_modules
 
 from .user import *
 from .models import RestModel, RestColumn
-from .pagination import Pagination, Github
+from .pagination import Pagination, GithubPagination
 from .client import ApiClient
 from .views import (RestRoot, RestRouter, RestMixin, change_password,
                     RequirePermission)
 
+__all__ = ['RestRouter', 'RestMixin', 'RestModel', 'RestColumn',
+           'Pagination', 'GithubPagination', 'change_password',
+           'RequirePermission']
 
-def luxrest(url, name):
+
+def luxrest(url, name, **rest):
     '''Dictionary containing the api type and the api url name
     '''
-    return {'url': url, 'name': name}
+    rest['url'] = url
+    rest['name'] = name
+    return rest
 
 
 class AuthBackend(lux.Extension):
     '''Interface for extension supporting restful methods
     '''
-    def authenticate(self, request, **params):
+    def authenticate(self, request, **params):  # pragma    nocover
         '''Authenticate user'''
         pass
 
-    def login(self, request, user):
-        '''Login user'''
+    def login(self, request, user):  # pragma    nocover
+        '''Login a user'''
         pass
 
-    def create_user(self, request, **kwargs):
+    def logout(self, request, user):  # pragma    nocover
+        '''Logout a user'''
+        pass
+
+    def create_user(self, request, **kwargs):  # pragma    nocover
         '''Create a standard user.'''
         pass
 
-    def create_superuser(self, request, **kwargs):
+    def create_superuser(self, request, **kwargs):  # pragma    nocover
         '''Create a user with *superuser* permissions.'''
         pass
 
-    def create_token(self, request, user, **kwargs):
+    def create_token(self, request, user, **kwargs):  # pragma    nocover
         '''Create an athentication token for ``user``'''
         pass
 
-    def get_user(self, request, **kwargs):
+    def get_user(self, request, **kwargs):  # pragma    nocover
         '''Retrieve a user.'''
         pass
 
-    def request(self, request):
+    def request(self, request):  # pragma    nocover
         '''Request middleware. Most restful backends implement this method
         '''
         pass
 
-    def has_permission(self, request, target, level):
+    def has_permission(self, request, target, level):  # pragma    nocover
         '''Check if the given request has permission over ``target``
         element with permission ``level``
         '''
@@ -83,7 +91,7 @@ class Extension(AuthBackend):
 
     _config = [
         Parameter('AUTHENTICATION_BACKENDS', [],
-                  'List of python dotted path to classES used to provide '
+                  'List of python dotted paths to classes which provide '
                   'a backend for authentication.'),
         Parameter('CRYPT_ALGORITHM',
                   'lux.utils.crypt.arc4',
@@ -96,7 +104,7 @@ class Extension(AuthBackend):
                   'to the application and long and random enough'),
         Parameter('AUTH_SALT_SIZE', 8,
                   'Salt size for encryption algorithm'),
-        Parameter('SESSION_MESSAGES', True, 'Handle session messages'),
+        Parameter('SESSION_MESSAGES', True, 'Handle messages'),
         Parameter('SESSION_EXPIRY', 7*24*60*60,
                   'Expiry for a session/token in seconds.'),
         Parameter('CHECK_USERNAME', lambda u: True,
@@ -136,6 +144,10 @@ class Extension(AuthBackend):
 
     def on_config(self, app):
         self.backends = []
+
+        url = app.config['API_URL']
+        if not is_absolute_uri(url):
+            app.config['API_URL'] = str(RestRoot(url))
 
         module = import_module(app.meta.module_name)
 
@@ -178,7 +190,6 @@ class Extension(AuthBackend):
 
             api = RestRoot(url)
             middleware.append(api)
-            app.config['API_URL'] = str(api.route)
             for extension in app.extensions.values():
                 api_sections = getattr(extension, 'api_sections', None)
                 if api_sections:
@@ -221,8 +232,8 @@ class Extension(AuthBackend):
     def create_token(self, request, user, **kwargs):
         return self._apply_all('create_token', request, user, **kwargs)
 
-    def logout(self, request, user=None):
-        return self._apply_all('logout', request, user=user)
+    def logout(self, request, user):
+        return self._apply_all('logout', request, user)
 
     def create_user(self, request, **kwargs):
         '''Create a standard user.'''

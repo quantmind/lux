@@ -83,14 +83,15 @@ class TestClient:
 
     def request_start_response(self, path=None, HTTP_ACCEPT=None,
                                headers=None, body=None, content_type=None,
-                               token=None, **extra):
+                               token=None, cookie=None, **extra):
         extra['HTTP_ACCEPT'] = HTTP_ACCEPT or '*/*'
+        headers = headers or []
         if content_type:
-            headers = headers or []
             headers.append(('content-type', content_type))
         if token:
-            headers = headers or []
             headers.append(('Authorization', 'Bearer %s' % token))
+        if cookie:
+            headers.append(('Cookie', cookie))
         request = self.app.wsgi_request(path=path, headers=headers, body=body,
                                         extra=extra)
         start_response = mock.MagicMock()
@@ -129,12 +130,6 @@ class TestMixin:
     :attr:`config_file`'''
     prefixdb = 'luxtest_'
 
-    def bs(self, response):
-        from bs4 import BeautifulSoup
-        self.assertEqual(response.headers['content-type'],
-                         'text/html; charset=utf-8')
-        return BeautifulSoup(response.get_content())
-
     def authenticity_token(self, doc):
         name = doc.find('meta', attrs={'name': 'csrf-param'})
         value = doc.find('meta', attrs={'name': 'csrf-token'})
@@ -142,6 +137,25 @@ class TestMixin:
             name = name.attrs['content']
             value = value.attrs['content']
             return {name: value}
+
+    def cookie(self, response):
+        '''Extract a cookie from the response if available
+        '''
+        headers = response.get_headers()
+        return dict(headers).get('Set-Cookie')
+
+    def bs(self, response):
+        '''Return a BeautifulSoup object from the ``response``
+        '''
+        from bs4 import BeautifulSoup
+        return BeautifulSoup(self.html(response))
+
+    def html(self, response):
+        '''Get html/text content from response
+        '''
+        self.assertEqual(response.content_type,
+                         'text/html; charset=utf-8')
+        return response.content[0].decode('utf-8')
 
     def json(self, response):
         '''Get JSON object from response
@@ -238,32 +252,3 @@ class AppTestCase(unittest.TestCase, TestMixin):
                                        ['--username', username,
                                         '--email', email,
                                         '--password', password])
-
-
-class TestServer(unittest.TestCase, TestMixin):
-    app_cfg = None
-
-    @test_timeout(30)
-    @classmethod
-    def setUpClass(cls):
-        name = cls.__name__.lower()
-        cfg = cls.cfg
-        argv = [__file__, 'serve', '-b', '127.0.0.1:0',
-                '--concurrency', cfg.concurrency]
-        loglevel = cfg.loglevel
-        cls.app = app = lux.execute_from_config(cls.config_file, argv=argv,
-                                                name=name, loglevel=loglevel)
-        mapper = cls.on_loaded(app)
-        if mapper:
-            app.params['DATASTORE'] = mapper._default_store.dns
-            yield from app.get_command('create_databases')([])
-            yield from app.get_command('create_tables')([])
-        cls.app_cfg = yield from app._started
-        cls.url = 'http://{0}:{1}'.format(*cls.app_cfg.addresses[0])
-
-    @classmethod
-    def tearDownClass(cls):
-        from lux.extensions.odm import database_drop
-        if cls.app_cfg is not None:
-            yield from send('arbiter', 'kill_actor', cls.app_cfg.name)
-            yield from database_drop(cls.app)

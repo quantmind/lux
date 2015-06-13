@@ -1,25 +1,21 @@
 import time
-import json
 
 from datetime import datetime, timedelta
 
-from pulsar import PermissionDenied, Http404
-from pulsar.utils.pep import to_bytes, to_string
-from pulsar.utils.importer import module_attribute
+from pulsar import PermissionDenied, ImproperlyConfigured
+from pulsar.apps.wsgi import Json
 
-import lux
-from lux import Parameter, Router
-from lux.forms import Form
-from lux.utils.crypt import get_random_string, digest
+from lux import Parameter, wsgi_request
 
-from .token import jwt
-from .browser import BrowserBackend
+from .token import jwt, Authorization, AuthBackend
+from ..user import AuthenticationError
 
 
 REASON_BAD_TOKEN = "CSRF token missing or incorrect"
+CSRF_SET = frozenset(('GET', 'HEAD', 'OPTIONS'))
 
 
-class SessionBackend(BrowserBackend):
+class SessionBackend(AuthBackend):
     '''Mixin for :class:`.AuthBackend` via sessions.
     '''
     _config = [
@@ -34,27 +30,70 @@ class SessionBackend(BrowserBackend):
     ForgotPasswordRouter = None
     dismiss_message = None
 
+    def on_config(self, app):
+        if not jwt:     # pragma    nocover
+            raise ImproperlyConfigured('JWT library not available')
+
     def on_form(self, app, form):
         '''Handle CSRF on form
         '''
         request = form.request
-        backend = request.cache.auth_backend if request else None
         param = app.config['CSRF_PARAM']
-        if (backend and form.request.method == 'POST' and
-                form.is_bound and param):
+        if (param and form.is_bound and
+                form.request.method not in CSRF_SET):
             token = form.rawdata.get(param)
-            backend.validate_csrf_token(form.request, token)
+            self.validate_csrf_token(form.request, token)
 
-    def wsgi(self):
-        wsgi = [self]
-        cfg = self.config
-        if cfg['SESSION_MESSAGES']:
-            wsgi.append(Router('_dismiss_message',
-                               post=self._dismiss_message))
-        return wsgi
+    def on_html_document(self, app, request, doc):
+        if request.method in CSRF_SET:
+            cfg = app.config
+            param = cfg['CSRF_PARAM']
+            if param:
+                csrf_token = self.csrf_token(request)
+                doc.head.add_meta(name="csrf-param", content=param)
+                doc.head.add_meta(name="csrf-token", content=csrf_token)
+
+    def api_sections(self, app):
+        '''At the authorization router to the api
+        '''
+        yield Authorization()
+
+    # MIDDLEWARE
+    def request(self, request):
+        key = request.config['SESSION_COOKIE_NAME']
+        session_key = request.cookies.get(key)
+        session = None
+        if session_key:
+            session = self.get_session(request, session_key.value)
+        if not session:
+            expiry = self.session_expiry(request)
+            session = self.session_create(request, expiry=expiry)
+        request.cache.session = session
+        if session.user:
+            request.cache.user = session.user
+        if not request.cache.user:
+            request.cache.user = self.anonymous()
+
+    def response(self, environ, response):
+        request = wsgi_request(environ)
+        session = request.cache.session
+        if session:
+            if response.can_set_cookies():
+                key = request.app.config['SESSION_COOKIE_NAME']
+                session_key = request.cookies.get(key)
+                id = self.session_key(session)
+                if not session_key or session_key.value != id:
+                    response.set_cookie(key, value=str(id), httponly=True,
+                                        expires=session.expiry)
+
+            self.session_save(request, session)
+        return response
+
+    def response_middleware(self, app):
+        return [self.response]
 
     # ABSTRACT METHODS WHICH MUST BE IMPLEMENTED
-    def get_session(self, key):
+    def get_session(self, request, key):
         '''Retrieve a session from its key
         '''
         raise NotImplementedError
@@ -81,11 +120,6 @@ class SessionBackend(BrowserBackend):
         '''Confirm registration'''
         raise NotImplementedError
 
-    def get_user_by_email(self, email):
-        '''Get a user from its email address
-        '''
-        raise NotImplementedError
-
     def auth_key_used(self, key):
         '''The authentication ``key`` has been used and this method is
         for setting/updating the backend model accordingly.
@@ -93,51 +127,22 @@ class SessionBackend(BrowserBackend):
         '''
         raise NotImplementedError
 
-    # MIDDLEWARE
-    def request(self, request):
-        key = request.config['SESSION_COOKIE_NAME']
-        session_key = request.cookies.get(key)
-        session = None
-        if session_key:
-            session = self.get_session(session_key.value)
-        if not session:
-            expiry = self.session_expiry(request)
-            session = self.session_create(request, expiry=expiry)
-        request.cache.session = session
-        if session.user:
-            request.cache.user = session.user
-        if not request.cache.user:
-            request.cache.user = self.anonymous()
-
-    def response(self, request, response):
-        session = request.cache.session
-        if session:
-            if response.can_set_cookies():
-                key = request.app.config['SESSION_COOKIE_NAME']
-                session_key = request.cookies.get(key)
-                id = self.session_key(session)
-                if not session_key or session_key.value != id:
-                    response.set_cookie(key, value=str(id), httponly=True,
-                                        expires=session.expiry)
-
-            self.session_save(request, session)
-        return response
-
     # CSRF
     def csrf_token(self, request):
         session = request.cache.session
         if session:
-            assert self.jwt, 'Requires jwt package'
-            return self.jwt.encode({'session': self.session_key(session),
-                                    'exp': time.time() + self.csrf_expiry},
-                                   self.secret_key)
+            expiry = request.config['CSRF_EXPIRY']
+            secret_key = request.config['SECRET_KEY']
+            return jwt.encode({'session': self.session_key(session),
+                               'exp': time.time() + expiry},
+                              secret_key)
 
     def validate_csrf_token(self, request, token):
         if not token:
             raise PermissionDenied(REASON_BAD_TOKEN)
         try:
-            assert self.jwt, 'Requires jwt package'
-            token = self.jwt.decode(token, self.secret_key)
+            secret_key = request.config['SECRET_KEY']
+            token = jwt.decode(token, secret_key)
         except jwt.ExpiredSignature:
             raise PermissionDenied('Expired token')
         except Exception:
@@ -149,7 +154,7 @@ class SessionBackend(BrowserBackend):
     def password_recovery(self, request, email):
         '''Recovery password email
         '''
-        user = self.get_user_by_email(email)
+        user = self.get_user(email=email)
         if not self.get_or_create_registration(
                 request, user,
                 email_subject='password_email_subject.txt',
@@ -157,19 +162,20 @@ class SessionBackend(BrowserBackend):
                 message='password_message.txt'):
             raise AuthenticationError("Can't find that email, sorry")
 
-    def login(self, request, user=None):
+    def login(self, request, user):
         '''Login a user from a model or from post data
         '''
-        if user is None:
-            data = request.body_data()
-            user = self.authenticate(request, **data)
-            if user is None:
-                raise AuthenticationError('Invalid username or password')
         if not user.is_active():
             return self.inactive_user_login(request, user)
         request.cache.session = self.session_create(request, user=user)
         request.cache.user = user
-        return user
+        return Json({'user': True}).http_response(request)
+
+    def logout(self, request, user):
+        if user.is_authenticated():
+            request.cache.session = self.session_create(request)
+            request.cache.user = self.anonymous()
+        return Json({'authenticated': False}).http_response(request)
 
     def inactive_user_login(self, request, user):
         '''Handle a user not yet active'''
@@ -181,15 +187,6 @@ class SessionBackend(BrowserBackend):
                    'confirmation_url': url}
         message = request.app.render_template('inactive.txt', context)
         session.warning(message)
-
-    def logout(self, request, user=None):
-        '''Logout a ``user``
-        '''
-        session = request.cache.session
-        user = user or request.cache.user
-        if user and user.is_authenticated():
-            request.cache.session = self.session_create(request)
-            request.cache.user = self.anonymous()
 
     def get_or_create_registration(self, request, user, **kw):
         '''Create a registration profile for ``user``.
@@ -229,14 +226,3 @@ class SessionBackend(BrowserBackend):
         message = app.render_template(
             message or 'activation_message.txt', ctx)
         request.cache.session.info(message)
-
-    # INTERNALS
-    def _dismiss_message(self, request):
-        response = request.response
-        if response.content_type in lux.JSON_CONTENT_TYPES:
-            session = request.cache.session
-            form = Form(request, data=request.body_data())
-            data = form.rawdata['message']
-            body = {'success': session.remove_message(data)}
-            response.content = json.dumps(body)
-            return response

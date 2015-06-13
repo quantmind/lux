@@ -1,5 +1,4 @@
 import json
-from functools import wraps
 
 from pulsar.apps.data import parse_store_url, create_store
 from pulsar.utils.importer import module_attribute

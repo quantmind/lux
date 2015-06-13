@@ -1,5 +1,8 @@
 
 
+__all__ = ['CMS']
+
+
 class CMS:
     '''A simple CMS.
 

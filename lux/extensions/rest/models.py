@@ -1,5 +1,3 @@
-from collections import namedtuple
-
 
 class RestColumn:
     '''A class for specifing attributes of a REST column/field

@@ -51,7 +51,7 @@ class Pagination:
         return data
 
 
-class Github(Pagination):
+class GithubPagination(Pagination):
     '''Github style pagination
     '''
     def __call__(self, request, result, total, limit, offset):

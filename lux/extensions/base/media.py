@@ -1,18 +1,9 @@
 import os
-import re
-import stat
-import mimetypes
 from itertools import chain
-from email.utils import parsedate_tz, mktime_tz
+
+from pulsar.apps import wsgi
 
 import lux
-
-from pulsar.utils.importer import import_module
-from pulsar.utils.httpurl import http_date, CacheControl
-from pulsar.utils.system import json
-from pulsar import Http404, PermissionDenied
-from pulsar.apps import wsgi
-from pulsar.apps.wsgi import Html
 
 
 def filesystem_path(app, base, bits):

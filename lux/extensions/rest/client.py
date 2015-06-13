@@ -1,6 +1,6 @@
 from pulsar import new_event_loop
 from pulsar.apps.http import HttpClient
-from pulsar.utils.httpurl import is_absolute_uri, remove_double_slash
+from pulsar.utils.httpurl import is_absolute_uri
 
 
 class ApiClient:

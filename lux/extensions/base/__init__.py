@@ -11,7 +11,6 @@ this extension adds middleware for serving static files from
 :setting:`MEDIA_URL`.
 In addition, a :setting:`FAVICON` location can also be specified.
 '''
-import os
 import hashlib
 
 from pulsar.apps import wsgi
@@ -21,6 +20,9 @@ import lux
 from lux import Parameter
 
 from .media import FileRouter, MediaRouter
+
+
+__all__ = ['FileRouter', 'MediaRouter']
 
 
 class Extension(lux.Extension):

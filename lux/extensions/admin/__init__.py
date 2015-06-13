@@ -10,6 +10,9 @@ from lux import Parameter, RedirectRouter
 from .admin import Admin, AdminModel, CRUDAdmin, adminMap, register
 
 
+__all__ = ['Admin', 'AdminModel', 'CRUDAdmin', 'register']
+
+
 class Extension(lux.Extension):
     '''Admin site for database data
     '''

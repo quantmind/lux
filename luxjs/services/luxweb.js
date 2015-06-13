@@ -4,62 +4,37 @@
     //	===================
     //
     //  Angular module for interacting with lux-based REST APIs
-    angular.module('lux.web.api', ['lux.services'])
+    angular.module('lux.webapi', ['lux.services'])
 
-        .run(['$lux', function ($lux) {
+        .run(['$rootScope', '$window', '$lux', function ($scope, $window, $lux) {
             //
-            var csrf = {},
-                name = $(document.querySelector("meta[name=csrf-param]")).attr('content'),
+            var name = $(document.querySelector("meta[name=csrf-param]")).attr('content'),
                 csrf_token = $(document.querySelector("meta[name=csrf-token]")).attr('content');
 
-            if (name && csrf_token)
-                csrf[name] = csrf_token;
+            if (name && csrf_token) {
+                $lux.csrf = {};
+                $lux.csrf[name] = csrf_token;
+            }
 
-            // A post method with CSRF parameter
-            $lux.post = function (url, data, cfg) {
-                var ct = cfg ? cfg.contentType : null,
-                    fd = this.formData(ct);
-                return this.http.post(url, fd(data), cfg);
-            };
+            if ($scope.API_URL) {
 
-            //
-            // Change the form data depending on content type
-            $lux.formData = function (contentType) {
-
-                return function (data) {
-                    data = extend(data || {}, csrf);
-                    if (contentType === 'application/x-www-form-urlencoded')
-                        return $.param(data);
-                    else if (contentType === 'multipart/form-data') {
-                        var fd = new FormData();
-                        forEach(data, function (value, key) {
-                            fd.append(key, value);
-                        });
-                        return fd;
-                    } else {
-                        return data;
-                    }
-                };
-            };
-            //
-            if (scope.API_URL) {
-
-                $lux.api(scope.API_URL, luxweb);
+                $lux.api($scope.API_URL, luxweb);
 
                 // logout via post method
-                scope.logout = function(e, url) {
+                $scope.logout = function(e, url) {
                     e.preventDefault();
                     e.stopPropagation();
                     $lux.post(url).success(function (data) {
-                        if (data.redirect)
-                            window.location.replace(data.redirect);
+                        $window.location.reload();
                     });
                 };
             }
         }]);
 
 
-    var luxweb = function (url, $lux) {
+    var CSRFset = ['get', 'head', 'options'],
+        //
+        luxweb = function (url, $lux) {
 
         var api = baseapi(url, $lux),
             request = api.request;
@@ -99,32 +74,16 @@
             return promise;
         };
 
-        api.authentication = function (request) {
-            //
-            if (lux.context.user_token) {
-                self.auth = {user_token: lux.context.user_token};
-            } else if (lux.context.user) {
-                $lux.log.info('Fetching authentication token');
-                //
-                $lux.post('/_token').success(function (data) {
-                    lux.context.user_token = data.token;
-                    self.auth = {user_token: lux.context.user_token};
-                    self.call(request);
-                }).error(request.error);
-                //
-                return request.deferred.promise;
-            } else {
-                self.auth = {};
-            }
-            //
-            // Add authentication token
-            if (lux.context.user_token) {
-                var headers = request.options.headers;
-                if (!headers)
-                    request.options.headers = headers = {};
+        api.httpOptions = function (request) {
+            var options = request.options;
 
-                headers.Authorization = 'Bearer ' + lux.context.user_token;
+            if ($lux.csrf && CSRFset.indexOf(options.method === -1)) {
+                options.data = extend(options.data || {}, $lux.csrf);
             }
+
+            if (!options.headers)
+                options.headers = {};
+            options.headers['Content-Type'] = 'application/json';
         };
 
         return api;

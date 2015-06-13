@@ -1,4 +1,3 @@
-import sys
 from lux import forms
 
 

@@ -38,6 +38,8 @@ from .components import grid
 
 def add_ng_modules(doc, modules):
     if modules:
+        if not isinstance(modules, (list, tuple)):
+            modules = (modules,)
         ngmodules = set(doc.jscontext.get('ngModules', ()))
         ngmodules.update(modules)
         doc.jscontext['ngModules'] = tuple(ngmodules)

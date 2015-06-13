@@ -162,27 +162,33 @@ class SessionBackend(AuthMixin, backends.SessionBackend):
     '''An authentication backend based on sessions stored in the
     cache server and user on the ODM
     '''
+    def on_config(self, app):
+        super().on_config(app)
+        backends.SessionBackend.on_config(self, app)
 
-    def get_session(self, key):
-        return self.app.cache_server.get(self._key(key))
+    def get_session(self, request, key):
+        session = request.app.cache_server.get_json(self._key(key))
+        if session:
+            session = AttributeDictionary(session)
+            if session.user_id:
+                session.user = self.get_user(request, user_id=session.user_id)
+            return session
+
+    def session_save(self, request, session):
+        session = session.all().copy()
+        session.pop('user', None)
+        request.app.cache_server.set_json(self._key(session['id']), session)
 
     def session_key(self, session):
         '''Session key from session object
         '''
-        return session['id']
-
-    def session_save(self, request, session):
-        session = session.copy()
-        session.pop(user)
-        request.app.cache_server.set(self._key(session['id']), session)
+        return session.id
 
     def session_create(self, request, id=None, user=None, expiry=None):
         '''Create a new session
         '''
         if not id:
             id = uuid.uuid4().hex
-        if not expiry:
-            expiry = self.session_expiry(request)
         session = AttributeDictionary(id=id)
         if expiry:
             session.expiry = expiry.isoformat()

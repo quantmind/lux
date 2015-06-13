@@ -1,5 +1,7 @@
+import json
+
 import lux
-from lux import route, HtmlRouter
+from lux import route
 from lux.forms import Form, WebFormRouter, FormMixin, Layout, Fieldset, Submit
 
 from pulsar import Http404, PermissionDenied, HttpRedirect, MethodNotAllowed
@@ -14,21 +16,6 @@ from .models import RestModel
 REST_CONTENT_TYPES = ['application/json']
 
 
-def csrf(method):
-    '''Decorator which makes sure the CSRF token is checked
-
-    This decorator should be applied to all view handling POST data
-    without using a :class:`.Form`.
-    '''
-    def _(self, request):
-        # make sure CSRF is checked
-        data, files = request.data_and_files()
-        Form(request, data=data, files=files)
-        return method(self, request)
-
-    return _
-
-
 class RestRoot(lux.Router):
     '''Api Root
 
@@ -39,8 +26,8 @@ class RestRoot(lux.Router):
 
     def apis(self, request):
         routes = {}
-        for route in self.routes:
-            routes[route.model.api_name] = request.absolute_uri(route.path())
+        for router in self.routes:
+            routes[router.model.api_name] = request.absolute_uri(router.path())
         return routes
 
     def get(self, request):
@@ -115,6 +102,57 @@ class RestRouter(RestMixin, lux.Router):
         return Json(data).http_response(request)
 
 
+class Authorization(RestRouter):
+    '''A Rest view for authorization
+    '''
+    model = RestModel('authorization', LoginForm)
+
+    def post(self, request):
+        '''Anthenticate the user and create a new Authorization token
+        if succesful
+        '''
+        user = request.cache.user
+        if user.is_authenticated():
+            raise MethodNotAllowed
+
+        form = self.model.form(request, data=request.body_data())
+
+        if form.is_valid():
+            auth_backend = request.cache.auth_backend
+            try:
+                user = auth_backend.authenticate(request, **form.cleaned_data)
+                return auth_backend.login(request, user)
+            except AuthenticationError as e:
+                form.add_error_message(str(e))
+
+        return Json(form.tojson()).http_response(request)
+
+    def post_logout(self, request):
+        '''Logout via post method
+        '''
+        # make sure csrf is called
+        Form(request, data=request.body_data())
+
+        user = request.cache.user
+        if not user.is_authenticated():
+            raise MethodNotAllowed
+
+        auth_backend = request.cache.auth_backend
+        return auth_backend.logout(request, user)
+
+    def post_dismiss_message(self, request):
+        app = request.app
+        if not app.config['SESSION_MESSAGES']:
+            raise Http404
+        session = request.cache.session
+        form = Form(request, data=request.body_data())
+        data = form.rawdata['message']
+        body = {'success': session.remove_message(data)}
+        response = request.response
+        response.content = json.dumps(body)
+        return response
+
+
 class Login(WebFormRouter):
     '''Adds login get ("text/html") and post handlers
     '''
@@ -123,30 +161,11 @@ class Login(WebFormRouter):
                           Submit('Login', disabled="form.$invalid"),
                           showLabels=False)
     template = 'login.html'
-    redirect_to = '/'
 
     def get(self, request):
         if request.cache.user.is_authenticated():
             raise HttpRedirect(self.redirect_to)
         return super().get(request)
-
-    def post(self, request):
-        '''Handle login post data
-        '''
-        user = request.cache.user
-        if user.is_authenticated():
-            raise MethodNotAllowed
-        form = self.fclass(request, data=request.body_data())
-        if form.is_valid():
-            auth = request.cache.auth_backend
-            try:
-                user = auth.authenticate(request, **form.cleaned_data)
-                auth.login(request, user)
-            except AuthenticationError as e:
-                form.add_error_message(str(e))
-            else:
-                return self.maybe_redirect_to(request, form, user=user)
-        return Json(form.tojson()).http_response(request)
 
 
 class SignUp(WebFormRouter):
@@ -184,14 +203,14 @@ class SignUp(WebFormRouter):
     def new_confirmation(self, request):
         username = request.urlargs['username']
         backend = request.cache.auth_backend
-        user = backend.confirm_registration(request, username=username)
+        backend.confirm_registration(request, username=username)
         raise HttpRedirect(self.redirect_url(request))
 
     @route('<key>')
     def confirmation(self, request):
         key = request.urlargs['key']
         backend = request.cache.auth_backend
-        user = backend.confirm_registration(request, key)
+        backend.confirm_registration(request, key)
         raise HttpRedirect(self.redirect_url(request))
 
 
