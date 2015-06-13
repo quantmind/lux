@@ -27,7 +27,7 @@ before_script:
 script:
   - grunt jasmine
   - pep8
-  - python -m runtests --coverage --test-timeout 10
+  - python -m runtests --coverage --test-timeout 10 --log-level warning
   - python -m runtests --coveralls
 
 # after_script:
