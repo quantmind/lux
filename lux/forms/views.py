@@ -1,27 +1,17 @@
 from pulsar import MethodNotAllowed
-from pulsar.utils.httpurl import ENCODE_BODY_METHODS
 
 from .form import Form
 from ..core.wrappers import HtmlRouter
 
 
-__all__ = ['FormMixin', 'WebFormRouter']
+__all__ = ['WebFormRouter']
 
 
 def method_not_allowed(request):
     raise MethodNotAllowed
 
 
-class FormMixin(object):
-    default_form = Form
-    form = None
-
-    @property
-    def fclass(self):
-        return self.form or self.default_form
-
-
-class WebFormRouter(HtmlRouter, FormMixin):
+class WebFormRouter(HtmlRouter):
     '''A Router for rending web forms
     '''
     uirouter = False
@@ -30,31 +20,12 @@ class WebFormRouter(HtmlRouter, FormMixin):
     form_method = None
     form_enctype = None
     form_action = None
+    default_form = Form
+    form = None
 
-    def __init__(self, *args, **kwargs):
-        '''Override the standard initialization method to check if
-        one of the encode body methods needs to be removed.
-
-        For example
-
-            Login('/login', post='authorizations_url')
-
-        will remove the handler for the post method (if the Login router
-        implemented it) and set the form_action attribute to
-        'authorizations_url'
-        '''
-        for method in ENCODE_BODY_METHODS:
-            method = method.lower()
-            value = kwargs.pop(method, None)
-            if value and not hasattr(value, '__call__'):
-                assert not self.form_method, 'form method already specified'
-                self.form_method = method
-                self.form_action = value
-                if hasattr(self, method):
-                    kwargs[method] = method_not_allowed
-            elif value:
-                kwargs[method] = value
-        super().__init__(*args, **kwargs)
+    @property
+    def fclass(self):
+        return self.form or self.default_form
 
     def get_html(self, request):
         '''Handle the HTML page for login

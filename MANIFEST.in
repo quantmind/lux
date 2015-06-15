@@ -10,4 +10,5 @@ recursive-include luxjs *
 recursive-include tests *
 recursive-include lux/extensions *.html *.txt *.js
 recursive-include lux/media *.js
+recursive-include lux/core/commands/templates *.js *.json *.rst
 recursive-include examples *

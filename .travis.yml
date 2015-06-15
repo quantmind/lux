@@ -29,6 +29,7 @@ before_script:
 
 script:
   - grunt jasmine
+  - ls -la
   - flake8
   - rm -rf lux
   - python -m runtests --coverage --test-timeout 10 --log-level warning
