@@ -11,7 +11,7 @@ before_install:
 install:
   - pip install -r requirements-dev.txt
   - pip install -r requirements-soft.txt
-  - pip install -r requirements.txt
+  - python setup.py install
   - npm install
 
 services:
@@ -30,6 +30,7 @@ before_script:
 script:
   - grunt jasmine
   - flake8
+  - sudo rm -rf lux
   - python -m runtests --coverage --test-timeout 10 --log-level warning
   - python -m runtests --coveralls
 
