@@ -30,7 +30,7 @@ before_script:
 script:
   - grunt jasmine
   - flake8
-  - sudo rm -rf lux
+  - rm -rf lux
   - python -m runtests --coverage --test-timeout 10 --log-level warning
   - python -m runtests --coveralls
 

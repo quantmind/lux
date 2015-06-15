@@ -4,7 +4,7 @@ from pulsar.utils.slugify import slugify
 
 import lux
 from lux import forms, HtmlRouter
-from lux.extensions import odm, admin
+from lux.extensions import odm
 from lux.forms import Layout, Fieldset, Submit
 
 
@@ -101,34 +101,3 @@ class CMS(lux.CMS):
         if self.key:
             key = '%s:%s' (key, self.key)
         return key
-
-
-#    CLASSES FOR ADMIN
-class CmsAdmin(admin.CRUDAdmin):
-    '''Admin views for the cms
-    '''
-    section = 'cms'
-
-
-@admin.register(PageCRUD.model)
-class PageAdmin(CmsAdmin):
-    '''Admin views for html pages
-    '''
-    icon = 'fa fa-sitemap'
-    form = Layout(PageForm,
-                  Fieldset(all=True),
-                  Submit('Add new page'))
-    editform = Layout(PageForm,
-                      Fieldset(all=True),
-                      Submit('Update page'))
-
-
-@admin.register(TemplateCRUD.model)
-class TemplateAdmin(CmsAdmin):
-    icon = 'fa fa-file-code-o'
-    form = Layout(TemplateForm,
-                  Fieldset(all=True),
-                  Submit('Add new template'))
-    editform = Layout(TemplateForm,
-                      Fieldset(all=True),
-                      Submit('Update template'))
