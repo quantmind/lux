@@ -22,23 +22,27 @@ is not ``None`` (it is set to ``website`` by default).
 .. _OAuth2: http://oauth.net/2/
 .. _OGP: http://ogp.me/
 '''
-from functools import partial
+from importlib import import_module
 
 import lux
 from lux import Parameter
 from lux.core.wrappers import HeadMeta
 
-from . import dropbox
-from . import facebook
-from . import github
-from . import google
-from . import linkedin
-from . import twitter
-
-
 from .oauth import get_oauths
 from .ogp import OGP
 from .views import OAuthRouter, oauth_context
+
+
+def _import(*names):
+    for name in names:
+        import_module('lux.extensions.oauth.%s' % name)
+
+
+_import('amazon', 'dropbox', 'facebook', 'github', 'google', 'linkedin',
+        'twitter')
+
+
+__all__ = ['OAuthRouter', 'OGP', 'get_oauths']
 
 
 class Extension(lux.Extension):

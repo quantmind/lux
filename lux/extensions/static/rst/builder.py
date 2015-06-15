@@ -1,7 +1,6 @@
 import os
 
 from sphinx.builders.html import StandaloneHTMLBuilder
-from sphinx.util.osutil import ensuredir
 from sphinx.application import Sphinx
 
 from ..builder import normpath
@@ -12,7 +11,6 @@ class SphinxContent(Content):
 
     def __init__(self, app, ctx):
         content_type = 'text/html'
-        meta = ctx.get('meta') or {}
         super().__init__(app, content_type=content_type)
 
 

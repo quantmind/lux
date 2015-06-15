@@ -37,7 +37,7 @@ class TestSql(test.AppTestCase):
     def _create_task(self, token, txt='This is a task', person=None):
         data = {'subject': txt}
         if person:
-            data['assigned'] = person['id']
+            data['assigned_id'] = person['id']
         request = yield from self.client.post(
             '/tasks', body=data, token=token,
             content_type='application/json')
@@ -69,6 +69,8 @@ class TestSql(test.AppTestCase):
     def test_odm(self):
         tables = yield from self.app.odm.tables()
         self.assertTrue(tables)
+        self.assertEqual(len(tables), 1)
+        self.assertEqual(len(tables[0][1]), 8)
 
     def test_rest_model(self):
         from tests.odm import CRUDTask, CRUDPerson
@@ -200,12 +202,12 @@ class TestSql(test.AppTestCase):
         person = yield from self._create_person(token, 'spiderman')
         task = yield from self._create_task(token, 'climb a wall a day',
                                             person)
-        self.assertTrue('assigned' in task)
+        self.assertTrue('assigned_id' in task)
 
     def test_relationship_field_failed(self):
         token = yield from self._token()
         data = {'subject': 'climb a wall a day',
-                'assigned': 6868897}
+                'assigned_id': 6868897}
         request = yield from self.client.post('/tasks', body=data,
                                               token=token,
                                               content_type='application/json')
@@ -215,7 +217,7 @@ class TestSql(test.AppTestCase):
         self.assertIsInstance(data, dict)
         self.assertFalse(data['success'])
         self.assertTrue(data['error'])
-        error = data['messages']['assigned'][0]
+        error = data['messages']['assigned_id'][0]
         self.assertEqual(error['message'], 'Invalid person')
 
     def test_unique_field(self):
@@ -241,3 +243,10 @@ class TestSql(test.AppTestCase):
         data = self.json(response)
         columns = data['columns']
         self.assertEqual(len(columns), 8)
+
+    def test_preflight_request(self):
+        request = yield from self.client.options('/users/delete')
+        response = request.response
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Access-Control-Allow-Methods'],
+                         'GET, POST, DELETE')

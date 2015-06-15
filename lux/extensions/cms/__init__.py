@@ -1,9 +1,10 @@
-from pulsar.utils.httpurl import is_absolute_uri
-
 import lux
 from lux import Parameter
 
 from .views import PageCRUD, TemplateCRUD, AnyPage, CMS
+
+
+__all__ = ['AnyPage', 'CMS']
 
 
 class Extension(lux.Extension):
@@ -13,5 +14,9 @@ class Extension(lux.Extension):
 
     Requires the :mod:`lux.extensions.odm` extension
     '''
+    _config = [
+        Parameter('CMS_LOAD_PLUGINS', True, 'Load plugins from extensions')
+    ]
+
     def api_sections(self, app):
         return [PageCRUD(), TemplateCRUD()]

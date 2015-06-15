@@ -11,6 +11,9 @@ from .socketio import SocketIO
 from .ws import LuxWs
 
 
+__all__ = ['LuxWs', 'SocketIO']
+
+
 class Extension(lux.Extension):
 
     _config = [

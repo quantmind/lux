@@ -3,7 +3,7 @@ import os
 import lux
 from lux.extensions.static import HtmlContent, SphinxDocs, Sitemap
 
-from .ui import add_css
+from .ui import add_css     # noqa
 
 
 def d(path):

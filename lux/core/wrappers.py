@@ -104,11 +104,13 @@ class HtmlRouter(Router):
     model = None
     response_content_types = TEXT_CONTENT_TYPES
 
-    def get(self, request, html=None):
-        # render the inner html
-        if html is None:
-            html = self.get_html(request)
+    def get(self, request):
+        html = self.get_html(request)
+        return self.html_response(request, html)
 
+    def html_response(self, request, html):
+        '''Render `html` as a full Html document or a partial.
+        '''
         if isinstance(html, Html):
             html = html.render(request)
 

@@ -4,7 +4,6 @@
    :member-order: bysource
 
 '''
-import sys
 import argparse
 import logging
 from functools import partial
@@ -108,8 +107,6 @@ class Command(ConsoleParser):
     def __init__(self, name, app):
         self.name = name
         self.app = app
-        self.stdout = app.stdout
-        self.stderr = app.stderr
 
     def __call__(self, argv, **params):
         app = self.pulsar_app(argv)
@@ -156,17 +153,11 @@ class Command(ConsoleParser):
 
     def write(self, stream=''):
         '''Write ``stream`` to the :attr:`stdout`.'''
-        h = self.stdout or sys.stdout
-        if stream:
-            h.write(stream)
-        h.write('\n')
+        self.app.write(stream)
 
     def write_err(self, stream=''):
         '''Write ``stream`` to the :attr:`stderr`.'''
-        h = self.stderr or self.stdout or sys.stderr
-        if stream:
-            h.write(stream)
-        h.write('\n')
+        self.app.write_err(stream)
 
     def pulsar_app(self, argv, application=None, log_name='lux', **kw):
         app = self.app

@@ -2,10 +2,8 @@ import os
 
 from pulsar.apps.http import HttpClient
 from pulsar.utils.pep import native_str
-from pulsar.utils.importer import import_module
-from pulsar.utils.httpurl import remove_double_slash
 from pulsar.utils.system import convert_bytes
-from pulsar import Setting, new_event_loop, ImproperlyConfigured
+from pulsar import Setting, new_event_loop
 
 from lux.extensions.ui.lib import Css
 

@@ -1,4 +1,4 @@
-from lux.extensions.ui import *
+from lux.extensions.ui import *     # noqa
 
 
 def add_css(all):

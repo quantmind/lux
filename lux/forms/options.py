@@ -1,5 +1,6 @@
 from .errors import ValidationError
 
+
 __all__ = ['Options', 'OptionGroup']
 
 
@@ -41,8 +42,3 @@ class OptionGroup(Options):
     def __init__(self, name, options):
         self.name = name
         self._choices = options
-
-    def html(self, html, value=None):
-        group = Html('optgroup', label=self.name)
-        html.append(group)
-        super(ChoiceGroup, self).html(group, value)

@@ -38,13 +38,10 @@ a :class:`.Blog` and other routers:
 import os
 import sys
 import json
-import shutil
 from datetime import datetime
 
 from pulsar import ImproperlyConfigured
 from pulsar.apps.wsgi import FileRouter, WsgiHandler, MediaRouter
-from pulsar.utils.httpurl import urlparse
-from pulsar.utils.slugify import slugify
 
 import lux
 from lux import Parameter, Router
@@ -53,9 +50,14 @@ from .builder import Builder, DirBuilder, ContextBuilder, DirContent
 from .contents import Content, Article
 from .routers import (MediaBuilder, HtmlContent, Blog, ErrorRouter,
                       JsonRoot, JsonRedirect, Sitemap, HtmlFile)
+from .readers import register_reader
 from .rst import SphinxDocs
 from .ui import add_css
-from . import slides
+
+
+__all__ = ['Builder', 'DirBuilder', 'DirContent', 'ErrorRouter',
+           'Sitemap', 'HtmlFile', 'Blog', 'Content', 'Article',
+           'SphinxDocs', 'register_reader', 'add_css']
 
 
 class StaticHandler(WsgiHandler):

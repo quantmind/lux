@@ -105,3 +105,31 @@ class TestSqlite(test.AppTestCase):
                          'application/json; charset=utf-8')
         data = json.loads(response.content[0].decode('utf-8'))
         self.assertTrue('token' in data)
+
+    @test.green
+    def test_permissions(self):
+        '''Test permission models
+        '''
+        odm = self.app.odm()
+
+        with odm.begin() as session:
+            user = odm.user(username=test.randomname())
+            group = odm.group(name='staff')
+            session.add(user)
+            session.add(group)
+            group.users.append(user)
+
+        self.assertTrue(user.id)
+        self.assertTrue(group.id)
+
+        groups = user.groups
+        self.assertTrue(group in groups)
+
+        with odm.begin() as session:
+            # add goup to the session
+            session.add(group)
+            permission = odm.permission(name='admin',
+                                        description='Can access the admin',
+                                        policy={})
+            group.permissions.append(permission)
+

@@ -1,7 +1,6 @@
 from copy import copy
 from itertools import zip_longest
 
-from pulsar.utils.string import to_string
 from pulsar.apps.wsgi import html_factory
 
 from .fields import HiddenField

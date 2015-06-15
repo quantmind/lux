@@ -34,6 +34,18 @@ class CommandTests(test.TestCase):
         app = command(['-b', ':9000'], start=False)
         self.assertEqual(app, command.app)
 
+    def test_command_write_err(self):
+        command = self.fetch_command('serve')
+        command.write_err('errore!')
+        data = command.app.stderr.getvalue()
+        self.assertTrue('errore!')
+
+    def test_command_properties(self):
+        app = self.application()
+        command = self.fetch_command('serve')
+        self.assertEqual(command.get_version(), app.get_version())
+        self.assertEqual(command.config_module, app.config_module)
+
     @test.green
     def test_generate_key(self):
         command = self.fetch_command('generate_secret_key')

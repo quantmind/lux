@@ -40,9 +40,9 @@ class SessionBackend(AuthBackend):
         request = form.request
         param = app.config['CSRF_PARAM']
         if (param and form.is_bound and
-                form.request.method not in CSRF_SET):
+                request.method not in CSRF_SET):
             token = form.rawdata.get(param)
-            self.validate_csrf_token(form.request, token)
+            self.validate_csrf_token(request, token)
 
     def on_html_document(self, app, request, doc):
         if request.method in CSRF_SET:
@@ -91,6 +91,20 @@ class SessionBackend(AuthBackend):
 
     def response_middleware(self, app):
         return [self.response]
+
+    def login_response(self, request, user):
+        '''Login response
+        '''
+        request.cache.session = self.session_create(request, user=user)
+        request.cache.user = user
+        return Json({'success': True,
+                     'message': 'user login'}).http_response(request)
+
+    def logout_response(self, request, user):
+        if user.is_authenticated():
+            request.cache.session = self.session_create(request)
+            request.cache.user = self.anonymous()
+        return Json({'authenticated': False}).http_response(request)
 
     # ABSTRACT METHODS WHICH MUST BE IMPLEMENTED
     def get_session(self, request, key):
@@ -162,22 +176,7 @@ class SessionBackend(AuthBackend):
                 message='password_message.txt'):
             raise AuthenticationError("Can't find that email, sorry")
 
-    def login(self, request, user):
-        '''Login a user from a model or from post data
-        '''
-        if not user.is_active():
-            return self.inactive_user_login(request, user)
-        request.cache.session = self.session_create(request, user=user)
-        request.cache.user = user
-        return Json({'user': True}).http_response(request)
-
-    def logout(self, request, user):
-        if user.is_authenticated():
-            request.cache.session = self.session_create(request)
-            request.cache.user = self.anonymous()
-        return Json({'authenticated': False}).http_response(request)
-
-    def inactive_user_login(self, request, user):
+    def inactive_user_login_response(self, request, user):
         '''Handle a user not yet active'''
         cfg = request.config
         url = '%s/confirmation/%s' % (cfg['REGISTER_URL'], user.username)

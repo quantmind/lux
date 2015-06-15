@@ -2,13 +2,6 @@ import os
 from collections import namedtuple
 from datetime import datetime
 
-import pulsar
-
-from pulsar.apps.wsgi import WsgiResponse
-from pulsar.utils.httpurl import remove_double_slash, urljoin
-
-from lux import route
-
 from .contents import SkipBuild, BuildError, Unsupported, CONTENT_EXTENSIONS
 from .contents import Content, get_reader
 
@@ -309,7 +302,7 @@ class FileBuilder(Builder):
                 slug = src = request.urlargs['path']
                 dir = self.parent.get_src()
                 if dir:
-                    src = os.path.join(dir, path)
+                    src = os.path.join(dir, src)
             else:
                 src = self.src
                 slug = str(self.route)[1:]
@@ -422,7 +415,6 @@ class DirContent(Content):
         reader = get_reader(app, index)
         ctx = ContextBuilder(app, location=path, exclude=('index.md',),
                              render=False)
-        location = os.path.abspath(app.config['STATIC_LOCATION'])
         for key, content in list(ctx.items()):
             if content.is_text:
                 value = content.render()

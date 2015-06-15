@@ -107,13 +107,12 @@ class TestSqlite(test.AppTestCase):
         self.json(response)
 
     def test_create_superuser_command_and_login(self):
-        username = 'ghghghgh'
+        username = test.randomname()
+        email = '%s@jgjh.com' % username
         password = 'dfbjdhbvdjbhv'
         data = {'username': username,
                 'password': password}
-        user = yield from self.create_superuser(username,
-                                                'sjhcsecds@sjdbcsjdc.com',
-                                                password)
+        user = yield from self.create_superuser(username, email, password)
         self.assertEqual(user.username, username)
         self.assertNotEqual(user.password, password)
 
@@ -126,7 +125,7 @@ class TestSqlite(test.AppTestCase):
         cookie = self.cookie(response)
         self.assertTrue(cookie)
         #
-        # Get new token
+        # Login with csrf token and cookie, It should work
         request = yield from self.client.post('/api/authorizations',
                                               content_type='application/json',
                                               body=data,
@@ -135,8 +134,51 @@ class TestSqlite(test.AppTestCase):
         self.assertEqual(response.status_code, 200)
         data = self.json(response)
         self.assertTrue(data)
+        cookie2 = self.cookie(response)
+        # The cookie has changed
+        self.assertNotEqual(cookie, cookie2)
         #
-        request = yield from self.client.get('/')
+        request = yield from self.client.get('/', cookie=cookie2)
+        response = request.response
+        self.assertEqual(response.status_code, 200)
+        user = request.cache.user
+        self.assertTrue(user.is_authenticated())
+        cookie3 = self.cookie(response)
+        # The cookie has changed
+        self.assertEqual(cookie3, None)
+        #
+        request = yield from self.client.get('/login', cookie=cookie2)
+        response = request.response
+        self.assertEqual(response.status_code, 302)
+        return cookie2
+
+    def test_logout(self):
+        cookie = yield from self.test_create_superuser_command_and_login()
+        #
+        # This wont work, not csrf token
+        request = yield from self.client.post('/api/authorizations/logout',
+                                              content_type='application/json',
+                                              body={},
+                                              cookie=cookie)
+        response = request.response
+        self.assertEqual(response.status_code, 403)
+        #
+        request = yield from self.client.get('/', cookie=cookie)
+        response = request.response
+        self.assertEqual(response.status_code, 200)
+        user = request.cache.user
+        self.assertTrue(user.is_authenticated())
+        token = self.authenticity_token(self.bs(response))
+        self.assertTrue(token)
+
+        request = yield from self.client.post('/api/authorizations/logout',
+                                              content_type='application/json',
+                                              body=token,
+                                              cookie=cookie)
+        response = request.response
         self.assertEqual(response.status_code, 200)
         user = request.cache.user
         self.assertFalse(user.is_authenticated())
+        cookie2 = self.cookie(response)
+        self.assertTrue(cookie2)
+        self.assertNotEqual(cookie, cookie2)

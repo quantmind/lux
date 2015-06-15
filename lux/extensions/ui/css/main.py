@@ -1,4 +1,4 @@
-from ..lib import *
+from ..lib import *     # noqa
 
 
 def add_css(all):

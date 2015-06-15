@@ -12,4 +12,4 @@ if os.environ.get('lux_install_running') != 'yes':
 
     __version__ = version = get_version(VERSION, __file__)
 
-    from .core import *
+    from .core import *     # noqa

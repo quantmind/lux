@@ -5,6 +5,9 @@ from .form import Form
 from ..core.wrappers import HtmlRouter
 
 
+__all__ = ['FormMixin', 'WebFormRouter']
+
+
 def method_not_allowed(request):
     raise MethodNotAllowed
 
@@ -12,27 +15,10 @@ def method_not_allowed(request):
 class FormMixin(object):
     default_form = Form
     form = None
-    redirect_to = None
 
     @property
     def fclass(self):
         return self.form or self.default_form
-
-    def maybe_redirect_to(self, request, form, **kw):
-        redirect_to = self.redirect_url(request)
-        if redirect_to:
-            return Json({'success': True,
-                         'redirect': redirect_to}
-                        ).http_response(request)
-        else:
-            return Json(form.tojson()).http_response(request)
-
-    def redirect_url(self, request):
-        redirect_to = self.redirect_to
-        if hasattr(redirect_to, '__call__'):
-            redirect_to = redirect_to(request, **kw)
-        if redirect_to:
-            return request.absolute_uri(redirect_to)
 
 
 class WebFormRouter(HtmlRouter, FormMixin):

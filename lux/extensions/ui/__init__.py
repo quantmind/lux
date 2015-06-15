@@ -78,9 +78,9 @@ Mixins
 import lux
 from lux import Parameter
 
-from .lib import *
-from .libs import CssLibraries
-from .css import add_css
+from .lib import *              # noqa
+from .libs import CssLibraries  # noqa
+from .css import add_css        # noqa
 
 
 class Extension(lux.Extension):

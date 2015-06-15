@@ -1,6 +1,4 @@
-from inspect import isclass
 from datetime import datetime, date
-from collections import Mapping
 
 import pytz
 
@@ -8,10 +6,9 @@ from dateutil.parser import parse as dateparser
 
 from pulsar.utils.html import NOTHING, escape
 from pulsar.utils.pep import to_string
-from pulsar.apps.wsgi import Html
 
-from .options import *
-from .errors import *
+from .options import Options
+from .errors import *   # noqa
 
 
 __all__ = ['Field',

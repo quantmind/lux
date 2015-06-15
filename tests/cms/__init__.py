@@ -18,4 +18,6 @@ class Extension(lux.Extension):
         return [AnyPage('wiki')]
 
     def on_loaded(self, app):
+        '''Add the AnyPage router for serving pages
+        '''
         app.handler.middleware.append(AnyPage())

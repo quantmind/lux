@@ -1,4 +1,4 @@
-from lux.extensions.ui.lib import *
+from lux.extensions.ui.lib import *     # noqa
 
 
 def add_css(all):
@@ -70,7 +70,6 @@ def add_animate(all):
 
 def add_forms(all):
     css = all.css
-    vars = all.variables
 
     css('.form-error',
         css(' span', display='block'))

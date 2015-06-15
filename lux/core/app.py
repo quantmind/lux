@@ -30,7 +30,7 @@ __all__ = ['App',
 LUX_CORE = os.path.dirname(__file__)
 
 
-def execute_from_config(config_file, **params):
+def execute_from_config(config_file, **params):     # pragma    nocover
     '''Create and run an :class:`.Application` from a ``config_file``.
 
     This is the function to use when creating the script which runs your
@@ -49,7 +49,7 @@ def execute_from_config(config_file, **params):
     return execute_app(App(config_file, **params))
 
 
-def execute_app(app, argv=None, **params):
+def execute_app(app, argv=None, **params):  # pragma    nocover
     '''Execute a given ``app``.
 
     :parameter app: the :class:`.App` to execute
@@ -280,6 +280,12 @@ class Application(ConsoleParser, Extension, EventMixin):
         '''
         return create_cache(self, self.config['CACHE_SERVER'])
 
+    @lazyproperty
+    def green_pool(self):
+        if self.config['GREEN_POOL']:
+            from pulsar.apps.greenio import GreenPool
+            return GreenPool(self.config['GREEN_POOL'])
+
     def get_handler(self):
         if self.handler is None:
             self._worker = pulsar.get_actor()
@@ -467,12 +473,6 @@ class Application(ConsoleParser, Extension, EventMixin):
         if Ext and isclass(Ext) and issubclass(Ext, Extension):
             return Ext
 
-    def format_date(self, dte):
-        return dte.strftime(self.config['DATE_FORMAT'])
-
-    def format_datetime(self, dte):
-        return dte.strftime(self.config['DATETIME_FORMAT'])
-
     # Template redering
     def template_full_path(self, names):
         '''Return the template full path or None.
@@ -596,11 +596,25 @@ class Application(ConsoleParser, Extension, EventMixin):
         for ext in self.extensions.values():
             self.bind_events(ext, event_names)
 
-    @lazyproperty
-    def green_pool(self):
-        if self.config['GREEN_POOL']:
-            from pulsar.apps.greenio import GreenPool
-            return GreenPool(self.config['GREEN_POOL'])
+    def module_iterator(self, submodule=None, filter=None, cache=None):
+        '''Iterate over applications modules
+        '''
+        for extension in self.config['EXTENSIONS']:
+            try:
+                mod = import_module(extension)
+            except ImportError:
+                # the module is not there
+                mod = None
+            if mod:
+                if submodule:
+                    try:
+                        mod = import_module('.%s' % submodule, extension)
+                    except ImportError:
+                        pass
+                if filter:
+                    yield from module_types(mod, filter, cache)
+                else:
+                    yield mod
 
     # INTERNALS
     def _build_config(self, module_name):
@@ -700,3 +714,19 @@ def add_app(apps, name, pos=None):
         apps.insert(pos, name)
     else:
         apps.append(name)
+
+
+def module_types(mod, filter, cache=None):
+    # Loop through attributes in mod_models
+    if cache and hasattr(mod, cache):
+        for value in getattr(mod, cache):
+            yield value
+    else:
+        all = []
+        if cache:
+            setattr(mod, cache, all)
+        for name in dir(mod):
+            value = getattr(mod, name)
+            if filter(value):
+                all.append(value)
+                yield value

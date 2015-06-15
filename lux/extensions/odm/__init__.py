@@ -14,11 +14,15 @@ from lux import Parameter
 
 from pulsar.utils.log import LocalMixin
 
-from .exc import *
-from .mapper import Mapper, Model
+from .exc import *     # noqa
+from .mapper import Mapper, model_base
 from .views import CRUD, RestRouter
 from .models import RestModel
 from .forms import RelationshipField, UniqueField
+
+
+__all__ = ['model_base', 'CRUD', 'RestRouter', 'RestModel',
+           'RelationshipField', 'UniqueField']
 
 
 class Extension(lux.Extension):
@@ -71,6 +75,8 @@ class Odm(LocalMixin):
         return odm
 
     def tables(self):
+        '''Coroutine returning all tables managed by the mapper
+        '''
         odm = self()
         if self.app.green_pool:
             tables = yield from self.app.green_pool.submit(odm.tables)

@@ -51,8 +51,6 @@ you do not need to access user data::
 '''
 from string import Template
 
-from pulsar.utils.httpurl import urlparse
-
 from ..oauth import OAuth2, register_oauth
 
 

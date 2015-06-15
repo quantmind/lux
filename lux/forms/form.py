@@ -1,13 +1,10 @@
 import json
-from collections import Mapping
-from functools import partial
 
-from pulsar import multi_async, HttpRedirect
+from pulsar import HttpRedirect
 from pulsar.utils.string import to_string
 from pulsar.utils.structures import OrderedDict
 from pulsar.utils.html import nicename, NOTHING
 from pulsar.utils.httpurl import JSON_CONTENT_TYPES
-from pulsar.apps.wsgi import Html
 
 from .errors import ValidationError, FormError
 from .fields import Field

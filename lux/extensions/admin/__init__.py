@@ -7,10 +7,10 @@ needs to be specified.
 import lux
 from lux import Parameter, RedirectRouter
 
-from .admin import Admin, AdminModel, CRUDAdmin, adminMap, register
+from .admin import Admin, AdminModel, CRUDAdmin, adminMap, register, is_admin
 
 
-__all__ = ['Admin', 'AdminModel', 'CRUDAdmin', 'register']
+__all__ = ['Admin', 'AdminModel', 'CRUDAdmin', 'register', 'adminMap']
 
 
 class Extension(lux.Extension):
@@ -27,9 +27,11 @@ class Extension(lux.Extension):
     def middleware(self, app):
         admin = app.config['ADMIN_URL']
         if admin:
+            app.require('lux.extensions.rest')
             self.admin = admin = Admin(admin)
             middleware = []
-            for AdminRouterCls in adminMap.values():
+            all = app.module_iterator('admin', is_admin, '__admins__')
+            for AdminRouterCls in all:
                 route = AdminRouterCls()
                 admin.add_child(route)
                 path = route.path()

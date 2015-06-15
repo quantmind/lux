@@ -1,27 +1,24 @@
 '''
 Extension for Restful web services
 '''
-from datetime import datetime, timedelta
 from importlib import import_module
 
 from pulsar import ImproperlyConfigured
 from pulsar.utils.importer import module_attribute
 from pulsar.utils.httpurl import is_absolute_uri
 
-import lux
 from lux import Parameter
 from lux.core.wrappers import wsgi_request
-from lux.extensions.angular import add_ng_modules
 
-from .user import *
+from .user import *     # noqa
+from .auth import AuthBackend
 from .models import RestModel, RestColumn
 from .pagination import Pagination, GithubPagination
 from .client import ApiClient
-from .views import (RestRoot, RestRouter, RestMixin, change_password,
-                    RequirePermission)
+from .views import RestRoot, RestRouter, RestMixin, RequirePermission
 
 __all__ = ['RestRouter', 'RestMixin', 'RestModel', 'RestColumn',
-           'Pagination', 'GithubPagination', 'change_password',
+           'Pagination', 'GithubPagination', 'AuthBackend',
            'RequirePermission']
 
 
@@ -31,60 +28,6 @@ def luxrest(url, name, **rest):
     rest['url'] = url
     rest['name'] = name
     return rest
-
-
-class AuthBackend(lux.Extension):
-    '''Interface for extension supporting restful methods
-    '''
-    def authenticate(self, request, **params):  # pragma    nocover
-        '''Authenticate user'''
-        pass
-
-    def login(self, request, user):  # pragma    nocover
-        '''Login a user'''
-        pass
-
-    def logout(self, request, user):  # pragma    nocover
-        '''Logout a user'''
-        pass
-
-    def create_user(self, request, **kwargs):  # pragma    nocover
-        '''Create a standard user.'''
-        pass
-
-    def create_superuser(self, request, **kwargs):  # pragma    nocover
-        '''Create a user with *superuser* permissions.'''
-        pass
-
-    def create_token(self, request, user, **kwargs):  # pragma    nocover
-        '''Create an athentication token for ``user``'''
-        pass
-
-    def get_user(self, request, **kwargs):  # pragma    nocover
-        '''Retrieve a user.'''
-        pass
-
-    def request(self, request):  # pragma    nocover
-        '''Request middleware. Most restful backends implement this method
-        '''
-        pass
-
-    def has_permission(self, request, target, level):  # pragma    nocover
-        '''Check if the given request has permission over ``target``
-        element with permission ``level``
-        '''
-        pass
-
-    def session_expiry(self, request):
-        '''Expiry for a session or a token
-        '''
-        session_expiry = request.config['SESSION_EXPIRY']
-        if session_expiry:
-            return datetime.now() + timedelta(seconds=session_expiry)
-
-    def user_agent(self, request, max_len=80):
-        agent = request.get('HTTP_USER_AGENT')
-        return agent[:max_len] if agent else ''
 
 
 class Extension(AuthBackend):
@@ -139,8 +82,6 @@ class Extension(AuthBackend):
                   'a lux application accessing a lux api'),
         Parameter('PAGINATION', 'lux.extensions.rest.Pagination',
                   'Pagination class')]
-
-    ngModules = ['lux.users']
 
     def on_config(self, app):
         self.backends = []
@@ -219,21 +160,26 @@ class Extension(AuthBackend):
     def request(self, request):
         # Inject self as the authentication backend
         cache = request.cache
-        cache.user = Anonymous()
+        cache.user = self.anonymous()
         cache.auth_backend = self
         return self._apply_all('request', request)
 
+    # HTTP Responses
+    def login_response(self, request, user):
+        return self._apply_all('login_response', request, user)
+
+    def logout_response(self, request, user):
+        return self._apply_all('logout_response', request, user)
+
+    def signup_response(self, request, user):
+        return self._apply_all('signup_response', request, user)
+
+    def password_changed_response(self, request, user):
+        return self._apply_all('password_changed_response', request, user)
+
+    # Backend methods
     def authenticate(self, request, **kwargs):
         return self._apply_all('authenticate', request, **kwargs)
-
-    def login(self, request, user):
-        return self._apply_all('login', request, user)
-
-    def create_token(self, request, user, **kwargs):
-        return self._apply_all('create_token', request, user, **kwargs)
-
-    def logout(self, request, user):
-        return self._apply_all('logout', request, user)
 
     def create_user(self, request, **kwargs):
         '''Create a standard user.'''
@@ -246,12 +192,12 @@ class Extension(AuthBackend):
     def get_user(self, request, **kwargs):
         return self._apply_all('get_user', request, **kwargs)
 
+    def create_token(self, request, user, **kwargs):
+        return self._apply_all('create_token', request, user, **kwargs)
+
     def has_permission(self, request, target, level):
         has = self._apply_all('has_permission', request, target, level)
         return True if has is None else has
-
-    def on_html_document(self, app, request, doc):
-        add_ng_modules(doc, self.ngModules)
 
     def _apply_all(self, method, request, *args, **kwargs):
         for backend in self.backends:

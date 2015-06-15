@@ -1,4 +1,3 @@
-import os
 import json
 import time
 from copy import copy
@@ -100,9 +99,6 @@ class Symbolic(object):
 
     def __sub__(self, other):
         return self._op(other, subtraction)
-
-    def __rsub__(self, other):
-        return self._op(other, addition)
 
     def __rsub__(self, other):
         return self._op(other, subtraction, True)

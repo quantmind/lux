@@ -2,7 +2,7 @@ from sqlalchemy.exc import DataError
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy import desc
 
-from pulsar import PermissionDenied, Http404
+from pulsar import PermissionDenied, MethodNotAllowed, Http404
 from pulsar.apps.wsgi import Json
 
 import odm
@@ -55,7 +55,6 @@ class RestRouter(rest.RestRouter):
 
     def update_model(self, request, instance, data):
         odm = request.app.odm()
-        model = odm[self.model.name]
         with odm.begin() as session:
             for key, value in data.items():
                 setattr(instance, key, value)
@@ -70,9 +69,6 @@ class RestRouter(rest.RestRouter):
             query = session.query(model)
             meta['total'] = query.count()
         return meta
-
-    def filter(self, request, query, text):
-        return query
 
     def sortby(self, request, query):
         sortby = request.url_data.get('sortby')
@@ -164,7 +160,7 @@ class CRUD(RestRouter):
         '''Read an instance
         '''
         instance = self.get_model(request)
-        url = request.absolute_uri()
+        # url = request.absolute_uri()
         data = self.serialise(request, instance)
         return Json(data).http_response(request)
 

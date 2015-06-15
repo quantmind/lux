@@ -1,4 +1,3 @@
-from pulsar import Setting
 from pulsar.apps.wsgi import Router
 
 import lux

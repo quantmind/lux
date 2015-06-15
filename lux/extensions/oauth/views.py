@@ -1,10 +1,6 @@
-import lux
 from pulsar.apps.wsgi import Router, Json, route
 
 from .oauth import get_oauths
-
-
-__all__ = ['OAuth', 'oauth_context']
 
 
 def oauth_context(request, path='/oauth/'):

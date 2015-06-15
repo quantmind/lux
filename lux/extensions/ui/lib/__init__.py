@@ -1,3 +1,3 @@
-from .base import *
-from .colorvar import *
-from .mixins import *
+from .base import *         # noqa
+from .colorvar import *     # noqa
+from .mixins import *       # noqa

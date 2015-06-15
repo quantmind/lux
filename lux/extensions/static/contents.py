@@ -1,20 +1,16 @@
 import os
 import stat
-import json
-from functools import partial
 from datetime import datetime, date
 from collections import Mapping
 
 from dateutil.parser import parse as parse_date
 
-import pulsar
 from pulsar import HttpException, Http404
 from pulsar.utils.slugify import slugify
 from pulsar.utils.structures import AttributeDictionary, mapping_iterator
 from pulsar.utils.pep import to_string
 from pulsar.apps.wsgi import Links
 
-from lux import JSON_CONTENT_TYPES
 from lux.utils import iso8601
 from lux.extensions.ui import CssLibraries
 
@@ -383,7 +379,7 @@ class Content(object):
             value = metadata.pop(name, default)
             meta.site[name] = value
             setattr(self, name, value)
-        self._engine = engine = self._app.template_engine(self.template_engine)
+        self._engine = self._app.template_engine(self.template_engine)
         meta.update(((key, self._render_meta(value, context))
                     for key, value in metadata.items()))
 

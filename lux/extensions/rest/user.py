@@ -3,9 +3,9 @@ from importlib import import_module
 from pulsar.utils.pep import to_bytes
 
 
-__all__ = ['AuthenticationError', 'LoginError', 'LogoutError',
+__all__ = ['AuthenticationError',
            'MessageMixin', 'UserMixin', 'normalise_email', 'PasswordMixin',
-           'Anonymous', 'CREATE', 'READ', 'UPDATE', 'DELETE']
+           'CREATE', 'READ', 'UPDATE', 'DELETE']
 
 
 UNUSABLE_PASSWORD = '!'
@@ -17,14 +17,6 @@ DELETE = 40     # D
 
 
 class AuthenticationError(ValueError):
-    pass
-
-
-class LoginError(RuntimeError):
-    pass
-
-
-class LogoutError(RuntimeError):
     pass
 
 
@@ -125,18 +117,6 @@ class UserMixin(MessageMixin):
         '''Retrieve a user from OAuth ``name`` with ``identifier``
         '''
         raise NotImplementedError
-
-
-class Anonymous(UserMixin):
-
-    def is_authenticated(self):
-        return False
-
-    def is_anonymous(self):
-        return True
-
-    def get_id(self):
-        return 0
 
 
 class PasswordMixin:

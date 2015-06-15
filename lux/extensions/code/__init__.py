@@ -24,7 +24,7 @@ information.
 import lux
 from lux import Parameter
 from lux.extensions.angular import add_ng_modules
-from lux.extensions.ui import *
+from lux.extensions.ui import *     # noqa
 
 
 class Extension(lux.Extension):

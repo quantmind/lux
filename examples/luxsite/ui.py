@@ -1,11 +1,10 @@
-from lux.extensions.ui.lib import *
+from lux.extensions.ui.lib import *     # noqa
 
 
 def add_css(all):
     css = all.css
     media = all.media
     vars = all.variables
-    media_url = all.app.config['MEDIA_URL']
 
     vars.font_family = ('"freight-text-pro",Georgia,Cambria,"Times New Roman",'
                         'Times,serif')
@@ -72,7 +71,6 @@ def add_css(all):
 
 def add_classes(all):
     css = all.css
-    vars = all.variables
 
     css('.hover-opacity',
         Opacity(0.5),

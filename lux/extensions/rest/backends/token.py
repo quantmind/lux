@@ -81,14 +81,16 @@ class TokenBackend(AuthBackend):
     def response_middleware(self, app):
         return [self.response]
 
-    def login(self, request, user):
+    def login_response(self, request, user):
         token = self.create_token(request, user)
         token = token.decode('utf-8')
         request.response.status_code = 201
-        return Json({'token': token}).http_response(request)
+        return Json({'success': True,
+                     'token': token}).http_response(request)
 
-    def logout(self, request):
-        return Json({'authenticated': False}).http_response(request)
+    def logout_response(self, request, user):
+        return Json({'success': True,
+                     'message': 'loged out'}).http_response(request)
 
     def on_preflight(self, app, request):
         '''Preflight handler

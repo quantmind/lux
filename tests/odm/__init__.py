@@ -4,6 +4,7 @@ import lux
 from lux import forms
 from lux.extensions import odm
 
+from sqlalchemy.orm import relationship
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
 
 
@@ -14,6 +15,7 @@ EXTENSIONS = ['lux.extensions.base',
 
 
 AUTHENTICATION_BACKENDS = ['lux.extensions.auth.TokenBackend']
+CORS_ALLOWED_METHODS = 'GET, POST, DELETE'
 
 
 class Extension(lux.Extension):
@@ -25,7 +27,9 @@ class Extension(lux.Extension):
 class TaskForm(forms.Form):
     subject = forms.CharField(required=True)
     done = forms.BooleanField(default=False)
-    assigned = odm.RelationshipField(model='person', required=False)
+    assigned_id = odm.RelationshipField(model='person',
+                                        label='assigned',
+                                        required=False)
 
 
 class PersonForm(forms.Form):
@@ -63,15 +67,20 @@ class UserCRUD(odm.CRUD):
         return self.model.tojson(request, data, exclude=('superuser',))
 
 
-class Person(odm.Model):
+Model = odm.model_base('odmtest')
+
+
+# Models
+class Person(Model):
     id = Column(Integer, primary_key=True)
     username = Column(String(250), unique=True)
     name = Column(String(250))
+    tasks = relationship('Task', backref='assigned')
 
 
-class Task(odm.Model):
+class Task(Model):
     id = Column(Integer, primary_key=True)
     subject = Column(String(250))
     done = Column(Boolean, default=False)
     created = Column(DateTime, default=datetime.utcnow)
-    assigned = Column(Integer, ForeignKey('person.id'))
+    assigned_id = Column(Integer, ForeignKey('person.id'))

@@ -7,10 +7,10 @@ import json
 from unittest import mock
 from io import StringIO
 
-from pulsar import send, get_event_loop
+from pulsar import get_event_loop
 from pulsar.utils.httpurl import encode_multipart_formdata
 from pulsar.utils.string import random_string
-from pulsar.apps.test import test_timeout
+from pulsar.apps.test import test_timeout   # noqa
 
 import lux
 from lux.core.commands.generate_secret_key import generate_secret
@@ -19,6 +19,8 @@ logger = logging.getLogger('lux.test')
 
 
 def randomname(prefix=None):
+    '''Generate a random name with a prefix (default to ``luxtest_``)
+    '''
     prefix = prefix or 'luxtest_'
     name = random_string(min_len=8, max_len=8, characters=string.ascii_letters)
     return ('%s%s' % (prefix, name)).lower()
@@ -108,7 +110,7 @@ class TestClient:
 
     def post(self, path=None, body=None, content_type=None, **extra):
         extra['REQUEST_METHOD'] = 'POST'
-        if body and not isinstance(body, bytes):
+        if body is not None and not isinstance(body, bytes):
             if content_type is None:
                 body, content_type = encode_multipart_formdata(body)
             elif content_type == 'application/json':
@@ -119,6 +121,10 @@ class TestClient:
 
     def delete(self, path=None, **extra):
         extra['REQUEST_METHOD'] = 'DELETE'
+        return self.request(path=path, **extra)
+
+    def options(self, path=None, **extra):
+        extra['REQUEST_METHOD'] = 'OPTIONS'
         return self.request(path=path, **extra)
 
 

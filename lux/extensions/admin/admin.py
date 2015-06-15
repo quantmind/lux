@@ -1,3 +1,5 @@
+from inspect import isclass
+
 from pulsar import Http404
 from pulsar.utils.html import nicename
 
@@ -8,6 +10,12 @@ from lux.extensions.angular import grid, ng_template
 
 # Override Default Admin Router for a model
 adminMap = {}
+
+
+def is_admin(cls, check_model=True):
+    if isclass(cls) and issubclass(cls, AdminModel) and cls is not AdminModel:
+        return bool(cls.model) if check_model else True
+    return False
 
 
 class register:
@@ -22,10 +30,10 @@ class register:
         self.model = model
 
     def __call__(self, cls):
-        assert issubclass(cls, AdminModel)
-        assert cls is not AdminModel
+        assert is_admin(cls, False)
         cls.model = self.model
         adminMap[self.model.name] = cls
+        return cls
 
 
 class AdminRouter(lux.HtmlRouter):
@@ -64,7 +72,7 @@ class AdminRouter(lux.HtmlRouter):
 class Admin(AdminRouter):
     '''Admin Root
 
-    This router containes all Admin router managing models
+    This router containes all Admin routers managing models.
     '''
     _sitemap = None
 
@@ -151,4 +159,4 @@ class CRUDAdmin(AdminModel):
         html = form().as_form(action=target)
         context = {'html_form': html.render()}
         html = request.app.render_template(self.addtemplate, context)
-        return self.get(request, html=html)
+        return self.html_response(request, html)

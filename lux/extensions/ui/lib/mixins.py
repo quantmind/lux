@@ -1,7 +1,7 @@
 import os
 
-from .base import *
-from .colorvar import *
+from .base import *         # noqa
+from .colorvar import *     # noqa
 from ..libs import CssLibraries
 
 __all__ = ['Animation',
@@ -27,7 +27,6 @@ __all__ = ['Animation',
            # generators
            'CssInclude',
            'Image',
-           'Fontface',
            'FontSmoothing',
            'Stack']
 
@@ -818,25 +817,7 @@ class Image(Mixin):
             elem['background-position'] = self.position
 
 
-# ################################################ FONT-FACE
-class Fontface(Mixin):
-
-    def __init__(self, base, svg=None):
-        self.base = base
-        self.svg = '#'+svg if svg else ''
-
-    def __call__(self, elem):
-        base = self.base
-        if not base.startswith('http'):
-            base = cssv.MEDIAURL + self.base
-        elem['src'] = "url('{0}.eot')".format(base)
-        elem['src'] = ("url('{0}.eot?#iefix') format('embedded-opentype'), "
-                       "url('{0}.woff') format('woff'), "
-                       "url('{0}.ttf') format('truetype'), "
-                       "url('{0}.svg{1}') format('svg')"
-                       .format(base, self.svg))
-
-
+# ################################################ FontSmoothing
 class FontSmoothing(Mixin):
 
     def __call__(self, elem):

@@ -1,12 +1,7 @@
-import string
 from itertools import chain, zip_longest
-from random import choice
 from collections import Hashable
 from functools import partial
-from datetime import datetime, date
-
-from pulsar.utils.httpurl import *
-from pulsar.utils.version import get_version
+from urllib.parse import urlsplit
 
 
 def unique_tuple(*iterables):

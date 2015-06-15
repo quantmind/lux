@@ -6,6 +6,9 @@ from lux import Parameter
 from .backend import EmailBackend
 
 
+__all__ = ['EmailBackend']
+
+
 class Extension(lux.Extension):
 
     _config = [

@@ -3,14 +3,14 @@ import json
 from copy import copy
 
 import lux
-from lux import route, JSON_CONTENT_TYPES
+from lux import JSON_CONTENT_TYPES
 from lux.extensions import base, sitemap
 
 from pulsar import ImproperlyConfigured
 from pulsar.utils.slugify import slugify
 from pulsar.apps.wsgi import Json, Html, Router
 
-from .builder import (DirBuilder, FileBuilder, BuildError, SkipBuild,
+from .builder import (DirBuilder, FileBuilder, SkipBuild,
                       Unsupported, normpath)
 from .contents import Article, parse_date, page_info
 
@@ -94,7 +94,6 @@ class JsonFile(Router, FileBuilder):
 
     def get(self, request):
         app = request.app
-        response = request.response
         content = self.get_content(request)
         # Get the JSON representation of the resource
         data = content.json(request)
@@ -121,7 +120,6 @@ class JsonFile(Router, FileBuilder):
 
     def all(self, app, html=True, draft=False):
         all = []
-        o = 'modified' if draft else 'date'
         for d in self.build(app):
             data = json.loads(d.body.decode('utf-8'))
             if bool(data.get('priority') == '0') is not draft:

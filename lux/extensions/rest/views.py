@@ -2,10 +2,10 @@ import json
 
 import lux
 from lux import route
-from lux.forms import Form, WebFormRouter, FormMixin, Layout, Fieldset, Submit
+from lux.forms import Form, WebFormRouter, Layout, Fieldset, Submit
 
 from pulsar import Http404, PermissionDenied, HttpRedirect, MethodNotAllowed
-from pulsar.apps.wsgi import Json, Router
+from pulsar.apps.wsgi import Json
 
 from .forms import (LoginForm, CreateUserForm, ChangePasswordForm,
                     EmailForm, PasswordForm)
@@ -103,9 +103,19 @@ class RestRouter(RestMixin, lux.Router):
 
 
 class Authorization(RestRouter):
-    '''A Rest view for authorization
+    '''Authentication views for
+
+    * login
+    * logout
+    * signup
+    * password change
+    * password recovery
+
+    All views respond to POST requests
     '''
     model = RestModel('authorization', LoginForm)
+    create_user_form = CreateUserForm
+    change_password_form = ChangePasswordForm
 
     def post(self, request):
         '''Anthenticate the user and create a new Authorization token
@@ -121,12 +131,17 @@ class Authorization(RestRouter):
             auth_backend = request.cache.auth_backend
             try:
                 user = auth_backend.authenticate(request, **form.cleaned_data)
-                return auth_backend.login(request, user)
+                if user.is_active():
+                    return auth_backend.login_response(request, user)
+                else:
+                    return auth_backend.inactive_user_login_response(request,
+                                                                     user)
             except AuthenticationError as e:
                 form.add_error_message(str(e))
 
         return Json(form.tojson()).http_response(request)
 
+    @route()
     def post_logout(self, request):
         '''Logout via post method
         '''
@@ -138,7 +153,57 @@ class Authorization(RestRouter):
             raise MethodNotAllowed
 
         auth_backend = request.cache.auth_backend
-        return auth_backend.logout(request, user)
+        return auth_backend.logout_response(request, user)
+
+    @route()
+    def post_signup(self, request):
+        '''Handle signup post data
+
+        If :attr:`.create_user_form` form is None, raise a 4040 error.
+
+        A succesful response is returned by the backend
+        :meth:`.signup_response` method.
+        '''
+        if not self.create_user_form:
+            raise Http404
+
+        user = request.cache.user
+        if user.is_authenticated():
+            raise MethodNotAllowed
+
+        form = self.create_user_form(request, data=request.body_data())
+
+        if form.is_valid():
+            data = form.cleaned_data
+            auth_backend = request.cache.auth_backend
+            try:
+                user = auth_backend.create_user(request, **data)
+                return auth_backend.signup_response(request, user)
+            except AuthenticationError as e:
+                form.add_error_message(str(e))
+        return Json(form.tojson()).http_response(request)
+
+    @route()
+    def post_change_password(self, request):
+        '''Change user password
+        '''
+        # Set change_password_form to None to remove support
+        # for password change
+        if not self.change_password_form:
+            raise Http404
+
+        user = request.cache.user
+        if not user.is_authenticated():
+            raise MethodNotAllowed
+
+        form = self.change_password_form(request, data=request.body_data())
+
+        if form.is_valid():
+            auth_backend = request.cache.auth_backend
+            password = form.cleaned_data['password']
+            auth_backend.set_password(user, password)
+            return auth_backend.changed_passord_response(request, user)
+        return Json(form.tojson()).http_response(request)
 
     def post_dismiss_message(self, request):
         app = request.app
@@ -156,15 +221,15 @@ class Authorization(RestRouter):
 class Login(WebFormRouter):
     '''Adds login get ("text/html") and post handlers
     '''
+    template = 'login.html'
     default_form = Layout(LoginForm,
                           Fieldset(all=True),
                           Submit('Login', disabled="form.$invalid"),
                           showLabels=False)
-    template = 'login.html'
 
     def get(self, request):
         if request.cache.user.is_authenticated():
-            raise HttpRedirect(self.redirect_to)
+            raise HttpRedirect('/')
         return super().get(request)
 
 
@@ -178,26 +243,11 @@ class SignUp(WebFormRouter):
                                  disabled="form.$invalid"),
                           showLabels=False,
                           directive='user-form')
-    redirect_to = '/'
 
-    def post(self, request):
-        '''Handle login post data
-        '''
-        user = request.cache.user
-        if user.is_authenticated():
-            raise MethodNotAllowed
-        data = request.body_data()
-        form = self.fclass(request, data=data)
-        if form.is_valid():
-            data = form.cleaned_data
-            auth_backend = request.cache.auth_backend
-            try:
-                user = auth_backend.create_user(request, **data)
-            except AuthenticationError as e:
-                form.add_error_message(str(e))
-            else:
-                return self.maybe_redirect_to(request, form, user=user)
-        return Json(form.tojson()).http_response(request)
+    def get(self, request):
+        if request.cache.user.is_authenticated():
+            raise HttpRedirect('/')
+        return super().get(request)
 
     @route('confirmation/<username>')
     def new_confirmation(self, request):
@@ -220,15 +270,6 @@ class ChangePassword(WebFormRouter):
                                    'password_repeat'),
                           Submit('Update password'),
                           showLabels=False)
-
-    def post(self, request):
-        '''Handle post data
-        '''
-        user = request.cache.user
-        form = change_password(request, self.form_class)
-        if form.is_valid():
-            return self.maybe_redirect_to(request, form, user=user)
-        return Json(form.tojson()).http_response(request)
 
 
 class ForgotPassword(WebFormRouter):
@@ -331,21 +372,6 @@ class ComingSoon(WebFormRouter):
         return Json(form.tojson()).http_response(request)
 
 
-class Logout(Router, FormMixin):
-    '''Logout handler, post view only
-    '''
-    redirect_to = '/'
-
-    def post(self, request):
-        '''Logout via post method
-        '''
-        # validate CSRF
-        form = self.fclass(request, data=request.body_data())
-        backend = request.cache.auth_backend
-        backend.logout(request)
-        return self.maybe_redirect_to(request, form)
-
-
 class RequirePermission(object):
     '''Decorator to apply to a view
     '''
@@ -362,15 +388,3 @@ class RequirePermission(object):
             return callable(request)
         else:
             raise PermissionDenied
-
-
-def change_password(request, form_class):
-    user = request.cache.user
-    if not user.is_authenticated():
-        raise MethodNotAllowed
-    form = form_class(request, data=request.body_data())
-    if form.is_valid():
-        auth = request.cache.auth_backend
-        password = form.cleaned_data['password']
-        auth.set_password(user, password)
-    return form

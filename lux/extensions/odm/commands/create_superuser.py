@@ -3,7 +3,7 @@ import getpass
 import re
 import sys
 
-from pulsar import ImproperlyConfigured, Setting
+from pulsar import Setting
 
 import lux
 from lux.extensions.rest import normalise_email

@@ -24,16 +24,19 @@ Include ``lux.extensions.angular`` into the :setting:`EXTENSIONS` list in your
 .. _AngularJS: https://angularjs.org/
 .. _`ui-router`: https://github.com/angular-ui/ui-router
 '''
+from urllib.parse import urlparse
+
 import lux
-from lux import Parameter, RouterParam
+from lux import Parameter
 
 from pulsar import Http404
-from pulsar.apps.wsgi import MediaMixin, Html, route
-from pulsar.utils.httpurl import urlparse
-from pulsar.utils.html import escape
+from pulsar.apps.wsgi import Html
 
 from .ui import add_css
 from .components import grid
+
+
+__all__ = ['add_css', 'grid', 'add_ng_modules']
 
 
 def add_ng_modules(doc, modules):
@@ -107,7 +110,6 @@ class Extension(lux.Extension):
     def context(self, request, context):
         router = html_router(request.app_handler)
         if request.config['HTML5_NAVIGATION'] and router:
-            root = angular_root(request.app, router)
             pages = request.html_document.jscontext['pages']
             page = pages.get(router.state)
             context['html_main'] = self.uiview(request, context, page)

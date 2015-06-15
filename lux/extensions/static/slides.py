@@ -23,7 +23,6 @@ class Slides(MarkdownReader):
             raw = text.read()
             doc, slides = self.slides(raw)
         md = Markdown(extensions=self.extensions)
-        info = md.convert(doc)
         meta = md.Meta
         body = ['<div class="slides">']
         for slide in slides:

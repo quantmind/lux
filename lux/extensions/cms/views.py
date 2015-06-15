@@ -41,7 +41,6 @@ class AnyPage(HtmlRouter):
         '''Obtain the cms handler for this Router
         '''
         key = ':'.join(b[1] for b in self.full_route.breadcrumbs[:-1])
-        path = self.full_route.path
         if key:
             return CMS(app, slugify(key))
         else:
@@ -81,8 +80,7 @@ class CMS(lux.CMS):
 
         for page in sitemap:
             route = Route(page['path'])
-            match = route.match(path)
-            if math:
+            if route.match(path):
                 return page
 
     def build_map(self):

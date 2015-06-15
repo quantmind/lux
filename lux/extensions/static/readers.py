@@ -3,7 +3,7 @@ import imp
 import mimetypes
 from itertools import chain
 
-from pulsar.apps.wsgi import AsyncString
+from pulsar.apps.wsgi import String
 
 from .contents import (Content, METADATA_PROCESSORS, slugify, is_html,
                        SkipBuild, register_reader)
@@ -11,7 +11,7 @@ from .urlwrappers import MultiValue
 
 try:
     from markdown import Markdown
-except ImportError:
+except ImportError:     # pragma    nocover
     Markdown = False
 
 Restructured = False
@@ -170,7 +170,7 @@ class PythonReader(BaseReader):
         return self.process(mod.template(), source_path, name, **params)
 
     def process(self, raw, source_path, name=None, **params):
-        if isinstance(raw, AsyncString):
+        if isinstance(raw, String):
             ct = raw._content_type
             body = raw.render()
         else:

@@ -1,6 +1,3 @@
-import os
-from functools import partial, total_ordering
-
 from pulsar.utils.slugify import slugify
 
 

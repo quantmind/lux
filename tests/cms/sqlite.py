@@ -1,14 +1,12 @@
 import json
 
-from pulsar.apps.test import test_timeout
-
 from dateutil.parser import parse
 
 from lux.utils import test
 
 
-@test_timeout(20)
-class TestSql(test.AppTestCase):
+@test.test_timeout(20)
+class TestCMSsqlite(test.AppTestCase):
     config_file = 'tests.cms'
     config_params = {'DATASTORE': 'sqlite://'}
 

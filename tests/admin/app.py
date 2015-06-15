@@ -11,8 +11,6 @@ class AdminTest(test.AppTestCase):
         self.assertIsInstance(admin, Admin)
         sitemap = admin.sitemap(app)
         self.assertTrue(sitemap)
-        # TODO
-        return
         self.assertEqual(len(sitemap), 1)
         items = sitemap[0]['items']
         self.assertEqual(len(items), 1)

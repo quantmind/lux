@@ -4,8 +4,6 @@ sitemap_ XML files easy.
 
 .. _sitemap: http://www.sitemaps.org/
 '''
-from datetime import date
-
 from pulsar.apps.wsgi import Router
 from pulsar.utils.httpurl import urllibr, urlencode
 

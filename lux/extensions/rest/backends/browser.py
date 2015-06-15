@@ -42,6 +42,6 @@ class BrowserBackend(AuthBackend):
 
     def on_html_document(self, app, request, doc):
         if is_absolute_uri(app.config['API_URL']):
-            add_ng_modules(doc, 'lux.restapi')
+            add_ng_modules(doc, ('lux.restapi', 'lux.users'))
         else:
-            add_ng_modules(doc, 'lux.webapi')
+            add_ng_modules(doc, ('lux.webapi', 'lux.users'))

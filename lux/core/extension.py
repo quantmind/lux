@@ -182,14 +182,6 @@ class Extension(metaclass=ExtensionType):
             config[setting.name] = value
         self._setup_logger(config, module, opts)
 
-    def extra_form_data(self, request):
-        '''Must return an iterable over key-value pair of data to add to a
-        :class:`.Form`.
-
-        By default it returns an empty tuple.
-        '''
-        return ()
-
     def write(self, msg=''):
         '''Write ``msg`` into :attr:`stdout` or ``sys.stdout``
         '''
