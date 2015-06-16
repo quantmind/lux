@@ -12,6 +12,8 @@ class DataError(Exception):
 class Content(rest.RestModel):
     '''A Rest model with git backend using dulwich_
 
+    This model provide basic CRUD operations for a RestFul web API
+
     Several hints for implementation were from gittle_
 
     .. _dulwich: https://www.samba.org/~jelmer/dulwich/docs/
@@ -26,6 +28,8 @@ class Content(rest.RestModel):
         super().__init__(name, **kwargs)
 
     def write(self, user, data, new=False, message=None):
+        '''Write a file into the repository
+        '''
         slug = data['slug']
         filename = '%s.md' % slug
         fullpath = os.path.join(self.path, filename)

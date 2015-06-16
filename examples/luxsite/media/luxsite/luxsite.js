@@ -1,6 +1,6 @@
 //      Lux Library - v0.2.0
 
-//      Compiled 2015-06-15.
+//      Compiled 2015-06-16.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -69,6 +69,7 @@
             "lodash": "//cdnjs.cloudflare.com/ajax/libs/lodash.js/2.4.1/lodash",
             "marked": "//cdnjs.cloudflare.com/ajax/libs/marked/0.3.2/marked",
             "mathjax": "//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML",
+            "moment": "//cdnjs.cloudflare.com/ajax/libs/moment.js/2.10.3/moment",
             "restangular": "//cdnjs.cloudflare.com/ajax/libs/restangular/1.4.0/restangular",
             "sockjs": "//cdnjs.cloudflare.com/ajax/libs/sockjs-client/0.3.4/sockjs.min.js",
             "stats": "//cdnjs.cloudflare.com/ajax/libs/stats.js/r11/Stats",
