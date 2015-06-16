@@ -1,3 +1,8 @@
+Developemnt
+=====================
+* More extensions and fixes
+* 207 unit tests, 77% coverage
+
 Ver. 0.2.0 - 2015-May-22
 =======================================
 * Working on Python 3.4 and above only

@@ -176,13 +176,16 @@ class TestMixin:
         return json.loads(response.content[0].decode('utf-8'))
 
     def assertValidationError(self, data, field=None, text=None):
+        '''Assert a Form validation error
+        '''
         self.assertFalse(data['success'])
         self.assertTrue(data['error'])
         if field:
-            messages = data['messages'][field][0]
-            self.assertTrue(messages['error'])
+            msg = data['messages'][field][0]
+            self.assertTrue(msg['error'])
             if text:
-                self.assertEqual(error['message'], text)
+                self.assertEqual(msg['message'], text)
+
 
 class TestCase(unittest.TestCase, TestMixin):
     '''TestCase class for lux tests.
