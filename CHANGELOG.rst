@@ -1,7 +1,7 @@
-Developemnt
+Developement
 =====================
 * More extensions and fixes
-* 207 unit tests, 77% coverage
+* 207 unit tests, 75% coverage
 
 Ver. 0.2.0 - 2015-May-22
 =======================================
