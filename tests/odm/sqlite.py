@@ -245,8 +245,27 @@ class TestSql(test.AppTestCase):
         self.assertEqual(len(columns), 8)
 
     def test_preflight_request(self):
-        request = yield from self.client.options('/users/delete')
+        request = yield from self.client.options('/users')
         response = request.response
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response['Access-Control-Allow-Methods'],
                          'GET, POST, DELETE')
+        token = yield from self._token()
+        task = yield from self._create_task(token, 'testing preflight on id')
+        request = yield from self.client.options('/tasks/%s' % task['id'])
+        response = request.response
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Access-Control-Allow-Methods'],
+                         'GET, POST, DELETE')
+
+    def test_head_request(self):
+        request = yield from self.client.head('/tasks/8676097')
+        response = request.response
+        self.assertEqual(response.status_code, 404)
+        self.assertFalse(response.content)
+        token = yield from self._token()
+        task = yield from self._create_task(token, 'testing head request')
+        request = yield from self.client.head('/tasks/%s' % task['id'])
+        response = request.response
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.content)

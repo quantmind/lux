@@ -31,6 +31,7 @@ script:
   - grunt jasmine
   - flake8
   - rm -rf lux
+  - rm -rf build
   - python -m runtests --coverage --test-timeout 10 --log-level warning
   - python -m runtests --coveralls
 

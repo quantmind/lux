@@ -37,7 +37,7 @@ class Extension(AuthBackend):
                   'List of python dotted paths to classes which provide '
                   'a backend for authentication.'),
         Parameter('CRYPT_ALGORITHM',
-                  'lux.utils.crypt.arc4',
+                  dict(module='lux.utils.crypt.arc4', salt_size=8),
                   'Python dotted path to module which provides the '
                   '``encrypt`` and, optionally, ``decrypt`` method for '
                   'password and sensitive data encryption/decryption'),
@@ -45,8 +45,6 @@ class Extension(AuthBackend):
                   'secret-key',
                   'A string or bytes used for encrypting data. Must be unique '
                   'to the application and long and random enough'),
-        Parameter('AUTH_SALT_SIZE', 8,
-                  'Salt size for encryption algorithm'),
         Parameter('SESSION_MESSAGES', True, 'Handle messages'),
         Parameter('SESSION_EXPIRY', 7*24*60*60,
                   'Expiry for a session/token in seconds.'),

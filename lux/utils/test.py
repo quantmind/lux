@@ -127,6 +127,10 @@ class TestClient:
         extra['REQUEST_METHOD'] = 'OPTIONS'
         return self.request(path=path, **extra)
 
+    def head(self, path=None, **extra):
+        extra['REQUEST_METHOD'] = 'HEAD'
+        return self.request(path=path, **extra)
+
 
 class TestMixin:
     config_file = 'tests.config'

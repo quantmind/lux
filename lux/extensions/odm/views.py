@@ -104,7 +104,8 @@ class RestRouter(rest.RestRouter):
 
 
 class CRUD(RestRouter):
-
+    '''A Router for handling CRUD JSON requests for a database model
+    '''
     def get(self, request):
         '''Get a list of models
         '''
@@ -116,19 +117,6 @@ class CRUD(RestRouter):
             text = self.query(request)
             data = self.collection(request, limit, offset, text)
             return Json(data).http_response(request)
-        raise PermissionDenied
-
-    @route(method=('get', 'options'))
-    def metadata(self, request):
-        if request.method == 'OPTIONS':
-            request.app.fire('on_preflight', request)
-            return request.response
-
-        backend = request.cache.auth_backend
-        model = self.model
-        if backend.has_permission(request, model.name, rest.READ):
-            meta = self.meta(request)
-            return Json(meta).http_response(request)
         raise PermissionDenied
 
     def post(self, request):
@@ -155,43 +143,63 @@ class CRUD(RestRouter):
             return Json(data).http_response(request)
         raise PermissionDenied
 
-    @route('<id>')
-    def read(self, request):
-        '''Read an instance
-        '''
-        instance = self.get_model(request)
-        # url = request.absolute_uri()
-        data = self.serialise(request, instance)
-        return Json(data).http_response(request)
+    # Additional Routes
 
-    @route('<id>')
-    def post_update(self, request):
-        model = self.model
-        instance = self.get_model(request)
-        form_class = model.editform or model.form
-        if not form_class:
-            raise MethodNotAllowed
+    @route(method=('get', 'options'))
+    def metadata(self, request):
+        '''Model metadata
+        '''
+        if request.method == 'OPTIONS':
+            request.app.fire('on_preflight', request)
+            return request.response
 
         backend = request.cache.auth_backend
-        if backend.has_permission(request, model.name, rest.UPDATE):
-            data, files = request.data_and_files()
-            form = form_class(request, data=data, files=files)
-            if form.is_valid(exclude_missing=True):
-                instance = self.update_model(request, instance,
-                                             form.cleaned_data)
-                data = self.serialise(request, instance)
-            else:
-                data = form.tojson()
-            return Json(data).http_response(request)
+        model = self.model
+        if backend.has_permission(request, model.name, rest.READ):
+            meta = self.meta(request)
+            return Json(meta).http_response(request)
         raise PermissionDenied
 
-    @route('delete/<id>', method='delete')
-    def delete(self, request):
+    @route('<id>', method=('get', 'post', 'delete', 'head', 'options'))
+    def read_update_delete(self, request):
         instance = self.get_model(request)
         backend = request.cache.auth_backend
-        if backend.has_permission(request, self.model.name, rest.DELETE):
-            with request.app.odm().begin() as session:
-                session.delete(instance)
-            request.response.status_code = 204
+
+        if request.method == 'OPTIONS':
+            request.app.fire('on_preflight', request)
             return request.response
+
+        elif request.method == 'GET':
+            # url = request.absolute_uri()
+            data = self.serialise(request, instance)
+            return Json(data).http_response(request)
+
+        elif request.method == 'HEAD':
+            return request.response
+
+        elif request.method == 'POST':
+            model = self.model
+            form_class = model.editform or model.form
+            if not form_class:
+                raise MethodNotAllowed
+
+            if backend.has_permission(request, model.name, rest.UPDATE):
+                data, files = request.data_and_files()
+                form = form_class(request, data=data, files=files)
+                if form.is_valid(exclude_missing=True):
+                    instance = self.update_model(request, instance,
+                                                 form.cleaned_data)
+                    data = self.serialise(request, instance)
+                else:
+                    data = form.tojson()
+                return Json(data).http_response(request)
+
+        elif request.method == 'DELETE':
+
+            if backend.has_permission(request, self.model.name, rest.DELETE):
+                with request.app.odm().begin() as session:
+                    session.delete(instance)
+                request.response.status_code = 204
+                return request.response
+
         raise PermissionDenied

@@ -129,9 +129,11 @@ class PasswordMixin:
         cfg = app.config
         self.encoding = cfg['ENCODING']
         self.secret_key = cfg['SECRET_KEY'].encode()
-        self.salt_size = cfg['AUTH_SALT_SIZE']
-        algorithm = cfg['CRYPT_ALGORITHM']
-        self.crypt_module = import_module(algorithm)
+        ckwargs = cfg['CRYPT_ALGORITHM']
+        if not isinstance(ckwargs, dict):
+            ckwargs = dict(module=ckwargs)
+        self.ckwargs = ckwargs.copy()
+        self.crypt_module = import_module(self.ckwargs.pop('module'))
 
     def encrypt(self, string_or_bytes):
         '''Encrypt ``string_or_bytes`` using the algorithm specified
@@ -140,7 +142,7 @@ class PasswordMixin:
         Return an encrypted string
         '''
         b = to_bytes(string_or_bytes, self.encoding)
-        p = self.crypt_module.encrypt(b, self.secret_key, self.salt_size)
+        p = self.crypt_module.encrypt(b, self.secret_key, **self.ckwargs)
         return p.decode(self.encoding)
 
     def crypt_verify(self, encrypted, raw):
@@ -149,7 +151,7 @@ class PasswordMixin:
         return self.crypt_module.verify(to_bytes(encrypted),
                                         to_bytes(raw),
                                         self.secret_key,
-                                        self.salt_size)
+                                        **self.ckwargs)
 
     def decrypt(self, string_or_bytes):
         b = to_bytes(string_or_bytes, self.encoding)
