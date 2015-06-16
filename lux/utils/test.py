@@ -18,11 +18,12 @@ from lux.core.commands.generate_secret_key import generate_secret
 logger = logging.getLogger('lux.test')
 
 
-def randomname(prefix=None):
+def randomname(prefix=None, len=8):
     '''Generate a random name with a prefix (default to ``luxtest_``)
     '''
-    prefix = prefix or 'luxtest_'
-    name = random_string(min_len=8, max_len=8, characters=string.ascii_letters)
+    prefix = prefix if prefix is not None else 'luxtest_'
+    name = random_string(min_len=len, max_len=len,
+                         characters=string.ascii_letters)
     return ('%s%s' % (prefix, name)).lower()
 
 
@@ -174,6 +175,14 @@ class TestMixin:
                          'application/json; charset=utf-8')
         return json.loads(response.content[0].decode('utf-8'))
 
+    def assertValidationError(self, data, field=None, text=None):
+        self.assertFalse(data['success'])
+        self.assertTrue(data['error'])
+        if field:
+            messages = data['messages'][field][0]
+            self.assertTrue(messages['error'])
+            if text:
+                self.assertEqual(error['message'], text)
 
 class TestCase(unittest.TestCase, TestMixin):
     '''TestCase class for lux tests.

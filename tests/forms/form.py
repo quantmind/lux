@@ -159,5 +159,5 @@ class FormTests(test.TestCase):
         form = SimpleForm(data=dict(name='luca', timestamp='xyz'))
         self.assertFalse(form.is_valid())
         result = form.tojson()
-        self.assertEqual(result['messages']['timestamp'][0]['message'],
-                         '"xyz" is not a valid date')
+        self.assertValidationError(result, 'timestamp',
+                                   '"xyz" is not a valid date')
