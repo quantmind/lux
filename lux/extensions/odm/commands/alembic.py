@@ -159,7 +159,7 @@ class Command(lux.Command):
                                  branch_label=opt.branch)
         # this commands required revision name, but do not take any message or
         # branch labels
-        elif cmd in ('show', 'stamp', 'upgrade'):
+        elif cmd in ('show', 'stamp', 'upgrade', 'downgrade'):
             if len(opt.command) != 1:
                 raise CommandError('Command: %s required revision id' % cmd)
             getattr(alembic_cmd, cmd)(config, *opt.command)
