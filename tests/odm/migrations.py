@@ -3,6 +3,7 @@ import os.path
 
 from sqlalchemy.schema import MetaData
 
+import lux
 from lux.utils import test
 from lux.core.commands import CommandError
 
@@ -100,7 +101,7 @@ class TestMigrationsCommands(test.TestCase):
         cmd = self.cmd()
         template_path = cmd.get_lux_template_directory()
         path = os.path.join(
-            os.getcwd(),
-            'lux/extensions/odm/commands/template'
+            lux.PACKAGE_DIR,
+            'extensions/odm/commands/template'
         )
         self.assertEqual(template_path, path)
