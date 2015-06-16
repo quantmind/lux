@@ -7,7 +7,7 @@ from pulsar.utils.slugify import slugify
 from lux import forms
 from lux.extensions import rest
 
-from .models import Repo, DataError
+from .models import Content, DataError
 
 
 SLUG_LENGTH = 64
@@ -28,7 +28,7 @@ class TextCRUD(rest.RestRouter):
     '''CRUD views for the text APIs
     '''
     def __init__(self, name, path, *args, **kwargs):
-        model = Repo(name, path, form=BlogForm)
+        model = Content(name, path, form=BlogForm)
         super().__init__(model, *args, **kwargs)
 
     def post(self, request):
