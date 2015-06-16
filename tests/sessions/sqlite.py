@@ -1,10 +1,15 @@
 import json
+from unittest import skipUnless
 
-from pulsar.apps.test import test_timeout
+from pulsar.apps.test import test_timeout, check_server
 
 from lux.utils import test
 
 
+REDIS_OK = check_server('redis')
+
+
+@skipUnless(REDIS_OK, 'Requires a running Redis server')
 @test_timeout(20)
 class TestSqlite(test.AppTestCase):
     config_file = 'tests.sessions'
