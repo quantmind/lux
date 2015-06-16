@@ -1,0 +1,11 @@
+<a ng-attr-title="link.title" ng-class="link.klass" ng-click="clickLink($event, link)"
+ng-href="{{link.href}}" data-title="{{link.title}}"
+ng-attr-target="{{link.target}}">
+<i ng-if="link.icon" class="{{link.icon}}"></i>
+<span ng-if="!link.image">{{link.label || link.name}}</span>
+<img ng-if="link.image" src="{{link.image}}"/>
+</a>
+
+<ul class="treeview-menu" ng-class="link.class" ng-if="link.subitems">
+    <li ng-repeat="link in link.subitems" ng-class="{active:activeLink(link)}" ng-include='sidebar/nav-link.tpl.html'></li>
+</ul>

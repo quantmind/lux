@@ -4,7 +4,7 @@ from lux import Parameter
 from .views import PageCRUD, TemplateCRUD, AnyPage, CMS
 
 
-__all__ = ['AnyPage', 'CMS']
+__all__ = ['AnyPage']
 
 
 class Extension(lux.Extension):
@@ -20,3 +20,6 @@ class Extension(lux.Extension):
 
     def api_sections(self, app):
         return [PageCRUD(), TemplateCRUD()]
+
+    def on_loaded(self, app):
+        app.cms = CMS(app)

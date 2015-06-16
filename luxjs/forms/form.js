@@ -16,7 +16,7 @@
     //      formFieldChange: triggered when a form field changes:
     //          arguments: formmodel, field (changed)
     //
-    angular.module('lux.form', ['lux.services'])
+    angular.module('lux.form', ['lux.services', 'lux.form.utils'])
         //
         .constant('formDefaults', {
             // Default layout
@@ -451,7 +451,7 @@
                 //
                 // Return the function to handle form processing
                 processForm: function (scope) {
-                    return scope.processForm || lux.processForm();
+                    return scope.processForm || lux.processForm;
                 },
                 //
                 _select: function (tag, element) {

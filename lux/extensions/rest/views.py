@@ -39,8 +39,12 @@ class RestMixin:
     '''Instance of a :class:`~lux.extensions.rest.RestModel`
     '''
     def __init__(self, *args, **kwargs):
+        if self.model is None and args:
+            self.model, args = args[0], args[1:]
+
         if not isinstance(self.model, RestModel):
             raise NotImplementedError('REST model not available')
+
         super().__init__(self.model.url, *args, **kwargs)
 
 

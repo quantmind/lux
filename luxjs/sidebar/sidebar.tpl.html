@@ -1,0 +1,66 @@
+<nav ng-attr-id="{{sidebar.navbar.id}}" class="navbar navbar-{{sidebar.navbar.themeTop}}"
+ng-class="{'navbar-fixed-top':sidebar.navbar.fixed, 'navbar-static-top':sidebar.navbar.top}" role="navigation"
+ng-model="sidebar.navbar.collapse" bs-collapse>
+    <div class="{{sidebar.navbar.container}}">
+        <div class="navbar-header">
+            <button ng-if="sidebar.navbar.toggle" type="button" class="navbar-toggle" bs-collapse-toggle>
+                <span class="sr-only">Toggle sidebar</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a ng-if="sidebar.navbar.brandImage" href="{{sidebar.navbar.url}}" class="navbar-brand" target="{{sidebar.navbar.target}}">
+                <img ng-src="{{sidebar.navbar.brandImage}}" alt="{{sidebar.navbar.brand || 'brand'}}">
+            </a>
+            <a ng-if="!sidebar.navbar.brandImage && sidebar.navbar.brand" href="{{sidebar.navbar.url}}" class="navbar-brand" target="{{sidebar.navbar.target}}">
+                {{sidebar.navbar.brand}}
+            </a>
+        </div>
+        <div>
+            <ul ng-if="sidebar.navbar.items" class="nav navbar-nav navbar-main">
+                <li ng-repeat="link in sidebar.navbar.items" ng-class="{active:activeLink(link)}" nav-sidebar-link>
+                </li>
+            </ul>
+        </div>
+        <div class="navbar-collapse" bs-collapse-target>
+            <ul ng-if="sidebar.navbar.itemsRight" class="nav navbar-nav navbar-side" >
+                <li ng-repeat="link in sidebar.navbar.itemsRight" ng-class="{active:activeLink(link)}" nav-sidebar-link>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<aside ng-if="user" ng-attr-id="{{sidebar.id}}" class="main-sidebar"
+       ng-class="{'sidebar-fixed':sidebar.fixed}">
+    <section ng-if="sidebar.sections" class="sidebar">
+        <div class="user-panel">
+            <div ng-if="user.avatar" class="pull-left image">
+                <img src="{{user.avatar}}" alt="User Image" />
+            </div>
+            <div class="pull-left info">
+                <p>SIGNED IN AS</p>
+                <a href="#">{{user.name}}</a>
+            </div>
+        </div>
+        <ul class="sidebar-menu">
+            <li ng-if="section.name" ng-repeat-start="section in sidebar.sections" class="header">
+                {{section.name}}
+            </li>
+            <li ng-repeat-end ng-repeat="link in section.items" class="treeview"
+            ng-class="{active:activeLink(link)}" ng-include="'subnav'"></li>
+        </ul>
+    </section>
+</aside>
+
+
+<script type="text/ng-template" id="subnav">
+    <a ng-href="{{link.href}}" ng-attr-title="{{link.title}}" ng-click="menuCollapse($event)">
+        <i ng-if="link.icon" class="{{link.icon}}"></i>
+        <span>{{link.name}}</span>
+        <i ng-if="link.subitems" class="fa fa-angle-left pull-right"></i>
+    </a>
+    <ul class="treeview-menu" ng-class="link.class" ng-if="link.subitems">
+        <li ng-repeat="link in link.subitems" ng-class="{active:activeLink(link)}" ng-include="'subnav'"></li>
+    </ul>
+</script>

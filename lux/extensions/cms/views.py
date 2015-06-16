@@ -7,26 +7,26 @@ from lux import forms, HtmlRouter
 from lux.extensions import odm
 
 
-class PageForm(forms.Form):
-    path = forms.CharField(required=False)
-    title = forms.CharField()
-    description = forms.TextField(required=False)
-    template_id = odm.RelationshipField('template', label='template')
-    published = forms.BooleanField(required=False)
-    layout = forms.TextField(required=False)
-
-
 class TemplateForm(forms.Form):
     title = forms.CharField()
     body = forms.TextField()
 
 
-class PageCRUD(odm.CRUD):
-    model = odm.RestModel('page', PageForm, url='html_pages')
-
-
 class TemplateCRUD(odm.CRUD):
     model = odm.RestModel('template', TemplateForm, url='html_templates')
+
+
+class PageForm(forms.Form):
+    path = forms.CharField(required=False)
+    title = forms.CharField()
+    description = forms.TextField(required=False)
+    template_id = odm.RelationshipField(TemplateCRUD.model, label='template')
+    published = forms.BooleanField(required=False)
+    layout = forms.TextField(required=False)
+
+
+class PageCRUD(odm.CRUD):
+    model = odm.RestModel('page', PageForm, url='html_pages')
 
 
 class AnyPage(HtmlRouter):
@@ -62,6 +62,8 @@ class CMS(lux.CMS):
         page = self.page(path)
         if page:
             return page['template']
+        else:
+            return super().template(path)
 
     def page(self, path):
         '''Obtain a page object from a path

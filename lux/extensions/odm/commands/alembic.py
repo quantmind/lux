@@ -52,7 +52,7 @@ class Command(lux.Command):
 
     def get_lux_template_directory(self):
         return os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                            '../template/')
+                            'template')
 
     def get_config(self):
         '''

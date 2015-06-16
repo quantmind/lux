@@ -1,6 +1,6 @@
 //      Lux Library - v0.2.0
 
-//      Compiled 2015-06-13.
+//      Compiled 2015-06-15.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -1527,113 +1527,6 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
             };
         }]);
 
-//
-//	Form processor
-//	=========================
-//
-//	Default Form processing function
-// 	If a submit element (input.submit or button) does not specify
-// 	a ``click`` entry, this function is used
-lux.processForm = function (options) {
-
-    return function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-
-        var form = this[this.formName],
-            model = this[this.formModelName],
-            attrs = this.formAttrs,
-            target = attrs.action,
-            scope = this,
-            FORMKEY = scope.formAttrs.FORMKEY,
-            $lux = this.$lux,
-            method = attrs.method || 'post',
-            promise,
-            api;
-        //
-        // Flag the form as submitted
-        form.submitted = true;
-        if (form.$invalid) return;
-
-        // Get the api information if target is an object
-        //	target
-        //		- name:	api name
-        //		- target: api target
-        if (isObject(target)) api = $lux.api(target);
-
-        this.formMessages = {};
-        //
-        if (api) {
-            promise = api.request(method, target, model);
-        } else if (target) {
-            var enctype = attrs.enctype || '',
-                ct = enctype.split(';')[0],
-                options = {
-                    url: target,
-                    method: attrs.method || 'POST',
-                    data: model,
-                    transformRequest: $lux.formData(ct),
-                };
-            // Let the browser choose the content type
-            if (ct === 'application/x-www-form-urlencoded' || ct === 'multipart/form-data') {
-                options.headers = {
-                    'content-type': undefined
-                };
-            }
-            promise = $lux.http(options);
-        } else {
-            $lux.log.error('Could not process form. No target or api');
-            return;
-        }
-        //
-        promise.then(function (response) {
-                var data = response.data;
-                var hookName = scope.formAttrs.resultHandler;
-                var processedByHook = hookName && scope.$parent[hookName](response);
-                if (!processedByHook) {
-                    if (data.messages) {
-                        scope.addMessages(data.messages);
-                    } else if (api) {
-                        // Created
-                        if (response.status === 201) {
-                            scope.formMessages[FORMKEY] = [{message: 'Successfully created'}];
-                        } else {
-                            scope.formMessages[FORMKEY] = [{message: 'Successfully updated'}];
-                        }
-                    } else {
-                        window.location.href = data.redirect || '/';
-                    }
-                }
-            },
-            function (response) {
-                var data = response.data,
-                    status = response.status,
-                    messages, msg;
-                if (data) {
-                    messages = data.messages;
-                    if (!messages) {
-                        msg = data.message;
-                        if (!msg) {
-                            status = status || data.status || 501;
-                            msg = 'Server error (' + data.status + ')';
-                        }
-                        messages = {};
-                        scope.formMessages[FORMKEY] = [{
-                            message: msg,
-                            error: true
-                        }];
-                    } else
-                        scope.addMessages(messages);
-                } else {
-                    status = status || 501;
-                    msg = 'Server error (' + status + ')';
-                    messages = {};
-                    scope.formMessages[FORMKEY] = [{message: msg, error: true}];
-                }
-            });
-    };
-};
-
     //
     // Form module for lux
     //
@@ -1652,7 +1545,7 @@ lux.processForm = function (options) {
     //      formFieldChange: triggered when a form field changes:
     //          arguments: formmodel, field (changed)
     //
-    angular.module('lux.form', ['lux.services'])
+    angular.module('lux.form', ['lux.services', 'lux.form.utils'])
         //
         .constant('formDefaults', {
             // Default layout
@@ -2087,7 +1980,7 @@ lux.processForm = function (options) {
                 //
                 // Return the function to handle form processing
                 processForm: function (scope) {
-                    return scope.processForm || lux.processForm();
+                    return scope.processForm || lux.processForm;
                 },
                 //
                 _select: function (tag, element) {
@@ -2373,6 +2266,163 @@ lux.processForm = function (options) {
                 }
             };
         });
+
+//
+//	Form processor
+//	=========================
+//
+//	Default Form processing function
+// 	If a submit element (input.submit or button) does not specify
+// 	a ``click`` entry, this function is used
+lux.processForm = function (e) {
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    var form = this[this.formName],
+        model = this[this.formModelName],
+        attrs = this.formAttrs,
+        target = attrs.action,
+        scope = this,
+        FORMKEY = scope.formAttrs.FORMKEY,
+        $lux = this.$lux,
+        method = attrs.method || 'post',
+        promise,
+        api;
+    //
+    // Flag the form as submitted
+    form.submitted = true;
+    if (form.$invalid) return;
+
+    // Get the api information if target is an object
+    //	target
+    //		- name:	api name
+    //		- target: api target
+    if (isObject(target)) api = $lux.api(target);
+
+    this.formMessages = {};
+    //
+    if (api) {
+        promise = api.request(method, target, model);
+    } else if (target) {
+        var enctype = attrs.enctype || '',
+            ct = enctype.split(';')[0],
+            options = {
+                url: target,
+                method: attrs.method || 'POST',
+                data: model,
+                transformRequest: $lux.formData(ct),
+            };
+        // Let the browser choose the content type
+        if (ct === 'application/x-www-form-urlencoded' || ct === 'multipart/form-data') {
+            options.headers = {
+                'content-type': undefined
+            };
+        }
+        promise = $lux.http(options);
+    } else {
+        $lux.log.error('Could not process form. No target or api');
+        return;
+    }
+    //
+    promise.then(function (response) {
+            var data = response.data;
+            var hookName = scope.formAttrs.resultHandler;
+            var processedByHook = hookName && scope.$parent[hookName](response);
+            if (!processedByHook) {
+                if (data.messages) {
+                    scope.addMessages(data.messages);
+                } else if (api) {
+                    // Created
+                    if (response.status === 201) {
+                        scope.formMessages[FORMKEY] = [{message: 'Successfully created'}];
+                    } else {
+                        scope.formMessages[FORMKEY] = [{message: 'Successfully updated'}];
+                    }
+                } else {
+                    window.location.href = data.redirect || '/';
+                }
+            }
+        },
+        function (response) {
+            var data = response.data,
+                status = response.status,
+                messages, msg;
+            if (data) {
+                messages = data.messages;
+                if (!messages) {
+                    msg = data.message;
+                    if (!msg) {
+                        status = status || data.status || 501;
+                        msg = 'Server error (' + data.status + ')';
+                    }
+                    messages = {};
+                    scope.formMessages[FORMKEY] = [{
+                        message: msg,
+                        error: true
+                    }];
+                } else
+                    scope.addMessages(messages);
+            } else {
+                status = status || 501;
+                msg = 'Server error (' + status + ')';
+                messages = {};
+                scope.formMessages[FORMKEY] = [{message: msg, error: true}];
+            }
+        });
+};
+
+/**
+ * Created by Reupen on 02/06/2015.
+ */
+
+angular.module('lux.form.utils', ['lux.services'])
+
+    .directive('remoteOptions', ['$lux', function ($lux) {
+
+        function link(scope, element, attrs, ctrl) {
+            var id = attrs.bmllRemoteoptionsId || 'id',
+                name = attrs.bmllRemoteoptionsValue || 'name';
+
+            var options = scope[attrs.bmllRemoteoptionsName] = [];
+
+            var initialValue = {};
+            initialValue[id] = '';
+            initialValue[name] = 'Loading...';
+
+            options.push(initialValue);
+            ctrl.$setViewValue('');
+            ctrl.$render();
+
+            var promise = api.get({name: attrs.bmllRemoteoptionsName});
+            promise.then(function (data) {
+                options[0][name] = 'Please select...';
+                options.push.apply(options, data.data.result);
+            }, function (data) {
+                /** TODO: add error alert */
+                options[0][name] = '(error loading options)';
+            });
+        }
+
+        return {
+            require: 'ngModel',
+            link: link
+        };
+    }])
+
+    .directive('selectOnClick', function () {
+        return {
+            restrict: 'A',
+            link: function (scope, element, attrs) {
+                element.on('click', function () {
+                    if (!window.getSelection().toString()) {
+                        // Required for mobile Safari
+                        this.setSelectionRange(0, this.value.length);
+                    }
+                });
+            }
+        };
+    });
 
 angular.module('templates-message', ['message/message.tpl.html']);
 

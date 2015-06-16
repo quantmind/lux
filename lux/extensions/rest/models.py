@@ -1,4 +1,5 @@
 
+
 class RestColumn:
     '''A class for specifing attributes of a REST column/field
     for a model
@@ -58,6 +59,10 @@ class RestModel:
         self._html_url = html_url
         self._columns = columns
         self._exclude = frozenset(exclude or ())
+
+    def __repr__(self):
+        return self.name
+    __str__ = __repr__
 
     def tojson(self, request, object, exclude=None, decoder=None):
         '''Convert a model ``object`` into a JSON serializable

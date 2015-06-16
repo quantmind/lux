@@ -17,10 +17,10 @@ depends_on = ${repr(depends_on)}
 
 from alembic import op
 import sqlalchemy as sa
-import sqlalchemy_utils
 ${imports if imports else ""}
 
 import odm
+import odm.types
 
 
 def upgrade(engine_name):

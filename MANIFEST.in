@@ -11,4 +11,5 @@ recursive-include tests *
 recursive-include lux/extensions *.html *.txt *.js
 recursive-include lux/media *.js
 recursive-include lux/core/commands/templates *.js *.json *.rst
+recursive-include lux/extensions/odm/commands/templates *.mako
 recursive-include examples *

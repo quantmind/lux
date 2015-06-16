@@ -1,6 +1,8 @@
 from lux import forms
 from lux.forms.fields import MultipleMixin
 
+from .models import RestModel
+
 
 class RelationshipField(MultipleMixin, forms.Field):
     '''A :class:`.Field` for database relationships
@@ -9,19 +11,23 @@ class RelationshipField(MultipleMixin, forms.Field):
 
         The name of the model this relationship field refers to
     '''
-    attrs = {'type': 'select'}
+    attrs = {'type': 'select',
+             'remote-options': ''}
     validation_error = 'Invalid {0}'
 
     def __init__(self, model=None, **kwargs):
-        self.model = model
-        assert self.model, 'no model defined'
         super().__init__(**kwargs)
+        assert model, 'no model defined'
+        if not isinstance(model, RestModel):
+            model = RestModel(model)
+        self.model = model
+        self.attrs['remote-options-name'] = self.model.api_name
 
     def _clean(self, value, bfield):
         app = bfield.request.app
         # Get a reference to the object data mapper
         odm = app.odm()
-        model = odm[self.model]
+        model = odm[self.model.name]
         with odm.begin() as session:
             instance = session.query(model).get(value)
             if not instance:

@@ -1,3 +1,5 @@
+import json
+
 from pulsar import new_event_loop
 from pulsar.apps.http import HttpClient
 from pulsar.utils.httpurl import is_absolute_uri
@@ -58,7 +60,20 @@ class LocalClient:
                                         headers=self.headers,
                                         extra=extra)
         response = yield from self.app(request.environ, self)
-        return response
+        return Response(response)
 
     def __call__(self, status, response_headers, exc_info=None):
         pass
+
+
+class Response:
+    __slots__ = ('response',)
+
+    def __init__(self, response):
+        self.response = response
+
+    def __getattr__(self, name):
+        return getattr(self.response, name)
+
+    def json(self):
+        return json.loads(self.response.content[0].decode('utf-8'))
