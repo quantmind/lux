@@ -6,28 +6,40 @@ angular.module('lux.form.utils', ['lux.services'])
 
     .directive('remoteOptions', ['$lux', function ($lux) {
 
-        function link(scope, element, attrs, ctrl) {
+        function fill(api, target, scope, attrs, ctrl) {
+
             var id = attrs.remoteOptionsId || 'id',
-                name = attrs.remoteValue || 'name';
+                name = attrs.remoteOptionsValue || 'id',
+                initialValue = {},
+                options = [];
 
-            var options = scope[attrs.remoteName] = [];
-
-            var initialValue = {};
+            scope[target.name] = options;
             initialValue[id] = '';
             initialValue[name] = 'Loading...';
 
             options.push(initialValue);
-            ctrl.$setViewValue('');
-            ctrl.$render();
 
-            var promise = api.get({name: attrs.bmllRemoteoptionsName});
-            promise.then(function (data) {
+            api.get().then(function (data) {
                 options[0][name] = 'Please select...';
                 options.push.apply(options, data.data.result);
             }, function (data) {
                 /** TODO: add error alert */
                 options[0][name] = '(error loading options)';
             });
+            ctrl.$setViewValue('');
+            ctrl.$render();
+        }
+
+        function link(scope, element, attrs, ctrl) {
+
+            if (attrs.remoteOptions) {
+                var target = JSON.parse(attrs.remoteOptions),
+                    api = $lux.api(target);
+
+                if (api && target.name)
+                    return fill(api, target, scope, attrs, ctrl);
+            }
+            // TODO: message
         }
 
         return {

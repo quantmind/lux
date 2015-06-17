@@ -1545,7 +1545,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
     //      formFieldChange: triggered when a form field changes:
     //          arguments: formmodel, field (changed)
     //
-    angular.module('lux.form', ['lux.services', 'lux.form.utils'])
+    angular.module('lux.form', ['lux.form.utils'])
         //
         .constant('formDefaults', {
             // Default layout
@@ -2380,28 +2380,40 @@ angular.module('lux.form.utils', ['lux.services'])
 
     .directive('remoteOptions', ['$lux', function ($lux) {
 
-        function link(scope, element, attrs, ctrl) {
-            var id = attrs.bmllRemoteoptionsId || 'id',
-                name = attrs.bmllRemoteoptionsValue || 'name';
+        function fill(api, target, scope, attrs, ctrl) {
 
-            var options = scope[attrs.bmllRemoteoptionsName] = [];
+            var id = attrs.remoteOptionsId || 'id',
+                name = attrs.remoteOptionsValue || 'id',
+                initialValue = {},
+                options = [];
 
-            var initialValue = {};
+            scope[target.name] = options;
             initialValue[id] = '';
             initialValue[name] = 'Loading...';
 
             options.push(initialValue);
-            ctrl.$setViewValue('');
-            ctrl.$render();
 
-            var promise = api.get({name: attrs.bmllRemoteoptionsName});
-            promise.then(function (data) {
+            api.get().then(function (data) {
                 options[0][name] = 'Please select...';
                 options.push.apply(options, data.data.result);
             }, function (data) {
                 /** TODO: add error alert */
                 options[0][name] = '(error loading options)';
             });
+            ctrl.$setViewValue('');
+            ctrl.$render();
+        }
+
+        function link(scope, element, attrs, ctrl) {
+
+            if (attrs.remoteOptions) {
+                var target = JSON.parse(attrs.remoteOptions),
+                    api = $lux.api(target);
+
+                if (api && target.name)
+                    return fill(api, target, scope, attrs, ctrl);
+            }
+            // TODO: message
         }
 
         return {

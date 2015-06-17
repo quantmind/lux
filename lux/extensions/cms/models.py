@@ -13,7 +13,8 @@ class Page(odm.Model):
     path = Column(String(256), unique=True)
     title = Column(String(256))
     description = Column(Text)
-    template_id = Column(Integer, ForeignKey('template.id'))
+    template_id = Column(Integer, ForeignKey('template.id'),
+                         doc='Body Template')
     layout = Column(JSONType)
     published = Column(Boolean, default=False)
     updated = Column(DateTime, default=datetime.utcnow)

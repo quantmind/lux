@@ -42,6 +42,8 @@ def as_angular_dict(field, form):
 
 
 class AngularFormElement(object):
+    '''Base class for all serialization elements
+    '''
     type = None
 
     def as_dict(self, form=None):

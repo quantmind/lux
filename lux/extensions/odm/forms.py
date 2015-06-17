@@ -1,7 +1,12 @@
+import logging
+
 from lux import forms
 from lux.forms.fields import MultipleMixin
 
 from .models import RestModel
+
+
+logger = logging.getLogger('lux.extensions.odm')
 
 
 class RelationshipField(MultipleMixin, forms.Field):
@@ -13,8 +18,7 @@ class RelationshipField(MultipleMixin, forms.Field):
     '''
     validation_error = 'Invalid {0}'
 
-    attrs = {'type': 'select',
-             'data-remote-options': ''}
+    attrs = {'type': 'select'}
 
     def __init__(self, model=None, **kwargs):
         super().__init__(**kwargs)
@@ -22,7 +26,14 @@ class RelationshipField(MultipleMixin, forms.Field):
         if not isinstance(model, RestModel):
             model = RestModel(model)
         self.model = model
-        self.attrs['data-remote-options-name'] = self.model.api_name
+
+    def getattrs(self, form):
+        attrs = self.attrs.copy()
+        if not form:
+            logger.error('%s %s cannot get remote target. No form available',
+                         self.__class__.__name__, self.name)
+        attrs.update(self.model.field_options(form.request))
+        return attrs
 
     def _clean(self, value, bfield):
         app = bfield.request.app

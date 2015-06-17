@@ -13,7 +13,10 @@ class TemplateForm(forms.Form):
 
 
 class TemplateCRUD(odm.CRUD):
-    model = odm.RestModel('template', TemplateForm, url='html_templates')
+    model = odm.RestModel('template',
+                          TemplateForm,
+                          url='html_templates',
+                          repr_field='title')
 
 
 class PageForm(forms.Form):

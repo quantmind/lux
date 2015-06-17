@@ -85,7 +85,7 @@ def column_info(name, col):
 
     info = {'name': name,
             'field': col.name,
-            'displayName': nicename(name),
+            'displayName': col.doc or nicename(name),
             'sortable': sortable,
             'filter': filter,
             'type': type}

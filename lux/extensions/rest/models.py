@@ -1,3 +1,8 @@
+import json
+import logging
+
+
+logger = logging.getLogger('lux.extensions.rest')
 
 
 class RestColumn:
@@ -45,16 +50,20 @@ class RestModel:
 
         Form class for this REST model in editing mode
     '''
+    remote_options_str = 'item.{id} as item.{repr} for item in {options}'
     _loaded = False
 
     def __init__(self, name, form=None, editform=None, columns=None,
                  url=None, api_name=None, exclude=None,
-                 api_url=True, html_url=None):
+                 api_url=True, html_url=None, id_field=None,
+                 repr_field=None):
         self.name = name
         self.form = form
         self.editform = editform or form
         self.url = url or '%ss' % name
         self.api_name = '%s_url' % self.url
+        self.id_field = id_field or 'id'
+        self.repr_field = repr_field or 'id'
         self._api_url = api_url
         self._html_url = html_url
         self._columns = columns
@@ -90,6 +99,19 @@ class RestModel:
         target = {'url': url, 'name': self.api_name}
         target.update(**extra_data)
         return target
+
+    def field_options(self, request):
+        '''Return a generator of options for a html serializer
+        '''
+        if not request:
+            logger.error('%s cannot get remote target. No request', self)
+        else:
+            target = self.get_target(request)
+            yield 'data-remote-options', json.dumps(target)
+            yield 'data-remote-options-id', self.id_field
+            yield 'data-remote-options-value', self.repr_field
+            yield 'data-ng-options', self.remote_options_str.format(
+                id=self.id_field, repr=self.repr_field, options=self.api_name)
 
     def _load_columns(self, app):
         return self._columns or []

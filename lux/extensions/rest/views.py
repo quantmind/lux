@@ -92,7 +92,11 @@ class RestRouter(RestMixin, lux.Router):
 
     def meta(self, request):
         app = request.app
-        return {'columns': self.model.columns(app),
+        columns = self.model.columns(app)
+
+        return {'id': self.model.id_field,
+                'repr': self.model.repr_field,
+                'columns': columns,
                 'default-limit': app.config['API_LIMIT_DEFAULT']}
 
     def serialise_model(self, request, data, in_list=False):
