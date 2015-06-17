@@ -1,3 +1,11 @@
+    function dateSorting(column) {
+
+        column.sortingAlgorithm = function(a, b) {
+            var dt1 = new Date(a).getTime(),
+                dt2 = new Date(b).getTime();
+            return dt1 === dt2 ? 0 : (dt1 < dt2 ? -1 : 1);
+        };
+    }
 
     angular.module('lux.grid', ['lux.message', 'templates-grid', 'ngTouch', 'ui.grid', 'ui.grid.pagination', 'ui.grid.selection'])
         //
@@ -12,6 +20,34 @@
                     title: 'Delete',
                     icon: 'fa fa-trash'
                 }
+            },
+            // dictionary of call-backs for columns types
+            // The function is called with four parameters
+            //	* `column` ui-grid object
+            //	* `col` object from metadata
+            //	* `uiGridConstants` object
+            //	* `gridDefaults` object
+            columns: {
+                date: dateSorting,
+
+                datetime: dateSorting,
+
+                // Font-awesome icon by default
+                boolean: function (column, col, uiGridConstants, gridDefaults) {
+                    column.cellTemplate = gridDefaults.wrapCell('<i ng-class="{{COL_FIELD == true}} ? \'fa fa-check-circle text-success\' : \'fa fa-times-circle text-danger\'"></i>');
+
+                    if (col.hasOwnProperty('filter')) {
+                        column.filter = {
+                            type: uiGridConstants.filter.SELECT,
+                            selectOptions: [{ value: 'true', label: 'True' }, { value: 'false', label: 'False'}]
+                        };
+                    }
+                }
+            },
+            //
+            // default wrapper for grid cells
+            wrapCell: function (template) {
+                return '<div class="ui-grid-cell-contents">' + template + '</div>';
             }
         })
         //
@@ -46,24 +82,10 @@
                         column.enableFiltering = false;
 
                     if (column.field === 'id')
-                        column.cellTemplate = '<div class="ui-grid-cell-contents"><a ng-href="{{grid.appScope.objectUrl(COL_FIELD)}}">{{COL_FIELD}}</a></div>';
+                        column.cellTemplate = gridDefaults.wrapCell('<a ng-href="{{grid.appScope.objectUrl(COL_FIELD)}}">{{COL_FIELD}}</a>');
 
-                    if (column.type === 'date') {
-                        column.sortingAlgorithm = function(a, b) {
-                            var dt1 = new Date(a).getTime(),
-                                dt2 = new Date(b).getTime();
-                            return dt1 === dt2 ? 0 : (dt1 < dt2 ? -1 : 1);
-                        };
-                    } else if (column.type === 'boolean') {
-                        column.cellTemplate = '<div class="ui-grid-cell-contents"><i ng-class="{{COL_FIELD == true}} ? \'fa fa-check-circle text-success\' : \'fa fa-times-circle text-danger\'"></i></div>';
-
-                        if (col.hasOwnProperty('filter')) {
-                            column.filter = {
-                                type: uiGridConstants.filter.SELECT,
-                                selectOptions: [{ value: 'true', label: 'True' }, { value: 'false', label: 'False'}],
-                            };
-                        }
-                    }
+                    var callback = gridDefaults.columns[col.type];
+                    if (callback) callback(column, col, uiGridConstants, gridDefaults);
                     columnDefs.push(column);
                 });
 

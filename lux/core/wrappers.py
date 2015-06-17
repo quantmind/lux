@@ -96,12 +96,9 @@ class HtmlRouter(Router):
     '''Extend pulsar :class:`~pulsar.apps.wsgi.routers.Router`
     with content management.
     '''
-    in_nav = False
-    html_body_template = None
-    form = None
-    uirouter = None
-    uimodules = None
-    model = None
+    html_body_template = RouterParam(None)
+    uirouter = RouterParam(None)
+    uimodules = RouterParam(None)
     response_content_types = TEXT_CONTENT_TYPES
 
     def get(self, request):

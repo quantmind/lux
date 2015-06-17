@@ -66,6 +66,8 @@ class Submit(AngularFormElement):
 
 
 class Fieldset(AngularFormElement):
+    '''A :class:`.Fieldset` is a collection of form fields
+    '''
     type = 'fieldset'
 
     def __init__(self, *children, **attrs):
