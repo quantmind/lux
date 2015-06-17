@@ -7,10 +7,10 @@ angular.module('lux.form.utils', ['lux.services'])
     .directive('remoteOptions', ['$lux', function ($lux) {
 
         function link(scope, element, attrs, ctrl) {
-            var id = attrs.bmllRemoteoptionsId || 'id',
-                name = attrs.bmllRemoteoptionsValue || 'name';
+            var id = attrs.remoteOptionsId || 'id',
+                name = attrs.remoteValue || 'name';
 
-            var options = scope[attrs.bmllRemoteoptionsName] = [];
+            var options = scope[attrs.remoteName] = [];
 
             var initialValue = {};
             initialValue[id] = '';

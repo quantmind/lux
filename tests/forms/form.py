@@ -127,7 +127,7 @@ class FormTests(test.TestCase):
         self.assertFalse(form.is_valid())
         result = form.tojson()
         self.assertEqual(result['messages']['rank'][0]['message'],
-                         '"foo" is not a valid number')
+                         'Not a valid number')
 
     def test_date_field(self):
         dt = date.today()

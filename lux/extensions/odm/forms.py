@@ -11,9 +11,10 @@ class RelationshipField(MultipleMixin, forms.Field):
 
         The name of the model this relationship field refers to
     '''
-    attrs = {'type': 'select',
-             'remote-options': ''}
     validation_error = 'Invalid {0}'
+
+    attrs = {'type': 'select',
+             'data-remote-options': ''}
 
     def __init__(self, model=None, **kwargs):
         super().__init__(**kwargs)
@@ -21,7 +22,7 @@ class RelationshipField(MultipleMixin, forms.Field):
         if not isinstance(model, RestModel):
             model = RestModel(model)
         self.model = model
-        self.attrs['remote-options-name'] = self.model.api_name
+        self.attrs['data-remote-options-name'] = self.model.api_name
 
     def _clean(self, value, bfield):
         app = bfield.request.app

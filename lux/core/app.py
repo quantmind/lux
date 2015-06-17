@@ -59,9 +59,10 @@ def execute_app(app, argv=None, **params):  # pragma    nocover
         :class:`.Command` executing the ``app``.
     '''
     if argv is None:
-        argv = app._argv or sys.argv
-    app._argv = argv = list(argv)
-    if argv:
+        argv = app._argv
+    if argv is None:
+        argv = sys.argv
+        app._argv = argv = list(argv)
         app._script = argv.pop(0)
     try:
         application = app.commands()

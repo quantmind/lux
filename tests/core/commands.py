@@ -9,6 +9,12 @@ from lux.utils import test
 class CommandTests(test.TestCase):
     config_file = 'tests.config'
 
+    def test_getapp(self):
+        app = self.application(GREEN_POOL=50)
+        command = self.fetch_command('getapp', app)
+        self.assertEqual(app, command([]))
+        self.assertEqual(app.config['GREEN_POOL'], 0)
+
     @test.test_timeout(30)
     @test.green
     def test_startproject(self):

@@ -26,7 +26,7 @@ __all__ = ['Field',
            'UrlField']
 
 
-standard_validation_error = '{0} is required'
+standard_validation_error = 'Not a valid value'
 standard_required_error = 'required'
 
 
@@ -210,7 +210,7 @@ class TextField(Field):
 
 class IntegerField(Field):
     attrs = {'type': 'number'}
-    validation_error = '"{0}" is not a valid number'
+    validation_error = 'Not a valid number'
     totype = int
 
     def _clean(self, value, instance):
