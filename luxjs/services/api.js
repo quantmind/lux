@@ -1,5 +1,7 @@
-    //  Lux Api service factory for angular
-    //  ---------------------------------------
+    //  Lux Api service
+    //	===================
+    //
+    //	A factory of javascript clients to web services
     angular.module('lux.services', [])
         //
         .value('ApiTypes', {})
@@ -33,6 +35,11 @@
             this.q = $q;
             this.timeout = $timeout;
             this.apiUrls = {};
+            this.messages = extend({}, lux.messageService, {
+                pushMessage: function (message) {
+                    this.log($log, message);
+                }
+            });
             //  Create a client api
             //  -------------------------
             //
@@ -50,12 +57,12 @@
                     }
                     api = ApiTypes[url];
                     if (!api)
-                        $lux.log.error('Api client for "' + url + '" is not available');
+                        $lux.$log.error('Api client for "' + url + '" is not available');
                     else
                         return api(url, this).defaults(defaults);
                 } else if (arguments.length === 2) {
                     ApiTypes[url] = api;
-                    return this;
+                    return api(url, this);
                 }
             };
         }]);
@@ -222,7 +229,7 @@
             if (!opts.url) {
                 var href = request.baseUrl;
                 if (opts.path)
-                    href = request.baseUrl + opts.path;
+                    href = joinUrl(request.baseUrl, opts.path);
                 opts.url = href;
             }
 

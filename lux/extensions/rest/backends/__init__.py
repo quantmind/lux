@@ -1,6 +1,11 @@
 from .token import TokenBackend
-from .browser import BrowserBackend
 from .session import SessionBackend
+from .browser import BrowserBackend, ApiSessionBackend
+from .mixins import CacheSessionMixin
 
 
-__all__ = ['TokenBackend', 'BrowserBackend', 'SessionBackend']
+__all__ = ['TokenBackend',
+           'BrowserBackend',
+           'SessionBackend',
+           'CacheSessionMixin',
+           'ApiSessionBackend']

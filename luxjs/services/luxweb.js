@@ -18,7 +18,7 @@
 
             if ($scope.API_URL) {
                 var api = $lux.api($scope.API_URL, luxweb);
-                api.initScope(scope);
+                api.initScope($scope);
             }
         }]);
 
@@ -34,6 +34,20 @@
             api.login = function () {
                 $lux.window.location.href = lux.context.LOGIN_URL;
                 $lux.window.reload();
+            };
+
+            // Perform Logout
+            api.logout = function (scope) {
+                scope.$emit('pre-logout');
+                api.post({
+                    name: 'authorizations_url',
+                    path: '/logout'
+                }).then(function () {
+                    scope.$emit('after-logout');
+                    $lux.window.reload();
+                }, function (response) {
+                    $lux.messages.error('Error while logging out');
+                });
             };
 
             //
@@ -97,9 +111,7 @@
                         e.stopPropagation();
                     }
                     if (api.user()) {
-                        api.logout().then(function () {
-                            $window.location.reload();
-                        });
+                        api.logout(scope);
                     }
                 };
             };

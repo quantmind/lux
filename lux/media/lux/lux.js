@@ -307,8 +307,10 @@ function(angular, root) {
         return n;
     };
 
-    //  Lux Api service factory for angular
-    //  ---------------------------------------
+    //  Lux Api service
+    //	===================
+    //
+    //	A factory of javascript clients to web services
     angular.module('lux.services', [])
         //
         .value('ApiTypes', {})
@@ -342,6 +344,11 @@ function(angular, root) {
             this.q = $q;
             this.timeout = $timeout;
             this.apiUrls = {};
+            this.messages = extend({}, lux.messageService, {
+                pushMessage: function (message) {
+                    this.log($log, message);
+                }
+            });
             //  Create a client api
             //  -------------------------
             //
@@ -359,12 +366,12 @@ function(angular, root) {
                     }
                     api = ApiTypes[url];
                     if (!api)
-                        $lux.log.error('Api client for "' + url + '" is not available');
+                        $lux.$log.error('Api client for "' + url + '" is not available');
                     else
                         return api(url, this).defaults(defaults);
                 } else if (arguments.length === 2) {
                     ApiTypes[url] = api;
-                    return this;
+                    return api(url, this);
                 }
             };
         }]);
@@ -531,7 +538,7 @@ function(angular, root) {
             if (!opts.url) {
                 var href = request.baseUrl;
                 if (opts.path)
-                    href = request.baseUrl + opts.path;
+                    href = joinUrl(request.baseUrl, opts.path);
                 opts.url = href;
             }
 
@@ -624,33 +631,13 @@ function(angular, root) {
     //	scope to retrieve the api client handler and user informations
     angular.module('lux.restapi', ['lux.services'])
 
-        .run(['$rootScope', '$window', '$lux', function (scope, $window, $lux) {
+        .run(['$rootScope', '$lux', function ($scope, $lux) {
 
             // If the root scope has an API_URL register the luxrest client
-            if (scope.API_URL) {
-
-                $lux.api(scope.API_URL, luxrest);
-
-                //	Get the api client
-                scope.api = function () {
-                    return $lux.api(scope.API_URL);
-                };
-
-                // 	Get the current user
-                scope.getUser = function () {
-                    var api = scope.api();
-                    if (api)
-                        return api.user();
-                };
-
-                //	Logout the current user
-                scope.logout = function () {
-                    var api = scope.api();
-                    if (api && api.token()) {
-                        api.logout();
-                        $window.location.reload();
-                    }
-                };
+            if ($scope.API_URL) {
+                var api = $lux.api($scope.API_URL, luxrest);
+                $lux.api($lux.location.origin, luxweb);
+                api.initScope($scope);
             }
 
         }]);
@@ -694,13 +681,6 @@ function(angular, root) {
             }
         };
 
-        api.logout = function () {
-            var key = 'luxrest - ' + api.baseUrl();
-
-            localStorage.removeItem(key);
-            sessionStorage.removeItem(key);
-        };
-
         api.user = function () {
             var token = api.token();
             if (token) {
@@ -735,6 +715,16 @@ function(angular, root) {
             }
         };
 
+        var initScope = api.initScope;
+
+        api.initScope = function (scope) {
+            initScope.call(api, scope);
+            scope.$on('after-logout', function () {
+                var key = 'luxrest - ' + api.baseUrl();
+                localStorage.removeItem(key);
+                sessionStorage.removeItem(key);
+            });
+        };
         return api;
     };
 
@@ -759,7 +749,7 @@ function(angular, root) {
 
             if ($scope.API_URL) {
                 var api = $lux.api($scope.API_URL, luxweb);
-                api.initScope(scope);
+                api.initScope($scope);
             }
         }]);
 
@@ -775,6 +765,20 @@ function(angular, root) {
             api.login = function () {
                 $lux.window.location.href = lux.context.LOGIN_URL;
                 $lux.window.reload();
+            };
+
+            // Perform Logout
+            api.logout = function (scope) {
+                scope.$emit('pre-logout');
+                api.post({
+                    name: 'authorizations_url',
+                    path: '/logout'
+                }).then(function () {
+                    scope.$emit('after-logout');
+                    $lux.window.reload();
+                }, function (response) {
+                    $lux.messages.error('Error while logging out');
+                });
             };
 
             //
@@ -838,9 +842,7 @@ function(angular, root) {
                         e.stopPropagation();
                     }
                     if (api.user()) {
-                        api.logout().then(function () {
-                            $window.location.reload();
-                        });
+                        api.logout(scope);
                     }
                 };
             };
@@ -2454,6 +2456,37 @@ angular.module('lux.form.utils', ['lux.services'])
         };
     });
 
+
+    lux.messageService = {
+        pushMessage: function () {},
+
+        debug: function (text) {
+            this.pushMessage({type: 'debug', text: text});
+        },
+
+        info: function (text) {
+            this.pushMessage({type: 'info', text: text});
+        },
+
+        success: function (text) {
+            this.pushMessage({type: 'success', text: text});
+        },
+
+        warn: function (text) {
+            this.pushMessage({type: 'warn', text: text});
+        },
+
+        error: function (text) {
+            this.pushMessage({type: 'error', text: text});
+        },
+
+        log: function ($log, message) {
+            var type = message.type;
+            if (type === 'success') type = 'info';
+            $log[type](message.text);
+        }
+    };
+
 angular.module('templates-message', ['message/message.tpl.html']);
 
 angular.module("message/message.tpl.html", []).run(["$templateCache", function($templateCache) {
@@ -2467,124 +2500,111 @@ angular.module("message/message.tpl.html", []).run(["$templateCache", function($
     "");
 }]);
 
-//
-//  Message module
-//
-//  Usage:
-//
-//  html:
-//    limit - maximum number of messages to show, by default 5
-//    <message limit="10"></message>
-//
-//  js:
-//    angular.module('app', ['app.view'])
-//    .controller('AppController', ['$scope', '$message', function ($scope, $message) {
-//                $message.setDebugMode(true);
-//                $message.debug('debug message');
-//                $message.error('error message');
-//                $message.success('success message');
-//                $message.info('info message');
-//
-//            }])
-angular.module('lux.message', ['templates-message'])
     //
-    //  Service for messages
+    //  Message module
     //
-    .service('$message', ['$log',  '$rootScope', function ($log, $rootScope) {
-        return {
-            getMessages: function () {
-                if( ! this.getStorage().getItem('messages') ){
-                    return [];
-                }
-                return JSON.parse(this.getStorage().getItem('messages')).reverse();
-
-            },
-            setMessages: function (messages) {
-               this.getStorage().messages = JSON.stringify(messages);
-            },
-            pushMessage: function (message) {
-                var messages = this.getMessages();
-                message.id = messages.length;
-                messages.push(message);
-                this.setMessages(messages);
-                $log.log('(message):'+ message.type + ' "' + message.text + '"');
-                $rootScope.$emit('messageAdded');
-            },
-            removeMessage: function (message) {
-                var messages = this.getMessages();
-                messages = messages.filter(function (value) {
-                    return value.id !== message.id;
-                });
-                this.setMessages(messages);
-            },
-            getDebugMode: function () {
-                return !! JSON.parse(window.localStorage.getItem('debug'));
-            },
-            setDebugMode: function (value) {
-                window.localStorage.debug = JSON.stringify(value);
-            },
-            setStorage: function (storage) {
-                window.localStorage.messagesStorage = storage;
-            },
-            getStorage: function () {
-                if( window.localStorage.getItem('messagesStorage') === 'session' ){
-                    return window.sessionStorage;
-                }
-                return window.localStorage;
-
-            },
-            info: function (text) {
-                this.pushMessage({type: 'info', text: text});
-            },
-            error: function (text) {
-                this.pushMessage({type: 'danger', text: text});
-            },
-            debug: function (text) {
-                this.pushMessage({type: 'warning', text: text});
-            },
-            success: function (text) {
-                this.pushMessage({type: 'success', text: text});
-            }
-
-        };
-    }])
+    //  Usage:
     //
-    // Directive for displaying messages
+    //  html:
+    //    limit - maximum number of messages to show, by default 5
+    //    <message limit="10"></message>
     //
-    .directive('message', ['$message', '$rootScope', '$log', function ($message, $rootScope, $log) {
-        return {
-            restrict: 'AE',
-            replace: true,
-            templateUrl: "message/message.tpl.html",
-            link: {
-                post: function ($scope, element, attrs) {
-                    var renderMessages = function () {
-                        $scope.messages = $message.getMessages();
-                    };
-                    renderMessages();
+    //  js:
+    //    angular.module('app', ['app.view'])
+    //    .controller('AppController', ['$scope', '$message', function ($scope, $message) {
+    //                $message.setDebugMode(true);
+    //                $message.debug('debug message');
+    //                $message.error('error message');
+    //                $message.success('success message');
+    //                $message.info('info message');
+    //
+    //            }])
+    angular.module('lux.message', ['lux.services', 'templates-message'])
+        //
+        //  Service for messages
+        //
+        .service('$message', ['$log',  '$rootScope', function ($log, $rootScope) {
+            extend(this, lux.messageService, {
+                getMessages: function () {
+                    if( ! this.getStorage().getItem('messages') ){
+                        return [];
+                    }
+                    return JSON.parse(this.getStorage().getItem('messages')).reverse();
 
-                    $scope.limit = !!attrs.limit ? parseInt(attrs.limit) : 5; //5 messages to show by default
-
-                    $scope.debug = function(){
-                        return $message.getDebugMode();
-                    };
-
-                    $scope.removeMessage = function (message) {
-                        $message.removeMessage(message);
-                        renderMessages();
-                    };
-
-                    $rootScope.$on('$viewContentLoaded', function () {
-                        renderMessages();
+                },
+                setMessages: function (messages) {
+                   this.getStorage().messages = JSON.stringify(messages);
+                },
+                pushMessage: function (message) {
+                    var messages = this.getMessages();
+                    message.id = messages.length;
+                    messages.push(message);
+                    this.setMessages(messages);
+                    $log.log('(message):'+ message.type + ' "' + message.text + '"');
+                    $rootScope.$emit('messageAdded');
+                },
+                removeMessage: function (message) {
+                    var messages = this.getMessages();
+                    messages = messages.filter(function (value) {
+                        return value.id !== message.id;
                     });
+                    this.setMessages(messages);
+                },
+                getDebugMode: function () {
+                    return !! JSON.parse(window.localStorage.getItem('debug'));
+                },
+                setDebugMode: function (value) {
+                    window.localStorage.debug = JSON.stringify(value);
+                },
+                setStorage: function (storage) {
+                    window.localStorage.messagesStorage = storage;
+                },
+                getStorage: function () {
+                    if( window.localStorage.getItem('messagesStorage') === 'session' ){
+                        return window.sessionStorage;
+                    }
+                    return window.localStorage;
 
-                    $rootScope.$on('messageAdded', function (){
-                        renderMessages();
-                    });
                 }
-            }
-        };
-    }]);
+            });
+        }])
+        //
+        // Directive for displaying messages
+        //
+        .directive('message', ['$message', '$rootScope', '$log', function ($message, $rootScope, $log) {
+            return {
+                restrict: 'AE',
+                replace: true,
+                templateUrl: "message/message.tpl.html",
+                link: {
+                    post: function ($scope, element, attrs) {
+                        var renderMessages = function () {
+                            $scope.messages = $message.getMessages();
+                        };
+                        renderMessages();
+
+                        $scope.limit = !!attrs.limit ? parseInt(attrs.limit) : 5; //5 messages to show by default
+
+                        $scope.debug = function(){
+                            return $message.getDebugMode();
+                        };
+
+                        $scope.removeMessage = function (message) {
+                            $message.removeMessage(message);
+                            renderMessages();
+                        };
+
+                        $rootScope.$on('$viewContentLoaded', function () {
+                            renderMessages();
+                        });
+
+                        $rootScope.$on('messageAdded', function (){
+                            renderMessages();
+                        });
+                    }
+                }
+            };
+        }]);
 
 
 angular.module('templates-grid', ['grid/modal.empty.tpl.html', 'grid/modal.tpl.html']);

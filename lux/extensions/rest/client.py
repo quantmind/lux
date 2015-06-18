@@ -14,8 +14,8 @@ class ApiClient:
     def __init__(self, app):
         self.app = app
 
-    def get(self, url, **kw):
-        return self.request('GET', url, **kw)
+    def get(self, path, **kw):
+        return self.request('GET', path, **kw)
 
     def request(self, method, path=None, **kw):
         http = self.http()
@@ -26,6 +26,8 @@ class ApiClient:
         return self._wait(response) if self._wait else response
 
     def http(self):
+        '''Get the HTTP client
+        '''
         if self._http is None:
             if self.app.green_pool:
                 from pulsar.apps.greenio import wait

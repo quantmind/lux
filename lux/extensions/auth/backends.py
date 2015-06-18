@@ -3,8 +3,6 @@ import uuid
 from sqlalchemy.orm.exc import NoResultFound
 from datetime import datetime
 
-from pulsar.utils.structures import AttributeDictionary
-
 from lux.extensions.rest import (PasswordMixin, backends, normalise_email,
                                  AuthenticationError, READ)
 
@@ -158,44 +156,12 @@ class TokenBackend(AuthMixin, backends.TokenBackend):
         return self.encode_payload(request, payload)
 
 
-class SessionBackend(AuthMixin, backends.SessionBackend):
+class SessionBackend(AuthMixin,
+                     backends.CacheSessionMixin,
+                     backends.SessionBackend):
     '''An authentication backend based on sessions stored in the
     cache server and user on the ODM
     '''
     def on_config(self, app):
         super().on_config(app)
         backends.SessionBackend.on_config(self, app)
-
-    def get_session(self, request, key):
-        session = request.app.cache_server.get_json(self._key(key))
-        if session:
-            session = AttributeDictionary(session)
-            if session.user_id:
-                session.user = self.get_user(request, user_id=session.user_id)
-            return session
-
-    def session_save(self, request, session):
-        session = session.all().copy()
-        session.pop('user', None)
-        request.app.cache_server.set_json(self._key(session['id']), session)
-
-    def session_key(self, session):
-        '''Session key from session object
-        '''
-        return session.id
-
-    def session_create(self, request, id=None, user=None, expiry=None):
-        '''Create a new session
-        '''
-        if not id:
-            id = uuid.uuid4().hex
-        session = AttributeDictionary(id=id)
-        if expiry:
-            session.expiry = expiry.isoformat()
-        if user:
-            session.user_id = user.id
-            session.user = user
-        return session
-
-    def _key(self, id):
-        return 'session:%s' % id

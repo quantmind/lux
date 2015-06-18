@@ -22,11 +22,10 @@ __all__ = ['RestRouter', 'RestMixin', 'RestModel', 'RestColumn',
            'RequirePermission']
 
 
-def luxrest(url, name, **rest):
+def luxrest(url, **rest):
     '''Dictionary containing the api type and the api url name
     '''
     rest['url'] = url
-    rest['name'] = name
     return rest
 
 

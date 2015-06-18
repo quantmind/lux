@@ -7,33 +7,13 @@
     //	scope to retrieve the api client handler and user informations
     angular.module('lux.restapi', ['lux.services'])
 
-        .run(['$rootScope', '$window', '$lux', function (scope, $window, $lux) {
+        .run(['$rootScope', '$lux', function ($scope, $lux) {
 
             // If the root scope has an API_URL register the luxrest client
-            if (scope.API_URL) {
-
-                $lux.api(scope.API_URL, luxrest);
-
-                //	Get the api client
-                scope.api = function () {
-                    return $lux.api(scope.API_URL);
-                };
-
-                // 	Get the current user
-                scope.getUser = function () {
-                    var api = scope.api();
-                    if (api)
-                        return api.user();
-                };
-
-                //	Logout the current user
-                scope.logout = function () {
-                    var api = scope.api();
-                    if (api && api.token()) {
-                        api.logout();
-                        $window.location.reload();
-                    }
-                };
+            if ($scope.API_URL) {
+                var api = $lux.api($scope.API_URL, luxrest);
+                $lux.api($lux.location.origin, luxweb);
+                api.initScope($scope);
             }
 
         }]);
@@ -77,13 +57,6 @@
             }
         };
 
-        api.logout = function () {
-            var key = 'luxrest - ' + api.baseUrl();
-
-            localStorage.removeItem(key);
-            sessionStorage.removeItem(key);
-        };
-
         api.user = function () {
             var token = api.token();
             if (token) {
@@ -118,6 +91,16 @@
             }
         };
 
+        var initScope = api.initScope;
+
+        api.initScope = function (scope) {
+            initScope.call(api, scope);
+            scope.$on('after-logout', function () {
+                var key = 'luxrest - ' + api.baseUrl();
+                localStorage.removeItem(key);
+                sessionStorage.removeItem(key);
+            });
+        };
         return api;
     };
 

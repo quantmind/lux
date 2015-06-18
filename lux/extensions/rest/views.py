@@ -16,6 +16,11 @@ from .models import RestModel
 REST_CONTENT_TYPES = ['application/json']
 
 
+def action(f):
+    f.is_action = True
+    return f
+
+
 class RestRoot(lux.Router):
     '''Api Root
 
@@ -110,24 +115,10 @@ class RestRouter(RestMixin, lux.Router):
         return Json(data).http_response(request)
 
 
-class Authorization(RestRouter):
-    '''Authentication views for
-
-    * login
-    * logout
-    * signup
-    * password change
-    * password recovery
-
-    All views respond to POST requests
-    '''
-    model = RestModel('authorization', LoginForm)
-    create_user_form = CreateUserForm
-    change_password_form = ChangePasswordForm
+class ProcessLoginMixin:
 
     def post(self, request):
-        '''Anthenticate the user and create a new Authorization token
-        if succesful
+        '''Authenticate the user
         '''
         user = request.cache.user
         if user.is_authenticated():
@@ -149,22 +140,54 @@ class Authorization(RestRouter):
 
         return Json(form.tojson()).http_response(request)
 
-    @route()
-    def post_logout(self, request):
-        '''Logout via post method
-        '''
-        # make sure csrf is called
-        Form(request, data=request.body_data())
 
-        user = request.cache.user
-        if not user.is_authenticated():
+class Authorization(RestRouter, ProcessLoginMixin):
+    '''Authentication views for
+
+    * login
+    * logout
+    * signup
+    * password change
+    * password recovery
+
+    All views respond to POST requests
+    '''
+    model = RestModel('authorization', LoginForm)
+    create_user_form = CreateUserForm
+    change_password_form = ChangePasswordForm
+
+    @route('/<action>', method=('post', 'options'))
+    def auth_action(self, request):
+        '''Post actions
+        '''
+        action = request.urlargs['action']
+        method = getattr(self, action, None)
+        if not getattr(method, 'is_action', False):
+            raise Http404
+
+        if request.method == 'OPTIONS':
+            request.app.fire('on_preflight', request)
+            return request.response
+
+        return method(request)
+
+    @action
+    def logout(self, request):
+        # make sure csrf is called
+        form = Form(request, data=request.body_data() or {})
+
+        if form.is_valid():
+            user = request.cache.user
+            if not user.is_authenticated():
+                raise MethodNotAllowed
+
+            auth_backend = request.cache.auth_backend
+            return auth_backend.logout_response(request, user)
+        else:
             raise MethodNotAllowed
 
-        auth_backend = request.cache.auth_backend
-        return auth_backend.logout_response(request, user)
-
-    @route()
-    def post_signup(self, request):
+    @action
+    def signup(self, request):
         '''Handle signup post data
 
         If :attr:`.create_user_form` form is None, raise a 4040 error.
@@ -174,6 +197,10 @@ class Authorization(RestRouter):
         '''
         if not self.create_user_form:
             raise Http404
+
+        if request.method == 'OPTIONS':
+            request.app.fire('on_preflight', request)
+            return request.response
 
         user = request.cache.user
         if user.is_authenticated():
@@ -191,8 +218,8 @@ class Authorization(RestRouter):
                 form.add_error_message(str(e))
         return Json(form.tojson()).http_response(request)
 
-    @route()
-    def post_change_password(self, request):
+    @action
+    def change_password(self, request):
         '''Change user password
         '''
         # Set change_password_form to None to remove support
@@ -213,7 +240,8 @@ class Authorization(RestRouter):
             return auth_backend.changed_passord_response(request, user)
         return Json(form.tojson()).http_response(request)
 
-    def post_dismiss_message(self, request):
+    @action
+    def dismiss_message(self, request):
         app = request.app
         if not app.config['SESSION_MESSAGES']:
             raise Http404
@@ -239,6 +267,11 @@ class Login(WebFormRouter):
         if request.cache.user.is_authenticated():
             raise HttpRedirect('/')
         return super().get(request)
+
+
+class LoginPost(Login, ProcessLoginMixin):
+    '''Login Rouer for both get and post methods
+    '''
 
 
 class SignUp(WebFormRouter):
