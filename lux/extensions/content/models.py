@@ -1,8 +1,21 @@
 import os
+import glob
 
-from dulwich.repo import Repo, NotGitRepository
+from dulwich.file import GitFile
+from dulwich.porcelain import rm
+from dulwich.porcelain import add
+from dulwich.porcelain import init
+from dulwich.porcelain import commit
+from dulwich.porcelain import open_repo
+from dulwich.errors import NotGitRepository
 
 from lux.extensions import rest
+
+
+def _b(value):
+    '''Return string literals
+    '''
+    return value.encode('utf-8')
 
 
 class DataError(Exception):
@@ -10,20 +23,19 @@ class DataError(Exception):
 
 
 class Content(rest.RestModel):
+
     '''A Rest model with git backend using dulwich_
 
     This model provide basic CRUD operations for a RestFul web API
 
-    Several hints for implementation were from gittle_
-
     .. _dulwich: https://www.samba.org/~jelmer/dulwich/docs/
-    .. _gittle: https://github.com/FriendCode/gittle
     '''
+
     def __init__(self, name, path, **kwargs):
         try:
-            self.repo = Repo(path)
+            self.repo = open_repo(path)
         except NotGitRepository:
-            self.repo = Repo.init(path)
+            self.repo = init(path)
         self.path = path
         super().__init__(name, **kwargs)
 
@@ -45,33 +57,50 @@ class Content(rest.RestModel):
                 raise DataError('%s not available' % slug)
 
         content = self.content(data)
-        with open(filename, 'w') as file:
-            file.write(content)
 
-        if new:
-            self.gittle.add(filename)
+        with open(fullpath, 'wb') as f:
+            f.write(_b(content))
 
-        if not message:
-            message = "Updated %s" % slug
+        add(self.repo, [filename])
+        commit_hash = commit(self.repo, _b(message),
+                             committer=_b(user.username))
+        return commit_hash
 
-        ret = self.gittle.commit(name=user.username,
-                                 email=user.email,
-                                 message=message,
-                                 files=[filename])
+    def delete(self, user, data, message=None):
+        '''Delete file(s) from repository
+        '''
+        files_to_del = data.get('files')
+        if files_to_del:
+            for f in files_to_del:
+                path = os.path.join(self.path, f)
+                # remove only files that really exist
+                if os.path.exists(path):
+                    # remove from disk
+                    os.remove(path)
+                    # remove from repo
+                    rm(self.repo, [path])
+            if not message:
+                message = 'Deleted %s' % ';'.join(files_to_del)
+                commit_hash = commit(self.repo, _b(message),
+                                     committer=_b(user.username))
+                return commit_hash
+        raise DataError('Nothing to delete')
 
-        # cache.delete(cname)
-
-        return ret
+    def read(self, path):
+        '''Read content from file in repository
+        '''
+        if not os.path.isabs:
+            path = os.path.join(self.repo.path, path)
+        if os.path.exists(path):
+            # use GitFile instead of standard file object, as it gives
+            # `lazy` behavior and also obeys the git file locking protocol
+            with GitFile(path) as f:
+                content = f.read()
+            return content.decode('utf-8')
+        raise DataError('%s not available' % path)
 
     def all(self):
-        index = self.repo.open_index()
-        for name in index:
-            yield dict(name=name,
-                       filename=name,
-                       ctime=index[name].ctime[0],
-                       mtime=index[name].mtime[0],
-                       sha=index[name].sha,
-                       size=index[name].size)
+        return glob.glob(os.path.join(self.repo.path, '*.md'))
 
     def content(self, data):
         body = data['body']
