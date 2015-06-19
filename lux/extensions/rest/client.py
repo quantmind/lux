@@ -17,11 +17,14 @@ class ApiClient:
     def get(self, path, **kw):
         return self.request('GET', path, **kw)
 
+    def post(self, path, **kw):
+        return self.request('POST', path, **kw)
+
     def request(self, method, path=None, **kw):
         http = self.http()
         url = self.app.config['API_URL']
         if path:
-            url = '%s%s' % (url, path)
+            url = '%s/%s' % (url, path)
         response = http.request(method, url, **kw)
         return self._wait(response) if self._wait else response
 

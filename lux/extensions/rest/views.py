@@ -116,6 +116,7 @@ class RestRouter(RestMixin, lux.Router):
 
 
 class ProcessLoginMixin:
+    login_form = LoginForm
 
     def post(self, request):
         '''Authenticate the user
@@ -124,7 +125,7 @@ class ProcessLoginMixin:
         if user.is_authenticated():
             raise MethodNotAllowed
 
-        form = self.model.form(request, data=request.body_data())
+        form = self.login_form(request, data=request.body_data())
 
         if form.is_valid():
             auth_backend = request.cache.auth_backend
@@ -152,7 +153,7 @@ class Authorization(RestRouter, ProcessLoginMixin):
 
     All views respond to POST requests
     '''
-    model = RestModel('authorization', LoginForm)
+    model = RestModel('authorization')
     create_user_form = CreateUserForm
     change_password_form = ChangePasswordForm
 
@@ -270,7 +271,7 @@ class Login(WebFormRouter):
 
 
 class LoginPost(Login, ProcessLoginMixin):
-    '''Login Rouer for both get and post methods
+    '''Login Router for both get and post methods
     '''
 
 

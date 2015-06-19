@@ -1,25 +1,30 @@
+    function asMessage (level, message) {
+        if (isString(message)) message = {text: message};
+        message.type = level;
+        return message;
+    }
 
     lux.messageService = {
         pushMessage: function () {},
 
         debug: function (text) {
-            this.pushMessage({type: 'debug', text: text});
+            this.pushMessage(asMessage('debug', text));
         },
 
         info: function (text) {
-            this.pushMessage({type: 'info', text: text});
+            this.pushMessage(asMessage('info', text));
         },
 
         success: function (text) {
-            this.pushMessage({type: 'success', text: text});
+            this.pushMessage(asMessage('success', text));
         },
 
         warn: function (text) {
-            this.pushMessage({type: 'warn', text: text});
+            this.pushMessage(asMessage('warn', text));
         },
 
         error: function (text) {
-            this.pushMessage({type: 'error', text: text});
+            this.pushMessage(asMessage('error', text));
         },
 
         log: function ($log, message) {

@@ -12,20 +12,24 @@
     //
     //  js:
     //    angular.module('app', ['app.view'])
-    //    .controller('AppController', ['$scope', '$message', function ($scope, $message) {
-    //                $message.setDebugMode(true);
-    //                $message.debug('debug message');
-    //                $message.error('error message');
-    //                $message.success('success message');
-    //                $message.info('info message');
+    //    .controller('AppController', ['$scope', 'luxMessage', function ($scope, luxMessage) {
+    //                luxMessage.setDebugMode(true);
+    //                luxMessage.debug('debug message');
+    //                luxMessage.error('error message');
+    //                luxMessage.success('success message');
+    //                luxMessage.info('info message');
     //
     //            }])
     angular.module('lux.message', ['lux.services', 'templates-message'])
         //
         //  Service for messages
         //
-        .service('$message', ['$log',  '$rootScope', function ($log, $rootScope) {
+        .service('luxMessage', ['$lux',  '$rootScope', function ($lux, $scope) {
+
+            var log = lux.messageService.log;
+
             extend(this, lux.messageService, {
+
                 getMessages: function () {
                     if( ! this.getStorage().getItem('messages') ){
                         return [];
@@ -33,17 +37,21 @@
                     return JSON.parse(this.getStorage().getItem('messages')).reverse();
 
                 },
+
                 setMessages: function (messages) {
                    this.getStorage().messages = JSON.stringify(messages);
                 },
+
                 pushMessage: function (message) {
-                    var messages = this.getMessages();
-                    message.id = messages.length;
-                    messages.push(message);
-                    this.setMessages(messages);
-                    $log.log('(message):'+ message.type + ' "' + message.text + '"');
-                    $rootScope.$emit('messageAdded');
+                    if (message.store) {
+                        var messages = this.getMessages();
+                        messages.push(message);
+                        this.setMessages(messages);
+                    }
+                    log($lux.$log, message);
+                    $scope.$broadcast('messageAdded', message);
                 },
+
                 removeMessage: function (message) {
                     var messages = this.getMessages();
                     messages = messages.filter(function (value) {
@@ -51,15 +59,19 @@
                     });
                     this.setMessages(messages);
                 },
+
                 getDebugMode: function () {
                     return !! JSON.parse(window.localStorage.getItem('debug'));
                 },
+
                 setDebugMode: function (value) {
                     window.localStorage.debug = JSON.stringify(value);
                 },
+
                 setStorage: function (storage) {
                     window.localStorage.messagesStorage = storage;
                 },
+
                 getStorage: function () {
                     if( window.localStorage.getItem('messagesStorage') === 'session' ){
                         return window.sessionStorage;
@@ -72,37 +84,55 @@
         //
         // Directive for displaying messages
         //
-        .directive('message', ['$message', '$rootScope', '$log', function ($message, $rootScope, $log) {
+        .directive('messages', ['luxMessage', function (luxMessage) {
+
+            function renderMessages (scope) {
+                //scope.messages = luxMessage.getMessages();
+            }
+
+            function pushMessage(scope, message) {
+                if (message.type === 'error')
+                    message.type = 'danger';
+                scope.messages.push(message);
+            }
+
             return {
                 restrict: 'AE',
                 replace: true,
                 templateUrl: "message/message.tpl.html",
-                link: {
-                    post: function ($scope, element, attrs) {
-                        var renderMessages = function () {
-                            $scope.messages = $message.getMessages();
-                        };
-                        renderMessages();
+                link: function (scope, element, attrs) {
+                    scope.messages = [];
 
-                        $scope.limit = !!attrs.limit ? parseInt(attrs.limit) : 5; //5 messages to show by default
+                    scope.limit = !!attrs.limit ? parseInt(attrs.limit) : 5; //5 messages to show by default
 
-                        $scope.debug = function(){
-                            return $message.getDebugMode();
-                        };
+                    scope.debug = function(){
+                        return luxMessage.getDebugMode();
+                    };
 
-                        $scope.removeMessage = function (message) {
-                            $message.removeMessage(message);
-                            renderMessages();
-                        };
+                    scope.removeMessage = function (message) {
+                        var msgs = scope.messages;
+                        for (var i=0; i<msgs.length; ++i) {
+                            if (msgs[i].text === message.text) {
+                                msgs.splice(i, 1);
+                                if (message.store) {
+                                    //TODO: remove it from the store
+                                }
+                            }
+                        }
+                    };
 
-                        $rootScope.$on('$viewContentLoaded', function () {
-                            renderMessages();
-                        });
+                    scope.$on('$viewContentLoaded', function () {
+                        renderMessages(scope);
+                    });
 
-                        $rootScope.$on('messageAdded', function (){
-                            renderMessages();
-                        });
-                    }
+                    scope.$on('messageAdded', function (e, message) {
+                        if (!e.defaultPrevented) {
+                            pushMessage(scope, message);
+                            //scope.$apply();
+                        }
+                    });
+
+                    renderMessages(scope);
                 }
             };
         }]);

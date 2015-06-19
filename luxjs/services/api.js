@@ -1,3 +1,10 @@
+    lux.messages.no_api = function (url) {
+        return {
+            text: 'Api client for "' + url + '" is not available',
+            icon: 'fa fa-exclamation-triangle'
+        };
+    };
+
     //  Lux Api service
     //	===================
     //
@@ -8,6 +15,13 @@
         //
         .run(['$rootScope', '$lux', function (scope, $lux) {
             //
+            var name = $(document.querySelector("meta[name=csrf-param]")).attr('content'),
+                csrf_token = $(document.querySelector("meta[name=csrf-token]")).attr('content');
+
+            if (name && csrf_token) {
+                $lux.csrf = {};
+                $lux.csrf[name] = csrf_token;
+            }
             //  Listen for a Lux form to be available
             //  If it uses the api for posting, register with it
             scope.$on('formReady', function (e, model, formScope) {
@@ -35,6 +49,7 @@
             this.q = $q;
             this.timeout = $timeout;
             this.apiUrls = {};
+            this.$log = $log;
             this.messages = extend({}, lux.messageService, {
                 pushMessage: function (message) {
                     this.log($log, message);
@@ -57,7 +72,7 @@
                     }
                     api = ApiTypes[url];
                     if (!api)
-                        $lux.$log.error('Api client for "' + url + '" is not available');
+                        $lux.messages.error(lux.messages.no_api(url));
                     else
                         return api(url, this).defaults(defaults);
                 } else if (arguments.length === 2) {

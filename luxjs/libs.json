@@ -24,7 +24,7 @@
             "dest": "luxjs/blog/blog-template.js"
         },
         "nav": {
-            "src": "luxjs/nav/*.tpl.html",
+            "src": "luxjs/nav/templates/*.tpl.html",
             "dest": "luxjs/nav/nav-template.js"
         },
         "users": {

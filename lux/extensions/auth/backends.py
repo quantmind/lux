@@ -162,6 +162,3 @@ class SessionBackend(AuthMixin,
     '''An authentication backend based on sessions stored in the
     cache server and user on the ODM
     '''
-    def on_config(self, app):
-        super().on_config(app)
-        backends.SessionBackend.on_config(self, app)

@@ -1,7 +1,7 @@
-angular.module('templates-nav', ['nav/link.tpl.html', 'nav/navbar.tpl.html', 'nav/navbar2.tpl.html']);
+angular.module('templates-nav', ['nav/templates/link.tpl.html', 'nav/templates/navbar.tpl.html', 'nav/templates/navbar2.tpl.html', 'nav/templates/sidebar.tpl.html']);
 
-angular.module("nav/link.tpl.html", []).run(["$templateCache", function($templateCache) {
-  $templateCache.put("nav/link.tpl.html",
+angular.module("nav/templates/link.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("nav/templates/link.tpl.html",
     "<a ng-if=\"link.title\" ng-href=\"{{link.href}}\" data-title=\"{{link.title}}\" ng-click=\"clickLink($event, link)\"\n" +
     "ng-attr-target=\"{{link.target}}\" bs-tooltip=\"tooltip\">\n" +
     "<i ng-if=\"link.icon\" class=\"{{link.icon}}\"></i> {{link.label || link.name}}</a>\n" +
@@ -9,9 +9,9 @@ angular.module("nav/link.tpl.html", []).run(["$templateCache", function($templat
     "<i ng-if=\"link.icon\" class=\"{{link.icon}}\"></i> {{link.label || link.name}}</a>");
 }]);
 
-angular.module("nav/navbar.tpl.html", []).run(["$templateCache", function($templateCache) {
-  $templateCache.put("nav/navbar.tpl.html",
-    "<nav ng-attr-id=\"{{navbar.id}}\" class=\"navbar navbar-{{navbar.themeTop}}\"\n" +
+angular.module("nav/templates/navbar.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("nav/templates/navbar.tpl.html",
+    "<nav ng-if=\"navbar\" ng-attr-id=\"{{navbar.id}}\" class=\"navbar navbar-{{navbar.themeTop}}\"\n" +
     "ng-class=\"{'navbar-fixed-top':navbar.fixed, 'navbar-static-top':navbar.top}\" role=\"navigation\"\n" +
     "ng-model=\"navbar.collapse\" bs-collapse>\n" +
     "    <div class=\"{{navbar.container}}\">\n" +
@@ -40,11 +40,12 @@ angular.module("nav/navbar.tpl.html", []).run(["$templateCache", function($templ
     "            </ul>\n" +
     "        </div>\n" +
     "    </div>\n" +
-    "</nav>");
+    "</nav>\n" +
+    "");
 }]);
 
-angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($templateCache) {
-  $templateCache.put("nav/navbar2.tpl.html",
+angular.module("nav/templates/navbar2.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("nav/templates/navbar2.tpl.html",
     "<nav class=\"navbar navbar-{{navbar.themeTop}}\"\n" +
     "ng-class=\"{'navbar-fixed-top':navbar.fixed, 'navbar-static-top':navbar.top}\"\n" +
     "role=\"navigation\" ng-model=\"navbar.collapse\" bs-collapse>\n" +
@@ -96,4 +97,43 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
     "        </div>\n" +
     "    </div>\n" +
     "</nav>");
+}]);
+
+angular.module("nav/templates/sidebar.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("nav/templates/sidebar.tpl.html",
+    "<div ng-include=\"nav/templates/navbar.tpl.html\"></div>\n" +
+    "<aside ng-if=\"user\" ng-attr-id=\"{{sidebar.id}}\" class=\"main-sidebar\"\n" +
+    "       ng-class=\"{'sidebar-fixed':sidebar.fixed}\">\n" +
+    "    <section ng-if=\"sidebar.sections\" class=\"sidebar\">\n" +
+    "        <div class=\"user-panel\">\n" +
+    "            <div ng-if=\"user.avatar\" class=\"pull-left image\">\n" +
+    "                <img src=\"{{user.avatar}}\" alt=\"User Image\" />\n" +
+    "            </div>\n" +
+    "            <div class=\"pull-left info\">\n" +
+    "                <p>SIGNED IN AS</p>\n" +
+    "                <a href=\"#\">{{user.name}}</a>\n" +
+    "            </div>\n" +
+    "        </div>\n" +
+    "        <ul class=\"sidebar-menu\">\n" +
+    "            <li ng-if=\"section.name\" ng-repeat-start=\"section in sidebar.sections\" class=\"header\">\n" +
+    "                {{section.name}}\n" +
+    "            </li>\n" +
+    "            <li ng-repeat-end ng-repeat=\"link in section.items\" class=\"treeview\"\n" +
+    "            ng-class=\"{active:activeLink(link)}\" ng-include=\"'subnav'\"></li>\n" +
+    "        </ul>\n" +
+    "    </section>\n" +
+    "</aside>\n" +
+    "\n" +
+    "\n" +
+    "<script type=\"text/ng-template\" id=\"subnav\">\n" +
+    "    <a ng-href=\"{{link.href}}\" ng-attr-title=\"{{link.title}}\" ng-click=\"menuCollapse($event)\">\n" +
+    "        <i ng-if=\"link.icon\" class=\"{{link.icon}}\"></i>\n" +
+    "        <span>{{link.name}}</span>\n" +
+    "        <i ng-if=\"link.subitems\" class=\"fa fa-angle-left pull-right\"></i>\n" +
+    "    </a>\n" +
+    "    <ul class=\"treeview-menu\" ng-class=\"link.class\" ng-if=\"link.subitems\">\n" +
+    "        <li ng-repeat=\"link in link.subitems\" ng-class=\"{active:activeLink(link)}\" ng-include=\"'subnav'\"></li>\n" +
+    "    </ul>\n" +
+    "</script>\n" +
+    "");
 }]);

@@ -3,8 +3,9 @@ from importlib import import_module
 from pulsar.utils.pep import to_bytes
 
 
-__all__ = ['AuthenticationError',
-           'MessageMixin', 'UserMixin', 'normalise_email', 'PasswordMixin',
+__all__ = ['AuthenticationError', 'MessageMixin',
+           'UserMixin', 'SessionMixin',
+           'normalise_email', 'PasswordMixin',
            'CREATE', 'READ', 'UPDATE', 'DELETE']
 
 
@@ -117,6 +118,13 @@ class UserMixin(MessageMixin):
         '''Retrieve a user from OAuth ``name`` with ``identifier``
         '''
         raise NotImplementedError
+
+
+class SessionMixin:
+    '''Mixin for web sessions
+    '''
+    def get_key(self):
+        return self.id
 
 
 class PasswordMixin:

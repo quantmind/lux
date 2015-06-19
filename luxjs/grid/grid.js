@@ -7,7 +7,8 @@
         };
     }
 
-    angular.module('lux.grid', ['lux.message', 'templates-grid', 'ngTouch', 'ui.grid', 'ui.grid.pagination', 'ui.grid.selection'])
+    angular.module('lux.grid', ['lux.services', 'templates-grid', 'ngTouch', 'ui.grid',
+                                'ui.grid.pagination', 'ui.grid.selection'])
         //
         .constant('gridDefaults', {
             showMenu: true,
@@ -52,8 +53,8 @@
         })
         //
         // Directive to build Angular-UI grid options using Lux REST API
-        .directive('restGrid', ['$lux', '$window', '$modal', '$state', '$q', '$message', 'uiGridConstants', 'gridDefaults',
-            function ($lux, $window, $modal, $state, $q, $message, uiGridConstants, gridDefaults) {
+        .directive('restGrid', ['$lux', '$window', '$modal', '$state', '$q', 'uiGridConstants', 'gridDefaults',
+            function ($lux, $window, $modal, $state, $q, uiGridConstants, gridDefaults) {
 
             var paginationOptions = {
                     sizes: [25, 50, 100]
@@ -179,9 +180,9 @@
                         defer.promise.then(function() {
                             if (success) {
                                 getPage(scope, api, gridState);
-                                $message.success('Successfully deleted ' + stateName + ' ' + results);
+                                $lux.messages.success('Successfully deleted ' + stateName + ' ' + results);
                             } else
-                                $message.error('Error while deleting ' + stateName + ' ' + results);
+                                $lux.messages.error('Error while deleting ' + stateName + ' ' + results);
 
                             modal.hide();
                         });

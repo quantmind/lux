@@ -1,6 +1,7 @@
 <div>
-    <div class="alert alert-{{ message.type }}" role="alert" ng-repeat="message in messages  track by $index | limitTo: limit" ng-if="! ( !debug()  && message.type === 'warning' ) ">
+    <div class="alert alert-{{ message.type }}" role="alert" ng-repeat="message in messages">
         <a href="#" class="close" ng-click="removeMessage(message)">&times;</a>
-        {{ message.text }}
+        <i ng-if="message.icon" ng-class="message.icon"></i>
+        <span>{{ message.text }}</span>
     </div>
 </div>

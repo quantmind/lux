@@ -74,7 +74,8 @@
                 inputAttributes = extendArray([], baseAttributes, ['disabled', 'type', 'value', 'placeholder']),
                 textareaAttributes = extendArray([], baseAttributes, ['disabled', 'placeholder', 'rows', 'cols']),
                 buttonAttributes = extendArray([], baseAttributes, ['disabled']),
-                formAttributes = extendArray([], baseAttributes, ['accept-charset', 'action', 'autocomplete',
+                // Don't include action in the form attributes
+                formAttributes = extendArray([], baseAttributes, ['accept-charset','autocomplete',
                                                                   'enctype', 'method', 'novalidate', 'target']),
                 validationAttributes = ['minlength', 'maxlength', 'min', 'max', 'required'],
                 ngAttributes = ['disabled', 'minlength', 'maxlength', 'required'];

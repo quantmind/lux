@@ -1,12 +1,17 @@
+'''Backends for Browser based Authentication
+'''
+from pulsar import ImproperlyConfigured
 from pulsar.utils.httpurl import is_absolute_uri
+from pulsar.utils.structures import AttributeDictionary
 
 from lux import Parameter
 from lux.extensions.angular import add_ng_modules
 
 from .. import AuthBackend, luxrest
 from ..views import Login, LoginPost, SignUp, ForgotPassword
-from ..user import AuthenticationError
-from .mixins import CacheSessionMixin
+from ..user import UserMixin, AuthenticationError
+from .mixins import CacheSessionMixin, SessionBackendMixin
+from .token import jwt
 
 
 def auth_router(api, url, Router):
@@ -67,7 +72,18 @@ class BrowserBackend(AuthBackend):
             add_ng_modules(doc, ('lux.webapi', 'lux.users'))
 
 
-class ApiSessionBackend(CacheSessionMixin, BrowserBackend):
+class User(AttributeDictionary, UserMixin):
+
+    def is_superuser(self):
+        return self.superuser
+
+    def is_active(self):
+        return True
+
+
+class ApiSessionBackend(CacheSessionMixin,
+                        SessionBackendMixin,
+                        BrowserBackend):
     '''An Mixin for authenticating against a RESTful HTTP API.
 
     This mixin should be used when the API_URL is remote and therefore
@@ -78,9 +94,6 @@ class ApiSessionBackend(CacheSessionMixin, BrowserBackend):
                  'email': 'users/email'}
 
     LoginRouter = LoginPost
-
-    def api_sessions(self):
-        return ()
 
     def get_user(self, request, **kw):
         api = request.app.api
@@ -96,11 +109,15 @@ class ApiSessionBackend(CacheSessionMixin, BrowserBackend):
                 return response.json()
 
     def authenticate(self, request, **data):
+        if not jwt:
+            raise ImproperlyConfigured('JWT library not available')
         api = request.app.api
         try:
             response = api.post('authorizations', data=data)
             if response.status_code == 201:
                 token = response.json().get('token')
+                payload = jwt.decode(token, verify=False)
+                return User(payload)
             else:
                 response.raise_for_status()
 

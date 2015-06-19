@@ -101,7 +101,7 @@
         //
         .directive('navbarLink', function () {
             return {
-                templateUrl: "nav/link.tpl.html",
+                templateUrl: "nav/templates/link.tpl.html",
                 restrict: 'A'
             };
         })
@@ -111,7 +111,7 @@
         .directive('navbar', ['navService', function (navService) {
             //
             return {
-                templateUrl: "nav/navbar.tpl.html",
+                templateUrl: "nav/templates/navbar.tpl.html",
                 restrict: 'AE',
                 // Link function
                 link: function (scope, element, attrs) {

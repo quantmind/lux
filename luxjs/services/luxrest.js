@@ -11,9 +11,11 @@
 
             // If the root scope has an API_URL register the luxrest client
             if ($scope.API_URL) {
-                var api = $lux.api($scope.API_URL, luxrest);
-                $lux.api($lux.location.origin, luxweb);
-                api.initScope($scope);
+                $lux.api($scope.API_URL, luxrest);
+                //
+                // Register the web server
+                var web = $lux.api('', luxweb);
+                web.initScope($scope);
             }
 
         }]);

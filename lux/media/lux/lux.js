@@ -50,6 +50,7 @@ function(angular, root) {
     lux.angular = angular;
     lux.forEach = angular.forEach;
     lux.context = extend({}, defaults, lux.context);
+    lux.messages = {};
 
     // Extend lux context with additional data
     lux.extend = function (context) {
@@ -93,6 +94,7 @@ function(angular, root) {
         }]);
 
     lux.context.ngModules.push('lux.applications');
+
     var _ = lux._ = {},
 
     pick = _.pick = function (obj, callback) {
@@ -307,6 +309,13 @@ function(angular, root) {
         return n;
     };
 
+    lux.messages.no_api = function (url) {
+        return {
+            text: 'Api client for "' + url + '" is not available',
+            icon: 'fa fa-exclamation-triangle'
+        };
+    };
+
     //  Lux Api service
     //	===================
     //
@@ -317,6 +326,13 @@ function(angular, root) {
         //
         .run(['$rootScope', '$lux', function (scope, $lux) {
             //
+            var name = $(document.querySelector("meta[name=csrf-param]")).attr('content'),
+                csrf_token = $(document.querySelector("meta[name=csrf-token]")).attr('content');
+
+            if (name && csrf_token) {
+                $lux.csrf = {};
+                $lux.csrf[name] = csrf_token;
+            }
             //  Listen for a Lux form to be available
             //  If it uses the api for posting, register with it
             scope.$on('formReady', function (e, model, formScope) {
@@ -344,6 +360,7 @@ function(angular, root) {
             this.q = $q;
             this.timeout = $timeout;
             this.apiUrls = {};
+            this.$log = $log;
             this.messages = extend({}, lux.messageService, {
                 pushMessage: function (message) {
                     this.log($log, message);
@@ -366,7 +383,7 @@ function(angular, root) {
                     }
                     api = ApiTypes[url];
                     if (!api)
-                        $lux.$log.error('Api client for "' + url + '" is not available');
+                        $lux.messages.error(lux.messages.no_api(url));
                     else
                         return api(url, this).defaults(defaults);
                 } else if (arguments.length === 2) {
@@ -644,9 +661,11 @@ function(angular, root) {
 
             // If the root scope has an API_URL register the luxrest client
             if ($scope.API_URL) {
-                var api = $lux.api($scope.API_URL, luxrest);
-                $lux.api($lux.location.origin, luxweb);
-                api.initScope($scope);
+                $lux.api($scope.API_URL, luxrest);
+                //
+                // Register the web server
+                var web = $lux.api('', luxweb);
+                web.initScope($scope);
             }
 
         }]);
@@ -719,16 +738,8 @@ function(angular, root) {
     //  Angular module for interacting with lux-based REST APIs
     angular.module('lux.webapi', ['lux.services'])
 
-        .run(['$rootScope', '$window', '$lux', function ($scope, $window, $lux) {
+        .run(['$rootScope', '$lux', function ($scope, $lux) {
             //
-            var name = $(document.querySelector("meta[name=csrf-param]")).attr('content'),
-                csrf_token = $(document.querySelector("meta[name=csrf-token]")).attr('content');
-
-            if (name && csrf_token) {
-                $lux.csrf = {};
-                $lux.csrf[name] = csrf_token;
-            }
-
             if ($scope.API_URL) {
                 var api = $lux.api($scope.API_URL, luxweb);
                 api.initScope($scope);
@@ -1636,7 +1647,8 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                 inputAttributes = extendArray([], baseAttributes, ['disabled', 'type', 'value', 'placeholder']),
                 textareaAttributes = extendArray([], baseAttributes, ['disabled', 'placeholder', 'rows', 'cols']),
                 buttonAttributes = extendArray([], baseAttributes, ['disabled']),
-                formAttributes = extendArray([], baseAttributes, ['accept-charset', 'action', 'autocomplete',
+                // Don't include action in the form attributes
+                formAttributes = extendArray([], baseAttributes, ['accept-charset','autocomplete',
                                                                   'enctype', 'method', 'novalidate', 'target']),
                 validationAttributes = ['minlength', 'maxlength', 'min', 'max', 'required'],
                 ngAttributes = ['disabled', 'minlength', 'maxlength', 'required'];
@@ -2469,28 +2481,33 @@ angular.module('lux.form.utils', ['lux.services'])
         };
     });
 
+    function asMessage (level, message) {
+        if (isString(message)) message = {text: message};
+        message.type = level;
+        return message;
+    }
 
     lux.messageService = {
         pushMessage: function () {},
 
         debug: function (text) {
-            this.pushMessage({type: 'debug', text: text});
+            this.pushMessage(asMessage('debug', text));
         },
 
         info: function (text) {
-            this.pushMessage({type: 'info', text: text});
+            this.pushMessage(asMessage('info', text));
         },
 
         success: function (text) {
-            this.pushMessage({type: 'success', text: text});
+            this.pushMessage(asMessage('success', text));
         },
 
         warn: function (text) {
-            this.pushMessage({type: 'warn', text: text});
+            this.pushMessage(asMessage('warn', text));
         },
 
         error: function (text) {
-            this.pushMessage({type: 'error', text: text});
+            this.pushMessage(asMessage('error', text));
         },
 
         log: function ($log, message) {
@@ -2505,9 +2522,10 @@ angular.module('templates-message', ['message/message.tpl.html']);
 angular.module("message/message.tpl.html", []).run(["$templateCache", function($templateCache) {
   $templateCache.put("message/message.tpl.html",
     "<div>\n" +
-    "    <div class=\"alert alert-{{ message.type }}\" role=\"alert\" ng-repeat=\"message in messages  track by $index | limitTo: limit\" ng-if=\"! ( !debug()  && message.type === 'warning' ) \">\n" +
+    "    <div class=\"alert alert-{{ message.type }}\" role=\"alert\" ng-repeat=\"message in messages\">\n" +
     "        <a href=\"#\" class=\"close\" ng-click=\"removeMessage(message)\">&times;</a>\n" +
-    "        {{ message.text }}\n" +
+    "        <i ng-if=\"message.icon\" ng-class=\"message.icon\"></i>\n" +
+    "        <span>{{ message.text }}</span>\n" +
     "    </div>\n" +
     "</div>\n" +
     "");
@@ -2527,20 +2545,24 @@ angular.module("message/message.tpl.html", []).run(["$templateCache", function($
     //
     //  js:
     //    angular.module('app', ['app.view'])
-    //    .controller('AppController', ['$scope', '$message', function ($scope, $message) {
-    //                $message.setDebugMode(true);
-    //                $message.debug('debug message');
-    //                $message.error('error message');
-    //                $message.success('success message');
-    //                $message.info('info message');
+    //    .controller('AppController', ['$scope', 'luxMessage', function ($scope, luxMessage) {
+    //                luxMessage.setDebugMode(true);
+    //                luxMessage.debug('debug message');
+    //                luxMessage.error('error message');
+    //                luxMessage.success('success message');
+    //                luxMessage.info('info message');
     //
     //            }])
     angular.module('lux.message', ['lux.services', 'templates-message'])
         //
         //  Service for messages
         //
-        .service('$message', ['$log',  '$rootScope', function ($log, $rootScope) {
+        .service('luxMessage', ['$lux',  '$rootScope', function ($lux, $scope) {
+
+            var log = lux.messageService.log;
+
             extend(this, lux.messageService, {
+
                 getMessages: function () {
                     if( ! this.getStorage().getItem('messages') ){
                         return [];
@@ -2548,17 +2570,21 @@ angular.module("message/message.tpl.html", []).run(["$templateCache", function($
                     return JSON.parse(this.getStorage().getItem('messages')).reverse();
 
                 },
+
                 setMessages: function (messages) {
                    this.getStorage().messages = JSON.stringify(messages);
                 },
+
                 pushMessage: function (message) {
-                    var messages = this.getMessages();
-                    message.id = messages.length;
-                    messages.push(message);
-                    this.setMessages(messages);
-                    $log.log('(message):'+ message.type + ' "' + message.text + '"');
-                    $rootScope.$emit('messageAdded');
+                    if (message.store) {
+                        var messages = this.getMessages();
+                        messages.push(message);
+                        this.setMessages(messages);
+                    }
+                    log($lux.$log, message);
+                    $scope.$broadcast('messageAdded', message);
                 },
+
                 removeMessage: function (message) {
                     var messages = this.getMessages();
                     messages = messages.filter(function (value) {
@@ -2566,15 +2592,19 @@ angular.module("message/message.tpl.html", []).run(["$templateCache", function($
                     });
                     this.setMessages(messages);
                 },
+
                 getDebugMode: function () {
                     return !! JSON.parse(window.localStorage.getItem('debug'));
                 },
+
                 setDebugMode: function (value) {
                     window.localStorage.debug = JSON.stringify(value);
                 },
+
                 setStorage: function (storage) {
                     window.localStorage.messagesStorage = storage;
                 },
+
                 getStorage: function () {
                     if( window.localStorage.getItem('messagesStorage') === 'session' ){
                         return window.sessionStorage;
@@ -2587,37 +2617,55 @@ angular.module("message/message.tpl.html", []).run(["$templateCache", function($
         //
         // Directive for displaying messages
         //
-        .directive('message', ['$message', '$rootScope', '$log', function ($message, $rootScope, $log) {
+        .directive('messages', ['luxMessage', function (luxMessage) {
+
+            function renderMessages (scope) {
+                //scope.messages = luxMessage.getMessages();
+            }
+
+            function pushMessage(scope, message) {
+                if (message.type === 'error')
+                    message.type = 'danger';
+                scope.messages.push(message);
+            }
+
             return {
                 restrict: 'AE',
                 replace: true,
                 templateUrl: "message/message.tpl.html",
-                link: {
-                    post: function ($scope, element, attrs) {
-                        var renderMessages = function () {
-                            $scope.messages = $message.getMessages();
-                        };
-                        renderMessages();
+                link: function (scope, element, attrs) {
+                    scope.messages = [];
 
-                        $scope.limit = !!attrs.limit ? parseInt(attrs.limit) : 5; //5 messages to show by default
+                    scope.limit = !!attrs.limit ? parseInt(attrs.limit) : 5; //5 messages to show by default
 
-                        $scope.debug = function(){
-                            return $message.getDebugMode();
-                        };
+                    scope.debug = function(){
+                        return luxMessage.getDebugMode();
+                    };
 
-                        $scope.removeMessage = function (message) {
-                            $message.removeMessage(message);
-                            renderMessages();
-                        };
+                    scope.removeMessage = function (message) {
+                        var msgs = scope.messages;
+                        for (var i=0; i<msgs.length; ++i) {
+                            if (msgs[i].text === message.text) {
+                                msgs.splice(i, 1);
+                                if (message.store) {
+                                    //TODO: remove it from the store
+                                }
+                            }
+                        }
+                    };
 
-                        $rootScope.$on('$viewContentLoaded', function () {
-                            renderMessages();
-                        });
+                    scope.$on('$viewContentLoaded', function () {
+                        renderMessages(scope);
+                    });
 
-                        $rootScope.$on('messageAdded', function (){
-                            renderMessages();
-                        });
-                    }
+                    scope.$on('messageAdded', function (e, message) {
+                        if (!e.defaultPrevented) {
+                            pushMessage(scope, message);
+                            //scope.$apply();
+                        }
+                    });
+
+                    renderMessages(scope);
                 }
             };
         }]);
@@ -2673,7 +2721,8 @@ angular.module("grid/modal.tpl.html", []).run(["$templateCache", function($templ
         };
     }
 
-    angular.module('lux.grid', ['lux.message', 'templates-grid', 'ngTouch', 'ui.grid', 'ui.grid.pagination', 'ui.grid.selection'])
+    angular.module('lux.grid', ['lux.services', 'templates-grid', 'ngTouch', 'ui.grid',
+                                'ui.grid.pagination', 'ui.grid.selection'])
         //
         .constant('gridDefaults', {
             showMenu: true,
@@ -2718,8 +2767,8 @@ angular.module("grid/modal.tpl.html", []).run(["$templateCache", function($templ
         })
         //
         // Directive to build Angular-UI grid options using Lux REST API
-        .directive('restGrid', ['$lux', '$window', '$modal', '$state', '$q', '$message', 'uiGridConstants', 'gridDefaults',
-            function ($lux, $window, $modal, $state, $q, $message, uiGridConstants, gridDefaults) {
+        .directive('restGrid', ['$lux', '$window', '$modal', '$state', '$q', 'uiGridConstants', 'gridDefaults',
+            function ($lux, $window, $modal, $state, $q, uiGridConstants, gridDefaults) {
 
             var paginationOptions = {
                     sizes: [25, 50, 100]
@@ -2845,9 +2894,9 @@ angular.module("grid/modal.tpl.html", []).run(["$templateCache", function($templ
                         defer.promise.then(function() {
                             if (success) {
                                 getPage(scope, api, gridState);
-                                $message.success('Successfully deleted ' + stateName + ' ' + results);
+                                $lux.messages.success('Successfully deleted ' + stateName + ' ' + results);
                             } else
-                                $message.error('Error while deleting ' + stateName + ' ' + results);
+                                $lux.messages.error('Error while deleting ' + stateName + ' ' + results);
 
                             modal.hide();
                         });
@@ -3435,10 +3484,10 @@ angular.module("bs/tooltip.tpl.html", []).run(["$templateCache", function($templ
     "</div>");
 }]);
 
-angular.module('templates-nav', ['nav/link.tpl.html', 'nav/navbar.tpl.html', 'nav/navbar2.tpl.html']);
+angular.module('templates-nav', ['nav/templates/link.tpl.html', 'nav/templates/navbar.tpl.html', 'nav/templates/navbar2.tpl.html', 'nav/templates/sidebar.tpl.html']);
 
-angular.module("nav/link.tpl.html", []).run(["$templateCache", function($templateCache) {
-  $templateCache.put("nav/link.tpl.html",
+angular.module("nav/templates/link.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("nav/templates/link.tpl.html",
     "<a ng-if=\"link.title\" ng-href=\"{{link.href}}\" data-title=\"{{link.title}}\" ng-click=\"clickLink($event, link)\"\n" +
     "ng-attr-target=\"{{link.target}}\" bs-tooltip=\"tooltip\">\n" +
     "<i ng-if=\"link.icon\" class=\"{{link.icon}}\"></i> {{link.label || link.name}}</a>\n" +
@@ -3446,9 +3495,9 @@ angular.module("nav/link.tpl.html", []).run(["$templateCache", function($templat
     "<i ng-if=\"link.icon\" class=\"{{link.icon}}\"></i> {{link.label || link.name}}</a>");
 }]);
 
-angular.module("nav/navbar.tpl.html", []).run(["$templateCache", function($templateCache) {
-  $templateCache.put("nav/navbar.tpl.html",
-    "<nav ng-attr-id=\"{{navbar.id}}\" class=\"navbar navbar-{{navbar.themeTop}}\"\n" +
+angular.module("nav/templates/navbar.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("nav/templates/navbar.tpl.html",
+    "<nav ng-if=\"navbar\" ng-attr-id=\"{{navbar.id}}\" class=\"navbar navbar-{{navbar.themeTop}}\"\n" +
     "ng-class=\"{'navbar-fixed-top':navbar.fixed, 'navbar-static-top':navbar.top}\" role=\"navigation\"\n" +
     "ng-model=\"navbar.collapse\" bs-collapse>\n" +
     "    <div class=\"{{navbar.container}}\">\n" +
@@ -3477,11 +3526,12 @@ angular.module("nav/navbar.tpl.html", []).run(["$templateCache", function($templ
     "            </ul>\n" +
     "        </div>\n" +
     "    </div>\n" +
-    "</nav>");
+    "</nav>\n" +
+    "");
 }]);
 
-angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($templateCache) {
-  $templateCache.put("nav/navbar2.tpl.html",
+angular.module("nav/templates/navbar2.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("nav/templates/navbar2.tpl.html",
     "<nav class=\"navbar navbar-{{navbar.themeTop}}\"\n" +
     "ng-class=\"{'navbar-fixed-top':navbar.fixed, 'navbar-static-top':navbar.top}\"\n" +
     "role=\"navigation\" ng-model=\"navbar.collapse\" bs-collapse>\n" +
@@ -3533,6 +3583,45 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
     "        </div>\n" +
     "    </div>\n" +
     "</nav>");
+}]);
+
+angular.module("nav/templates/sidebar.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("nav/templates/sidebar.tpl.html",
+    "<div ng-include=\"nav/templates/navbar.tpl.html\"></div>\n" +
+    "<aside ng-if=\"user\" ng-attr-id=\"{{sidebar.id}}\" class=\"main-sidebar\"\n" +
+    "       ng-class=\"{'sidebar-fixed':sidebar.fixed}\">\n" +
+    "    <section ng-if=\"sidebar.sections\" class=\"sidebar\">\n" +
+    "        <div class=\"user-panel\">\n" +
+    "            <div ng-if=\"user.avatar\" class=\"pull-left image\">\n" +
+    "                <img src=\"{{user.avatar}}\" alt=\"User Image\" />\n" +
+    "            </div>\n" +
+    "            <div class=\"pull-left info\">\n" +
+    "                <p>SIGNED IN AS</p>\n" +
+    "                <a href=\"#\">{{user.name}}</a>\n" +
+    "            </div>\n" +
+    "        </div>\n" +
+    "        <ul class=\"sidebar-menu\">\n" +
+    "            <li ng-if=\"section.name\" ng-repeat-start=\"section in sidebar.sections\" class=\"header\">\n" +
+    "                {{section.name}}\n" +
+    "            </li>\n" +
+    "            <li ng-repeat-end ng-repeat=\"link in section.items\" class=\"treeview\"\n" +
+    "            ng-class=\"{active:activeLink(link)}\" ng-include=\"'subnav'\"></li>\n" +
+    "        </ul>\n" +
+    "    </section>\n" +
+    "</aside>\n" +
+    "\n" +
+    "\n" +
+    "<script type=\"text/ng-template\" id=\"subnav\">\n" +
+    "    <a ng-href=\"{{link.href}}\" ng-attr-title=\"{{link.title}}\" ng-click=\"menuCollapse($event)\">\n" +
+    "        <i ng-if=\"link.icon\" class=\"{{link.icon}}\"></i>\n" +
+    "        <span>{{link.name}}</span>\n" +
+    "        <i ng-if=\"link.subitems\" class=\"fa fa-angle-left pull-right\"></i>\n" +
+    "    </a>\n" +
+    "    <ul class=\"treeview-menu\" ng-class=\"link.class\" ng-if=\"link.subitems\">\n" +
+    "        <li ng-repeat=\"link in link.subitems\" ng-class=\"{active:activeLink(link)}\" ng-include=\"'subnav'\"></li>\n" +
+    "    </ul>\n" +
+    "</script>\n" +
+    "");
 }]);
 
 
@@ -3638,7 +3727,7 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
         //
         .directive('navbarLink', function () {
             return {
-                templateUrl: "nav/link.tpl.html",
+                templateUrl: "nav/templates/link.tpl.html",
                 restrict: 'A'
             };
         })
@@ -3648,7 +3737,7 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
         .directive('navbar', ['navService', function (navService) {
             //
             return {
-                templateUrl: "nav/navbar.tpl.html",
+                templateUrl: "nav/templates/navbar.tpl.html",
                 restrict: 'AE',
                 // Link function
                 link: function (scope, element, attrs) {
@@ -3730,6 +3819,162 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
                     windowResize(resize);
                     //
                     resize();
+                }
+            };
+        }]);
+
+    //
+    //  Sidebar module
+    //
+    //  Include this module to render bootstrap sidebar templates
+    //  The sidebar should be available as the ``sidebar`` object within
+    //  the ``luxContext`` object:
+    //
+    //      luxContext.sidebar = {
+    //          sections: [{
+    //              name: 'Sec1',
+    //              items: [{
+    //                      name: 'i1',
+    //                      icon: 'fa fa-dashboard',
+    //                      subitems: []
+    //               }]
+    //          }]
+    //      };
+    //
+    var sidebarDefaults = {
+        collapse: true,
+        position: 'left',
+        fixed: true,
+        url: lux.context.url,
+    };
+
+    angular.module('lux.sidebar', ['templates-sidebar', 'lux.nav'])
+        //
+        .service('sidebarService', ['linkService', 'navService', function (linkService, navService) {
+
+            this.initScope = function (scope, opts, element) {
+
+                var sidebar = angular.extend({}, sidebarDefaults, lux.getOptions(opts)),
+                    body = lux.querySelector(document, 'body');
+
+                if (!sidebar.url)
+                    sidebar.url = '/';
+                if (!sidebar.themeTop)
+                    sidebar.themeTop = sidebar.theme;
+                if (!sidebar.position)
+                    sidebar.position = sidebarDefaults.position;
+
+                sidebar.container = sidebar.fluid ? 'container-fluid' : 'container';
+                body.addClass(sidebar.position + '-sidebar skin');
+
+                // Add link service functionality
+                linkService.initScope(scope);
+
+                if (scope.user) {
+                    if (!sidebar.collapse)
+                        element.addClass('sidebar-open-' + sidebar.position);
+                }
+
+                scope.toggleSidebar = function() {
+                    element.toggleClass('sidebar-open-' + sidebar.position);
+                };
+
+                scope.menuCollapse = function($event) {
+                    // Get the clicked link, the submenu and sidebar menu
+                    var item = angular.element($event.currentTarget || $event.srcElement),
+                        submenu = item.next();
+
+                    // If the menu is not visible then close all open menus
+                    if (submenu.hasClass('active')) {
+                        item.removeClass('active');
+                        submenu.removeClass('active');
+                    } else {
+                        item.parent().parent().find('ul').removeClass('active');
+                        item.addClass('active');
+                        submenu.addClass('active');
+                    }
+                };
+
+                scope.sidebar = sidebar;
+                return sidebar;
+            };
+        }])
+        //
+        .directive('navSidebarLink', ['sidebarService', function (sidebarService) {
+            return {
+                templateUrl: "nav/templates/nav-link.tpl.html",
+                restrict: 'A',
+            };
+        }])
+        //
+        //  Directive for the sidebar
+        .directive('sidebar', ['$compile', 'sidebarService', function ($compile, sidebarService) {
+            //
+            return {
+                restrict: 'AE',
+
+                // We need to use the compile function so that we remove the
+                // content before it is included in the bootstraping algorithm
+                compile: function compile(element) {
+                    var inner = element.html(),
+                        className = element[0].className;
+                    //
+                    element.html('');
+
+                    return {
+                        post: function (scope, element, attrs) {
+                            scope.sidebarContent = inner;
+                            sidebarService.initScope(scope, attrs, element);
+
+                            inner = $compile('<div data-content-sidebar bs-collapse></div>')(scope);
+                            element.append(inner);
+                        }
+                    };
+                }
+            };
+        }])
+
+        //
+        //  Inner directive for the sidebar
+        .directive('contentSidebar', ['$compile', '$document', function ($compile, $document) {
+            return {
+                templateUrl: "nav/templates/sidebar.tpl.html",
+
+                restrict: 'A',
+
+                link: function (scope, element, attrs) {
+                    var sidebar = scope.sidebar,
+                        // get the original content
+                        content = scope.sidebarContent,
+                        // content-wrapper
+                        wrapper = angular.element(document.createElement('div'))
+                                    .addClass('content-wrapper')
+                                    .append(content),
+                        // overlay
+                        overlay = angular.element(document.createElement('div'))
+                                    .addClass('overlay'),
+                        // page
+                        page = angular.element(document.createElement('div'))
+                                    .attr('id', 'page')
+                                    .append(wrapper)
+                                    .append(overlay);
+
+                    delete scope.sidebarContent;
+
+                    // compile
+                    page = $compile(page)(scope);
+                    element.after(page);
+
+                    page.on('click', function() {
+                        var sidebarTag = page.parent();
+                        if (sidebarTag.hasClass('sidebar-open-left')) {
+                            sidebarTag.removeClass('sidebar-open-left');
+                        }
+
+                        if (sidebarTag.hasClass('sidebar-open-right')) {
+                            sidebarTag.removeClass('sidebar-open-right');
+                        }
+                    });
                 }
             };
         }]);

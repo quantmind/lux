@@ -42,6 +42,7 @@ function(angular, root) {
     lux.angular = angular;
     lux.forEach = angular.forEach;
     lux.context = extend({}, defaults, lux.context);
+    lux.messages = {};
 
     // Extend lux context with additional data
     lux.extend = function (context) {

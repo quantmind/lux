@@ -6,16 +6,8 @@
     //  Angular module for interacting with lux-based REST APIs
     angular.module('lux.webapi', ['lux.services'])
 
-        .run(['$rootScope', '$window', '$lux', function ($scope, $window, $lux) {
+        .run(['$rootScope', '$lux', function ($scope, $lux) {
             //
-            var name = $(document.querySelector("meta[name=csrf-param]")).attr('content'),
-                csrf_token = $(document.querySelector("meta[name=csrf-token]")).attr('content');
-
-            if (name && csrf_token) {
-                $lux.csrf = {};
-                $lux.csrf[name] = csrf_token;
-            }
-
             if ($scope.API_URL) {
                 var api = $lux.api($scope.API_URL, luxweb);
                 api.initScope($scope);

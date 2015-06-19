@@ -120,11 +120,19 @@ class ExtensionMeta(object):
 class ExtensionType(type):
     '''Little magic to setup the extension'''
     def __new__(cls, name, bases, attrs):
-        config = attrs.pop('_config', None)
+        config = []
+        for base in bases:
+            cfg = getattr(base, '_config', None)
+            if isinstance(cfg, list):
+                config.extend(cfg)
         version = attrs.pop('version', None)
         abstract = attrs.pop('abstract', False)
+        cfg = attrs.get('_config')
+        if cfg:
+            config.extend(cfg)
         klass = super().__new__(cls, name, bases, attrs)
         if not abstract:
+            klass._config = None
             meta = getattr(klass, 'meta', None)
             module = getmodule(klass)
             if isinstance(meta, ExtensionMeta):
