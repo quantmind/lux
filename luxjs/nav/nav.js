@@ -1,15 +1,22 @@
 
     //
     //  Lux Navigation module
+    //  ============================
     //
-    //  * Requires "angular-strap" for the collapsable directives
+    //  * Requires ``lux.bs`` for the collapsable directives
     //
-    //  Include this module to render bootstrap navigation templates
-    //  The navigation should be available as the ``navbar`` object within
-    //  the ``luxContext`` object:
+    //  Html:
     //
-    //      luxContext.navbar = {
-    //          items: [{href="/", value="Home"}]
+    //      <navbar data-options="lux.context.navbar"></navbar>
+    //
+    //  Js:
+    //
+    //      lux.context.navbar = {
+    //          id: null,           //  id attribute of the nav tag
+    //          brand: null,        //  brand text to be displayed
+    //          brandImage: null    //  brand image to be displayed rather than text. If available
+    //                              //  the `brand` text is placed in the `alt` attribute
+    //          url: "/",           //  href of the brand (if brand is defined)
     //      };
     //
     var navBarDefaults = {
@@ -24,12 +31,12 @@
         fixed: false,
         search: false,
         url: lux.context.url,
-        target: '',
+        target: '_self',
         toggle: true,
         fluid: true
     };
 
-    angular.module('lux.nav', ['templates-nav', 'lux.services', 'lux.bs'])
+    angular.module('lux.nav', ['templates-nav', 'lux.bs'])
         //
         .service('linkService', ['$location', function ($location) {
 

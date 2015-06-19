@@ -1,5 +1,8 @@
     //
-    //  Message module
+    //  Lux messages
+    //  =================
+    //
+    //  An implementation of the messageService interface
     //
     //  Usage:
     //

@@ -39,33 +39,6 @@
             headers['Content-Type'] = 'application/json';
         };
 
-        // Set/Get the JWT token
-        api.token = function (token) {
-            var key = 'luxrest - ' + api.baseUrl();
-
-            if (arguments.length) {
-                var decoded = lux.decodeJWToken(token);
-                if (decoded.storage === 'session')
-                    sessionStorage.setItem(key, token);
-                else
-                    localStorage.setItem(key, token);
-                return api;
-            } else {
-                token = localStorage.getItem(key);
-                if (!token) token = sessionStorage.getItem(key);
-                return token;
-            }
-        };
-
-        api.user = function () {
-            var token = api.token();
-            if (token) {
-                var u = lux.decodeJWToken(token);
-                u.token = token;
-                return u;
-            }
-        };
-
         // Add authentication token if available
         api.authentication = function (request) {
             //

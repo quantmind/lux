@@ -99,8 +99,8 @@
             defaults = {};
 
         api.toString = function () {
-            if (defaults && defaults.name)
-                return api.baseUrl() + '/' + defaults.name;
+            if (defaults.name)
+                return joinUrl(api.baseUrl(), defaults.name);
             else
                 return api.baseUrl();
         };
@@ -121,12 +121,6 @@
         api.baseUrl  = function () {
             return url;
         };
-
-        // calculate the url for an API call
-        api.httpOptions = function (request) {};
-
-        // This function can be used to add authentication
-        api.authentication = function (request) {};
         //
         api.get = function (opts, data) {
             return api.request('get', opts, data);
@@ -136,10 +130,25 @@
             return api.request('post', opts, data);
         };
         //
+        api.put = function (opts, data) {
+            return api.request('put', opts, data);
+        };
+        //
         api.delete = function (opts, data) {
             return api.request('delete', opts, data);
         };
-
+        //
+        //  Add additional Http options to the request
+        api.httpOptions = function (request) {};
+        //
+        //  This function can be used to add authentication
+        api.authentication = function (request) {};
+        //
+        //  Return the current user
+        //  ---------------------------
+        //
+        //  Only implemented by apis managing authentication
+        api.user = function () {};
         //
         // Perform the actual request and return a promise
         //	method: HTTP method

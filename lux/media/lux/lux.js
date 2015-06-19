@@ -1,6 +1,6 @@
 //      Lux Library - v0.2.0
 
-//      Compiled 2015-06-18.
+//      Compiled 2015-06-19.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -159,7 +159,7 @@ function(angular, root) {
             if (bit) {
                 var cbit = bit,
                     slash = false;
-                // remove fron slashes if url has already some value
+                // remove front slashes if cbit has some
                 while (url && cbit.substring(0, 1) === '/')
                     cbit = cbit.substring(1);
                 // remove end slashes
@@ -408,8 +408,8 @@ function(angular, root) {
             defaults = {};
 
         api.toString = function () {
-            if (defaults && defaults.name)
-                return api.baseUrl() + '/' + defaults.name;
+            if (defaults.name)
+                return joinUrl(api.baseUrl(), defaults.name);
             else
                 return api.baseUrl();
         };
@@ -430,12 +430,6 @@ function(angular, root) {
         api.baseUrl  = function () {
             return url;
         };
-
-        // calculate the url for an API call
-        api.httpOptions = function (request) {};
-
-        // This function can be used to add authentication
-        api.authentication = function (request) {};
         //
         api.get = function (opts, data) {
             return api.request('get', opts, data);
@@ -445,10 +439,25 @@ function(angular, root) {
             return api.request('post', opts, data);
         };
         //
+        api.put = function (opts, data) {
+            return api.request('put', opts, data);
+        };
+        //
         api.delete = function (opts, data) {
             return api.request('delete', opts, data);
         };
-
+        //
+        //  Add additional Http options to the request
+        api.httpOptions = function (request) {};
+        //
+        //  This function can be used to add authentication
+        api.authentication = function (request) {};
+        //
+        //  Return the current user
+        //  ---------------------------
+        //
+        //  Only implemented by apis managing authentication
+        api.user = function () {};
         //
         // Perform the actual request and return a promise
         //	method: HTTP method
@@ -663,33 +672,6 @@ function(angular, root) {
             headers['Content-Type'] = 'application/json';
         };
 
-        // Set/Get the JWT token
-        api.token = function (token) {
-            var key = 'luxrest - ' + api.baseUrl();
-
-            if (arguments.length) {
-                var decoded = lux.decodeJWToken(token);
-                if (decoded.storage === 'session')
-                    sessionStorage.setItem(key, token);
-                else
-                    localStorage.setItem(key, token);
-                return api;
-            } else {
-                token = localStorage.getItem(key);
-                if (!token) token = sessionStorage.getItem(key);
-                return token;
-            }
-        };
-
-        api.user = function () {
-            var token = api.token();
-            if (token) {
-                var u = lux.decodeJWToken(token);
-                u.token = token;
-                return u;
-            }
-        };
-
         // Add authentication token if available
         api.authentication = function (request) {
             //
@@ -754,13 +736,44 @@ function(angular, root) {
         }]);
 
 
-    var CSRFset = ['get', 'head', 'options'],
+    var //
+        //  HTTP verbs which don't send a csrf token in their requests
+        CSRFset = ['get', 'head', 'options'],
         //
         luxweb = function (url, $lux) {
 
             var api = baseapi(url, $lux),
                 request = api.request;
 
+            // Set/Get the JWT token
+            api.token = function (token) {
+                var key = 'luxtoken-' + api.baseUrl();
+
+                if (arguments.length) {
+                    // Set the token
+                    var decoded = lux.decodeJWToken(token);
+                    if (decoded.storage === 'session')
+                        sessionStorage.setItem(key, token);
+                    else
+                        localStorage.setItem(key, token);
+                    return api;
+                } else {
+                    // Obtain the token
+                    token = localStorage.getItem(key);
+                    if (!token) token = sessionStorage.getItem(key);
+                    return token;
+                }
+            };
+
+            // Get the user fro the JWT
+            api.user = function () {
+                var token = api.token();
+                if (token) {
+                    var u = lux.decodeJWToken(token);
+                    u.token = token;
+                    return u;
+                }
+            };
             // Redirect to the LOGIN_URL
             api.login = function () {
                 $lux.window.location.href = lux.context.LOGIN_URL;
@@ -2501,7 +2514,10 @@ angular.module("message/message.tpl.html", []).run(["$templateCache", function($
 }]);
 
     //
-    //  Message module
+    //  Lux messages
+    //  =================
+    //
+    //  An implementation of the messageService interface
     //
     //  Usage:
     //
@@ -3198,21 +3214,31 @@ angular.module("users/messages.tpl.html", []).run(["$templateCache", function($t
             scope.$log = $log;
         }]);
     //
-    // Bootstrap the document
+    //  Bootstrap the document
+    //  ============================
+    //
+    //  * ``name``  name of the module
+    //  * ``modules`` modules to include
+    //
+    //  These modules are appended to the modules available in the
+    //  lux context object and therefore they will be processed afterwards.
+    //
     lux.bootstrap = function (name, modules) {
         //
         // actual bootstrapping function
         function _bootstrap() {
             //
             // Resolve modules to load
-            if (!isArray(modules))
-                modules = [];
-            // Add all modules from context
-            forEach(lux.context.ngModules, function (mod) {
-                modules.push(mod);
+            var mods = lux.context.ngModules;
+            if(!mods) mods = [];
+
+            // Add all modules from input
+            forEach(modules, function (mod) {
+                mods.push(mod);
             });
-            modules.splice(0, 0, 'lux.loader');
-            angular.module(name, modules);
+            // Insert the lux loader as first module
+            mods.splice(0, 0, 'lux.loader');
+            angular.module(name, mods);
             angular.bootstrap(document, [name]);
         }
 
@@ -3512,15 +3538,22 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
 
     //
     //  Lux Navigation module
+    //  ============================
     //
-    //  * Requires "angular-strap" for the collapsable directives
+    //  * Requires ``lux.bs`` for the collapsable directives
     //
-    //  Include this module to render bootstrap navigation templates
-    //  The navigation should be available as the ``navbar`` object within
-    //  the ``luxContext`` object:
+    //  Html:
     //
-    //      luxContext.navbar = {
-    //          items: [{href="/", value="Home"}]
+    //      <navbar data-options="lux.context.navbar"></navbar>
+    //
+    //  Js:
+    //
+    //      lux.context.navbar = {
+    //          id: null,           //  id attribute of the nav tag
+    //          brand: null,        //  brand text to be displayed
+    //          brandImage: null    //  brand image to be displayed rather than text. If available
+    //                              //  the `brand` text is placed in the `alt` attribute
+    //          url: "/",           //  href of the brand (if brand is defined)
     //      };
     //
     var navBarDefaults = {
@@ -3535,12 +3568,12 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
         fixed: false,
         search: false,
         url: lux.context.url,
-        target: '',
+        target: '_self',
         toggle: true,
         fluid: true
     };
 
-    angular.module('lux.nav', ['templates-nav', 'lux.services', 'lux.bs'])
+    angular.module('lux.nav', ['templates-nav', 'lux.bs'])
         //
         .service('linkService', ['$location', function ($location) {
 

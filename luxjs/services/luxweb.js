@@ -23,13 +23,44 @@
         }]);
 
 
-    var CSRFset = ['get', 'head', 'options'],
+    var //
+        //  HTTP verbs which don't send a csrf token in their requests
+        CSRFset = ['get', 'head', 'options'],
         //
         luxweb = function (url, $lux) {
 
             var api = baseapi(url, $lux),
                 request = api.request;
 
+            // Set/Get the JWT token
+            api.token = function (token) {
+                var key = 'luxtoken-' + api.baseUrl();
+
+                if (arguments.length) {
+                    // Set the token
+                    var decoded = lux.decodeJWToken(token);
+                    if (decoded.storage === 'session')
+                        sessionStorage.setItem(key, token);
+                    else
+                        localStorage.setItem(key, token);
+                    return api;
+                } else {
+                    // Obtain the token
+                    token = localStorage.getItem(key);
+                    if (!token) token = sessionStorage.getItem(key);
+                    return token;
+                }
+            };
+
+            // Get the user fro the JWT
+            api.user = function () {
+                var token = api.token();
+                if (token) {
+                    var u = lux.decodeJWToken(token);
+                    u.token = token;
+                    return u;
+                }
+            };
             // Redirect to the LOGIN_URL
             api.login = function () {
                 $lux.window.location.href = lux.context.LOGIN_URL;

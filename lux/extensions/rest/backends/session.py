@@ -26,7 +26,6 @@ class SessionBackend(AuthBackend):
         Parameter('CSRF_PARAM', 'authenticity_token',
                   'CSRF parameter name in forms')
     ]
-
     ForgotPasswordRouter = None
     dismiss_message = None
 
