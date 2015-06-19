@@ -1,3 +1,5 @@
+import json
+
 from lux.utils import test
 from lux import forms
 
@@ -42,3 +44,21 @@ class FieldTests(test.TestCase):
         self.assertEqual(field.options.all(), result)
         #
         self.assertEqual(repr(field), 'foo')
+
+    def test_JsonField(self):
+        field = forms.JsonField()
+
+        value = {'test': '????'}
+        t = type(value)
+        json_val = json.dumps(value)
+
+        result = field._clean(json_val, None)
+
+        self.assertEqual(type(result), t)
+
+    def test_JsonField_raises(self):
+        field = forms.JsonField()
+        value = 'string'
+
+        with self.assertRaises(forms.ValidationError):
+            field._clean(value, None)
