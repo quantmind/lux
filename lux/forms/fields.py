@@ -278,17 +278,15 @@ class BooleanField(Field):
             return bool(value)
 
 
-class JsonField(Field):
-    attrs = {'type': 'json'}
-    validation_error = '"{0}" is not a valid json field'
+class JsonField(TextField):
+    validation_error = 'value is not a valid json field'
 
     def _clean(self, value, instance):
         try:
-            value = json.loads(value)
+            return json.loads(value)
         except Exception:
             raise ValidationError(
                 self.validation_error.format(value))
-        return json.dumps(value)
 
 
 class MultipleMixin:
