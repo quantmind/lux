@@ -30,6 +30,29 @@
             FORMKEY: 'm__form'
         })
         //
+        .run(['$lux', function ($lux) {
+            var formHandlers = {};
+            $lux.formHandlers = formHandlers;
+
+            formHandlers.reload = function () {
+                $lux.window.location.reload();
+            };
+
+            formHandlers.redirectHome = function (response, scope) {
+                var href = scope.formAttrs.redirectTo || '/';
+                $lux.window.location.href = href;
+                $lux.window.location.reload();
+            };
+
+            formHandlers.login = function (response, scope) {
+                var target = scope.formAttrs.action,
+                    api = $lux.api(target);
+                if (api)
+                    api.token(response.data.token);
+                $lux.window.location.reload();
+            };
+        }])
+        //
         // The formService is a reusable component for redering form fields
         .service('standardForm', ['$log', '$http', '$document', '$templateCache', 'formDefaults',
                                   function (log, $http, $document, $templateCache, formDefaults) {

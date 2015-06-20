@@ -15,11 +15,12 @@ from .auth import AuthBackend
 from .models import RestModel, RestColumn
 from .pagination import Pagination, GithubPagination
 from .client import ApiClient
-from .views import RestRoot, RestRouter, RestMixin, RequirePermission
+from .views import (RestRoot, RestRouter, RestMixin, RequirePermission,
+                    ProcessLoginMixin)
 
 __all__ = ['RestRouter', 'RestMixin', 'RestModel', 'RestColumn',
            'Pagination', 'GithubPagination', 'AuthBackend',
-           'RequirePermission']
+           'RequirePermission', 'ProcessLoginMixin']
 
 
 def luxrest(url, **rest):
@@ -120,8 +121,8 @@ class Extension(AuthBackend):
                                            dotted_path)
             app.pagination = pagination()
 
-            # Add the preflight event
-            events = ('on_preflight',)
+            # Add the preflight and token events
+            events = ('on_preflight', 'on_token')
             app.add_events(events)
             for backend in self.backends:
                 app.bind_events(backend, events)

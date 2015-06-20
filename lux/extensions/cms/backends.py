@@ -2,16 +2,14 @@
 '''
 from pulsar import ImproperlyConfigured
 from pulsar.utils.httpurl import is_absolute_uri
-from pulsar.utils.structures import AttributeDictionary
 
 from lux import Parameter
 from lux.extensions.angular import add_ng_modules
+from lux.extensions.rest import AuthenticationError, AuthBackend, luxrest
+from lux.extensions.rest.backends import (CacheSessionMixin, jwt,
+                                          SessionBackendMixin)
 
-from .. import AuthBackend, luxrest
-from ..views import Login, LoginPost, SignUp, ForgotPassword
-from ..user import UserMixin, AuthenticationError
-from .mixins import CacheSessionMixin, SessionBackendMixin
-from .token import jwt
+from .user import User, Login, LoginPost, SignUp, ForgotPassword
 
 
 def auth_router(api, url, Router):
@@ -70,15 +68,6 @@ class BrowserBackend(AuthBackend):
             add_ng_modules(doc, ('lux.restapi', 'lux.users'))
         else:
             add_ng_modules(doc, ('lux.webapi', 'lux.users'))
-
-
-class User(AttributeDictionary, UserMixin):
-
-    def is_superuser(self):
-        return self.superuser
-
-    def is_active(self):
-        return True
 
 
 class ApiSessionBackend(CacheSessionMixin,

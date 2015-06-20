@@ -230,7 +230,9 @@ class Application(ConsoleParser, Extension, EventMixin):
                   'Run the WSGI handle in a pool of greenlet'),
         Parameter('SECURE_PROXY_SSL_HEADER', None,
                   'A tuple representing a HTTP header/value combination that '
-                  'signifies a request is secure.')
+                  'signifies a request is secure.'),
+        Parameter('CMS_PARTIALS_PATH',
+                  'cms', 'Path to CMS Partials templates'),
         ]
 
     def __init__(self, callable, handler=True):
@@ -539,12 +541,12 @@ class Application(ConsoleParser, Extension, EventMixin):
         engine = engine or self.config['DEFAULT_TEMPLATE_ENGINE']
         return template_engine(engine)
 
-    def html_response(self, request, template_name, context=None,
+    def html_response(self, request, page, context=None,
                       jscontext=None, title=None, status_code=None):
         '''Html response via a template.
 
         :param request: the :class:`.WsgiRequest`
-        :param template_name: the template file name to load
+        :param page: A :class:`Page` or a template file name
         :param context: optional context dictionary
         '''
         if 'text/html' in request.content_types:
@@ -562,7 +564,7 @@ class Application(ConsoleParser, Extension, EventMixin):
                 jscontext = json.dumps(doc.jscontext)
                 doc.head.embedded_js.insert(
                     0, 'var lux = {context: %s};\n' % jscontext)
-            body = self.render_template(template_name, context)
+            body = self.cms.render(page, context)
             doc.body.append(body)
             return doc.http_response(request)
 

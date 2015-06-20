@@ -1,6 +1,6 @@
 //      Lux Library - v0.2.0
 
-//      Compiled 2015-06-19.
+//      Compiled 2015-06-20.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -761,12 +761,17 @@ function(angular, root) {
                 var key = 'luxtoken-' + api.baseUrl();
 
                 if (arguments.length) {
-                    // Set the token
-                    var decoded = lux.decodeJWToken(token);
-                    if (decoded.storage === 'session')
-                        sessionStorage.setItem(key, token);
-                    else
-                        localStorage.setItem(key, token);
+                    if (token) {
+                        // Set the token
+                        var decoded = lux.decodeJWToken(token);
+                        if (decoded.storage === 'session')
+                            sessionStorage.setItem(key, token);
+                        else
+                            localStorage.setItem(key, token);
+                    } else {
+                        sessionStorage.removeItem(key);
+                        localStorage.removeItem(key);
+                    }
                     return api;
                 } else {
                     // Obtain the token
@@ -785,6 +790,7 @@ function(angular, root) {
                     return u;
                 }
             };
+
             // Redirect to the LOGIN_URL
             api.login = function () {
                 $lux.window.location.href = lux.context.LOGIN_URL;
@@ -799,7 +805,8 @@ function(angular, root) {
                     path: '/logout'
                 }).then(function () {
                     scope.$emit('after-logout');
-                    $lux.window.reload();
+                    api.token(undefined);
+                    $lux.window.location.reload();
                 }, function (response) {
                     $lux.messages.error('Error while logging out');
                 });
@@ -1603,6 +1610,29 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
             FORMKEY: 'm__form'
         })
         //
+        .run(['$lux', function ($lux) {
+            var formHandlers = {};
+            $lux.formHandlers = formHandlers;
+
+            formHandlers.reload = function () {
+                $lux.window.location.reload();
+            };
+
+            formHandlers.redirectHome = function (response, scope) {
+                var href = scope.formAttrs.redirectTo || '/';
+                $lux.window.location.href = href;
+                $lux.window.location.reload();
+            };
+
+            formHandlers.login = function (response, scope) {
+                var target = scope.formAttrs.action,
+                    api = $lux.api(target);
+                if (api)
+                    api.token(response.data.token);
+                $lux.window.location.reload();
+            };
+        }])
+        //
         // The formService is a reusable component for redering form fields
         .service('standardForm', ['$log', '$http', '$document', '$templateCache', 'formDefaults',
                                   function (log, $http, $document, $templateCache, formDefaults) {
@@ -2319,18 +2349,29 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
 //	Default Form processing function
 // 	If a submit element (input.submit or button) does not specify
 // 	a ``click`` entry, this function is used
+//
+//  Post Result
+//  -------------------
+//
+//  When a form is processed succesfully, this method will check if the
+//  ``formAttrs`` object contains a ``resultHandler`` parameter which should be
+//  a string.
+//
+//  In the event the ``resultHandler`` exists,
+//  the ``$lux.formHandlers`` object is checked if it contains a function
+//  at the ``resultHandler`` value. If it does, the function is called.
 lux.processForm = function (e) {
 
     e.preventDefault();
     e.stopPropagation();
 
-    var form = this[this.formName],
+    var scope = this,
+        $lux = scope.$lux,
+        form = this[this.formName],
         model = this[this.formModelName],
         attrs = this.formAttrs,
         target = attrs.action,
-        scope = this,
         FORMKEY = scope.formAttrs.FORMKEY,
-        $lux = this.$lux,
         method = attrs.method || 'post',
         promise,
         api;
@@ -2373,19 +2414,17 @@ lux.processForm = function (e) {
     promise.then(function (response) {
             var data = response.data;
             var hookName = scope.formAttrs.resultHandler;
-            var processedByHook = hookName && scope.$parent[hookName](response);
-            if (!processedByHook) {
-                if (data.messages) {
-                    scope.addMessages(data.messages);
-                } else if (api) {
-                    // Created
-                    if (response.status === 201) {
-                        scope.formMessages[FORMKEY] = [{message: 'Successfully created'}];
-                    } else {
-                        scope.formMessages[FORMKEY] = [{message: 'Successfully updated'}];
-                    }
+            var hook = hookName && $lux.formHandlers[hookName];
+            if (hook) {
+                hook(response, scope);
+            } else if (data.messages) {
+                scope.addMessages(data.messages);
+            } else if (api) {
+                // Created
+                if (response.status === 201) {
+                    scope.formMessages[FORMKEY] = [{message: 'Successfully created'}];
                 } else {
-                    window.location.href = data.redirect || '/';
+                    scope.formMessages[FORMKEY] = [{message: 'Successfully updated'}];
                 }
             }
         },

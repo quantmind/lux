@@ -41,7 +41,6 @@ def add_css(all):
         padding_bottom=px(50))
 
     css('#page-footer',
-        Skin(only='default', noclass='default'),
         Border(top=px(1), color=vars.background_footer_border),
         background_color=vars.background_footer_color,
         min_height=px(200))

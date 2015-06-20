@@ -10,7 +10,7 @@ from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, DateTime
 from odm.types import IPAddressType, UUIDType, JSONType
 
 from lux.extensions import odm
-from lux.extensions.rest import UserMixin
+from lux.extensions.rest import UserMixin, SessionMixin
 
 
 Model = odm.model_base('auth')
@@ -81,14 +81,18 @@ class Permission(Model):
     policy = Column(JSONType)
 
 
-class Token(Model):
+class Token(Model, SessionMixin):
     '''A model for an Authentification Token
     '''
     id = Column(UUIDType(binary=False), primary_key=True)
     user_id = Column(Integer, ForeignKey('user.id'))
     created = Column(DateTime, default=datetime.utcnow)
+    expiry = Column(DateTime)
     ip_address = Column(IPAddressType)
     user_agent = Column(String(80))
     last_access = Column(DateTime, default=datetime.utcnow)
     # when true, this is a session token, otherwise it is a personal token
     session = Column(Boolean, default=True)
+
+    def get_key(self):
+        return self.id.hex

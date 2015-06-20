@@ -108,6 +108,12 @@ class HtmlRouter(Router):
     def html_response(self, request, html):
         '''Render `html` as a full Html document or a partial.
         '''
+        app = request.app
+        # get cms for this router
+        cms = self.cms(app)
+        # cms page
+        page = cms.page(request.path[1:])
+
         if isinstance(html, Html):
             html = html.render(request)
 
@@ -118,9 +124,12 @@ class HtmlRouter(Router):
 
         context = {'html_main': html}
         self.context(request, context)
-        app = request.app
-        template = self.get_html_body_template(app)
-        return app.html_response(request, template, context=context)
+        if not page.template:
+            page.template = self.getparam('html_body_template',
+                                          default='home.html',
+                                          parents=True)
+
+        return app.html_response(request, page, context=context)
 
     def get_html(self, request):
         '''Must be implemented by subclasses.
@@ -131,23 +140,12 @@ class HtmlRouter(Router):
         return ''
 
     def context(self, request, context):
+        '''Add router specific entries to the template
+        ``context`` dictionary'''
         pass
 
     def cms(self, app):
         return app.cms
-
-    def get_html_body_template(self, app):
-        '''Fetch the HTML template for the body part of this request
-        '''
-        cms = self.cms(app)
-        template = (cms.template(self.full_route.path) or
-                    self.html_body_template)
-        if not template:
-            if self.parent:
-                template = self.parent.get_html_body_template(app)
-            else:
-                template = 'home.html'
-        return template
 
     def childname(self, prefix):
         '''key for a child router

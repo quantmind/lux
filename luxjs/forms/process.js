@@ -5,18 +5,29 @@
 //	Default Form processing function
 // 	If a submit element (input.submit or button) does not specify
 // 	a ``click`` entry, this function is used
+//
+//  Post Result
+//  -------------------
+//
+//  When a form is processed succesfully, this method will check if the
+//  ``formAttrs`` object contains a ``resultHandler`` parameter which should be
+//  a string.
+//
+//  In the event the ``resultHandler`` exists,
+//  the ``$lux.formHandlers`` object is checked if it contains a function
+//  at the ``resultHandler`` value. If it does, the function is called.
 lux.processForm = function (e) {
 
     e.preventDefault();
     e.stopPropagation();
 
-    var form = this[this.formName],
+    var scope = this,
+        $lux = scope.$lux,
+        form = this[this.formName],
         model = this[this.formModelName],
         attrs = this.formAttrs,
         target = attrs.action,
-        scope = this,
         FORMKEY = scope.formAttrs.FORMKEY,
-        $lux = this.$lux,
         method = attrs.method || 'post',
         promise,
         api;
@@ -59,19 +70,17 @@ lux.processForm = function (e) {
     promise.then(function (response) {
             var data = response.data;
             var hookName = scope.formAttrs.resultHandler;
-            var processedByHook = hookName && scope.$parent[hookName](response);
-            if (!processedByHook) {
-                if (data.messages) {
-                    scope.addMessages(data.messages);
-                } else if (api) {
-                    // Created
-                    if (response.status === 201) {
-                        scope.formMessages[FORMKEY] = [{message: 'Successfully created'}];
-                    } else {
-                        scope.formMessages[FORMKEY] = [{message: 'Successfully updated'}];
-                    }
+            var hook = hookName && $lux.formHandlers[hookName];
+            if (hook) {
+                hook(response, scope);
+            } else if (data.messages) {
+                scope.addMessages(data.messages);
+            } else if (api) {
+                // Created
+                if (response.status === 201) {
+                    scope.formMessages[FORMKEY] = [{message: 'Successfully created'}];
                 } else {
-                    window.location.href = data.redirect || '/';
+                    scope.formMessages[FORMKEY] = [{message: 'Successfully updated'}];
                 }
             }
         },

@@ -1,10 +1,13 @@
+'''Backend-based CMS
+'''
 import lux
 from lux import Parameter
 
 from .views import PageCRUD, TemplateCRUD, AnyPage, CMS
+from .backends import BrowserBackend, ApiSessionBackend, User
 
 
-__all__ = ['AnyPage']
+__all__ = ['AnyPage', 'BrowserBackend', 'ApiSessionBackend', 'User']
 
 
 class Extension(lux.Extension):
@@ -17,6 +20,7 @@ class Extension(lux.Extension):
     _config = [
         Parameter('CMS_LOAD_PLUGINS', True, 'Load plugins from extensions')
     ]
+    _partials = None
 
     def api_sections(self, app):
         return [PageCRUD(), TemplateCRUD()]

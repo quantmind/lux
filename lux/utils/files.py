@@ -12,6 +12,30 @@ import itertools
 __all__ = ['File', 'Filehandler']
 
 
+def skipfile(name):
+    return name.startswith('.') or name.startswith('__')
+
+
+def directory(dir):
+    bd, fname = os.path.split(dir)
+    return dir if fname else bd
+
+
+def get_rel_dir(dir, base, res=''):
+    '''Return the ``base`` path relative to ``dir``
+    '''
+    dir = directory(dir)
+    base = directory(base)
+    if len(base) > len(dir):
+        raise RuntimeError('Base directory not in path')
+    if dir == base:
+        return res
+    dir, fname = os.path.split(dir)
+    if res:
+        fname = os.path.join(fname, res)
+    return get_rel_dir(dir, base, fname)
+
+
 def get_valid_filename(s):
     """
     Returns the given string converted to a string that can be used for a clean

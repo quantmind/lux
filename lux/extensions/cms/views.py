@@ -1,10 +1,10 @@
-from pulsar.apps.wsgi import Route
 from pulsar import Http404
 from pulsar.utils.slugify import slugify
 
 import lux
 from lux import forms, HtmlRouter
 from lux.extensions import odm
+from lux.core.cms import Page
 
 
 class TemplateForm(forms.Form):
@@ -61,13 +61,6 @@ class AnyPage(HtmlRouter):
 class CMS(lux.CMS):
     '''Override default lux CMS handler
     '''
-    def template(self, path):
-        page = self.page(path)
-        if page:
-            return page['template']
-        else:
-            return super().template(path)
-
     def page(self, path):
         '''Obtain a page object from a path
         '''
@@ -78,16 +71,16 @@ class CMS(lux.CMS):
         except Exception:
             sitemap = None
 
-        if not sitemap:
-            sitemap = self.build_map()
+        if sitemap is None:
+            sitemap = self._build_map()
             self.app.cache_server.set_json(key, sitemap)
 
-        for page in sitemap:
-            route = Route(page['path'])
-            if route.match(path):
-                return page
+        page = self.match(path, sitemap)
+        if not page:
+            return super().page(path)
+        return Page(page)
 
-    def build_map(self):
+    def _build_map(self):
         key = self.key or ''
         response = self.app.api.get('/html_pages?filterby=root:eq:%s' % key)
         if response.status_code == 200:

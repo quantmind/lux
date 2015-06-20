@@ -123,8 +123,18 @@ class UserMixin(MessageMixin):
 class SessionMixin:
     '''Mixin for web sessions
     '''
+    encoded = None
+    '''Encoded representation of this session'''
+
+    def get_user(self):
+        return self.user
+
     def get_key(self):
         return self.id
+
+    def __repr__(self):
+        return self.get_key()
+    __str__ = __repr__
 
 
 class PasswordMixin:

@@ -29,12 +29,17 @@
                 var key = 'luxtoken-' + api.baseUrl();
 
                 if (arguments.length) {
-                    // Set the token
-                    var decoded = lux.decodeJWToken(token);
-                    if (decoded.storage === 'session')
-                        sessionStorage.setItem(key, token);
-                    else
-                        localStorage.setItem(key, token);
+                    if (token) {
+                        // Set the token
+                        var decoded = lux.decodeJWToken(token);
+                        if (decoded.storage === 'session')
+                            sessionStorage.setItem(key, token);
+                        else
+                            localStorage.setItem(key, token);
+                    } else {
+                        sessionStorage.removeItem(key);
+                        localStorage.removeItem(key);
+                    }
                     return api;
                 } else {
                     // Obtain the token
@@ -53,6 +58,7 @@
                     return u;
                 }
             };
+
             // Redirect to the LOGIN_URL
             api.login = function () {
                 $lux.window.location.href = lux.context.LOGIN_URL;
@@ -67,7 +73,8 @@
                     path: '/logout'
                 }).then(function () {
                     scope.$emit('after-logout');
-                    $lux.window.reload();
+                    api.token(undefined);
+                    $lux.window.location.reload();
                 }, function (response) {
                     $lux.messages.error('Error while logging out');
                 });
