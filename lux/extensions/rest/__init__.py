@@ -1,5 +1,16 @@
 '''
-Extension for Restful web services
+Extension for Restful web services.
+
+This extension should be added before any other extensions
+which requires authentication and restful services.
+When using default lux extensions, the usual position of this extension is
+just after the :mod:`lux.extensions.base`::
+
+    EXTENSIONS = ['lux.extensions.base',
+                  'lux.extensions.rest',
+                  ...
+                  ]
+
 '''
 from importlib import import_module
 

@@ -23,7 +23,7 @@
         url: lux.context.url,
     };
 
-    angular.module('lux.sidebar', ['templates-sidebar', 'lux.nav'])
+    angular.module('lux.sidebar', ['lux.nav'])
         //
         .service('sidebarService', ['linkService', 'navService', function (linkService, navService) {
 
@@ -71,6 +71,7 @@
                 };
 
                 scope.sidebar = sidebar;
+                scope.navbar = sidebar.navbar;
                 return sidebar;
             };
         }])

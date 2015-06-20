@@ -101,7 +101,7 @@ angular.module("nav/templates/navbar2.tpl.html", []).run(["$templateCache", func
 
 angular.module("nav/templates/sidebar.tpl.html", []).run(["$templateCache", function($templateCache) {
   $templateCache.put("nav/templates/sidebar.tpl.html",
-    "<div ng-include=\"nav/templates/navbar.tpl.html\"></div>\n" +
+    "<navbar></navbar>\n" +
     "<aside ng-if=\"user\" ng-attr-id=\"{{sidebar.id}}\" class=\"main-sidebar\"\n" +
     "       ng-class=\"{'sidebar-fixed':sidebar.fixed}\">\n" +
     "    <section ng-if=\"sidebar.sections\" class=\"sidebar\">\n" +

@@ -3626,7 +3626,7 @@ angular.module("nav/templates/navbar2.tpl.html", []).run(["$templateCache", func
 
 angular.module("nav/templates/sidebar.tpl.html", []).run(["$templateCache", function($templateCache) {
   $templateCache.put("nav/templates/sidebar.tpl.html",
-    "<div ng-include=\"nav/templates/navbar.tpl.html\"></div>\n" +
+    "<navbar></navbar>\n" +
     "<aside ng-if=\"user\" ng-attr-id=\"{{sidebar.id}}\" class=\"main-sidebar\"\n" +
     "       ng-class=\"{'sidebar-fixed':sidebar.fixed}\">\n" +
     "    <section ng-if=\"sidebar.sections\" class=\"sidebar\">\n" +
@@ -3737,7 +3737,7 @@ angular.module("nav/templates/sidebar.tpl.html", []).run(["$templateCache", func
 
             this.initScope = function (scope, opts) {
 
-                var navbar = extend({}, navBarDefaults, getOptions(opts));
+                var navbar = extend({}, navBarDefaults, scope.navbar, getOptions(opts));
                 if (!navbar.url)
                     navbar.url = '/';
                 if (!navbar.themeTop)
@@ -3887,7 +3887,7 @@ angular.module("nav/templates/sidebar.tpl.html", []).run(["$templateCache", func
         url: lux.context.url,
     };
 
-    angular.module('lux.sidebar', ['templates-sidebar', 'lux.nav'])
+    angular.module('lux.sidebar', ['lux.nav'])
         //
         .service('sidebarService', ['linkService', 'navService', function (linkService, navService) {
 
@@ -3935,6 +3935,7 @@ angular.module("nav/templates/sidebar.tpl.html", []).run(["$templateCache", func
                 };
 
                 scope.sidebar = sidebar;
+                scope.navbar = sidebar.navbar;
                 return sidebar;
             };
         }])

@@ -22,6 +22,7 @@ __all__ = ['Field',
            'FloatField',
            'EmailField',
            'FileField',
+           'HiddenField',
            'PasswordField',
            'UrlField']
 
@@ -336,9 +337,6 @@ class EmailField(CharField):
 
 class HiddenField(CharField):
     attrs = {'type': 'hidden'}
-
-    def to_json(self, value):
-        pass
 
 
 class PasswordField(HiddenField):

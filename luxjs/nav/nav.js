@@ -72,7 +72,7 @@
 
             this.initScope = function (scope, opts) {
 
-                var navbar = extend({}, navBarDefaults, getOptions(opts));
+                var navbar = extend({}, navBarDefaults, scope.navbar, getOptions(opts));
                 if (!navbar.url)
                     navbar.url = '/';
                 if (!navbar.themeTop)
