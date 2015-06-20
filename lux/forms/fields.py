@@ -1,5 +1,6 @@
 from datetime import datetime, date
 
+import json
 import pytz
 
 from dateutil.parser import parse as dateparser
@@ -15,6 +16,7 @@ __all__ = ['Field',
            'CharField',
            'TextField',
            'BooleanField',
+           'JsonField',
            'DateField',
            'DateTimeField',
            'ChoiceField',
@@ -275,6 +277,17 @@ class BooleanField(Field):
             return False
         else:
             return bool(value)
+
+
+class JsonField(TextField):
+    validation_error = 'not a valid json string'
+
+    def _clean(self, value, instance):
+        try:
+            return json.loads(value)
+        except Exception:
+            raise ValidationError(
+                self.validation_error.format(value))
 
 
 class MultipleMixin:
