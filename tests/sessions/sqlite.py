@@ -136,9 +136,9 @@ class TestSqlite(test.AppTestCase):
                                               body=data,
                                               cookie=cookie)
         response = request.response
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 201)
         data = self.json(response)
-        self.assertTrue(data)
+        self.assertTrue(data.get('token'))
         cookie2 = self.cookie(response)
         # The cookie has changed
         self.assertNotEqual(cookie, cookie2)

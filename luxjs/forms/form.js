@@ -110,6 +110,8 @@
                 //
                 inputGroupClass: 'form-group',
                 //
+                inputHiddenClass: 'form-hidden',
+                //
                 inputClass: 'form-control',
                 //
                 buttonClass: 'btn btn-default',
@@ -131,9 +133,11 @@
                     scope.info = info;
 
                     if (info) {
+                        // Pick the renderer by checking `type`
                         if (info.hasOwnProperty('type'))
                             renderer = this[info.type];
 
+                        // If no element type, use the `element`
                         if (!renderer) {
                             renderer = this[info.element];
                         }
@@ -267,7 +271,7 @@
                     // Add model attribute
                     input.attr('ng-model', scope.formModelName + '.' + field.name);
 
-                    if (!field.showLabels) {
+                    if (!field.showLabels || field.type === 'hidden') {
                         label.addClass('sr-only');
                         // Add placeholder if not defined
                         if (field.placeholder === undefined)
@@ -282,7 +286,9 @@
                     }
 
                     if (this.inputGroupClass) {
-                        element = angular.element($document[0].createElement('div')).addClass(this.inputGroupClass);
+                        element = angular.element($document[0].createElement('div'));
+                        if (field.type === 'hidden') element.addClass(this.inputHiddenClass);
+                        else element.addClass(this.inputGroupClass);
                         element.append(label).append(input);
                     } else {
                         element = [label, input];
@@ -602,9 +608,19 @@
                     scope.formid = form.id;
                     scope.formCount = 0;
 
-                    scope.addMessages = function (messages) {
-                        forEach(messages, function (messages, field) {
-                            scope.formMessages[field] = messages;
+                    scope.addMessages = function (messages, level) {
+                        if (!level) level = 'info';
+
+                        forEach(messages, function (message) {
+                            if (isString(message))
+                                message = {message: message};
+
+                            var field = message.field || formDefaults.FORMKEY;
+
+                            if (!message.level)
+                                message.level = level;
+
+                            scope.formMessages[field] = [message];
 
                             var msg = '';
                             forEach(messages, function(error) {
@@ -613,8 +629,10 @@
                                     msg += '</br>';
                             });
 
-                            scope.formErrors[field] = msg;
-                            scope[scope.formName][field].$invalid = true;
+                            if (message.level === 'error') {
+                                scope.formErrors[field] = message.message;
+                                scope[scope.formName][field].$invalid = true;
+                            }
                         });
                     };
 

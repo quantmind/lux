@@ -53,25 +53,23 @@ class User(Model, UserMixin):
     def is_superuser(self):
         return self.superuser
 
+    def full_name(self):
+        name = ''
+        if self.first_name:
+            name = self.first_name
+            if self.last_name:
+                name = '%s %s' % (name, self.last_name)
+        elif self.last_name:
+            name = self.last_name
+        else:
+            name = self.username or self.email
+        return name
 
 class Group(Model):
     id = Column(Integer, primary_key=True)
     name = Column(String(80), unique=True)
     permissions = relationship("Permission", secondary=groups_permissions,
                                backref="groups")
-
-
-class PermissionType(enum.Enum):
-    can_view = 10
-    can_add = 20
-    can_change = 30
-    can_remove = 40
-
-
-PermissionType.can_view.label = 'Can view'
-PermissionType.can_add.label = 'Can add'
-PermissionType.can_change.label = 'Can change'
-PermissionType.can_remove.label = 'Can remove'
 
 
 class Permission(Model):

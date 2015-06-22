@@ -1,6 +1,6 @@
 //      Lux Library - v0.2.0
 
-//      Compiled 2015-06-20.
+//      Compiled 2015-06-22.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -1280,7 +1280,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
     //  ==============
     //
     //  Design to work with the ``lux.extension.angular``
-    angular.module('lux.page', ['lux.services', 'lux.form', 'templates-page'])
+    angular.module('lux.page', ['lux.form', 'templates-page'])
         //
         .service('pageService', ['$lux', 'dateFilter', function ($lux, dateFilter) {
 
@@ -1414,7 +1414,17 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                     }
                 }
             };
-        }]);
+        }])
+        //
+        .directive('year', function () {
+            return {
+                restrict: 'AE',
+                link: function (scope, element) {
+                    var dt = new Date();
+                    element.html(dt.getFullYear()+'');
+                }
+            };
+        });
 
 
 
@@ -1690,6 +1700,8 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                 //
                 inputGroupClass: 'form-group',
                 //
+                inputHiddenClass: 'form-hidden',
+                //
                 inputClass: 'form-control',
                 //
                 buttonClass: 'btn btn-default',
@@ -1711,9 +1723,11 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                     scope.info = info;
 
                     if (info) {
+                        // Pick the renderer by checking `type`
                         if (info.hasOwnProperty('type'))
                             renderer = this[info.type];
 
+                        // If no element type, use the `element`
                         if (!renderer) {
                             renderer = this[info.element];
                         }
@@ -1847,7 +1861,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                     // Add model attribute
                     input.attr('ng-model', scope.formModelName + '.' + field.name);
 
-                    if (!field.showLabels) {
+                    if (!field.showLabels || field.type === 'hidden') {
                         label.addClass('sr-only');
                         // Add placeholder if not defined
                         if (field.placeholder === undefined)
@@ -1862,7 +1876,9 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                     }
 
                     if (this.inputGroupClass) {
-                        element = angular.element($document[0].createElement('div')).addClass(this.inputGroupClass);
+                        element = angular.element($document[0].createElement('div'));
+                        if (field.type === 'hidden') element.addClass(this.inputHiddenClass);
+                        else element.addClass(this.inputGroupClass);
                         element.append(label).append(input);
                     } else {
                         element = [label, input];
@@ -2182,9 +2198,19 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                     scope.formid = form.id;
                     scope.formCount = 0;
 
-                    scope.addMessages = function (messages) {
-                        forEach(messages, function (messages, field) {
-                            scope.formMessages[field] = messages;
+                    scope.addMessages = function (messages, level) {
+                        if (!level) level = 'info';
+
+                        forEach(messages, function (message) {
+                            if (isString(message))
+                                message = {message: message};
+
+                            var field = message.field || formDefaults.FORMKEY;
+
+                            if (!message.level)
+                                message.level = level;
+
+                            scope.formMessages[field] = [message];
 
                             var msg = '';
                             forEach(messages, function(error) {
@@ -2193,8 +2219,10 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                                     msg += '</br>';
                             });
 
-                            scope.formErrors[field] = msg;
-                            scope[scope.formName][field].$invalid = true;
+                            if (message.level === 'error') {
+                                scope.formErrors[field] = message.message;
+                                scope[scope.formName][field].$invalid = true;
+                            }
                         });
                     };
 
@@ -2429,30 +2457,19 @@ lux.processForm = function (e) {
             }
         },
         function (response) {
-            var data = response.data,
+            var data = response.data || {},
                 status = response.status,
-                messages, msg;
-            if (data) {
-                messages = data.messages;
-                if (!messages) {
-                    msg = data.message;
-                    if (!msg) {
-                        status = status || data.status || 501;
-                        msg = 'Server error (' + data.status + ')';
-                    }
-                    messages = {};
-                    scope.formMessages[FORMKEY] = [{
-                        message: msg,
-                        error: true
-                    }];
-                } else
-                    scope.addMessages(messages);
-            } else {
-                status = status || 501;
-                msg = 'Server error (' + status + ')';
-                messages = {};
-                scope.formMessages[FORMKEY] = [{message: msg, error: true}];
+                messages = data.errors,
+                msg;
+            if (!messages) {
+                msg = data.message;
+                if (!msg) {
+                    status = status || data.status || 501;
+                    msg = 'Response error (' + data.status + ')';
+                }
+                messages = [{message: msg}];
             }
+            scope.addMessages(messages, 'error');
         });
 };
 
@@ -3536,7 +3553,7 @@ angular.module("nav/templates/link.tpl.html", []).run(["$templateCache", functio
 
 angular.module("nav/templates/navbar.tpl.html", []).run(["$templateCache", function($templateCache) {
   $templateCache.put("nav/templates/navbar.tpl.html",
-    "<nav ng-if=\"navbar\" ng-attr-id=\"{{navbar.id}}\" class=\"navbar navbar-{{navbar.themeTop}}\"\n" +
+    "<nav ng-attr-id=\"{{navbar.id}}\" class=\"navbar navbar-{{navbar.themeTop}}\"\n" +
     "ng-class=\"{'navbar-fixed-top':navbar.fixed, 'navbar-static-top':navbar.top}\" role=\"navigation\"\n" +
     "ng-model=\"navbar.collapse\" bs-collapse>\n" +
     "    <div class=\"{{navbar.container}}\">\n" +
@@ -3626,13 +3643,12 @@ angular.module("nav/templates/navbar2.tpl.html", []).run(["$templateCache", func
 
 angular.module("nav/templates/sidebar.tpl.html", []).run(["$templateCache", function($templateCache) {
   $templateCache.put("nav/templates/sidebar.tpl.html",
-    "<navbar></navbar>\n" +
-    "<aside ng-if=\"user\" ng-attr-id=\"{{sidebar.id}}\" class=\"main-sidebar\"\n" +
-    "       ng-class=\"{'sidebar-fixed':sidebar.fixed}\">\n" +
+    "<navbar ng-if=\"navbar\"></navbar>\n" +
+    "<aside ng-attr-id=\"{{sidebar.id}}\" class=\"main-sidebar\" ng-class=\"{'sidebar-fixed':sidebar.fixed}\">\n" +
     "    <section ng-if=\"sidebar.sections\" class=\"sidebar\">\n" +
-    "        <div class=\"user-panel\">\n" +
+    "        <div ng-if=\"user\" class=\"user-panel\">\n" +
     "            <div ng-if=\"user.avatar\" class=\"pull-left image\">\n" +
-    "                <img src=\"{{user.avatar}}\" alt=\"User Image\" />\n" +
+    "                <img ng-src=\"{{user.avatar}}\" alt=\"User Image\" />\n" +
     "            </div>\n" +
     "            <div class=\"pull-left info\">\n" +
     "                <p>SIGNED IN AS</p>\n" +
@@ -3893,7 +3909,7 @@ angular.module("nav/templates/sidebar.tpl.html", []).run(["$templateCache", func
 
             this.initScope = function (scope, opts, element) {
 
-                var sidebar = angular.extend({}, sidebarDefaults, lux.getOptions(opts)),
+                var sidebar = angular.extend({}, sidebarDefaults, scope.sidebar, lux.getOptions(opts)),
                     body = lux.querySelector(document, 'body');
 
                 if (!sidebar.url)
@@ -3909,10 +3925,8 @@ angular.module("nav/templates/sidebar.tpl.html", []).run(["$templateCache", func
                 // Add link service functionality
                 linkService.initScope(scope);
 
-                if (scope.user) {
-                    if (!sidebar.collapse)
-                        element.addClass('sidebar-open-' + sidebar.position);
-                }
+                if (!sidebar.collapse)
+                    element.addClass('sidebar-open-' + sidebar.position);
 
                 scope.toggleSidebar = function() {
                     element.toggleClass('sidebar-open-' + sidebar.position);
@@ -3936,6 +3950,8 @@ angular.module("nav/templates/sidebar.tpl.html", []).run(["$templateCache", func
 
                 scope.sidebar = sidebar;
                 scope.navbar = sidebar.navbar;
+                if (!sidebar.sections && scope.navigation)
+                    sidebar.sections = scope.navigation;
                 return sidebar;
             };
         }])

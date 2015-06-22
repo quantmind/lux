@@ -9,6 +9,9 @@ from lux.utils.files import skipfile, get_rel_dir
 __all__ = ['CMS']
 
 
+MATCH = {}
+
+
 class Page(AttributeDictionary):
     pass
 
@@ -41,7 +44,10 @@ class CMS:
 
         for page in sitemap:
             route = Route(page['path'])
-            if route.match(path) is not None:
+            if isinstance(path, Route):
+                if path == route:
+                    return page
+            elif route.match(path) == MATCH:
                 return page
 
     def site_map(self):

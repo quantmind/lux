@@ -11,7 +11,7 @@ angular.module("nav/templates/link.tpl.html", []).run(["$templateCache", functio
 
 angular.module("nav/templates/navbar.tpl.html", []).run(["$templateCache", function($templateCache) {
   $templateCache.put("nav/templates/navbar.tpl.html",
-    "<nav ng-if=\"navbar\" ng-attr-id=\"{{navbar.id}}\" class=\"navbar navbar-{{navbar.themeTop}}\"\n" +
+    "<nav ng-attr-id=\"{{navbar.id}}\" class=\"navbar navbar-{{navbar.themeTop}}\"\n" +
     "ng-class=\"{'navbar-fixed-top':navbar.fixed, 'navbar-static-top':navbar.top}\" role=\"navigation\"\n" +
     "ng-model=\"navbar.collapse\" bs-collapse>\n" +
     "    <div class=\"{{navbar.container}}\">\n" +
@@ -101,13 +101,12 @@ angular.module("nav/templates/navbar2.tpl.html", []).run(["$templateCache", func
 
 angular.module("nav/templates/sidebar.tpl.html", []).run(["$templateCache", function($templateCache) {
   $templateCache.put("nav/templates/sidebar.tpl.html",
-    "<navbar></navbar>\n" +
-    "<aside ng-if=\"user\" ng-attr-id=\"{{sidebar.id}}\" class=\"main-sidebar\"\n" +
-    "       ng-class=\"{'sidebar-fixed':sidebar.fixed}\">\n" +
+    "<navbar ng-if=\"navbar\"></navbar>\n" +
+    "<aside ng-attr-id=\"{{sidebar.id}}\" class=\"main-sidebar\" ng-class=\"{'sidebar-fixed':sidebar.fixed}\">\n" +
     "    <section ng-if=\"sidebar.sections\" class=\"sidebar\">\n" +
-    "        <div class=\"user-panel\">\n" +
+    "        <div ng-if=\"user\" class=\"user-panel\">\n" +
     "            <div ng-if=\"user.avatar\" class=\"pull-left image\">\n" +
-    "                <img src=\"{{user.avatar}}\" alt=\"User Image\" />\n" +
+    "                <img ng-src=\"{{user.avatar}}\" alt=\"User Image\" />\n" +
     "            </div>\n" +
     "            <div class=\"pull-left info\">\n" +
     "                <p>SIGNED IN AS</p>\n" +

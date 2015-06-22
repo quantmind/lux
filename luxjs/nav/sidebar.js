@@ -29,7 +29,7 @@
 
             this.initScope = function (scope, opts, element) {
 
-                var sidebar = angular.extend({}, sidebarDefaults, lux.getOptions(opts)),
+                var sidebar = angular.extend({}, sidebarDefaults, scope.sidebar, lux.getOptions(opts)),
                     body = lux.querySelector(document, 'body');
 
                 if (!sidebar.url)
@@ -45,10 +45,8 @@
                 // Add link service functionality
                 linkService.initScope(scope);
 
-                if (scope.user) {
-                    if (!sidebar.collapse)
-                        element.addClass('sidebar-open-' + sidebar.position);
-                }
+                if (!sidebar.collapse)
+                    element.addClass('sidebar-open-' + sidebar.position);
 
                 scope.toggleSidebar = function() {
                     element.toggleClass('sidebar-open-' + sidebar.position);
@@ -72,6 +70,8 @@
 
                 scope.sidebar = sidebar;
                 scope.navbar = sidebar.navbar;
+                if (!sidebar.sections && scope.navigation)
+                    sidebar.sections = scope.navigation;
                 return sidebar;
             };
         }])

@@ -282,7 +282,7 @@ class Form(metaclass=FormType):
         Called last in the validation algorithm.
         By default it does nothing but it can be overwritten to cross checking
         fields for example. It doesn't need to return anything, just throw a
-        :class:`lux.ValidationError` in case the cleaning is not successful.
+        :class:`.ValidationError` in case the cleaning is not successful.
         '''
         pass
 
@@ -303,24 +303,28 @@ class Form(metaclass=FormType):
         :attr:`messages` dictionary.
         '''
         errors = self.errors
-        data = {}
-        message = {'success': not errors,
-                   'error': bool(errors)}
-        for name, msg in self.errors.items():
-            field = self.dfields.get(name)
-            if field:
-                name = field.html_name
-            data[name] = [{'message': m, 'error': True} for m in msg]
-        for name, msg in self.messages.items():
-            field = self.dfields.get(name)
-            if field:
-                name = field.html_name
-            l = data.get(name, [])
-            l.extend(({'message': m} for m in msg))
-            data[name] = l
-        if data:
-            message['messages'] = data
-        return message
+        if errors:
+            if self.request:
+                self.request.response.status_code = 422
+            messages = []
+            data = {'message': 'validation error',
+                    'errors': messages}
+            for name, msg in self.errors.items():
+                msg = {'message': '\n'.join(msg)}
+                field = self.dfields.get(name)
+                if field:
+                    msg['field'] = field.html_name
+                messages.append(msg)
+            return data
+        else:
+            messages = []
+            for name, msg in self.messages.items():
+                msg = {'message': msg}
+                field = self.dfields.get(name)
+                if field:
+                    msg['field'] = field.html_name
+                messages.append(msg)
+            return messages
 
     # INTERNALS
     def _check_unwind(self, raise_error=True):

@@ -280,7 +280,7 @@ class BooleanField(Field):
 
 
 class JsonField(TextField):
-    validation_error = 'not a valid json string'
+    validation_error = 'not a valid JSON string'
 
     def _clean(self, value, instance):
         try:

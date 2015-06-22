@@ -85,29 +85,18 @@ lux.processForm = function (e) {
             }
         },
         function (response) {
-            var data = response.data,
+            var data = response.data || {},
                 status = response.status,
-                messages, msg;
-            if (data) {
-                messages = data.messages;
-                if (!messages) {
-                    msg = data.message;
-                    if (!msg) {
-                        status = status || data.status || 501;
-                        msg = 'Server error (' + data.status + ')';
-                    }
-                    messages = {};
-                    scope.formMessages[FORMKEY] = [{
-                        message: msg,
-                        error: true
-                    }];
-                } else
-                    scope.addMessages(messages);
-            } else {
-                status = status || 501;
-                msg = 'Server error (' + status + ')';
-                messages = {};
-                scope.formMessages[FORMKEY] = [{message: msg, error: true}];
+                messages = data.errors,
+                msg;
+            if (!messages) {
+                msg = data.message;
+                if (!msg) {
+                    status = status || data.status || 501;
+                    msg = 'Response error (' + data.status + ')';
+                }
+                messages = [{message: msg}];
             }
+            scope.addMessages(messages, 'error');
         });
 };

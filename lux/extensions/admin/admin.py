@@ -52,7 +52,9 @@ class AdminRouter(lux.HtmlRouter):
             return callable(request)
 
     def context(self, request, context):
-        '''Add the admin navigation to the javascript context
+        '''Override to add the admin navigation to the javascript context.
+
+        The navigation entry can be used to build the admin web pages
         '''
         admin = self.admin_root()
         if admin:

@@ -151,9 +151,9 @@ def angular_compatible(app, router1, router2):
     router1 = html_router(router1)
     router2 = html_router(router2)
     if router1 and router2:
-        templ1 = router1.get_html_body_template(app)
-        templ2 = router2.get_html_body_template(app)
-        return templ1 == templ2
+        page1 = router1.cms(app).page(router1.full_route)
+        page2 = router2.cms(app).page(router2.full_route)
+        return page1.template == page2.template
     return False
 
 
