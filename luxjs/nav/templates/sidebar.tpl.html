@@ -1,7 +1,7 @@
-<navbar ng-if="navbar"></navbar>
+<navbar></navbar>
 <aside ng-attr-id="{{sidebar.id}}" class="main-sidebar" ng-class="{'sidebar-fixed':sidebar.fixed}">
     <section ng-if="sidebar.sections" class="sidebar">
-        <div ng-if="user" class="user-panel">
+        <div ng-if="user" class="nav-panel">
             <div ng-if="user.avatar" class="pull-left image">
                 <img ng-src="{{user.avatar}}" alt="User Image" />
             </div>

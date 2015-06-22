@@ -76,12 +76,8 @@ class TestSqlite(test.AppTestCase):
         request = yield from self.client.post('/authorizations',
                                               content_type='application/json',
                                               body=data)
-        response = request.response
-        self.assertEqual(response.status_code, 200)
-        user = request.cache.user
-        self.assertFalse(user.is_authenticated())
-        self.assertEqual(response['content-type'],
-                         'application/json; charset=utf-8')
+        self.assertValidationError(request.response, '',
+                                   'Invalid username or password')
 
     def test_create_superuser_command_and_token(self):
         username = 'ghghghgh'

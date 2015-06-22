@@ -8,7 +8,7 @@ import lux
 from lux import Parameter, RedirectRouter
 
 from .admin import Admin, AdminModel, CRUDAdmin, adminMap, register, is_admin
-from .ui import add_css
+from .sidebar import add_css
 
 
 __all__ = ['Admin', 'AdminModel', 'CRUDAdmin', 'register',

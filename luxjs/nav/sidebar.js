@@ -19,8 +19,8 @@
     var sidebarDefaults = {
         collapse: true,
         position: 'left',
-        fixed: true,
-        url: lux.context.url,
+        toggle: 'Menu',
+        url: lux.context.url || '/',
     };
 
     angular.module('lux.sidebar', ['lux.nav'])
@@ -31,13 +31,6 @@
 
                 var sidebar = angular.extend({}, sidebarDefaults, scope.sidebar, lux.getOptions(opts)),
                     body = lux.querySelector(document, 'body');
-
-                if (!sidebar.url)
-                    sidebar.url = '/';
-                if (!sidebar.themeTop)
-                    sidebar.themeTop = sidebar.theme;
-                if (!sidebar.position)
-                    sidebar.position = sidebarDefaults.position;
 
                 sidebar.container = sidebar.fluid ? 'container-fluid' : 'container';
                 body.addClass(sidebar.position + '-sidebar skin');
@@ -69,11 +62,37 @@
                 };
 
                 scope.sidebar = sidebar;
-                scope.navbar = sidebar.navbar;
+                scope.navbar = initNavbar(sidebar);
+
                 if (!sidebar.sections && scope.navigation)
                     sidebar.sections = scope.navigation;
                 return sidebar;
             };
+
+            // Initialise top navigation bar
+            function initNavbar (sidebar) {
+                var navbar = sidebar.navbar;
+
+                // No navbar, add an object
+                if (!navbar)
+                    sidebar.navbar = navbar = {};
+                //
+                // Add toggle to the navbar
+                if (sidebar.toggle) {
+                    if (!navbar.itemsLeft) navbar.itemsLeft = [];
+
+                    navbar.itemsLeft.splice(0, 0, {
+                        href: '#',
+                        title: sidebar.toggle,
+                        name: sidebar.toggle,
+                        klass: 'sidebar-toggle',
+                        icon: 'fa fa-bars',
+                        action: 'toggleSidebar'
+                    });
+                }
+
+                return navbar;
+            }
         }])
         //
         .directive('navSidebarLink', ['sidebarService', function (sidebarService) {

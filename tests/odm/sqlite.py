@@ -212,13 +212,8 @@ class TestSql(test.AppTestCase):
                                               token=token,
                                               content_type='application/json')
         response = request.response
-        self.assertEqual(response.status_code, 200)
-        data = self.json(response)
-        self.assertIsInstance(data, dict)
-        self.assertFalse(data['success'])
-        self.assertTrue(data['error'])
-        error = data['messages']['assigned_id'][0]
-        self.assertEqual(error['message'], 'Invalid person')
+        self.assertValidationError(request.response, 'assigned_id',
+                                   'Invalid person')
 
     def test_unique_field(self):
         token = yield from self._token()
@@ -227,13 +222,8 @@ class TestSql(test.AppTestCase):
         request = yield from self.client.post('/people', body=data,
                                               token=token,
                                               content_type='application/json')
-        response = request.response
-        self.assertEqual(response.status_code, 200)
-        data = self.json(response)
-        self.assertFalse(data['success'])
-        self.assertTrue(data['error'])
-        error = data['messages']['username'][0]
-        self.assertEqual(error['message'], 'spiderman1 not available')
+        self.assertValidationError(request.response, 'username',
+                                   'spiderman1 not available')
 
     def test_metadata_custom(self):
         request = yield from self.client.get('/users/metadata',

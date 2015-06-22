@@ -1,4 +1,4 @@
-from lux.extensions.ui.lib import *
+from lux.extensions.ui.lib import *     # noqa
 
 
 def add_css(all):
@@ -6,12 +6,30 @@ def add_css(all):
     '''
     css = all.css
     media = all.media
+    vars = all.variables
     cfg = all.app.config
+
+    # Sidebar variables container
+    navbar = vars.navbar
+    sidebar = vars.sidebar
+    sidebar.width = px(250)
+    sidebar.toggle.margin = px(15)
+    sidebar.toggle.size = px(22)
+    sidebar.toggle.padding = 0.5*(navbar.height-sidebar.toggle.size)
+
     collapse_width = px(cfg['NAVBAR_COLLAPSE_WIDTH'])
 
     media(min_width=collapse_width).css(
         '.sidebar',
-        width=px(250))
+        width=sidebar.width)
+
+    media(min_width=collapse_width).css(
+        '.navbar.navbar-static-top .navbar-nav',
+        css('> li > a.sidebar-toggle',
+            font_size=sidebar.toggle.size,
+            line_height=sidebar.toggle.size,
+            padding_top=sidebar.toggle.padding,
+            paddint_bottom=sidebar.toggle.padding))
 
     css('.overlay',
         position='absolute',
@@ -24,10 +42,7 @@ def add_css(all):
         z_index=800)
 
     css('.content-wrapper',
-        # background_color=color('#EDEDED'),
-        # border_top='2px solid #ddd',
-        z_index=800,
-        padding=spacing(0, 20, 20))
+        z_index=800)
 
     css('a',
         color=color('#3c8dbc'))
@@ -43,11 +58,11 @@ def add_css(all):
         overflow_x='hidden',
         top=px(0),
         min_height='100%',
-        width=px(250),
+        width=sidebar.width,
         z_index=810)
 
     css('.right-sidebar',
-        css(' .content-wrapper, .navbar-static-top, #footer',
+        css(' .content-wrapper, .navbar-static-top',
             transform='translate(0px, 0px)',
             transition='transform 0.15s cubic-bezier(0.2, 0.3, 0.25, 0.9) 0s'),
         css(' .main-sidebar',
@@ -62,11 +77,12 @@ def add_css(all):
             css(' .navbar-side',
                 float='left'),
             css(' .sidebar-toggle',
+                margin_left=sidebar.toggle.margin,
                 border_left='1px solid #ddd')),
         )
 
     css('.left-sidebar',
-        css(' .content-wrapper, .navbar-static-top, #footer',
+        css(' .content-wrapper, .navbar-static-top',
             transform='translate(0px, 0px)',
             transition='transform 0.15s cubic-bezier(0.2, 0.3, 0.25, 0.9) 0s'),
         css(' .main-sidebar',
@@ -81,6 +97,7 @@ def add_css(all):
             css(' .navbar-side',
                 float='right'),
             css(' .sidebar-toggle',
+                margin_right=sidebar.toggle.margin,
                 border_right='1px solid #ddd')),
         )
 
@@ -90,7 +107,7 @@ def add_css(all):
             background_color='rgba(0, 0, 0, 0.1)'),
         css(' .navbar-side',
             display='none'),
-        css(' .content-wrapper, .navbar-static-top, #page-footer',
+        css(' .content-wrapper, .navbar-static-top',
             transform='translate(250px, 0px)',
             transition='transform 0.15s cubic-bezier(0.2, 0.3, 0.25, 0.9) 0s'),
         css(' .main-sidebar',
@@ -103,7 +120,7 @@ def add_css(all):
             background_color='rgba(0, 0, 0, 0.1)'),
         css(' .navbar-side',
             display='none'),
-        css(' .content-wrapper, .navbar-static-top, #page-footer',
+        css(' .content-wrapper, .navbar-static-top',
             transform='translate(-250px, 0px)',
             transition='transform 0.15s cubic-bezier(0.2, 0.3, 0.25, 0.9) 0s'),
         css(' .main-sidebar',
@@ -114,7 +131,7 @@ def add_css(all):
         position='fixed'),
 
     css('.sidebar',
-        css(' .user-panel',
+        css(' .nav-panel',
             css(':before, :after',
                 content='\"\"',
                 display='table'),
@@ -142,6 +159,7 @@ def add_css(all):
                 padding=spacing(5, 5, 5, 15),
                 line_height=1),
             padding=spacing(3, 10),
+            height=navbar.height,
             background=color('#425466')),
         css(' .sidebar-menu',
             css(' .treeview-menu',
@@ -198,7 +216,7 @@ def add_css(all):
                 position='relative',
                 margin=px(0),
                 padding=px(0),
-                width=px(250)),
+                width=sidebar.width),
             list_style='none',
             margin=px(0),
             padding=px(0)),

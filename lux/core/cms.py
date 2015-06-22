@@ -9,17 +9,22 @@ from lux.utils.files import skipfile, get_rel_dir
 __all__ = ['CMS']
 
 
-MATCH = {}
-
-
 class Page(AttributeDictionary):
     pass
 
 
 class CMS:
-    '''A simple CMS.
+    '''Lux CMS base class.
 
     Retrieve HTML templates from the :setting:`HTML_TEMPLATES` dictionary
+
+    .. attribute:: app
+
+        lux Application
+
+    .. attribute:: key
+
+        A key which identify this CMS. Not used yet. #TOTO explain this
     '''
     _sitemap = None
     _context = None
@@ -29,15 +34,20 @@ class CMS:
         self.key = key
 
     def page(self, path):
-        '''Obtain a page object from a path
+        '''Obtain a page object from a path.
+
+        This method always return a :class:`.Page`. If there are not
+        registered pages which match the path, it return an empty Page.
         '''
         return Page(self.match(path) or ())
 
     def match(self, path, sitemap=None):
         '''Match a path with a page form ``sitemap``
 
-        If no sitemap is given, use the default stitemap
-        form the :meth:`site_map` method
+        If no sitemap is given, use the default sitemap
+        form the :meth:`site_map` method.
+
+        If no page is matched returns Nothing.
         '''
         if sitemap is None:
             sitemap = self.site_map()
@@ -47,8 +57,10 @@ class CMS:
             if isinstance(path, Route):
                 if path == route:
                     return page
-            elif route.match(path) == MATCH:
-                return page
+            else:
+                matched = route.match(path)
+                if matched is not None and '__remaining__' not in matched:
+                    return page
 
     def site_map(self):
         if self._sitemap is None:

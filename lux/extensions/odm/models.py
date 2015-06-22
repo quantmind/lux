@@ -33,7 +33,7 @@ class RestModel(rest.RestModel):
                 continue
             try:
                 data = obj.__getattribute__(name)
-                if hasattr(data,'__call__'):
+                if hasattr(data, '__call__'):
                     data = data()
                 if isinstance(data, date):
                     if isinstance(data, datetime) and not data.tzinfo:

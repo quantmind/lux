@@ -4,6 +4,9 @@ from lux.extensions import odm
 from .policy import validate_policy
 
 
+PermissionModel = odm.RestModel('permission')
+
+
 class UserForm(forms.Form):
     pass
 
@@ -12,6 +15,7 @@ class GroupForm(forms.Form):
     model = 'group'
     id = forms.HiddenField(required=False)
     name = forms.CharField()
+    permissions = odm.RelationshipField(PermissionModel)
 
     def clean_name(self, value):
         value = value.lower()

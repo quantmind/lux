@@ -113,6 +113,8 @@ class AdminModel(rest.RestMixin, AdminRouter):
     icon = None
     '''An icon for this Admin section
     '''
+    uimodules = ('lux.grid',)
+
     def info(self, app):
         '''Information for admin navigation
         '''

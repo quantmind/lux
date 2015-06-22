@@ -9,8 +9,8 @@ def add_css(all):
     vars.background_footer_color = '#ededed'
     vars.background_footer_border = '#D4D4D4'
     vars.colors.blue = '#2B4E72'
-    vars.navbar_height = 80
-    vars.animate.fade.top = px(vars.navbar_height)
+    vars.navbar.height = 80
+    vars.animate.fade.top = px(vars.navbar.height)
 
     vars.font_family = ('"freight-text-pro",Georgia,Cambria,"Times New Roman",'
                         'Times,serif')

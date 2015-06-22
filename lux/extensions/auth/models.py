@@ -1,7 +1,6 @@
 '''
 SQLAlchemy models for Authentications
 '''
-import enum
 from datetime import datetime
 
 from sqlalchemy.orm import relationship
@@ -64,6 +63,7 @@ class User(Model, UserMixin):
         else:
             name = self.username or self.email
         return name
+
 
 class Group(Model):
     id = Column(Integer, primary_key=True)

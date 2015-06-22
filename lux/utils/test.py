@@ -10,6 +10,7 @@ from io import StringIO
 from pulsar import get_event_loop
 from pulsar.utils.httpurl import encode_multipart_formdata
 from pulsar.utils.string import random_string
+from pulsar.apps.wsgi import WsgiResponse
 from pulsar.apps.test import test_timeout   # noqa
 
 import lux
@@ -175,16 +176,22 @@ class TestMixin:
                          'application/json; charset=utf-8')
         return json.loads(response.content[0].decode('utf-8'))
 
-    def assertValidationError(self, data, field=None, text=None):
+    def assertValidationError(self, response, field=None, text=None):
         '''Assert a Form validation error
         '''
-        self.assertFalse(data['success'])
-        self.assertTrue(data['error'])
-        if field:
-            msg = data['messages'][field][0]
-            self.assertTrue(msg['error'])
+        if isinstance(response, WsgiResponse):
+            self.assertEqual(response.status_code, 422)
+            data = self.json(response)
+        else:
+            data = response
+        self.assertEqual(data['message'], 'validation error')
+        errors = data['errors']
+        self.assertTrue(errors)
+        if field is not None:
+            data = dict(((d.get('field', ''), d['message']) for d in errors))
+            self.assertTrue(field in data)
             if text:
-                self.assertEqual(msg['message'], text)
+                self.assertEqual(data[field], text)
 
 
 class TestCase(unittest.TestCase, TestMixin):

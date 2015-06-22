@@ -3545,7 +3545,7 @@ angular.module('templates-nav', ['nav/templates/link.tpl.html', 'nav/templates/n
 angular.module("nav/templates/link.tpl.html", []).run(["$templateCache", function($templateCache) {
   $templateCache.put("nav/templates/link.tpl.html",
     "<a ng-if=\"link.title\" ng-href=\"{{link.href}}\" data-title=\"{{link.title}}\" ng-click=\"clickLink($event, link)\"\n" +
-    "ng-attr-target=\"{{link.target}}\" bs-tooltip=\"tooltip\">\n" +
+    "ng-attr-target=\"{{link.target}}\" ng-class=\"link.klass\" bs-tooltip=\"tooltip\">\n" +
     "<i ng-if=\"link.icon\" class=\"{{link.icon}}\"></i> {{link.label || link.name}}</a>\n" +
     "<a ng-if=\"!link.title\" ng-href=\"{{link.href}}\" ng-attr-target=\"{{link.target}}\">\n" +
     "<i ng-if=\"link.icon\" class=\"{{link.icon}}\"></i> {{link.label || link.name}}</a>");
@@ -3564,6 +3564,10 @@ angular.module("nav/templates/navbar.tpl.html", []).run(["$templateCache", funct
     "                <span class=\"icon-bar\"></span>\n" +
     "                <span class=\"icon-bar\"></span>\n" +
     "            </button>\n" +
+    "            <ul ng-if=\"navbar.itemsLeft\" class=\"nav navbar-nav\">\n" +
+    "                <li ng-repeat=\"link in navbar.itemsLeft\" ng-class=\"{active:activeLink(link)}\" navbar-link>\n" +
+    "                </li>\n" +
+    "            </ul>\n" +
     "            <a ng-if=\"navbar.brandImage\" href=\"{{navbar.url}}\" class=\"navbar-brand\" target=\"{{navbar.target}}\">\n" +
     "                <img ng-src=\"{{navbar.brandImage}}\" alt=\"{{navbar.brand || 'brand'}}\">\n" +
     "            </a>\n" +
@@ -3572,10 +3576,6 @@ angular.module("nav/templates/navbar.tpl.html", []).run(["$templateCache", funct
     "            </a>\n" +
     "        </div>\n" +
     "        <div class=\"navbar-collapse\" bs-collapse-target>\n" +
-    "            <ul ng-if=\"navbar.items\" class=\"nav navbar-nav\">\n" +
-    "                <li ng-repeat=\"link in navbar.items\" ng-class=\"{active:activeLink(link)}\" navbar-link>\n" +
-    "                </li>\n" +
-    "            </ul>\n" +
     "            <ul ng-if=\"navbar.itemsRight\" class=\"nav navbar-nav navbar-right\">\n" +
     "                <li ng-repeat=\"link in navbar.itemsRight\" ng-class=\"{active:activeLink(link)}\" navbar-link>\n" +
     "                </li>\n" +
@@ -3643,10 +3643,10 @@ angular.module("nav/templates/navbar2.tpl.html", []).run(["$templateCache", func
 
 angular.module("nav/templates/sidebar.tpl.html", []).run(["$templateCache", function($templateCache) {
   $templateCache.put("nav/templates/sidebar.tpl.html",
-    "<navbar ng-if=\"navbar\"></navbar>\n" +
+    "<navbar></navbar>\n" +
     "<aside ng-attr-id=\"{{sidebar.id}}\" class=\"main-sidebar\" ng-class=\"{'sidebar-fixed':sidebar.fixed}\">\n" +
     "    <section ng-if=\"sidebar.sections\" class=\"sidebar\">\n" +
-    "        <div ng-if=\"user\" class=\"user-panel\">\n" +
+    "        <div ng-if=\"user\" class=\"nav-panel\">\n" +
     "            <div ng-if=\"user.avatar\" class=\"pull-left image\">\n" +
     "                <img ng-src=\"{{user.avatar}}\" alt=\"User Image\" />\n" +
     "            </div>\n" +
@@ -3899,8 +3899,8 @@ angular.module("nav/templates/sidebar.tpl.html", []).run(["$templateCache", func
     var sidebarDefaults = {
         collapse: true,
         position: 'left',
-        fixed: true,
-        url: lux.context.url,
+        toggle: 'Menu',
+        url: lux.context.url || '/',
     };
 
     angular.module('lux.sidebar', ['lux.nav'])
@@ -3911,13 +3911,6 @@ angular.module("nav/templates/sidebar.tpl.html", []).run(["$templateCache", func
 
                 var sidebar = angular.extend({}, sidebarDefaults, scope.sidebar, lux.getOptions(opts)),
                     body = lux.querySelector(document, 'body');
-
-                if (!sidebar.url)
-                    sidebar.url = '/';
-                if (!sidebar.themeTop)
-                    sidebar.themeTop = sidebar.theme;
-                if (!sidebar.position)
-                    sidebar.position = sidebarDefaults.position;
 
                 sidebar.container = sidebar.fluid ? 'container-fluid' : 'container';
                 body.addClass(sidebar.position + '-sidebar skin');
@@ -3949,11 +3942,37 @@ angular.module("nav/templates/sidebar.tpl.html", []).run(["$templateCache", func
                 };
 
                 scope.sidebar = sidebar;
-                scope.navbar = sidebar.navbar;
+                scope.navbar = initNavbar(sidebar);
+
                 if (!sidebar.sections && scope.navigation)
                     sidebar.sections = scope.navigation;
                 return sidebar;
             };
+
+            // Initialise top navigation bar
+            function initNavbar (sidebar) {
+                var navbar = sidebar.navbar;
+
+                // No navbar, add an object
+                if (!navbar)
+                    sidebar.navbar = navbar = {};
+                //
+                // Add toggle to the navbar
+                if (sidebar.toggle) {
+                    if (!navbar.itemsLeft) navbar.itemsLeft = [];
+
+                    navbar.itemsLeft.splice(0, 0, {
+                        href: '#',
+                        title: sidebar.toggle,
+                        name: sidebar.toggle,
+                        klass: 'sidebar-toggle',
+                        icon: 'fa fa-bars',
+                        action: 'toggleSidebar'
+                    });
+                }
+
+                return navbar;
+            }
         }])
         //
         .directive('navSidebarLink', ['sidebarService', function (sidebarService) {
