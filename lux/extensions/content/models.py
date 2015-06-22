@@ -1,15 +1,18 @@
 import os
 import glob
 
-from dulwich.file import GitFile
 from dulwich.porcelain import rm
 from dulwich.porcelain import add
 from dulwich.porcelain import init
 from dulwich.porcelain import commit
 from dulwich.porcelain import open_repo
+from dulwich.file import GitFile
 from dulwich.errors import NotGitRepository
 
 from lux.extensions import rest
+
+
+__all__ = ('_b', 'DataError', 'Content')
 
 
 def _b(value):
@@ -43,22 +46,23 @@ class Content(rest.RestModel):
         '''Write a file into the repository
         '''
         slug = data['slug']
-        filename = '%s.md' % slug
-        fullpath = os.path.join(self.path, filename)
+        filename = self._format_filename(slug)
+        filepath = self._format_filename(slug, True)
         if new:
             if not message:
                 message = "Created %s" % slug
-            if os.path.isfile(fullpath):
+            if os.path.isfile(filepath):
                 raise DataError('%s not available' % slug)
         else:
             if not message:
                 message = "Updated %s" % slug
-            if not os.path.isfile(fullpath):
+            if not os.path.isfile(filepath):
                 raise DataError('%s not available' % slug)
 
         content = self.content(data)
 
-        with open(fullpath, 'wb') as f:
+        # write file
+        with open(filepath, 'wb') as f:
             f.write(_b(content))
 
         add(self.repo, [filename])
@@ -70,37 +74,87 @@ class Content(rest.RestModel):
         '''Delete file(s) from repository
         '''
         files_to_del = data.get('files')
-        if files_to_del:
-            for f in files_to_del:
-                path = os.path.join(self.path, f)
-                # remove only files that really exist
-                if os.path.exists(path):
-                    # remove from disk
-                    os.remove(path)
-                    # remove from repo
-                    rm(self.repo, [path])
-            if not message:
-                message = 'Deleted %s' % ';'.join(files_to_del)
-                commit_hash = commit(self.repo, _b(message),
-                                     committer=_b(user.username))
-                return commit_hash
-        raise DataError('Nothing to delete')
+        if not files_to_del:
+            raise DataError('Nothing to delete')
+        # convert to list if not already
+        if not isinstance(files_to_del, (list, tuple)):
+            files_to_del = [files_to_del]
 
-    def read(self, path):
+        filenames = self._format_filename(files_to_del, path=True)
+        for f in filenames:
+            # remove only files that really exist and not dirs
+            if os.path.exists(f) and os.path.isfile(f):
+                # remove from disk
+                os.remove(f)
+                # remove from repo, we need only file name not full path
+                name = f.split('/')[-1]
+                rm(self.repo, [name])
+
+        if not message:
+            message = 'Deleted %s' % ';'.join(filenames)
+
+        commit_hash = commit(self.repo, _b(message),
+                             committer=_b(user.username))
+        return commit_hash
+
+
+    def read(self, filename):
         '''Read content from file in repository
         '''
-        if not os.path.isabs:
-            path = os.path.join(self.repo.path, path)
-        if os.path.exists(path):
-            # use GitFile instead of standard file object, as it gives
-            # `lazy` behavior and also obeys the git file locking protocol
-            with GitFile(path) as f:
+        file_name = self._format_filename(filename, True)
+        try:
+            # use dulwich GitFile to obeys the git file locking protocol
+            with GitFile(file_name, 'rb') as f:
                 content = f.read()
             return content.decode('utf-8')
-        raise DataError('%s not available' % path)
+        except IOError:
+            raise DataError('%s not available' % filename)
 
     def all(self):
-        return glob.glob(os.path.join(self.repo.path, '*.md'))
+        '''Return list of all files stored in repo
+        '''
+        files = glob.glob(os.path.join(self.repo.path, '*.md'))
+        return self._get_filename(files)
+
+    def __iter_filename(self, filename, func, path=None):
+        '''In case more than one filename is provided, normalize
+        all entries by provided function. Dedicated for `_format_filename'
+        and `_get_filename` functions, should be not use directly.
+        '''
+        _filename = []
+        for name in filename:
+            if path:
+                _name = func(name, path)
+            else:
+                _name = func(name)
+            _filename.append(_name)
+        return _filename
+
+    def _format_filename(self, filename, path=None):
+        '''Append `.md` extension to file name and full path
+        if `path` is True.
+        '''
+        if isinstance(filename, (list, tuple)):
+            return self.__iter_filename(filename, self._format_filename, path)
+
+        if not filename.endswith('.md'):
+            filename = '%s.md' % filename
+        if path:
+            filename = os.path.join(self.repo.path, filename)
+        return filename
+
+    def _get_filename(self, filename):
+        '''Get rid of full path and `.md` extension and
+        return peeled file name.
+        '''
+        if isinstance(filename, (list, tuple)):
+            return self.__iter_filename(filename, self._get_filename)
+
+        # in case filename is a full path to a file
+        filename = filename.split('/')[-1]
+        if filename.endswith('.md'):
+            filename = filename[:-3]
+        return filename
 
     def content(self, data):
         body = data['body']
