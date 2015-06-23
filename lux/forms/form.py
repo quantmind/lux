@@ -186,8 +186,12 @@ class Form(metaclass=FormType):
                  prefix=None, instance=None):
         self.request = request
         self.is_bound = data is not None or files is not None
-        self.rawdata = data if data is None else dict(data.items())
-        self._files = files if files is None else dict(files.items())
+        if self.is_bound:
+            self.rawdata = dict(data.items() if data else ())
+            self._files = dict(files.items() if files else ())
+        else:
+            self.rawdata = None
+            self._files = None
         self._cleaned_data = None
         self._errors = None
         if initial:
