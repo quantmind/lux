@@ -48,7 +48,8 @@ class Extension(AuthBackend):
                   'List of python dotted paths to classes which provide '
                   'a backend for authentication.'),
         Parameter('CRYPT_ALGORITHM',
-                  dict(module='lux.utils.crypt.arc4', salt_size=8),
+                  'lux.utils.crypt.pbkdf2',
+                  # dict(module='lux.utils.crypt.arc4', salt_size=8),
                   'Python dotted path to module which provides the '
                   '``encrypt`` and, optionally, ``decrypt`` method for '
                   'password and sensitive data encryption/decryption'),

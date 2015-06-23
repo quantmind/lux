@@ -1,2 +1,6 @@
-EXTENSIONS = ['lux.extensions.base',
-              'lux.extensions.ui']
+EXTENSIONS = ['lux.extensions.ui',
+              'lux.extensions.base',
+              'lux.extensions.rest',
+              'lux.extensions.angular',
+              'lux.extensions.admin',
+              'lux.extensions.code']
