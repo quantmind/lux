@@ -1,3 +1,5 @@
+import operator
+
 from pulsar.apps.wsgi import Route
 from pulsar import Http404
 from pulsar.utils.slugify import slugify
@@ -47,6 +49,29 @@ class AnyPage(HtmlRouter):
             if not isinstance(cms, CMS):
                 app.cms = cms = CMS(app)
             return cms
+
+    def _get_components(self, components, row, col):
+        return [comp for comp in components
+                if comp['row'] == row and comp['col'] == col]
+
+    def layout_to_html(self, layout):
+        html = ''
+        for row_idx, row in enumerate(layout['rows']):
+            row_html = '\n<div class="row">{content}\n</div>'
+            content = ''
+            for col_idx, col in enumerate(row):
+                col_html = '\n\t<div class="{col_cls}">{components}\n\t</div>'
+                components = self._get_components(layout['components'],
+                                                  row_idx, col_idx)
+                render_block = ''
+                for comp in sorted(components, key=operator.itemgetter('pos')):
+                    render_block += ('''\n\t\t<render-component id="%s" %s>'''
+                                     '''</render-component>''' % (
+                                         comp['id'], comp['type']))
+                content += col_html.format(col_cls=col,
+                                           components=render_block)
+            html += row_html.format(content=content)
+        return html
 
     def get_html(self, request):
         path = request.urlargs['path']
