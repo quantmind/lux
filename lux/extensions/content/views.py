@@ -25,8 +25,10 @@ class BlogForm(forms.Form):
 
 
 class TextCRUD(rest.RestRouter):
+
     '''CRUD views for the text APIs
     '''
+
     def __init__(self, name, path, *args, **kwargs):
         model = Content(name, path, form=BlogForm)
         super().__init__(model, *args, **kwargs)
