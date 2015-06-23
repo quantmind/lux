@@ -608,8 +608,7 @@
                     scope.formid = form.id;
                     scope.formCount = 0;
 
-                    scope.addMessages = function (messages, level) {
-                        if (!level) level = 'info';
+                    scope.addMessages = function (messages, error) {
 
                         forEach(messages, function (message) {
                             if (isString(message))
@@ -617,19 +616,11 @@
 
                             var field = message.field || formDefaults.FORMKEY;
 
-                            if (!message.level)
-                                message.level = level;
+                            if (error) message.error = error;
 
                             scope.formMessages[field] = [message];
 
-                            var msg = '';
-                            forEach(messages, function(error) {
-                                msg += error.message;
-                                if (messages.length > 1)
-                                    msg += '</br>';
-                            });
-
-                            if (message.level === 'error') {
+                            if (message.error && field !== formDefaults.FORMKEY) {
                                 scope.formErrors[field] = message.message;
                                 scope[scope.formName][field].$invalid = true;
                             }

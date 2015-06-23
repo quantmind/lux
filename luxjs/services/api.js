@@ -13,6 +13,8 @@
         //
         .value('ApiTypes', {})
         //
+        .value('AuthApis', {})
+        //
         .run(['$rootScope', '$lux', function (scope, $lux) {
             //
             var name = $(document.querySelector("meta[name=csrf-param]")).attr('content'),
@@ -38,8 +40,9 @@
             });
         }])
         //
-        .service('$lux', ['$location', '$window', '$q', '$http', '$log', '$timeout', 'ApiTypes',
-                function ($location, $window, $q, $http, $log, $timeout, ApiTypes) {
+        .service('$lux', ['$location', '$window', '$q', '$http', '$log',
+                          '$timeout', 'ApiTypes', 'AuthApis',
+                function ($location, $window, $q, $http, $log, $timeout, ApiTypes, AuthApis) {
             var $lux = this;
 
             this.location = $location;
@@ -79,6 +82,13 @@
                     ApiTypes[url] = api;
                     return api(url, this);
                 }
+            };
+
+            this.authApi = function (api, auth) {
+                if (arguments.length === 1)
+                    return AuthApis[api.baseUrl()];
+                else if (arguments.length === 2)
+                    AuthApis[api.baseUrl()] = auth;
             };
         }]);
     //

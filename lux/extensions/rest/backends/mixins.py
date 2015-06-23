@@ -3,11 +3,10 @@ import time
 
 from pulsar import HttpException, ImproperlyConfigured
 from pulsar.utils.structures import AttributeDictionary
+from pulsar.utils.pep import to_string
 from pulsar.apps.wsgi import Json
 
 from lux import Parameter, wsgi_request
-
-from ..user import SessionMixin
 
 try:
     import jwt
@@ -27,12 +26,14 @@ class TokenBackendMixin:
     def login_response(self, request, user):
         expiry = self.session_expiry(request)
         token = self.create_token(request, user, expiry=expiry)
-        token = token.encoded.decode('utf-8')
+        token = to_string(token.encoded)
         request.response.status_code = 201
         return Json({'success': True,
                      'token': token}).http_response(request)
 
     def logout_response(self, request, user):
+        '''TODO: do we set the token as expired!? Or we simply do nothing?
+        '''
         return Json({'success': True}).http_response(request)
 
     def encode_token(self, request, user=None, expiry=None, **token):
@@ -77,12 +78,14 @@ class SessionBackendMixin:
     def login_response(self, request, user):
         session = self.create_session(request, user)
         request.cache.session = session
-        token = session.encoded.decode('utf-8')
+        token = to_string(session.encoded)
         request.response.status_code = 201
         return Json({'success': True,
                      'token': token}).http_response(request)
 
     def logout_response(self, request, user):
+        '''Logout and create a new session
+        '''
         if user.is_authenticated():
             request.cache.user = self.anonymous()
             request.cache.session = self.create_session(request)
@@ -99,8 +102,9 @@ class SessionBackendMixin:
             # Create an anonymous session
             session = self.create_session(request)
         request.cache.session = session
-        if session.user:
-            request.cache.user = session.user
+        user = session.get_user()
+        if user:
+            request.cache.user = user
 
     def response_session(self, environ, response):
         request = wsgi_request(environ)
@@ -135,41 +139,3 @@ class SessionBackendMixin:
         '''Save an existing session
         '''
         raise NotImplementedError
-
-
-class Session(AttributeDictionary, SessionMixin):
-    pass
-
-
-class CacheSessionMixin:
-    '''A mixin for storing session in cache
-    '''
-    def get_session(self, request, key):
-        app = request.app
-        session = app.cache_server.get_json(self._key(key))
-        if session:
-            session = Session(session)
-            if session.user_id:
-                session.user = self.get_user(request, user_id=session.user_id)
-            return session
-
-    def session_save(self, request, session):
-        session = session.all().copy()
-        session.pop('user', None)
-        request.app.cache_server.set_json(self._key(session['id']), session)
-
-    def create_session(self, request, id=None, user=None, expiry=None):
-        '''Create a new session
-        '''
-        if not id:
-            id = uuid.uuid4().hex
-        session = Session(id=id)
-        if expiry:
-            session.expiry = expiry.isoformat()
-        if user:
-            session.user_id = user.id
-            session.user = user
-        return session
-
-    def _key(self, id):
-        return 'session:%s' % id

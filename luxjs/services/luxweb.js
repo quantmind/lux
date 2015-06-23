@@ -9,8 +9,7 @@
         .run(['$rootScope', '$lux', function ($scope, $lux) {
             //
             if ($scope.API_URL) {
-                var api = $lux.api($scope.API_URL, luxweb);
-                api.initScope($scope);
+                $lux.api($scope.API_URL, luxweb).scopeApi($scope);
             }
         }]);
 
@@ -22,10 +21,24 @@
         luxweb = function (url, $lux) {
 
             var api = baseapi(url, $lux),
-                request = api.request;
+                request = api.request,
+                auth_name = 'authorizations_url',
+                web;
+
+            // Set the name of the authentication endpoints
+            api.authName = function (name) {
+                if (arguments.length === 1) {
+                    auth_name = name;
+                    return api;
+                } else
+                    return auth_name;
+            };
 
             // Set/Get the JWT token
             api.token = function (token) {
+                var auth = $lux.authApi(api);
+                if (auth) return auth.token();
+
                 var key = 'luxtoken-' + api.baseUrl();
 
                 if (arguments.length) {
@@ -49,6 +62,24 @@
                 }
             };
 
+            // Perform Logout
+            api.logout = function (scope) {
+                var auth = $lux.authApi(api);
+                if (auth) return auth.logout(scope);
+
+                scope.$emit('pre-logout');
+                api.post({
+                    name: api.authName(),
+                    path: '/logout'
+                }).then(function () {
+                    scope.$emit('after-logout');
+                    api.token(undefined);
+                    $lux.window.location.reload();
+                }, function (response) {
+                    $lux.messages.error('Error while logging out');
+                });
+            };
+
             // Get the user fro the JWT
             api.user = function () {
                 var token = api.token();
@@ -63,21 +94,6 @@
             api.login = function () {
                 $lux.window.location.href = lux.context.LOGIN_URL;
                 $lux.window.reload();
-            };
-
-            // Perform Logout
-            api.logout = function (scope) {
-                scope.$emit('pre-logout');
-                api.post({
-                    name: 'authorizations_url',
-                    path: '/logout'
-                }).then(function () {
-                    scope.$emit('after-logout');
-                    api.token(undefined);
-                    $lux.window.location.reload();
-                }, function (response) {
-                    $lux.messages.error('Error while logging out');
-                });
             };
 
             //
@@ -123,8 +139,14 @@
 
             //
             // Initialise a scope with this api
-            api.initScope = function (scope) {
+            api.scopeApi = function (scope, auth) {
                 //  Get the api client
+                if (auth) {
+                    // Register auth as the authentication client of this api
+                    $lux.authApi(api, auth);
+                    auth.authName(null);
+                }
+
                 scope.api = function () {
                     return $lux.api(url);
                 };

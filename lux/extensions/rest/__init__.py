@@ -27,11 +27,11 @@ from .models import RestModel, RestColumn
 from .pagination import Pagination, GithubPagination
 from .client import ApiClient
 from .views import (RestRoot, RestRouter, RestMixin, RequirePermission,
-                    ProcessLoginMixin)
+                    ProcessLoginMixin, logout)
 
 __all__ = ['RestRouter', 'RestMixin', 'RestModel', 'RestColumn',
            'Pagination', 'GithubPagination', 'AuthBackend',
-           'RequirePermission', 'ProcessLoginMixin']
+           'RequirePermission', 'ProcessLoginMixin', 'logout']
 
 
 def luxrest(url, **rest):

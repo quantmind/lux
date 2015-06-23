@@ -2,8 +2,7 @@
 '''
 from .token import TokenBackend
 from .session import SessionBackend, CsrfBackend
-from .mixins import (TokenBackendMixin, SessionBackendMixin,
-                     CacheSessionMixin)
+from .mixins import TokenBackendMixin, SessionBackendMixin
 from .mixins import jwt
 
 
@@ -13,6 +12,5 @@ __all__ = ['TokenBackend',
            #
            'SessionBackendMixin',
            'TokenBackendMixin',
-           'CacheSessionMixin',
            #
            'jwt']

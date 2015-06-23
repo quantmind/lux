@@ -14,6 +14,7 @@ API_URL = 'api'
 
 
 class Extension(lux.Extension):
+
     def meddleware(self, app):
         return [AnyPage('wiki')]
 

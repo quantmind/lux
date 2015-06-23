@@ -4,20 +4,31 @@ from pulsar.apps.wsgi import Json, route
 
 import lux
 from lux.forms import WebFormRouter, Layout, Fieldset, Submit
-from lux.extensions.rest import (UserMixin, ProcessLoginMixin,
-                                 AuthenticationError)
+from lux.extensions.rest import (UserMixin, SessionMixin, ProcessLoginMixin,
+                                 AuthenticationError, logout)
 from lux.extensions.rest.forms import (LoginForm, CreateUserForm,
                                        PasswordForm, ChangePasswordForm,
                                        EmailForm)
 
 
 class User(AttributeDictionary, UserMixin):
+    '''A dictionary-based user
 
+    Used by the :class:`.ApiSessionBackend`
+    '''
     def is_superuser(self):
         return self.superuser
 
     def is_active(self):
         return True
+
+
+class Session(AttributeDictionary, SessionMixin):
+    '''A dictionary-based Session
+
+    Used by the :class:`.ApiSessionBackend`
+    '''
+    pass
 
 
 class Login(WebFormRouter):
@@ -39,6 +50,12 @@ class Login(WebFormRouter):
 class LoginPost(Login, ProcessLoginMixin):
     '''Login Router for both get and post methods
     '''
+
+
+class Logout(lux.Router):
+
+    def post(self, request):
+        return logout(request)
 
 
 class SignUp(WebFormRouter):

@@ -1,15 +1,17 @@
 '''Backends for Browser based Authentication
 '''
+import uuid
+
 from pulsar import ImproperlyConfigured
 from pulsar.utils.httpurl import is_absolute_uri
 
 from lux import Parameter
 from lux.extensions.angular import add_ng_modules
 from lux.extensions.rest import AuthenticationError, AuthBackend, luxrest
-from lux.extensions.rest.backends import (CacheSessionMixin, jwt,
-                                          SessionBackendMixin)
+from lux.extensions.rest.backends import jwt, SessionBackendMixin
 
-from .user import User, Login, LoginPost, SignUp, ForgotPassword
+from .user import (User, Session, Login, LoginPost, Logout, SignUp,
+                   ForgotPassword)
 
 
 def auth_router(api, url, Router):
@@ -38,6 +40,7 @@ class BrowserBackend(AuthBackend):
                   True)
     ]
     LoginRouter = Login
+    LogoutRouter = None
     SignUpRouter = SignUp
     ForgotPasswordRouter = ForgotPassword
 
@@ -50,6 +53,11 @@ class BrowserBackend(AuthBackend):
             middleware.append(auth_router(api,
                                           cfg['LOGIN_URL'],
                                           self.LoginRouter))
+
+        if cfg['LOGOUT_URL'] and self.LogoutRouter:
+            middleware.append(auth_router(api,
+                                          cfg['LOGOUT_URL'],
+                                          self.LogoutRouter))
 
         if cfg['REGISTER_URL']:
             middleware.append(auth_router(api,
@@ -70,19 +78,28 @@ class BrowserBackend(AuthBackend):
             add_ng_modules(doc, ('lux.webapi', 'lux.users'))
 
 
-class ApiSessionBackend(CacheSessionMixin,
-                        SessionBackendMixin,
+class ApiSessionBackend(SessionBackendMixin,
                         BrowserBackend):
     '''An Mixin for authenticating against a RESTful HTTP API.
 
     This mixin should be used when the API_URL is remote and therefore
     not API is installed in the current application.
+
+    The workflow for authentication is the following:
+
+    * Redirect the authentication to the remote api
+    * If successful obtain the JWT token from the response
+    * Create the user from decoding the JWT payload
+    * create the session with same id as the token id and set the user as
+      session key
+    * Save the session in cache and return the original encoded token
     '''
     users_url = {'id': 'users',
                  'username': 'users/username',
                  'email': 'users/email'}
 
     LoginRouter = LoginPost
+    LogoutRouter = Logout
 
     def get_user(self, request, **kw):
         api = request.app.api
@@ -102,11 +119,14 @@ class ApiSessionBackend(CacheSessionMixin,
             raise ImproperlyConfigured('JWT library not available')
         api = request.app.api
         try:
+            client = self.user_agent(request, 80)
             response = api.post('authorizations', data=data)
             if response.status_code == 201:
                 token = response.json().get('token')
                 payload = jwt.decode(token, verify=False)
-                return User(payload)
+                user = User(payload)
+                user.encoded = token
+                return user
             else:
                 response.raise_for_status()
 
@@ -118,5 +138,33 @@ class ApiSessionBackend(CacheSessionMixin,
             else:
                 raise AuthenticationError('Invalid credentials')
 
-    def login_response(self, request, user):
-        pass
+    def create_session(self, request, user=None):
+        '''Login and return response
+        '''
+        if user:
+            user = User(user)
+            session = Session(id=user.pop('token_id'),
+                              expiry=user.pop('exp'),
+                              user=user)
+            session.encoded = session.user.pop('encoded')
+        else:
+            session = Session(id=uuid.uuid4().hex)
+        return session
+
+    def get_session(self, request, key):
+        app = request.app
+        session = app.cache_server.get_json(self._key(key))
+        if session:
+            session = Session(session)
+            if session.user:
+                session.user = User(session.user)
+            return session
+
+    def session_save(self, request, session):
+        data = session.all()
+        if session.user:
+            data['user'] = session.user.all()
+        request.app.cache_server.set_json(self._key(session.id), data)
+
+    def _key(self, id):
+        return 'session:%s' % id

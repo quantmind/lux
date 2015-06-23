@@ -20,6 +20,20 @@ def action(f):
     return f
 
 
+def logout(request):
+    form = Form(request, data=request.body_data() or {})
+
+    if form.is_valid():
+        user = request.cache.user
+        if not user.is_authenticated():
+            raise MethodNotAllowed
+
+        auth_backend = request.cache.auth_backend
+        return auth_backend.logout_response(request, user)
+    else:
+        raise MethodNotAllowed
+
+
 class RestRoot(lux.Router):
     '''Api Root
 
@@ -174,17 +188,7 @@ class Authorization(RestRouter, ProcessLoginMixin):
     @action
     def logout(self, request):
         # make sure csrf is called
-        form = Form(request, data=request.body_data() or {})
-
-        if form.is_valid():
-            user = request.cache.user
-            if not user.is_authenticated():
-                raise MethodNotAllowed
-
-            auth_backend = request.cache.auth_backend
-            return auth_backend.logout_response(request, user)
-        else:
-            raise MethodNotAllowed
+        return logout(request)
 
     @action
     def signup(self, request):

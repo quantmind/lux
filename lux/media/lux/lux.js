@@ -1,6 +1,6 @@
 //      Lux Library - v0.2.0
 
-//      Compiled 2015-06-22.
+//      Compiled 2015-06-23.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -324,6 +324,8 @@ function(angular, root) {
         //
         .value('ApiTypes', {})
         //
+        .value('AuthApis', {})
+        //
         .run(['$rootScope', '$lux', function (scope, $lux) {
             //
             var name = $(document.querySelector("meta[name=csrf-param]")).attr('content'),
@@ -349,8 +351,9 @@ function(angular, root) {
             });
         }])
         //
-        .service('$lux', ['$location', '$window', '$q', '$http', '$log', '$timeout', 'ApiTypes',
-                function ($location, $window, $q, $http, $log, $timeout, ApiTypes) {
+        .service('$lux', ['$location', '$window', '$q', '$http', '$log',
+                          '$timeout', 'ApiTypes', 'AuthApis',
+                function ($location, $window, $q, $http, $log, $timeout, ApiTypes, AuthApis) {
             var $lux = this;
 
             this.location = $location;
@@ -390,6 +393,13 @@ function(angular, root) {
                     ApiTypes[url] = api;
                     return api(url, this);
                 }
+            };
+
+            this.authApi = function (api, auth) {
+                if (arguments.length === 1)
+                    return AuthApis[api.baseUrl()];
+                else if (arguments.length === 2)
+                    AuthApis[api.baseUrl()] = auth;
             };
         }]);
     //
@@ -661,11 +671,9 @@ function(angular, root) {
 
             // If the root scope has an API_URL register the luxrest client
             if ($scope.API_URL) {
-                $lux.api($scope.API_URL, luxrest);
-                //
-                // Register the web server
                 var web = $lux.api('', luxweb);
-                web.initScope($scope);
+                //
+                $lux.api($scope.API_URL, luxrest).scopeApi($scope, web);
             }
 
         }]);
@@ -716,16 +724,6 @@ function(angular, root) {
             }
         };
 
-        var initScope = api.initScope;
-
-        api.initScope = function (scope) {
-            initScope.call(api, scope);
-            scope.$on('after-logout', function () {
-                var key = 'luxrest - ' + api.baseUrl();
-                localStorage.removeItem(key);
-                sessionStorage.removeItem(key);
-            });
-        };
         return api;
     };
 
@@ -741,8 +739,7 @@ function(angular, root) {
         .run(['$rootScope', '$lux', function ($scope, $lux) {
             //
             if ($scope.API_URL) {
-                var api = $lux.api($scope.API_URL, luxweb);
-                api.initScope($scope);
+                $lux.api($scope.API_URL, luxweb).scopeApi($scope);
             }
         }]);
 
@@ -754,10 +751,24 @@ function(angular, root) {
         luxweb = function (url, $lux) {
 
             var api = baseapi(url, $lux),
-                request = api.request;
+                request = api.request,
+                auth_name = 'authorizations_url',
+                web;
+
+            // Set the name of the authentication endpoints
+            api.authName = function (name) {
+                if (arguments.length === 1) {
+                    auth_name = name;
+                    return api;
+                } else
+                    return auth_name;
+            };
 
             // Set/Get the JWT token
             api.token = function (token) {
+                var auth = $lux.authApi(api);
+                if (auth) return auth.token();
+
                 var key = 'luxtoken-' + api.baseUrl();
 
                 if (arguments.length) {
@@ -781,6 +792,24 @@ function(angular, root) {
                 }
             };
 
+            // Perform Logout
+            api.logout = function (scope) {
+                var auth = $lux.authApi(api);
+                if (auth) return auth.logout(scope);
+
+                scope.$emit('pre-logout');
+                api.post({
+                    name: api.authName(),
+                    path: '/logout'
+                }).then(function () {
+                    scope.$emit('after-logout');
+                    api.token(undefined);
+                    $lux.window.location.reload();
+                }, function (response) {
+                    $lux.messages.error('Error while logging out');
+                });
+            };
+
             // Get the user fro the JWT
             api.user = function () {
                 var token = api.token();
@@ -795,21 +824,6 @@ function(angular, root) {
             api.login = function () {
                 $lux.window.location.href = lux.context.LOGIN_URL;
                 $lux.window.reload();
-            };
-
-            // Perform Logout
-            api.logout = function (scope) {
-                scope.$emit('pre-logout');
-                api.post({
-                    name: 'authorizations_url',
-                    path: '/logout'
-                }).then(function () {
-                    scope.$emit('after-logout');
-                    api.token(undefined);
-                    $lux.window.location.reload();
-                }, function (response) {
-                    $lux.messages.error('Error while logging out');
-                });
             };
 
             //
@@ -855,8 +869,14 @@ function(angular, root) {
 
             //
             // Initialise a scope with this api
-            api.initScope = function (scope) {
+            api.scopeApi = function (scope, auth) {
                 //  Get the api client
+                if (auth) {
+                    // Register auth as the authentication client of this api
+                    $lux.authApi(api, auth);
+                    auth.authName(null);
+                }
+
                 scope.api = function () {
                     return $lux.api(url);
                 };
@@ -2198,8 +2218,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                     scope.formid = form.id;
                     scope.formCount = 0;
 
-                    scope.addMessages = function (messages, level) {
-                        if (!level) level = 'info';
+                    scope.addMessages = function (messages, error) {
 
                         forEach(messages, function (message) {
                             if (isString(message))
@@ -2207,19 +2226,11 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
 
                             var field = message.field || formDefaults.FORMKEY;
 
-                            if (!message.level)
-                                message.level = level;
+                            if (error) message.error = error;
 
                             scope.formMessages[field] = [message];
 
-                            var msg = '';
-                            forEach(messages, function(error) {
-                                msg += error.message;
-                                if (messages.length > 1)
-                                    msg += '</br>';
-                            });
-
-                            if (message.level === 'error') {
+                            if (message.error && field !== formDefaults.FORMKEY) {
                                 scope.formErrors[field] = message.message;
                                 scope[scope.formName][field].$invalid = true;
                             }
