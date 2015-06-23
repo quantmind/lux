@@ -8,6 +8,7 @@ from dateutil.parser import parse as dateparser
 from pulsar.utils.html import NOTHING, escape
 from pulsar.utils.pep import to_string
 
+from ..utils.files import File
 from .options import Options
 from .errors import *   # noqa
 
