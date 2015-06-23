@@ -12,7 +12,6 @@ from .formsets import FormSet
 
 FORMKEY = 'm__form'
 
-
 __all__ = ['FormType',
            'Form',
            'BoundField',
@@ -53,6 +52,7 @@ class FieldList(list):
         if ``True`` the :class:`Fieldlist` attribute name in the form is
         prefixed to the field names.
     '''
+
     def __init__(self, data=None, withprefix=True):
         self.withprefix = withprefix
         super(FieldList, self).__init__(data or ())
@@ -82,7 +82,7 @@ def get_form_meta_data(bases, attrs, with_base_fields=True):
             fields.append((obj.name, attrs.pop(name)))
         elif isinstance(obj, FieldList):
             obj = attrs.pop(name)
-            fields.extend(obj.fields(name+'__'))
+            fields.extend(obj.fields(name + '__'))
         elif isinstance(obj, FormSet):
             obj.name = name
             inlines.append((name, attrs.pop(name)))
@@ -106,7 +106,6 @@ def get_form_meta_data(bases, attrs, with_base_fields=True):
 
 
 class FormType(type):
-
     def __new__(cls, name, bases, attrs):
         fields, inlines = get_form_meta_data(bases, attrs)
         attrs['base_fields'] = fields
@@ -364,7 +363,8 @@ class Form(metaclass=FormType):
         for name, field in self.base_fields.items():
             bfield = BoundField(self, field)
             key = bfield.html_name
-            if is_bound and exclude_missing and key not in rawdata:
+            if is_bound and exclude_missing and key not in rawdata and \
+               key not in files:
                 continue
             fields.append(bfield)
             dfields[name] = bfield
