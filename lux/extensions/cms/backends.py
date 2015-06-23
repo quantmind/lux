@@ -119,7 +119,8 @@ class ApiSessionBackend(SessionBackendMixin,
             raise ImproperlyConfigured('JWT library not available')
         api = request.app.api
         try:
-            client = self.user_agent(request, 80)
+            # TODO: add address from request
+            # client = request.get_client_address()
             response = api.post('authorizations', data=data)
             if response.status_code == 201:
                 token = response.json().get('token')

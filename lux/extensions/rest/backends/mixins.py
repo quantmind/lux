@@ -1,8 +1,6 @@
-import uuid
 import time
 
 from pulsar import HttpException, ImproperlyConfigured
-from pulsar.utils.structures import AttributeDictionary
 from pulsar.utils.pep import to_string
 from pulsar.apps.wsgi import Json
 
