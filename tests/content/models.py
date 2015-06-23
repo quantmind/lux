@@ -3,7 +3,6 @@ import os.path
 import shutil
 
 from dulwich.porcelain import init
-from dulwich.repo import Repo
 
 from lux.utils import test
 from lux.extensions.content.models import Content, DataError

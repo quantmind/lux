@@ -97,7 +97,6 @@ class Content(rest.RestModel):
                              committer=_b(user.username))
         return commit_hash
 
-
     def read(self, filename):
         '''Read content from file in repository
         '''
