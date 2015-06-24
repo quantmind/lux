@@ -24,7 +24,7 @@ class TestContentModel(test.TestCase):
     def setUpClass(cls):
         # create the testing repo
         init(PWD)
-        cls.repo = Content('Tests', PWD)
+        cls.repo = Content('Tests', PWD, '')
         cls.user = User()
 
     @classmethod

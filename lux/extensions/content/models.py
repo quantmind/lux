@@ -29,17 +29,21 @@ class Content(rest.RestModel):
 
     '''A Rest model with git backend using dulwich_
 
-    This model provide basic CRUD operations for a RestFul web API
+    This model provide basic CRUD operations for a RestFul web API.
 
     .. _dulwich: https://www.samba.org/~jelmer/dulwich/docs/
     '''
 
-    def __init__(self, name, path, **kwargs):
+    def __init__(self, name, repo, path=None, **kwargs):
         try:
-            self.repo = open_repo(path)
+            self.repo = open_repo(repo)
         except NotGitRepository:
-            self.repo = init(path)
-        self.path = path
+            self.repo = init(repo)
+        self.path = repo
+        if path is None:
+            path = name
+        if path:
+            self.path  = os.path.join(self.path, path)
         super().__init__(name, **kwargs)
 
     def write(self, user, data, new=False, message=None):
@@ -139,7 +143,7 @@ class Content(rest.RestModel):
         if not filename.endswith('.md'):
             filename = '%s.md' % filename
         if path:
-            filename = os.path.join(self.repo.path, filename)
+            filename = os.path.join(self.path, filename)
         return filename
 
     def _get_filename(self, filename):

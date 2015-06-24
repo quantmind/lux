@@ -1,6 +1,6 @@
 import logging
 
-from pulsar import PermissionDenied
+from pulsar import PermissionDenied, Http404
 from pulsar.apps.wsgi import route, Json
 from pulsar.utils.slugify import slugify
 
@@ -25,7 +25,6 @@ class BlogForm(forms.Form):
 
 
 class TextCRUD(rest.RestRouter):
-
     '''CRUD views for the text APIs
     '''
 
@@ -57,16 +56,19 @@ class TextCRUD(rest.RestRouter):
             return Json(data).http_response(request)
         raise PermissionDenied
 
-    @route('id')
-    def update(self, request):
+    @route('<slug>', method=('get', 'post'))
+    def read_update(self, request):
+        text = self.get_model(request, request.urlargs['slug'])
         backend = request.cache.auth_backend
-        model = self.model
-        if backend.has_permission(request, model.name, rest.CREATE):
-            assert model.form
-            data, files = request.data_and_files()
-            form = model.form(request, data=data, files=files)
-            if form.is_valid():
-                pass
+
+        if request.method == 'GET':
+            # url = request.absolute_uri()
+            if backend.has_permission(request, self.model.name, rest.READ):
+                request.response.content = text
+                return request.response
+
+        elif request.method == 'HEAD':
+            return request.response
 
     def create_model(self, request, data):
         '''Create a new document
@@ -76,7 +78,10 @@ class TextCRUD(rest.RestRouter):
         self.model.write(request.cache.user, data, new=True)
 
     def get_model(self, request, slug, sha=None):
-        pass
+        try:
+            return self.model.read(slug)
+        except DataError:
+            raise Http404
 
     def update_model(self, request, instance, data):
         pass

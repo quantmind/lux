@@ -1,6 +1,6 @@
 //      Lux Library - v0.2.0
 
-//      Compiled 2015-06-23.
+//      Compiled 2015-06-24.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -1283,6 +1283,366 @@ function(angular, root) {
             if (scope.STREAM_URL)
                 scope.connectSockJs(scope.STREAM_URL);
         }]);
+
+    angular.module('lux.cms', [
+        'lux.cms.core',
+        'lux.cms.component',
+        'lux.cms.component.text'])
+
+    .run(['$rootScope', 'CMS', function(scope, CMS) {
+
+        scope.cms = new CMS();
+    }])
+
+    .factory('CMS', ['Component', function(Component) {
+
+        var CMS = function CMS() {
+            var self = this;
+
+            self.components = new Component(self);
+        };
+
+        return CMS;
+    }]);
+
+angular.module('lux.cms.component', [])
+    //
+    .factory('Component', ['$q', '$rootScope', function($q, $rootScope) {
+        /**
+         * Component provides the ability to register public methods events inside an app and allow
+         * for other components to use the component via featureName.raise.methodName and featureName.on.eventName(function(args){}).
+         *
+         * @appInstance: App which the API is for
+         * @compnentId: Unique id in case multiple API instances do exist inside the same Angular environment
+         */
+        var Component = function Component(appInstance, componentId) {
+            this.gantt = appInstance;
+            this.componentId = componentId;
+            this.eventListeners = [];
+        };
+
+        /**
+         * Registers a new event for the given feature.
+         *
+         * @featureName: Name of the feature that raises the event
+         * @eventName: Name of the event
+         *
+         * To trigger the event call:
+         * .raise.eventName()
+         *
+         * To register a event listener call:
+         * .on.eventName(scope, callBackFn, _this)
+         * scope: A scope reference to add a deregister call to the scopes .$on('destroy')
+         * callBackFn: The function to call
+         * _this: Optional this context variable for callbackFn. If omitted, gantt.api will be used for the context
+         *
+         * .on.eventName returns a de-register funtion that will remove the listener. It's not necessary to use it as the listener
+         * will be removed when the scope is destroyed.
+         */
+        Component.prototype.registerEvent = function(featureName, eventName) {
+            var self = this;
+            if (!self[featureName]) {
+                self[featureName] = {};
+            }
+
+            var feature = self[featureName];
+            if (!feature.on) {
+                feature.on = {};
+                feature.raise = {};
+            }
+
+            var eventId = 'event:component:' + this.componentId + ':' + featureName + ':' + eventName;
+
+            // Creating raise event method: featureName.raise.eventName
+            feature.raise[eventName] = function() {
+                $rootScope.$emit.apply($rootScope, [eventId].concat(Array.prototype.slice.call(arguments)));
+            };
+
+            // Creating on event method: featureName.oneventName
+            feature.on[eventName] = function(scope, handler, _this) {
+                var deregAngularOn = registerEventWithAngular(eventId, handler, self.gantt, _this);
+
+                var listener = {
+                    handler: handler,
+                    dereg: deregAngularOn,
+                    eventId: eventId,
+                    scope: scope,
+                    _this: _this
+                };
+                self.eventListeners.push(listener);
+
+                var removeListener = function() {
+                    listener.dereg();
+                    var index = self.eventListeners.indexOf(listener);
+                    self.eventListeners.splice(index, 1);
+                };
+
+                scope.$on('$destroy', function() {
+                    removeListener();
+                });
+
+                return removeListener;
+            };
+        };
+
+        /**
+         * @ngdoc function
+         * @name registerEventsFromObject
+         * @description Registers features and events from a simple objectMap.
+         * eventObjectMap must be in this format (multiple features allowed)
+         * <pre>
+         * {featureName:
+         *        {
+         *          eventNameOne:function(args){},
+         *          eventNameTwo:function(args){}
+         *        }
+         *  }
+         * </pre>
+         * @param {object} eventObjectMap map of feature/event names
+         */
+        Component.prototype.registerEventsFromObject = function (eventObjectMap) {
+          var self = this;
+          var features = [];
+          angular.forEach(eventObjectMap, function (featProp, featPropName) {
+            var feature = {name: featPropName, events: []};
+            angular.forEach(featProp, function (prop, propName) {
+              feature.events.push(propName);
+            });
+            features.push(feature);
+          });
+
+          features.forEach(function (feature) {
+            feature.events.forEach(function (event) {
+              self.registerEvent(feature.name, event);
+            });
+          });
+
+        };
+
+
+        function registerEventWithAngular(eventId, handler, app, _this) {
+            return $rootScope.$on(eventId, function() {
+                var args = Array.prototype.slice.call(arguments);
+                args.splice(0, 1); // Remove evt argument
+                handler.apply(_this ? _this : app, args);
+            });
+        }
+
+        /**
+         * Registers a new event for the given feature
+         *
+         * @featureName: Name of the feature
+         * @methodName: Name of the method
+         * @callBackFn: Function to execute
+         * @_this: Binds callBackFn 'this' to _this. Defaults to Api.app
+         */
+        Component.prototype.registerMethod = function(featureName, methodName, callBackFn, _this) {
+            var self = this;
+
+            if (!this[featureName]) {
+                this[featureName] = {};
+            }
+
+            var feature = this[featureName];
+            feature[methodName] = function() {
+                callBackFn.apply(_this || this.app, arguments);
+            };
+        };
+
+        /**
+         * @ngdoc function
+         * @name registerMethodsFromObject
+         * @description Registers features and methods from a simple objectMap.
+         * eventObjectMap must be in this format (multiple features allowed)
+         * <br>
+         * {featureName:
+         *        {
+         *          methodNameOne:function(args){},
+         *          methodNameTwo:function(args){}
+         *        }
+         * @param {object} eventObjectMap map of feature/event names
+         * @param {object} _this binds this to _this for all functions.  Defaults to gridApi.grid
+         */
+        Component.prototype.registerMethodsFromObject = function (methodMap, _this) {
+          var self = this;
+          var features = [];
+          angular.forEach(methodMap, function (featProp, featPropName) {
+            var feature = {name: featPropName, methods: []};
+            angular.forEach(featProp, function (prop, propName) {
+              feature.methods.push({name: propName, fn: prop});
+            });
+            features.push(feature);
+          });
+
+          features.forEach(function (feature) {
+            feature.methods.forEach(function (method) {
+              self.registerMethod(feature.name, method.name, method.fn, _this);
+            });
+          });
+
+        };
+
+        return Component;
+    }]);
+
+
+angular.module('lux.cms.component.text', ['lux.services'])
+
+    .factory('textComponent', ['$rootScope', '$lux', function($rootScope, $lux) {
+
+        return {
+            componentId: null,
+            //
+            element: null,
+            //
+            api: {
+                path: 'cms/components/text',
+            },
+            getData: function(componentId) {
+                // TODO: change it to fetch data from api.lux
+                return testData.getComponents()[componentId].content;
+            },
+            initialize: function(componentId, element) {
+                var self = this;
+
+                self.element = element;
+                self.componentId = componentId;
+
+                var component = {
+                    events: {
+                        text: {
+
+                        }
+                    },
+                    methods: {
+                        text: {
+                            render: function() {
+                                self.element.html(self.getData(self.componentId));
+                            }
+                        }
+                    }
+                };
+
+                $rootScope.cms.components.registerEventsFromObject(component.events);
+                $rootScope.cms.components.registerMethodsFromObject(component.methods);
+            }
+        };
+    }])
+
+    .directive('text', ['textComponent', function(textComponent) {
+        return {
+            priority: -200,
+            scope: false,
+            require: 'renderComponent',
+            link: {
+                pre: function(scope, element, attrs) {
+                    var componentId = attrs.id;
+                    textComponent.initialize(componentId, element);
+                    scope.cms.components.text.render();
+                }
+            }
+        };
+    }]);
+
+angular.module('lux.cms.core', [])
+    //
+    .constant('cmsDefaults', {})
+    //
+    .service('pageBuilder', ['$http', '$document', '$filter', '$compile', 'orderByFilter', 'cmsDefaults', function($http, $document, $filter, $compile, orderByFilter, cmsDefaults) {
+        var self = this;
+
+        extend(this, {
+            layout: {},
+            //
+            scope: null,
+            //
+            element: null,
+            //
+            init: function(scope, element, layout) {
+                self.scope = scope;
+                self.element = element;
+                self.layout = layout;
+            },
+            // Add columns to row
+            addColumns: function(row, rowIdx, columns) {
+                var components,
+                    column,
+                    colIdx = 0;
+
+                forEach(columns, function(col) {
+                    components = orderByFilter($filter('filter')(self.layout.components, {row: rowIdx, col: colIdx}, true), '+pos');
+                    column = angular.element($document[0].createElement('div'))
+                                .addClass(col);
+
+                    if (components.length == 1)
+                        column.append('<render-component id="' + components[0].id + '" ' + components[0].type + '></render-component>');
+                    else if (components.length > 1) {
+                        forEach(components, function(component) {
+                            column.append('<render-component id="' + component.id + '" ' + component.type + '></render-component>');
+                        });
+                    }
+
+                    row.append(column);
+                    ++colIdx;
+                });
+
+                row = $compile(row)(self.scope);
+            },
+            //
+            buildLayout: function() {
+                var row,
+                    rowIdx = 0;
+
+                forEach(self.layout.rows, function(columns) {
+                    row = angular.element($document[0].createElement('div')).addClass('row');
+                    self.addColumns(row, rowIdx, columns);
+                    self.element.append(row);
+                    ++rowIdx;
+                });
+            }
+        });
+    }])
+    //
+    .controller('pageController', [function() {
+        var self = this;
+    }])
+    //
+    .directive('renderPage', ['pageBuilder', 'testData', function(pageBuilder, testData) {
+        return {
+            replace: true,
+            link: {
+                post: function(scope, element, attrs) {
+                    var layout = testData.getLayout();
+
+                    pageBuilder.init(scope, element, layout);
+                    pageBuilder.buildLayout();
+
+                    scope.$on('$viewContentLoaded', function(){
+                        console.log(scope);
+                    });
+                }
+            }
+        };
+    }])
+    //
+    .directive('renderComponent', ['cmsDefaults', function(cmsDefaults) {
+        return {
+            replace: true,
+            transclude: true,
+            controller: 'pageController',
+            scope: {
+                componentId: '@id'
+            },
+            compile: function() {
+                return {
+                    post: function(scope, element, attrs, ctrl) {}
+                };
+            }
+        };
+    }]);
+
+
+
 
 angular.module('templates-page', ['page/breadcrumbs.tpl.html']);
 
