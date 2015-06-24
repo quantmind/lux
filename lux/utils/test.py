@@ -11,7 +11,7 @@ from pulsar import get_event_loop
 from pulsar.utils.httpurl import encode_multipart_formdata
 from pulsar.utils.string import random_string
 from pulsar.apps.wsgi import WsgiResponse
-from pulsar.apps.test import test_timeout   # noqa
+from pulsar.apps.test import test_timeout, sequential   # noqa
 
 import lux
 from lux.core.commands.generate_secret_key import generate_secret
