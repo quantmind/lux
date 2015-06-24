@@ -17,8 +17,16 @@
             lux: {
                 deps: ["angular"]
             },
-            'ui-bootstrap': {
+            "ui-bootstrap": {
                 deps: ["angular"]
+            },
+            "codemirror-markdown": {
+                deps: ["codemirror"],
+                exports: "CodeMirror"
+            },
+            "codemirror-htmlmixed": {
+                deps: ["codemirror", "codemirror-xml", "codemirror-javascript", "codemirror-css"],
+                exports: "CodeMirror"
             },
             restangular: {
                 deps: ["angular"]
