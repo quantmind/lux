@@ -12,9 +12,10 @@ this extension adds middleware for serving static files from
 In addition, a :setting:`FAVICON` location can also be specified.
 '''
 import hashlib
+from urllib.parse import urlparse
 
 from pulsar.apps import wsgi
-from pulsar.utils.httpurl import remove_double_slash, urlparse
+from pulsar.utils.httpurl import remove_double_slash
 
 import lux
 from lux import Parameter

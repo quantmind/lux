@@ -67,10 +67,6 @@ def callable(obj):
     return hasattr(obj, '__call__')
 
 
-def b(s):
-    return s.encode("latin-1")
-
-
 def binxor(a, b):
     return bytes([x ^ y for (x, y) in zip(a, b)])
 
@@ -112,6 +108,8 @@ class PBKDF2(object):
                  digestmodule=sha256, macmodule=hmac, secret_key=None):
         self.__macmodule = macmodule
         self.__digestmodule = digestmodule
+        if isinstance(secret_key, str):
+            secret_key = secret_key.encode('latin-1')
         self.__secret_key = secret_key
         self._setup(passphrase, salt, iterations, self._pseudorandom)
 
@@ -121,8 +119,6 @@ class PBKDF2(object):
         # by passing the secret key and our base key through a pseudo-random
         # function and SHA1 works nicely.
         if self.__secret_key:
-            if not isbytes(self.__secret_key):
-                self.__secret_key = b(self.__secret_key)
             key = sha1(self.__secret_key + key).digest()
         return self.__macmodule.new(key=key, msg=msg,
                                     digestmod=self.__digestmodule).digest()
@@ -143,7 +139,7 @@ class PBKDF2(object):
             block = self.__f(i)
             blocks.append(block)
             size += len(block)
-        buf = b("").join(blocks)
+        buf = b"".join(blocks)
         retval = buf[:bytes]
         self.__buf = buf[bytes:]
         self.__blockNum = i
@@ -195,7 +191,7 @@ class PBKDF2(object):
         self.__iterations = iterations
         self.__prf = prf
         self.__blockNum = 0
-        self.__buf = b("")
+        self.__buf = b""
         self.closed = False
 
     def close(self):
@@ -283,7 +279,7 @@ def _makesalt(altchars="./"):
 
     This function is not suitable for generating cryptographic secrets.
     """
-    binarysalt = b("").join([pack("@H", randint(0, 0xffff)) for i in range(3)])
+    binarysalt = b"".join([pack("@H", randint(0, 0xffff)) for i in range(3)])
     return b64encode(binarysalt, altchars)
 
 

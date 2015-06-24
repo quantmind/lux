@@ -9,6 +9,7 @@
 _doc_build
 __pycache__
 htmlcov
+htmlprof
 dist
 build
 lux.egg-info

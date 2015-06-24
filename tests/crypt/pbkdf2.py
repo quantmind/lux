@@ -2,10 +2,10 @@ from binascii import unhexlify
 
 from lux.utils import test
 
-from lux.utils.crypt.pbkdf2 import (_0xffffffffL, algorithms, isunicode,
+from lux.utils.crypt.pbkdf2 import (_0xffffffffL, algorithms,
                                     isbytes, isinteger, callable, binxor,
                                     b64encode, verify, b2a_hex, PBKDF2,
-                                    crypt, _makesalt, encrypt, b,
+                                    crypt, _makesalt, encrypt,
                                     sha1, sha256, sha512)
 
 
@@ -23,9 +23,6 @@ class TestPBKDF2(test.TestCase):
         self.assertEqual(len(algorithms), 3)
         self.assertEqual(set(algorithms), set(('sha1', 'sha256', 'sha512')))
 
-    def test_isunicode(self):
-        self.assertTrue(isunicode('test'), True)
-
     def test_isbytes(self):
         self.assertTrue(isbytes(bytes(self.u('test'))), True)
 
@@ -34,9 +31,6 @@ class TestPBKDF2(test.TestCase):
 
     def test_callable(self):
         self.assertTrue(callable(print), True)
-
-    def test_b(self):
-        self.assertEqual(b('123'), ('123').encode("latin-1"))
 
     def test_binxor(self):
         self.assertEqual(binxor([1], [2]), self.u('\x03'))
@@ -54,7 +48,7 @@ class TestPBKDF2(test.TestCase):
         from binascii import a2b_hex as _a2b_hex
 
         def a2b_hex(s):
-            return _a2b_hex(b(s))
+            return _a2b_hex(s.encode('latin-1'))
 
         #
         # Test vectors from RFC 3962
@@ -256,7 +250,7 @@ class TestPBKDF2(test.TestCase):
         self.assertEqual(e, result)
 
         # crypt 4 (unicode)
-        t_msg = b('\xce\x99\xcf\x89\xce\xb1\xce\xbd\xce\xbd\xce\xb7\xcf\x82')
+        t_msg = b'\xce\x99\xcf\x89\xce\xb1\xce\xbd\xce\xbd\xce\xb7\xcf\x82'
         result = crypt(
             t_msg.decode('utf-8'),
             '$p5k2$sha1$3e8$KosHgqNo$jJ.gcxXLu6COVzAlz5SRvAqZTd8='
@@ -266,7 +260,7 @@ class TestPBKDF2(test.TestCase):
 
         # crypt 5 (UTF-8 bytes)
         result = crypt(
-            b('\xce\x99\xcf\x89\xce\xb1\xce\xbd\xce\xbd\xce\xb7\xcf\x82'),
+            b'\xce\x99\xcf\x89\xce\xb1\xce\xbd\xce\xbd\xce\xb7\xcf\x82',
             '$p5k2$sha1$3e8$KosHgqNo$jJ.gcxXLu6COVzAlz5SRvAqZTd8='
         )
         expected = '$p5k2$sha1$3e8$KosHgqNo$jJ.gcxXLu6COVzAlz5SRvAqZTd8='
