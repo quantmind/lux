@@ -9,7 +9,7 @@
             mode: lux.context.CODEMIRROR_MODE || "markdown",
             theme: lux.context.CODEMIRROR_THEME || "monokai",
         })
-        .directive('luxCodemirror', ['$lux', 'luxCodemirrorDefaults', function ($lux, luxCodemirrorDefaults) {
+        .directive('luxCodemirror', ['$rootScope', '$lux', 'luxCodemirrorDefaults', function ($rootScope, $lux, luxCodemirrorDefaults) {
             //
             function initCodemirror() {
                 loadCss('https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.3.0/codemirror.css');
@@ -138,10 +138,9 @@
                                     throw new Error('the CodeMirror event requires a callback function');
                             });
 
-                            // onLoad callback
-                            if (angular.isFunction(options.onLoad)) {
-                              options.onLoad(codemirror);
-                            }
+                            $rootScope.$on('$viewContentLoaded', function () {
+                                codemirror.refresh();
+                            });
                         }
                     };
                 }
