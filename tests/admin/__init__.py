@@ -2,6 +2,10 @@ import lux
 from lux import forms
 from lux.extensions.admin import register, CRUDAdmin
 
+
+from tests.config import *  # noqa
+
+
 EXTENSIONS = ['lux.extensions.base',
               'lux.extensions.rest',
               'lux.extensions.auth',
@@ -12,8 +16,6 @@ EXTENSIONS = ['lux.extensions.base',
 HTML5_NAVIGATION = True
 API_URL = 'api'
 AUTHENTICATION_BACKENDS = ['lux.extensions.auth.TokenBackend']
-GREEN_POOL = 50
-
 
 class Extension(lux.Extension):
     pass

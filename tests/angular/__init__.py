@@ -4,6 +4,9 @@ from lux.utils import test
 
 __test__ = False
 
+from tests.config import *  # noqa
+
+
 EXTENSIONS = ['lux.extensions.ui',
               'lux.extensions.angular']
 

@@ -3,6 +3,8 @@ import lux
 from lux import forms, HtmlRouter
 from lux.extensions import odm
 
+from tests.config import *  # noqa
+
 EXTENSIONS = ['lux.extensions.base',
               'lux.extensions.odm',
               'lux.extensions.rest',

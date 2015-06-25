@@ -7,6 +7,7 @@ from lux.extensions import odm
 from sqlalchemy.orm import relationship
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
 
+from tests.config import *  # noqa
 
 EXTENSIONS = ['lux.extensions.base',
               'lux.extensions.odm',
@@ -16,8 +17,6 @@ EXTENSIONS = ['lux.extensions.base',
 
 AUTHENTICATION_BACKENDS = ['lux.extensions.auth.TokenBackend']
 CORS_ALLOWED_METHODS = 'GET, POST, DELETE'
-# Force greenlet (sqlite threads are slow)
-GREEN_POOL = 50
 
 
 class Extension(lux.Extension):

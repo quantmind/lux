@@ -53,8 +53,8 @@
         })
         //
         // Directive to build Angular-UI grid options using Lux REST API
-        .directive('restGrid', ['$lux', '$window', '$modal', '$state', '$q', 'uiGridConstants', 'gridDefaults',
-            function ($lux, $window, $modal, $state, $q, uiGridConstants, gridDefaults) {
+        .directive('restGrid', ['$lux', '$modal', 'uiGridConstants', 'gridDefaults',
+            function ($lux, $modal, uiGridConstants, gridDefaults) {
 
             var paginationOptions = {
                     sizes: [25, 50, 100]
@@ -129,14 +129,17 @@
 
             function addGridMenu(scope, api, gridOptions) {
                 var menu = [],
-                    stateName = $state.current.url.split('/').pop(-1),
-                    model = stateName.slice(0, -1),
+                    // We cannot use $state, we must be able to use this without ui.router
+                    // stateName = $state.current.url.split('/').pop(-1),
+                    // model = stateName.slice(0, -1),
+                    stateName = 'UNKNOWN',
+                    model = stateName,
                     modalScope = scope.$new(true),
                     modal,
                     title;
 
                 scope.create = function($event) {
-                    $state.go($state.current.name + '_add');
+                    //$state.go($state.current.name + '_add');
                 };
 
                 scope.delete = function($event) {
@@ -168,7 +171,7 @@
                     modal = $modal({scope: modalScope, title: modalTitle, content: modalContent, template: modalTemplate, show: true});
 
                     modalScope.ok = function() {
-                        var defer = $q.defer();
+                        var defer = $lux.q.defer();
                         forEach(scope.selected, function(item, _) {
                             api.delete({path: '/' + item[pk]})
                                 .success(function(resp) {
@@ -214,7 +217,7 @@
                 scope.options = options;
 
                 scope.objectUrl = function(objectId) {
-                    return $window.location + '/' + objectId;
+                    return $lux.window.location + '/' + objectId;
                 };
 
                 var api = $lux.api(options.target),

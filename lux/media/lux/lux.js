@@ -1,6 +1,6 @@
 //      Lux Library - v0.2.0
 
-//      Compiled 2015-06-24.
+//      Compiled 2015-06-25.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -1498,6 +1498,7 @@ angular.module('lux.cms.component.text', ['lux.services'])
             api: {
                 path: 'cms/components/text',
             },
+            //
             getData: function(componentId) {
                 // TODO: change it to fetch data from api.lux
                 return testData.getComponents()[componentId].content;
@@ -1844,7 +1845,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
     //  Python implementation in the lux.extensions.angular Extension
     //
 
-    // Hack for delaing with ui-router state.href
+    // Hack for delaying with ui-router state.href
     // TODO: fix this!
     var stateHref = lux.stateHref = function (state, State, Params) {
         if (Params) {
@@ -1859,7 +1860,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
     //  Lux State Provider
     //	========================
     //
-    //	Complements the python lux server
+    //	Complements the lux server and angular ui.router
     function LuxStateProvider ($stateProvider, $urlRouterProvider) {
 
         var states = lux.context.states,
@@ -3194,8 +3195,8 @@ angular.module("grid/modal.tpl.html", []).run(["$templateCache", function($templ
         })
         //
         // Directive to build Angular-UI grid options using Lux REST API
-        .directive('restGrid', ['$lux', '$window', '$modal', '$state', '$q', 'uiGridConstants', 'gridDefaults',
-            function ($lux, $window, $modal, $state, $q, uiGridConstants, gridDefaults) {
+        .directive('restGrid', ['$lux', '$modal', 'uiGridConstants', 'gridDefaults',
+            function ($lux, $modal, uiGridConstants, gridDefaults) {
 
             var paginationOptions = {
                     sizes: [25, 50, 100]
@@ -3270,14 +3271,17 @@ angular.module("grid/modal.tpl.html", []).run(["$templateCache", function($templ
 
             function addGridMenu(scope, api, gridOptions) {
                 var menu = [],
-                    stateName = $state.current.url.split('/').pop(-1),
-                    model = stateName.slice(0, -1),
+                    // We cannot use $state, we must be able to use this without ui.router
+                    // stateName = $state.current.url.split('/').pop(-1),
+                    // model = stateName.slice(0, -1),
+                    stateName = 'UNKNOWN',
+                    model = stateName,
                     modalScope = scope.$new(true),
                     modal,
                     title;
 
                 scope.create = function($event) {
-                    $state.go($state.current.name + '_add');
+                    //$state.go($state.current.name + '_add');
                 };
 
                 scope.delete = function($event) {
@@ -3309,7 +3313,7 @@ angular.module("grid/modal.tpl.html", []).run(["$templateCache", function($templ
                     modal = $modal({scope: modalScope, title: modalTitle, content: modalContent, template: modalTemplate, show: true});
 
                     modalScope.ok = function() {
-                        var defer = $q.defer();
+                        var defer = $lux.q.defer();
                         forEach(scope.selected, function(item, _) {
                             api.delete({path: '/' + item[pk]})
                                 .success(function(resp) {
@@ -3355,7 +3359,7 @@ angular.module("grid/modal.tpl.html", []).run(["$templateCache", function($templ
                 scope.options = options;
 
                 scope.objectUrl = function(objectId) {
-                    return $window.location + '/' + objectId;
+                    return $lux.window.location + '/' + objectId;
                 };
 
                 var api = $lux.api(options.target),
