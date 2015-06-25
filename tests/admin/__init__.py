@@ -5,12 +5,14 @@ from lux.extensions.admin import register, CRUDAdmin
 EXTENSIONS = ['lux.extensions.base',
               'lux.extensions.rest',
               'lux.extensions.auth',
+              'lux.extensions.cms',
               'lux.extensions.angular',
               'lux.extensions.admin']
 
 HTML5_NAVIGATION = True
 API_URL = 'api'
 AUTHENTICATION_BACKENDS = ['lux.extensions.auth.TokenBackend']
+GREEN_POOL = 50
 
 
 class Extension(lux.Extension):

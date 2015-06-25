@@ -79,9 +79,9 @@ class Admin(AdminRouter):
     _sitemap = None
 
     def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         # set self as the angular root
         self._angular_root = self
-        super().__init__(*args, **kwargs)
 
     def sitemap(self, app):
         if self._sitemap is None:

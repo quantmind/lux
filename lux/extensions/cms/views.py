@@ -27,7 +27,7 @@ class PageForm(forms.Form):
     description = forms.TextField(required=False)
     template_id = odm.RelationshipField(TemplateCRUD.model, label='template')
     published = forms.BooleanField(required=False)
-    layout = forms.TextField(required=False)
+    layout = forms.JsonField()
 
 
 class PageCRUD(odm.CRUD):
@@ -109,7 +109,7 @@ class CMS(lux.CMS):
 
     def _build_map(self):
         key = self.key or ''
-        response = self.app.api.get('/html_pages?root=%s' % key)
+        response = self.app.api.get('html_pages?root=%s' % key)
         if response.status_code == 200:
             data = response.json()
             return data['result']

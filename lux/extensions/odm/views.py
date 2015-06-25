@@ -101,6 +101,8 @@ class RestRouter(rest.RestRouter):
         return query
 
     def _do_filter(self, request, query, field, op, value):
+        if value == '':
+            value = None
         odm = request.app.odm()
         field = getattr(odm[self.model.name], field)
         if op == 'eq':

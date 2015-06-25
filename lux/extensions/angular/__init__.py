@@ -208,13 +208,3 @@ def add_to_sitemap(sitemap, app, doc, router, parent=None, angular=None):
     # Loop over children routes
     for child in router.routes:
         add_to_sitemap(sitemap, app, doc, child, name, angular)
-
-    # Add redirect to folder page if required
-    return
-    if path.endswith('/') and path != '/':
-        rpath = path[:-1]
-        if rpath not in sitemap['pages']:
-            page = {'url': rpath,
-                    'redirectTo': path}
-            sitemap['states'].append(rpath)
-            sitemap['pages'][rpath] = page
