@@ -148,7 +148,7 @@ class Command(lux.Command):
         elif cmd == 'merge':
             if len(opt.command) != 2:
                 raise CommandError('Command: %s required revisions id.' % cmd)
-            alembic_cmd.merge(config, *opt.command, message=opt.msg,
+            alembic_cmd.merge(config, opt.command, message=opt.msg,
                               branch_label=opt.branch)
         elif cmd == 'revision':
             alembic_cmd.revision(config, message=opt.msg,
