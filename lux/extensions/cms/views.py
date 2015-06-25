@@ -84,7 +84,9 @@ class AnyPage(HtmlRouter):
 
 
 class CMS(lux.CMS):
-    '''Override default lux CMS handler
+    '''Override default lux :class:`.CMS` handler
+
+    This CMS handler reads page information from the database and
     '''
     def page(self, path):
         '''Obtain a page object from a path
@@ -107,7 +109,7 @@ class CMS(lux.CMS):
 
     def _build_map(self):
         key = self.key or ''
-        response = self.app.api.get('/html_pages?filterby=root:eq:%s' % key)
+        response = self.app.api.get('/html_pages?root=%s' % key)
         if response.status_code == 200:
             data = response.json()
             return data['result']

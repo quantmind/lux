@@ -12,6 +12,7 @@ htmlcov
 htmlprof
 dist
 build
+src
 lux.egg-info
 docs/build
 example/luxweb/settings.py

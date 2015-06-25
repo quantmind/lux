@@ -43,7 +43,7 @@ class Content(rest.RestModel):
         if path is None:
             path = name
         if path:
-            self.path  = os.path.join(self.path, path)
+            self.path = os.path.join(self.path, path)
         super().__init__(name, **kwargs)
 
     def write(self, user, data, new=False, message=None):

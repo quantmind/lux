@@ -10,7 +10,12 @@ __all__ = ['CMS']
 
 
 class Page(AttributeDictionary):
-    pass
+    '''An object representing an HTML page
+
+    .. attribute:: template
+
+        HTML string for the html body tag
+    '''
 
 
 class CMS:
@@ -24,7 +29,7 @@ class CMS:
 
     .. attribute:: key
 
-        A key which identify this CMS. Not used yet. #TOTO explain this
+        A key which identify the CMS. Not used yet. #TOTO explain this
     '''
     _sitemap = None
     _context = None
@@ -34,12 +39,20 @@ class CMS:
         self.key = key
 
     def page(self, path):
-        '''Obtain a page object from a path.
+        '''Obtain a page object from a request path.
 
-        This method always return a :class:`.Page`. If there are not
+        This method always return a :class:`.Page`. If there are no
         registered pages which match the path, it return an empty Page.
         '''
         return Page(self.match(path) or ())
+
+    def inner_html(self, request, page, html=''):
+        '''Render the inner part of the page template (``html_main``)
+
+        ``html`` is the html rendered by the Router, indipendently from the
+        CMS layout. It can be en empty string.
+        '''
+        return html
 
     def match(self, path, sitemap=None):
         '''Match a path with a page form ``sitemap``
@@ -74,6 +87,8 @@ class CMS:
         return self._sitemap
 
     def render(self, page, context):
+        '''Render a ``page`` with a ``context`` dictionary
+        '''
         context.update(self.context(context))
         if not isinstance(page, Page):
             page = Page(template=page)

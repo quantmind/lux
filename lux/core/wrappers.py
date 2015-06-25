@@ -111,12 +111,10 @@ class HtmlRouter(Router):
         app = request.app
         # get cms for this router
         cms = self.cms(app)
-        # cms page
+        # fetch the cms page if possible
         page = cms.page(request.path[1:])
-
-        if isinstance(html, Html):
-            html = html.render(request)
-
+        # render the inner part of the html page
+        html = cms.inner_html(request, page, html)
         # This request is for the inner template only
         if request.url_data.get('template') == 'ui':
             request.response.content = html

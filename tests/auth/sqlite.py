@@ -5,7 +5,6 @@ from pulsar.apps.test import test_timeout
 from lux.utils import test
 
 
-@test_timeout(20)
 class TestSqlite(test.AppTestCase):
     config_file = 'tests.auth'
     config_params = {'DATASTORE': 'sqlite://'}

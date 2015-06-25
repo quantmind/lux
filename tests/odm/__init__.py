@@ -16,6 +16,8 @@ EXTENSIONS = ['lux.extensions.base',
 
 AUTHENTICATION_BACKENDS = ['lux.extensions.auth.TokenBackend']
 CORS_ALLOWED_METHODS = 'GET, POST, DELETE'
+# Force greenlet (sqlite threads are slow)
+GREEN_POOL = 50
 
 
 class Extension(lux.Extension):
