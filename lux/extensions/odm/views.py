@@ -87,19 +87,32 @@ class RestRouter(rest.RestRouter):
         return query
 
     def filter(self, request, query, text):
-        filterby = request.url_data.get('filterby')
-        if filterby:
-            if not isinstance(filterby, list):
-                filterby = (filterby,)
-            for entry in filterby:
-                bits = entry.split(':')
-                if len(bits) == 3:
-                    query = self._do_filter(query, *bits)
+        columns = self.model.columnsMapping(request.app)
+
+        for key, value in request.url_data.items():
+            bits = key.split(':')
+            field = bits[0]
+            if field in columns:
+                col = columns[field]
+                op = bits[1] if len(bits) == 2 else 'eq'
+                field = col.get('field')
+                if field:
+                    query = self._do_filter(request, query, field, op, value)
         return query
 
-    def _do_filter(self, query, field, op, value):
+    def _do_filter(self, request, query, field, op, value):
+        odm = request.app.odm()
+        field = getattr(odm[self.model.name], field)
         if op == 'eq':
-            query = query.filter_by(**{field: value})
+            query = query.filter(field == value)
+        elif op == 'gt':
+            query = query.filter(field > value)
+        elif op == 'ge':
+            query = query.filter(field >= value)
+        elif op == 'lt':
+            query = query.filter(field < value)
+        elif op == 'le':
+            query = query.filter(field <= value)
         return query
 
 

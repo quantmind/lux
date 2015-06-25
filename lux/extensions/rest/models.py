@@ -87,6 +87,9 @@ class RestModel:
             self._columns = self._load_columns(app)
         return self._columns
 
+    def columnsMapping(self, app):
+        return dict(((c['name'], c) for c in self.columns(app)))
+
     def get_target(self, request, **extra_data):
         '''Get a target for a form
 

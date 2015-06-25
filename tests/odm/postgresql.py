@@ -32,8 +32,9 @@ class TestPostgreSql(test.AppTestCase):
         self.assertTrue('token' in data)
         return data['token']
 
-    def _create_task(self, token, txt='This is a task', person=None):
-        data = {'subject': txt}
+    def _create_task(self, token, subject='This is a task', person=None,
+                     **data):
+        data['subject'] = subject
         if person:
             data['assigned_id'] = person['id']
         request = yield from self.client.post(
@@ -44,9 +45,8 @@ class TestPostgreSql(test.AppTestCase):
         data = self.json(response)
         self.assertIsInstance(data, dict)
         self.assertTrue('id' in data)
-        self.assertEqual(data['subject'], txt)
+        self.assertEqual(data['subject'], subject)
         self.assertTrue('created' in data)
-        self.assertFalse(data['done'])
         return data
 
     def _create_person(self, token, username, name=None):
@@ -258,3 +258,26 @@ class TestPostgreSql(test.AppTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertFalse(response.content)
 
+    def test_filter(self):
+        token = yield from self._token()
+        yield from self._create_task(token, 'A done task', done=True)
+        yield from self._create_task(token, 'a not done task')
+        request = yield from self.client.get('/tasks?done=1')
+        response = request.response
+        self.assertEqual(response.status_code, 200)
+        data = self.json(response)
+        result = data['result']
+        self.assertIsInstance(result, list)
+        self.assertTrue(result)
+        for task in result:
+            self.assertEqual(task['done'], True)
+
+        request = yield from self.client.get('/tasks?done=0')
+        response = request.response
+        self.assertEqual(response.status_code, 200)
+        data = self.json(response)
+        result = data['result']
+        self.assertIsInstance(result, list)
+        self.assertTrue(result)
+        for task in result:
+            self.assertEqual(task['done'], False)
