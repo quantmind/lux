@@ -53,8 +53,8 @@
         })
         //
         // Directive to build Angular-UI grid options using Lux REST API
-        .directive('restGrid', ['$lux', '$modal', 'uiGridConstants', 'gridDefaults',
-            function ($lux, $modal, uiGridConstants, gridDefaults) {
+        .directive('restGrid', ['$lux', '$rootScope', '$modal', '$location', 'uiGridConstants', 'gridDefaults',
+            function ($lux, $rootScope, $modal, $location, uiGridConstants, gridDefaults) {
 
             var paginationOptions = {
                     sizes: [25, 50, 100]
@@ -129,17 +129,14 @@
 
             function addGridMenu(scope, api, gridOptions) {
                 var menu = [],
-                    // We cannot use $state, we must be able to use this without ui.router
-                    // stateName = $state.current.url.split('/').pop(-1),
-                    // model = stateName.slice(0, -1),
-                    stateName = 'UNKNOWN',
-                    model = stateName,
+                    stateName = $rootScope.page,
+                    model = stateName.slice(0, -1),
                     modalScope = scope.$new(true),
                     modal,
                     title;
 
                 scope.create = function($event) {
-                    //$state.go($state.current.name + '_add');
+                    $location.path($location.path() + '/add');
                 };
 
                 scope.delete = function($event) {
