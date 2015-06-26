@@ -1,5 +1,5 @@
 from .models import Content
-from .views import TextCRUD
+from .views import TextCRUD, TextForm
 
 
-__all__ = ['Content', 'TextCRUD']
+__all__ = ['Content', 'TextCRUD', 'TextForm']

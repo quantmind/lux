@@ -1,4 +1,8 @@
-'''Backend-based CMS
+'''The :mod:`lux.extensions.cms` extend the default CMS with
+back-end models for specifying the layout of the inner html and the
+components (plugins) which are used to render the layout.
+
+
 '''
 import lux
 from lux import Parameter

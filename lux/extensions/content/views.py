@@ -15,17 +15,17 @@ SLUG_LENGTH = 64
 logger = logging.getLogger('lux.extensions.content')
 
 
-class BlogForm(forms.Form):
+class TextForm(forms.Form):
     title = forms.CharField()
     slug = forms.CharField(required=False,
                            max_length=SLUG_LENGTH)
-    author = forms.CharField()
+    author = forms.CharField(required=False)
     body = forms.TextField()
     tags = forms.CharField(required=False)
     published = forms.DateTimeField(required=False)
 
 
-class TextCRUD(HtmlRouter, rest.RestMixin):
+class TextCRUD(rest.RestMixin, HtmlRouter):
     '''CRUD views for the text APIs
     '''
     response_content_types = ('text/html', 'text/plain', 'application/json')
@@ -38,11 +38,13 @@ class TextCRUD(HtmlRouter, rest.RestMixin):
     def post(self, request):
         '''Create a new model
         '''
+        form = self.model.form
+        if not form:
+            raise Http404
         backend = request.cache.auth_backend
         model = self.model
         if backend.has_permission(request, model.name, rest.CREATE):
-            assert model.form
-            data, files = request.data_and_files()
+            data, files = self.json_data_files(request)
             form = model.form(request, data=data, files=files)
             if form.is_valid():
                 try:
@@ -67,7 +69,8 @@ class TextCRUD(HtmlRouter, rest.RestMixin):
         if request.method == 'GET':
             if backend.has_permission(request, self.model.name, rest.READ):
                 if request.content_types.best == 'text/html':
-                    return content
+                    html = content.html(request)
+                    return self.html_response(request, html)
                 elif request.content_types.best == 'text/plain':
                     return content
                 else:
@@ -79,18 +82,22 @@ class TextCRUD(HtmlRouter, rest.RestMixin):
 
     def get_model(self, request, slug, sha=None):
         try:
-            text = self.model.read(slug)
+            data = self.model.read(slug)
         except DataError:
             raise Http404
         reader = get_reader(request.app, '.%s' % self.model.ext)
-        return reader.process(text)
+        return reader.process(data['content'], data['path'], slug=slug)
 
     def create_model(self, request, data):
         '''Create a new document
         '''
         slug = data.get('slug') or data['title']
         data['slug'] = slugify(slug, max_length=SLUG_LENGTH)
-        self.model.write(request.cache.user, data, new=True)
+        data['hash'] = self.model.write(request.cache.user, data, new=True)
+        return data
 
     def update_model(self, request, instance, data):
         pass
+
+    def serialise_model(self, request, data, in_list=False):
+        return data

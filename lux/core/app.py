@@ -211,6 +211,8 @@ class Application(ConsoleParser, Extension, EventMixin):
                   ('Cache server, can be a connection string to a valid '
                    'datastore which support the cache protocol or an object '
                    'supporting the cache protocol')),
+        Parameter('DEFAULT_CACHE_TIMEOUT', 60,
+                  'Default timeout for data stored in cache'),
         Parameter('DEFAULT_FROM_EMAIL', '',
                   'Default email address to send email from'),
         Parameter('LOCALE', 'en_GB', 'Default locale', True),

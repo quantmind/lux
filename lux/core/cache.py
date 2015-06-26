@@ -1,4 +1,5 @@
 import json
+from functools import wraps
 
 from pulsar.apps.data import parse_store_url, create_store
 from pulsar.utils.importer import module_attribute
@@ -6,7 +7,47 @@ from pulsar.utils.string import to_string
 from pulsar import ImproperlyConfigured
 
 
+__all__ = ['cached', 'register_cache']
+
+
 data_caches = {}
+
+
+def cache_key(request):
+    path = request.path
+    user = str(request.cache.user)
+    return '%s:%s:%s' % (request.config['APP_NAME'], path, user)
+
+
+def cached(method):
+    '''Decorator to apply to Router's methods for
+    caching the return value
+    '''
+    @wraps(method)
+    def _(self, request, *args, **kw):
+        app = request.app
+
+        if request.method == 'GET':
+            server = app.cache_server
+            key = cache_key(request)
+            result = server.get_json(key)
+            if result is not None:
+                return result
+
+        result = method(self, request, *args, **kw)
+        if request.method == 'GET':
+            timeout = app.config['DEFAULT_CACHE_TIMEOUT']
+            try:
+                server.set_json(key, result, timeout=timeout)
+            except TypeError:
+                app.logger.exception('Could not convert to JSON a value to '
+                                     'set in cache')
+            except Exception:
+                app.logger.exception('Critical exception while setting cache')
+
+        return result
+
+    return _
 
 
 class Cache:

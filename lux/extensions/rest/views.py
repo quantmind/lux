@@ -4,7 +4,7 @@ import lux
 from lux import route
 from lux.forms import Form
 
-from pulsar import Http404, PermissionDenied, MethodNotAllowed
+from pulsar import Http404, PermissionDenied, MethodNotAllowed, BadRequest
 from pulsar.apps.wsgi import Json
 
 from .forms import LoginForm, CreateUserForm, ChangePasswordForm
@@ -111,6 +111,16 @@ class RestMixin:
         '''Serialise on model
         '''
         return self.model.tojson(request, data)
+
+    def json_data_files(self, request):
+        content_type, _ = request.content_type_options
+        try:
+            assert content_type == 'application/json'
+            return request.data_and_files()
+        except AssertionError:
+            raise BadRequest('Expected application/json content type')
+        except ValueError:
+            raise BadRequest('Problems parsing JSON')
 
     def json(self, request, data):
         '''Return a response as application/json

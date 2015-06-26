@@ -43,6 +43,9 @@ class User(Model, UserMixin):
     joined = Column(DateTime, default=datetime.utcnow)
     tokens = relationship('Token', backref='user')
 
+    def __repr__(self):
+        return self.username or self.email
+
     def has_permission(self, permission):
         return self.is_superuser or permission in self.permissions
 

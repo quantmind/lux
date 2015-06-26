@@ -1,20 +1,14 @@
 import os
-import os.path
 import shutil
 
-from dulwich.porcelain import init
-
 from lux.utils import test
+from lux.extensions.rest import UserMixin
 from lux.extensions.content.models import Content, DataError
 
+from . import PWD, remove_repo
 
-PWD = os.path.join(os.getcwd(), 'test_repo')
 
-
-class User(object):
-
-    '''Imitate User model
-    '''
+class User(UserMixin):
     username = 'Test'
 
 
@@ -22,15 +16,12 @@ class TestContentModel(test.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        # create the testing repo
-        init(PWD)
         cls.repo = Content('Tests', PWD, '')
         cls.user = User()
 
     @classmethod
     def tearDownClass(cls):
-        # remove test repo after all
-        shutil.rmtree(PWD)
+        remove_repo()
 
     def test_initialization(self):
         # repo exist
@@ -85,7 +76,7 @@ class TestContentModel(test.TestCase):
         data = {'slug': 'README', 'body': 'Readme message'}
         self.repo.write(self.user, data, new=True)
         content = self.repo.read('README')
-        self.assertEqual(content, 'Readme message')
+        self.assertEqual(content['content'], 'Readme message')
         # try to read wrong file
         with self.assertRaises(DataError) as e:
             self.repo.read('Not_exist')

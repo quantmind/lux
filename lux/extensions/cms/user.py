@@ -22,6 +22,9 @@ class User(AttributeDictionary, UserMixin):
     def is_active(self):
         return True
 
+    def __str__(self):
+        return self.username or self.email or 'user'
+
 
 class Session(AttributeDictionary, SessionMixin):
     '''A dictionary-based Session

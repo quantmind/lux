@@ -1,10 +1,10 @@
-import operator
+import json
 
 from pulsar import Http404
 from pulsar.utils.slugify import slugify
 
 import lux
-from lux import forms, HtmlRouter
+from lux import forms, HtmlRouter, Html, cached
 from lux.extensions import odm
 from lux.core.cms import Page
 
@@ -53,29 +53,6 @@ class AnyPage(HtmlRouter):
                 app.cms = cms = CMS(app)
             return cms
 
-    def _get_components(self, components, row, col):
-        return [comp for comp in components
-                if comp['row'] == row and comp['col'] == col]
-
-    def layout_to_html(self, layout):
-        html = ''
-        for row_idx, row in enumerate(layout['rows']):
-            row_html = '\n<div class="row">{content}\n</div>'
-            content = ''
-            for col_idx, col in enumerate(row):
-                col_html = '\n\t<div class="{col_cls}">{components}\n\t</div>'
-                components = self._get_components(layout['components'],
-                                                  row_idx, col_idx)
-                render_block = ''
-                for comp in sorted(components, key=operator.itemgetter('pos')):
-                    render_block += ('''\n\t\t<render-component id="%s" %s>'''
-                                     '''</render-component>''' % (
-                                         comp['id'], comp['type']))
-                content += col_html.format(col_cls=col,
-                                           components=render_block)
-            html += row_html.format(content=content)
-        return html
-
     def get_html(self, request):
         path = request.urlargs['path']
         page = self.cms(request.app).page(path)
@@ -106,6 +83,79 @@ class CMS(lux.CMS):
         if not page:
             return super().page(path)
         return Page(page)
+
+    @cached
+    def inner_html(self, request, page, html=''):
+        '''Build page html content using json layout.
+        :param layout: json (with rows and components) e.g.
+            layout = {
+                'rows': [
+                    ['col-md-6', 'col-md-6'],
+                    ['col-md-6', 'col-md-6']
+                ],
+                'components': [
+                    {'type': 'text', 'id': 1, 'row': 0, 'col': 0, 'pos': 0},
+                    {'type': 'gallery', 'id': 2, 'row': 1, 'col': 1, 'pos': 0}
+                ]
+            }
+        :return: raw html
+            <div class="row">
+                <div class="col-md-6">
+                    <render-component id="1" text></render-component>
+                </div>
+                <div class="col-md-6"></div>
+            </div>
+            <div class="row">
+                    <div class="col-md-6"></div>
+                    <div class="col-md-6">
+                        <render-component id="2" gallery></render-component>
+                    </div>
+            </div>
+        '''
+        layout = page.layout
+        if layout:
+            try:
+                layout = json.loads(layout)
+            except Exception:
+                request.app.logger.exception('Could not parse layout')
+                layout = None
+
+        if not layout:
+            layout = dict(rows=[['col-sm-12']],
+                          components=[dict(type='self')])
+
+        components = layout.get('components', ())
+        container = Html('div', cn='container')
+
+        for row_idx, row in enumerate(layout.get('rows', ())):
+            htmlRow = Html('div', cn='row')
+            container.append(htmlRow)
+
+            for col_idx, col in enumerate(row):
+                htmlCol = Html('div', cn=col)
+                htmlRow.append(htmlCol)
+
+                for comp in sorted(components, key=lambda c: c.get('pos', 0)):
+                    ctype = comp.get('type')
+                    if ctype == 'self':
+                        htmlCol.append(Html('div', html, cn='block'))
+
+        return container.render(request)
+
+    def _get_components(self, components, row, column):
+        '''Returns the component from specified row and column.
+
+        :param components: json with the components e.g.
+            components = [
+                {'type': 'text', 'id': 1, 'row': 0, 'col': 0, 'pos': 0},
+                {'type': 'text', 'id': 2, 'row': 1, 'col': 1, 'pos': 0}
+            ]
+        :param row: value, determine row of the component
+        :param column: value, determine column of the component
+        :return: a specified component
+        '''
+        return (comp for comp in components
+                if comp.get('row', 0) == row and comp('col', 0) == column)
 
     def _build_map(self):
         key = self.key or ''

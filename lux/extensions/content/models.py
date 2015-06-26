@@ -10,6 +10,7 @@ from dulwich.file import GitFile
 from dulwich.errors import NotGitRepository
 
 from lux.extensions import rest
+from lux.utils.files import get_rel_dir
 
 
 __all__ = ('_b', 'DataError', 'Content')
@@ -54,13 +55,16 @@ class Content(rest.RestModel):
         ``new``, the file must exist.
         '''
         slug = data['slug']
-        filename = self._format_filename(slug)
-        filepath = self._format_filename(slug, True)
+        filepath = self._format_filename(slug)
         if new:
             if not message:
                 message = "Created %s" % slug
             if os.path.isfile(filepath):
                 raise DataError('%s not available' % slug)
+            else:
+                dir = os.path.dirname(filepath)
+                if not os.path.isdir(dir):
+                    os.makedirs(dir)
         else:
             if not message:
                 message = "Updated %s" % slug
@@ -73,10 +77,12 @@ class Content(rest.RestModel):
         with open(filepath, 'wb') as f:
             f.write(_b(content))
 
+        filename = get_rel_dir(filepath, self.repo.path)
+
         add(self.repo, [filename])
-        commit_hash = commit(self.repo, _b(message),
-                             committer=_b(user.username))
-        return commit_hash
+        committer = user.username if user.is_authenticated() else 'anonymous'
+        commit_hash = commit(self.repo, _b(message), committer=_b(committer))
+        return commit_hash.decode('utf-8')
 
     def delete(self, user, data, message=None):
         '''Delete file(s) from repository
@@ -88,7 +94,7 @@ class Content(rest.RestModel):
         if not isinstance(files_to_del, (list, tuple)):
             files_to_del = [files_to_del]
 
-        filenames = self._format_filename(files_to_del, path=True)
+        filenames = self._format_filename(files_to_del)
         for f in filenames:
             # remove only files that really exist and not dirs
             if os.path.exists(f) and os.path.isfile(f):
@@ -108,12 +114,14 @@ class Content(rest.RestModel):
     def read(self, filename):
         '''Read content from file in repository
         '''
-        file_name = self._format_filename(filename, True)
+        path = self._format_filename(filename)
         try:
             # use dulwich GitFile to obeys the git file locking protocol
-            with GitFile(file_name, 'rb') as f:
+            with GitFile(path, 'rb') as f:
                 content = f.read()
-            return content.decode('utf-8')
+            return dict(content=content.decode('utf-8'),
+                        filename=filename,
+                        path=path)
         except IOError:
             raise DataError('%s not available' % filename)
 
@@ -137,19 +145,17 @@ class Content(rest.RestModel):
             _filename.append(_name)
         return _filename
 
-    def _format_filename(self, filename, path=None):
+    def _format_filename(self, filename):
         '''Append `.md` extension to file name and full path
         if `path` is True.
         '''
         if isinstance(filename, (list, tuple)):
-            return self._iter_filename(filename, self._format_filename, path)
+            return self._iter_filename(filename, self._format_filename)
 
         ext = '.%s' % self.ext
         if not filename.endswith(ext):
             filename = '%s%s' % (filename, ext)
-        if path:
-            filename = os.path.join(self.path, filename)
-        return filename
+        return os.path.join(self.path, filename)
 
     def _get_filename(self, filename):
         '''Get rid of full path and `.md` extension and

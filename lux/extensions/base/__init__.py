@@ -18,7 +18,7 @@ from pulsar.apps import wsgi
 from pulsar.utils.httpurl import remove_double_slash
 
 import lux
-from lux import Parameter
+from lux import Parameter, RedirectRouter
 
 from .media import FileRouter, MediaRouter
 
@@ -35,6 +35,8 @@ class Extension(lux.Extension):
         Parameter('CLEAN_URL', False,
                   'When ``True``, requests on urls with consecutive slashes '
                   'are converted to valid url and redirected.'),
+        Parameter('REDIRECTS', None,
+                  'Dictionary mapping url to another url to redirect to.'),
         Parameter('SERVE_STATIC_FILES', False,
                   'if ``True`` add middleware to serve static files.'),
         Parameter('FAVICON', None,
@@ -50,6 +52,10 @@ class Extension(lux.Extension):
             path = app.config['MEDIA_URL']
             middleware.append(MediaRouter(path, app.meta.media_dir,
                                           show_indexes=app.debug))
+        if app.config['REDIRECTS']:
+            for url, to in app.config['REDIRECTS'].items():
+                middleware.append(RedirectRouter(url, to))
+
         return middleware
 
     def response_middleware(self, app):
