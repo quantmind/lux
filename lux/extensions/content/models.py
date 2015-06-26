@@ -34,12 +34,13 @@ class Content(rest.RestModel):
     .. _dulwich: https://www.samba.org/~jelmer/dulwich/docs/
     '''
 
-    def __init__(self, name, repo, path=None, **kwargs):
+    def __init__(self, name, repo, path=None, ext='md', **kwargs):
         try:
             self.repo = open_repo(repo)
         except NotGitRepository:
             self.repo = init(repo)
         self.path = repo
+        self.ext = ext
         if path is None:
             path = name
         if path:
@@ -48,6 +49,9 @@ class Content(rest.RestModel):
 
     def write(self, user, data, new=False, message=None):
         '''Write a file into the repository
+
+        When ``new`` the file must not exist, when not
+        ``new``, the file must exist.
         '''
         slug = data['slug']
         filename = self._format_filename(slug)
@@ -116,10 +120,10 @@ class Content(rest.RestModel):
     def all(self):
         '''Return list of all files stored in repo
         '''
-        files = glob.glob(os.path.join(self.repo.path, '*.md'))
+        files = glob.glob(os.path.join(self.repo.path, '*.%s' % self.ext))
         return self._get_filename(files)
 
-    def __iter_filename(self, filename, func, path=None):
+    def _iter_filename(self, filename, func, path=None):
         '''In case more than one filename is provided, normalize
         all entries by provided function. Dedicated for `_format_filename'
         and `_get_filename` functions, should be not use directly.
@@ -138,10 +142,11 @@ class Content(rest.RestModel):
         if `path` is True.
         '''
         if isinstance(filename, (list, tuple)):
-            return self.__iter_filename(filename, self._format_filename, path)
+            return self._iter_filename(filename, self._format_filename, path)
 
-        if not filename.endswith('.md'):
-            filename = '%s.md' % filename
+        ext = '.%s' % self.ext
+        if not filename.endswith(ext):
+            filename = '%s%s' % (filename, ext)
         if path:
             filename = os.path.join(self.path, filename)
         return filename
@@ -151,7 +156,7 @@ class Content(rest.RestModel):
         return peeled file name.
         '''
         if isinstance(filename, (list, tuple)):
-            return self.__iter_filename(filename, self._get_filename)
+            return self._iter_filename(filename, self._get_filename)
 
         # in case filename is a full path to a file
         filename = filename.split('/')[-1]

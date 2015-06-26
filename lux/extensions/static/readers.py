@@ -43,7 +43,7 @@ class BaseReader(object):
     def __init__(self, app, ext=None):
         self.app = app
         self.ext = ext
-        self.logger = app.extensions['lux.extensions.static'].logger
+        self.logger = app.logger
         self.config = app.config
 
     def __str__(self):
@@ -130,7 +130,7 @@ class MarkdownReader(BaseReader):
         if 'meta' not in self.extensions:
             self.extensions.append('meta')
 
-    def process(self, raw, source_path, name=None, **params):
+    def process(self, raw, source_path=None, name=None, **params):
         if isinstance(raw, bytes):
             raw = raw.decode('utf-8')
         self._md = md = Markdown(extensions=self.extensions)

@@ -4,10 +4,11 @@ from pulsar import PermissionDenied, Http404
 from pulsar.apps.wsgi import route, Json
 from pulsar.utils.slugify import slugify
 
-from lux import forms
+from lux import forms, HtmlRouter
 from lux.extensions import rest
+from lux.extensions.static import get_reader
 
-from .models import Content, DataError
+from .models import DataError
 
 
 SLUG_LENGTH = 64
@@ -24,13 +25,15 @@ class BlogForm(forms.Form):
     published = forms.DateTimeField(required=False)
 
 
-class TextCRUD(rest.RestRouter):
+class TextCRUD(HtmlRouter, rest.RestMixin):
     '''CRUD views for the text APIs
     '''
+    response_content_types = ('text/html', 'text/plain', 'application/json')
 
-    def __init__(self, name, path, *args, **kwargs):
-        model = Content(name, path, form=BlogForm)
-        super().__init__(model, *args, **kwargs)
+    def get(self, request):
+        '''Return a list of contents
+        '''
+        return request.response
 
     def post(self, request):
         '''Create a new model
@@ -56,19 +59,31 @@ class TextCRUD(rest.RestRouter):
             return Json(data).http_response(request)
         raise PermissionDenied
 
-    @route('<slug>', method=('get', 'post'))
+    @route('<slug>', method=('get', 'head', 'post'))
     def read_update(self, request):
-        text = self.get_model(request, request.urlargs['slug'])
+        content = self.get_model(request, request.urlargs['slug'])
         backend = request.cache.auth_backend
 
         if request.method == 'GET':
-            # url = request.absolute_uri()
             if backend.has_permission(request, self.model.name, rest.READ):
-                request.response.content = text
-                return request.response
+                if request.content_types.best == 'text/html':
+                    return content
+                elif request.content_types.best == 'text/plain':
+                    return content
+                else:
+                    return content
 
         elif request.method == 'HEAD':
-            return request.response
+            if backend.has_permission(request, self.model.name, rest.READ):
+                return request.response
+
+    def get_model(self, request, slug, sha=None):
+        try:
+            text = self.model.read(slug)
+        except DataError:
+            raise Http404
+        reader = get_reader(request.app, '.%s' % self.model.ext)
+        return reader.process(text)
 
     def create_model(self, request, data):
         '''Create a new document
@@ -76,12 +91,6 @@ class TextCRUD(rest.RestRouter):
         slug = data.get('slug') or data['title']
         data['slug'] = slugify(slug, max_length=SLUG_LENGTH)
         self.model.write(request.cache.user, data, new=True)
-
-    def get_model(self, request, slug, sha=None):
-        try:
-            return self.model.read(slug)
-        except DataError:
-            raise Http404
 
     def update_model(self, request, instance, data):
         pass
