@@ -12,7 +12,8 @@
     //  Events:
     //
     //      formReady: triggered once the form has rendered
-    //          arguments: formmodel
+    //          arguments: formmodel, formscope
+    //
     //      formFieldChange: triggered when a form field changes:
     //          arguments: formmodel, field (changed)
     //

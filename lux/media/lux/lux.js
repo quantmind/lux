@@ -1,6 +1,6 @@
 //      Lux Library - v0.2.0
 
-//      Compiled 2015-06-29.
+//      Compiled 2015-06-30.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -831,10 +831,15 @@ function(angular, root) {
             //
             //  Check the run method in the "lux.services" module for more information
             api.formReady = function (model, formScope) {
-                var id = api.defaults().id;
-                if (id) {
-                    api.get({path: '/' + id}).success(function (data) {
-                        angular.extend(form, data);
+                var resolve = api.defaults().get;
+                if (resolve) {
+                    api.get().success(function (data) {
+                        forEach(data, function (value, key) {
+                            // TODO: do we need a callback for JSON fields?
+                            // or shall we leave it here?
+                            if (isObject(value)) value = JSON.stringify(value, null, 4);
+                            model[key] = value;
+                        });
                     });
                 }
             };
@@ -1807,18 +1812,13 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
             };
         });
 
-
-
+    //
+    //	Lux.router
+    //	===================
+    //
+    //	Drop in replacement for lux.ui.router when HTML5_NAVIGATION is off.
+    //
     angular.module('lux.router', ['lux.page'])
-        //
-        .config(['$provide', '$locationProvider', function ($provide, $locationProvider) {
-            if (lux.context.HTML5_NAVIGATION) {
-                $locationProvider.html5Mode(true);
-                lux.context.targetLinks = true;
-                $locationProvider.hashPrefix(lux.context.hashPrefix);
-            }
-        }])
-        //
 
         //
         //  Convert all internal links to have a target so that the page reload
@@ -1840,6 +1840,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                 }
             };
         }]);
+
     //
     //  UI-Routing
     //
@@ -1986,7 +1987,8 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
     //  Events:
     //
     //      formReady: triggered once the form has rendered
-    //          arguments: formmodel
+    //          arguments: formmodel, formscope
+    //
     //      formFieldChange: triggered when a form field changes:
     //          arguments: formmodel, field (changed)
     //

@@ -101,10 +101,15 @@
             //
             //  Check the run method in the "lux.services" module for more information
             api.formReady = function (model, formScope) {
-                var id = api.defaults().id;
-                if (id) {
-                    api.get({path: '/' + id}).success(function (data) {
-                        angular.extend(form, data);
+                var resolve = api.defaults().get;
+                if (resolve) {
+                    api.get().success(function (data) {
+                        forEach(data, function (value, key) {
+                            // TODO: do we need a callback for JSON fields?
+                            // or shall we leave it here?
+                            if (isObject(value)) value = JSON.stringify(value, null, 4);
+                            model[key] = value;
+                        });
                     });
                 }
             };

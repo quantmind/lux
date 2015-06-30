@@ -159,7 +159,7 @@ class CRUDAdmin(AdminModel):
     def get_form(self, request, form, id=None):
         if not form:
             raise Http404
-        target = self.model.get_target(request, id=id)
+        target = self.model.get_target(request, path=id, get=True)
         html = form(request).as_form(action=target)
         context = {'html_form': html.render()}
         html = request.app.render_template(self.addtemplate, context)

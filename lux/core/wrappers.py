@@ -169,6 +169,8 @@ class HtmlRouter(Router):
             # Variables in the url
             params = dict(((v, v) for v in router.route.variables))
             url = router.route.url(**params)
+            # A page with variable requires to be resolved by the api
+            # The resolve requires a model
             page['resolve'] = True
         else:
             url = page['url']

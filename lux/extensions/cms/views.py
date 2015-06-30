@@ -129,7 +129,7 @@ class CMS(lux.CMS):
                           components=[dict(type='self')])
 
         components = layout.get('components', ())
-        container = Html('div', cn='container')
+        container = Html('div', cn='container-fluid')
 
         for row_idx, row in enumerate(layout.get('rows', ())):
             htmlRow = Html('div', cn='row')
