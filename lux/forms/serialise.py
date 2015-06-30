@@ -6,7 +6,7 @@ from lux import Html
 from lux.utils.crypt import get_random_string
 
 
-__all__ = ['Fieldset', 'Submit', 'Layout', 'Row']
+__all__ = ['Fieldset', 'Submit', 'Layout', 'Row', 'as_angular_dict']
 
 
 def angular_fields(form_class, fields, missings):
@@ -29,7 +29,7 @@ def as_angular_dict(field, form):
         return field.as_dict(form)
     else:
         data = field.getattrs(form)
-        data['name'] = field.name
+        data['name'] = field.html_name()
         if form.is_bound:
             pass
         elif field.name in form.initial:

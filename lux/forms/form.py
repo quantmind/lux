@@ -3,7 +3,7 @@ import json
 from pulsar import HttpRedirect
 from pulsar.utils.string import to_string
 from pulsar.utils.structures import OrderedDict
-from pulsar.utils.html import nicename, NOTHING
+from pulsar.utils.html import NOTHING
 from pulsar.utils.httpurl import JSON_CONTENT_TYPES
 
 from .errors import ValidationError, FormError
@@ -441,8 +441,6 @@ class BoundField(object):
 
         The :attr:`field` name to be used in HTML.
     '''
-    auto_id = 'id_{0[html_name]}'
-
     def __init__(self, form, field):
         self.form = form
         self.field = field
@@ -450,21 +448,9 @@ class BoundField(object):
         self.name = field.name
         self.html_name = field.html_name(form.prefix)
         self.value = None
-        if field.label is None:
-            self.label = nicename(self.name)
-        else:
-            self.label = field.label
-        self.required = field.required
-        self.help_text = field.help_text
-        self.id = self.auto_id.format(self.__dict__)
-        self.errors_id = self.id + '-errors'
 
     def __repr__(self):
         return '{0}: {1}'.format(self.name, self.value)
-
-    @property
-    def error(self):
-        return self.form.errors.get(self.name, '')
 
     def clean(self, value):
         '''Return a cleaned value for ``value`` by running the validation

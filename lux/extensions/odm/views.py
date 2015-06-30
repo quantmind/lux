@@ -49,17 +49,22 @@ class RestRouter(rest.RestRouter):
         odm = request.app.odm()
         model = odm[self.model.name]
         with odm.begin() as session:
-            instance = model(**data)
+            instance = model()
             session.add(instance)
+            for name, value in data.items():
+                self.set_instance_value(instance, name, value)
         return instance
 
     def update_model(self, request, instance, data):
         odm = request.app.odm()
         with odm.begin() as session:
-            for key, value in data.items():
-                setattr(instance, key, value)
             session.add(instance)
+            for name, value in data.items():
+                self.set_instance_value(instance, name, value)
         return instance
+
+    def set_instance_value(self, instance, name, value):
+        setattr(instance, name, value)
 
     def meta(self, request):
         meta = super().meta(request)
@@ -194,7 +199,7 @@ class CRUD(RestRouter):
 
         elif request.method == 'POST':
             model = self.model
-            form_class = model.editform or model.form
+            form_class = model.updateform
             if not form_class:
                 raise MethodNotAllowed
 

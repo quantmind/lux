@@ -245,7 +245,7 @@
                                     .html(field.label),
                         element = angular.element($document[0].createElement('div')).addClass(this.element);
 
-                    input.attr('ng-model', scope.formModelName + '.' + field.name);
+                    input.attr('ng-model', scope.formModelName + '["' + field.name + '"]');
 
                     forEach(inputAttributes, function (name) {
                         if (field[name]) input.attr(name, field[name]);
@@ -269,7 +269,7 @@
                         element;
 
                     // Add model attribute
-                    input.attr('ng-model', scope.formModelName + '.' + field.name);
+                    input.attr('ng-model', scope.formModelName + '["' + field.name + '"]');
 
                     if (!field.showLabels || field.type === 'hidden') {
                         label.addClass('sr-only');
@@ -325,6 +325,9 @@
                                 .attr('value', opt.value).html(opt.repr || opt.value);
                         select.append(opt);
                     });
+
+                    if (field.multiple)
+                        select.attr('multiple', true);
 
                     return this.onChange(scope, element);
                 },
@@ -384,9 +387,9 @@
                         // True when the form is submitted
                         submitted = scope.formName + '.submitted',
                         // True if the field is dirty
-                        dirty = [scope.formName, field.name, '$dirty'].join('.'),
-                        invalid = [scope.formName, field.name, '$invalid'].join('.'),
-                        error = [scope.formName, field.name, '$error'].join('.') + '.',
+                        dirty = joinField(scope.formName, field.name, '$dirty'),
+                        invalid = joinField(scope.formName, field.name, '$invalid'),
+                        error = joinField(scope.formName, field.name, '$error') + '.',
                         input = $(element[0].querySelector(scope.info.element)),
                         p = $($document[0].createElement('p'))
                                 .attr('ng-show', '(' + submitted + ' || ' + dirty + ') && ' + invalid)
@@ -418,10 +421,10 @@
 
                     // Add the invalid handler for server side errors
                     var name = '$invalid';
-                        name += ' && !' + [scope.formName, field.name, '$error.required'].join('.');
+                        name += ' && !' + joinField(scope.formName, field.name, '$error.required');
                         p.append(
                             this.fieldErrorElement(scope, name, self.errorMessage(scope, 'invalid'))
-                            .html('{{formErrors.' + field.name + '}}')
+                            .html('{{formErrors["' + field.name + '"]}}')
                         );
 
                     return element.append(p);
@@ -429,7 +432,7 @@
                 //
                 fieldErrorElement: function (scope, name, msg) {
                     var field = scope.field,
-                        value = [scope.formName, field.name, name].join('.');
+                        value = joinField(scope.formName, field.name, name);
 
                     return $($document[0].createElement('span'))
                                 .attr('ng-show', value)

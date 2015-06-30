@@ -19,9 +19,9 @@ class PageAdmin(CmsAdmin):
     form = Layout(PageForm,
                   Fieldset(all=True),
                   Submit('Add new page'))
-    editform = Layout(PageForm,
-                      Fieldset(all=True),
-                      Submit('Update page'))
+    updateform = Layout(PageForm,
+                        Fieldset(all=True),
+                        Submit('Update page'))
 
 
 @admin.register(TemplateCRUD.model)
@@ -30,6 +30,6 @@ class TemplateAdmin(CmsAdmin):
     form = Layout(TemplateForm,
                   Fieldset(all=True),
                   Submit('Add new template'))
-    editform = Layout(TemplateForm,
-                      Fieldset(all=True),
-                      Submit('Update template'))
+    updateform = Layout(TemplateForm,
+                        Fieldset(all=True),
+                        Submit('Update template'))

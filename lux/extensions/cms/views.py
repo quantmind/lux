@@ -68,21 +68,25 @@ class CMS(lux.CMS):
     def page(self, path):
         '''Obtain a page object from a path
         '''
-        key = self.cache_key()
-        try:
-            sitemap = self.app.cache_server.get_json(key)
-            assert isinstance(sitemap, list)
-        except Exception:
-            sitemap = None
-
-        if sitemap is None:
-            sitemap = self._build_map()
-            self.app.cache_server.set_json(key, sitemap)
-
-        page = self.match(path, sitemap)
+        page = self.match(path)
         if not page:
-            return super().page(path)
-        return Page(page)
+            sitemap = super().site_map(self.app)
+            page = self.match(path, sitemap)
+        return Page(page or ())
+
+    @cached
+    def site_map(self, app):
+        key = self.key or ''
+        response = app.api.get('html_pages?root=%s' % key)
+        if response.status_code == 200:
+            data = response.json()
+            return data['result']
+        else:
+            try:
+                response.raise_for_status()
+            except Exception:
+                app.logger.exception('Could not load sitemap')
+            return []
 
     @cached
     def inner_html(self, request, page, html=''):

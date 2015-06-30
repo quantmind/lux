@@ -63,7 +63,7 @@ class CMS:
         If no page is matched returns Nothing.
         '''
         if sitemap is None:
-            sitemap = self.site_map()
+            sitemap = self.site_map(self.app)
 
         for page in sitemap:
             route = Route(page['path'])
@@ -75,7 +75,7 @@ class CMS:
                 if matched is not None and '__remaining__' not in matched:
                     return page
 
-    def site_map(self):
+    def site_map(self, app):
         if self._sitemap is None:
             sitemap = []
             for url, page in self.app.config['HTML_TEMPLATES'].items():

@@ -28,6 +28,7 @@ class Extension(lux.Extension):
     _partials = None
 
     def api_sections(self, app):
+        app.require('lux.extensions.odm')
         return [PageCRUD(), TemplateCRUD()]
 
     def on_loaded(self, app):
@@ -37,3 +38,7 @@ class Extension(lux.Extension):
         '''Add the ``lux.cms`` module to angular bootstrap
         '''
         add_ng_modules(doc, 'lux.cms')
+
+    def on_after_commit(self, app, session, changes):
+        for change in changes:
+            pass

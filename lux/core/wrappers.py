@@ -166,8 +166,10 @@ class HtmlRouter(Router):
         '''Add angular router information (lux.extensions.angular)
         '''
         if router.route.variables:
+            # Variables in the url
             params = dict(((v, v) for v in router.route.variables))
             url = router.route.url(**params)
+            page['resolve'] = True
         else:
             url = page['url']
         page['templateUrl'] = '%s?template=ui' % url

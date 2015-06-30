@@ -1,6 +1,6 @@
 //      Lux Library - v0.2.0
 
-//      Compiled 2015-06-25.
+//      Compiled 2015-06-29.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -1810,6 +1810,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
 
 
     angular.module('lux.router', ['lux.page'])
+        //
         .config(['$provide', '$locationProvider', function ($provide, $locationProvider) {
             if (lux.context.HTML5_NAVIGATION) {
                 $locationProvider.html5Mode(true);
@@ -1817,6 +1818,8 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                 $locationProvider.hashPrefix(lux.context.hashPrefix);
             }
         }])
+        //
+
         //
         //  Convert all internal links to have a target so that the page reload
         .directive('page', ['$log', '$timeout', function (log, timer) {
@@ -2216,7 +2219,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                                     .html(field.label),
                         element = angular.element($document[0].createElement('div')).addClass(this.element);
 
-                    input.attr('ng-model', scope.formModelName + '.' + field.name);
+                    input.attr('ng-model', scope.formModelName + '["' + field.name + '"]');
 
                     forEach(inputAttributes, function (name) {
                         if (field[name]) input.attr(name, field[name]);
@@ -2240,7 +2243,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                         element;
 
                     // Add model attribute
-                    input.attr('ng-model', scope.formModelName + '.' + field.name);
+                    input.attr('ng-model', scope.formModelName + '["' + field.name + '"]');
 
                     if (!field.showLabels || field.type === 'hidden') {
                         label.addClass('sr-only');
@@ -2296,6 +2299,9 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                                 .attr('value', opt.value).html(opt.repr || opt.value);
                         select.append(opt);
                     });
+
+                    if (field.multiple)
+                        select.attr('multiple', true);
 
                     return this.onChange(scope, element);
                 },
@@ -2355,9 +2361,9 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                         // True when the form is submitted
                         submitted = scope.formName + '.submitted',
                         // True if the field is dirty
-                        dirty = [scope.formName, field.name, '$dirty'].join('.'),
-                        invalid = [scope.formName, field.name, '$invalid'].join('.'),
-                        error = [scope.formName, field.name, '$error'].join('.') + '.',
+                        dirty = joinField(scope.formName, field.name, '$dirty'),
+                        invalid = joinField(scope.formName, field.name, '$invalid'),
+                        error = joinField(scope.formName, field.name, '$error') + '.',
                         input = $(element[0].querySelector(scope.info.element)),
                         p = $($document[0].createElement('p'))
                                 .attr('ng-show', '(' + submitted + ' || ' + dirty + ') && ' + invalid)
@@ -2389,10 +2395,10 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
 
                     // Add the invalid handler for server side errors
                     var name = '$invalid';
-                        name += ' && !' + [scope.formName, field.name, '$error.required'].join('.');
+                        name += ' && !' + joinField(scope.formName, field.name, '$error.required');
                         p.append(
                             this.fieldErrorElement(scope, name, self.errorMessage(scope, 'invalid'))
-                            .html('{{formErrors.' + field.name + '}}')
+                            .html('{{formErrors["' + field.name + '"]}}')
                         );
 
                     return element.append(p);
@@ -2400,7 +2406,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                 //
                 fieldErrorElement: function (scope, name, msg) {
                     var field = scope.field,
-                        value = [scope.formName, field.name, name].join('.');
+                        value = joinField(scope.formName, field.name, name);
 
                     return $($document[0].createElement('span'))
                                 .attr('ng-show', value)
@@ -2742,172 +2748,177 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
             };
         });
 
-//
-//	Form processor
-//	=========================
-//
-//	Default Form processing function
-// 	If a submit element (input.submit or button) does not specify
-// 	a ``click`` entry, this function is used
-//
-//  Post Result
-//  -------------------
-//
-//  When a form is processed succesfully, this method will check if the
-//  ``formAttrs`` object contains a ``resultHandler`` parameter which should be
-//  a string.
-//
-//  In the event the ``resultHandler`` exists,
-//  the ``$lux.formHandlers`` object is checked if it contains a function
-//  at the ``resultHandler`` value. If it does, the function is called.
-lux.processForm = function (e) {
-
-    e.preventDefault();
-    e.stopPropagation();
-
-    var scope = this,
-        $lux = scope.$lux,
-        form = this[this.formName],
-        model = this[this.formModelName],
-        attrs = this.formAttrs,
-        target = attrs.action,
-        FORMKEY = scope.formAttrs.FORMKEY,
-        method = attrs.method || 'post',
-        promise,
-        api;
     //
-    // Flag the form as submitted
-    form.submitted = true;
-    if (form.$invalid) return;
-
-    // Get the api information if target is an object
-    //	target
-    //		- name:	api name
-    //		- target: api target
-    if (isObject(target)) api = $lux.api(target);
-
-    this.formMessages = {};
-    //
-    if (api) {
-        promise = api.request(method, target, model);
-    } else if (target) {
-        var enctype = attrs.enctype || '',
-            ct = enctype.split(';')[0],
-            options = {
-                url: target,
-                method: attrs.method || 'POST',
-                data: model,
-                transformRequest: $lux.formData(ct),
-            };
-        // Let the browser choose the content type
-        if (ct === 'application/x-www-form-urlencoded' || ct === 'multipart/form-data') {
-            options.headers = {
-                'content-type': undefined
-            };
-        }
-        promise = $lux.http(options);
-    } else {
-        $lux.log.error('Could not process form. No target or api');
-        return;
+    function joinField (model, name, extra) {
+        return model + '["' + name + '"].' + extra;
     }
+
     //
-    promise.then(function (response) {
-            var data = response.data;
-            var hookName = scope.formAttrs.resultHandler;
-            var hook = hookName && $lux.formHandlers[hookName];
-            if (hook) {
-                hook(response, scope);
-            } else if (data.messages) {
-                scope.addMessages(data.messages);
-            } else if (api) {
-                // Created
-                if (response.status === 201) {
-                    scope.formMessages[FORMKEY] = [{message: 'Successfully created'}];
-                } else {
-                    scope.formMessages[FORMKEY] = [{message: 'Successfully updated'}];
-                }
+    //	Form processor
+    //	=========================
+    //
+    //	Default Form processing function
+    // 	If a submit element (input.submit or button) does not specify
+    // 	a ``click`` entry, this function is used
+    //
+    //  Post Result
+    //  -------------------
+    //
+    //  When a form is processed succesfully, this method will check if the
+    //  ``formAttrs`` object contains a ``resultHandler`` parameter which should be
+    //  a string.
+    //
+    //  In the event the ``resultHandler`` exists,
+    //  the ``$lux.formHandlers`` object is checked if it contains a function
+    //  at the ``resultHandler`` value. If it does, the function is called.
+    lux.processForm = function (e) {
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        var scope = this,
+            $lux = scope.$lux,
+            form = this[this.formName],
+            model = this[this.formModelName],
+            attrs = this.formAttrs,
+            target = attrs.action,
+            FORMKEY = scope.formAttrs.FORMKEY,
+            method = attrs.method || 'post',
+            promise,
+            api;
+        //
+        // Flag the form as submitted
+        form.submitted = true;
+        if (form.$invalid) return;
+
+        // Get the api information if target is an object
+        //	target
+        //		- name:	api name
+        //		- target: api target
+        if (isObject(target)) api = $lux.api(target);
+
+        this.formMessages = {};
+        //
+        if (api) {
+            promise = api.request(method, target, model);
+        } else if (target) {
+            var enctype = attrs.enctype || '',
+                ct = enctype.split(';')[0],
+                options = {
+                    url: target,
+                    method: attrs.method || 'POST',
+                    data: model,
+                    transformRequest: $lux.formData(ct),
+                };
+            // Let the browser choose the content type
+            if (ct === 'application/x-www-form-urlencoded' || ct === 'multipart/form-data') {
+                options.headers = {
+                    'content-type': undefined
+                };
             }
-        },
-        function (response) {
-            var data = response.data || {},
-                status = response.status,
-                messages = data.errors,
-                msg;
-            if (!messages) {
-                msg = data.message;
-                if (!msg) {
-                    status = status || data.status || 501;
-                    msg = 'Response error (' + data.status + ')';
-                }
-                messages = [{message: msg}];
-            }
-            scope.addMessages(messages, 'error');
-        });
-};
-
-/**
- * Created by Reupen on 02/06/2015.
- */
-
-angular.module('lux.form.utils', ['lux.services'])
-
-    .directive('remoteOptions', ['$lux', function ($lux) {
-
-        function fill(api, target, scope, attrs, ctrl) {
-
-            var id = attrs.remoteOptionsId || 'id',
-                name = attrs.remoteOptionsValue || 'id',
-                initialValue = {},
-                options = [];
-
-            scope[target.name] = options;
-            initialValue[id] = '';
-            initialValue[name] = 'Loading...';
-
-            options.push(initialValue);
-
-            api.get().then(function (data) {
-                options[0][name] = 'Please select...';
-                options.push.apply(options, data.data.result);
-            }, function (data) {
-                /** TODO: add error alert */
-                options[0][name] = '(error loading options)';
-            });
-            ctrl.$setViewValue('');
-            ctrl.$render();
+            promise = $lux.http(options);
+        } else {
+            $lux.log.error('Could not process form. No target or api');
+            return;
         }
-
-        function link(scope, element, attrs, ctrl) {
-
-            if (attrs.remoteOptions) {
-                var target = JSON.parse(attrs.remoteOptions),
-                    api = $lux.api(target);
-
-                if (api && target.name)
-                    return fill(api, target, scope, attrs, ctrl);
-            }
-            // TODO: message
-        }
-
-        return {
-            require: 'ngModel',
-            link: link
-        };
-    }])
-
-    .directive('selectOnClick', function () {
-        return {
-            restrict: 'A',
-            link: function (scope, element, attrs) {
-                element.on('click', function () {
-                    if (!window.getSelection().toString()) {
-                        // Required for mobile Safari
-                        this.setSelectionRange(0, this.value.length);
+        //
+        promise.then(function (response) {
+                var data = response.data;
+                var hookName = scope.formAttrs.resultHandler;
+                var hook = hookName && $lux.formHandlers[hookName];
+                if (hook) {
+                    hook(response, scope);
+                } else if (data.messages) {
+                    scope.addMessages(data.messages);
+                } else if (api) {
+                    // Created
+                    if (response.status === 201) {
+                        scope.formMessages[FORMKEY] = [{message: 'Successfully created'}];
+                    } else {
+                        scope.formMessages[FORMKEY] = [{message: 'Successfully updated'}];
                     }
+                }
+            },
+            function (response) {
+                var data = response.data || {},
+                    status = response.status,
+                    messages = data.errors,
+                    msg;
+                if (!messages) {
+                    msg = data.message;
+                    if (!msg) {
+                        status = status || data.status || 501;
+                        msg = 'Response error (' + data.status + ')';
+                    }
+                    messages = [{message: msg}];
+                }
+                scope.addMessages(messages, 'error');
+            });
+    };
+
+    /**
+     * Created by Reupen on 02/06/2015.
+     */
+
+    angular.module('lux.form.utils', ['lux.services'])
+
+        .directive('remoteOptions', ['$lux', function ($lux) {
+
+            function fill(api, target, scope, attrs, ctrl) {
+
+                var id = attrs.remoteOptionsId || 'id',
+                    name = attrs.remoteOptionsValue || 'id',
+                    initialValue = {},
+                    options = [];
+
+                scope[target.name] = options;
+                initialValue[id] = '';
+                initialValue[name] = 'Loading...';
+
+                options.push(initialValue);
+
+                api.get().then(function (data) {
+                    options[0][name] = 'Please select...';
+                    options.push.apply(options, data.data.result);
+                }, function (data) {
+                    /** TODO: add error alert */
+                    options[0][name] = '(error loading options)';
                 });
+                ctrl.$setViewValue('');
+                ctrl.$render();
             }
-        };
-    });
+
+            function link(scope, element, attrs, ctrl) {
+
+                if (attrs.remoteOptions) {
+                    var target = JSON.parse(attrs.remoteOptions),
+                        api = $lux.api(target);
+
+                    if (api && target.name)
+                        return fill(api, target, scope, attrs, ctrl);
+                }
+                // TODO: message
+            }
+
+            return {
+                require: 'ngModel',
+                link: link
+            };
+        }])
+
+        .directive('selectOnClick', function () {
+            return {
+                restrict: 'A',
+                link: function (scope, element, attrs) {
+                    element.on('click', function () {
+                        if (!window.getSelection().toString()) {
+                            // Required for mobile Safari
+                            this.setSelectionRange(0, this.value.length);
+                        }
+                    });
+                }
+            };
+        });
 
     function asMessage (level, message) {
         if (isString(message)) message = {text: message};
@@ -3919,7 +3930,7 @@ angular.module('templates-nav', ['nav/templates/link.tpl.html', 'nav/templates/n
 
 angular.module("nav/templates/link.tpl.html", []).run(["$templateCache", function($templateCache) {
   $templateCache.put("nav/templates/link.tpl.html",
-    "<a ng-if=\"link.title\" ng-href=\"{{link.href}}\" data-title=\"{{link.title}}\" ng-click=\"clickLink($event, link)\"\n" +
+    "<a ng-if=\"link.title\" ng-href=\"{{link.href}}\" title=\"{{link.title}}\" ng-click=\"clickLink($event, link)\"\n" +
     "ng-attr-target=\"{{link.target}}\" ng-class=\"link.klass\" bs-tooltip=\"tooltip\">\n" +
     "<i ng-if=\"link.icon\" class=\"{{link.icon}}\"></i> {{link.label || link.name}}</a>\n" +
     "<a ng-if=\"!link.title\" ng-href=\"{{link.href}}\" ng-attr-target=\"{{link.target}}\">\n" +

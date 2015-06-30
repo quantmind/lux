@@ -1,6 +1,7 @@
 
 
     angular.module('lux.router', ['lux.page'])
+        //
         .config(['$provide', '$locationProvider', function ($provide, $locationProvider) {
             if (lux.context.HTML5_NAVIGATION) {
                 $locationProvider.html5Mode(true);
@@ -8,6 +9,8 @@
                 $locationProvider.hashPrefix(lux.context.hashPrefix);
             }
         }])
+        //
+
         //
         //  Convert all internal links to have a target so that the page reload
         .directive('page', ['$log', '$timeout', function (log, timer) {

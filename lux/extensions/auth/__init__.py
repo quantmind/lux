@@ -8,6 +8,9 @@ how to write authentication backends and models in lux.
 '''
 import lux
 
+from lux import Parameter
+from lux.extensions import rest
+
 from .backends import TokenBackend, SessionBackend
 
 
@@ -15,6 +18,12 @@ __all__ = ['TokenBackend', 'SessionBackend']
 
 
 class Extension(lux.Extension):
+    _config = [
+        Parameter('ANONYMOUS_GROUP', 'anonymous',
+                  'Name of the group for all anonymous users'),
+        Parameter('DEFAULT_PERMISSION_LEVEL', rest.READ,
+                  'Default permission level')
+    ]
 
     def on_token(self, app, request, token, user):
         if user.is_authenticated():

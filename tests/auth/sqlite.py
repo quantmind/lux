@@ -1,5 +1,3 @@
-import json
-
 from pulsar.apps.test import test_timeout
 
 from lux.utils import test
@@ -79,27 +77,7 @@ class TestSqlite(test.AppTestCase):
                                    'Invalid username or password')
 
     def test_create_superuser_command_and_token(self):
-        username = 'ghghghgh'
-        password = 'dfbjdhbvdjbhv'
-        user = yield from self.create_superuser(username,
-                                                'sjhcsecds@sjdbcsjdc.com',
-                                                password)
-        self.assertEqual(user.username, username)
-        self.assertNotEqual(user.password, password)
-
-        # Get new token
-        request = yield from self.client.post('/authorizations',
-                                              content_type='application/json',
-                                              body={'username': username,
-                                                    'password': password})
-        response = request.response
-        self.assertEqual(response.status_code, 201)
-        user = request.cache.user
-        self.assertFalse(user.is_authenticated())
-        self.assertEqual(response['content-type'],
-                         'application/json; charset=utf-8')
-        data = json.loads(response.content[0].decode('utf-8'))
-        self.assertTrue('token' in data)
+        return self._token()
 
     @test.green
     def test_permissions(self):
@@ -128,3 +106,41 @@ class TestSqlite(test.AppTestCase):
                                         policy={})
             group.permissions.append(permission)
 
+    def test_create_permission_errors(self):
+        token = yield from self._token()
+        data = dict(name='blabla')
+        request = yield from self.client.post('/permissions',
+                                              body=data,
+                                              content_type='application/json',
+                                              token=token)
+        self.assertValidationError(request.response, 'policy', 'required')
+        data = dict(name='blabla', policy='{')
+        request = yield from self.client.post('/permissions',
+                                              body=data,
+                                              content_type='application/json',
+                                              token=token)
+        self.assertValidationError(request.response, 'policy',
+                                   'not a valid JSON string')
+
+    def _token(self):
+        username = test.randomname()
+        password = test.randomname()
+        email = '%s@%s.com' % (username, test.randomname())
+        user = yield from self.create_superuser(username,
+                                                email,
+                                                password)
+        self.assertEqual(user.username, username)
+        self.assertNotEqual(user.password, password)
+
+        # Get new token
+        request = yield from self.client.post('/authorizations',
+                                              content_type='application/json',
+                                              body={'username': username,
+                                                    'password': password})
+        response = request.response
+        self.assertEqual(response.status_code, 201)
+        user = request.cache.user
+        self.assertFalse(user.is_authenticated())
+        data = self.json(response)
+        self.assertTrue('token' in data)
+        return data['token']

@@ -21,17 +21,16 @@ def action(f):
 
 
 def logout(request):
+    '''Logout a user
+    '''
     form = Form(request, data=request.body_data() or {})
 
     if form.is_valid():
         user = request.cache.user
-        if not user.is_authenticated():
-            raise MethodNotAllowed
-
         auth_backend = request.cache.auth_backend
         return auth_backend.logout_response(request, user)
     else:
-        raise MethodNotAllowed
+        return Json(form.tojson()).http_response(request)
 
 
 class RestRoot(lux.Router):

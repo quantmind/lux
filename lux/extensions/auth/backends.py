@@ -4,8 +4,11 @@ from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.orm import joinedload
 from datetime import datetime
 
+from lux import cached
 from lux.extensions.rest import (PasswordMixin, backends, normalise_email,
-                                 AuthenticationError, READ)
+                                 AuthenticationError)
+
+from .policy import has_permission
 
 
 class AuthMixin(PasswordMixin):
@@ -79,10 +82,11 @@ class AuthMixin(PasswordMixin):
         if user.is_superuser():
             return True
         else:
-            if level <= READ:
-                return True
-            else:
-                return False
+            permissions = self.get_permissions(request)
+            for policy in permissions.values():
+                if has_permission(policy, name, level):
+                    return True
+            return level <= request.config.get('DEFAULT_PERMISSION_LEVEL', 0)
 
     def create_user(self, request, username=None, password=None, email=None,
                     first_name=None, last_name=None, active=False,
@@ -137,6 +141,23 @@ class AuthMixin(PasswordMixin):
                                           user=user,
                                           expiry=token.expiry)
         return token
+
+    @cached(user=True)
+    def get_permissions(self, request):
+        odm = request.app.odm()
+        user = request.cache.user
+        perms = {}
+        with odm.begin() as session:
+            if user.is_authenticated():
+                session.add(user)
+                groups = set(user.groups)
+            else:
+                cfg = request.config
+                query = session.query(odm.group)
+                groups = set(query.filter_by(name=cfg['ANONYMOUS_GROUP']))
+            for group in groups:
+                perms.update(((p.name, p.policy) for p in group.permissions))
+        return perms
 
 
 class TokenBackend(AuthMixin, backends.TokenBackend):

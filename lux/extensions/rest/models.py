@@ -46,20 +46,20 @@ class RestModel:
 
         Form class for this REST model
 
-    .. attribute:: editform
+    .. attribute:: updateform
 
         Form class for this REST model in editing mode
     '''
     remote_options_str = 'item.{id} as item.{repr} for item in {options}'
     _loaded = False
 
-    def __init__(self, name, form=None, editform=None, columns=None,
+    def __init__(self, name, form=None, updateform=None, columns=None,
                  url=None, api_name=None, exclude=None,
                  api_url=True, html_url=None, id_field=None,
                  repr_field=None):
         self.name = name
         self.form = form
-        self.editform = editform or form
+        self.updateform = updateform or form
         self.url = url or '%ss' % name
         self.api_name = '%s_url' % self.url
         self.id_field = id_field or 'id'

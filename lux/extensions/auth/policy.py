@@ -7,6 +7,10 @@ POLICY = dict(effect=(str, frozenset(('allow', 'deny'))),
               condition=(dict, None))
 
 
+EFFECTS = {'allow': True,
+           'deny': False}
+
+
 def validate_policy(policy):
     if isinstance(policy, dict):
         return validate_single_policy(policy)
@@ -29,7 +33,9 @@ def validate_single_policy(policy):
     for key, value in policy.items():
         key = str(key).lower()
         if key not in POLICY:
-            raise ValidationError('"%s" is not a statement' % key)
+            statements = ', '.join(POLICY)
+            raise ValidationError('"%s" is not a valid statement. '
+                                  'Must be one of %s' % (key, statements))
         types, check = POLICY[key]
         if not isinstance(value, types):
             raise ValidationError('not a valid %s statement' % key)
@@ -44,3 +50,12 @@ def validate_single_policy(policy):
         raise ValidationError('"action" must be defined')
 
     return p
+
+
+def has_permission(policy, name, level):
+    actions = policy['action']
+    if not isinstance(actions, list):
+        actions = (actions,)
+    for action in actions:
+        if name == action:
+            return EFFECTS[policy.get('effect', 'allow')]
