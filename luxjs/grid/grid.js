@@ -1,3 +1,8 @@
+    //  Lux Grid
+    //  ==============
+    //  Grid use $modal service from angular-strap library.
+    //
+    //
     function dateSorting(column) {
 
         column.sortingAlgorithm = function(a, b) {
