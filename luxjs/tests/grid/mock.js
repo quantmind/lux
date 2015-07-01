@@ -1,60 +1,17 @@
-
-    angular.module("lux.grid.mock", [])
-
-        .config(['$provide', function ($provide) {
-
-            $provide.decorator('$httpBackend', angular.mock.e2e.$httpBackendDecorator);
-        }])
-
-        .run(['$httpBackend', function ($httpBackend) {
-
-            var api_mock_data = {
-                '/user': {
-                    'columns': [
-                        {field: 'id', displayName: 'ID'},
-                        {field: 'user', displayName: 'user'},
-                        {field: 'edit', cellTemplate: '<div><button class="btn btn-primary" ng-click=" getExternalScopes().onClick(row.entity.fullName)">Edit</button></div>'}
-                    ],
-                    'rows': [{
-                        'id': 1,
-                        'user': 'Marius',
-                    }, {
-                        'id': 2,
-                        'user': 'Adam',
-                    }]
-                },
-                '/group': {
-                    'columns': [
-                        {field: 'id', displayName: 'ID'},
-                        {field: 'group', displayName: 'Group'}
-                    ],
-                    'rows': [{
-                        'id': 1,
-                        'group': 'Admins',
-                    }, {
-                        'id': 2,
-                        'group': 'Staff',
-                    }]
-                },
-                '/exchange': {
-                    'columns': [
-                        {field: 'id', displayName: 'ID'},
-                        {field: 'exchange', displayName: 'Exchange'},
-                        {field: 'price', displayName: 'Price'}
-                    ],
-                    'rows': [{
-                        'id': 1,
-                        'exchange': 'BATS',
-                        'price': 100,
-                    }, {
-                        'id': 2,
-                        'exchange': 'ERIS',
-                        'price': 200,
-                    }]
-                }
-            };
-
-            for (var url in api_mock_data) {
-                $httpBackend.whenGET(url).respond(api_mock_data[url]);
-            }
-        }]);
+define({
+    '/': {
+        "html_pages_url": "http://localhost:6050/html_pages"
+    },
+    '/html_pages': {
+        'result': [{
+            "template_id": 1,
+            "path": "/test3",
+            "id": 3,
+            "updated": "2015-06-25T09:39:25.635919+00:00",
+            "title": "test3",
+            "published": true,
+            "layout": "{ \"rows\": \"[[col-md-6, col-md-6], [col-md-6, col-md-6]]\", \"components\": \"[{type:text, id:3, row:0, col:0, pos:0}, {type:text, id:4, row:1, col:1, pos:0}]\" }"}, {"template_id": 1, "path": "test4", "description": "4", "id": 4, "updated": "2015-06-25T15:41:52.524005+00:00", "title": "test4", "published": true, "layout": "{\n            \"rows\": \"[[\\\"col-md-6\\\", \\\"col-md-6\\\"], [\\\"col-md-6\\\", \\\"col-md-6\\\"]]\",\n            \"components\": \"[{\\\"type\\\":\\\"text\\\", \\\"id\\\":1, \\\"row\\\":0, \\\"col\\\":0, \\\"pos\\\":0}, {\\\"type\\\":\\\"gallery\\\", \\\"id\\\":2, \\\"row\\\":1, \\\"col\\\":1, \\\"pos\\\":0}]\"\n        }"
+        }],
+        "total": 4
+    }
+})
