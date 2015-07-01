@@ -114,6 +114,7 @@ class TestSqlite(test.AppTestCase):
                                               content_type='application/json',
                                               token=token)
         self.assertValidationError(request.response, 'policy', 'required')
+        #
         data = dict(name='blabla', policy='{')
         request = yield from self.client.post('/permissions',
                                               body=data,
@@ -121,8 +122,34 @@ class TestSqlite(test.AppTestCase):
                                               token=token)
         self.assertValidationError(request.response, 'policy',
                                    'not a valid JSON string')
+        #
+        data = dict(name='blabla', description='hgv hh', policy='[]')
+        request = yield from self.client.post('/permissions',
+                                              body=data,
+                                              content_type='application/json',
+                                              token=token)
+        self.assertValidationError(request.response, '',
+                                   'Policy empty')
+        #
+        data = dict(name='blabla', description='hgv hh', policy='[45]')
+        request = yield from self.client.post('/permissions',
+                                              body=data,
+                                              content_type='application/json',
+                                              token=token)
+        self.assertValidationError(request.response, '',
+                                   'Policy should be a list or an object')
+        #
+        data = dict(name='blabla', description='hgv hh', policy='{}')
+        request = yield from self.client.post('/permissions',
+                                              body=data,
+                                              content_type='application/json',
+                                              token=token)
+        self.assertValidationError(request.response, '',
+                                   '"action" must be defined')
 
     def _token(self):
+        '''Return a token for a new superuser
+        '''
         username = test.randomname()
         password = test.randomname()
         email = '%s@%s.com' % (username, test.randomname())

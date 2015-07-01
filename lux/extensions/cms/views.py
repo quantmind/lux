@@ -131,6 +131,7 @@ class CMS(lux.CMS):
         components = layout.get('components', ())
         container = Html('div', cn='container-fluid')
 
+        # Loop over rows
         for row_idx, row in enumerate(layout.get('rows', ())):
             htmlRow = Html('div', cn='row')
             container.append(htmlRow)
