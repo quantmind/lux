@@ -1,7 +1,7 @@
     //
     // Grid module for lux
     //
-    //  Depedences:
+    //  Dependencies:
     //
     //      - use $modal service from angular-strap library
     //
