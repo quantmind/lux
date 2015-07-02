@@ -1,6 +1,9 @@
-    //  Lux Grid
-    //  ==============
-    //  Grid use $modal service from angular-strap library.
+    //
+    // Grid module for lux
+    //
+    //  Depedences:
+    //
+    //      - use $modal service from angular-strap library
     //
     //
     function dateSorting(column) {
@@ -57,8 +60,8 @@
             }
         })
         //
-        .service('GridService', ['$lux', '$rootScope', '$compile', '$modal', '$location', 'uiGridConstants', 'gridDefaults',
-            function($lux, $rootScope, $compile, $modal, $location, uiGridConstants, gridDefaults) {
+        .service('GridService', ['$lux', '$compile', '$modal', 'uiGridConstants', 'gridDefaults',
+            function($lux, $compile, $modal, uiGridConstants, gridDefaults) {
 
             function parseColumns(columns) {
                 var columnDefs = [],
@@ -108,14 +111,14 @@
             // Add menu actions to grid
             function addGridMenu(scope, api, gridOptions) {
                 var menu = [],
-                    stateName = $rootScope.page,
+                    stateName = window.location.href.split('/').pop(-1),
                     model = stateName.slice(0, -1),
                     modalScope = scope.$new(true),
                     modal,
                     title;
 
                 scope.create = function($event) {
-                    $location.path($location.path() + '/add');
+                    window.location.href += '/add';
                 };
 
                 scope.delete = function($event) {
