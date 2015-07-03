@@ -1,21 +1,39 @@
     //
-    // Directive allows to add CodeMirror to the textarea elements
+    //  Lux Codemirror module
+    //  ============================
+    //  Directive allows to add CodeMirror to the textarea elements
+    //
+    //  Html:
+    //
+    //      <textarea lux-codemirror="{'mode': 'html'}"></div>
+    //
+    //
+    //  Supported modes:
+    //
+    //      html, markdown, json
+    //
+    //
     //  ============================
     //
     angular.module('lux.codemirror', ['lux.services'])
+        //
         .constant('luxCodemirrorDefaults', {
             lineWrapping : true,
             lineNumbers: true,
             mode: lux.context.CODEMIRROR_MODE || "markdown",
             theme: lux.context.CODEMIRROR_THEME || "monokai",
+            reindentOnLoad: true,
         })
-        .directive('luxCodemirror', ['$rootScope', '$lux', 'luxCodemirrorDefaults', function ($rootScope, $lux, luxCodemirrorDefaults) {
+        //
+        .directive('luxCodemirror', ['$lux', 'luxCodemirrorDefaults', function ($lux, luxCodemirrorDefaults) {
             //
+            // Initialize codemirror, load css.
             function initCodemirror() {
                 loadCss('https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.3.0/codemirror.css');
                 loadCss('https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.3.0/theme/' + luxCodemirrorDefaults.theme + '.css');
             }
             //
+            // Creates a new instance of the editor
             function newEditor(element, options) {
                 var codemirror;
 
@@ -31,27 +49,7 @@
                 return codemirror;
             }
             //
-            function optionsWatcher(codemirror, codemirrorAttr, scope) {
-                if (!codemirrorAttr) return;
-
-                var codemirrorDefaultsKeys = Object.keys(window.CodeMirror.defaults);
-                scope.$watch(codemirrorAttr, updateOptions, true);
-
-                function updateOptions(newValues, oldValue) {
-                    if (!angular.isObject(newValues)) return;
-
-                    codemirrorDefaultsKeys.forEach(function(key) {
-                        if (newValues.hasOwnProperty(key)) {
-
-                            if (oldValue && newValues[key] === oldValue[key])
-                                return;
-
-                        codemirror.setOption(key, newValues[key]);
-                        }
-                    });
-                }
-            }
-            //
+            // Allows play with ng-model
             function ngModelLink(codemirror, ngModel, scope) {
                 if (!ngModel) return;
 
@@ -83,17 +81,20 @@
                 });
             }
             //
-            function refreshAttribute(codemirror, refreshAttr, scope) {
-                if (!refreshAttr) return;
-
-                scope.$watch(refreshAttr, function(newVal, oldVal) {
-                    // Skip the initial watch firing
-                    if (newVal !== oldVal) {
-                        $timeout(function() {
-                            codemirror.refresh();
-                        });
-                    }
-                });
+            // Set specified mode
+            function setMode(options) {
+                switch (options.mode) {
+                    case 'json':
+                        options.mode = 'javascript';
+                        break;
+                    case 'html':
+                        options.mode = 'htmlmixed';
+                        break;
+                    default:
+                        options.mode = luxCodemirrorDefaults.mode;
+                        break;
+                }
+                return options;
             }
             //
             return {
@@ -106,6 +107,7 @@
                         throw new Error('lux-codemirror needs CodeMirror to work!');
                     }
 
+                    // Initialize codemirror
                     initCodemirror();
 
                     return {
@@ -113,21 +115,24 @@
 
                             var options = angular.extend(
                                 { value: element.text() },
-                                luxCodemirrorDefaults || {},
-                                scope.$eval(attrs.luxCodemirrorOpts)
+                                luxCodemirrorDefaults || {}
                             );
+
+                            if (attrs.luxCodemirror) {
+                                var luxCodemirrorOpts = JSON.parse(attrs.luxCodemirror);
+
+                                if (options.hasOwnProperty('mode'))
+                                    luxCodemirrorOpts = setMode(luxCodemirrorOpts);
+
+                                angular.extend(
+                                    options,
+                                    luxCodemirrorOpts || {}
+                                );
+                            }
 
                             var codemirror = newEditor(element, options);
 
-                            optionsWatcher(
-                                codemirror,
-                                attrs.luxCodemirrorOpts,
-                                scope
-                            );
-
                             ngModelLink(codemirror, ngModel, scope);
-
-                            refreshAttribute(codemirror, attrs.refresh, scope);
 
                             // Allow access to the CodeMirror instance through a broadcasted event
                             // eg: $broadcast('CodeMirror', function(cm){...});
@@ -138,7 +143,7 @@
                                     throw new Error('the CodeMirror event requires a callback function');
                             });
 
-                            $rootScope.$on('$viewContentLoaded', function () {
+                            scope.$on('$viewContentLoaded', function () {
                                 codemirror.refresh();
                             });
                         }

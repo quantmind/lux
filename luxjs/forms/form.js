@@ -196,6 +196,15 @@
                     return element;
                 },
                 //
+                addDirectives: function(scope, element) {
+                    // lux-codemirror directive
+                    if (scope.field.hasOwnProperty('text_edit')) {
+                        element.attr('lux-codemirror', scope.field.text_edit);
+                    }
+
+                    return element;
+                },
+                //
                 renderNotSupported: function (scope) {
                     return $($document[0].createElement('span')).html(field.label || '');
                 },
@@ -285,6 +294,9 @@
                         if (info.textBased)
                             input.attr('value', field.value);
                     }
+
+                    // Add directive to element
+                    input = this.addDirectives(scope, input);
 
                     if (this.inputGroupClass) {
                         element = angular.element($document[0].createElement('div'));
