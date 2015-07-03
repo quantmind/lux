@@ -17,8 +17,9 @@ module.exports = function (grunt) {
                     specs : 'luxjs/tests/**/*.js',
                     template: 'luxjs/tests/test.tpl.html',
                     templateOptions: {
-                        deps: ['lux/media/lux/lux.min.js', 'angular-strap',
-                               'angular-mocks', 'lodash']
+                        deps: ['lux/media/lux/lux.min.js', 'angular-ui-grid',
+                               'angular-mocks', 'angular-strap',
+                               'angular-touch', 'lodash']
                     }
                 }
             }

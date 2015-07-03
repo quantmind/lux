@@ -1,3 +1,11 @@
+    //
+    // Grid module for lux
+    //
+    //  Dependencies:
+    //
+    //      - use $modal service from angular-strap library
+    //
+    //
     function dateSorting(column) {
 
         column.sortingAlgorithm = function(a, b) {
@@ -52,18 +60,8 @@
             }
         })
         //
-        // Directive to build Angular-UI grid options using Lux REST API
-        .directive('restGrid', ['$lux', '$modal', 'uiGridConstants', 'gridDefaults',
-            function ($lux, $modal, uiGridConstants, gridDefaults) {
-
-            var paginationOptions = {
-                    sizes: [25, 50, 100]
-                },
-                gridState = {
-                    page: 1,
-                    limit: 25,
-                    offset: 0,
-                };
+        .service('GridService', ['$lux', '$compile', '$modal', 'uiGridConstants', 'gridDefaults',
+            function($lux, $compile, $modal, uiGridConstants, gridDefaults) {
 
             function parseColumns(columns) {
                 var columnDefs = [],
@@ -93,26 +91,9 @@
                 return columnDefs;
             }
 
-            // Get initial data
-            function getInitialData (scope) {
-                var api = $lux.api(scope.options.target),
-                    sub_path = scope.options.target.path || '';
-
-                api.get({path: sub_path + '/metadata'}).success(function(resp) {
-                    gridState.limit = resp['default-limit'];
-
-                    scope.gridOptions.columnDefs = parseColumns(resp.columns);
-
-                    api.get({path: sub_path}, {limit: gridState.limit}).success(function(resp) {
-                        scope.gridOptions.totalItems = resp.total;
-                        scope.gridOptions.data = resp.result;
-                    });
-                });
-            }
-
             // Get specified page using params
-            function getPage(scope, api, params) {
-                api.get({}, params).success(function(resp) {
+            function getPage(scope, api) {
+                api.get({}, scope.gridState).success(function(resp) {
                     scope.gridOptions.totalItems = resp.total;
                     scope.gridOptions.data = resp.result;
                 });
@@ -127,19 +108,17 @@
                 }
             }
 
+            // Add menu actions to grid
             function addGridMenu(scope, api, gridOptions) {
                 var menu = [],
-                    // We cannot use $state, we must be able to use this without ui.router
-                    // stateName = $state.current.url.split('/').pop(-1),
-                    // model = stateName.slice(0, -1),
-                    stateName = 'UNKNOWN',
-                    model = stateName,
+                    stateName = window.location.href.split('/').pop(-1),
+                    model = stateName.slice(0, -1),
                     modalScope = scope.$new(true),
                     modal,
                     title;
 
                 scope.create = function($event) {
-                    //$state.go($state.current.name + '_add');
+                    window.location.href += '/add';
                 };
 
                 scope.delete = function($event) {
@@ -182,7 +161,7 @@
 
                         defer.promise.then(function() {
                             if (success) {
-                                getPage(scope, api, gridState);
+                                getPage(scope, api);
                                 $lux.messages.success('Successfully deleted ' + stateName + ' ' + results);
                             } else
                                 $lux.messages.error('Error while deleting ' + stateName + ' ' + results);
@@ -212,18 +191,43 @@
                 });
             }
 
-            // Pre-process grid options
-            function buildOptions (scope, options) {
+            // Get initial data
+            this.getInitialData = function(scope) {
+                var api = $lux.api(scope.options.target),
+                    sub_path = scope.options.target.path || '';
+
+                api.get({path: sub_path + '/metadata'}).success(function(resp) {
+                    scope.gridState.limit = resp['default-limit'];
+                    scope.gridOptions.columnDefs = parseColumns(resp.columns);
+
+                    api.get({path: sub_path}, {limit: scope.gridState.limit}).success(function(resp) {
+                        scope.gridOptions.totalItems = resp.total;
+                        scope.gridOptions.data = resp.result;
+                    });
+                });
+            };
+
+            this.buildOptions = function(scope, options) {
                 scope.options = options;
+
+                scope.paginationOptions = {
+                    sizes: [25, 50, 100]
+                };
+
+                scope.gridState = {
+                    page: 1,
+                    limit: 25,
+                    offset: 0,
+                };
 
                 scope.objectUrl = function(objectId) {
                     return $lux.window.location + '/' + objectId;
                 };
 
-                var api = $lux.api(options.target),
+                var api = $lux.api(scope.options.target),
                     gridOptions = {
-                        paginationPageSizes: paginationOptions.sizes,
-                        paginationPageSize: gridState.limit,
+                        paginationPageSizes: scope.paginationOptions.sizes,
+                        paginationPageSize: scope.gridState.limit,
                         enableFiltering: true,
                         enableRowHeaderSelection: false,
                         useExternalPagination: true,
@@ -232,32 +236,32 @@
                         onRegisterApi: function(gridApi) {
                             scope.gridApi = gridApi;
                             scope.gridApi.pagination.on.paginationChanged(scope, function(pageNumber, pageSize) {
-                                gridState.page = pageNumber;
-                                gridState.limit = pageSize;
-                                gridState.offset = pageSize*(pageNumber - 1);
+                                scope.gridState.page = pageNumber;
+                                scope.gridState.limit = pageSize;
+                                scope.gridState.offset = pageSize*(pageNumber - 1);
 
-                                getPage(scope, api, gridState);
+                                getPage(scope, api);
                             });
 
                             scope.gridApi.core.on.sortChanged(scope, function(grid, sortColumns) {
                                 if( sortColumns.length === 0) {
-                                    delete gridState.sortby;
-                                    getPage(scope, api, gridState);
+                                    delete scope.gridState.sortby;
+                                    getPage(scope, api);
                                 } else {
                                     // Build query string for sorting
                                     angular.forEach(sortColumns, function(column) {
-                                        gridState.sortby = column.name + ':' + column.sort.direction;
+                                        scope.gridState.sortby = column.name + ':' + column.sort.direction;
                                     });
 
                                     switch( sortColumns[0].sort.direction ) {
                                         case uiGridConstants.ASC:
-                                            getPage(scope, api, gridState);
+                                            getPage(scope, api);
                                             break;
                                         case uiGridConstants.DESC:
-                                            getPage(scope, api, gridState);
+                                            getPage(scope, api);
                                             break;
                                         case undefined:
-                                            getPage(scope, api, gridState);
+                                            getPage(scope, api);
                                             break;
                                     }
                                 }
@@ -269,7 +273,11 @@
                     addGridMenu(scope, api, gridOptions);
 
                 return gridOptions;
-            }
+            };
+        }])
+        //
+        // Directive to build Angular-UI grid options using Lux REST API
+        .directive('restGrid', ['$compile', 'GridService', function ($compile, GridService) {
 
             return {
                 restrict: 'A',
@@ -287,9 +295,12 @@
                         opts = getOptions(opts);
 
                         if (opts) {
-                            scope.gridOptions = buildOptions(scope, opts);
-                            getInitialData(scope);
+                            scope.gridOptions = GridService.buildOptions(scope, opts);
+                            GridService.getInitialData(scope);
                         }
+
+                        var grid = '<div class="table-uigrid" ui-grid="gridOptions" ui-grid-pagination ui-grid-selection></div>';
+                        element.append($compile(grid)(scope));
                     },
                 },
             };
