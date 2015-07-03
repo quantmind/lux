@@ -20,7 +20,7 @@
         .constant('luxCodemirrorDefaults', {
             lineWrapping : true,
             lineNumbers: true,
-            mode: lux.context.CODEMIRROR_MODE || "markdown",
+            mode: "markdown",
             theme: lux.context.CODEMIRROR_THEME || "monokai",
             reindentOnLoad: true,
         })
@@ -35,22 +35,22 @@
             //
             // Creates a new instance of the editor
             function newEditor(element, options) {
-                var codemirror;
+                var cm;
 
                 if (element[0].tagName === 'TEXTAREA') {
-                    codemirror = window.CodeMirror.fromTextArea(element[0], options);
+                    cm = window.CodeMirror.fromTextArea(element[0], options);
                 } else {
                     element.html('');
-                    codemirror = new window.CodeMirror(function(cm_el) {
+                    cm = new window.CodeMirror(function(cm_el) {
                         element.append(cm_el);
                     }, options);
                 }
 
-                return codemirror;
+                return cm;
             }
             //
             // Allows play with ng-model
-            function ngModelLink(codemirror, ngModel, scope) {
+            function ngModelLink(cm, ngModel, scope) {
                 if (!ngModel) return;
 
                 // CodeMirror expects a string, so make sure it gets one.
@@ -67,11 +67,11 @@
                 // This takes care of the synchronizing the codeMirror element with the underlying model, in the case that it is changed by something else.
                 ngModel.$render = function() {
                     var safeViewValue = ngModel.$viewValue || '';
-                    codemirror.setValue(safeViewValue);
+                    cm.setValue(safeViewValue);
                 };
 
                 // Keep the ngModel in sync with changes from CodeMirror
-                codemirror.on('change', function(instance) {
+                cm.on('change', function(instance) {
                     var newValue = instance.getValue();
                     if (newValue !== ngModel.$viewValue) {
                         scope.$evalAsync(function() {
@@ -115,36 +115,27 @@
 
                             var options = angular.extend(
                                 { value: element.text() },
-                                luxCodemirrorDefaults || {}
+                                luxCodemirrorDefaults || {},
+                                scope.$eval(attrs.luxCodemirror) || {}
                             );
 
-                            if (attrs.luxCodemirror) {
-                                var luxCodemirrorOpts = JSON.parse(attrs.luxCodemirror);
+                            options = setMode(options);
 
-                                if (options.hasOwnProperty('mode'))
-                                    luxCodemirrorOpts = setMode(luxCodemirrorOpts);
+                            var cm = newEditor(element, options);
 
-                                angular.extend(
-                                    options,
-                                    luxCodemirrorOpts || {}
-                                );
-                            }
-
-                            var codemirror = newEditor(element, options);
-
-                            ngModelLink(codemirror, ngModel, scope);
+                            ngModelLink(cm, ngModel, scope);
 
                             // Allow access to the CodeMirror instance through a broadcasted event
                             // eg: $broadcast('CodeMirror', function(cm){...});
                             scope.$on('CodeMirror', function(event, callback) {
                                 if (angular.isFunction(callback))
-                                    callback(codemirror);
+                                    callback(cm);
                                 else
                                     throw new Error('the CodeMirror event requires a callback function');
                             });
 
                             scope.$on('$viewContentLoaded', function () {
-                                codemirror.refresh();
+                                cm.refresh();
                             });
                         }
                     };
