@@ -1,10 +1,6 @@
-import json
-
-from pulsar import HttpRedirect
 from pulsar.utils.string import to_string
 from pulsar.utils.structures import OrderedDict
 from pulsar.utils.html import NOTHING
-from pulsar.utils.httpurl import JSON_CONTENT_TYPES
 
 from .errors import ValidationError, FormError
 from .fields import Field
@@ -17,22 +13,7 @@ __all__ = ['FormType',
            'BoundField',
            'FieldList',
            'MakeForm',
-           'smart_redirect',
            'FORMKEY']
-
-
-def smart_redirect(request, url=None, status=None):
-    # Ajax request, treat it differently
-    url = url or request.full_path()
-    if request.is_xhr:
-        response = request.response
-        ct = request.content_types.best_match(JSON_CONTENT_TYPES)
-        if ct in JSON_CONTENT_TYPES:
-            response.content_type = ct
-            response.content = json.dumps({'redirect': url})
-        return response
-    else:
-        raise HttpRedirect(url, status=status)
 
 
 class FieldList(list):
@@ -183,7 +164,7 @@ class Form(metaclass=FormType):
     model = None
 
     def __init__(self, request=None, data=None, files=None, initial=None,
-                 prefix=None, instance=None):
+                 prefix=None):
         self.request = request
         self.is_bound = data is not None or files is not None
         if self.is_bound:
@@ -199,7 +180,6 @@ class Form(metaclass=FormType):
         else:
             self.initial = {}
         self.prefix = prefix or ''
-        self.instance = instance
         self.messages = {}
         self.changed = False
         self.form_sets = {}
@@ -262,23 +242,6 @@ class Form(metaclass=FormType):
         self._check_unwind()
         return self._fields_dict
 
-    def value_from_instance(self, instance, name, value):
-        '''Extracting an attribute value from an ``instance``.
-
-        This function is called when :attr:`Form.is_bound` is ``False``
-        and an :attr:`instance` of a model is available.
-
-        :parameter instance: model instance
-        :parameter name: form field name
-        :parameter value: current value from the :attr:`initial` dictionary.
-
-        Override if you need to customise behavoiur.'''
-        if hasattr(instance, name):
-            value = getattr(instance, name)
-            if hasattr(value, '__call__'):
-                value = value()
-        return value
-
     def clean(self):
         '''The form clean method.
 
@@ -288,9 +251,6 @@ class Form(metaclass=FormType):
         :class:`.ValidationError` in case the cleaning is not successful.
         '''
         pass
-
-    def redirect(self, request=None, url=None, status=None):
-        return smart_redirect(request or self.request, url, status)
 
     def add_message(self, message):
         '''Add a message to the form'''
@@ -384,24 +344,14 @@ class Form(metaclass=FormType):
                 bfield.value = field_value
 
     def _fill_initial(self):
-        # Fill the initial dictionary with data from fields and from
-        # the instance if available
+        # Fill the initial dictionary with data from fields
         old_initial = self.initial
         self.initial = initial = {}
-        instance = self.instance
-        instance_id = instance.id if instance else None
         for name, field in self.base_fields.items():
             if name in old_initial:
                 value = old_initial[name]
             else:
                 value = field.get_default(self)
-            # Instance with id can override the initial value
-            if instance_id:
-                try:
-                    # First try the field method
-                    value = field.value_from_instance(instance)
-                except ValueError:
-                    value = self.value_from_instance(instance, name, value)
             if value is not None:
                 initial[name] = value
 
@@ -449,17 +399,12 @@ class BoundField(object):
         self.html_name = field.html_name(form.prefix)
         self.value = None
 
-    def __repr__(self):
-        return '{0}: {1}'.format(self.name, self.value)
-
     def clean(self, value):
         '''Return a cleaned value for ``value`` by running the validation
         algorithm on :attr:`field`.
         '''
         form = self.form
         try:
-            if self.field.required and value in NOTHING:
-                raise ValidationError('required')
             value = self.field.clean(value, self)
             func_name = 'clean_' + self.name
             if hasattr(form, func_name):

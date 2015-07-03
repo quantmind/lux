@@ -131,6 +131,14 @@ class TestSqlite(test.AppTestCase):
         self.assertValidationError(request.response, '',
                                    'Policy empty')
         #
+        data = dict(name='blabla', description='hgv hh', policy='67')
+        request = yield from self.client.post('/permissions',
+                                              body=data,
+                                              content_type='application/json',
+                                              token=token)
+        self.assertValidationError(request.response, '',
+                                   'Policy should be a list or an object')
+        #
         data = dict(name='blabla', description='hgv hh', policy='[45]')
         request = yield from self.client.post('/permissions',
                                               body=data,

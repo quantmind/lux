@@ -67,7 +67,8 @@ def ng_template(request, *args):
         return True
 
 
-UIROUTER = ('lux.ui.router',)
+LUX_ROUTER = ('lux.router',)
+LUX_UIROUTER = ('lux.ui.router',)
 
 
 class Extension(lux.Extension):
@@ -90,7 +91,7 @@ class Extension(lux.Extension):
 
         # Use HTML5 navigation and angular router
         if app.config['HTML5_NAVIGATION']:
-            add_ng_modules(doc, UIROUTER)
+            add_ng_modules(doc, LUX_UIROUTER)
             root = angular_root(app, router)
 
             doc.body.data({'ng-model': 'page',
@@ -105,6 +106,7 @@ class Extension(lux.Extension):
             doc.jscontext.update(root._angular_sitemap)
             doc.jscontext['page'] = router.state
         else:
+            add_ng_modules(doc, LUX_ROUTER)
             add_ng_modules(doc, router.uimodules)
 
     def context(self, request, context):
