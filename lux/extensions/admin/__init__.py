@@ -8,9 +8,11 @@ import lux
 from lux import Parameter, RedirectRouter
 
 from .admin import Admin, AdminModel, CRUDAdmin, adminMap, register, is_admin
+from .sidebar import add_css
 
 
-__all__ = ['Admin', 'AdminModel', 'CRUDAdmin', 'register', 'adminMap']
+__all__ = ['Admin', 'AdminModel', 'CRUDAdmin', 'register',
+           'adminMap', 'add_css']
 
 
 class Extension(lux.Extension):

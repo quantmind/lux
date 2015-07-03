@@ -35,3 +35,9 @@ class LuxSession(odm.OdmSession):
     @property
     def app(self):
         return self.mapper.app
+
+    @classmethod
+    def signal(cls, session, changes, event):
+        '''Signal changes on session
+        '''
+        session.app.fire(event, session, changes)

@@ -1,17 +1,10 @@
-import time
-
 from pulsar import HttpException, ImproperlyConfigured
-from pulsar.apps.wsgi import Json
-
-try:
-    import jwt
-except ImportError:     # pragma    nocover
-    jwt = None
 
 from lux import Parameter
 
 from ..views import Authorization
 from .. import AuthBackend
+from .mixins import jwt, TokenBackendMixin
 
 
 class Http401(HttpException):
@@ -21,7 +14,7 @@ class Http401(HttpException):
         super().__init__(msg=msg, status=401, headers=headers)
 
 
-class TokenBackend(AuthBackend):
+class TokenBackend(TokenBackendMixin, AuthBackend):
     '''Backend based on JWT_
 
     Once a ``jtw`` is created, authetication is achieved by setting
@@ -37,10 +30,6 @@ class TokenBackend(AuthBackend):
                   'Access-Control-Allow-Methods for CORS')
     ]
 
-    def on_config(self, app):
-        if not jwt:     # pragma    nocover
-            raise ImproperlyConfigured('JWT library not available')
-
     def api_sections(self, app):
         '''At the authorization router to the api
         '''
@@ -51,6 +40,8 @@ class TokenBackend(AuthBackend):
         and the authentication type if ``bearer`` try to perform
         authentication using JWT_.
         '''
+        if not jwt:     # pragma    nocover
+            raise ImproperlyConfigured('JWT library not available')
         auth = request.get('HTTP_AUTHORIZATION')
         user = request.cache.user
         if auth and user.is_anonymous():
@@ -58,16 +49,12 @@ class TokenBackend(AuthBackend):
             auth_type = auth_type.lower()
             if auth_type == 'bearer':
                 try:
-                    data = jwt.decode(key, self.secret_key)
-                except jwt.ExpiredSignature:
-                    request.app.logger.info('JWT token has expired')
-                    # In this case we want the client to perform
-                    # a new authentication. Raise 401
-                    raise Http401('Token')
+                    token = self.decode_token(request, key)
                 except Exception:
                     request.app.logger.exception('Could not load user')
                 else:
-                    user = self.get_user(request, **data)
+                    request.cache.session = token
+                    user = self.get_user(request, **token)
                     if user:
                         request.cache.user = user
 
@@ -80,17 +67,6 @@ class TokenBackend(AuthBackend):
 
     def response_middleware(self, app):
         return [self.response]
-
-    def login_response(self, request, user):
-        token = self.create_token(request, user)
-        token = token.decode('utf-8')
-        request.response.status_code = 201
-        return Json({'success': True,
-                     'token': token}).http_response(request)
-
-    def logout_response(self, request, user):
-        return Json({'success': True,
-                     'message': 'loged out'}).http_response(request)
 
     def on_preflight(self, app, request):
         '''Preflight handler
@@ -107,21 +83,3 @@ class TokenBackend(AuthBackend):
         if headers:
             response['Access-Control-Allow-Headers'] = headers
         response['Access-Control-Allow-Methods'] = methods
-
-    def create_token(self, request, user, **kwargs):    # pragma    nocover
-        '''Create the JWT
-        '''
-        raise NotImplementedError
-
-    def jwt_payload(self, request, user):
-        '''Add user-related payload to the JWT
-        '''
-        expiry = self.session_expiry(request)
-        payload = {'user_id': user.id,
-                   'superuser': user.is_superuser()}
-        if expiry:
-            payload['exp'] = int(time.mktime(expiry.timetuple()))
-        return payload
-
-    def encode_payload(self, request, payload):
-        return jwt.encode(payload, request.config['SECRET_KEY'])

@@ -9,8 +9,8 @@ def add_css(all):
     vars.background_footer_color = '#ededed'
     vars.background_footer_border = '#D4D4D4'
     vars.colors.blue = '#2B4E72'
-    vars.navbar_height = 80
-    vars.animate.fade.top = px(vars.navbar_height)
+    vars.navbar.height = 80
+    vars.animate.fade.top = px(vars.navbar.height)
 
     vars.font_family = ('"freight-text-pro",Georgia,Cambria,"Times New Roman",'
                         'Times,serif')
@@ -41,7 +41,6 @@ def add_css(all):
         padding_bottom=px(50))
 
     css('#page-footer',
-        Skin(only='default', noclass='default'),
         Border(top=px(1), color=vars.background_footer_border),
         background_color=vars.background_footer_color,
         min_height=px(200))

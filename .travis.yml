@@ -32,7 +32,7 @@ script:
   - flake8
   - rm -rf lux
   - rm -rf build
-  - python -m runtests --coverage --test-timeout 10
+  - python -m runtests --coverage
   - python -m runtests --coveralls
 
 # after_script:

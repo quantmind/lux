@@ -11,6 +11,7 @@ from pulsar.utils.structures import mapping_iterator
 
 from lux.utils import unique_tuple
 
+
 __all__ = ['Html', 'WsgiRequest', 'Router', 'HtmlRouter',
            'JsonRouter', 'route', 'wsgi_request',
            'cached_property', 'html_factory', 'RedirectRouter',
@@ -108,9 +109,13 @@ class HtmlRouter(Router):
     def html_response(self, request, html):
         '''Render `html` as a full Html document or a partial.
         '''
-        if isinstance(html, Html):
-            html = html.render(request)
-
+        app = request.app
+        # get cms for this router
+        cms = self.cms(app)
+        # fetch the cms page if possible
+        page = cms.page(request.path[1:])
+        # render the inner part of the html page
+        html = cms.inner_html(request, page, html)
         # This request is for the inner template only
         if request.url_data.get('template') == 'ui':
             request.response.content = html
@@ -118,9 +123,12 @@ class HtmlRouter(Router):
 
         context = {'html_main': html}
         self.context(request, context)
-        app = request.app
-        template = self.get_html_body_template(app)
-        return app.html_response(request, template, context=context)
+        if not page.template:
+            page.template = self.getparam('html_body_template',
+                                          default='home.html',
+                                          parents=True)
+
+        return app.html_response(request, page, context=context)
 
     def get_html(self, request):
         '''Must be implemented by subclasses.
@@ -131,23 +139,12 @@ class HtmlRouter(Router):
         return ''
 
     def context(self, request, context):
+        '''Add router specific entries to the template
+        ``context`` dictionary'''
         pass
 
     def cms(self, app):
         return app.cms
-
-    def get_html_body_template(self, app):
-        '''Fetch the HTML template for the body part of this request
-        '''
-        cms = self.cms(app)
-        template = (cms.template(self.full_route.path) or
-                    self.html_body_template)
-        if not template:
-            if self.parent:
-                template = self.parent.get_html_body_template(app)
-            else:
-                template = 'home.html'
-        return template
 
     def childname(self, prefix):
         '''key for a child router
@@ -169,8 +166,12 @@ class HtmlRouter(Router):
         '''Add angular router information (lux.extensions.angular)
         '''
         if router.route.variables:
+            # Variables in the url
             params = dict(((v, v) for v in router.route.variables))
             url = router.route.url(**params)
+            # A page with variable requires to be resolved by the api
+            # The resolve requires a model
+            page['resolve'] = True
         else:
             url = page['url']
         page['templateUrl'] = '%s?template=ui' % url

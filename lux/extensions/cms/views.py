@@ -1,10 +1,12 @@
-from pulsar.apps.wsgi import Route
+import json
+
 from pulsar import Http404
 from pulsar.utils.slugify import slugify
 
 import lux
-from lux import forms, HtmlRouter
+from lux import forms, HtmlRouter, Html, cached
 from lux.extensions import odm
+from lux.core.cms import Page
 
 
 class TemplateForm(forms.Form):
@@ -25,7 +27,7 @@ class PageForm(forms.Form):
     description = forms.TextField(required=False)
     template_id = odm.RelationshipField(TemplateCRUD.model, label='template')
     published = forms.BooleanField(required=False)
-    layout = forms.TextField(required=False)
+    layout = forms.JsonField()
 
 
 class PageCRUD(odm.CRUD):
@@ -59,37 +61,110 @@ class AnyPage(HtmlRouter):
 
 
 class CMS(lux.CMS):
-    '''Override default lux CMS handler
-    '''
-    def template(self, path):
-        page = self.page(path)
-        if page:
-            return page['template']
-        else:
-            return super().template(path)
+    '''Override default lux :class:`.CMS` handler
 
+    This CMS handler reads page information from the database and
+    '''
     def page(self, path):
         '''Obtain a page object from a path
         '''
-        key = self.cache_key()
-        try:
-            sitemap = self.app.cache_server.get_json(key)
-            assert isinstance(sitemap, list)
-        except Exception:
-            sitemap = None
+        page = self.match(path)
+        if not page:
+            sitemap = super().site_map(self.app)
+            page = self.match(path, sitemap)
+        return Page(page or ())
 
-        if not sitemap:
-            sitemap = self.build_map()
-            self.app.cache_server.set_json(key, sitemap)
-
-        for page in sitemap:
-            route = Route(page['path'])
-            if route.match(path):
-                return page
-
-    def build_map(self):
+    @cached
+    def site_map(self, app):
         key = self.key or ''
-        response = self.app.api.get('/html_pages?filterby=root:eq:%s' % key)
+        response = app.api.get('html_pages?root=%s' % key)
+        if response.status_code == 200:
+            data = response.json()
+            return data['result']
+        else:
+            try:
+                response.raise_for_status()
+            except Exception:
+                app.logger.exception('Could not load sitemap')
+            return []
+
+    @cached
+    def inner_html(self, request, page, html=''):
+        '''Build page html content using json layout.
+        :param layout: json (with rows and components) e.g.
+            layout = {
+                'rows': [
+                    ['col-md-6', 'col-md-6'],
+                    ['col-md-6', 'col-md-6']
+                ],
+                'components': [
+                    {'type': 'text', 'id': 1, 'row': 0, 'col': 0, 'pos': 0},
+                    {'type': 'gallery', 'id': 2, 'row': 1, 'col': 1, 'pos': 0}
+                ]
+            }
+        :return: raw html
+            <div class="row">
+                <div class="col-md-6">
+                    <render-component id="1" text></render-component>
+                </div>
+                <div class="col-md-6"></div>
+            </div>
+            <div class="row">
+                    <div class="col-md-6"></div>
+                    <div class="col-md-6">
+                        <render-component id="2" gallery></render-component>
+                    </div>
+            </div>
+        '''
+        layout = page.layout
+        if layout:
+            try:
+                layout = json.loads(layout)
+            except Exception:
+                request.app.logger.exception('Could not parse layout')
+                layout = None
+
+        if not layout:
+            layout = dict(rows=[['col-sm-12']],
+                          components=[dict(type='self')])
+
+        components = layout.get('components', ())
+        container = Html('div', cn='container-fluid')
+
+        # Loop over rows
+        for row_idx, row in enumerate(layout.get('rows', ())):
+            htmlRow = Html('div', cn='row')
+            container.append(htmlRow)
+
+            for col_idx, col in enumerate(row):
+                htmlCol = Html('div', cn=col)
+                htmlRow.append(htmlCol)
+
+                for comp in sorted(components, key=lambda c: c.get('pos', 0)):
+                    ctype = comp.get('type')
+                    if ctype == 'self':
+                        htmlCol.append(Html('div', html, cn='block'))
+
+        return container.render(request)
+
+    def _get_components(self, components, row, column):
+        '''Returns the component from specified row and column.
+
+        :param components: json with the components e.g.
+            components = [
+                {'type': 'text', 'id': 1, 'row': 0, 'col': 0, 'pos': 0},
+                {'type': 'text', 'id': 2, 'row': 1, 'col': 1, 'pos': 0}
+            ]
+        :param row: value, determine row of the component
+        :param column: value, determine column of the component
+        :return: a specified component
+        '''
+        return (comp for comp in components
+                if comp.get('row', 0) == row and comp('col', 0) == column)
+
+    def _build_map(self):
+        key = self.key or ''
+        response = self.app.api.get('html_pages?root=%s' % key)
         if response.status_code == 200:
             data = response.json()
             return data['result']

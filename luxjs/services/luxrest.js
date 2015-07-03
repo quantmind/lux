@@ -7,33 +7,13 @@
     //	scope to retrieve the api client handler and user informations
     angular.module('lux.restapi', ['lux.services'])
 
-        .run(['$rootScope', '$window', '$lux', function (scope, $window, $lux) {
+        .run(['$rootScope', '$lux', function ($scope, $lux) {
 
             // If the root scope has an API_URL register the luxrest client
-            if (scope.API_URL) {
-
-                $lux.api(scope.API_URL, luxrest);
-
-                //	Get the api client
-                scope.api = function () {
-                    return $lux.api(scope.API_URL);
-                };
-
-                // 	Get the current user
-                scope.getUser = function () {
-                    var api = scope.api();
-                    if (api)
-                        return api.user();
-                };
-
-                //	Logout the current user
-                scope.logout = function () {
-                    var api = scope.api();
-                    if (api && api.token()) {
-                        api.logout();
-                        $window.location.reload();
-                    }
-                };
+            if ($scope.API_URL) {
+                var web = $lux.api('', luxweb);
+                //
+                $lux.api($scope.API_URL, luxrest).scopeApi($scope, web);
             }
 
         }]);
@@ -57,40 +37,6 @@
             if (!headers)
                 options.headers = headers = {};
             headers['Content-Type'] = 'application/json';
-        };
-
-        // Set/Get the JWT token
-        api.token = function (token) {
-            var key = 'luxrest - ' + api.baseUrl();
-
-            if (arguments.length) {
-                var decoded = lux.decodeJWToken(token);
-                if (decoded.storage === 'session')
-                    sessionStorage.setItem(key, token);
-                else
-                    localStorage.setItem(key, token);
-                return api;
-            } else {
-                token = localStorage.getItem(key);
-                if (!token) token = sessionStorage.getItem(key);
-                return token;
-            }
-        };
-
-        api.logout = function () {
-            var key = 'luxrest - ' + api.baseUrl();
-
-            localStorage.removeItem(key);
-            sessionStorage.removeItem(key);
-        };
-
-        api.user = function () {
-            var token = api.token();
-            if (token) {
-                var u = lux.decodeJWToken(token);
-                u.token = token;
-                return u;
-            }
         };
 
         // Add authentication token if available

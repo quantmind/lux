@@ -1,5 +1,16 @@
 '''
-Extension for Restful web services
+Extension for Restful web services.
+
+This extension should be added before any other extensions
+which requires authentication and restful services.
+When using default lux extensions, the usual position of this extension is
+just after the :mod:`lux.extensions.base`::
+
+    EXTENSIONS = ['lux.extensions.base',
+                  'lux.extensions.rest',
+                  ...
+                  ]
+
 '''
 from importlib import import_module
 
@@ -15,18 +26,18 @@ from .auth import AuthBackend
 from .models import RestModel, RestColumn
 from .pagination import Pagination, GithubPagination
 from .client import ApiClient
-from .views import RestRoot, RestRouter, RestMixin, RequirePermission
+from .views import (RestRoot, RestRouter, RestMixin, RequirePermission,
+                    ProcessLoginMixin, logout)
 
 __all__ = ['RestRouter', 'RestMixin', 'RestModel', 'RestColumn',
            'Pagination', 'GithubPagination', 'AuthBackend',
-           'RequirePermission']
+           'RequirePermission', 'ProcessLoginMixin', 'logout']
 
 
-def luxrest(url, name, **rest):
+def luxrest(url, **rest):
     '''Dictionary containing the api type and the api url name
     '''
     rest['url'] = url
-    rest['name'] = name
     return rest
 
 
@@ -37,7 +48,8 @@ class Extension(AuthBackend):
                   'List of python dotted paths to classes which provide '
                   'a backend for authentication.'),
         Parameter('CRYPT_ALGORITHM',
-                  dict(module='lux.utils.crypt.arc4', salt_size=8),
+                  'lux.utils.crypt.pbkdf2',
+                  # dict(module='lux.utils.crypt.arc4', salt_size=8),
                   'Python dotted path to module which provides the '
                   '``encrypt`` and, optionally, ``decrypt`` method for '
                   'password and sensitive data encryption/decryption'),
@@ -121,8 +133,8 @@ class Extension(AuthBackend):
                                            dotted_path)
             app.pagination = pagination()
 
-            # Add the preflight event
-            events = ('on_preflight',)
+            # Add the preflight and token events
+            events = ('on_preflight', 'on_token')
             app.add_events(events)
             for backend in self.backends:
                 app.bind_events(backend, events)

@@ -42,6 +42,7 @@ class Extension(lux.Extension):
     def on_config(self, app):
         '''Initialise Object Data Mapper'''
         app.odm = Odm(app, app.config['DATASTORE'])
+        app.add_events(('on_before_commit', 'on_after_commit'))
 
     def on_loaded(self, app):
         '''When the application load, choose the

@@ -19,25 +19,18 @@
     var sidebarDefaults = {
         collapse: true,
         position: 'left',
-        fixed: true,
-        url: lux.context.url,
+        toggle: 'Menu',
+        url: lux.context.url || '/',
     };
 
-    angular.module('bmll.sidebar', ['templates-sidebar', 'lux.nav'])
+    angular.module('lux.sidebar', ['lux.nav'])
         //
-        .service('sidebarService', ['linkService', function (linkService) {
+        .service('sidebarService', ['linkService', 'navService', function (linkService, navService) {
 
             this.initScope = function (scope, opts, element) {
 
-                var sidebar = angular.extend({}, sidebarDefaults, lux.getOptions(opts)),
+                var sidebar = angular.extend({}, sidebarDefaults, scope.sidebar, lux.getOptions(opts)),
                     body = lux.querySelector(document, 'body');
-
-                if (!sidebar.url)
-                    sidebar.url = '/';
-                if (!sidebar.themeTop)
-                    sidebar.themeTop = sidebar.theme;
-                if (!sidebar.position)
-                    sidebar.position = sidebarDefaults.position;
 
                 sidebar.container = sidebar.fluid ? 'container-fluid' : 'container';
                 body.addClass(sidebar.position + '-sidebar skin');
@@ -45,10 +38,8 @@
                 // Add link service functionality
                 linkService.initScope(scope);
 
-                if (scope.user) {
-                    if (!sidebar.collapse)
-                        element.addClass('sidebar-open-' + sidebar.position);
-                }
+                if (!sidebar.collapse)
+                    element.addClass('sidebar-open-' + sidebar.position);
 
                 scope.toggleSidebar = function() {
                     element.toggleClass('sidebar-open-' + sidebar.position);
@@ -71,13 +62,42 @@
                 };
 
                 scope.sidebar = sidebar;
+                scope.navbar = initNavbar(sidebar);
+
+                if (!sidebar.sections && scope.navigation)
+                    sidebar.sections = scope.navigation;
                 return sidebar;
             };
+
+            // Initialise top navigation bar
+            function initNavbar (sidebar) {
+                var navbar = sidebar.navbar;
+
+                // No navbar, add an object
+                if (!navbar)
+                    sidebar.navbar = navbar = {};
+                //
+                // Add toggle to the navbar
+                if (sidebar.toggle) {
+                    if (!navbar.itemsLeft) navbar.itemsLeft = [];
+
+                    navbar.itemsLeft.splice(0, 0, {
+                        href: '#',
+                        title: sidebar.toggle,
+                        name: sidebar.toggle,
+                        klass: 'sidebar-toggle',
+                        icon: 'fa fa-bars',
+                        action: 'toggleSidebar'
+                    });
+                }
+
+                return navbar;
+            }
         }])
         //
         .directive('navSidebarLink', ['sidebarService', function (sidebarService) {
             return {
-                templateUrl: "sidebar/nav-link.tpl.html",
+                templateUrl: "nav/templates/nav-link.tpl.html",
                 restrict: 'A',
             };
         }])
@@ -113,7 +133,7 @@
         //  Inner directive for the sidebar
         .directive('contentSidebar', ['$compile', '$document', function ($compile, $document) {
             return {
-                templateUrl: "sidebar/sidebar.tpl.html",
+                templateUrl: "nav/templates/sidebar.tpl.html",
 
                 restrict: 'A',
 

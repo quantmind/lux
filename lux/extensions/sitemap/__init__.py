@@ -4,8 +4,10 @@ sitemap_ XML files easy.
 
 .. _sitemap: http://www.sitemaps.org/
 '''
+from urllib.parse import urlencode
+
 from pulsar.apps.wsgi import Router
-from pulsar.utils.httpurl import urllibr, urlencode
+from pulsar.utils.httpurl import urllibr
 
 import lux
 

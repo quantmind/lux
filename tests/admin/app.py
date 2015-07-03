@@ -11,10 +11,12 @@ class AdminTest(test.AppTestCase):
         self.assertIsInstance(admin, Admin)
         sitemap = admin.sitemap(app)
         self.assertTrue(sitemap)
-        self.assertEqual(len(sitemap), 1)
-        items = sitemap[0]['items']
-        self.assertEqual(len(items), 1)
-        blog = items[0]
+        self.assertEqual(len(sitemap), 2)
+        items = {}
+        for site in sitemap:
+            items.update(((item['title'], item) for item in site['items']))
+        self.assertEqual(len(items), 3)
+        blog = items['Blog']
         self.assertEqual(blog['icon'], 'fa fa-book')
         self.assertEqual(blog['title'], 'Blog')
         self.assertEqual(blog['href'], '/admin/blogs')
@@ -49,3 +51,8 @@ class AdminTest(test.AppTestCase):
         self.assertEqual(updates['url'], '/admin/blogs/:id')
         self.assertEqual(updates['templateUrl'],
                          '/admin/blogs/id?template=ui')
+
+    def test_edit_template_view(self):
+        request = yield from self.client.get('/admin/html_templates/1')
+        response = request.response
+        self.assertEqual(response.status_code, 200)

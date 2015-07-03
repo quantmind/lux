@@ -6,7 +6,7 @@
     //  Python implementation in the lux.extensions.angular Extension
     //
 
-    // Hack for delaing with ui-router state.href
+    // Hack for delaying with ui-router state.href
     // TODO: fix this!
     var stateHref = lux.stateHref = function (state, State, Params) {
         if (Params) {
@@ -21,7 +21,7 @@
     //  Lux State Provider
     //	========================
     //
-    //	Complements the python lux server
+    //	Complements the lux server and angular ui.router
     function LuxStateProvider ($stateProvider, $urlRouterProvider) {
 
         var states = lux.context.states,

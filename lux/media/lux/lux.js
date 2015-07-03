@@ -1,6 +1,6 @@
 //      Lux Library - v0.2.0
 
-//      Compiled 2015-06-18.
+//      Compiled 2015-06-30.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -50,6 +50,7 @@ function(angular, root) {
     lux.angular = angular;
     lux.forEach = angular.forEach;
     lux.context = extend({}, defaults, lux.context);
+    lux.messages = {};
 
     // Extend lux context with additional data
     lux.extend = function (context) {
@@ -93,6 +94,7 @@ function(angular, root) {
         }]);
 
     lux.context.ngModules.push('lux.applications');
+
     var _ = lux._ = {},
 
     pick = _.pick = function (obj, callback) {
@@ -159,7 +161,7 @@ function(angular, root) {
             if (bit) {
                 var cbit = bit,
                     slash = false;
-                // remove fron slashes if url has already some value
+                // remove front slashes if cbit has some
                 while (url && cbit.substring(0, 1) === '/')
                     cbit = cbit.substring(1);
                 // remove end slashes
@@ -307,14 +309,32 @@ function(angular, root) {
         return n;
     };
 
-    //  Lux Api service factory for angular
-    //  ---------------------------------------
+    lux.messages.no_api = function (url) {
+        return {
+            text: 'Api client for "' + url + '" is not available',
+            icon: 'fa fa-exclamation-triangle'
+        };
+    };
+
+    //  Lux Api service
+    //	===================
+    //
+    //	A factory of javascript clients to web services
     angular.module('lux.services', [])
         //
         .value('ApiTypes', {})
         //
+        .value('AuthApis', {})
+        //
         .run(['$rootScope', '$lux', function (scope, $lux) {
             //
+            var name = $(document.querySelector("meta[name=csrf-param]")).attr('content'),
+                csrf_token = $(document.querySelector("meta[name=csrf-token]")).attr('content');
+
+            if (name && csrf_token) {
+                $lux.csrf = {};
+                $lux.csrf[name] = csrf_token;
+            }
             //  Listen for a Lux form to be available
             //  If it uses the api for posting, register with it
             scope.$on('formReady', function (e, model, formScope) {
@@ -331,8 +351,9 @@ function(angular, root) {
             });
         }])
         //
-        .service('$lux', ['$location', '$window', '$q', '$http', '$log', '$timeout', 'ApiTypes',
-                function ($location, $window, $q, $http, $log, $timeout, ApiTypes) {
+        .service('$lux', ['$location', '$window', '$q', '$http', '$log',
+                          '$timeout', 'ApiTypes', 'AuthApis',
+                function ($location, $window, $q, $http, $log, $timeout, ApiTypes, AuthApis) {
             var $lux = this;
 
             this.location = $location;
@@ -342,6 +363,12 @@ function(angular, root) {
             this.q = $q;
             this.timeout = $timeout;
             this.apiUrls = {};
+            this.$log = $log;
+            this.messages = extend({}, lux.messageService, {
+                pushMessage: function (message) {
+                    this.log($log, message);
+                }
+            });
             //  Create a client api
             //  -------------------------
             //
@@ -359,13 +386,20 @@ function(angular, root) {
                     }
                     api = ApiTypes[url];
                     if (!api)
-                        $lux.log.error('Api client for "' + url + '" is not available');
+                        $lux.messages.error(lux.messages.no_api(url));
                     else
                         return api(url, this).defaults(defaults);
                 } else if (arguments.length === 2) {
                     ApiTypes[url] = api;
-                    return this;
+                    return api(url, this);
                 }
+            };
+
+            this.authApi = function (api, auth) {
+                if (arguments.length === 1)
+                    return AuthApis[api.baseUrl()];
+                else if (arguments.length === 2)
+                    AuthApis[api.baseUrl()] = auth;
             };
         }]);
     //
@@ -401,8 +435,8 @@ function(angular, root) {
             defaults = {};
 
         api.toString = function () {
-            if (defaults && defaults.name)
-                return api.baseUrl() + '/' + defaults.name;
+            if (defaults.name)
+                return joinUrl(api.baseUrl(), defaults.name);
             else
                 return api.baseUrl();
         };
@@ -423,12 +457,6 @@ function(angular, root) {
         api.baseUrl  = function () {
             return url;
         };
-
-        // calculate the url for an API call
-        api.httpOptions = function (request) {};
-
-        // This function can be used to add authentication
-        api.authentication = function (request) {};
         //
         api.get = function (opts, data) {
             return api.request('get', opts, data);
@@ -438,10 +466,25 @@ function(angular, root) {
             return api.request('post', opts, data);
         };
         //
+        api.put = function (opts, data) {
+            return api.request('put', opts, data);
+        };
+        //
         api.delete = function (opts, data) {
             return api.request('delete', opts, data);
         };
-
+        //
+        //  Add additional Http options to the request
+        api.httpOptions = function (request) {};
+        //
+        //  This function can be used to add authentication
+        api.authentication = function (request) {};
+        //
+        //  Return the current user
+        //  ---------------------------
+        //
+        //  Only implemented by apis managing authentication
+        api.user = function () {};
         //
         // Perform the actual request and return a promise
         //	method: HTTP method
@@ -531,7 +574,7 @@ function(angular, root) {
             if (!opts.url) {
                 var href = request.baseUrl;
                 if (opts.path)
-                    href = request.baseUrl + opts.path;
+                    href = joinUrl(request.baseUrl, opts.path);
                 opts.url = href;
             }
 
@@ -624,33 +667,13 @@ function(angular, root) {
     //	scope to retrieve the api client handler and user informations
     angular.module('lux.restapi', ['lux.services'])
 
-        .run(['$rootScope', '$window', '$lux', function (scope, $window, $lux) {
+        .run(['$rootScope', '$lux', function ($scope, $lux) {
 
             // If the root scope has an API_URL register the luxrest client
-            if (scope.API_URL) {
-
-                $lux.api(scope.API_URL, luxrest);
-
-                //	Get the api client
-                scope.api = function () {
-                    return $lux.api(scope.API_URL);
-                };
-
-                // 	Get the current user
-                scope.getUser = function () {
-                    var api = scope.api();
-                    if (api)
-                        return api.user();
-                };
-
-                //	Logout the current user
-                scope.logout = function () {
-                    var api = scope.api();
-                    if (api && api.token()) {
-                        api.logout();
-                        $window.location.reload();
-                    }
-                };
+            if ($scope.API_URL) {
+                var web = $lux.api('', luxweb);
+                //
+                $lux.api($scope.API_URL, luxrest).scopeApi($scope, web);
             }
 
         }]);
@@ -674,40 +697,6 @@ function(angular, root) {
             if (!headers)
                 options.headers = headers = {};
             headers['Content-Type'] = 'application/json';
-        };
-
-        // Set/Get the JWT token
-        api.token = function (token) {
-            var key = 'luxrest - ' + api.baseUrl();
-
-            if (arguments.length) {
-                var decoded = lux.decodeJWToken(token);
-                if (decoded.storage === 'session')
-                    sessionStorage.setItem(key, token);
-                else
-                    localStorage.setItem(key, token);
-                return api;
-            } else {
-                token = localStorage.getItem(key);
-                if (!token) token = sessionStorage.getItem(key);
-                return token;
-            }
-        };
-
-        api.logout = function () {
-            var key = 'luxrest - ' + api.baseUrl();
-
-            localStorage.removeItem(key);
-            sessionStorage.removeItem(key);
-        };
-
-        api.user = function () {
-            var token = api.token();
-            if (token) {
-                var u = lux.decodeJWToken(token);
-                u.token = token;
-                return u;
-            }
         };
 
         // Add authentication token if available
@@ -747,29 +736,89 @@ function(angular, root) {
     //  Angular module for interacting with lux-based REST APIs
     angular.module('lux.webapi', ['lux.services'])
 
-        .run(['$rootScope', '$window', '$lux', function ($scope, $window, $lux) {
+        .run(['$rootScope', '$lux', function ($scope, $lux) {
             //
-            var name = $(document.querySelector("meta[name=csrf-param]")).attr('content'),
-                csrf_token = $(document.querySelector("meta[name=csrf-token]")).attr('content');
-
-            if (name && csrf_token) {
-                $lux.csrf = {};
-                $lux.csrf[name] = csrf_token;
-            }
-
             if ($scope.API_URL) {
-                var api = $lux.api($scope.API_URL, luxweb);
-                api.initScope(scope);
+                $lux.api($scope.API_URL, luxweb).scopeApi($scope);
             }
         }]);
 
 
-    var CSRFset = ['get', 'head', 'options'],
+    var //
+        //  HTTP verbs which don't send a csrf token in their requests
+        CSRFset = ['get', 'head', 'options'],
         //
         luxweb = function (url, $lux) {
 
             var api = baseapi(url, $lux),
-                request = api.request;
+                request = api.request,
+                auth_name = 'authorizations_url',
+                web;
+
+            // Set the name of the authentication endpoints
+            api.authName = function (name) {
+                if (arguments.length === 1) {
+                    auth_name = name;
+                    return api;
+                } else
+                    return auth_name;
+            };
+
+            // Set/Get the JWT token
+            api.token = function (token) {
+                var auth = $lux.authApi(api);
+                if (auth) return auth.token();
+
+                var key = 'luxtoken-' + api.baseUrl();
+
+                if (arguments.length) {
+                    if (token) {
+                        // Set the token
+                        var decoded = lux.decodeJWToken(token);
+                        if (decoded.storage === 'session')
+                            sessionStorage.setItem(key, token);
+                        else
+                            localStorage.setItem(key, token);
+                    } else {
+                        sessionStorage.removeItem(key);
+                        localStorage.removeItem(key);
+                    }
+                    return api;
+                } else {
+                    // Obtain the token
+                    token = localStorage.getItem(key);
+                    if (!token) token = sessionStorage.getItem(key);
+                    return token;
+                }
+            };
+
+            // Perform Logout
+            api.logout = function (scope) {
+                var auth = $lux.authApi(api);
+                if (auth) return auth.logout(scope);
+
+                scope.$emit('pre-logout');
+                api.post({
+                    name: api.authName(),
+                    path: '/logout'
+                }).then(function () {
+                    scope.$emit('after-logout');
+                    api.token(undefined);
+                    $lux.window.location.reload();
+                }, function (response) {
+                    $lux.messages.error('Error while logging out');
+                });
+            };
+
+            // Get the user fro the JWT
+            api.user = function () {
+                var token = api.token();
+                if (token) {
+                    var u = lux.decodeJWToken(token);
+                    u.token = token;
+                    return u;
+                }
+            };
 
             // Redirect to the LOGIN_URL
             api.login = function () {
@@ -782,10 +831,15 @@ function(angular, root) {
             //
             //  Check the run method in the "lux.services" module for more information
             api.formReady = function (model, formScope) {
-                var id = api.defaults().id;
-                if (id) {
-                    api.get({path: '/' + id}).success(function (data) {
-                        angular.extend(form, data);
+                var resolve = api.defaults().get;
+                if (resolve) {
+                    api.get().success(function (data) {
+                        forEach(data, function (value, key) {
+                            // TODO: do we need a callback for JSON fields?
+                            // or shall we leave it here?
+                            if (isObject(value)) value = JSON.stringify(value, null, 4);
+                            model[key] = value;
+                        });
                     });
                 }
             };
@@ -820,8 +874,14 @@ function(angular, root) {
 
             //
             // Initialise a scope with this api
-            api.initScope = function (scope) {
+            api.scopeApi = function (scope, auth) {
                 //  Get the api client
+                if (auth) {
+                    // Register auth as the authentication client of this api
+                    $lux.authApi(api, auth);
+                    auth.authName(null);
+                }
+
                 scope.api = function () {
                     return $lux.api(url);
                 };
@@ -838,9 +898,7 @@ function(angular, root) {
                         e.stopPropagation();
                     }
                     if (api.user()) {
-                        api.logout().then(function () {
-                            $window.location.reload();
-                        });
+                        api.logout(scope);
                     }
                 };
             };
@@ -1231,6 +1289,367 @@ function(angular, root) {
                 scope.connectSockJs(scope.STREAM_URL);
         }]);
 
+    angular.module('lux.cms', [
+        'lux.cms.core',
+        'lux.cms.component',
+        'lux.cms.component.text'])
+
+    .run(['$rootScope', 'CMS', function(scope, CMS) {
+
+        scope.cms = new CMS();
+    }])
+
+    .factory('CMS', ['Component', function(Component) {
+
+        var CMS = function CMS() {
+            var self = this;
+
+            self.components = new Component(self);
+        };
+
+        return CMS;
+    }]);
+
+angular.module('lux.cms.component', [])
+    //
+    .factory('Component', ['$q', '$rootScope', function($q, $rootScope) {
+        /**
+         * Component provides the ability to register public methods events inside an app and allow
+         * for other components to use the component via featureName.raise.methodName and featureName.on.eventName(function(args){}).
+         *
+         * @appInstance: App which the API is for
+         * @compnentId: Unique id in case multiple API instances do exist inside the same Angular environment
+         */
+        var Component = function Component(appInstance, componentId) {
+            this.gantt = appInstance;
+            this.componentId = componentId;
+            this.eventListeners = [];
+        };
+
+        /**
+         * Registers a new event for the given feature.
+         *
+         * @featureName: Name of the feature that raises the event
+         * @eventName: Name of the event
+         *
+         * To trigger the event call:
+         * .raise.eventName()
+         *
+         * To register a event listener call:
+         * .on.eventName(scope, callBackFn, _this)
+         * scope: A scope reference to add a deregister call to the scopes .$on('destroy')
+         * callBackFn: The function to call
+         * _this: Optional this context variable for callbackFn. If omitted, gantt.api will be used for the context
+         *
+         * .on.eventName returns a de-register funtion that will remove the listener. It's not necessary to use it as the listener
+         * will be removed when the scope is destroyed.
+         */
+        Component.prototype.registerEvent = function(featureName, eventName) {
+            var self = this;
+            if (!self[featureName]) {
+                self[featureName] = {};
+            }
+
+            var feature = self[featureName];
+            if (!feature.on) {
+                feature.on = {};
+                feature.raise = {};
+            }
+
+            var eventId = 'event:component:' + this.componentId + ':' + featureName + ':' + eventName;
+
+            // Creating raise event method: featureName.raise.eventName
+            feature.raise[eventName] = function() {
+                $rootScope.$emit.apply($rootScope, [eventId].concat(Array.prototype.slice.call(arguments)));
+            };
+
+            // Creating on event method: featureName.oneventName
+            feature.on[eventName] = function(scope, handler, _this) {
+                var deregAngularOn = registerEventWithAngular(eventId, handler, self.gantt, _this);
+
+                var listener = {
+                    handler: handler,
+                    dereg: deregAngularOn,
+                    eventId: eventId,
+                    scope: scope,
+                    _this: _this
+                };
+                self.eventListeners.push(listener);
+
+                var removeListener = function() {
+                    listener.dereg();
+                    var index = self.eventListeners.indexOf(listener);
+                    self.eventListeners.splice(index, 1);
+                };
+
+                scope.$on('$destroy', function() {
+                    removeListener();
+                });
+
+                return removeListener;
+            };
+        };
+
+        /**
+         * @ngdoc function
+         * @name registerEventsFromObject
+         * @description Registers features and events from a simple objectMap.
+         * eventObjectMap must be in this format (multiple features allowed)
+         * <pre>
+         * {featureName:
+         *        {
+         *          eventNameOne:function(args){},
+         *          eventNameTwo:function(args){}
+         *        }
+         *  }
+         * </pre>
+         * @param {object} eventObjectMap map of feature/event names
+         */
+        Component.prototype.registerEventsFromObject = function (eventObjectMap) {
+          var self = this;
+          var features = [];
+          angular.forEach(eventObjectMap, function (featProp, featPropName) {
+            var feature = {name: featPropName, events: []};
+            angular.forEach(featProp, function (prop, propName) {
+              feature.events.push(propName);
+            });
+            features.push(feature);
+          });
+
+          features.forEach(function (feature) {
+            feature.events.forEach(function (event) {
+              self.registerEvent(feature.name, event);
+            });
+          });
+
+        };
+
+
+        function registerEventWithAngular(eventId, handler, app, _this) {
+            return $rootScope.$on(eventId, function() {
+                var args = Array.prototype.slice.call(arguments);
+                args.splice(0, 1); // Remove evt argument
+                handler.apply(_this ? _this : app, args);
+            });
+        }
+
+        /**
+         * Registers a new event for the given feature
+         *
+         * @featureName: Name of the feature
+         * @methodName: Name of the method
+         * @callBackFn: Function to execute
+         * @_this: Binds callBackFn 'this' to _this. Defaults to Api.app
+         */
+        Component.prototype.registerMethod = function(featureName, methodName, callBackFn, _this) {
+            var self = this;
+
+            if (!this[featureName]) {
+                this[featureName] = {};
+            }
+
+            var feature = this[featureName];
+            feature[methodName] = function() {
+                callBackFn.apply(_this || this.app, arguments);
+            };
+        };
+
+        /**
+         * @ngdoc function
+         * @name registerMethodsFromObject
+         * @description Registers features and methods from a simple objectMap.
+         * eventObjectMap must be in this format (multiple features allowed)
+         * <br>
+         * {featureName:
+         *        {
+         *          methodNameOne:function(args){},
+         *          methodNameTwo:function(args){}
+         *        }
+         * @param {object} eventObjectMap map of feature/event names
+         * @param {object} _this binds this to _this for all functions.  Defaults to gridApi.grid
+         */
+        Component.prototype.registerMethodsFromObject = function (methodMap, _this) {
+          var self = this;
+          var features = [];
+          angular.forEach(methodMap, function (featProp, featPropName) {
+            var feature = {name: featPropName, methods: []};
+            angular.forEach(featProp, function (prop, propName) {
+              feature.methods.push({name: propName, fn: prop});
+            });
+            features.push(feature);
+          });
+
+          features.forEach(function (feature) {
+            feature.methods.forEach(function (method) {
+              self.registerMethod(feature.name, method.name, method.fn, _this);
+            });
+          });
+
+        };
+
+        return Component;
+    }]);
+
+
+angular.module('lux.cms.component.text', ['lux.services'])
+
+    .factory('textComponent', ['$rootScope', '$lux', function($rootScope, $lux) {
+
+        return {
+            componentId: null,
+            //
+            element: null,
+            //
+            api: {
+                path: 'cms/components/text',
+            },
+            //
+            getData: function(componentId) {
+                // TODO: change it to fetch data from api.lux
+                return testData.getComponents()[componentId].content;
+            },
+            initialize: function(componentId, element) {
+                var self = this;
+
+                self.element = element;
+                self.componentId = componentId;
+
+                var component = {
+                    events: {
+                        text: {
+
+                        }
+                    },
+                    methods: {
+                        text: {
+                            render: function() {
+                                self.element.html(self.getData(self.componentId));
+                            }
+                        }
+                    }
+                };
+
+                $rootScope.cms.components.registerEventsFromObject(component.events);
+                $rootScope.cms.components.registerMethodsFromObject(component.methods);
+            }
+        };
+    }])
+
+    .directive('text', ['textComponent', function(textComponent) {
+        return {
+            priority: -200,
+            scope: false,
+            require: 'renderComponent',
+            link: {
+                pre: function(scope, element, attrs) {
+                    var componentId = attrs.id;
+                    textComponent.initialize(componentId, element);
+                    scope.cms.components.text.render();
+                }
+            }
+        };
+    }]);
+
+angular.module('lux.cms.core', [])
+    //
+    .constant('cmsDefaults', {})
+    //
+    .service('pageBuilder', ['$http', '$document', '$filter', '$compile', 'orderByFilter', 'cmsDefaults', function($http, $document, $filter, $compile, orderByFilter, cmsDefaults) {
+        var self = this;
+
+        extend(this, {
+            layout: {},
+            //
+            scope: null,
+            //
+            element: null,
+            //
+            init: function(scope, element, layout) {
+                self.scope = scope;
+                self.element = element;
+                self.layout = layout;
+            },
+            // Add columns to row
+            addColumns: function(row, rowIdx, columns) {
+                var components,
+                    column,
+                    colIdx = 0;
+
+                forEach(columns, function(col) {
+                    components = orderByFilter($filter('filter')(self.layout.components, {row: rowIdx, col: colIdx}, true), '+pos');
+                    column = angular.element($document[0].createElement('div'))
+                                .addClass(col);
+
+                    if (components.length == 1)
+                        column.append('<render-component id="' + components[0].id + '" ' + components[0].type + '></render-component>');
+                    else if (components.length > 1) {
+                        forEach(components, function(component) {
+                            column.append('<render-component id="' + component.id + '" ' + component.type + '></render-component>');
+                        });
+                    }
+
+                    row.append(column);
+                    ++colIdx;
+                });
+
+                row = $compile(row)(self.scope);
+            },
+            //
+            buildLayout: function() {
+                var row,
+                    rowIdx = 0;
+
+                forEach(self.layout.rows, function(columns) {
+                    row = angular.element($document[0].createElement('div')).addClass('row');
+                    self.addColumns(row, rowIdx, columns);
+                    self.element.append(row);
+                    ++rowIdx;
+                });
+            }
+        });
+    }])
+    //
+    .controller('pageController', [function() {
+        var self = this;
+    }])
+    //
+    .directive('renderPage', ['pageBuilder', 'testData', function(pageBuilder, testData) {
+        return {
+            replace: true,
+            link: {
+                post: function(scope, element, attrs) {
+                    var layout = testData.getLayout();
+
+                    pageBuilder.init(scope, element, layout);
+                    pageBuilder.buildLayout();
+
+                    scope.$on('$viewContentLoaded', function(){
+                        console.log(scope);
+                    });
+                }
+            }
+        };
+    }])
+    //
+    .directive('renderComponent', ['cmsDefaults', function(cmsDefaults) {
+        return {
+            replace: true,
+            transclude: true,
+            controller: 'pageController',
+            scope: {
+                componentId: '@id'
+            },
+            compile: function() {
+                return {
+                    post: function(scope, element, attrs, ctrl) {}
+                };
+            }
+        };
+    }]);
+
+
+
+
 angular.module('templates-page', ['page/breadcrumbs.tpl.html']);
 
 angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function($templateCache) {
@@ -1247,7 +1666,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
     //  ==============
     //
     //  Design to work with the ``lux.extension.angular``
-    angular.module('lux.page', ['lux.services', 'lux.form', 'templates-page'])
+    angular.module('lux.page', ['lux.form', 'templates-page'])
         //
         .service('pageService', ['$lux', 'dateFilter', function ($lux, dateFilter) {
 
@@ -1381,18 +1800,26 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                     }
                 }
             };
-        }]);
-
-
-
-    angular.module('lux.router', ['lux.page'])
-        .config(['$provide', '$locationProvider', function ($provide, $locationProvider) {
-            if (lux.context.HTML5_NAVIGATION) {
-                $locationProvider.html5Mode(true);
-                lux.context.targetLinks = true;
-                $locationProvider.hashPrefix(lux.context.hashPrefix);
-            }
         }])
+        //
+        .directive('year', function () {
+            return {
+                restrict: 'AE',
+                link: function (scope, element) {
+                    var dt = new Date();
+                    element.html(dt.getFullYear()+'');
+                }
+            };
+        });
+
+    //
+    //	Lux.router
+    //	===================
+    //
+    //	Drop in replacement for lux.ui.router when HTML5_NAVIGATION is off.
+    //
+    angular.module('lux.router', ['lux.page'])
+
         //
         //  Convert all internal links to have a target so that the page reload
         .directive('page', ['$log', '$timeout', function (log, timer) {
@@ -1413,6 +1840,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                 }
             };
         }]);
+
     //
     //  UI-Routing
     //
@@ -1421,7 +1849,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
     //  Python implementation in the lux.extensions.angular Extension
     //
 
-    // Hack for delaing with ui-router state.href
+    // Hack for delaying with ui-router state.href
     // TODO: fix this!
     var stateHref = lux.stateHref = function (state, State, Params) {
         if (Params) {
@@ -1436,7 +1864,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
     //  Lux State Provider
     //	========================
     //
-    //	Complements the python lux server
+    //	Complements the lux server and angular ui.router
     function LuxStateProvider ($stateProvider, $urlRouterProvider) {
 
         var states = lux.context.states,
@@ -1559,7 +1987,8 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
     //  Events:
     //
     //      formReady: triggered once the form has rendered
-    //          arguments: formmodel
+    //          arguments: formmodel, formscope
+    //
     //      formFieldChange: triggered when a form field changes:
     //          arguments: formmodel, field (changed)
     //
@@ -1576,6 +2005,29 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
             formErrorClass: 'form-error',
             FORMKEY: 'm__form'
         })
+        //
+        .run(['$lux', function ($lux) {
+            var formHandlers = {};
+            $lux.formHandlers = formHandlers;
+
+            formHandlers.reload = function () {
+                $lux.window.location.reload();
+            };
+
+            formHandlers.redirectHome = function (response, scope) {
+                var href = scope.formAttrs.redirectTo || '/';
+                $lux.window.location.href = href;
+                $lux.window.location.reload();
+            };
+
+            formHandlers.login = function (response, scope) {
+                var target = scope.formAttrs.action,
+                    api = $lux.api(target);
+                if (api)
+                    api.token(response.data.token);
+                $lux.window.location.reload();
+            };
+        }])
         //
         // The formService is a reusable component for redering form fields
         .service('standardForm', ['$log', '$http', '$document', '$templateCache', 'formDefaults',
@@ -1621,7 +2073,8 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                 inputAttributes = extendArray([], baseAttributes, ['disabled', 'type', 'value', 'placeholder']),
                 textareaAttributes = extendArray([], baseAttributes, ['disabled', 'placeholder', 'rows', 'cols']),
                 buttonAttributes = extendArray([], baseAttributes, ['disabled']),
-                formAttributes = extendArray([], baseAttributes, ['accept-charset', 'action', 'autocomplete',
+                // Don't include action in the form attributes
+                formAttributes = extendArray([], baseAttributes, ['accept-charset','autocomplete',
                                                                   'enctype', 'method', 'novalidate', 'target']),
                 validationAttributes = ['minlength', 'maxlength', 'min', 'max', 'required'],
                 ngAttributes = ['disabled', 'minlength', 'maxlength', 'required'];
@@ -1632,6 +2085,8 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                 className: '',
                 //
                 inputGroupClass: 'form-group',
+                //
+                inputHiddenClass: 'form-hidden',
                 //
                 inputClass: 'form-control',
                 //
@@ -1654,9 +2109,11 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                     scope.info = info;
 
                     if (info) {
+                        // Pick the renderer by checking `type`
                         if (info.hasOwnProperty('type'))
                             renderer = this[info.type];
 
+                        // If no element type, use the `element`
                         if (!renderer) {
                             renderer = this[info.element];
                         }
@@ -1764,7 +2221,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                                     .html(field.label),
                         element = angular.element($document[0].createElement('div')).addClass(this.element);
 
-                    input.attr('ng-model', scope.formModelName + '.' + field.name);
+                    input.attr('ng-model', scope.formModelName + '["' + field.name + '"]');
 
                     forEach(inputAttributes, function (name) {
                         if (field[name]) input.attr(name, field[name]);
@@ -1788,9 +2245,9 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                         element;
 
                     // Add model attribute
-                    input.attr('ng-model', scope.formModelName + '.' + field.name);
+                    input.attr('ng-model', scope.formModelName + '["' + field.name + '"]');
 
-                    if (!field.showLabels) {
+                    if (!field.showLabels || field.type === 'hidden') {
                         label.addClass('sr-only');
                         // Add placeholder if not defined
                         if (field.placeholder === undefined)
@@ -1805,7 +2262,9 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                     }
 
                     if (this.inputGroupClass) {
-                        element = angular.element($document[0].createElement('div')).addClass(this.inputGroupClass);
+                        element = angular.element($document[0].createElement('div'));
+                        if (field.type === 'hidden') element.addClass(this.inputHiddenClass);
+                        else element.addClass(this.inputGroupClass);
                         element.append(label).append(input);
                     } else {
                         element = [label, input];
@@ -1842,6 +2301,9 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                                 .attr('value', opt.value).html(opt.repr || opt.value);
                         select.append(opt);
                     });
+
+                    if (field.multiple)
+                        select.attr('multiple', true);
 
                     return this.onChange(scope, element);
                 },
@@ -1901,9 +2363,9 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                         // True when the form is submitted
                         submitted = scope.formName + '.submitted',
                         // True if the field is dirty
-                        dirty = [scope.formName, field.name, '$dirty'].join('.'),
-                        invalid = [scope.formName, field.name, '$invalid'].join('.'),
-                        error = [scope.formName, field.name, '$error'].join('.') + '.',
+                        dirty = joinField(scope.formName, field.name, '$dirty'),
+                        invalid = joinField(scope.formName, field.name, '$invalid'),
+                        error = joinField(scope.formName, field.name, '$error') + '.',
                         input = $(element[0].querySelector(scope.info.element)),
                         p = $($document[0].createElement('p'))
                                 .attr('ng-show', '(' + submitted + ' || ' + dirty + ') && ' + invalid)
@@ -1935,10 +2397,10 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
 
                     // Add the invalid handler for server side errors
                     var name = '$invalid';
-                        name += ' && !' + [scope.formName, field.name, '$error.required'].join('.');
+                        name += ' && !' + joinField(scope.formName, field.name, '$error.required');
                         p.append(
                             this.fieldErrorElement(scope, name, self.errorMessage(scope, 'invalid'))
-                            .html('{{formErrors.' + field.name + '}}')
+                            .html('{{formErrors["' + field.name + '"]}}')
                         );
 
                     return element.append(p);
@@ -1946,7 +2408,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                 //
                 fieldErrorElement: function (scope, name, msg) {
                     var field = scope.field,
-                        value = [scope.formName, field.name, name].join('.');
+                        value = joinField(scope.formName, field.name, name);
 
                     return $($document[0].createElement('span'))
                                 .attr('ng-show', value)
@@ -2125,19 +2587,22 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                     scope.formid = form.id;
                     scope.formCount = 0;
 
-                    scope.addMessages = function (messages) {
-                        forEach(messages, function (messages, field) {
-                            scope.formMessages[field] = messages;
+                    scope.addMessages = function (messages, error) {
 
-                            var msg = '';
-                            forEach(messages, function(error) {
-                                msg += error.message;
-                                if (messages.length > 1)
-                                    msg += '</br>';
-                            });
+                        forEach(messages, function (message) {
+                            if (isString(message))
+                                message = {message: message};
 
-                            scope.formErrors[field] = msg;
-                            scope[scope.formName][field].$invalid = true;
+                            var field = message.field || formDefaults.FORMKEY;
+
+                            if (error) message.error = error;
+
+                            scope.formMessages[field] = [message];
+
+                            if (message.error && field !== formDefaults.FORMKEY) {
+                                scope.formErrors[field] = message.message;
+                                scope[scope.formName][field].$invalid = true;
+                            }
                         });
                     };
 
@@ -2285,70 +2750,87 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
             };
         });
 
-//
-//	Form processor
-//	=========================
-//
-//	Default Form processing function
-// 	If a submit element (input.submit or button) does not specify
-// 	a ``click`` entry, this function is used
-lux.processForm = function (e) {
-
-    e.preventDefault();
-    e.stopPropagation();
-
-    var form = this[this.formName],
-        model = this[this.formModelName],
-        attrs = this.formAttrs,
-        target = attrs.action,
-        scope = this,
-        FORMKEY = scope.formAttrs.FORMKEY,
-        $lux = this.$lux,
-        method = attrs.method || 'post',
-        promise,
-        api;
     //
-    // Flag the form as submitted
-    form.submitted = true;
-    if (form.$invalid) return;
-
-    // Get the api information if target is an object
-    //	target
-    //		- name:	api name
-    //		- target: api target
-    if (isObject(target)) api = $lux.api(target);
-
-    this.formMessages = {};
-    //
-    if (api) {
-        promise = api.request(method, target, model);
-    } else if (target) {
-        var enctype = attrs.enctype || '',
-            ct = enctype.split(';')[0],
-            options = {
-                url: target,
-                method: attrs.method || 'POST',
-                data: model,
-                transformRequest: $lux.formData(ct),
-            };
-        // Let the browser choose the content type
-        if (ct === 'application/x-www-form-urlencoded' || ct === 'multipart/form-data') {
-            options.headers = {
-                'content-type': undefined
-            };
-        }
-        promise = $lux.http(options);
-    } else {
-        $lux.log.error('Could not process form. No target or api');
-        return;
+    function joinField (model, name, extra) {
+        return model + '["' + name + '"].' + extra;
     }
+
     //
-    promise.then(function (response) {
-            var data = response.data;
-            var hookName = scope.formAttrs.resultHandler;
-            var processedByHook = hookName && scope.$parent[hookName](response);
-            if (!processedByHook) {
-                if (data.messages) {
+    //	Form processor
+    //	=========================
+    //
+    //	Default Form processing function
+    // 	If a submit element (input.submit or button) does not specify
+    // 	a ``click`` entry, this function is used
+    //
+    //  Post Result
+    //  -------------------
+    //
+    //  When a form is processed succesfully, this method will check if the
+    //  ``formAttrs`` object contains a ``resultHandler`` parameter which should be
+    //  a string.
+    //
+    //  In the event the ``resultHandler`` exists,
+    //  the ``$lux.formHandlers`` object is checked if it contains a function
+    //  at the ``resultHandler`` value. If it does, the function is called.
+    lux.processForm = function (e) {
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        var scope = this,
+            $lux = scope.$lux,
+            form = this[this.formName],
+            model = this[this.formModelName],
+            attrs = this.formAttrs,
+            target = attrs.action,
+            FORMKEY = scope.formAttrs.FORMKEY,
+            method = attrs.method || 'post',
+            promise,
+            api;
+        //
+        // Flag the form as submitted
+        form.submitted = true;
+        if (form.$invalid) return;
+
+        // Get the api information if target is an object
+        //	target
+        //		- name:	api name
+        //		- target: api target
+        if (isObject(target)) api = $lux.api(target);
+
+        this.formMessages = {};
+        //
+        if (api) {
+            promise = api.request(method, target, model);
+        } else if (target) {
+            var enctype = attrs.enctype || '',
+                ct = enctype.split(';')[0],
+                options = {
+                    url: target,
+                    method: attrs.method || 'POST',
+                    data: model,
+                    transformRequest: $lux.formData(ct),
+                };
+            // Let the browser choose the content type
+            if (ct === 'application/x-www-form-urlencoded' || ct === 'multipart/form-data') {
+                options.headers = {
+                    'content-type': undefined
+                };
+            }
+            promise = $lux.http(options);
+        } else {
+            $lux.log.error('Could not process form. No target or api');
+            return;
+        }
+        //
+        promise.then(function (response) {
+                var data = response.data;
+                var hookName = scope.formAttrs.resultHandler;
+                var hook = hookName && $lux.formHandlers[hookName];
+                if (hook) {
+                    hook(response, scope);
+                } else if (data.messages) {
                     scope.addMessages(data.messages);
                 } else if (api) {
                     // Created
@@ -2357,234 +2839,277 @@ lux.processForm = function (e) {
                     } else {
                         scope.formMessages[FORMKEY] = [{message: 'Successfully updated'}];
                     }
-                } else {
-                    window.location.href = data.redirect || '/';
                 }
-            }
-        },
-        function (response) {
-            var data = response.data,
-                status = response.status,
-                messages, msg;
-            if (data) {
-                messages = data.messages;
+            },
+            function (response) {
+                var data = response.data || {},
+                    status = response.status,
+                    messages = data.errors,
+                    msg;
                 if (!messages) {
                     msg = data.message;
                     if (!msg) {
                         status = status || data.status || 501;
-                        msg = 'Server error (' + data.status + ')';
+                        msg = 'Response error (' + data.status + ')';
                     }
-                    messages = {};
-                    scope.formMessages[FORMKEY] = [{
-                        message: msg,
-                        error: true
-                    }];
-                } else
-                    scope.addMessages(messages);
-            } else {
-                status = status || 501;
-                msg = 'Server error (' + status + ')';
-                messages = {};
-                scope.formMessages[FORMKEY] = [{message: msg, error: true}];
-            }
-        });
-};
-
-/**
- * Created by Reupen on 02/06/2015.
- */
-
-angular.module('lux.form.utils', ['lux.services'])
-
-    .directive('remoteOptions', ['$lux', function ($lux) {
-
-        function fill(api, target, scope, attrs, ctrl) {
-
-            var id = attrs.remoteOptionsId || 'id',
-                name = attrs.remoteOptionsValue || 'id',
-                initialValue = {},
-                options = [];
-
-            scope[target.name] = options;
-            initialValue[id] = '';
-            initialValue[name] = 'Loading...';
-
-            options.push(initialValue);
-
-            api.get().then(function (data) {
-                options[0][name] = 'Please select...';
-                options.push.apply(options, data.data.result);
-            }, function (data) {
-                /** TODO: add error alert */
-                options[0][name] = '(error loading options)';
+                    messages = [{message: msg}];
+                }
+                scope.addMessages(messages, 'error');
             });
-            ctrl.$setViewValue('');
-            ctrl.$render();
-        }
+    };
 
-        function link(scope, element, attrs, ctrl) {
+    /**
+     * Created by Reupen on 02/06/2015.
+     */
 
-            if (attrs.remoteOptions) {
-                var target = JSON.parse(attrs.remoteOptions),
-                    api = $lux.api(target);
+    angular.module('lux.form.utils', ['lux.services'])
 
-                if (api && target.name)
-                    return fill(api, target, scope, attrs, ctrl);
-            }
-            // TODO: message
-        }
+        .directive('remoteOptions', ['$lux', function ($lux) {
 
-        return {
-            require: 'ngModel',
-            link: link
-        };
-    }])
+            function fill(api, target, scope, attrs, ctrl) {
 
-    .directive('selectOnClick', function () {
-        return {
-            restrict: 'A',
-            link: function (scope, element, attrs) {
-                element.on('click', function () {
-                    if (!window.getSelection().toString()) {
-                        // Required for mobile Safari
-                        this.setSelectionRange(0, this.value.length);
-                    }
+                var id = attrs.remoteOptionsId || 'id',
+                    name = attrs.remoteOptionsValue || 'id',
+                    initialValue = {},
+                    options = [];
+
+                scope[target.name] = options;
+                initialValue[id] = '';
+                initialValue[name] = 'Loading...';
+
+                options.push(initialValue);
+
+                api.get().then(function (data) {
+                    options[0][name] = 'Please select...';
+                    options.push.apply(options, data.data.result);
+                }, function (data) {
+                    /** TODO: add error alert */
+                    options[0][name] = '(error loading options)';
                 });
+                ctrl.$setViewValue('');
+                ctrl.$render();
             }
-        };
-    });
+
+            function link(scope, element, attrs, ctrl) {
+
+                if (attrs.remoteOptions) {
+                    var target = JSON.parse(attrs.remoteOptions),
+                        api = $lux.api(target);
+
+                    if (api && target.name)
+                        return fill(api, target, scope, attrs, ctrl);
+                }
+                // TODO: message
+            }
+
+            return {
+                require: 'ngModel',
+                link: link
+            };
+        }])
+
+        .directive('selectOnClick', function () {
+            return {
+                restrict: 'A',
+                link: function (scope, element, attrs) {
+                    element.on('click', function () {
+                        if (!window.getSelection().toString()) {
+                            // Required for mobile Safari
+                            this.setSelectionRange(0, this.value.length);
+                        }
+                    });
+                }
+            };
+        });
+
+    function asMessage (level, message) {
+        if (isString(message)) message = {text: message};
+        message.type = level;
+        return message;
+    }
+
+    lux.messageService = {
+        pushMessage: function () {},
+
+        debug: function (text) {
+            this.pushMessage(asMessage('debug', text));
+        },
+
+        info: function (text) {
+            this.pushMessage(asMessage('info', text));
+        },
+
+        success: function (text) {
+            this.pushMessage(asMessage('success', text));
+        },
+
+        warn: function (text) {
+            this.pushMessage(asMessage('warn', text));
+        },
+
+        error: function (text) {
+            this.pushMessage(asMessage('error', text));
+        },
+
+        log: function ($log, message) {
+            var type = message.type;
+            if (type === 'success') type = 'info';
+            $log[type](message.text);
+        }
+    };
 
 angular.module('templates-message', ['message/message.tpl.html']);
 
 angular.module("message/message.tpl.html", []).run(["$templateCache", function($templateCache) {
   $templateCache.put("message/message.tpl.html",
     "<div>\n" +
-    "    <div class=\"alert alert-{{ message.type }}\" role=\"alert\" ng-repeat=\"message in messages  track by $index | limitTo: limit\" ng-if=\"! ( !debug()  && message.type === 'warning' ) \">\n" +
+    "    <div class=\"alert alert-{{ message.type }}\" role=\"alert\" ng-repeat=\"message in messages\">\n" +
     "        <a href=\"#\" class=\"close\" ng-click=\"removeMessage(message)\">&times;</a>\n" +
-    "        {{ message.text }}\n" +
+    "        <i ng-if=\"message.icon\" ng-class=\"message.icon\"></i>\n" +
+    "        <span>{{ message.text }}</span>\n" +
     "    </div>\n" +
     "</div>\n" +
     "");
 }]);
 
-//
-//  Message module
-//
-//  Usage:
-//
-//  html:
-//    limit - maximum number of messages to show, by default 5
-//    <message limit="10"></message>
-//
-//  js:
-//    angular.module('app', ['app.view'])
-//    .controller('AppController', ['$scope', '$message', function ($scope, $message) {
-//                $message.setDebugMode(true);
-//                $message.debug('debug message');
-//                $message.error('error message');
-//                $message.success('success message');
-//                $message.info('info message');
-//
-//            }])
-angular.module('lux.message', ['templates-message'])
     //
-    //  Service for messages
+    //  Lux messages
+    //  =================
     //
-    .service('$message', ['$log',  '$rootScope', function ($log, $rootScope) {
-        return {
-            getMessages: function () {
-                if( ! this.getStorage().getItem('messages') ){
-                    return [];
-                }
-                return JSON.parse(this.getStorage().getItem('messages')).reverse();
+    //  An implementation of the messageService interface
+    //
+    //  Usage:
+    //
+    //  html:
+    //    limit - maximum number of messages to show, by default 5
+    //    <message limit="10"></message>
+    //
+    //  js:
+    //    angular.module('app', ['app.view'])
+    //    .controller('AppController', ['$scope', 'luxMessage', function ($scope, luxMessage) {
+    //                luxMessage.setDebugMode(true);
+    //                luxMessage.debug('debug message');
+    //                luxMessage.error('error message');
+    //                luxMessage.success('success message');
+    //                luxMessage.info('info message');
+    //
+    //            }])
+    angular.module('lux.message', ['lux.services', 'templates-message'])
+        //
+        //  Service for messages
+        //
+        .service('luxMessage', ['$lux',  '$rootScope', function ($lux, $scope) {
 
-            },
-            setMessages: function (messages) {
-               this.getStorage().messages = JSON.stringify(messages);
-            },
-            pushMessage: function (message) {
-                var messages = this.getMessages();
-                message.id = messages.length;
-                messages.push(message);
-                this.setMessages(messages);
-                $log.log('(message):'+ message.type + ' "' + message.text + '"');
-                $rootScope.$emit('messageAdded');
-            },
-            removeMessage: function (message) {
-                var messages = this.getMessages();
-                messages = messages.filter(function (value) {
-                    return value.id !== message.id;
-                });
-                this.setMessages(messages);
-            },
-            getDebugMode: function () {
-                return !! JSON.parse(window.localStorage.getItem('debug'));
-            },
-            setDebugMode: function (value) {
-                window.localStorage.debug = JSON.stringify(value);
-            },
-            setStorage: function (storage) {
-                window.localStorage.messagesStorage = storage;
-            },
-            getStorage: function () {
-                if( window.localStorage.getItem('messagesStorage') === 'session' ){
-                    return window.sessionStorage;
-                }
-                return window.localStorage;
+            var log = lux.messageService.log;
 
-            },
-            info: function (text) {
-                this.pushMessage({type: 'info', text: text});
-            },
-            error: function (text) {
-                this.pushMessage({type: 'danger', text: text});
-            },
-            debug: function (text) {
-                this.pushMessage({type: 'warning', text: text});
-            },
-            success: function (text) {
-                this.pushMessage({type: 'success', text: text});
+            extend(this, lux.messageService, {
+
+                getMessages: function () {
+                    if( ! this.getStorage().getItem('messages') ){
+                        return [];
+                    }
+                    return JSON.parse(this.getStorage().getItem('messages')).reverse();
+
+                },
+
+                setMessages: function (messages) {
+                   this.getStorage().messages = JSON.stringify(messages);
+                },
+
+                pushMessage: function (message) {
+                    if (message.store) {
+                        var messages = this.getMessages();
+                        messages.push(message);
+                        this.setMessages(messages);
+                    }
+                    log($lux.$log, message);
+                    $scope.$broadcast('messageAdded', message);
+                },
+
+                removeMessage: function (message) {
+                    var messages = this.getMessages();
+                    messages = messages.filter(function (value) {
+                        return value.id !== message.id;
+                    });
+                    this.setMessages(messages);
+                },
+
+                getDebugMode: function () {
+                    return !! JSON.parse(window.localStorage.getItem('debug'));
+                },
+
+                setDebugMode: function (value) {
+                    window.localStorage.debug = JSON.stringify(value);
+                },
+
+                setStorage: function (storage) {
+                    window.localStorage.messagesStorage = storage;
+                },
+
+                getStorage: function () {
+                    if( window.localStorage.getItem('messagesStorage') === 'session' ){
+                        return window.sessionStorage;
+                    }
+                    return window.localStorage;
+
+                }
+            });
+        }])
+        //
+        // Directive for displaying messages
+        //
+        .directive('messages', ['luxMessage', function (luxMessage) {
+
+            function renderMessages (scope) {
+                //scope.messages = luxMessage.getMessages();
             }
 
-        };
-    }])
-    //
-    // Directive for displaying messages
-    //
-    .directive('message', ['$message', '$rootScope', '$log', function ($message, $rootScope, $log) {
-        return {
-            restrict: 'AE',
-            replace: true,
-            templateUrl: "message/message.tpl.html",
-            link: {
-                post: function ($scope, element, attrs) {
-                    var renderMessages = function () {
-                        $scope.messages = $message.getMessages();
-                    };
-                    renderMessages();
-
-                    $scope.limit = !!attrs.limit ? parseInt(attrs.limit) : 5; //5 messages to show by default
-
-                    $scope.debug = function(){
-                        return $message.getDebugMode();
-                    };
-
-                    $scope.removeMessage = function (message) {
-                        $message.removeMessage(message);
-                        renderMessages();
-                    };
-
-                    $rootScope.$on('$viewContentLoaded', function () {
-                        renderMessages();
-                    });
-
-                    $rootScope.$on('messageAdded', function (){
-                        renderMessages();
-                    });
-                }
+            function pushMessage(scope, message) {
+                if (message.type === 'error')
+                    message.type = 'danger';
+                scope.messages.push(message);
             }
-        };
-    }]);
+
+            return {
+                restrict: 'AE',
+                replace: true,
+                templateUrl: "message/message.tpl.html",
+                link: function (scope, element, attrs) {
+                    scope.messages = [];
+
+                    scope.limit = !!attrs.limit ? parseInt(attrs.limit) : 5; //5 messages to show by default
+
+                    scope.debug = function(){
+                        return luxMessage.getDebugMode();
+                    };
+
+                    scope.removeMessage = function (message) {
+                        var msgs = scope.messages;
+                        for (var i=0; i<msgs.length; ++i) {
+                            if (msgs[i].text === message.text) {
+                                msgs.splice(i, 1);
+                                if (message.store) {
+                                    //TODO: remove it from the store
+                                }
+                            }
+                        }
+                    };
+
+                    scope.$on('$viewContentLoaded', function () {
+                        renderMessages(scope);
+                    });
+
+                    scope.$on('messageAdded', function (e, message) {
+                        if (!e.defaultPrevented) {
+                            pushMessage(scope, message);
+                            //scope.$apply();
+                        }
+                    });
+
+                    renderMessages(scope);
+                }
+            };
+        }]);
 
 
 angular.module('templates-grid', ['grid/modal.empty.tpl.html', 'grid/modal.tpl.html']);
@@ -2637,7 +3162,8 @@ angular.module("grid/modal.tpl.html", []).run(["$templateCache", function($templ
         };
     }
 
-    angular.module('lux.grid', ['lux.message', 'templates-grid', 'ngTouch', 'ui.grid', 'ui.grid.pagination', 'ui.grid.selection'])
+    angular.module('lux.grid', ['lux.services', 'templates-grid', 'ngTouch', 'ui.grid',
+                                'ui.grid.pagination', 'ui.grid.selection'])
         //
         .constant('gridDefaults', {
             showMenu: true,
@@ -2682,8 +3208,8 @@ angular.module("grid/modal.tpl.html", []).run(["$templateCache", function($templ
         })
         //
         // Directive to build Angular-UI grid options using Lux REST API
-        .directive('restGrid', ['$lux', '$window', '$modal', '$state', '$q', '$message', 'uiGridConstants', 'gridDefaults',
-            function ($lux, $window, $modal, $state, $q, $message, uiGridConstants, gridDefaults) {
+        .directive('restGrid', ['$lux', '$modal', 'uiGridConstants', 'gridDefaults',
+            function ($lux, $modal, uiGridConstants, gridDefaults) {
 
             var paginationOptions = {
                     sizes: [25, 50, 100]
@@ -2758,14 +3284,17 @@ angular.module("grid/modal.tpl.html", []).run(["$templateCache", function($templ
 
             function addGridMenu(scope, api, gridOptions) {
                 var menu = [],
-                    stateName = $state.current.url.split('/').pop(-1),
-                    model = stateName.slice(0, -1),
+                    // We cannot use $state, we must be able to use this without ui.router
+                    // stateName = $state.current.url.split('/').pop(-1),
+                    // model = stateName.slice(0, -1),
+                    stateName = 'UNKNOWN',
+                    model = stateName,
                     modalScope = scope.$new(true),
                     modal,
                     title;
 
                 scope.create = function($event) {
-                    $state.go($state.current.name + '_add');
+                    //$state.go($state.current.name + '_add');
                 };
 
                 scope.delete = function($event) {
@@ -2797,7 +3326,7 @@ angular.module("grid/modal.tpl.html", []).run(["$templateCache", function($templ
                     modal = $modal({scope: modalScope, title: modalTitle, content: modalContent, template: modalTemplate, show: true});
 
                     modalScope.ok = function() {
-                        var defer = $q.defer();
+                        var defer = $lux.q.defer();
                         forEach(scope.selected, function(item, _) {
                             api.delete({path: '/' + item[pk]})
                                 .success(function(resp) {
@@ -2809,9 +3338,9 @@ angular.module("grid/modal.tpl.html", []).run(["$templateCache", function($templ
                         defer.promise.then(function() {
                             if (success) {
                                 getPage(scope, api, gridState);
-                                $message.success('Successfully deleted ' + stateName + ' ' + results);
+                                $lux.messages.success('Successfully deleted ' + stateName + ' ' + results);
                             } else
-                                $message.error('Error while deleting ' + stateName + ' ' + results);
+                                $lux.messages.error('Error while deleting ' + stateName + ' ' + results);
 
                             modal.hide();
                         });
@@ -2843,7 +3372,7 @@ angular.module("grid/modal.tpl.html", []).run(["$templateCache", function($templ
                 scope.options = options;
 
                 scope.objectUrl = function(objectId) {
-                    return $window.location + '/' + objectId;
+                    return $lux.window.location + '/' + objectId;
                 };
 
                 var api = $lux.api(options.target),
@@ -3178,21 +3707,31 @@ angular.module("users/messages.tpl.html", []).run(["$templateCache", function($t
             scope.$log = $log;
         }]);
     //
-    // Bootstrap the document
+    //  Bootstrap the document
+    //  ============================
+    //
+    //  * ``name``  name of the module
+    //  * ``modules`` modules to include
+    //
+    //  These modules are appended to the modules available in the
+    //  lux context object and therefore they will be processed afterwards.
+    //
     lux.bootstrap = function (name, modules) {
         //
         // actual bootstrapping function
         function _bootstrap() {
             //
             // Resolve modules to load
-            if (!isArray(modules))
-                modules = [];
-            // Add all modules from context
-            forEach(lux.context.ngModules, function (mod) {
-                modules.push(mod);
+            var mods = lux.context.ngModules;
+            if(!mods) mods = [];
+
+            // Add all modules from input
+            forEach(modules, function (mod) {
+                mods.push(mod);
             });
-            modules.splice(0, 0, 'lux.loader');
-            angular.module(name, modules);
+            // Insert the lux loader as first module
+            mods.splice(0, 0, 'lux.loader');
+            angular.module(name, mods);
             angular.bootstrap(document, [name]);
         }
 
@@ -3389,19 +3928,19 @@ angular.module("bs/tooltip.tpl.html", []).run(["$templateCache", function($templ
     "</div>");
 }]);
 
-angular.module('templates-nav', ['nav/link.tpl.html', 'nav/navbar.tpl.html', 'nav/navbar2.tpl.html']);
+angular.module('templates-nav', ['nav/templates/link.tpl.html', 'nav/templates/navbar.tpl.html', 'nav/templates/navbar2.tpl.html', 'nav/templates/sidebar.tpl.html']);
 
-angular.module("nav/link.tpl.html", []).run(["$templateCache", function($templateCache) {
-  $templateCache.put("nav/link.tpl.html",
-    "<a ng-if=\"link.title\" ng-href=\"{{link.href}}\" data-title=\"{{link.title}}\" ng-click=\"clickLink($event, link)\"\n" +
-    "ng-attr-target=\"{{link.target}}\" bs-tooltip=\"tooltip\">\n" +
+angular.module("nav/templates/link.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("nav/templates/link.tpl.html",
+    "<a ng-if=\"link.title\" ng-href=\"{{link.href}}\" title=\"{{link.title}}\" ng-click=\"clickLink($event, link)\"\n" +
+    "ng-attr-target=\"{{link.target}}\" ng-class=\"link.klass\" bs-tooltip=\"tooltip\">\n" +
     "<i ng-if=\"link.icon\" class=\"{{link.icon}}\"></i> {{link.label || link.name}}</a>\n" +
     "<a ng-if=\"!link.title\" ng-href=\"{{link.href}}\" ng-attr-target=\"{{link.target}}\">\n" +
     "<i ng-if=\"link.icon\" class=\"{{link.icon}}\"></i> {{link.label || link.name}}</a>");
 }]);
 
-angular.module("nav/navbar.tpl.html", []).run(["$templateCache", function($templateCache) {
-  $templateCache.put("nav/navbar.tpl.html",
+angular.module("nav/templates/navbar.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("nav/templates/navbar.tpl.html",
     "<nav ng-attr-id=\"{{navbar.id}}\" class=\"navbar navbar-{{navbar.themeTop}}\"\n" +
     "ng-class=\"{'navbar-fixed-top':navbar.fixed, 'navbar-static-top':navbar.top}\" role=\"navigation\"\n" +
     "ng-model=\"navbar.collapse\" bs-collapse>\n" +
@@ -3413,6 +3952,10 @@ angular.module("nav/navbar.tpl.html", []).run(["$templateCache", function($templ
     "                <span class=\"icon-bar\"></span>\n" +
     "                <span class=\"icon-bar\"></span>\n" +
     "            </button>\n" +
+    "            <ul ng-if=\"navbar.itemsLeft\" class=\"nav navbar-nav\">\n" +
+    "                <li ng-repeat=\"link in navbar.itemsLeft\" ng-class=\"{active:activeLink(link)}\" navbar-link>\n" +
+    "                </li>\n" +
+    "            </ul>\n" +
     "            <a ng-if=\"navbar.brandImage\" href=\"{{navbar.url}}\" class=\"navbar-brand\" target=\"{{navbar.target}}\">\n" +
     "                <img ng-src=\"{{navbar.brandImage}}\" alt=\"{{navbar.brand || 'brand'}}\">\n" +
     "            </a>\n" +
@@ -3421,21 +3964,18 @@ angular.module("nav/navbar.tpl.html", []).run(["$templateCache", function($templ
     "            </a>\n" +
     "        </div>\n" +
     "        <div class=\"navbar-collapse\" bs-collapse-target>\n" +
-    "            <ul ng-if=\"navbar.items\" class=\"nav navbar-nav\">\n" +
-    "                <li ng-repeat=\"link in navbar.items\" ng-class=\"{active:activeLink(link)}\" navbar-link>\n" +
-    "                </li>\n" +
-    "            </ul>\n" +
     "            <ul ng-if=\"navbar.itemsRight\" class=\"nav navbar-nav navbar-right\">\n" +
     "                <li ng-repeat=\"link in navbar.itemsRight\" ng-class=\"{active:activeLink(link)}\" navbar-link>\n" +
     "                </li>\n" +
     "            </ul>\n" +
     "        </div>\n" +
     "    </div>\n" +
-    "</nav>");
+    "</nav>\n" +
+    "");
 }]);
 
-angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($templateCache) {
-  $templateCache.put("nav/navbar2.tpl.html",
+angular.module("nav/templates/navbar2.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("nav/templates/navbar2.tpl.html",
     "<nav class=\"navbar navbar-{{navbar.themeTop}}\"\n" +
     "ng-class=\"{'navbar-fixed-top':navbar.fixed, 'navbar-static-top':navbar.top}\"\n" +
     "role=\"navigation\" ng-model=\"navbar.collapse\" bs-collapse>\n" +
@@ -3489,18 +4029,63 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
     "</nav>");
 }]);
 
+angular.module("nav/templates/sidebar.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("nav/templates/sidebar.tpl.html",
+    "<navbar></navbar>\n" +
+    "<aside ng-attr-id=\"{{sidebar.id}}\" class=\"main-sidebar\" ng-class=\"{'sidebar-fixed':sidebar.fixed}\">\n" +
+    "    <section ng-if=\"sidebar.sections\" class=\"sidebar\">\n" +
+    "        <div ng-if=\"user\" class=\"nav-panel\">\n" +
+    "            <div ng-if=\"user.avatar\" class=\"pull-left image\">\n" +
+    "                <img ng-src=\"{{user.avatar}}\" alt=\"User Image\" />\n" +
+    "            </div>\n" +
+    "            <div class=\"pull-left info\">\n" +
+    "                <p>SIGNED IN AS</p>\n" +
+    "                <a href=\"#\">{{user.name}}</a>\n" +
+    "            </div>\n" +
+    "        </div>\n" +
+    "        <ul class=\"sidebar-menu\">\n" +
+    "            <li ng-if=\"section.name\" ng-repeat-start=\"section in sidebar.sections\" class=\"header\">\n" +
+    "                {{section.name}}\n" +
+    "            </li>\n" +
+    "            <li ng-repeat-end ng-repeat=\"link in section.items\" class=\"treeview\"\n" +
+    "            ng-class=\"{active:activeLink(link)}\" ng-include=\"'subnav'\"></li>\n" +
+    "        </ul>\n" +
+    "    </section>\n" +
+    "</aside>\n" +
+    "\n" +
+    "\n" +
+    "<script type=\"text/ng-template\" id=\"subnav\">\n" +
+    "    <a ng-href=\"{{link.href}}\" ng-attr-title=\"{{link.title}}\" ng-click=\"menuCollapse($event)\">\n" +
+    "        <i ng-if=\"link.icon\" class=\"{{link.icon}}\"></i>\n" +
+    "        <span>{{link.name}}</span>\n" +
+    "        <i ng-if=\"link.subitems\" class=\"fa fa-angle-left pull-right\"></i>\n" +
+    "    </a>\n" +
+    "    <ul class=\"treeview-menu\" ng-class=\"link.class\" ng-if=\"link.subitems\">\n" +
+    "        <li ng-repeat=\"link in link.subitems\" ng-class=\"{active:activeLink(link)}\" ng-include=\"'subnav'\"></li>\n" +
+    "    </ul>\n" +
+    "</script>\n" +
+    "");
+}]);
+
 
     //
     //  Lux Navigation module
+    //  ============================
     //
-    //  * Requires "angular-strap" for the collapsable directives
+    //  * Requires ``lux.bs`` for the collapsable directives
     //
-    //  Include this module to render bootstrap navigation templates
-    //  The navigation should be available as the ``navbar`` object within
-    //  the ``luxContext`` object:
+    //  Html:
     //
-    //      luxContext.navbar = {
-    //          items: [{href="/", value="Home"}]
+    //      <navbar data-options="lux.context.navbar"></navbar>
+    //
+    //  Js:
+    //
+    //      lux.context.navbar = {
+    //          id: null,           //  id attribute of the nav tag
+    //          brand: null,        //  brand text to be displayed
+    //          brandImage: null    //  brand image to be displayed rather than text. If available
+    //                              //  the `brand` text is placed in the `alt` attribute
+    //          url: "/",           //  href of the brand (if brand is defined)
     //      };
     //
     var navBarDefaults = {
@@ -3515,12 +4100,12 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
         fixed: false,
         search: false,
         url: lux.context.url,
-        target: '',
+        target: '_self',
         toggle: true,
         fluid: true
     };
 
-    angular.module('lux.nav', ['templates-nav', 'lux.services', 'lux.bs'])
+    angular.module('lux.nav', ['templates-nav', 'lux.bs'])
         //
         .service('linkService', ['$location', function ($location) {
 
@@ -3556,7 +4141,7 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
 
             this.initScope = function (scope, opts) {
 
-                var navbar = extend({}, navBarDefaults, getOptions(opts));
+                var navbar = extend({}, navBarDefaults, scope.navbar, getOptions(opts));
                 if (!navbar.url)
                     navbar.url = '/';
                 if (!navbar.themeTop)
@@ -3585,7 +4170,7 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
         //
         .directive('navbarLink', function () {
             return {
-                templateUrl: "nav/link.tpl.html",
+                templateUrl: "nav/templates/link.tpl.html",
                 restrict: 'A'
             };
         })
@@ -3595,7 +4180,7 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
         .directive('navbar', ['navService', function (navService) {
             //
             return {
-                templateUrl: "nav/navbar.tpl.html",
+                templateUrl: "nav/templates/navbar.tpl.html",
                 restrict: 'AE',
                 // Link function
                 link: function (scope, element, attrs) {
@@ -3677,6 +4262,182 @@ angular.module("nav/navbar2.tpl.html", []).run(["$templateCache", function($temp
                     windowResize(resize);
                     //
                     resize();
+                }
+            };
+        }]);
+
+    //
+    //  Sidebar module
+    //
+    //  Include this module to render bootstrap sidebar templates
+    //  The sidebar should be available as the ``sidebar`` object within
+    //  the ``luxContext`` object:
+    //
+    //      luxContext.sidebar = {
+    //          sections: [{
+    //              name: 'Sec1',
+    //              items: [{
+    //                      name: 'i1',
+    //                      icon: 'fa fa-dashboard',
+    //                      subitems: []
+    //               }]
+    //          }]
+    //      };
+    //
+    var sidebarDefaults = {
+        collapse: true,
+        position: 'left',
+        toggle: 'Menu',
+        url: lux.context.url || '/',
+    };
+
+    angular.module('lux.sidebar', ['lux.nav'])
+        //
+        .service('sidebarService', ['linkService', 'navService', function (linkService, navService) {
+
+            this.initScope = function (scope, opts, element) {
+
+                var sidebar = angular.extend({}, sidebarDefaults, scope.sidebar, lux.getOptions(opts)),
+                    body = lux.querySelector(document, 'body');
+
+                sidebar.container = sidebar.fluid ? 'container-fluid' : 'container';
+                body.addClass(sidebar.position + '-sidebar skin');
+
+                // Add link service functionality
+                linkService.initScope(scope);
+
+                if (!sidebar.collapse)
+                    element.addClass('sidebar-open-' + sidebar.position);
+
+                scope.toggleSidebar = function() {
+                    element.toggleClass('sidebar-open-' + sidebar.position);
+                };
+
+                scope.menuCollapse = function($event) {
+                    // Get the clicked link, the submenu and sidebar menu
+                    var item = angular.element($event.currentTarget || $event.srcElement),
+                        submenu = item.next();
+
+                    // If the menu is not visible then close all open menus
+                    if (submenu.hasClass('active')) {
+                        item.removeClass('active');
+                        submenu.removeClass('active');
+                    } else {
+                        item.parent().parent().find('ul').removeClass('active');
+                        item.addClass('active');
+                        submenu.addClass('active');
+                    }
+                };
+
+                scope.sidebar = sidebar;
+                scope.navbar = initNavbar(sidebar);
+
+                if (!sidebar.sections && scope.navigation)
+                    sidebar.sections = scope.navigation;
+                return sidebar;
+            };
+
+            // Initialise top navigation bar
+            function initNavbar (sidebar) {
+                var navbar = sidebar.navbar;
+
+                // No navbar, add an object
+                if (!navbar)
+                    sidebar.navbar = navbar = {};
+                //
+                // Add toggle to the navbar
+                if (sidebar.toggle) {
+                    if (!navbar.itemsLeft) navbar.itemsLeft = [];
+
+                    navbar.itemsLeft.splice(0, 0, {
+                        href: '#',
+                        title: sidebar.toggle,
+                        name: sidebar.toggle,
+                        klass: 'sidebar-toggle',
+                        icon: 'fa fa-bars',
+                        action: 'toggleSidebar'
+                    });
+                }
+
+                return navbar;
+            }
+        }])
+        //
+        .directive('navSidebarLink', ['sidebarService', function (sidebarService) {
+            return {
+                templateUrl: "nav/templates/nav-link.tpl.html",
+                restrict: 'A',
+            };
+        }])
+        //
+        //  Directive for the sidebar
+        .directive('sidebar', ['$compile', 'sidebarService', function ($compile, sidebarService) {
+            //
+            return {
+                restrict: 'AE',
+
+                // We need to use the compile function so that we remove the
+                // content before it is included in the bootstraping algorithm
+                compile: function compile(element) {
+                    var inner = element.html(),
+                        className = element[0].className;
+                    //
+                    element.html('');
+
+                    return {
+                        post: function (scope, element, attrs) {
+                            scope.sidebarContent = inner;
+                            sidebarService.initScope(scope, attrs, element);
+
+                            inner = $compile('<div data-content-sidebar bs-collapse></div>')(scope);
+                            element.append(inner);
+                        }
+                    };
+                }
+            };
+        }])
+
+        //
+        //  Inner directive for the sidebar
+        .directive('contentSidebar', ['$compile', '$document', function ($compile, $document) {
+            return {
+                templateUrl: "nav/templates/sidebar.tpl.html",
+
+                restrict: 'A',
+
+                link: function (scope, element, attrs) {
+                    var sidebar = scope.sidebar,
+                        // get the original content
+                        content = scope.sidebarContent,
+                        // content-wrapper
+                        wrapper = angular.element(document.createElement('div'))
+                                    .addClass('content-wrapper')
+                                    .append(content),
+                        // overlay
+                        overlay = angular.element(document.createElement('div'))
+                                    .addClass('overlay'),
+                        // page
+                        page = angular.element(document.createElement('div'))
+                                    .attr('id', 'page')
+                                    .append(wrapper)
+                                    .append(overlay);
+
+                    delete scope.sidebarContent;
+
+                    // compile
+                    page = $compile(page)(scope);
+                    element.after(page);
+
+                    page.on('click', function() {
+                        var sidebarTag = page.parent();
+                        if (sidebarTag.hasClass('sidebar-open-left')) {
+                            sidebarTag.removeClass('sidebar-open-left');
+                        }
+
+                        if (sidebarTag.hasClass('sidebar-open-right')) {
+                            sidebarTag.removeClass('sidebar-open-right');
+                        }
+                    });
                 }
             };
         }]);

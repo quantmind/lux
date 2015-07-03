@@ -1,11 +1,29 @@
-    //  Lux Api service factory for angular
-    //  ---------------------------------------
+    lux.messages.no_api = function (url) {
+        return {
+            text: 'Api client for "' + url + '" is not available',
+            icon: 'fa fa-exclamation-triangle'
+        };
+    };
+
+    //  Lux Api service
+    //	===================
+    //
+    //	A factory of javascript clients to web services
     angular.module('lux.services', [])
         //
         .value('ApiTypes', {})
         //
+        .value('AuthApis', {})
+        //
         .run(['$rootScope', '$lux', function (scope, $lux) {
             //
+            var name = $(document.querySelector("meta[name=csrf-param]")).attr('content'),
+                csrf_token = $(document.querySelector("meta[name=csrf-token]")).attr('content');
+
+            if (name && csrf_token) {
+                $lux.csrf = {};
+                $lux.csrf[name] = csrf_token;
+            }
             //  Listen for a Lux form to be available
             //  If it uses the api for posting, register with it
             scope.$on('formReady', function (e, model, formScope) {
@@ -22,8 +40,9 @@
             });
         }])
         //
-        .service('$lux', ['$location', '$window', '$q', '$http', '$log', '$timeout', 'ApiTypes',
-                function ($location, $window, $q, $http, $log, $timeout, ApiTypes) {
+        .service('$lux', ['$location', '$window', '$q', '$http', '$log',
+                          '$timeout', 'ApiTypes', 'AuthApis',
+                function ($location, $window, $q, $http, $log, $timeout, ApiTypes, AuthApis) {
             var $lux = this;
 
             this.location = $location;
@@ -33,6 +52,12 @@
             this.q = $q;
             this.timeout = $timeout;
             this.apiUrls = {};
+            this.$log = $log;
+            this.messages = extend({}, lux.messageService, {
+                pushMessage: function (message) {
+                    this.log($log, message);
+                }
+            });
             //  Create a client api
             //  -------------------------
             //
@@ -50,13 +75,20 @@
                     }
                     api = ApiTypes[url];
                     if (!api)
-                        $lux.log.error('Api client for "' + url + '" is not available');
+                        $lux.messages.error(lux.messages.no_api(url));
                     else
                         return api(url, this).defaults(defaults);
                 } else if (arguments.length === 2) {
                     ApiTypes[url] = api;
-                    return this;
+                    return api(url, this);
                 }
+            };
+
+            this.authApi = function (api, auth) {
+                if (arguments.length === 1)
+                    return AuthApis[api.baseUrl()];
+                else if (arguments.length === 2)
+                    AuthApis[api.baseUrl()] = auth;
             };
         }]);
     //
@@ -92,8 +124,8 @@
             defaults = {};
 
         api.toString = function () {
-            if (defaults && defaults.name)
-                return api.baseUrl() + '/' + defaults.name;
+            if (defaults.name)
+                return joinUrl(api.baseUrl(), defaults.name);
             else
                 return api.baseUrl();
         };
@@ -114,12 +146,6 @@
         api.baseUrl  = function () {
             return url;
         };
-
-        // calculate the url for an API call
-        api.httpOptions = function (request) {};
-
-        // This function can be used to add authentication
-        api.authentication = function (request) {};
         //
         api.get = function (opts, data) {
             return api.request('get', opts, data);
@@ -129,10 +155,25 @@
             return api.request('post', opts, data);
         };
         //
+        api.put = function (opts, data) {
+            return api.request('put', opts, data);
+        };
+        //
         api.delete = function (opts, data) {
             return api.request('delete', opts, data);
         };
-
+        //
+        //  Add additional Http options to the request
+        api.httpOptions = function (request) {};
+        //
+        //  This function can be used to add authentication
+        api.authentication = function (request) {};
+        //
+        //  Return the current user
+        //  ---------------------------
+        //
+        //  Only implemented by apis managing authentication
+        api.user = function () {};
         //
         // Perform the actual request and return a promise
         //	method: HTTP method
@@ -222,7 +263,7 @@
             if (!opts.url) {
                 var href = request.baseUrl;
                 if (opts.path)
-                    href = request.baseUrl + opts.path;
+                    href = joinUrl(request.baseUrl, opts.path);
                 opts.url = href;
             }
 

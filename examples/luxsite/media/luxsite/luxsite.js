@@ -1,6 +1,6 @@
 //      Lux Library - v0.2.0
 
-//      Compiled 2015-06-18.
+//      Compiled 2015-06-30.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -52,7 +52,7 @@
             "angular-sanitize": "//ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular-sanitize",
             "angular-touch": "//cdnjs.cloudflare.com/ajax/libs/angular.js/1.3.15/angular-touch",
             "angular-strap": "//cdnjs.cloudflare.com/ajax/libs/angular-strap/2.2.1/angular-strap",
-            "angular-strap-tpl": "//cdnjs.cloudflare.com/ajax/libs/angular-strap/2.2.1/angular-strap.tpl",
+            "angular-strap-tpl": "//cdnjs.cloudflare.com/ajax/libs/angular-strap/2.2.4/angular-strap.tpl",
             "angular-ui-router": "//cdnjs.cloudflare.com/ajax/libs/angular-ui-router/0.2.14/angular-ui-router",
             "angular-ui-grid": "http://ui-grid.info/release/ui-grid-unstable",
             "angular-pusher": "//cdn.jsdelivr.net/angular.pusher/latest/pusher-angular.min.js",

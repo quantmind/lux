@@ -62,3 +62,12 @@ class FieldTests(test.TestCase):
 
         with self.assertRaises(forms.ValidationError):
             field._clean(value, None)
+
+    def test_multi_relationship_field(self):
+        from lux.extensions.odm import RelationshipField
+        field = RelationshipField('book', name='test_book',
+                                  multiple=True)
+        self.assertEqual(field.model.name, 'book')
+        attrs = field.getattrs()
+        self.assertEqual(attrs.get('multiple'), True)
+        self.assertEqual(attrs.get('label'), 'Test book')

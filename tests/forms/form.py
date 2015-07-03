@@ -84,15 +84,7 @@ class FormTests(test.TestCase):
         form = FailForm(data=data)
         self.assertRaises(forms.FormError, lambda: form.data)
         self.assertFalse(form.is_valid())
-        result = form.tojson()
-        self.assertTrue(result['error'])
-        self.assertFalse(result['success'])
-        self.assertEqual(len(result['messages']), 1)
-        messages = result['messages'][forms.FORMKEY]
-        self.assertEqual(len(messages), 1)
-        message = messages[0]
-        self.assertEqual(message['message'], 'wrong data')
-        self.assertTrue(message['error'])
+        self.assertValidationError(form.tojson(), '', 'wrong data')
         self.assertEqual(len(form.data), 2)
 
     def test_charfield_error(self):
@@ -102,9 +94,8 @@ class FormTests(test.TestCase):
 
         form = SimpleForm(data=dict(name=failconvert()))
         self.assertFalse(form.is_valid())
-        result = form.tojson()
-        self.assertEqual(result['messages']['name'][0]['message'],
-                         'Invalid value')
+        self.assertValidationError(form.tojson(), 'name',
+                                   'Invalid value')
 
     def test_integer_field(self):
         form = SimpleForm(data=dict(name='luca', rank='1'))
@@ -125,9 +116,8 @@ class FormTests(test.TestCase):
     def test_integer_field_error(self):
         form = SimpleForm(data=dict(name='luca', rank='foo'))
         self.assertFalse(form.is_valid())
-        result = form.tojson()
-        self.assertEqual(result['messages']['rank'][0]['message'],
-                         'Not a valid number')
+        self.assertValidationError(form.tojson(), 'rank',
+                                   'Not a valid number')
 
     def test_date_field(self):
         dt = date.today()
@@ -145,8 +135,8 @@ class FormTests(test.TestCase):
         form = SimpleForm(data=dict(name='luca', dt='xyz'))
         self.assertFalse(form.is_valid())
         result = form.tojson()
-        self.assertEqual(result['messages']['dt'][0]['message'],
-                         '"xyz" is not a valid date')
+        self.assertValidationError(form.tojson(), 'dt',
+                                   '"xyz" is not a valid date')
 
     def test_datetime_field(self):
         dt = datetime.now()
@@ -158,6 +148,5 @@ class FormTests(test.TestCase):
     def test_datetime_field_error(self):
         form = SimpleForm(data=dict(name='luca', timestamp='xyz'))
         self.assertFalse(form.is_valid())
-        result = form.tojson()
-        self.assertValidationError(result, 'timestamp',
+        self.assertValidationError(form.tojson(), 'timestamp',
                                    '"xyz" is not a valid date')

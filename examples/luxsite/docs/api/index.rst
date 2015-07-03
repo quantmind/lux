@@ -17,3 +17,4 @@ Python API
    static
    oauth/index
    code
+   cms

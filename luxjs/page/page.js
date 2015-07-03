@@ -2,7 +2,7 @@
     //  ==============
     //
     //  Design to work with the ``lux.extension.angular``
-    angular.module('lux.page', ['lux.services', 'lux.form', 'templates-page'])
+    angular.module('lux.page', ['lux.form', 'templates-page'])
         //
         .service('pageService', ['$lux', 'dateFilter', function ($lux, dateFilter) {
 
@@ -136,4 +136,14 @@
                     }
                 }
             };
-        }]);
+        }])
+        //
+        .directive('year', function () {
+            return {
+                restrict: 'AE',
+                link: function (scope, element) {
+                    var dt = new Date();
+                    element.html(dt.getFullYear()+'');
+                }
+            };
+        });

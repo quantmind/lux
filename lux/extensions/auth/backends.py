@@ -1,12 +1,14 @@
 import uuid
 
 from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.orm import joinedload
 from datetime import datetime
 
-from pulsar.utils.structures import AttributeDictionary
-
+from lux import cached
 from lux.extensions.rest import (PasswordMixin, backends, normalise_email,
-                                 AuthenticationError, READ)
+                                 AuthenticationError)
+
+from .policy import has_permission
 
 
 class AuthMixin(PasswordMixin):
@@ -14,12 +16,22 @@ class AuthMixin(PasswordMixin):
     SQLAlchemy models
     '''
 
-    def get_user(self, request, user_id=None, username=None, email=None, **kw):
+    def get_user(self, request, user_id=None, token_id=None, username=None,
+                 email=None, **kw):
         '''Securely fetch a user by id, username or email
 
         Returns user or nothing
         '''
         odm = request.app.odm()
+
+        if token_id and user_id:
+            with odm.begin() as session:
+                query = session.query(odm.token)
+                query = query.filter_by(user_id=user_id, id=token_id)
+                query.update({'last_access': datetime.utcnow()},
+                             synchronize_session=False)
+                if not query.count():
+                    return
 
         with odm.begin() as session:
             query = session.query(odm.user)
@@ -70,10 +82,11 @@ class AuthMixin(PasswordMixin):
         if user.is_superuser():
             return True
         else:
-            if level <= READ:
-                return True
-            else:
-                return False
+            permissions = self.get_permissions(request)
+            for policy in permissions.values():
+                if has_permission(policy, name, level):
+                    return True
+            return level <= request.config.get('DEFAULT_PERMISSION_LEVEL', 0)
 
     def create_user(self, request, username=None, password=None, email=None,
                     first_name=None, last_name=None, active=False,
@@ -107,95 +120,74 @@ class AuthMixin(PasswordMixin):
         params['active'] = True
         return self.create_user(request, **params)
 
-
-class TokenBackend(AuthMixin, backends.TokenBackend):
-    '''Authentication backend based on JSON Web Token
-    '''
-
-    def on_config(self, app):
-        super().on_config(app)
-        backends.TokenBackend.on_config(self, app)
-
-    def get_user(self, request, user_id=None, token_id=None, **kwargs):
-        """
-        Securely fetch a user by id, username or email, with
-        token UUID validation
-
-        Returns user or nothing
-        """
-
-        if token_id:
-            odm = request.app.odm()
-
-            with odm.begin() as session:
-                query = session.query(odm.token)
-                query = query.filter_by(user_id=user_id,
-                                        id=token_id)
-                query.update({'last_access': datetime.utcnow()},
-                             synchronize_session=False)
-                if query.first() is not None:
-                    return super().get_user(request, user_id=user_id, **kwargs)
-        else:
-            return super().get_user(request, user_id=user_id, **kwargs)
-
     def create_token(self, request, user, **kwargs):
-        '''Create the token
+        '''Create the token and return a two element tuple
+        containing the token and the encoded version
         '''
         odm = request.app.odm()
-        payload = self.jwt_payload(request, user)
         ip_address = request.get_client_address()
+        user_id = user.id if user.is_authenticated() else None
 
         with odm.begin() as session:
             token = odm.token(id=uuid.uuid4(),
-                              user_id=user.id,
+                              user_id=user_id,
                               ip_address=ip_address,
                               user_agent=self.user_agent(request, 80),
                               **kwargs)
             session.add(token)
 
-        payload['token_id'] = token.id.hex
-        payload['username'] = user.username
-        return self.encode_payload(request, payload)
+        token.encoded = self.encode_token(request,
+                                          token_id=token.id.hex,
+                                          user=user,
+                                          expiry=token.expiry)
+        return token
+
+    @cached(user=True)
+    def get_permissions(self, request):
+        odm = request.app.odm()
+        user = request.cache.user
+        perms = {}
+        with odm.begin() as session:
+            if user.is_authenticated():
+                session.add(user)
+                groups = set(user.groups)
+            else:
+                cfg = request.config
+                query = session.query(odm.group)
+                groups = set(query.filter_by(name=cfg['ANONYMOUS_GROUP']))
+            for group in groups:
+                perms.update(((p.name, p.policy) for p in group.permissions))
+        return perms
+
+
+class TokenBackend(AuthMixin, backends.TokenBackend):
+    '''Authentication backend based on JSON Web Token
+    '''
 
 
 class SessionBackend(AuthMixin, backends.SessionBackend):
     '''An authentication backend based on sessions stored in the
     cache server and user on the ODM
     '''
-    def on_config(self, app):
-        super().on_config(app)
-        backends.SessionBackend.on_config(self, app)
-
     def get_session(self, request, key):
-        session = request.app.cache_server.get_json(self._key(key))
-        if session:
-            session = AttributeDictionary(session)
-            if session.user_id:
-                session.user = self.get_user(request, user_id=session.user_id)
-            return session
-
-    def session_save(self, request, session):
-        session = session.all().copy()
-        session.pop('user', None)
-        request.app.cache_server.set_json(self._key(session['id']), session)
-
-    def session_key(self, session):
-        '''Session key from session object
+        '''Retrieve a session from its key
         '''
-        return session.id
+        odm = request.app.odm()
+        token = odm.token
+        with odm.begin() as session:
+            query = session.query(token).options(joinedload(token.user))
+            return query.get(key)
 
-    def session_create(self, request, id=None, user=None, expiry=None):
-        '''Create a new session
-        '''
-        if not id:
-            id = uuid.uuid4().hex
-        session = AttributeDictionary(id=id)
-        if expiry:
-            session.expiry = expiry.isoformat()
-        if user:
-            session.user_id = user.id
-            session.user = user
+    def create_session(self, request, user=None):
+        session = super().create_session(request, user=user)
+        odm = request.app.odm()
+        with odm.begin() as s:
+            s.add(session)
+            session.user
         return session
 
-    def _key(self, id):
-        return 'session:%s' % id
+    def session_save(self, request, session):
+        odm = request.app.odm()
+        with odm.begin() as s:
+            s.add(session)
+        return session

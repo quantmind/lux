@@ -1,8 +1,9 @@
 '''Extension for creating style sheets using python. It provides
 the :ref:`style command <style-command>` but no WSGI middleware.
 
-To use this extension, add the ``lux.extensions.ui`` entry into the
-:setting:`EXTENSIONS` list in your config file.
+To use this extension, insert the ``lux.extensions.ui`` as the
+first entry in the :setting:`EXTENSIONS` list in your config file.
+
 To add additional ``css`` rules, a user extension module must provide the
 ``add_css`` function which accept one parameter only, the ``css`` container.
 The ``add_css`` function is called when building the css file via the ``style``

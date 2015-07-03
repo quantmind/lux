@@ -27,12 +27,13 @@ class RelationshipField(MultipleMixin, forms.Field):
             model = RestModel(model)
         self.model = model
 
-    def getattrs(self, form):
-        attrs = self.attrs.copy()
+    def getattrs(self, form=None):
+        attrs = super().getattrs(form)
         if not form:
             logger.error('%s %s cannot get remote target. No form available',
                          self.__class__.__name__, self.name)
-        attrs.update(self.model.field_options(form.request))
+        else:
+            attrs.update(self.model.field_options(form.request))
         return attrs
 
     def _clean(self, value, bfield):
@@ -40,12 +41,19 @@ class RelationshipField(MultipleMixin, forms.Field):
         # Get a reference to the object data mapper
         odm = app.odm()
         model = odm[self.model.name]
+        if not self.multiple:
+            value = (value,)
+        idcolumn = getattr(model, self.model.id_field)
         with odm.begin() as session:
-            instance = session.query(model).get(value)
-            if not instance:
-                raise forms.ValidationError(
-                    self.validation_error.format(self.model))
-            return instance.id
+            all = session.query(model).filter(idcolumn.in_(value))
+            if self.multiple:
+                return list(all)
+            else:
+                if all.count() == 1:
+                    return getattr(all.one(), self.model.id_field)
+                else:
+                    raise forms.ValidationError(
+                        self.validation_error.format(self.model))
 
 
 class UniqueField:

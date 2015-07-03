@@ -12,7 +12,8 @@
     //  Events:
     //
     //      formReady: triggered once the form has rendered
-    //          arguments: formmodel
+    //          arguments: formmodel, formscope
+    //
     //      formFieldChange: triggered when a form field changes:
     //          arguments: formmodel, field (changed)
     //
@@ -29,6 +30,29 @@
             formErrorClass: 'form-error',
             FORMKEY: 'm__form'
         })
+        //
+        .run(['$lux', function ($lux) {
+            var formHandlers = {};
+            $lux.formHandlers = formHandlers;
+
+            formHandlers.reload = function () {
+                $lux.window.location.reload();
+            };
+
+            formHandlers.redirectHome = function (response, scope) {
+                var href = scope.formAttrs.redirectTo || '/';
+                $lux.window.location.href = href;
+                $lux.window.location.reload();
+            };
+
+            formHandlers.login = function (response, scope) {
+                var target = scope.formAttrs.action,
+                    api = $lux.api(target);
+                if (api)
+                    api.token(response.data.token);
+                $lux.window.location.reload();
+            };
+        }])
         //
         // The formService is a reusable component for redering form fields
         .service('standardForm', ['$log', '$http', '$document', '$templateCache', 'formDefaults',
@@ -74,7 +98,8 @@
                 inputAttributes = extendArray([], baseAttributes, ['disabled', 'type', 'value', 'placeholder']),
                 textareaAttributes = extendArray([], baseAttributes, ['disabled', 'placeholder', 'rows', 'cols']),
                 buttonAttributes = extendArray([], baseAttributes, ['disabled']),
-                formAttributes = extendArray([], baseAttributes, ['accept-charset', 'action', 'autocomplete',
+                // Don't include action in the form attributes
+                formAttributes = extendArray([], baseAttributes, ['accept-charset','autocomplete',
                                                                   'enctype', 'method', 'novalidate', 'target']),
                 validationAttributes = ['minlength', 'maxlength', 'min', 'max', 'required'],
                 ngAttributes = ['disabled', 'minlength', 'maxlength', 'required'];
@@ -85,6 +110,8 @@
                 className: '',
                 //
                 inputGroupClass: 'form-group',
+                //
+                inputHiddenClass: 'form-hidden',
                 //
                 inputClass: 'form-control',
                 //
@@ -107,9 +134,11 @@
                     scope.info = info;
 
                     if (info) {
+                        // Pick the renderer by checking `type`
                         if (info.hasOwnProperty('type'))
                             renderer = this[info.type];
 
+                        // If no element type, use the `element`
                         if (!renderer) {
                             renderer = this[info.element];
                         }
@@ -217,7 +246,7 @@
                                     .html(field.label),
                         element = angular.element($document[0].createElement('div')).addClass(this.element);
 
-                    input.attr('ng-model', scope.formModelName + '.' + field.name);
+                    input.attr('ng-model', scope.formModelName + '["' + field.name + '"]');
 
                     forEach(inputAttributes, function (name) {
                         if (field[name]) input.attr(name, field[name]);
@@ -241,9 +270,9 @@
                         element;
 
                     // Add model attribute
-                    input.attr('ng-model', scope.formModelName + '.' + field.name);
+                    input.attr('ng-model', scope.formModelName + '["' + field.name + '"]');
 
-                    if (!field.showLabels) {
+                    if (!field.showLabels || field.type === 'hidden') {
                         label.addClass('sr-only');
                         // Add placeholder if not defined
                         if (field.placeholder === undefined)
@@ -258,7 +287,9 @@
                     }
 
                     if (this.inputGroupClass) {
-                        element = angular.element($document[0].createElement('div')).addClass(this.inputGroupClass);
+                        element = angular.element($document[0].createElement('div'));
+                        if (field.type === 'hidden') element.addClass(this.inputHiddenClass);
+                        else element.addClass(this.inputGroupClass);
                         element.append(label).append(input);
                     } else {
                         element = [label, input];
@@ -295,6 +326,9 @@
                                 .attr('value', opt.value).html(opt.repr || opt.value);
                         select.append(opt);
                     });
+
+                    if (field.multiple)
+                        select.attr('multiple', true);
 
                     return this.onChange(scope, element);
                 },
@@ -354,9 +388,9 @@
                         // True when the form is submitted
                         submitted = scope.formName + '.submitted',
                         // True if the field is dirty
-                        dirty = [scope.formName, field.name, '$dirty'].join('.'),
-                        invalid = [scope.formName, field.name, '$invalid'].join('.'),
-                        error = [scope.formName, field.name, '$error'].join('.') + '.',
+                        dirty = joinField(scope.formName, field.name, '$dirty'),
+                        invalid = joinField(scope.formName, field.name, '$invalid'),
+                        error = joinField(scope.formName, field.name, '$error') + '.',
                         input = $(element[0].querySelector(scope.info.element)),
                         p = $($document[0].createElement('p'))
                                 .attr('ng-show', '(' + submitted + ' || ' + dirty + ') && ' + invalid)
@@ -388,10 +422,10 @@
 
                     // Add the invalid handler for server side errors
                     var name = '$invalid';
-                        name += ' && !' + [scope.formName, field.name, '$error.required'].join('.');
+                        name += ' && !' + joinField(scope.formName, field.name, '$error.required');
                         p.append(
                             this.fieldErrorElement(scope, name, self.errorMessage(scope, 'invalid'))
-                            .html('{{formErrors.' + field.name + '}}')
+                            .html('{{formErrors["' + field.name + '"]}}')
                         );
 
                     return element.append(p);
@@ -399,7 +433,7 @@
                 //
                 fieldErrorElement: function (scope, name, msg) {
                     var field = scope.field,
-                        value = [scope.formName, field.name, name].join('.');
+                        value = joinField(scope.formName, field.name, name);
 
                     return $($document[0].createElement('span'))
                                 .attr('ng-show', value)
@@ -578,19 +612,22 @@
                     scope.formid = form.id;
                     scope.formCount = 0;
 
-                    scope.addMessages = function (messages) {
-                        forEach(messages, function (messages, field) {
-                            scope.formMessages[field] = messages;
+                    scope.addMessages = function (messages, error) {
 
-                            var msg = '';
-                            forEach(messages, function(error) {
-                                msg += error.message;
-                                if (messages.length > 1)
-                                    msg += '</br>';
-                            });
+                        forEach(messages, function (message) {
+                            if (isString(message))
+                                message = {message: message};
 
-                            scope.formErrors[field] = msg;
-                            scope[scope.formName][field].$invalid = true;
+                            var field = message.field || formDefaults.FORMKEY;
+
+                            if (error) message.error = error;
+
+                            scope.formMessages[field] = [message];
+
+                            if (message.error && field !== formDefaults.FORMKEY) {
+                                scope.formErrors[field] = message.message;
+                                scope[scope.formName][field].$invalid = true;
+                            }
                         });
                     };
 

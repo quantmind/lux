@@ -1,12 +1,30 @@
 import json
+from copy import copy
+from inspect import isfunction
 
 from pulsar.apps.data import parse_store_url, create_store
 from pulsar.utils.importer import module_attribute
 from pulsar.utils.string import to_string
 from pulsar import ImproperlyConfigured
 
+from .wrappers import WsgiRequest
+
+
+__all__ = ['cached', 'register_cache']
+
 
 data_caches = {}
+
+
+def cached(*args, **kw):
+    '''Decorator to apply to Router's methods for
+    caching the return value
+    '''
+    if len(args) == 1 and not kw and isfunction(args[0]):
+        cache = CacheObject()
+        return cache(args[0])
+    else:
+        return CacheObject(*args, **kw)
 
 
 class Cache:
@@ -70,6 +88,70 @@ class RedisCache(Cache):
 
     def _wait(self, value):
         return value
+
+
+class CacheObject:
+    '''Object which implement cache functionality on callables.
+
+    A callable can be either a method or a function
+    '''
+    instance = None
+    callable = None
+
+    def __init__(self, user=False, timeout=None):
+        self.user = user
+        self.timeout = timeout
+
+    def cache_key(self, app, key):
+        base = self.callable.__name__
+        if self.instance:
+            base = '%s:%s' % (self.instance.__class__.__name__, base)
+        base = '%s:%s' % (app.config['APP_NAME'], key)
+        key = '%s:%s' % (base, key) if key else base
+        return key.lower()
+
+    def __call__(self, callable, *args, **kw):
+        if self.callable is None:
+            assert not args and not kw
+            self.callable = callable
+            return self
+
+        app = callable
+        key = ''
+        if isinstance(app, WsgiRequest):
+            key = app.path
+            if self.user:
+                key = '%s:%s' % (key, app.cache.user)
+
+        server = app.cache_server
+        key = self.cache_key(app, key)
+        result = server.get_json(key)
+        if result is not None:
+            return result
+
+        if self.instance:
+            result = self.callable(self.instance, app, *args, **kw)
+        else:
+            result = self.callable(app, *args, **kw)
+
+        timeout = self.timeout
+        if timeout is None:
+            timeout = app.config['DEFAULT_CACHE_TIMEOUT']
+
+        try:
+            server.set_json(key, result, timeout=timeout)
+        except TypeError:
+            app.logger.exception('Could not convert to JSON a value to '
+                                 'set in cache')
+        except Exception:
+            app.logger.exception('Critical exception while setting cache')
+
+        return result
+
+    def __get__(self, instance, objtype):
+        obj = copy(self)
+        obj.instance = instance
+        return obj
 
 
 def create_cache(app, url):

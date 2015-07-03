@@ -9,6 +9,9 @@ from .user import UserMixin
 
 class Anonymous(UserMixin):
 
+    def __repr__(self):
+        return self.__class__.__name__.lower()
+
     def is_authenticated(self):
         return False
 

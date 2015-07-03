@@ -3,7 +3,7 @@ import json
 from pulsar import HttpRedirect
 from pulsar.utils.string import to_string
 from pulsar.utils.structures import OrderedDict
-from pulsar.utils.html import nicename, NOTHING
+from pulsar.utils.html import NOTHING
 from pulsar.utils.httpurl import JSON_CONTENT_TYPES
 
 from .errors import ValidationError, FormError
@@ -11,7 +11,6 @@ from .fields import Field
 from .formsets import FormSet
 
 FORMKEY = 'm__form'
-
 
 __all__ = ['FormType',
            'Form',
@@ -53,6 +52,7 @@ class FieldList(list):
         if ``True`` the :class:`Fieldlist` attribute name in the form is
         prefixed to the field names.
     '''
+
     def __init__(self, data=None, withprefix=True):
         self.withprefix = withprefix
         super(FieldList, self).__init__(data or ())
@@ -82,7 +82,7 @@ def get_form_meta_data(bases, attrs, with_base_fields=True):
             fields.append((obj.name, attrs.pop(name)))
         elif isinstance(obj, FieldList):
             obj = attrs.pop(name)
-            fields.extend(obj.fields(name+'__'))
+            fields.extend(obj.fields(name + '__'))
         elif isinstance(obj, FormSet):
             obj.name = name
             inlines.append((name, attrs.pop(name)))
@@ -106,7 +106,6 @@ def get_form_meta_data(bases, attrs, with_base_fields=True):
 
 
 class FormType(type):
-
     def __new__(cls, name, bases, attrs):
         fields, inlines = get_form_meta_data(bases, attrs)
         attrs['base_fields'] = fields
@@ -187,8 +186,12 @@ class Form(metaclass=FormType):
                  prefix=None, instance=None):
         self.request = request
         self.is_bound = data is not None or files is not None
-        self.rawdata = data if data is None else dict(data.items())
-        self._files = files if files is None else dict(files.items())
+        if self.is_bound:
+            self.rawdata = dict(data.items() if data else ())
+            self._files = dict(files.items() if files else ())
+        else:
+            self.rawdata = None
+            self._files = None
         self._cleaned_data = None
         self._errors = None
         if initial:
@@ -282,7 +285,7 @@ class Form(metaclass=FormType):
         Called last in the validation algorithm.
         By default it does nothing but it can be overwritten to cross checking
         fields for example. It doesn't need to return anything, just throw a
-        :class:`lux.ValidationError` in case the cleaning is not successful.
+        :class:`.ValidationError` in case the cleaning is not successful.
         '''
         pass
 
@@ -303,24 +306,28 @@ class Form(metaclass=FormType):
         :attr:`messages` dictionary.
         '''
         errors = self.errors
-        data = {}
-        message = {'success': not errors,
-                   'error': bool(errors)}
-        for name, msg in self.errors.items():
-            field = self.dfields.get(name)
-            if field:
-                name = field.html_name
-            data[name] = [{'message': m, 'error': True} for m in msg]
-        for name, msg in self.messages.items():
-            field = self.dfields.get(name)
-            if field:
-                name = field.html_name
-            l = data.get(name, [])
-            l.extend(({'message': m} for m in msg))
-            data[name] = l
-        if data:
-            message['messages'] = data
-        return message
+        if errors:
+            if self.request:
+                self.request.response.status_code = 422
+            messages = []
+            data = {'message': 'validation error',
+                    'errors': messages}
+            for name, msg in self.errors.items():
+                msg = {'message': '\n'.join(msg)}
+                field = self.dfields.get(name)
+                if field:
+                    msg['field'] = field.html_name
+                messages.append(msg)
+            return data
+        else:
+            messages = []
+            for name, msg in self.messages.items():
+                msg = {'message': msg}
+                field = self.dfields.get(name)
+                if field:
+                    msg['field'] = field.html_name
+                messages.append(msg)
+            return messages
 
     # INTERNALS
     def _check_unwind(self, raise_error=True):
@@ -360,7 +367,8 @@ class Form(metaclass=FormType):
         for name, field in self.base_fields.items():
             bfield = BoundField(self, field)
             key = bfield.html_name
-            if is_bound and exclude_missing and key not in rawdata:
+            if is_bound and exclude_missing and key not in rawdata and \
+               key not in files:
                 continue
             fields.append(bfield)
             dfields[name] = bfield
@@ -433,8 +441,6 @@ class BoundField(object):
 
         The :attr:`field` name to be used in HTML.
     '''
-    auto_id = 'id_{0[html_name]}'
-
     def __init__(self, form, field):
         self.form = form
         self.field = field
@@ -442,21 +448,9 @@ class BoundField(object):
         self.name = field.name
         self.html_name = field.html_name(form.prefix)
         self.value = None
-        if field.label is None:
-            self.label = nicename(self.name)
-        else:
-            self.label = field.label
-        self.required = field.required
-        self.help_text = field.help_text
-        self.id = self.auto_id.format(self.__dict__)
-        self.errors_id = self.id + '-errors'
 
     def __repr__(self):
         return '{0}: {1}'.format(self.name, self.value)
-
-    @property
-    def error(self):
-        return self.form.errors.get(self.name, '')
 
     def clean(self, value):
         '''Return a cleaned value for ``value`` by running the validation

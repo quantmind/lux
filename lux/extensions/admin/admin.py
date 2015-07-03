@@ -52,7 +52,9 @@ class AdminRouter(lux.HtmlRouter):
             return callable(request)
 
     def context(self, request, context):
-        '''Add the admin navigation to the javascript context
+        '''Override to add the admin navigation to the javascript context.
+
+        The navigation entry can be used to build the admin web pages
         '''
         admin = self.admin_root()
         if admin:
@@ -77,9 +79,9 @@ class Admin(AdminRouter):
     _sitemap = None
 
     def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         # set self as the angular root
         self._angular_root = self
-        super().__init__(*args, **kwargs)
 
     def sitemap(self, app):
         if self._sitemap is None:
@@ -111,6 +113,8 @@ class AdminModel(rest.RestMixin, AdminRouter):
     icon = None
     '''An icon for this Admin section
     '''
+    uimodules = ('lux.grid',)
+
     def info(self, app):
         '''Information for admin navigation
         '''
@@ -155,7 +159,7 @@ class CRUDAdmin(AdminModel):
     def get_form(self, request, form, id=None):
         if not form:
             raise Http404
-        target = self.model.get_target(request, id=id)
+        target = self.model.get_target(request, path=id, get=True)
         html = form(request).as_form(action=target)
         context = {'html_form': html.render()}
         html = request.app.render_template(self.addtemplate, context)

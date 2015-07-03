@@ -1,6 +1,16 @@
+'''Backends and Mixins for managing Authentication and Security
+'''
 from .token import TokenBackend
-from .browser import BrowserBackend
-from .session import SessionBackend
+from .session import SessionBackend, CsrfBackend
+from .mixins import TokenBackendMixin, SessionBackendMixin
+from .mixins import jwt
 
 
-__all__ = ['TokenBackend', 'BrowserBackend', 'SessionBackend']
+__all__ = ['TokenBackend',
+           'SessionBackend',
+           'CsrfBackend',
+           #
+           'SessionBackendMixin',
+           'TokenBackendMixin',
+           #
+           'jwt']

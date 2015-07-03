@@ -1,0 +1,33 @@
+<navbar></navbar>
+<aside ng-attr-id="{{sidebar.id}}" class="main-sidebar" ng-class="{'sidebar-fixed':sidebar.fixed}">
+    <section ng-if="sidebar.sections" class="sidebar">
+        <div ng-if="user" class="nav-panel">
+            <div ng-if="user.avatar" class="pull-left image">
+                <img ng-src="{{user.avatar}}" alt="User Image" />
+            </div>
+            <div class="pull-left info">
+                <p>SIGNED IN AS</p>
+                <a href="#">{{user.name}}</a>
+            </div>
+        </div>
+        <ul class="sidebar-menu">
+            <li ng-if="section.name" ng-repeat-start="section in sidebar.sections" class="header">
+                {{section.name}}
+            </li>
+            <li ng-repeat-end ng-repeat="link in section.items" class="treeview"
+            ng-class="{active:activeLink(link)}" ng-include="'subnav'"></li>
+        </ul>
+    </section>
+</aside>
+
+
+<script type="text/ng-template" id="subnav">
+    <a ng-href="{{link.href}}" ng-attr-title="{{link.title}}" ng-click="menuCollapse($event)">
+        <i ng-if="link.icon" class="{{link.icon}}"></i>
+        <span>{{link.name}}</span>
+        <i ng-if="link.subitems" class="fa fa-angle-left pull-right"></i>
+    </a>
+    <ul class="treeview-menu" ng-class="link.class" ng-if="link.subitems">
+        <li ng-repeat="link in link.subitems" ng-class="{active:activeLink(link)}" ng-include="'subnav'"></li>
+    </ul>
+</script>

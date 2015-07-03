@@ -7,7 +7,7 @@ from lux.utils import test
 
 
 class CommandTests(test.TestCase):
-    config_file = 'tests.config'
+    config_file = 'tests.core'
 
     def test_getapp(self):
         app = self.application(GREEN_POOL=50)

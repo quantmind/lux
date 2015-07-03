@@ -50,7 +50,7 @@
             if (bit) {
                 var cbit = bit,
                     slash = false;
-                // remove fron slashes if url has already some value
+                // remove front slashes if cbit has some
                 while (url && cbit.substring(0, 1) === '/')
                     cbit = cbit.substring(1);
                 // remove end slashes

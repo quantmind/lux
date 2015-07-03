@@ -15,21 +15,31 @@
             scope.$log = $log;
         }]);
     //
-    // Bootstrap the document
+    //  Bootstrap the document
+    //  ============================
+    //
+    //  * ``name``  name of the module
+    //  * ``modules`` modules to include
+    //
+    //  These modules are appended to the modules available in the
+    //  lux context object and therefore they will be processed afterwards.
+    //
     lux.bootstrap = function (name, modules) {
         //
         // actual bootstrapping function
         function _bootstrap() {
             //
             // Resolve modules to load
-            if (!isArray(modules))
-                modules = [];
-            // Add all modules from context
-            forEach(lux.context.ngModules, function (mod) {
-                modules.push(mod);
+            var mods = lux.context.ngModules;
+            if(!mods) mods = [];
+
+            // Add all modules from input
+            forEach(modules, function (mod) {
+                mods.push(mod);
             });
-            modules.splice(0, 0, 'lux.loader');
-            angular.module(name, modules);
+            // Insert the lux loader as first module
+            mods.splice(0, 0, 'lux.loader');
+            angular.module(name, mods);
             angular.bootstrap(document, [name]);
         }
 

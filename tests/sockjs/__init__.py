@@ -1,5 +1,6 @@
 import lux
 
+from tests.config import *  # noqa
 
 EXTENSIONS = ['lux.extensions.base',
               'lux.extensions.sockjs']

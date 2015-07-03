@@ -3,13 +3,16 @@ import lux
 from lux import forms, HtmlRouter
 from lux.extensions import odm
 
+from tests.config import *  # noqa
+
 EXTENSIONS = ['lux.extensions.base',
               'lux.extensions.odm',
               'lux.extensions.rest',
               'lux.extensions.auth']
 
 AUTHENTICATION_BACKENDS = ['lux.extensions.auth.SessionBackend',
-                           'lux.extensions.rest.backends.BrowserBackend']
+                           'lux.extensions.rest.backends.CsrfBackend',
+                           'lux.extensions.cms.BrowserBackend']
 
 API_URL = 'api'
 SESSION_COOKIE_NAME = 'test-sessions'

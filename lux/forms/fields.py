@@ -5,9 +5,10 @@ import pytz
 
 from dateutil.parser import parse as dateparser
 
-from pulsar.utils.html import NOTHING, escape
+from pulsar.utils.html import NOTHING, escape, nicename
 from pulsar.utils.pep import to_string
 
+from ..utils.files import File
 from .options import Options
 from .errors import *   # noqa
 
@@ -24,6 +25,7 @@ __all__ = ['Field',
            'FloatField',
            'EmailField',
            'FileField',
+           'HiddenField',
            'PasswordField',
            'UrlField']
 
@@ -91,8 +93,6 @@ class Field:
         self.attrs = dict(self.attrs or ())
         self.attrs.update(attrs or ())
         self.attrs['required'] = self.required
-        if label:
-            self.attrs['label'] = label
         self.handle_params(**kwargs)
         # Increase the creation counter, and save our local copy.
         self.creation_counter = Field.creation_counter
@@ -155,7 +155,9 @@ class Field:
     def getattrs(self, form=None):
         '''Dictionary of attributes for the Html element.
         '''
-        return self.attrs.copy()
+        attrs = self.attrs.copy()
+        attrs['label'] = self.label or nicename(self.name)
+        return attrs
 
 
 class CharField(Field):
@@ -279,7 +281,7 @@ class BooleanField(Field):
 
 
 class JsonField(TextField):
-    validation_error = 'not a valid json string'
+    validation_error = 'not a valid JSON string'
 
     def _clean(self, value, instance):
         try:
@@ -310,7 +312,7 @@ class MultipleMixin:
                 return data[key]
 
 
-class ChoiceField(Field, MultipleMixin):
+class ChoiceField(MultipleMixin, Field):
     '''A :class:`Field` which validates against a set of ``options``.
 
     It has several additional attributes which can be specified
@@ -349,9 +351,6 @@ class EmailField(CharField):
 
 class HiddenField(CharField):
     attrs = {'type': 'hidden'}
-
-    def to_json(self, value):
-        pass
 
 
 class PasswordField(HiddenField):

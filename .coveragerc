@@ -1,8 +1,7 @@
 [run]
 concurrency = gevent
 source = lux
-omit =
-    lux/utils/sphinxtogithub.py
+omit = */utils/sphinxtogithub.py
 
 [report]
 # Regexes for lines to exclude from consideration

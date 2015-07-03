@@ -2,31 +2,13 @@ import os
 from collections import namedtuple
 from datetime import datetime
 
+from lux.utils.files import skipfile, get_rel_dir
+
 from .contents import SkipBuild, BuildError, Unsupported, CONTENT_EXTENSIONS
 from .contents import Content, get_reader
 
 
 Item = namedtuple('Item', 'loc lastmod priority file content_type body')
-
-
-def skipfile(name):
-    return name.startswith('.') or name.startswith('__')
-
-
-def directory(dir):
-    bd, fname = os.path.split(dir)
-    return dir if fname else bd
-
-
-def get_rel_dir(dir, base, res=''):
-    dir = directory(dir)
-    base = directory(base)
-    if dir == base:
-        return res
-    dir, fname = os.path.split(dir)
-    if res:
-        fname = os.path.join(fname, res)
-    return get_rel_dir(dir, base, fname)
 
 
 def normpath(path):

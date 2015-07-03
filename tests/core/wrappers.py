@@ -4,6 +4,7 @@ from lux.utils import test
 
 
 class TestWrappers(test.TestCase):
+    config_file = 'tests.core'
 
     def test_is_secure(self):
         app = self.application(SECURE_PROXY_SSL_HEADER=(

@@ -1,6 +1,7 @@
 Developement
 =====================
 * More extensions and fixes
+* Forms set status code to 422 when validation fails
 * 207 unit tests, 75% coverage
 
 Ver. 0.2.0 - 2015-May-22

@@ -4,6 +4,7 @@ import lux
 from lux.utils import test
 
 
+@test.test_timeout(30)
 class CommandTests(test.TestCase):
     config_file = 'tests.ui'
 
