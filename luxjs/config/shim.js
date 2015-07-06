@@ -20,13 +20,23 @@
             "ui-bootstrap": {
                 deps: ["angular"]
             },
-            "codemirror-markdown": {
-                deps: ["codemirror"],
+            "codemirror": {
                 exports: "CodeMirror"
+            },
+            "codemirror-markdown": {
+                deps: ["codemirror"]
+            },
+            "codemirror-xml": {
+                deps: ["codemirror"]
+            },
+            "codemirror-javascript": {
+                deps: ["codemirror"]
+            },
+            "codemirror-css": {
+                deps: ["codemirror"]
             },
             "codemirror-htmlmixed": {
                 deps: ["codemirror", "codemirror-xml", "codemirror-javascript", "codemirror-css"],
-                exports: "CodeMirror"
             },
             restangular: {
                 deps: ["angular"]
