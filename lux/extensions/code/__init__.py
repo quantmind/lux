@@ -36,7 +36,9 @@ class Extension(lux.Extension):
     '''
     _config = [
         Parameter('CODE_HIGHLIGHT_THEME', 'tomorrow',
-                  'highlight.js theme')]
+                  'highlight.js theme'),
+        Parameter('CODEMIRROR_THEME', 'monokai',
+                  'codemirror.js theme')]
 
     def on_html_document(self, app, request, doc):
         add_ng_modules(doc, ('highlight',))
