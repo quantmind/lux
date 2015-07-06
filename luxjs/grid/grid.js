@@ -72,6 +72,7 @@
                         field: col.field,
                         displayName: col.displayName,
                         type: getColumnType(col.type),
+                        name: col.name
                     };
 
                     if (!col.hasOwnProperty('sortable'))

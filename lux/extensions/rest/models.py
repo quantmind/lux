@@ -1,6 +1,8 @@
 import json
 import logging
 
+from pulsar.utils.html import nicename
+
 
 logger = logging.getLogger('lux.extensions.rest')
 
@@ -9,10 +11,13 @@ class RestColumn:
     '''A class for specifing attributes of a REST column/field
     for a model
     '''
-    def __init__(self, name, sortable=None, filter=None):
+    def __init__(self, name, sortable=None, filter=None, type=None,
+                 displayName=None):
         self.name = name
         self.sortable = sortable
         self.filter = filter
+        self.type = None
+        self.displayName = None
 
     @classmethod
     def make(cls, col):
@@ -25,9 +30,18 @@ class RestColumn:
         return self.name
     __str__ = __repr__
 
-    def as_dict(self):
-        return dict(((k, v) for k, v in self.__dict__.items()
-                     if v is not None))
+    def as_dict(self, defaults=False):
+        return dict(self._as_dict(defaults))
+
+    def _as_dict(self, defaults):
+        for k, v in self.__dict__.items():
+            if v is None and defaults:
+                if k == 'displayName':
+                    v = nicename(self.name)
+                elif k == type:
+                    v = 'string'
+            if v is not None:
+                yield k, v
 
 
 class RestModel:
