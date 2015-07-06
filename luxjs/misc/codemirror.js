@@ -23,12 +23,13 @@
             mode: "markdown",
             theme: lux.context.CODEMIRROR_THEME || "monokai",
             reindentOnLoad: true,
+            htmlModes: ['javascript', 'xml', 'css', 'htmlmixed'],
         })
         //
         .directive('luxCodemirror', ['$lux', 'luxCodemirrorDefaults', function ($lux, luxCodemirrorDefaults) {
             //
             // Initialize codemirror, load css.
-            function initCodemirror() {
+            function loadCSS() {
                 loadCss('https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.3.0/codemirror.css');
                 loadCss('https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.3.0/theme/' + luxCodemirrorDefaults.theme + '.css');
             }
@@ -97,45 +98,54 @@
                 return options;
             }
             //
+            // Returns suffix of the js module name to load depending on the editor mode
+            function getJSModuleSuffix(modeName) {
+                if (luxCodemirrorDefaults.htmlModes.indexOf(modeName) >= 0)
+                    return 'htmlmixed';
+                else
+                    return 'markdown';
+            }
+            //
             return {
                 restrict: 'EA',
                 require: '?ngModel',
                 //
                 compile: function () {
-                    // Require CodeMirror
-                    if (angular.isUndefined(window.CodeMirror)) {
-                        throw new Error('lux-codemirror needs CodeMirror to work!');
-                    }
-
-                    // Initialize codemirror
-                    initCodemirror();
-
+                    loadCSS();
                     return {
                         post: function(scope, element, attrs, ngModel) {
-
-                            var options = angular.extend(
-                                { value: element.text() },
-                                luxCodemirrorDefaults || {},
-                                scope.$eval(attrs.luxCodemirror) || {}
-                            );
+                            var jsModuleSuffix,
+                                options = angular.extend(
+                                    { value: element.text() },
+                                    luxCodemirrorDefaults || {},
+                                    scope.$eval(attrs.luxCodemirror) || {}
+                                );
 
                             options = setMode(options);
+                            jsModuleSuffix = getJSModuleSuffix(options.mode);
 
-                            var cm = newEditor(element, options);
+                            require(['codemirror-' + jsModuleSuffix], function() {
+                                // Require CodeMirror
+                                if (angular.isUndefined(window.CodeMirror)) {
+                                    throw new Error('lux-codemirror needs CodeMirror to work!');
+                                }
 
-                            ngModelLink(cm, ngModel, scope);
+                                var cm = newEditor(element, options);
 
-                            // Allow access to the CodeMirror instance through a broadcasted event
-                            // eg: $broadcast('CodeMirror', function(cm){...});
-                            scope.$on('CodeMirror', function(event, callback) {
-                                if (angular.isFunction(callback))
-                                    callback(cm);
-                                else
-                                    throw new Error('the CodeMirror event requires a callback function');
-                            });
+                                ngModelLink(cm, ngModel, scope);
 
-                            scope.$on('$viewContentLoaded', function () {
-                                cm.refresh();
+                                // Allow access to the CodeMirror instance through a broadcasted event
+                                // eg: $broadcast('CodeMirror', function(cm){...});
+                                scope.$on('CodeMirror', function(event, callback) {
+                                    if (angular.isFunction(callback))
+                                        callback(cm);
+                                    else
+                                        throw new Error('the CodeMirror event requires a callback function');
+                                });
+
+                                scope.$on('$viewContentLoaded', function () {
+                                    cm.refresh();
+                                });
                             });
                         }
                     };
