@@ -1,7 +1,7 @@
 import logging
 
 from pulsar import PermissionDenied, Http404
-from pulsar.apps.wsgi import route, Json
+from pulsar.apps.wsgi import route, Json, Html
 from pulsar.utils.slugify import slugify
 
 from lux import forms, HtmlRouter
@@ -69,7 +69,8 @@ class TextCRUD(rest.RestMixin, HtmlRouter):
         if request.method == 'GET':
             if backend.has_permission(request, self.model.name, rest.READ):
                 if request.content_types.best == 'text/html':
-                    html = content.html(request)
+                    html = Html('div', content.html(request),
+                                cn='text-content')
                     return self.html_response(request, html)
                 elif request.content_types.best == 'text/plain':
                     return content
