@@ -3228,8 +3228,8 @@ angular.module("grid/modal.tpl.html", []).run(["$templateCache", function($templ
             }
         })
         //
-        .service('GridService', ['$lux', '$compile', '$modal', 'uiGridConstants', 'gridDefaults',
-            function($lux, $compile, $modal, uiGridConstants, gridDefaults) {
+        .service('GridService', ['$lux', '$location', '$compile', '$modal', 'uiGridConstants', 'gridDefaults',
+            function($lux, $location, $compile, $modal, uiGridConstants, gridDefaults) {
 
             function parseColumns(columns) {
                 var columnDefs = [],
@@ -3287,8 +3287,11 @@ angular.module("grid/modal.tpl.html", []).run(["$templateCache", function($templ
                     title;
 
                 scope.create = function($event) {
-                    var loc = $lux.location;
-                    loc.path(loc.path() + '/add');
+                    // if location path is available then we use ui-router
+                    if ($location.path().length)
+                        $location.path($location.path() + '/add');
+                    else
+                        $lux.window.location.href += '/add';
                 };
 
                 scope.delete = function($event) {
