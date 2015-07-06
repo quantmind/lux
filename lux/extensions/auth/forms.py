@@ -1,3 +1,5 @@
+import json
+
 from lux import forms
 from lux.extensions import odm
 
@@ -9,7 +11,7 @@ class PermissionForm(forms.Form):
     id = forms.HiddenField(required=False)
     name = forms.CharField()
     description = forms.TextField()
-    policy = forms.JsonField()
+    policy = forms.JsonField(text_edit=json.dumps({'mode': 'json'}))
 
     def clean(self):
         policy = self.cleaned_data['policy']

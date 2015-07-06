@@ -1,3 +1,4 @@
+import json
 import logging
 
 from pulsar import PermissionDenied, Http404
@@ -20,7 +21,7 @@ class TextForm(forms.Form):
     slug = forms.CharField(required=False,
                            max_length=SLUG_LENGTH)
     author = forms.CharField(required=False)
-    body = forms.TextField()
+    body = forms.TextField(text_edit=json.dumps({'mode': 'markdown'}))
     tags = forms.CharField(required=False)
     published = forms.DateTimeField(required=False)
 

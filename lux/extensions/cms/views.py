@@ -11,7 +11,7 @@ from lux.core.cms import Page
 
 class TemplateForm(forms.Form):
     title = forms.CharField()
-    body = forms.TextField()
+    body = forms.TextField(text_edit=json.dumps({'mode': 'html'}))
 
 
 class TemplateCRUD(odm.CRUD):
