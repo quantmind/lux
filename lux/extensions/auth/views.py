@@ -1,6 +1,6 @@
 from lux.extensions.odm import CRUD
 
-from .forms import PermissionModel, GroupModel
+from .forms import PermissionModel, GroupModel, UserModel
 
 
 class PermissionCRUD(CRUD):
@@ -15,3 +15,7 @@ class GroupCRUD(CRUD):
             instance.permissions.extend(value)
         else:
             super().set_instance_value(instance, name, value)
+
+
+class UserCRUD(CRUD):
+    model = UserModel

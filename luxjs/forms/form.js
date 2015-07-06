@@ -95,8 +95,8 @@
                 },
                 //
                 baseAttributes = ['id', 'name', 'title', 'style'],
-                inputAttributes = extendArray([], baseAttributes, ['disabled', 'type', 'value', 'placeholder']),
-                textareaAttributes = extendArray([], baseAttributes, ['disabled', 'placeholder', 'rows', 'cols']),
+                inputAttributes = extendArray([], baseAttributes, ['disabled', 'readonly', 'type', 'value', 'placeholder']),
+                textareaAttributes = extendArray([], baseAttributes, ['disabled', 'readonly', 'placeholder', 'rows', 'cols']),
                 buttonAttributes = extendArray([], baseAttributes, ['disabled']),
                 // Don't include action in the form attributes
                 formAttributes = extendArray([], baseAttributes, ['accept-charset','autocomplete',
@@ -185,10 +185,8 @@
                         if (attributes.indexOf(name) > -1) {
                             if (ngAttributes.indexOf(name) > -1)
                                 element.attr('ng-' + name, value);
-                            else {
-                                if (value === true) value = '';
+                            else
                                 element.attr(name, value);
-                            }
                         } else if (name.substring(0, 5) === 'data-') {
                             element.attr(name, value);
                         }

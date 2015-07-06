@@ -64,7 +64,7 @@ class RestModel(rest.RestModel):
                 info = column_info(col.name, dbcol)
                 info.update(col.as_dict())
             else:
-                info = col.as_dict()
+                info = col.as_dict(True)
 
             columns.append(info)
 

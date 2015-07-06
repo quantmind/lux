@@ -1,7 +1,7 @@
 import logging
 
 from pulsar import PermissionDenied, Http404
-from pulsar.apps.wsgi import route, Json
+from pulsar.apps.wsgi import route, Json, Html
 from pulsar.utils.slugify import slugify
 
 from lux import forms, HtmlRouter
@@ -29,11 +29,14 @@ class TextCRUD(rest.RestMixin, HtmlRouter):
     '''CRUD views for the text APIs
     '''
     response_content_types = ('text/html', 'text/plain', 'application/json')
+    uimodules = ('lux.blog',)
 
-    def get(self, request):
-        '''Return a list of contents
+    def get_html(self, request):
+        '''Return a div for pagination
         '''
-        return request.response
+        target = self.model.get_target(request, path='/_all')
+        return Html('div').attr({'blog-pagination': '',
+                                 'target': target})
 
     def post(self, request):
         '''Create a new model
@@ -60,6 +63,14 @@ class TextCRUD(rest.RestMixin, HtmlRouter):
                 data = form.tojson()
             return Json(data).http_response(request)
         raise PermissionDenied
+
+    @route('_all', response_content_types=('application/json',))
+    def pagination(self, request):
+        pass
+        # reader = get_reader(request.app, '.%s' % self.model.ext)
+        # for file in self.model.all():
+        #     data = reader.process(data['content'], data['path'], slug=slug)
+        # return data
 
     @route('<slug>', method=('get', 'head', 'post'))
     def read_update(self, request):

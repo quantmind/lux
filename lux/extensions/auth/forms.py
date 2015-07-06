@@ -20,15 +20,13 @@ PermissionModel = odm.RestModel('permission', PermissionForm,
                                 repr_field='name')
 
 
-class UserForm(forms.Form):
-    pass
-
-
 class GroupForm(forms.Form):
     model = 'group'
     id = forms.HiddenField(required=False)
     name = forms.CharField()
-    permissions = odm.RelationshipField(PermissionModel, multiple=True)
+    permissions = odm.RelationshipField(PermissionModel,
+                                        multiple=True,
+                                        required=False)
 
     def clean_name(self, value):
         value = value.lower()
@@ -41,3 +39,23 @@ class GroupForm(forms.Form):
 
 
 GroupModel = odm.RestModel('group', GroupForm, repr_field='name')
+
+
+class UserForm(forms.Form):
+    id = forms.HiddenField(required=False)
+    username = forms.CharField()
+    email = forms.EmailField(required=False)
+    first_name = forms.CharField(required=False)
+    last_name = forms.CharField(required=False)
+    superuser = forms.BooleanField()
+    active = forms.BooleanField()
+    joined = forms.DateTimeField(readonly=True, required=False)
+    groups = odm.RelationshipField(GroupModel,
+                                   multiple=True,
+                                   required=False)
+
+
+UserModel = odm.RestModel('user', UserForm,
+                          repr_field='username',
+                          exclude=('password',),
+                          columns=('full_name',))

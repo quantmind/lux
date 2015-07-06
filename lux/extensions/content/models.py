@@ -27,7 +27,6 @@ class DataError(Exception):
 
 
 class Content(rest.RestModel):
-
     '''A Rest model with git backend using dulwich_
 
     This model provide basic CRUD operations for a RestFul web API.
@@ -47,6 +46,16 @@ class Content(rest.RestModel):
         if path:
             self.path = os.path.join(self.path, path)
         super().__init__(name, **kwargs)
+
+    def get_target(self, request, **extra_data):
+        '''Get a target for a form
+
+        Used by HTML Router to get information about the LUX REST API
+        of this Rest Model
+        '''
+        target = {'url': self.url}
+        target.update(**extra_data)
+        return target
 
     def write(self, user, data, new=False, message=None):
         '''Write a file into the repository
