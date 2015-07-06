@@ -15,7 +15,7 @@
         //
         .value('AuthApis', {})
         //
-        .run(['$rootScope', '$lux', function (scope, $lux) {
+        .run(['$lux', function ($lux) {
             //
             var name = $(document.querySelector("meta[name=csrf-param]")).attr('content'),
                 csrf_token = $(document.querySelector("meta[name=csrf-token]")).attr('content');
@@ -24,20 +24,6 @@
                 $lux.csrf = {};
                 $lux.csrf[name] = csrf_token;
             }
-            //  Listen for a Lux form to be available
-            //  If it uses the api for posting, register with it
-            scope.$on('formReady', function (e, model, formScope) {
-                var attrs = formScope.formAttrs,
-                    action = attrs ? attrs.action : null;
-                if (isObject(action)) {
-                    var api = $lux.api(action);
-                    if (api) {
-                        $lux.log.info('Form ' + formScope.formModelName + ' registered with "' +
-                            api.toString() + '" api');
-                        api.formReady(model, formScope);
-                    }
-                }
-            });
         }])
         //
         .service('$lux', ['$location', '$window', '$q', '$http', '$log',

@@ -31,7 +31,7 @@
             FORMKEY: 'm__form'
         })
         //
-        .run(['$lux', function ($lux) {
+        .run(['$rootScope', '$lux', function (scope, $lux) {
             var formHandlers = {};
             $lux.formHandlers = formHandlers;
 
@@ -52,6 +52,21 @@
                     api.token(response.data.token);
                 $lux.window.location.reload();
             };
+
+            //  Listen for a Lux form to be available
+            //  If it uses the api for posting, register with it
+            scope.$on('formReady', function (e, model, formScope) {
+                var attrs = formScope.formAttrs,
+                    action = attrs ? attrs.action : null;
+                if (isObject(action)) {
+                    var api = $lux.api(action);
+                    if (api) {
+                        $lux.log.info('Form ' + formScope.formModelName + ' registered with "' +
+                            api.toString() + '" api');
+                        api.formReady(model, formScope);
+                    }
+                }
+            });
         }])
         //
         // The formService is a reusable component for redering form fields

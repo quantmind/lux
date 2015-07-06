@@ -63,6 +63,20 @@
                         $urlRouterProvider.when(page.url, page.redirectTo);
                     else {
                         if (!name) name = 'home';
+
+                        if (page.resolveTemplate) {
+                            delete page.resolveTemplate;
+                            var templateUrl = page.templateUrl;
+
+                            page.templateUrl = function ($stateParams){
+                                var url = templateUrl;
+                                forEach($stateParams, function (value, name) {
+                                    url = url.replace(':' + name, value);
+                                });
+                                return url;
+                            };
+                        }
+
                         $stateProvider.state(name, page);
                     }
                 });

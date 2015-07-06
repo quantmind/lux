@@ -1,6 +1,6 @@
 //      Lux Library - v0.2.0
 
-//      Compiled 2015-07-04.
+//      Compiled 2015-07-06.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -326,7 +326,7 @@ function(angular, root) {
         //
         .value('AuthApis', {})
         //
-        .run(['$rootScope', '$lux', function (scope, $lux) {
+        .run(['$lux', function ($lux) {
             //
             var name = $(document.querySelector("meta[name=csrf-param]")).attr('content'),
                 csrf_token = $(document.querySelector("meta[name=csrf-token]")).attr('content');
@@ -335,20 +335,6 @@ function(angular, root) {
                 $lux.csrf = {};
                 $lux.csrf[name] = csrf_token;
             }
-            //  Listen for a Lux form to be available
-            //  If it uses the api for posting, register with it
-            scope.$on('formReady', function (e, model, formScope) {
-                var attrs = formScope.formAttrs,
-                    action = attrs ? attrs.action : null;
-                if (isObject(action)) {
-                    var api = $lux.api(action);
-                    if (api) {
-                        $lux.log.info('Form ' + formScope.formModelName + ' registered with "' +
-                            api.toString() + '" api');
-                        api.formReady(model, formScope);
-                    }
-                }
-            });
         }])
         //
         .service('$lux', ['$location', '$window', '$q', '$http', '$log',
@@ -1906,6 +1892,20 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                         $urlRouterProvider.when(page.url, page.redirectTo);
                     else {
                         if (!name) name = 'home';
+
+                        if (page.resolveTemplate) {
+                            delete page.resolveTemplate;
+                            var templateUrl = page.templateUrl;
+
+                            page.templateUrl = function ($stateParams){
+                                var url = templateUrl;
+                                forEach($stateParams, function (value, name) {
+                                    url = url.replace(':' + name, value);
+                                });
+                                return url;
+                            };
+                        }
+
                         $stateProvider.state(name, page);
                     }
                 });
@@ -2006,7 +2006,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
             FORMKEY: 'm__form'
         })
         //
-        .run(['$lux', function ($lux) {
+        .run(['$rootScope', '$lux', function (scope, $lux) {
             var formHandlers = {};
             $lux.formHandlers = formHandlers;
 
@@ -2027,6 +2027,21 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                     api.token(response.data.token);
                 $lux.window.location.reload();
             };
+
+            //  Listen for a Lux form to be available
+            //  If it uses the api for posting, register with it
+            scope.$on('formReady', function (e, model, formScope) {
+                var attrs = formScope.formAttrs,
+                    action = attrs ? attrs.action : null;
+                if (isObject(action)) {
+                    var api = $lux.api(action);
+                    if (api) {
+                        $lux.log.info('Form ' + formScope.formModelName + ' registered with "' +
+                            api.toString() + '" api');
+                        api.formReady(model, formScope);
+                    }
+                }
+            });
         }])
         //
         // The formService is a reusable component for redering form fields
@@ -3272,7 +3287,8 @@ angular.module("grid/modal.tpl.html", []).run(["$templateCache", function($templ
                     title;
 
                 scope.create = function($event) {
-                    window.location.href += '/add';
+                    var loc = $lux.location;
+                    loc.path(loc.path() + '/add');
                 };
 
                 scope.delete = function($event) {

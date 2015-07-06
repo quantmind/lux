@@ -48,25 +48,6 @@ def add_ng_modules(doc, modules):
         doc.jscontext['ngModules'] = tuple(ngmodules)
 
 
-def ng_template(request, *args):
-    '''Check if a request is for a angular template
-
-    An angular template request has the template=ui
-    query string in it
-    '''
-    if not (request.config.get('HTML5_NAVIGATION') and
-            request.url_data.get('template') == 'ui'):
-        return
-    urlargs = request.urlargs
-    if urlargs:
-        urlargs = urlargs.copy()
-        for arg in args:
-            if urlargs.pop(arg) != arg:
-                raise Http404
-    if not urlargs:
-        return True
-
-
 LUX_ROUTER = ('lux.router',)
 LUX_UIROUTER = ('lux.ui.router',)
 

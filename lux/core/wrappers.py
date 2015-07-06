@@ -165,13 +165,14 @@ class HtmlRouter(Router):
     def angular_page(self, app, router, page):
         '''Add angular router information (lux.extensions.angular)
         '''
+        url = page['url']
         if router.route.variables:
             # Variables in the url
-            params = dict(((v, v) for v in router.route.variables))
-            url = router.route.url(**params)
+            # params = dict(((v, v) for v in router.route.variables))
+            # url = router.route.url(**params)
             # A page with variable requires to be resolved by the api
             # The resolve requires a model
-            # page['resolve'] = True
+            page['resolveTemplate'] = True
         else:
             url = page['url']
         page['templateUrl'] = '%s?template=ui' % url

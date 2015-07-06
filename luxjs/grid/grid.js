@@ -119,7 +119,8 @@
                     title;
 
                 scope.create = function($event) {
-                    window.location.href += '/add';
+                    var loc = $lux.location;
+                    loc.path(loc.path() + '/add');
                 };
 
                 scope.delete = function($event) {
