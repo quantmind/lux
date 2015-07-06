@@ -171,7 +171,7 @@ class HtmlRouter(Router):
             url = router.route.url(**params)
             # A page with variable requires to be resolved by the api
             # The resolve requires a model
-            page['resolve'] = True
+            # page['resolve'] = True
         else:
             url = page['url']
         page['templateUrl'] = '%s?template=ui' % url
