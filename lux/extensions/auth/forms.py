@@ -38,6 +38,7 @@ class GroupForm(forms.Form):
             if query.count():
                 raise forms.ValidationError('group %s already available'
                                             % value)
+        return value
 
 
 GroupModel = odm.RestModel('group', GroupForm, repr_field='name')

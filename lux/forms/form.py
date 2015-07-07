@@ -408,7 +408,7 @@ class BoundField(object):
             value = self.field.clean(value, self)
             func_name = 'clean_' + self.name
             if hasattr(form, func_name):
-                self.value = getattr(self.form, func_name)(value)
+                value = getattr(self.form, func_name)(value)
             self.value = value
             if value not in NOTHING:
                 self.form._cleaned_data[self.name] = value
