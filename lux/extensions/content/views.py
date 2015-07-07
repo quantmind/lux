@@ -35,9 +35,8 @@ class TextCRUD(rest.RestMixin, HtmlRouter):
     def get_html(self, request):
         '''Return a div for pagination
         '''
-        target = self.model.get_target(request, path='/_all')
-        return Html('div').attr({'blog-pagination': '',
-                                 'target': target})
+        target = self.model.get_target(request, path='_all')
+        return Html('div').attr({'blog-pagination': {'target': target}})
 
     def post(self, request):
         '''Create a new model
