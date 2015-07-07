@@ -29,7 +29,6 @@ from urllib.parse import urlparse
 import lux
 from lux import Parameter
 
-from pulsar import Http404
 from pulsar.apps.wsgi import Html
 
 from .ui import add_css

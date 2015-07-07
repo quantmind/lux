@@ -40,7 +40,7 @@ define(function(require) {
             $httpBackend.verifyNoOutstandingRequest();
         });
 
-        it('test grid services', function() {
+        if('test grid services', function() {
             $httpBackend.expectGET('/api/metadata').respond({"default-limit": 25, "id": "id", "repr": "id", "columns": [{"name": "id", "type": "integer", "filter": true, "sortable": true, "field": "id", "displayName": "Id"}, {"name": "path", "type": "string", "filter": true, "sortable": true, "field": "path", "displayName": "Path"}, {"name": "title", "type": "string", "filter": true, "sortable": true, "field": "title", "displayName": "Title"}], "total": 3});
             $httpBackend.expectGET('/api?limit=25').respond({"result": [{"template_id": 1, "description": "test", "updated": "2015-06-25T09:35:37.486418+00:00", "id": 1, "layout": "{ \"rows\": \"[[col-md-6, col-md-6], [col-md-6, col-md-6]]\", \"components\": \"[{type:text, id:3, row:0, col:0, pos:0}, {type:text, id:4, row:1, col:1, pos:0}]\" }", "published": false, "title": "test", "path": "test"}, {"template_id": 1, "id": 2, "updated": "2015-06-25T09:36:04.162474+00:00", "layout": "{ \"rows\": \"[[col-md-6, col-md-6], [col-md-6, col-md-6]]\", \"components\": \"[{type:text, id:3, row:0, col:0, pos:0}, {type:text, id:4, row:1, col:1, pos:0}]\" }", "published": true, "title": "test2", "path": "test2"}], "total": 2});
 

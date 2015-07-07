@@ -50,7 +50,7 @@ class AdminTest(test.AppTestCase):
         self.assertTrue(updates)
         self.assertEqual(updates['url'], '/admin/blogs/:id')
         self.assertEqual(updates['templateUrl'],
-                         '/admin/blogs/id?template=ui')
+                         '/admin/blogs/:id?template=ui')
 
     def test_edit_template_view(self):
         request = yield from self.client.get('/admin/html_templates/1')

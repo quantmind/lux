@@ -41,7 +41,7 @@ class Extension(lux.Extension):
                   'codemirror.js theme')]
 
     def on_html_document(self, app, request, doc):
-        add_ng_modules(doc, ('highlight',))
+        add_ng_modules(doc, ('highlight', 'lux.codemirror'))
 
 
 def add_css(all):
