@@ -88,7 +88,7 @@ class Command(lux.Command):
         Config.get_template_directory = self.get_lux_template_directory
 
         # put migrations in main project dir
-        migration_dir = os.path.join(os.getcwd(), 'migrations')
+        migration_dir = os.path.join(self.app.meta.path, 'migrations')
         # set default settings in case where MIGRATIONS is not set
         alembic_cfg = Config()
         # where to place alembic env
