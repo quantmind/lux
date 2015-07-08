@@ -32,15 +32,18 @@ class PageForm(forms.Form):
     def clean_layout(self, value):
         if not isinstance(value, dict):
             raise forms.ValidationError('Layout must be a dictionary')
+        layout = {}
         if 'components' in value:
             components = value['components']
             if not isinstance(components, list):
                 raise forms.ValidationError('componets must be a list')
+            layout['components'] = components
         if 'rows' in value:
             rows = value['rows']
             if not isinstance(rows, list):
                 raise forms.ValidationError('rows must be a list')
-        return value
+            layout['rows'] = rows
+        return layout
 
 
 class PageCRUD(odm.CRUD):

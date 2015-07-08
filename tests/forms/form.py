@@ -155,4 +155,14 @@ class FormTests(test.TestCase):
         form = PageForm(data=dict(title='Just a test',
                                   layout=json.dumps({})))
         self.assertTrue(form.is_valid(True))
-
+        #
+        form = PageForm(data=dict(title='Just a test',
+                                  layout=json.dumps([1, 2])))
+        self.assertFalse(form.is_valid(True))
+        self.assertValidationError(form.tojson(), 'layout',
+                                   'Layout must be a dictionary')
+        #
+        form = PageForm(data=dict(title='Just a test',
+                                  layout=json.dumps({'foo': 5})))
+        self.assertTrue(form.is_valid(True))
+        self.assertEqual(form.cleaned_data['layout'], {})
