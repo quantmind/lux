@@ -2,7 +2,19 @@
 back-end models for specifying the layout of the inner html and the
 components (plugins) which are used to render the layout.
 
+The layout is specified on a :class:`.Page` model and it is a JSON object
+with the following form:
 
+    {
+        "rows": [
+                    ["col-md-6", "col-md-6"],
+                    ["col-md-6", "col-md-6"]
+                ],
+        "components": [
+            {"type": "text", "id": 1, "row": 0, "col": 0, "pos": 0},
+            {"type": "gallery", "id": 467, "row": 1, "col": 0, "pos": 0}
+        ]
+    }
 '''
 import lux
 from lux import Parameter

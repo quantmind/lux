@@ -1,9 +1,11 @@
+import json
 from datetime import date, datetime
 
 import pytz
 
 from lux.utils import test
 from lux import forms
+from lux.extensions.cms.views import PageForm
 
 
 class SimpleForm(forms.Form):
@@ -148,3 +150,9 @@ class FormTests(test.TestCase):
         self.assertFalse(form.is_valid())
         self.assertValidationError(form.tojson(), 'timestamp',
                                    '"xyz" is not a valid date')
+
+    def test_clean_field_in_form(self):
+        form = PageForm(data=dict(title='Just a test',
+                                  layout=json.dumps({})))
+        self.assertTrue(form.is_valid(True))
+

@@ -53,7 +53,7 @@ class FieldList(list):
                 yield name, field
 
 
-def get_form_meta_data(bases, attrs, with_base_fields=True):
+def get_form_meta_data(bases, attrs):
     fields = []
     inlines = []
     for name, obj in list(attrs.items()):
@@ -74,14 +74,9 @@ def get_form_meta_data(bases, attrs, with_base_fields=True):
     # If this class is subclassing another Form, add that Form's fields.
     # Note that we loop over the bases in *reverse*. This is necessary in
     # order to preserve the correct order of fields.
-    if with_base_fields:
-        for base in bases[::-1]:
-            if hasattr(base, 'base_fields'):
-                fields = list(base.base_fields.items()) + fields
-    else:
-        for base in bases[::-1]:
-            if hasattr(base, 'declared_fields'):
-                fields = list(base.declared_fields.items()) + fields
+    for base in bases[::-1]:
+        if hasattr(base, 'base_fields'):
+            fields = list(base.base_fields.items()) + fields
 
     return OrderedDict(fields), OrderedDict(inlines)
 
@@ -227,14 +222,6 @@ class Form(metaclass=FormType):
         '''
         self._check_unwind()
         return self._errors
-
-    @property
-    def fields(self):
-        '''List of :class:`BoundField` instances after
-        validation, if the form is bound, otherwise a list of
-        :class:`BoundField` instances with initial values.'''
-        self._check_unwind()
-        return self._fields
 
     @property
     def dfields(self):

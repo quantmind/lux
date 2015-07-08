@@ -29,6 +29,19 @@ class PageForm(forms.Form):
     published = forms.BooleanField(required=False)
     layout = forms.JsonField()
 
+    def clean_layout(self, value):
+        if not isinstance(value, dict):
+            raise forms.ValidationError('Layout must be a dictionary')
+        if 'components' in value:
+            components = value['components']
+            if not isinstance(components, list):
+                raise forms.ValidationError('componets must be a list')
+        if 'rows' in value:
+            rows = value['rows']
+            if not isinstance(rows, list):
+                raise forms.ValidationError('rows must be a list')
+        return value
+
 
 class PageCRUD(odm.CRUD):
     model = odm.RestModel('page', PageForm, url='html_pages')
