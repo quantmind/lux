@@ -93,7 +93,12 @@ class LuxWs(ws.WS):
         '''
         ws = websocket.cache.wsclient
         try:
+            # SockJS sends a string as a single element of an array.
+            # Therefore JSON is double-encoded!
             msg = json.loads(message)
+            if not isinstance(msg, list):
+                raise ValueError('Malformed message; expected array')
+            msg = json.loads(msg[0])
         except Exception as exc:
             ws.error_message(exc)
         else:

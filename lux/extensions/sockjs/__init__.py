@@ -58,8 +58,8 @@ class WsApi:
         try:
             if 'method' in msg:
                 method = msg['method']
-                if method in self.ws_api:
-                    self._ws_api[method](ws, msg.get('data'))
+                if method in self.methods:
+                    self.methods[method](ws, msg.get('data'))
                 else:
                     raise rpc.NoSuchFunction
             else:
@@ -80,10 +80,10 @@ class WsApi:
 
         A websocket handler is a method prefixed by ``ws_``.
         '''
-        for ext in app.extensions:
+        for ext in app.extensions.values():
             for name in dir(ext):
                 if name.startswith('ws_'):
-                    handler = getattr(app, name, None)
+                    handler = getattr(ext, name, None)
                     if hasattr(handler, '__call__'):
                         name = '_'.join(name.split('_')[1:])
                         yield name, handler
