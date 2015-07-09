@@ -6,9 +6,10 @@ import lux
 from lux.forms import WebFormRouter, Layout, Fieldset, Submit
 from lux.extensions.rest import (UserMixin, SessionMixin, ProcessLoginMixin,
                                  AuthenticationError, logout)
-from lux.extensions.rest.forms import (LoginForm, CreateUserForm,
-                                       PasswordForm, ChangePasswordForm,
+from lux.extensions.rest.forms import (LoginForm, PasswordForm,
+                                       ChangePasswordForm,
                                        EmailForm)
+from lux.extensions.auth.forms import CreateUserForm
 
 
 class User(AttributeDictionary, UserMixin):
@@ -62,12 +63,13 @@ class Logout(lux.Router):
 
 
 class SignUp(WebFormRouter):
+    '''Display a signup form
+    '''
     template = 'signup.html'
     default_form = Layout(CreateUserForm,
                           Fieldset('username', 'email', 'password',
                                    'password_repeat'),
                           Submit('Sign up',
-                                 classes='btn btn-primary btn-block',
                                  disabled="form.$invalid"),
                           showLabels=False,
                           directive='user-form')

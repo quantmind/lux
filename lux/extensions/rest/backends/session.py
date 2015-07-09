@@ -4,16 +4,12 @@ from pulsar import PermissionDenied, ImproperlyConfigured
 
 from lux import Parameter
 
-from .token import Authorization, AuthBackend
-from .mixins import jwt, SessionBackendMixin, TokenBackendMixin
+from .. import AuthBackend
+from .mixins import jwt, SessionBackendMixin
+from .registration import RegistrationMixin
 
 
-class SessionBackend(SessionBackendMixin, TokenBackendMixin, AuthBackend):
-
-    def api_sections(self, app):
-        '''At the authorization router to the api
-        '''
-        yield Authorization()
+class SessionBackend(SessionBackendMixin, RegistrationMixin, AuthBackend):
 
     def create_session(self, request, user=None):
         user = user or request.cache.user

@@ -1,10 +1,12 @@
 from pulsar import HttpException, ImproperlyConfigured
+from pulsar.utils.pep import to_string
+from pulsar.apps.wsgi import Json
 
 from lux import Parameter
 
-from ..views import Authorization
 from .. import AuthBackend
 from .mixins import jwt, TokenBackendMixin
+from .registration import RegistrationMixin
 
 
 class Http401(HttpException):
@@ -14,7 +16,7 @@ class Http401(HttpException):
         super().__init__(msg=msg, status=401, headers=headers)
 
 
-class TokenBackend(TokenBackendMixin, AuthBackend):
+class TokenBackend(TokenBackendMixin, RegistrationMixin, AuthBackend):
     '''Backend based on JWT_
 
     Once a ``jtw`` is created, authetication is achieved by setting
@@ -30,10 +32,18 @@ class TokenBackend(TokenBackendMixin, AuthBackend):
                   'Access-Control-Allow-Methods for CORS')
     ]
 
-    def api_sections(self, app):
-        '''At the authorization router to the api
+    def login_response(self, request, user):
+        expiry = self.session_expiry(request)
+        token = self.create_token(request, user, expiry=expiry)
+        token = to_string(token.encoded)
+        request.response.status_code = 201
+        return Json({'success': True,
+                     'token': token}).http_response(request)
+
+    def logout_response(self, request, user):
+        '''TODO: do we set the token as expired!? Or we simply do nothing?
         '''
-        yield Authorization()
+        return Json({'success': True}).http_response(request)
 
     def request(self, request):
         '''Check for ``HTTP_AUTHORIZATION`` header and if it is available

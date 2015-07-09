@@ -203,17 +203,13 @@ class Authorization(RestRouter, ProcessLoginMixin):
     def signup(self, request):
         '''Handle signup post data
 
-        If :attr:`.create_user_form` form is None, raise a 4040 error.
+        If :attr:`.create_user_form` form is None, raise a 404 error.
 
         A succesful response is returned by the backend
         :meth:`.signup_response` method.
         '''
         if not self.create_user_form:
             raise Http404
-
-        if request.method == 'OPTIONS':
-            request.app.fire('on_preflight', request)
-            return request.response
 
         user = request.cache.user
         if user.is_authenticated():

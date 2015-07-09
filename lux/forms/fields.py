@@ -7,6 +7,7 @@ from dateutil.parser import parse as dateparser
 
 from pulsar.utils.html import NOTHING, escape, nicename
 from pulsar.utils.pep import to_string
+from pulsar.utils.slugify import slugify
 
 from ..utils.files import File
 from .options import Options
@@ -27,7 +28,8 @@ __all__ = ['Field',
            'FileField',
            'HiddenField',
            'PasswordField',
-           'UrlField']
+           'UrlField',
+           'SlugField']
 
 
 standard_validation_error = 'Not a valid value'
@@ -372,3 +374,10 @@ class FileField(MultipleMixin, Field):
         elif res:
             d = res
             return File(d.file, d.filename, d.content_type, d.size)
+
+
+class SlugField(CharField):
+
+    def _clean(self, value, field):
+        value = super()._clean(value, field)
+        return slugify(value)

@@ -281,6 +281,9 @@ class Content(object):
         else:
             return self._content
 
+    def text(self, request):
+        return self._content
+
     def json(self, request):
         '''Convert the content into a Json dictionary for the API
         '''

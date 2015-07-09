@@ -6,6 +6,8 @@ from pulsar.apps.wsgi import Json
 
 from lux import Parameter, wsgi_request
 
+from ..views import Authorization
+
 try:
     import jwt
 except ImportError:     # pragma    nocover
@@ -21,18 +23,10 @@ class Http401(HttpException):
 
 class TokenBackendMixin:
 
-    def login_response(self, request, user):
-        expiry = self.session_expiry(request)
-        token = self.create_token(request, user, expiry=expiry)
-        token = to_string(token.encoded)
-        request.response.status_code = 201
-        return Json({'success': True,
-                     'token': token}).http_response(request)
-
-    def logout_response(self, request, user):
-        '''TODO: do we set the token as expired!? Or we simply do nothing?
+    def api_sections(self, app):
+        '''At the authorization router to the api
         '''
-        return Json({'success': True}).http_response(request)
+        yield Authorization()
 
     def encode_token(self, request, user=None, expiry=None, **token):
         '''Encode a JWT
@@ -62,7 +56,7 @@ class TokenBackendMixin:
         raise NotImplementedError
 
 
-class SessionBackendMixin:
+class SessionBackendMixin(TokenBackendMixin):
     '''Mixin for :class:`.AuthBackend` via sessions.
 
     This mixin implement the request and response middleware and introduce

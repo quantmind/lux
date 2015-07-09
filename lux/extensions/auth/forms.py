@@ -2,6 +2,7 @@ import json
 
 from lux import forms
 from lux.extensions import odm
+from lux.extensions.rest.forms import PasswordForm
 
 from .policy import validate_policy
 
@@ -62,3 +63,15 @@ UserModel = odm.RestModel('user', UserForm,
                           repr_field='username',
                           exclude=('password',),
                           columns=('full_name',))
+
+
+class CreateUserForm(PasswordForm):
+    '''Form for creating a new user form username, email and password
+    '''
+    model = 'user'
+    username = forms.SlugField(required=True,
+                               validator=odm.UniqueField(),
+                               minlength=6,
+                               maxlength=30)
+    email = forms.EmailField(required=True,
+                             validator=odm.UniqueField())

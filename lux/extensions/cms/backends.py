@@ -14,13 +14,17 @@ from .user import (User, Session, Login, LoginPost, Logout, SignUp,
                    ForgotPassword)
 
 
-def auth_router(api, url, Router):
+def auth_router(api, url, Router, path=None):
     if hasattr(Router, 'post'):
         # The Router handles post data, create an action for a web api
         action = luxrest('', path=url)
     else:
         # The Router does not handle post data, create an action for a rest api
         action = luxrest(api, name='authorizations_url')
+        if path is None:
+            path = url
+        if path:
+            action['path'] = path
     return Router(url, form_enctype='application/json', form_action=action)
 
 
@@ -52,7 +56,7 @@ class BrowserBackend(AuthBackend):
         if cfg['LOGIN_URL']:
             middleware.append(auth_router(api,
                                           cfg['LOGIN_URL'],
-                                          self.LoginRouter))
+                                          self.LoginRouter, False))
 
         if cfg['LOGOUT_URL'] and self.LogoutRouter:
             middleware.append(auth_router(api,

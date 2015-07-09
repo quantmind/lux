@@ -97,3 +97,10 @@ class Token(Model, SessionMixin):
 
     def get_key(self):
         return self.id.hex
+
+
+class Registration(Model):
+    id = Column(String(40), primary_key=True)
+    user_id = Column(Integer, ForeignKey('user.id'))
+    expiry = Column(DateTime, nullable=False)
+    confirmed = Column(Boolean)
