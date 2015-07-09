@@ -27,7 +27,7 @@ class PageForm(forms.Form):
     description = forms.TextField(required=False)
     template_id = odm.RelationshipField(TemplateCRUD.model, label='template')
     published = forms.BooleanField(required=False)
-    layout = forms.JsonField()
+    layout = forms.JsonField(text_edit=json.dumps({'mode': 'json'}))
 
     def clean_layout(self, value):
         if not isinstance(value, dict):

@@ -106,22 +106,22 @@ def get_reader(app, src):
 
 
 class Content(object):
+    '''A class for managing a file-based content
+    '''
     template = None
     template_engine = None
     _json_dict = None
     _loc = None
-    '''Template engine to render this content. Overwritten my metadata.
-    If not available, the application default engine is used'''
     mandatory_properties = ()
 
-    def __init__(self, app, content, metadata, src, path=None, context=None,
-                 **params):
+    def __init__(self, app, content, metadata, src=None,
+                 path=None, context=None, **params):
         self._app = app
         self._content = content
         self._context_for = context
         self._additional_context = {}
         self._src = src
-        self._path = path or src
+        self._path = path if path is not None else src
         self._meta = AttributeDictionary(params)
         if src:
             self._meta.modified = modified_datetime(src)
@@ -133,10 +133,10 @@ class Content(object):
         meta = self._meta
         if self.is_html:
             dir, slug = os.path.split(self._path)
-            if not slug:
-                slug = self._path
-                dir = None
             if not meta.slug:
+                if not slug:
+                    slug = self._path
+                    dir = None
                 meta.slug = slugify(slug, separator='_')
             if dir:
                 meta.slug = '%s/%s' % (dir, meta.slug)
@@ -159,6 +159,7 @@ class Content(object):
 
     @property
     def src(self):
+        '''Absolute path of source file. Can be None if not provided'''
         return self._src
 
     @property

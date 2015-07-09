@@ -123,7 +123,8 @@ class Content(rest.RestModel):
     def read(self, filename):
         '''Read content from file in repository
         '''
-        path = self._format_filename(filename)
+        filename = self._format_filename(filename)
+        path = os.path.join(self.path, filename)
         try:
             # use dulwich GitFile to obeys the git file locking protocol
             with GitFile(path, 'rb') as f:
@@ -155,16 +156,12 @@ class Content(rest.RestModel):
         return _filename
 
     def _format_filename(self, filename):
-        '''Append `.md` extension to file name and full path
-        if `path` is True.
+        '''Append extension to file name
         '''
-        if isinstance(filename, (list, tuple)):
-            return self._iter_filename(filename, self._format_filename)
-
         ext = '.%s' % self.ext
         if not filename.endswith(ext):
             filename = '%s%s' % (filename, ext)
-        return os.path.join(self.path, filename)
+        return filename
 
     def _get_filename(self, filename):
         '''Get rid of full path and `.md` extension and

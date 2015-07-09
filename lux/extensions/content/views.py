@@ -35,6 +35,10 @@ class TextCRUD(rest.RestMixin, HtmlRouter):
     def get_html(self, request):
         '''Return a div for pagination
         '''
+        try:
+            return self._read(request)
+        except Http404:
+            pass
         target = self.model.get_target(request, path='_all')
         return Html('div').attr({'blog-pagination': {'target': target}})
 
@@ -74,30 +78,28 @@ class TextCRUD(rest.RestMixin, HtmlRouter):
 
     @route('<slug>', method=('get', 'head', 'post'))
     def read_update(self, request):
-        content = self.get_model(request, request.urlargs['slug'])
+        slug = request.urlargs['slug']
         backend = request.cache.auth_backend
 
         if request.method == 'GET':
-            if backend.has_permission(request, self.model.name, rest.READ):
-                if request.content_types.best == 'text/html':
-                    html = Html('div', content.html(request),
-                                cn='text-content')
-                    return self.html_response(request, html)
-                elif request.content_types.best == 'text/plain':
-                    return content
-                else:
-                    return content
+            return self._read(request, slug)
 
-        elif request.method == 'HEAD':
+        content = self.get_model(request, slug)
+        if request.method == 'HEAD':
             if backend.has_permission(request, self.model.name, rest.READ):
                 return request.response
+
+        if request.method == 'POST':
+            pass
+
+        raise PermissionDenied
 
     def get_model(self, request, slug, sha=None):
         try:
             data = self.model.read(slug)
         except DataError:
             raise Http404
-        reader = get_reader(request.app, '.%s' % self.model.ext)
+        reader = get_reader(request.app, data['filename'])
         return reader.process(data['content'], data['path'], slug=slug)
 
     def create_model(self, request, data):
@@ -113,3 +115,18 @@ class TextCRUD(rest.RestMixin, HtmlRouter):
 
     def serialise_model(self, request, data, in_list=False):
         return data
+
+    def _read(self, request, slug=''):
+        content = self.get_model(request, slug)
+        backend = request.cache.auth_backend
+
+        if backend.has_permission(request, self.model.name, rest.READ):
+            if request.content_types.best == 'text/html':
+                html = Html('div', content.html(request),
+                            cn='text-content')
+                return self.html_response(request, html)
+            elif request.content_types.best == 'text/plain':
+                return content
+            else:
+                return content
+        raise PermissionDenied

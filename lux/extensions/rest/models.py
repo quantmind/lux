@@ -69,13 +69,14 @@ class RestModel:
 
     def __init__(self, name, form=None, updateform=None, columns=None,
                  url=None, api_name=None, exclude=None,
-                 api_url=True, html_url=None, id_field=None,
+                 api_url=None, html_url=None, id_field=None,
                  repr_field=None):
+        assert name, 'model name not available'
         self.name = name
         self.form = form
         self.updateform = updateform or form
-        self.url = url or '%ss' % name
-        self.api_name = '%s_url' % self.url
+        self.url = url if url is not None else '%ss' % name
+        self.api_name = '%s_url' % (self.url or self.name)
         self.id_field = id_field or 'id'
         self.repr_field = repr_field or 'id'
         self._api_url = api_url
@@ -110,7 +111,7 @@ class RestModel:
         Used by HTML Router to get information about the LUX REST API
         of this Rest Model
         '''
-        url = request.app.config.get('API_URL')
+        url = self._api_url or request.app.config.get('API_URL')
         if not url:
             return
         target = {'url': url, 'name': self.api_name}
