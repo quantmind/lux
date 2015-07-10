@@ -4,12 +4,12 @@ import uuid
 
 from pulsar import ImproperlyConfigured
 from pulsar.utils.httpurl import is_absolute_uri
-from pulsar.apps.wsgi import Json
 
 from lux import Parameter
 from lux.extensions.angular import add_ng_modules
 from lux.extensions.rest import AuthenticationError, AuthBackend, luxrest
 from lux.extensions.rest.backends import jwt, SessionBackendMixin
+from lux.extensions.rest.policy import has_permission
 
 from .user import (User, Session, Login, LoginPost, Logout, SignUp,
                    ForgotPassword)
@@ -85,17 +85,6 @@ class BrowserBackend(AuthBackend):
         else:
             add_ng_modules(doc, ('lux.webapi', 'lux.users'))
 
-    def signup_response(self, request, user):
-        '''Signup a new user
-        '''
-        auth_backend = request.cache.auth_backend
-        days = request.config['ACCOUNT_ACTIVATION_DAYS']
-        expiry = datetime.now() + timedelta(days=days)
-        reg_token = auth_backend.create_registration(request, user, expiry)
-        if reg_token:
-            self.send_email_confirmation(request, user, reg_token, **kw)
-            return Json({'reg_token': reg_token}).http_response(request)
-
 
 class ApiSessionBackend(SessionBackendMixin,
                         BrowserBackend):
@@ -121,6 +110,8 @@ class ApiSessionBackend(SessionBackendMixin,
     LogoutRouter = Logout
 
     def get_user(self, request, **kw):
+        '''Get User data
+        '''
         api = request.app.api
         for name in ('username', 'id', 'email'):
             value = kw.get(name)
@@ -148,6 +139,36 @@ class ApiSessionBackend(SessionBackendMixin,
                 user.encoded = token
                 return user
             else:
+                request.response.status_code = response.status_code
+                messages = response.json()
+                msg = None
+                for error in messages.get('errors', ()):
+                    if 'field' not in error:
+                        msg = error.get('message')
+                raise AuthenticationError(msg or 'Could not login')
+
+        except AuthenticationError:
+            raise
+        except Exception:
+            if data.get('username'):
+                raise AuthenticationError('Invalid username or password')
+            elif data.get('email'):
+                raise AuthenticationError('Invalid email or password')
+            else:
+                raise AuthenticationError('Invalid credentials')
+
+    def create_user(self, request, **data):
+        '''Create a new user from the api
+        '''
+        api = request.app.api
+        try:
+            # TODO: add address from request
+            # client = request.get_client_address()
+            response = api.post('authorizations/signup', data=data)
+            if response.status_code == 201:
+                user = User(response.json())
+                return user
+            else:
                 response.raise_for_status()
 
         except Exception:
@@ -157,6 +178,14 @@ class ApiSessionBackend(SessionBackendMixin,
                 raise AuthenticationError('Invalid email or password')
             else:
                 raise AuthenticationError('Invalid credentials')
+
+    def has_permission(self, request, name, level):
+        user = request.cache.user
+        if user.is_superuser():
+            return True
+        else:
+            permissions = getattr(user, 'permissions', None)
+            return has_permission(request, permissions, name, level)
 
     def create_session(self, request, user=None):
         '''Login and return response

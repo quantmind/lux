@@ -3,8 +3,7 @@ import json
 from lux import forms
 from lux.extensions import odm
 from lux.extensions.rest.forms import PasswordForm
-
-from .policy import validate_policy
+from lux.extensions.rest.policy import validate_policy
 
 
 class PermissionForm(forms.Form):

@@ -1,10 +1,11 @@
 from datetime import datetime, timedelta
 
+from pulsar import PermissionDenied
 from pulsar.apps.wsgi import Json
 
 import lux
 
-from .user import UserMixin
+from .user import UserMixin, AuthenticationError
 
 
 class Anonymous(UserMixin):
@@ -50,7 +51,8 @@ class AuthBackend(lux.Extension):
     def inactive_user_login_response(self, request, user):
         '''JSON response when a non active user logs in
         '''
-        pass
+        request.response.status_code = 403
+        raise AuthenticationError('Cannot login - not active user')
 
     # Internal Methods
     def authenticate(self, request, **params):  # pragma    nocover
@@ -73,7 +75,7 @@ class AuthBackend(lux.Extension):
         '''Create an athentication token for ``user``'''
         pass
 
-    def create_registration(self, request, user, expiry):
+    def create_registration(self, request, user, expiry, **kw):
         '''Create a registration token for ``user``'''
         pass
 

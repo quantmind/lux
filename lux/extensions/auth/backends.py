@@ -2,14 +2,14 @@ import uuid
 
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.orm import joinedload
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from lux import cached
 from lux.utils.crypt import digest
 from lux.extensions.rest import (PasswordMixin, backends, normalise_email,
                                  AuthenticationError)
+from lux.extensions.rest.policy import has_permission
 
-from .policy import has_permission
 from .views import Authorization
 
 
@@ -89,10 +89,7 @@ class AuthMixin(PasswordMixin):
             return True
         else:
             permissions = self.get_permissions(request)
-            for policy in permissions.values():
-                if has_permission(policy, name, level):
-                    return True
-            return level <= request.config.get('DEFAULT_PERMISSION_LEVEL', 0)
+            return has_permission(request, permissions, name, level)
 
     def create_user(self, request, username=None, password=None, email=None,
                     first_name=None, last_name=None, active=False,
@@ -148,12 +145,13 @@ class AuthMixin(PasswordMixin):
                                           expiry=token.expiry)
         return token
 
-    def signup_response(self, request, user):
-        reg = self.get_or_create_registration(request, user)
-
-    def create_registration(self, request, user, expiry):
+    def create_registration(self, request, user, expiry=None, **kw):
         '''Create a registration entry and return the registration id
         '''
+        if not expiry:
+            days = request.config['ACCOUNT_ACTIVATION_DAYS']
+            expiry = datetime.now() + timedelta(days=days)
+
         odm = request.app.odm()
 
         with odm.begin() as session:
@@ -214,17 +212,3 @@ class SessionBackend(AuthMixin, backends.SessionBackend):
         with odm.begin() as s:
             s.add(session)
         return session
-
-    def signup_response(self, request, user):
-        '''Create a registration id
-        '''
-        odm = request.app.odm()
-
-        with odm.begin() as session:
-            reg = odm.registration(id=digest(user.username),
-                                   user_id=user.id,
-                                   expiry=expiry,
-                                   confirmed=False)
-            session.add(reg)
-
-        return reg.id

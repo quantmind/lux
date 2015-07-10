@@ -24,7 +24,7 @@ from lux.core.wrappers import wsgi_request
 from .user import *     # noqa
 from .auth import AuthBackend
 from .models import *   # noqa
-from .pagination import Pagination, GithubPagination
+from .pagination import *   # noqa
 from .client import ApiClient
 from .views import *    # noqa
 
@@ -62,10 +62,8 @@ class Extension(AuthBackend):
                                         'update': 30,
                                         'delete': 40},
                   'When a model'),
-        Parameter('DEFAULT_PERMISSION_LEVEL', 'read',
-                  'When no roles has tested positive for permissions, this '
-                  'parameter is used to check if a model has permission for '
-                  'an action'),
+        Parameter('DEFAULT_PERMISSION_LEVELS', {},
+                  'Dictionary of default permission levels'),
         Parameter('ACCOUNT_ACTIVATION_DAYS', 2,
                   'Number of days the activation code is valid'),
         Parameter('API_URL', '', 'URL FOR THE REST API', True),
@@ -199,6 +197,9 @@ class Extension(AuthBackend):
 
     def create_token(self, request, user, **kwargs):
         return self._apply_all('create_token', request, user, **kwargs)
+
+    def create_registration(self, request, user, **kwargs):
+        return self._apply_all('create_registration', request, user, **kwargs)
 
     def has_permission(self, request, target, level):
         has = self._apply_all('has_permission', request, target, level)

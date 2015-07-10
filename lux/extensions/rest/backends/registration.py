@@ -1,5 +1,6 @@
-from datetime import datetime, timedelta
+from pulsar.apps.wsgi import Json
 
+from lux import Parameter
 from lux.extensions.rest import AuthenticationError
 
 
@@ -8,15 +9,24 @@ class RegistrationMixin:
 
     THis Mixin is used by HTML-based authentication backends
     '''
-    def create_registration(self, request, user, expiry):
-        '''Create a registration entry for a user.
-        This method should return the registration/activation key.
-        '''
-        days = request.config['ACCOUNT_ACTIVATION_DAYS']
-        expiry = datetime.now() + timedelta(days=days)
-        auth_key = self.create_registration(request, user, expiry)
-        self.send_email_confirmation(request, user, auth_key, **kw)
-        return auth_key
+    _config = [
+        Parameter('WEB_SITE_URL', None,
+                  'Url of the website registering to'),
+        Parameter('REGISTER_URL', '/signup',
+                  'Url to register with site', True),
+        Parameter('RESET_PASSWORD_URL', '/reset-password',
+                  'If given, add the router to handle password resets',
+                  True)
+    ]
+
+    def signup_response(self, request, user):
+        auth_backend = request.cache.auth_backend
+        reg_token = auth_backend.create_registration(request, user)
+        if reg_token:
+            email = self.send_email_confirmation(request, user, reg_token)
+            request.response.status_code = 201
+            data = dict(email=email, registration=reg_token)
+            return Json(data).http_response(request)
 
     def confirm_registration(self, request, **params):
         '''Confirm registration'''
@@ -51,41 +61,29 @@ class RegistrationMixin:
         message = request.app.render_template('inactive.txt', context)
         session.warning(message)
 
-    def get_or_create_registration(self, request, user, **kw):
-        '''Create a registration profile for ``user``.
-
-        This method send an email to the user so that the email
-        is verified once the user follows the link in the email.
-
-        Usually called after user registration or password recovery.
-        '''
-        if user and user.email:
-            days = request.config['ACCOUNT_ACTIVATION_DAYS']
-            expiry = datetime.now() + timedelta(days=days)
-            auth_key = self.create_registration(request, user, expiry)
-            self.send_email_confirmation(request, user, auth_key, **kw)
-            return auth_key
-
     def send_email_confirmation(self, request, user, auth_key, ctx=None,
                                 email_subject=None, email_message=None,
                                 message=None):
         '''Send an email to user to confirm his/her email address'''
+        if not user.email:
+            return
         app = request.app
         cfg = app.config
+        site = cfg['WEB_SITE_URL'] or request.absolute_uri('/')
+        if site.endswith('/'):
+            site = site[:-1]
         ctx = {'auth_key': auth_key,
                'register_url': cfg['REGISTER_URL'],
                'reset_password_url': cfg['RESET_PASSWORD_URL'],
                'expiration_days': cfg['ACCOUNT_ACTIVATION_DAYS'],
                'email': user.email,
-               'site_uri': request.absolute_uri('/')[:-1]}
+               'site_uri': site}
 
         subject = app.render_template(
-            email_subject or 'activation_email_subject.txt', ctx)
+            email_subject or 'registration/activation_email_subject.txt', ctx)
         # Email subject *must not* contain newlines
         subject = ''.join(subject.splitlines())
         body = app.render_template(
-            email_message or 'activation_email.txt', ctx)
+            email_message or 'registration/activation_email.txt', ctx)
         user.email_user(app, subject, body)
-        message = app.render_template(
-            message or 'activation_message.txt', ctx)
-        request.cache.session.info(message)
+        return user.email

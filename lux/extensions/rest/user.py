@@ -10,7 +10,7 @@ __all__ = ['AuthenticationError', 'MessageMixin',
            'UserMixin', 'SessionMixin',
            'normalise_email', 'PasswordMixin',
            'logout',
-           'CREATE', 'READ', 'UPDATE', 'DELETE']
+           'CREATE', 'READ', 'UPDATE', 'DELETE', 'PERMISSION_LEVELS']
 
 
 UNUSABLE_PASSWORD = '!'
@@ -19,6 +19,10 @@ CREATE = 30     # C
 READ = 10       # R
 UPDATE = 20     # U
 DELETE = 40     # D
+PERMISSION_LEVELS = dict(CREATE=CREATE,
+                         READ=READ,
+                         UPDATE=UPDATE,
+                         DELETE=DELETE)
 
 
 class AuthenticationError(ValueError):

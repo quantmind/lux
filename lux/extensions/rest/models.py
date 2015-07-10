@@ -10,7 +10,7 @@ __all__ = ['RestModel', 'RestColumn']
 
 
 class RestColumn:
-    '''A class for specifing attributes of a REST column/field
+    '''A class for specifying attributes of a REST column/field
     for a model
     '''
     def __init__(self, name, sortable=None, filter=None, type=None,

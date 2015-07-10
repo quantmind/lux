@@ -255,7 +255,9 @@ class Form(metaclass=FormType):
         errors = self.errors
         if errors:
             if self.request:
-                self.request.response.status_code = 422
+                status = self.request.response.status_code
+                if not status or status < 300:
+                    self.request.response.status_code = 422
             messages = []
             data = {'message': 'validation error',
                     'errors': messages}

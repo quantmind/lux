@@ -90,7 +90,7 @@ class TextCRUD(rest.RestMixin, HtmlRouter):
                 return request.response
 
         if request.method == 'POST':
-            pass
+            content.bla = None
 
         raise PermissionDenied
 
