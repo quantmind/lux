@@ -155,6 +155,18 @@ class TestSqlite(test.AppTestCase):
         self.assertValidationError(request.response, '',
                                    '"action" must be defined')
 
+    def test_signup(self):
+        request = yield from self.client.get('/signup')
+        self.assertEqual(request.response.status_code, 200)
+        data = {'username': 'whaaazaaa',
+                'password': 'annamo',
+                'password_repeat': 'annamo',
+                'email': 'whaaazaaa@whaaazaaa.com'}
+        request = yield from self.client.post('/authorizations/signup',
+                                              body=data,
+                                              content_type='application/json')
+        self.assertEqual(request.response.status_code, 201)
+
     def _token(self):
         '''Return a token for a new superuser
         '''

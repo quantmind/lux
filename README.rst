@@ -39,7 +39,6 @@ Python Requirements
 * markdown_ used by ``lux.extensions.static``
 * sphinx_ used by ``lux.extensions.static``
 * pyjwt_ used by some authentication backends in ``lux.extensions.rest``
-* pbkdf2_ as an optional password encryption algorithm in ``lux.extensions.rest``
 
 Developing with lux.js
 ==========================

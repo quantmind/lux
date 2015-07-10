@@ -33,6 +33,9 @@ class BrowserBackend(AuthBackend):
 
     It can be used by web servers delegating authentication to a backend API
     or handling authentication on the same site.
+
+    This backend can be used even if the ``lux.extensions.cms`` is not used by
+    your application.
     '''
     _config = [
         Parameter('LOGIN_URL', '/login', 'Url to login page', True),
@@ -87,7 +90,7 @@ class ApiSessionBackend(SessionBackendMixin,
     '''An Mixin for authenticating against a RESTful HTTP API.
 
     This mixin should be used when the API_URL is remote and therefore
-    not API is installed in the current application.
+    the API middleware is installed in the current application.
 
     The workflow for authentication is the following:
 

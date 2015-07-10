@@ -15,7 +15,8 @@ EXTENSIONS = ['lux.extensions.base',
               'lux.extensions.admin',
               'lux.extensions.auth']
 
-AUTHENTICATION_BACKENDS = ['lux.extensions.auth.TokenBackend']
+AUTHENTICATION_BACKENDS = ['lux.extensions.auth.TokenBackend',
+                           'lux.extensions.cms.BrowserBackend']
 
 
 class Extension(lux.Extension):

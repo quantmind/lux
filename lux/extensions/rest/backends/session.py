@@ -6,10 +6,9 @@ from lux import Parameter
 
 from .. import AuthBackend
 from .mixins import jwt, SessionBackendMixin
-from .registration import RegistrationMixin
 
 
-class SessionBackend(SessionBackendMixin, RegistrationMixin, AuthBackend):
+class SessionBackend(SessionBackendMixin, AuthBackend):
 
     def create_session(self, request, user=None):
         user = user or request.cache.user

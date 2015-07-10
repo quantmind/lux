@@ -1,14 +1,22 @@
 from datetime import datetime, timedelta
 
-from ..user import AuthenticationError
+from lux.extensions.rest import AuthenticationError
 
 
 class RegistrationMixin:
+    '''Mixin for adding User account registration with email confirmation
 
+    THis Mixin is used by HTML-based authentication backends
+    '''
     def create_registration(self, request, user, expiry):
         '''Create a registration entry for a user.
-        This method should return the registration/activation key.'''
-        raise NotImplementedError
+        This method should return the registration/activation key.
+        '''
+        days = request.config['ACCOUNT_ACTIVATION_DAYS']
+        expiry = datetime.now() + timedelta(days=days)
+        auth_key = self.create_registration(request, user, expiry)
+        self.send_email_confirmation(request, user, auth_key, **kw)
+        return auth_key
 
     def confirm_registration(self, request, **params):
         '''Confirm registration'''
@@ -27,9 +35,9 @@ class RegistrationMixin:
         user = self.get_user(email=email)
         if not self.get_or_create_registration(
                 request, user,
-                email_subject='password_email_subject.txt',
-                email_message='password_email.txt',
-                message='password_message.txt'):
+                email_subject='registration/password_email_subject.txt',
+                email_message='registration/password_email.txt',
+                message='registration/password_message.txt'):
             raise AuthenticationError("Can't find that email, sorry")
 
     def inactive_user_login_response(self, request, user):

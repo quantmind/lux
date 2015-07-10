@@ -6,7 +6,6 @@ from lux import Parameter
 
 from .. import AuthBackend
 from .mixins import jwt, TokenBackendMixin
-from .registration import RegistrationMixin
 
 
 class Http401(HttpException):
@@ -16,7 +15,7 @@ class Http401(HttpException):
         super().__init__(msg=msg, status=401, headers=headers)
 
 
-class TokenBackend(TokenBackendMixin, RegistrationMixin, AuthBackend):
+class TokenBackend(TokenBackendMixin, AuthBackend):
     '''Backend based on JWT_
 
     Once a ``jtw`` is created, authetication is achieved by setting
