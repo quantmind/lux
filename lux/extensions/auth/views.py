@@ -1,6 +1,8 @@
+from lux.extensions import rest
 from lux.extensions.odm import CRUD
+from lux.forms import Layout, Fieldset, Submit
 
-from .forms import PermissionModel, GroupModel, UserModel
+from .forms import PermissionModel, GroupModel, UserModel, CreateUserForm
 
 
 class PermissionCRUD(CRUD):
@@ -19,3 +21,19 @@ class GroupCRUD(CRUD):
 
 class UserCRUD(CRUD):
     model = UserModel
+
+
+class Authorization(rest.Authorization):
+    create_user_form = CreateUserForm
+
+
+class SignUp(rest.SignUp):
+    '''Handle sign up on Html pages
+    '''
+    default_form = Layout(CreateUserForm,
+                          Fieldset('username', 'email', 'password',
+                                   'password_repeat'),
+                          Submit('Sign up',
+                                 disabled="form.$invalid"),
+                          showLabels=False,
+                          directive='user-form')

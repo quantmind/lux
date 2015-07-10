@@ -1,11 +1,15 @@
 from importlib import import_module
 
 from pulsar.utils.pep import to_bytes
+from pulsar.apps.wsgi import Json
+
+from lux.forms import Form
 
 
 __all__ = ['AuthenticationError', 'MessageMixin',
            'UserMixin', 'SessionMixin',
            'normalise_email', 'PasswordMixin',
+           'logout',
            'CREATE', 'READ', 'UPDATE', 'DELETE']
 
 
@@ -194,6 +198,19 @@ class PasswordMixin:
         '''Set the password for ``user``.
         This method should commit changes.'''
         pass
+
+
+def logout(request):
+    '''Logout a user
+    '''
+    form = Form(request, data=request.body_data() or {})
+
+    if form.is_valid():
+        user = request.cache.user
+        auth_backend = request.cache.auth_backend
+        return auth_backend.logout_response(request, user)
+    else:
+        return Json(form.tojson()).http_response(request)
 
 
 def normalise_email(email):

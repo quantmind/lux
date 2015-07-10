@@ -23,15 +23,10 @@ from lux.core.wrappers import wsgi_request
 
 from .user import *     # noqa
 from .auth import AuthBackend
-from .models import RestModel, RestColumn
+from .models import *   # noqa
 from .pagination import Pagination, GithubPagination
 from .client import ApiClient
-from .views import (RestRoot, RestRouter, RestMixin, RequirePermission,
-                    ProcessLoginMixin, logout)
-
-__all__ = ['RestRouter', 'RestMixin', 'RestModel', 'RestColumn',
-           'Pagination', 'GithubPagination', 'AuthBackend',
-           'RequirePermission', 'ProcessLoginMixin', 'logout']
+from .views import *    # noqa
 
 
 def luxrest(url, **rest):

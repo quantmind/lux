@@ -4,6 +4,7 @@ import uuid
 
 from pulsar import ImproperlyConfigured
 from pulsar.utils.httpurl import is_absolute_uri
+from pulsar.apps.wsgi import Json
 
 from lux import Parameter
 from lux.extensions.angular import add_ng_modules
@@ -83,6 +84,17 @@ class BrowserBackend(AuthBackend):
             add_ng_modules(doc, ('lux.restapi', 'lux.users'))
         else:
             add_ng_modules(doc, ('lux.webapi', 'lux.users'))
+
+    def signup_response(self, request, user):
+        '''Signup a new user
+        '''
+        auth_backend = request.cache.auth_backend
+        days = request.config['ACCOUNT_ACTIVATION_DAYS']
+        expiry = datetime.now() + timedelta(days=days)
+        reg_token = auth_backend.create_registration(request, user, expiry)
+        if reg_token:
+            self.send_email_confirmation(request, user, reg_token, **kw)
+            return Json({'reg_token': reg_token}).http_response(request)
 
 
 class ApiSessionBackend(SessionBackendMixin,

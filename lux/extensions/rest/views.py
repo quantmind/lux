@@ -7,9 +7,18 @@ from lux.forms import Form
 from pulsar import Http404, PermissionDenied, MethodNotAllowed, BadRequest
 from pulsar.apps.wsgi import Json
 
-from .forms import LoginForm, CreateUserForm, ChangePasswordForm
-from .user import AuthenticationError
+from .forms import CreateUserForm, ChangePasswordForm
+from .user import AuthenticationError, logout
 from .models import RestModel
+from .html import (Login, LoginPost, Logout, SignUp, ProcessLoginMixin,
+                   ChangePassword, ForgotPassword, ComingSoon)
+
+
+__all__ = ['RestRoot', 'RestRouter', 'RestMixin', 'RequirePermission',
+           'Authorization',
+           #
+           'Login', 'LoginPost', 'Logout', 'SignUp', 'ProcessLoginMixin',
+           'ChangePassword', 'ForgotPassword', 'ComingSoon']
 
 
 REST_CONTENT_TYPES = ['application/json']
@@ -18,19 +27,6 @@ REST_CONTENT_TYPES = ['application/json']
 def action(f):
     f.is_action = True
     return f
-
-
-def logout(request):
-    '''Logout a user
-    '''
-    form = Form(request, data=request.body_data() or {})
-
-    if form.is_valid():
-        user = request.cache.user
-        auth_backend = request.cache.auth_backend
-        return auth_backend.logout_response(request, user)
-    else:
-        return Json(form.tojson()).http_response(request)
 
 
 class RestRoot(lux.Router):
@@ -135,33 +131,6 @@ class RestRouter(RestMixin, lux.Router):
         '''
         request.app.fire('on_preflight', request)
         return request.response
-
-
-class ProcessLoginMixin:
-    login_form = LoginForm
-
-    def post(self, request):
-        '''Authenticate the user
-        '''
-        # user = request.cache.user
-        # if user.is_authenticated():
-        #     raise MethodNotAllowed
-
-        form = self.login_form(request, data=request.body_data())
-
-        if form.is_valid():
-            auth_backend = request.cache.auth_backend
-            try:
-                user = auth_backend.authenticate(request, **form.cleaned_data)
-                if user.is_active():
-                    return auth_backend.login_response(request, user)
-                else:
-                    return auth_backend.inactive_user_login_response(request,
-                                                                     user)
-            except AuthenticationError as e:
-                form.add_error_message(str(e))
-
-        return Json(form.tojson()).http_response(request)
 
 
 class Authorization(RestRouter, ProcessLoginMixin):

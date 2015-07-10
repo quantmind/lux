@@ -7,15 +7,10 @@ from datetime import datetime
 from lux import cached
 from lux.utils.crypt import digest
 from lux.extensions.rest import (PasswordMixin, backends, normalise_email,
-                                 AuthenticationError, views)
-from lux.extensions import cms
+                                 AuthenticationError)
 
 from .policy import has_permission
-from .forms import CreateUserForm
-
-
-class Authorization(views.Authorization):
-    create_user_form = CreateUserForm
+from .views import Authorization
 
 
 class AuthMixin(PasswordMixin):
@@ -223,32 +218,6 @@ class SessionBackend(AuthMixin, backends.SessionBackend):
     def signup_response(self, request, user):
         '''Create a registration id
         '''
-        odm = request.app.odm()
-
-        with odm.begin() as session:
-            reg = odm.registration(id=digest(user.username),
-                                   user_id=user.id,
-                                   expiry=expiry,
-                                   confirmed=False)
-            session.add(reg)
-
-        return reg.id
-
-
-class BrowserBackend(cms.BrowserBackend):
-
-    def signup_response(self, request, user):
-        '''Signup a new user
-        '''
-        auth_backend = request.cache.auth_backend
-        days = request.config['ACCOUNT_ACTIVATION_DAYS']
-        expiry = datetime.now() + timedelta(days=days)
-        reg_token = auth_backend.create_registration(request, user, expiry)
-        if reg_token:
-            self.send_email_confirmation(request, user, reg_token, **kw)
-        return Json({'reg_token': reg_token}).http_response(request)
-
-    def create_registration(self, request, user, expiry):
         odm = request.app.odm()
 
         with odm.begin() as session:

@@ -6,6 +6,8 @@ from pulsar.utils.html import nicename
 
 logger = logging.getLogger('lux.extensions.rest')
 
+__all__ = ['RestModel', 'RestColumn']
+
 
 class RestColumn:
     '''A class for specifing attributes of a REST column/field
