@@ -198,7 +198,7 @@
 
             // Get initial data
             this.getInitialData = function(scope) {
-                var api = $lux.api(scope.options.target),
+                var api = scope.api(scope.options.target),
                     sub_path = scope.options.target.path || '';
 
                 api.get({path: sub_path + '/metadata'}).success(function(resp) {
