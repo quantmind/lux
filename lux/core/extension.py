@@ -4,8 +4,6 @@ import logging
 from copy import copy
 from inspect import getfile, getmodule
 
-from pulsar import HttpException
-
 from lux import __version__
 
 
@@ -265,11 +263,4 @@ class EventMixin:
         handlers = self.events.get(event) if self.events else None
         if handlers:
             for handler in handlers:
-                try:
-                    handler(self, *args)
-                except HttpException:
-                    raise
-                except Exception:
-                    self.logger.critical(
-                        'Unhandled exception while firing event %s', handler,
-                        exc_info=True)
+                handler(self, *args)
