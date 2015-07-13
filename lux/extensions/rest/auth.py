@@ -1,6 +1,5 @@
 from datetime import datetime, timedelta
 
-from pulsar import PermissionDenied
 from pulsar.apps.wsgi import Json
 
 import lux

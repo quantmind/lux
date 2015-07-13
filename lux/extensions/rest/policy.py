@@ -1,6 +1,6 @@
 from lux.forms import ValidationError
 
-from .user import PERMISSION_LEVELS, READ
+from .user import PERMISSION_LEVELS
 
 
 POLICY = dict(effect=(str, frozenset(('allow', 'deny'))),
@@ -59,7 +59,8 @@ def has_permission(request, permissions, name, level):
         for policy in permissions.values():
             if _has_permission(policy, name, level):
                 return True
-    default = request.config['DEFAULT_PERMISSION_LEVELS'].get(name, READ)
+    default = request.config['DEFAULT_PERMISSION_LEVEL']
+    default = request.config['DEFAULT_PERMISSION_LEVELS'].get(name, default)
     if isinstance(default, str):
         default = PERMISSION_LEVELS.get(default.upper(), 0)
     return level <= default

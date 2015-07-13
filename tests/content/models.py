@@ -69,8 +69,8 @@ class TestContentModel(test.TestCase):
     def test_all(self):
         data = {'slug': 'all_file', 'body': 'nothing'}
         self.repo.write(self.user, data, new=True)
-        files = self.repo.all()
-        self.assertIn('all_file', files)
+        models = dict(((v['filename'], v) for v in self.repo.all()))
+        self.assertIn('all_file.md', models)
 
     def test_read(self):
         data = {'slug': 'README', 'body': 'Readme message'}

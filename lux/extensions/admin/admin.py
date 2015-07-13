@@ -1,6 +1,6 @@
 from inspect import isclass
 
-from pulsar import Http404
+from pulsar import Http404, PermissionDenied
 from pulsar.utils.html import nicename
 
 import lux
@@ -40,16 +40,11 @@ class AdminRouter(lux.HtmlRouter):
     '''Base class for all Admin Routers
     '''
     def response_wrapper(self, callable, request):
-        app = request.app
         backend = request.cache.auth_backend
-        permission = app.config['ADMIN_PERMISSIONS']
-        if backend and permission:
-            if backend.has_permission(request, permission, rest.READ):
-                return callable(request)
-            else:
-                raise Http404
-        else:
+        if backend.has_permission(request, 'site:admin', rest.READ):
             return callable(request)
+        else:
+            raise Http404
 
     def context(self, request, context):
         '''Override to add the admin navigation to the javascript context.
@@ -157,8 +152,12 @@ class CRUDAdmin(AdminModel):
     def get_form(self, request, form, id=None):
         if not form:
             raise Http404
-        target = self.model.get_target(request, path=id, get=True)
-        html = form(request).as_form(action=target)
-        context = {'html_form': html.render()}
-        html = request.app.render_template(self.addtemplate, context)
-        return self.html_response(request, html)
+        perm = rest.UPDATE if id else rest.CREATE
+        backend = request.cache.auth_backend
+        if backend.has_permission(request, self.model.name, perm):
+            target = self.model.get_target(request, path=id, get=True)
+            html = form(request).as_form(action=target)
+            context = {'html_form': html.render()}
+            html = request.app.render_template(self.addtemplate, context)
+            return self.html_response(request, html)
+        raise PermissionDenied

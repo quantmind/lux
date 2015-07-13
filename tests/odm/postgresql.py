@@ -68,7 +68,7 @@ class TestPostgreSql(test.AppTestCase):
         tables = yield from self.app.odm.tables()
         self.assertTrue(tables)
         self.assertEqual(len(tables), 1)
-        self.assertEqual(len(tables[0][1]), 8)
+        self.assertEqual(len(tables[0][1]), 9)
 
     def test_rest_model(self):
         from tests.odm import CRUDTask, CRUDPerson

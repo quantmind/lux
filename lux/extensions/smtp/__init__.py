@@ -4,9 +4,10 @@ import lux
 from lux import Parameter
 
 from .backend import EmailBackend
+from .views import ContactRouter
 
 
-__all__ = ['EmailBackend']
+__all__ = ['EmailBackend', 'ContactRouter']
 
 
 class Extension(lux.Extension):

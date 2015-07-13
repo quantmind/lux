@@ -76,6 +76,26 @@
                 else if (arguments.length === 2)
                     AuthApis[api.baseUrl()] = auth;
             };
+
+            //
+            // Change the form data depending on content type
+            this.formData = function (contentType) {
+
+                return function (data) {
+                    data = extend(data || {}, $lux.csrf);
+                    if (contentType === 'application/x-www-form-urlencoded')
+                        return $.param(data);
+                    else if (contentType === 'multipart/form-data') {
+                        var fd = new FormData();
+                        forEach(data, function (value, key) {
+                            fd.append(key, value);
+                        });
+                        return fd;
+                    } else {
+                        return JSON.stringify(data);
+                    }
+                };
+            };
         }]);
     //
     function wrapPromise (promise) {

@@ -1,5 +1,6 @@
 import os
 import io
+from unittest import mock
 import shutil
 from os import path
 
@@ -71,3 +72,13 @@ class CommandTests(test.TestCase):
         command([])
         data = command.app.stdout.getvalue()
         self.assertTrue(data)
+
+    @test.green
+    def test_stop(self):
+        command = self.fetch_command('stop')
+        self.assertTrue(hasattr(command.kill, '__call__'))
+        command.kill = mock.MagicMock()
+        self.assertTrue(command.help)
+        command([])
+        self.assertEqual(command.app.stderr.getvalue(),
+                         'Pidfile not available\n')

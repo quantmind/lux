@@ -64,7 +64,7 @@ class Content(rest.RestModel):
         ``new``, the file must exist.
         '''
         slug = data['slug']
-        filepath = self._format_filename(slug)
+        filepath = os.path.join(self.path, self._format_filename(slug))
         if new:
             if not message:
                 message = "Created %s" % slug
@@ -103,27 +103,29 @@ class Content(rest.RestModel):
         if not isinstance(files_to_del, (list, tuple)):
             files_to_del = [files_to_del]
 
-        filenames = self._format_filename(files_to_del)
-        for f in filenames:
+        filenames = []
+
+        for file in files_to_del:
+            filepath = os.path.join(self.path, self._format_filename(file))
             # remove only files that really exist and not dirs
-            if os.path.exists(f) and os.path.isfile(f):
+            if os.path.exists(filepath) and os.path.isfile(filepath):
                 # remove from disk
-                os.remove(f)
-                # remove from repo, we need only file name not full path
-                name = f.split('/')[-1]
-                rm(self.repo, [name])
+                os.remove(filepath)
+                filename = get_rel_dir(filepath, self.repo.path)
+                filenames.append(filename)
 
-        if not message:
-            message = 'Deleted %s' % ';'.join(filenames)
+        if filenames:
+            rm(self.repo, filenames)
+            if not message:
+                message = 'Deleted %s' % ';'.join(filenames)
 
-        commit_hash = commit(self.repo, _b(message),
-                             committer=_b(user.username))
-        return commit_hash
+            return commit(self.repo, _b(message),
+                          committer=_b(user.username))
 
-    def read(self, filename):
+    def read(self, name):
         '''Read content from file in repository
         '''
-        filename = self._format_filename(filename)
+        filename = self._format_filename(name)
         path = os.path.join(self.path, filename)
         try:
             # use dulwich GitFile to obeys the git file locking protocol
@@ -133,27 +135,15 @@ class Content(rest.RestModel):
                         filename=filename,
                         path=path)
         except IOError:
-            raise DataError('%s not available' % filename)
+            raise DataError('%s not available' % name)
 
     def all(self):
         '''Return list of all files stored in repo
         '''
-        files = glob.glob(os.path.join(self.repo.path, '*.%s' % self.ext))
-        return self._get_filename(files)
-
-    def _iter_filename(self, filename, func, path=None):
-        '''In case more than one filename is provided, normalize
-        all entries by provided function. Dedicated for `_format_filename'
-        and `_get_filename` functions, should be not use directly.
-        '''
-        _filename = []
-        for name in filename:
-            if path:
-                _name = func(name, path)
-            else:
-                _name = func(name)
-            _filename.append(_name)
-        return _filename
+        files = glob.glob(os.path.join(self.path, '*.%s' % self.ext))
+        for file in files:
+            filename = get_rel_dir(file, self.path)
+            yield self.read(filename)
 
     def _format_filename(self, filename):
         '''Append extension to file name
@@ -161,19 +151,6 @@ class Content(rest.RestModel):
         ext = '.%s' % self.ext
         if not filename.endswith(ext):
             filename = '%s%s' % (filename, ext)
-        return filename
-
-    def _get_filename(self, filename):
-        '''Get rid of full path and `.md` extension and
-        return peeled file name.
-        '''
-        if isinstance(filename, (list, tuple)):
-            return self._iter_filename(filename, self._get_filename)
-
-        # in case filename is a full path to a file
-        filename = filename.split('/')[-1]
-        if filename.endswith('.md'):
-            filename = filename[:-3]
         return filename
 
     def content(self, data):

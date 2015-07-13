@@ -16,9 +16,11 @@ def add_css(all):
     navbar = vars.navbar
     #
     # Navbar Height
-    navbar.height = px(50)
+    navbar.height = px(60)
+    navbar.small_height = px(60)
     navbar.lineheight = px(20)
     navbar.padding = 0.5*(navbar.height-navbar.lineheight)
+    navbar.small_padding = 0.5*(navbar.small_height-navbar.lineheight)
     vars.animate.fade.top = navbar.height
     #
     collapse_width = px(cfg['NAVBAR_COLLAPSE_WIDTH'])
@@ -28,17 +30,23 @@ def add_css(all):
         css(' .navbar-brand',
             css(' img', height=navbar.height),
             padding=0),
+        css(' .navbar-nav',
+            css('> li > a',
+                padding_top=navbar.padding,
+                padding_bottom=navbar.padding)),
         height=navbar.height)
 
-    media(min_width=collapse_width).css(
-        '.navbar.navbar-static-top .navbar-nav',
-        css('> li > a',
-            padding_top=navbar.padding,
-            padding_bottom=navbar.padding))
+    media(max_width=collapse_width).css(
+        '.navbar.navbar-static-top',
+        css(' .navbar-brand',
+            css(' img', height=navbar.small_height),
+            padding=0),
+        height=navbar.small_height)
 
-    css('.navbar.navbar-static-top .navbar-nav',
-        css('> li > a',
-            line_height=navbar.lineheight))
+    css('.navbar.navbar-static-top',
+        css(' .navbar-nav',
+            css('> li > a',
+                line_height=navbar.lineheight)))
 
     css('.nav-second-level li a',
         padding_left=px(37))

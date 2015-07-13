@@ -52,7 +52,7 @@
         if (api) {
             promise = api.request(method, target, model);
         } else if (target) {
-            var enctype = attrs.enctype || '',
+            var enctype = attrs.enctype || 'application/json',
                 ct = enctype.split(';')[0],
                 options = {
                     url: target,
@@ -64,6 +64,10 @@
             if (ct === 'application/x-www-form-urlencoded' || ct === 'multipart/form-data') {
                 options.headers = {
                     'content-type': undefined
+                };
+            } else {
+                options.headers = {
+                    'content-type': ct
                 };
             }
             promise = $lux.http(options);

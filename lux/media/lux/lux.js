@@ -1,6 +1,6 @@
 //      Lux Library - v0.2.0
 
-//      Compiled 2015-07-06.
+//      Compiled 2015-07-13.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -386,6 +386,26 @@ function(angular, root) {
                     return AuthApis[api.baseUrl()];
                 else if (arguments.length === 2)
                     AuthApis[api.baseUrl()] = auth;
+            };
+
+            //
+            // Change the form data depending on content type
+            this.formData = function (contentType) {
+
+                return function (data) {
+                    data = extend(data || {}, $lux.csrf);
+                    if (contentType === 'application/x-www-form-urlencoded')
+                        return $.param(data);
+                    else if (contentType === 'multipart/form-data') {
+                        var fd = new FormData();
+                        forEach(data, function (value, key) {
+                            fd.append(key, value);
+                        });
+                        return fd;
+                    } else {
+                        return JSON.stringify(data);
+                    }
+                };
             };
         }]);
     //
@@ -2829,7 +2849,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
         if (api) {
             promise = api.request(method, target, model);
         } else if (target) {
-            var enctype = attrs.enctype || '',
+            var enctype = attrs.enctype || 'application/json',
                 ct = enctype.split(';')[0],
                 options = {
                     url: target,
@@ -2841,6 +2861,10 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
             if (ct === 'application/x-www-form-urlencoded' || ct === 'multipart/form-data') {
                 options.headers = {
                     'content-type': undefined
+                };
+            } else {
+                options.headers = {
+                    'content-type': ct
                 };
             }
             promise = $lux.http(options);
@@ -3378,7 +3402,7 @@ angular.module("grid/modal.tpl.html", []).run(["$templateCache", function($templ
 
             // Get initial data
             this.getInitialData = function(scope) {
-                var api = $lux.api(scope.options.target),
+                var api = scope.api(scope.options.target),
                     sub_path = scope.options.target.path || '';
 
                 api.get({path: sub_path + '/metadata'}).success(function(resp) {
