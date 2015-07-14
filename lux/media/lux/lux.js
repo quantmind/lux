@@ -1,6 +1,6 @@
 //      Lux Library - v0.2.0
 
-//      Compiled 2015-07-13.
+//      Compiled 2015-07-14.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -3402,7 +3402,7 @@ angular.module("grid/modal.tpl.html", []).run(["$templateCache", function($templ
 
             // Get initial data
             this.getInitialData = function(scope) {
-                var api = scope.api(scope.options.target),
+                var api = $lux.api(scope.options.target),
                     sub_path = scope.options.target.path || '';
 
                 api.get({path: sub_path + '/metadata'}).success(function(resp) {
