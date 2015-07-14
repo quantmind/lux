@@ -4,7 +4,7 @@ import lux
 from lux import route
 from lux.forms import Form
 
-from pulsar import Http404, PermissionDenied, MethodNotAllowed, BadRequest
+from pulsar import Http404, MethodNotAllowed, BadRequest
 from pulsar.apps.wsgi import Json
 
 from .forms import CreateUserForm, ChangePasswordForm
@@ -14,8 +14,7 @@ from .html import (Login, LoginPost, Logout, SignUp, ProcessLoginMixin,
                    ChangePassword, ForgotPassword, ComingSoon)
 
 
-__all__ = ['RestRoot', 'RestRouter', 'RestMixin', 'RequirePermission',
-           'Authorization',
+__all__ = ['RestRoot', 'RestRouter', 'RestMixin', 'Authorization',
            #
            'Login', 'LoginPost', 'Logout', 'SignUp', 'ProcessLoginMixin',
            'ChangePassword', 'ForgotPassword', 'ComingSoon']
@@ -230,21 +229,3 @@ class Authorization(RestRouter, ProcessLoginMixin):
         response = request.response
         response.content = json.dumps(body)
         return response
-
-
-class RequirePermission(object):
-    '''Decorator to apply to a view
-    '''
-    def __init__(self, name):
-        self.name = name
-
-    def __call__(self, router):
-        router.response_wrapper = self.check_permissions
-        return router
-
-    def check_permissions(self, callable, request):
-        backend = request.cache.auth_backend
-        if backend.has_permission(request, self.name):
-            return callable(request)
-        else:
-            raise PermissionDenied

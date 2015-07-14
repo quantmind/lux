@@ -1,5 +1,6 @@
 from importlib import import_module
 
+from pulsar.utils.structures import AttributeDictionary
 from pulsar.utils.pep import to_bytes
 from pulsar.apps.wsgi import Json
 
@@ -9,7 +10,7 @@ from lux.forms import Form
 __all__ = ['AuthenticationError', 'MessageMixin',
            'UserMixin', 'SessionMixin',
            'normalise_email', 'PasswordMixin',
-           'logout',
+           'logout', 'User', 'Session',
            'NONE', 'CREATE', 'READ', 'UPDATE', 'DELETE', 'PERMISSION_LEVELS']
 
 
@@ -204,6 +205,29 @@ class PasswordMixin:
         '''Set the password for ``user``.
         This method should commit changes.'''
         pass
+
+
+class User(AttributeDictionary, UserMixin):
+    '''A dictionary-based user
+
+    Used by the :class:`.ApiSessionBackend`
+    '''
+    def is_superuser(self):
+        return self.superuser
+
+    def is_active(self):
+        return True
+
+    def __str__(self):
+        return self.username or self.email or 'user'
+
+
+class Session(AttributeDictionary, SessionMixin):
+    '''A dictionary-based Session
+
+    Used by the :class:`.ApiSessionBackend`
+    '''
+    pass
 
 
 def logout(request):

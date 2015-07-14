@@ -11,10 +11,12 @@ import lux
 from lux import Parameter
 from lux.extensions import rest
 
-from .backends import TokenBackend, SessionBackend
+from .backends import (TokenBackend, SessionBackend, BrowserBackend,
+                       ApiSessionBackend)
 
 
-__all__ = ['TokenBackend', 'SessionBackend']
+__all__ = ['TokenBackend', 'SessionBackend',
+           'BrowserBackend', 'ApiSessionBackend']
 
 
 class Extension(lux.Extension):

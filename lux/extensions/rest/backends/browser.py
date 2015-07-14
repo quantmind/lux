@@ -7,12 +7,11 @@ from pulsar.utils.httpurl import is_absolute_uri
 
 from lux import Parameter
 from lux.extensions.angular import add_ng_modules
-from lux.extensions.rest import AuthenticationError, AuthBackend, luxrest
-from lux.extensions.rest.backends import jwt, SessionBackendMixin
-from lux.extensions.rest.policy import has_permission
 
-from .user import (User, Session, Login, LoginPost, Logout, SignUp,
-                   ForgotPassword)
+from .mixins import jwt, SessionBackendMixin
+from .. import (AuthenticationError, AuthBackend, luxrest, Login, LoginPost,
+                Logout, SignUp, ForgotPassword, User, Session)
+from ..policy import has_permission
 
 
 def auth_router(api, url, Router, path=None):

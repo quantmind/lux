@@ -10,7 +10,7 @@ from lux.extensions.rest import (PasswordMixin, backends, normalise_email,
                                  AuthenticationError)
 from lux.extensions.rest.policy import has_permission
 
-from .views import Authorization
+from .views import Authorization, SignUp
 
 
 class AuthMixin(PasswordMixin):
@@ -212,3 +212,11 @@ class SessionBackend(AuthMixin, backends.SessionBackend):
         with odm.begin() as s:
             s.add(session)
         return session
+
+
+class BrowserBackend(backends.BrowserBackend):
+    SignUpRouter = SignUp
+
+
+class ApiSessionBackend(backends.ApiSessionBackend):
+    SignUpRouter = SignUp

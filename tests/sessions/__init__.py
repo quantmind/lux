@@ -12,7 +12,7 @@ EXTENSIONS = ['lux.extensions.base',
 
 AUTHENTICATION_BACKENDS = ['lux.extensions.auth.SessionBackend',
                            'lux.extensions.rest.backends.CsrfBackend',
-                           'lux.extensions.cms.BrowserBackend']
+                           'lux.extensions.auth.BrowserBackend']
 
 API_URL = 'api'
 SESSION_COOKIE_NAME = 'test-sessions'
