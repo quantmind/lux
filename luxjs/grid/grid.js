@@ -137,7 +137,7 @@
                         subPath = scope.options.target.path || '';
 
                     var pkForItem = function(item) {
-                        return item.hasOwnProperty('id') ? item.id : item[name_field];
+                        return item.hasOwnProperty('id') ? item.id : item[first_field];
                     };
 
                     scope.selected = scope.gridApi.selection.getSelectedRows();
