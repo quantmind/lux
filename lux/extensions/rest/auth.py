@@ -78,6 +78,10 @@ class AuthBackend(lux.Extension):
         '''Create a registration token for ``user``'''
         pass
 
+    def set_password(self, request, user, password):
+        '''Set a new password for user'''
+        pass
+
     def request(self, request):  # pragma    nocover
         '''Request middleware. Most backends implement this method
         '''

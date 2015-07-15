@@ -11,13 +11,13 @@ from .forms import CreateUserForm, ChangePasswordForm
 from .user import AuthenticationError, logout
 from .models import RestModel
 from .html import (Login, LoginPost, Logout, SignUp, ProcessLoginMixin,
-                   ChangePassword, ForgotPassword, ComingSoon)
+                   ForgotPassword, ComingSoon)
 
 
 __all__ = ['RestRoot', 'RestRouter', 'RestMixin', 'Authorization',
            #
            'Login', 'LoginPost', 'Logout', 'SignUp', 'ProcessLoginMixin',
-           'ChangePassword', 'ForgotPassword', 'ComingSoon']
+           'ForgotPassword', 'ComingSoon']
 
 
 REST_CONTENT_TYPES = ['application/json']
@@ -213,8 +213,8 @@ class Authorization(RestRouter, ProcessLoginMixin):
         if form.is_valid():
             auth_backend = request.cache.auth_backend
             password = form.cleaned_data['password']
-            auth_backend.set_password(user, password)
-            return auth_backend.changed_passord_response(request, user)
+            auth_backend.set_password(request, user, password)
+            return auth_backend.password_changed_response(request, user)
         return Json(form.tojson()).http_response(request)
 
     @action

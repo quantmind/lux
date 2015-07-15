@@ -17,8 +17,14 @@ class LoginForm(forms.Form):
 class PasswordForm(forms.Form):
     password = forms.PasswordField(required=True, minlength=6, maxlength=128)
     password_repeat = forms.PasswordField(
-        label='confirm password',
+        label='Confirm password',
         data_check_repeat='password')
+
+    def clean(self):
+        password = self.cleaned_data['password']
+        password_repeat = self.cleaned_data['password_repeat']
+        if password != password_repeat:
+            raise forms.ValidationError('Passwords did not match')
 
 
 class CreateUserForm(PasswordForm):
@@ -27,7 +33,7 @@ class CreateUserForm(PasswordForm):
 
 
 class ChangePasswordForm(PasswordForm):
-    old_password = forms.PasswordField()
+    pass
 
 
 class EmailForm(forms.Form):

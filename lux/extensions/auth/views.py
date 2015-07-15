@@ -2,7 +2,8 @@ from lux.extensions import rest
 from lux.extensions.odm import CRUD, RestModel
 from lux.forms import Layout, Fieldset, Submit
 
-from .forms import PermissionModel, GroupModel, UserModel, CreateUserForm
+from .forms import (PermissionModel, GroupModel, UserModel, CreateUserForm,
+                    ChangePasswordForm)
 
 
 class PermissionCRUD(CRUD):
@@ -28,7 +29,10 @@ class RegistrationCRUD(CRUD):
 
 
 class Authorization(rest.Authorization):
+    '''Override Authorization router with a new create_user_form
+    '''
     create_user_form = CreateUserForm
+    change_password_form = ChangePasswordForm
 
 
 class SignUp(rest.SignUp):

@@ -203,6 +203,10 @@ class Extension(AuthBackend):
     def create_registration(self, request, user, **kwargs):
         return self._apply_all('create_registration', request, user, **kwargs)
 
+    def set_password(self, request, user, password):
+        '''Set a new password for user'''
+        return self._apply_all('set_password', request, user, password)
+
     def has_permission(self, request, target, level):
         has = self._apply_all('has_permission', request, target, level)
         return True if has is None else has

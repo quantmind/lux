@@ -2,8 +2,14 @@ import json
 
 from lux import forms
 from lux.extensions import odm
+from lux.extensions.rest import AuthenticationError
 from lux.extensions.rest.forms import PasswordForm
 from lux.extensions.rest.policy import validate_policy
+
+
+__all__ = ['PermissionForm', 'GroupForm',
+           'UserForm', 'CreateUserForm',
+           'ChangePasswordForm']
 
 
 class PermissionForm(forms.Form):
@@ -74,3 +80,20 @@ class CreateUserForm(PasswordForm):
                                maxlength=30)
     email = forms.EmailField(required=True,
                              validator=odm.UniqueField())
+
+
+class ChangePasswordForm(PasswordForm):
+    old_password = forms.PasswordField()
+
+    def clean_old_password(self, value):
+        request = self.request
+        user = request.cache.user
+        auth_backend = request.cache.auth_backend
+        try:
+            if user.is_authenticated():
+                auth_backend.authenticate(request, user=user, password=value)
+            else:
+                raise AuthenticationError('not authenticated')
+        except AuthenticationError as exc:
+            raise forms.ValidationError(str(exc))
+        return value

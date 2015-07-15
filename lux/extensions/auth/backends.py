@@ -56,31 +56,33 @@ class AuthMixin(PasswordMixin):
         return user
 
     def authenticate(self, request, user_id=None, username=None, email=None,
-                     password=None, **kw):
+                     user=None, password=None, **kw):
         odm = request.app.odm()
 
-        with odm.begin() as session:
-            query = session.query(odm.user)
-            try:
-                if user_id:
-                    user = query.get(user_id)
-                elif username:
-                    user = query.filter_by(username=username).one()
-                elif email:
-                    user = query.filter_by(email=normalise_email(email)).one()
-                else:
-                    raise AuthenticationError('Invalid credentials')
-                if user and self.crypt_verify(user.password, password):
-                    return user
-                else:
-                    raise NoResultFound
-            except NoResultFound:
-                if username:
-                    raise AuthenticationError('Invalid username or password')
-                elif email:
-                    raise AuthenticationError('Invalid email or password')
-                else:
-                    raise AuthenticationError('Invalid credentials')
+        try:
+            if not user:
+                with odm.begin() as session:
+                    query = session.query(odm.user)
+                    if user_id:
+                        user = query.get(user_id)
+                    elif username:
+                        user = query.filter_by(username=username).one()
+                    elif email:
+                        email = normalise_email(email)
+                        user = query.filter_by(email=email).one()
+                    else:
+                        raise AuthenticationError('Invalid credentials')
+            if user and self.crypt_verify(user.password, password):
+                return user
+            else:
+                raise NoResultFound
+        except NoResultFound:
+            if username:
+                raise AuthenticationError('Invalid username or password')
+            elif email:
+                raise AuthenticationError('Invalid email or password')
+            else:
+                raise AuthenticationError('Invalid credentials')
 
     def has_permission(self, request, name, level):
         user = request.cache.user
@@ -162,6 +164,14 @@ class AuthMixin(PasswordMixin):
             session.add(reg)
 
         return reg.id
+
+    def set_password(self, request, user, password):
+        '''Set a new password for user
+        '''
+        with request.app.odm().begin() as session:
+            user.password = self.password(password)
+            session.add(user)
+        return user
 
     @cached(user=True)
     def get_permissions(self, request):

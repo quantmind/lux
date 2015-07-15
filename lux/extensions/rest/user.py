@@ -201,11 +201,6 @@ class PasswordMixin:
         else:
             return UNUSABLE_PASSWORD
 
-    def set_password(self, user, password):
-        '''Set the password for ``user``.
-        This method should commit changes.'''
-        pass
-
 
 class User(AttributeDictionary, UserMixin):
     '''A dictionary-based user

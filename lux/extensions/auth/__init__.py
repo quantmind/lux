@@ -13,10 +13,12 @@ from lux.extensions import rest
 
 from .backends import (TokenBackend, SessionBackend, BrowserBackend,
                        ApiSessionBackend)
+from .views import Authorization
 
 
 __all__ = ['TokenBackend', 'SessionBackend',
-           'BrowserBackend', 'ApiSessionBackend']
+           'BrowserBackend', 'ApiSessionBackend',
+           'Authorization']
 
 
 class Extension(lux.Extension):

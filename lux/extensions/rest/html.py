@@ -7,7 +7,7 @@ import lux
 from lux.forms import WebFormRouter, Layout, Fieldset, Submit
 
 from .user import AuthenticationError, logout
-from .forms import LoginForm, PasswordForm, ChangePasswordForm, EmailForm
+from .forms import LoginForm, PasswordForm, EmailForm
 
 
 class ProcessLoginMixin:
@@ -87,16 +87,6 @@ class SignUp(WebFormRouter):
         backend = request.cache.auth_backend
         backend.confirm_registration(request, key)
         raise HttpRedirect(self.redirect_url(request))
-
-
-class ChangePassword(WebFormRouter):
-    default_form = Layout(ChangePasswordForm,
-                          Fieldset('old_password',
-                                   'password',
-                                   'password_repeat'),
-                          Submit('Update password'),
-                          showLabels=False,
-                          resultHandler='reload')
 
 
 class ForgotPassword(WebFormRouter):
