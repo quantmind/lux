@@ -2,6 +2,7 @@ import json
 
 from pulsar import Http404
 from pulsar.utils.slugify import slugify
+from pulsar.utils.structures import AttributeDictionary
 
 import lux
 from lux import forms, HtmlRouter, Html, cached
@@ -105,13 +106,14 @@ class CMS(lux.CMS):
             return []
 
     @cached
-    def inner_html(self, request, page, html=''):
+    def inner_html(self, request, page, self_comp=''):
         '''Build page html content using json layout.
         :param layout: json (with rows and components) e.g.
             layout = {
                 'rows': [
-                    ['col-md-6', 'col-md-6'],
-                    ['col-md-6', 'col-md-6']
+                    {},
+                    {cols: ['col-md-6', 'col-md-6']},
+                    {cols: ['col-md-6', 'col-md-6']}
                 ],
                 'components': [
                     {'type': 'text', 'id': 1, 'row': 0, 'col': 0, 'pos': 0},
@@ -141,27 +143,48 @@ class CMS(lux.CMS):
                 layout = None
 
         if not layout:
-            layout = dict(rows=[['col-sm-12']],
-                          components=[dict(type='self')])
+            layout = dict(rows=[{}])
 
-        components = layout.get('components', ())
-        container = Html('div', cn='container-fluid')
+        components = layout.get('components') or []
+        if not components:
+            components.append(dict(type='self'))
+
+        inner = Html(None)
 
         # Loop over rows
         for row_idx, row in enumerate(layout.get('rows', ())):
-            htmlRow = Html('div', cn='row')
-            container.append(htmlRow)
+            row = AttributeDictionary(row)
+            if row.cols:
+                html = self._row(row, components, self_comp)
+            else:
+                html = self._component(components[0], self_comp)
 
-            for col_idx, col in enumerate(row):
-                htmlCol = Html('div', cn=col)
-                htmlRow.append(htmlCol)
+            inner.append(html)
 
-                for comp in sorted(components, key=lambda c: c.get('pos', 0)):
-                    ctype = comp.get('type')
-                    if ctype == 'self':
-                        htmlCol.append(Html('div', html, cn='block'))
+        return inner.render(request)
 
-        return container.render(request)
+    def _row(self, row, components, self_comp):
+        fluid = '-fluid' if row.fluid else ''
+        container = Html('div', cn='container%s' % fluid)
+        htmlRow = Html('div', cn='row')
+        container.append(htmlRow)
+
+        for col_idx, col in enumerate(row.cols):
+            htmlCol = Html('div', cn=col)
+            htmlRow.append(htmlCol)
+
+            for comp in sorted(components, key=lambda c: c.get('pos', 0)):
+                html = self._component(comp, self_comp)
+                htmlCol.append(Html('div', html, cn='block'))
+
+        return container
+
+    def _component(self, comp, self_comp):
+        ctype = comp.get('type')
+        if ctype == 'self':
+            return self_comp
+        else:
+            return ''
 
     def _get_components(self, components, row, column):
         '''Returns the component from specified row and column.
