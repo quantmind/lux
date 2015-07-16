@@ -91,8 +91,9 @@ class RestRouter(rest.RestRouter):
                 query = query.order_by(entry)
         return query
 
-    def filter(self, request, query, text):
-        columns = self.model.columnsMapping(request.app)
+    def filter(self, request, query, text, model=None):
+        model = model or self.model
+        columns = model.columnsMapping(request.app)
 
         for key, value in request.url_data.items():
             bits = key.split(':')
@@ -102,14 +103,15 @@ class RestRouter(rest.RestRouter):
                 op = bits[1] if len(bits) == 2 else 'eq'
                 field = col.get('field')
                 if field:
-                    query = self._do_filter(request, query, field, op, value)
+                    query = self._do_filter(request, model, query,
+                                            field, op, value)
         return query
 
-    def _do_filter(self, request, query, field, op, value):
+    def _do_filter(self, request, model, query, field, op, value):
         if value == '':
             value = None
         odm = request.app.odm()
-        field = getattr(odm[self.model.name], field)
+        field = getattr(odm[model.name], field)
         if op == 'eq':
             query = query.filter(field == value)
         elif op == 'gt':
