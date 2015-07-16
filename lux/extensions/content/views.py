@@ -35,10 +35,11 @@ class TextCRUD(rest.RestMixin, HtmlRouter):
     def get_html(self, request):
         '''Return a div for pagination
         '''
-        try:
-            return self._read(request)
-        except Http404:
-            pass
+        for slug in ('', '_'):
+            try:
+                return self._read(request, slug)
+            except Http404:
+                pass
         target = self.model.get_target(request, path='_all')
         return Html('div').attr({'blog-pagination': {'target': target}})
 
