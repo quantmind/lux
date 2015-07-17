@@ -224,6 +224,11 @@ def add_css(all):
         padding_bottom=px(10))
 
     media(max_width=collapse_width).css(
+        '.navbar-nav',
+        margin='4px 0 !important',
+        float='left').css('.navbar-collapse',
+                          css('.in',
+                              background_image='linear-gradient(#FFF, #EEE 50%, #E4E4E4)')).css(
         '.right-sidebar',
         css(' .navbar-static-top',
             css(' .navbar-main',
