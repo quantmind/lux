@@ -31,6 +31,9 @@ class TextCRUD(rest.RestMixin, HtmlRouter):
     '''
     response_content_types = ('text/html', 'text/plain', 'application/json')
     uimodules = ('lux.blog',)
+    content_meta = None
+    '''Metadata dictionary for content routes
+    '''
 
     def get_html(self, request):
         '''Return a div for pagination
@@ -101,7 +104,8 @@ class TextCRUD(rest.RestMixin, HtmlRouter):
         except DataError:
             raise Http404
         reader = get_reader(request.app, data['filename'])
-        return reader.process(data['content'], data['path'], slug)
+        return reader.process(data['content'], data['path'], slug,
+                              meta=self.meta)
 
     def create_model(self, request, data):
         '''Create a new document
