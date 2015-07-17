@@ -225,7 +225,7 @@ def add_css(all):
 
     media(max_width=collapse_width).css(
         '.sidebar .nav-panel',
-        height=px(59)).css(
+        height=px(navbar.small_height)).css(
         '.navbar-nav',
         margin='4px 0 !important',
         float='left').css('.navbar-collapse',
