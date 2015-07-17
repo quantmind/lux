@@ -104,16 +104,15 @@ class TextCRUD(rest.RestMixin, HtmlRouter):
         except DataError:
             raise Http404
         reader = get_reader(request.app, data['filename'])
-        return reader.process(data['content'], data['path'], slug,
-                              meta=self.meta)
+        meta = self.content_meta or {}
+        return reader.process(data['content'], data['path'], slug, meta=meta)
 
     def create_model(self, request, data):
         '''Create a new document
         '''
         slug = data.get('slug') or data['title']
         data['slug'] = slugify(slug, max_length=SLUG_LENGTH)
-        data['hash'] = self.model.write(request.cache.user, data, new=True)
-        return data
+        return self.model.write(request.cache.user, data, new=True)
 
     def update_model(self, request, instance, data):
         pass
@@ -121,25 +120,26 @@ class TextCRUD(rest.RestMixin, HtmlRouter):
     def serialise_model(self, request, data, in_list=False):
         return data
 
-    def _read(self, request, slug='', response=False):
+    def _read(self, request, slug='', as_response=False):
         content = self.get_model(request, slug)
         backend = request.cache.auth_backend
 
         if backend.has_permission(request, self.model.name, rest.READ):
-            if request.content_types.best == 'text/html':
+            response = request.response
+            if response.content_type == 'text/html':
                 html = Html('div', content.html(request),
                             cn='text-content')
-                if response:
+                if as_response:
                     return self.html_response(request, html)
                 else:
                     return html
-            elif request.content_types.best == 'text/plain':
-                text = content.text()
+            elif response.content_type == 'text/plain':
+                text = content.text(request)
             else:
-                text = content.json()
-            if response:
-                request.response.content = text
-                return request.response
+                text = content.json(request)
+            if as_response:
+                response.content = text
+                return response
             else:
                 return text
         raise PermissionDenied

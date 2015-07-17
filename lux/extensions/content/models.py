@@ -91,7 +91,11 @@ class Content(rest.RestModel):
         add(self.repo, [filename])
         committer = user.username if user.is_authenticated() else 'anonymous'
         commit_hash = commit(self.repo, _b(message), committer=_b(committer))
-        return commit_hash.decode('utf-8')
+
+        return dict(hash=commit_hash.decode('utf-8'),
+                    body=content,
+                    filename=filename,
+                    slug=slug)
 
     def delete(self, user, data, message=None):
         '''Delete file(s) from repository

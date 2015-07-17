@@ -30,6 +30,17 @@ class TestContentViews(test.AppTestCase):
         response = request.response
         self.assertEqual(response.status_code, 400)
 
+    def test_read(self):
+        data = yield from self._create_blog(
+            title='test reading',
+            body='This is a simple post for testing')
+        self.assertEqual(data['slug'], 'test-reading')
+        self.assertEqual(data['filename'], 'blog/test-reading.md')
+        request = yield from self.client.get('/blog/test-reading')
+        response = request.response
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content_type, 'text/html; charset=utf-8')
+
     def _create_blog(self, **data):
         request = yield from self.client.post('/blog',
                                               body=data,
