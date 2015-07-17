@@ -376,13 +376,12 @@ class Content(object):
     def _update_meta(self, metadata):
         meta = self._meta
         static = self._app.extensions.get('lux.extensions.static')
-        if static:
-            meta.site = static.build_info(self._app)
-            for name in ('template_engine', 'template'):
-                default = getattr(self, name)
-                value = metadata.pop(name, default)
-                meta.site[name] = value
-                setattr(self, name, value)
+        meta.site = static.build_info(self._app) if static else {}
+        for name in ('template_engine', 'template'):
+            default = getattr(self, name)
+            value = metadata.pop(name, default)
+            meta.site[name] = value
+            setattr(self, name, value)
 
         context = self.context()
         self._engine = self._app.template_engine(self.template_engine)

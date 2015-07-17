@@ -14,8 +14,8 @@ def add_css(all):
     sidebar = vars.sidebar
     sidebar.width = px(250)
     sidebar.toggle.margin = px(15)
-    sidebar.toggle.size = px(22)
-    sidebar.toggle.padding = 0.5*(navbar.height-sidebar.toggle.size)
+    sidebar.toggle.size = px(21)
+    sidebar.toggle.padding = 0.5*(navbar.height-sidebar.toggle.size) - px(1)
 
     collapse_width = px(cfg['NAVBAR_COLLAPSE_WIDTH'])
 
@@ -29,7 +29,7 @@ def add_css(all):
             font_size=sidebar.toggle.size,
             line_height=sidebar.toggle.size,
             padding_top=sidebar.toggle.padding,
-            paddint_bottom=sidebar.toggle.padding))
+            padding_bottom=sidebar.toggle.padding))
 
     css('.overlay',
         position='absolute',

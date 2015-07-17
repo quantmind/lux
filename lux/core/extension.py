@@ -188,6 +188,11 @@ class Extension(metaclass=ExtensionType):
             config[setting.name] = value
         self._setup_logger(config, module, opts)
 
+    def get_template_full_path(self, app, name):
+        '''Full path for a template name
+        '''
+        return os.path.join(self.meta.path, 'templates', name)
+
     def write(self, msg=''):
         '''Write ``msg`` into :attr:`stdout` or ``sys.stdout``
         '''

@@ -233,8 +233,8 @@ class Application(ConsoleParser, Extension, EventMixin):
         Parameter('SECURE_PROXY_SSL_HEADER', None,
                   'A tuple representing a HTTP header/value combination that '
                   'signifies a request is secure.'),
-        Parameter('CMS_PARTIALS_PATH',
-                  'cms', 'Path to CMS Partials templates'),
+        Parameter('CMS_PARTIALS_PATH', None,
+                  'Path to CMS Partials snippets'),
         ]
 
     def __init__(self, callable, handler=True):
@@ -489,7 +489,7 @@ class Application(ConsoleParser, Extension, EventMixin):
             names = (names,)
         for name in names:
             for ext in reversed(tuple(self.extensions.values())):
-                filename = os.path.join(ext.meta.path, 'templates', name)
+                filename = ext.get_template_full_path(self, name)
                 if os.path.exists(filename):
                     return filename
             filename = os.path.join(LUX_CORE, 'templates', name)

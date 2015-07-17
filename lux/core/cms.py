@@ -5,6 +5,8 @@ from pulsar.utils.structures import AttributeDictionary
 
 from lux.utils.files import skipfile, get_rel_dir
 
+from .cache import cached
+
 
 __all__ = ['CMS']
 
@@ -32,7 +34,6 @@ class CMS:
         A key which identify the CMS. Not used yet. #TOTO explain this
     '''
     _sitemap = None
-    _context = None
 
     def __init__(self, app, key=None):
         self.app = app
@@ -94,14 +95,15 @@ class CMS:
             page = Page(template=page)
         return self.app.render_template(page.template, context)
 
+    @cached
     def context(self, context):
         '''Static context dictionary for this cms
         '''
-        if self._context is None:
-            path = self.app.config['CMS_PARTIALS_PATH']
-            location = os.path.join(self.app.meta.path, 'templates', path)
-            self._context = static_context(self.app, location, context)
-        return self._context
+        path = self.app.config['CMS_PARTIALS_PATH']
+        if path:
+            return static_context(self.app, path, context)
+        else:
+            return context
 
 
 def static_context(app, location, context=None):

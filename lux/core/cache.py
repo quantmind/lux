@@ -1,4 +1,5 @@
 import json
+import logging
 from copy import copy
 from inspect import isfunction
 
@@ -12,6 +13,8 @@ from .wrappers import WsgiRequest
 
 __all__ = ['cached', 'register_cache']
 
+
+logger = logging.getLogger('lux.cache')
 
 data_caches = {}
 
@@ -102,11 +105,17 @@ class CacheObject:
         self.user = user
         self.timeout = timeout
 
-    def cache_key(self, app, key):
+    def cache_key(self, app):
+        key = ''
+        if isinstance(app, WsgiRequest):
+            key = app.path
+            if self.user:
+                key = '%s:%s' % (key, app.cache.user)
+
         base = self.callable.__name__
         if self.instance:
             base = '%s:%s' % (self.instance.__class__.__name__, base)
-        base = '%s:%s' % (app.config['APP_NAME'], key)
+        base = '%s:%s' % (app.config['APP_NAME'], base)
         key = '%s:%s' % (base, key) if key else base
         return key.lower()
 
@@ -117,34 +126,42 @@ class CacheObject:
             return self
 
         app = callable
-        key = ''
-        if isinstance(app, WsgiRequest):
-            key = app.path
-            if self.user:
-                key = '%s:%s' % (key, app.cache.user)
 
-        server = app.cache_server
-        key = self.cache_key(app, key)
-        result = server.get_json(key)
-        if result is not None:
-            return result
+        if not hasattr(callable, 'cache_server'):
+            try:
+                if self.instance:
+                    app = self.instance.app
+                else:
+                    raise AttributeError
+            except AttributeError:
+                app = None
+                logger.error('Could not obtain application from first '
+                             'parameter nor from bound instance')
 
+        args = (callable,) + args
         if self.instance:
-            result = self.callable(self.instance, app, *args, **kw)
-        else:
-            result = self.callable(app, *args, **kw)
+            args = (self.instance,) + args
 
-        timeout = self.timeout
-        if timeout is None:
-            timeout = app.config['DEFAULT_CACHE_TIMEOUT']
+        if app:
+            key = self.cache_key(app)
+            result = app.cache_server.get_json(key)
+            if result is not None:
+                return result
 
-        try:
-            server.set_json(key, result, timeout=timeout)
-        except TypeError:
-            app.logger.exception('Could not convert to JSON a value to '
-                                 'set in cache')
-        except Exception:
-            app.logger.exception('Critical exception while setting cache')
+        result = self.callable(*args, **kw)
+
+        if app:
+            timeout = self.timeout
+            if timeout is None:
+                timeout = app.config['DEFAULT_CACHE_TIMEOUT']
+
+            try:
+                app.cache_server.set_json(key, result, timeout=timeout)
+            except TypeError:
+                app.logger.exception('Could not convert to JSON a value to '
+                                     'set in cache')
+            except Exception:
+                app.logger.exception('Critical exception while setting cache')
 
         return result
 
