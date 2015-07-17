@@ -168,6 +168,14 @@ class Extension(metaclass=ExtensionType):
         '''
         pass
 
+    def async_middleware(self, app):
+        '''Called by application ``app`` when creating the middleware.
+
+        This method is invoked the first time :attr:`.App.handler` attribute
+        is accessed. It must return a list of WSGI middleware or ``None``.
+        '''
+        pass
+
     def response_middleware(self, app):
         '''Called by application ``app`` when creating the response
         middleware'''

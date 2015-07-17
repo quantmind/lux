@@ -305,8 +305,10 @@ class Application(ConsoleParser, Extension, EventMixin):
                 wsgi = middleware_in_executor(self.handler)
 
             if wsgi:
-                self.handler = WsgiHandler((wait_for_body_middleware, wsgi),
-                                           async=True)
+                middleware = self.handler._async_middleware[:]
+                middleware.append(wait_for_body_middleware)
+                middleware.append(wsgi)
+                self.handler = WsgiHandler(middleware, async=True)
         return self.handler
 
     def get_version(self):
@@ -670,18 +672,24 @@ class Application(ConsoleParser, Extension, EventMixin):
         '''
         # do this here so that the config is already loaded before fire signal
         extensions = list(self.extensions.values())
+        async_middleware = []
         middleware = []
         rmiddleware = []
         for extension in extensions:
             _middleware = extension.middleware(self)
             if _middleware:
                 middleware.extend(_middleware)
+            _middleware = extension.async_middleware(self)
+            if _middleware:
+                async_middleware.extend(_middleware)
             _middleware = extension.response_middleware(self)
             if _middleware:
                 rmiddleware.extend(_middleware)
         # Response middleware executed in reversed order
         rmiddleware = list(reversed(rmiddleware))
-        return self._WsgiHandler(middleware, response_middleware=rmiddleware)
+        hnd = self._WsgiHandler(middleware, response_middleware=rmiddleware)
+        hnd._async_middleware = async_middleware
+        return hnd
 
     def _setup_logger(self, config, module, opts):
         debug = opts.debug or self.params.get('debug', False)

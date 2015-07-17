@@ -1,5 +1,7 @@
-from lux.utils import test
+import hmac
+import json
 
+from lux.utils import test
 
 from . import remove_repo
 
@@ -48,3 +50,26 @@ class TestContentViews(test.AppTestCase):
         response = request.response
         self.assertEqual(response.status_code, 201)
         return self.json(response)
+
+    def test_github_hook(self):
+        payload = dict(zen='foo', hook_id='457356234')
+        signature = hmac.new(b'test12345', json.dumps(payload).encode('utf-8'))
+        headers = [('X-Hub-Signature', signature.hexdigest()),
+                   ('X-GitHub-Event', 'ping')]
+        request = yield from self.client.post('/refresh-content',
+                                              body=payload,
+                                              content_type='application/json',
+                                              headers=headers)
+        response = request.response
+        self.assertEqual(response.status_code, 200)
+
+        payload = dict(zen='foo', hook_id='457356234')
+        signature = hmac.new(b'test12345', json.dumps(payload).encode('utf-8'))
+        headers = [('X-Hub-Signature', signature.hexdigest()),
+                   ('X-GitHub-Event', 'push')]
+        request = yield from self.client.post('/refresh-content',
+                                              body=payload,
+                                              content_type='application/json',
+                                              headers=headers)
+        response = request.response
+        self.assertEqual(response.status_code, 200)
