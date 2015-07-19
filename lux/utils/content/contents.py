@@ -9,10 +9,8 @@ from pulsar import HttpException, Http404
 from pulsar.utils.slugify import slugify
 from pulsar.utils.structures import AttributeDictionary, mapping_iterator
 from pulsar.utils.pep import to_string
-from pulsar.apps.wsgi import Links
 
-from lux.utils import iso8601
-from lux.extensions.ui import CssLibraries
+from .. import iso8601
 
 from .urlwrappers import Processor, MultiValue, Tag, Author, Category
 
@@ -118,8 +116,6 @@ class Content(object):
                  path=None, context=None, **params):
         self._app = app
         self._content = content
-        self._context_for = context
-        self._additional_context = {}
         self._src = src
         self._path = path if path is not None else src
         self._meta = AttributeDictionary(params)
@@ -156,6 +152,10 @@ class Content(object):
     @property
     def name(self):
         return self._meta.name
+
+    @property
+    def app(self):
+        return self._app
 
     @property
     def src(self):
@@ -215,20 +215,6 @@ class Content(object):
         if self.is_html:
             return '%s.json' % self._meta.slug
 
-    @property
-    def context_for(self):
-        '''A list of contents names for which this snippet is required
-        in the context dictionary
-        '''
-        return self._context_for
-
-    @property
-    def additional_context(self):
-        '''Dictionary of key and :class:`.Snippet` providing additional
-        keys for this content
-        '''
-        return self._additional_context
-
     def __repr__(self):
         return self._src
     __str__ = __repr__
@@ -237,7 +223,8 @@ class Content(object):
         '''The key for a context dictionary
         '''
         name = name or self.name
-        return 'html_%s' % name if self.is_html else name
+        suffix = self.suffix
+        return '%s_%s' % (suffix, name) if suffix else name
 
     def context(self, context=None):
         '''Extract the context dictionary for server side template rendering
@@ -290,15 +277,7 @@ class Content(object):
         if not self._json_dict and self.is_html:
             context = self._app.context(request)
             context = self.context(context)
-            # Add additional context keys
-            if self.additional_context:
-                for key, ct in self.additional_context.items():
-                    if isinstance(ct, Content):
-                        key = ct.key(key)
-                        ct = ct.render(context)
-                    context[key] = ct
             #
-            assert self.suffix
             data = self._to_json(self._meta)
             text = data.get(self.suffix) or {}
             data[self.suffix] = text
@@ -309,24 +288,6 @@ class Content(object):
                 value = data.get(key)
                 if value:
                     head[key] = value
-            #
-            require_css = data.get('require_css')
-            if require_css:
-                data['require_css'] = []
-                cfg = request.config
-                links = Links(cfg['MEDIA_URL'],
-                              minified=cfg['MINIFIED_MEDIA'])
-                for css in require_css:
-                    css = CssLibraries.get(css, css)
-                    links.append(css)
-                for link in links.children:
-                    link = link.split("href=")
-                    if len(link) == 2:
-                        href = link[1]
-                        c = href[0]
-                        href = href[1:]
-                        link = href[:href.find(c)]
-                        data['require_css'].append(link)
             #
             if 'head' in data:
                 head.update(data['head'])
@@ -375,15 +336,14 @@ class Content(object):
     # INTERNALS
     def _update_meta(self, metadata):
         meta = self._meta
-        static = self._app.extensions.get('lux.extensions.static')
-        meta.site = static.build_info(self._app) if static else {}
+        meta.site = {}
         for name in ('template_engine', 'template'):
             default = getattr(self, name)
             value = metadata.pop(name, default)
             meta.site[name] = value
             setattr(self, name, value)
 
-        context = self.context()
+        context = self.context(self.app.config)
         self._engine = self._app.template_engine(self.template_engine)
         meta.update(((key, self._render_meta(value, context))
                     for key, value in metadata.items()))

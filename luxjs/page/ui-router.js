@@ -90,7 +90,7 @@
     }
 
 
-    angular.module('lux.ui.router', ['lux.page', 'lux.scroll', 'ui.router'])
+    angular.module('lux.ui.router', ['lux.page', 'ui.router'])
         //
         .run(['$rootScope', '$state', '$stateParams', function (scope, $state, $stateParams) {
             //

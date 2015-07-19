@@ -525,17 +525,23 @@ class Application(ConsoleParser, Extension, EventMixin):
         The initial ``context`` is updated with contribution from
         all :setting:`EXTENSIONS` which expose the ``context`` method.
         '''
-        context = context if context is not None else {}
-        context.update(request.app.config)
-        for ext in self.extensions.values():
-            if hasattr(ext, 'context'):
-                context = ext.context(request, context) or context
+        if not request.cache._in_application_context:
+            request.cache._in_application_context = True
+            try:
+                context = context if context is not None else {}
+                context.update(self.config)
+                context.update(self.cms.context(context))
+                for ext in self.extensions.values():
+                    if hasattr(ext, 'context'):
+                        context = ext.context(request, context) or context
+            finally:
+                request.cache._in_application_context = False
         return context
 
     def render_template(self, name, context=None, request=None, engine=None):
         '''Render a template file ``name`` with ``context``
         '''
-        if request:
+        if request:  # get application context only when request available
             context = self.context(request, context)
         template = self.template(name)
         rnd = self.template_engine(engine)

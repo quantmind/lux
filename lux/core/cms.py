@@ -4,6 +4,7 @@ from pulsar.apps.wsgi import Route
 from pulsar.utils.structures import AttributeDictionary
 
 from lux.utils.files import skipfile, get_rel_dir
+from lux.utils.content import get_reader
 
 from .cache import cached
 
@@ -90,7 +91,6 @@ class CMS:
     def render(self, page, context):
         '''Render a ``page`` with a ``context`` dictionary
         '''
-        context.update(self.context(context))
         if not isinstance(page, Page):
             page = Page(template=page)
         return self.app.render_template(page.template, context)
@@ -106,11 +106,9 @@ class CMS:
             return context
 
 
-def static_context(app, location, context=None):
+def static_context(app, location, context):
     '''Load static context from ``location``
     '''
-    if context is None:
-        context = {}
     ctx = {}
     if os.path.isdir(location):
         for dirpath, dirs, filenames in os.walk(location, topdown=False):
@@ -125,14 +123,14 @@ def static_context(app, location, context=None):
                     prefix, tail = os.path.split(prefix)
                     bits.append(tail)
 
-                if len(file_bits) > 1:
-                    bits.append(content_type(file_bits[-1]))
-
-                name = '_'.join(reversed(bits))
                 filename = os.path.join(dirpath, filename)
-                text = app.render_template(filename, context=context)
-                ctx[name] = text
-                context[name] = text
+                reader = get_reader(app, filename)
+                name = '_'.join(reversed(bits))
+                content = reader.read(filename, name)
+                if content.suffix:
+                    name = '%s_%s' % (content.suffix, name)
+                ctx[name] = content.render(context)
+                context[name] = ctx[name]
     return ctx
 
 

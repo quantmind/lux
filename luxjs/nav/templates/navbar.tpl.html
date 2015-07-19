@@ -20,11 +20,11 @@ ng-model="navbar.collapse" bs-collapse>
                 {{navbar.brand}}
             </a>
         </div>
-        <div class="navbar-collapse" bs-collapse-target>
+        <nav class="navbar-collapse" bs-collapse-target>
             <ul ng-if="navbar.itemsRight" class="nav navbar-nav navbar-right">
                 <li ng-repeat="link in navbar.itemsRight" ng-class="{active:activeLink(link)}" navbar-link>
                 </li>
             </ul>
-        </div>
+        </nav>
     </div>
 </nav>

@@ -44,14 +44,6 @@ def add_css(all):
     css('.content-wrapper',
         z_index=800)
 
-    css('a',
-        color=color('#3c8dbc'))
-
-    css('a:hover, a:active, a:focus',
-        outline='none',
-        color=color('#72afd2'),
-        text_decoration='none')
-
     css('.main-sidebar',
         position='absolute',
         overflow_y='auto',
@@ -132,11 +124,7 @@ def add_css(all):
 
     css('.sidebar',
         css(' .nav-panel',
-            css(':before, :after',
-                content='\"\"',
-                display='table'),
-            css(':after',
-                clear='both'),
+            Clearfix(),
             css(' .image > img',
                 width=px(35),
                 height=px(35),
@@ -226,12 +214,8 @@ def add_css(all):
     media(max_width=collapse_width).css(
         '.sidebar .nav-panel',
         height=px(navbar.small_height)).css(
-        '.navbar-nav',
-        margin='4px 0 !important',
+        '.navbar-header > .navbar-nav',
         float='left').css(
-        '.navbar-collapse',
-        css('.in',
-            background_image='linear-gradient(#FFF, #EEE 50%, #E4E4E4)')).css(
         '.right-sidebar',
         css(' .navbar-static-top',
             css(' .navbar-main',

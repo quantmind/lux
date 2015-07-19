@@ -158,6 +158,7 @@ class CMS(lux.CMS):
                 html = self._row(row, components, self_comp)
             else:
                 html = self._component(components[0], self_comp)
+                html = super().inner_html(request, page, html)
 
             inner.append(html)
 

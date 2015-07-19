@@ -1,6 +1,6 @@
 //      Lux Library - v0.2.0
 
-//      Compiled 2015-07-17.
+//      Compiled 2015-07-18.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -1672,7 +1672,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
     //  ==============
     //
     //  Design to work with the ``lux.extension.angular``
-    angular.module('lux.page', ['lux.form', 'templates-page'])
+    angular.module('lux.page', ['lux.form', 'lux.scroll', 'templates-page'])
         //
         .service('pageService', ['$lux', 'dateFilter', function ($lux, dateFilter) {
 
@@ -1939,7 +1939,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
     }
 
 
-    angular.module('lux.ui.router', ['lux.page', 'lux.scroll', 'ui.router'])
+    angular.module('lux.ui.router', ['lux.page', 'ui.router'])
         //
         .run(['$rootScope', '$state', '$stateParams', function (scope, $state, $stateParams) {
             //
@@ -4028,12 +4028,12 @@ angular.module("nav/templates/navbar.tpl.html", []).run(["$templateCache", funct
     "                {{navbar.brand}}\n" +
     "            </a>\n" +
     "        </div>\n" +
-    "        <div class=\"navbar-collapse\" bs-collapse-target>\n" +
+    "        <nav class=\"navbar-collapse\" bs-collapse-target>\n" +
     "            <ul ng-if=\"navbar.itemsRight\" class=\"nav navbar-nav navbar-right\">\n" +
     "                <li ng-repeat=\"link in navbar.itemsRight\" ng-class=\"{active:activeLink(link)}\" navbar-link>\n" +
     "                </li>\n" +
     "            </ul>\n" +
-    "        </div>\n" +
+    "        </nav>\n" +
     "    </div>\n" +
     "</nav>\n" +
     "");

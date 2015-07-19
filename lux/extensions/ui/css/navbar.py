@@ -34,14 +34,14 @@ def add_css(all):
             css('> li > a',
                 padding_top=navbar.padding,
                 padding_bottom=navbar.padding)),
-        height=navbar.height)
+        min_height=navbar.height)
 
     media(max_width=collapse_width).css(
         '.navbar.navbar-static-top',
         css(' .navbar-brand',
             css(' img', height=navbar.small_height),
             padding=0),
-        height=navbar.small_height)
+        min_height=navbar.small_height)
 
     css('.navbar.navbar-static-top',
         css(' .navbar-nav',

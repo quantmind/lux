@@ -2,7 +2,7 @@
     //  ==============
     //
     //  Design to work with the ``lux.extension.angular``
-    angular.module('lux.page', ['lux.form', 'templates-page'])
+    angular.module('lux.page', ['lux.form', 'lux.scroll', 'templates-page'])
         //
         .service('pageService', ['$lux', 'dateFilter', function ($lux, dateFilter) {
 
@@ -138,6 +138,7 @@
             };
         }])
         //
+        //  Simply display the current yeat
         .directive('year', function () {
             return {
                 restrict: 'AE',

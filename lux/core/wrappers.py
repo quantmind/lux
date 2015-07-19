@@ -98,9 +98,12 @@ class HtmlRouter(Router):
     with content management.
     '''
     html_body_template = RouterParam(None)
+    '''Template for the html body'''
     uirouter = RouterParam(None)
     uimodules = RouterParam(None)
     response_content_types = TEXT_CONTENT_TYPES
+    template = None
+    '''Inner template'''
 
     def get(self, request):
         html = self.get_html(request)
@@ -116,13 +119,18 @@ class HtmlRouter(Router):
         page = cms.page(request.path[1:])
         # render the inner part of the html page
         html = cms.inner_html(request, page, html)
+
+        context = self.context(request, {'html_main': html})
+
+        if self.template:
+            html = app.render_template(self.template, context, request)
+            context['html_main'] = html
+
         # This request is for the inner template only
         if request.url_data.get('template') == 'ui':
             request.response.content = html
             return request.response
 
-        context = {'html_main': html}
-        self.context(request, context)
         if not page.template:
             page.template = self.getparam('html_body_template',
                                           default='home.html',
@@ -141,7 +149,7 @@ class HtmlRouter(Router):
     def context(self, request, context):
         '''Add router specific entries to the template
         ``context`` dictionary'''
-        pass
+        return context
 
     def cms(self, app):
         return app.cms
@@ -246,7 +254,8 @@ def error_handler(request, exc):
             msg = app.render_template(['%s.html' % response.status_code,
                                        'error.html'],
                                       {'status_code': response.status_code,
-                                       'status_message': msg})
+                                       'status_message': msg},
+                                      request=request)
     #
     if is_html:
         doc = request.html_document

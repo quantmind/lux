@@ -1,13 +1,14 @@
 import json
 import logging
+import os
 
 from pulsar import PermissionDenied, Http404
 from pulsar.apps.wsgi import route, Json, Html
 from pulsar.utils.slugify import slugify
 
 from lux import forms, HtmlRouter
+from lux.utils.content import get_reader
 from lux.extensions import rest
-from lux.extensions.static import get_reader
 
 from .models import DataError
 
@@ -80,15 +81,15 @@ class TextCRUD(rest.RestMixin, HtmlRouter):
         #     data = reader.process(data['content'], data['path'], slug=slug)
         # return data
 
-    @route('<slug>', method=('get', 'head', 'post'))
+    @route('<path:path>', method=('get', 'head', 'post'))
     def read_update(self, request):
-        slug = request.urlargs['slug']
+        path = request.urlargs['path']
         backend = request.cache.auth_backend
 
         if request.method == 'GET':
-            return self._read(request, slug, True)
+            return self._read(request, path, True)
 
-        content = self.get_model(request, slug)
+        content = self.get_model(request, path)
         if request.method == 'HEAD':
             if backend.has_permission(request, self.model.name, rest.READ):
                 return request.response
@@ -98,14 +99,17 @@ class TextCRUD(rest.RestMixin, HtmlRouter):
 
         raise PermissionDenied
 
-    def get_model(self, request, slug, sha=None):
+    def get_model(self, request, path, sha=None):
         try:
-            data = self.model.read(slug)
+            data = self.model.read(path)
         except DataError:
-            raise Http404
+            try:
+                data = self.model.read(os.path.join(path, '_'))
+            except DataError:
+                raise Http404
         reader = get_reader(request.app, data['filename'])
         meta = self.content_meta or {}
-        return reader.process(data['content'], data['path'], slug, meta=meta)
+        return reader.process(data['content'], data['path'], path, meta=meta)
 
     def create_model(self, request, data):
         '''Create a new document
@@ -127,8 +131,7 @@ class TextCRUD(rest.RestMixin, HtmlRouter):
         if backend.has_permission(request, self.model.name, rest.READ):
             response = request.response
             if response.content_type == 'text/html':
-                html = Html('div', content.html(request),
-                            cn='text-content')
+                html = content.html(request)
                 if as_response:
                     return self.html_response(request, html)
                 else:

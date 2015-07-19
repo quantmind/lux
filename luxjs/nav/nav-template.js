@@ -33,12 +33,12 @@ angular.module("nav/templates/navbar.tpl.html", []).run(["$templateCache", funct
     "                {{navbar.brand}}\n" +
     "            </a>\n" +
     "        </div>\n" +
-    "        <div class=\"navbar-collapse\" bs-collapse-target>\n" +
+    "        <nav class=\"navbar-collapse\" bs-collapse-target>\n" +
     "            <ul ng-if=\"navbar.itemsRight\" class=\"nav navbar-nav navbar-right\">\n" +
     "                <li ng-repeat=\"link in navbar.itemsRight\" ng-class=\"{active:activeLink(link)}\" navbar-link>\n" +
     "                </li>\n" +
     "            </ul>\n" +
-    "        </div>\n" +
+    "        </nav>\n" +
     "    </div>\n" +
     "</nav>\n" +
     "");
