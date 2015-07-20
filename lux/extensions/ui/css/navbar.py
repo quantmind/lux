@@ -37,6 +37,19 @@ def add_css(all):
         min_height=navbar.height)
 
     media(max_width=collapse_width).css(
+        '.collapse',
+        display='block !important',
+        visibility='hidden',
+        transform='translate(-100px, 0)',
+        transition='all 0.15s cubic-bezier(0.2, 0.3, 0.25, 0.9) 0s',
+        height=px(0)).css(
+        '.collapse.in',
+        visibility='visible',
+        transform='translate(0, 0)',
+        transition='all 0.15s cubic-bezier(0.2, 0.3, 0.25, 0.9) 0s',
+        height=px(120)).css(
+        '.navbar-collapse.in',
+        overflow_y='hidden !important').css(
         '.navbar.navbar-static-top',
         css(' .navbar-brand',
             css(' img', height=navbar.small_height),

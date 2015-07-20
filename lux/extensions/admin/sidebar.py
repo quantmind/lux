@@ -16,6 +16,9 @@ def add_css(all):
     sidebar.toggle.margin = px(15)
     sidebar.toggle.size = px(21)
     sidebar.toggle.padding = 0.5*(navbar.height-sidebar.toggle.size) - px(1)
+    sidebar.toggle.border = '1px solid #ddd'
+    sidebar.info.p.color = '#ccc'
+    sidebar.info.background = '#425466'
 
     collapse_width = px(cfg['NAVBAR_COLLAPSE_WIDTH'])
 
@@ -56,10 +59,10 @@ def add_css(all):
     css('.right-sidebar',
         css(' .content-wrapper, .navbar-static-top',
             transform='translate(0px, 0px)',
-            transition='transform 0.15s cubic-bezier(0.2, 0.3, 0.25, 0.9) 0s'),
+            transition='0.15s cubic-bezier(0.2, 0.3, 0.25, 0.9) 0s'),
         css(' .main-sidebar',
             transform='translate(250px, 0px)',
-            transition='transform 0.15s cubic-bezier(0.2, 0.3, 0.25, 0.9) 0s',
+            transition='0.15s cubic-bezier(0.2, 0.3, 0.25, 0.9) 0s',
             right=0),
         css(' .navbar-static-top',
             css(' .navbar-main',
@@ -70,16 +73,16 @@ def add_css(all):
                 float='left'),
             css(' .sidebar-toggle',
                 margin_left=sidebar.toggle.margin,
-                border_left='1px solid #ddd')),
+                border_left=sidebar.toggle.border)),
         )
 
     css('.left-sidebar',
         css(' .content-wrapper, .navbar-static-top',
             transform='translate(0px, 0px)',
-            transition='transform 0.15s cubic-bezier(0.2, 0.3, 0.25, 0.9) 0s'),
+            transition='0.15s cubic-bezier(0.2, 0.3, 0.25, 0.9) 0s'),
         css(' .main-sidebar',
             transform='translate(-250px, 0px)',
-            transition='transform 0.15s cubic-bezier(0.2, 0.3, 0.25, 0.9) 0s',
+            transition='0.15s cubic-bezier(0.2, 0.3, 0.25, 0.9) 0s',
             left=0),
         css(' .navbar-static-top',
             css(' .navbar-main',
@@ -90,7 +93,7 @@ def add_css(all):
                 float='right'),
             css(' .sidebar-toggle',
                 margin_right=sidebar.toggle.margin,
-                border_right='1px solid #ddd')),
+                border_right=sidebar.toggle.border)),
         )
 
     css('.sidebar-open-left',
@@ -101,7 +104,7 @@ def add_css(all):
             display='none'),
         css(' .content-wrapper, .navbar-static-top',
             transform='translate(250px, 0px)',
-            transition='transform 0.15s cubic-bezier(0.2, 0.3, 0.25, 0.9) 0s'),
+            transition='0.15s cubic-bezier(0.2, 0.3, 0.25, 0.9) 0s'),
         css(' .main-sidebar',
             Transform(x=px(0), y=px(0))),
         )
@@ -114,7 +117,7 @@ def add_css(all):
             display='none'),
         css(' .content-wrapper, .navbar-static-top',
             transform='translate(-250px, 0px)',
-            transition='transform 0.15s cubic-bezier(0.2, 0.3, 0.25, 0.9) 0s'),
+            transition='0.15s cubic-bezier(0.2, 0.3, 0.25, 0.9) 0s'),
         css(' .main-sidebar',
             Transform(x=px(0), y=px(0)))
         )
@@ -134,12 +137,11 @@ def add_css(all):
                 css(' > p',
                     margin_bottom=px(4),
                     margin_top=px(5),
-                    color=color('#ccc'),
+                    color=sidebar.info.p.color,
                     font_size=px(11)),
                 css(' > a',
                     css(' .fa',
                         margin_right=px(3)),
-                    color=color('#fff'),
                     text_decoration='none',
                     padding_right=px(5),
                     font_weight=600,
@@ -148,7 +150,7 @@ def add_css(all):
                 line_height=1),
             padding=spacing(3, 10),
             height=navbar.height,
-            background=color('#425466')),
+            background=sidebar.info.background),
         css(' .sidebar-menu',
             css(' .treeview-menu',
                 css('.active',
@@ -215,7 +217,8 @@ def add_css(all):
         '.sidebar .nav-panel',
         height=px(navbar.small_height)).css(
         '.navbar-header > .navbar-nav',
-        float='left').css(
+        float='left',
+        margin=px(0)).css(
         '.right-sidebar',
         css(' .navbar-static-top',
             css(' .navbar-main',
@@ -272,6 +275,8 @@ def sidebar_skin(all):
             css(' a',
                 css(':hover',
                     text_decoration='none'),
+                outline='none',
+                text_decoration='none',
                 color=skin.color),
             css(' > .sidebar-menu',
                 css(' > li',
