@@ -1,6 +1,6 @@
 //      Lux Library - v0.2.0
 
-//      Compiled 2015-07-18.
+//      Compiled 2015-07-20.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -1808,6 +1808,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
             };
         }])
         //
+        //  Simply display the current yeat
         .directive('year', function () {
             return {
                 restrict: 'AE',
@@ -2432,13 +2433,13 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                     });
 
                     // Add the invalid handler if not available
-                    /*var errors = p.children().length;
+                    var errors = p.children().length;
                     if (errors === (field.required ? 1 : 0)) {
-                        var name = '$invalid';
+                        var nameError = '$invalid';
                         if (errors)
-                            name += ' && !' + [scope.formName, field.name, '$error.required'].join('.');
-                        p.append(this.fieldErrorElement(scope, name, self.errorMessage(scope, 'invalid')));
-                    }*/
+                            nameError += ' && !' + [scope.formName, field.name, '$error.required'].join('.');
+                        p.append(this.fieldErrorElement(scope, nameError, self.errorMessage(scope, 'invalid')));
+                    }
 
                     // Add the invalid handler for server side errors
                     var name = '$invalid';
@@ -3332,11 +3333,17 @@ angular.module("grid/modal.tpl.html", []).run(["$templateCache", function($templ
 
                 scope.delete = function($event) {
                     var modalTitle, modalContent,
-                        pk = gridOptions.columnDefs[0].field,
+                        first_field = gridOptions.columnDefs[0].field,
+                        repr_field = scope.gridOptions.reprField || first_field,
                         icon = '<i class="fa fa-trash"></i>',
                         modalTemplate = 'grid/modal.tpl.html',
                         results = [],
-                        success = false;
+                        success = false,
+                        subPath = scope.options.target.path || '';
+
+                    var pkForItem = function(item) {
+                        return item.hasOwnProperty('id') ? item.id : item[first_field];
+                    };
 
                     scope.selected = scope.gridApi.selection.getSelectedRows();
 
@@ -3349,7 +3356,7 @@ angular.module("grid/modal.tpl.html", []).run(["$templateCache", function($templ
                         modalContent = 'Are you sure you want to delete ' + stateName;
 
                         forEach(scope.selected, function(item) {
-                            results.push(item[pk]);
+                            results.push(item[repr_field]);
                         });
 
                         results = results.join(',');
@@ -3361,7 +3368,7 @@ angular.module("grid/modal.tpl.html", []).run(["$templateCache", function($templ
                     modalScope.ok = function() {
                         var defer = $lux.q.defer();
                         forEach(scope.selected, function(item, _) {
-                            api.delete({path: '/' + item[pk]})
+                            api.delete({path: subPath + '/' + pkForItem(item)})
                                 .success(function(resp) {
                                     success = true;
                                     defer.resolve(success);
@@ -3408,6 +3415,8 @@ angular.module("grid/modal.tpl.html", []).run(["$templateCache", function($templ
                 api.get({path: sub_path + '/metadata'}).success(function(resp) {
                     scope.gridState.limit = resp['default-limit'];
                     scope.gridOptions.columnDefs = parseColumns(resp.columns);
+                    if (resp.repr)
+                        scope.gridOptions.reprField = resp.repr;
 
                     api.get({path: sub_path}, {limit: scope.gridState.limit}).success(function(resp) {
                         scope.gridOptions.totalItems = resp.total;
@@ -3426,7 +3435,7 @@ angular.module("grid/modal.tpl.html", []).run(["$templateCache", function($templ
                 scope.gridState = {
                     page: 1,
                     limit: 25,
-                    offset: 0,
+                    offset: 0
                 };
 
                 scope.objectUrl = function(objectId) {

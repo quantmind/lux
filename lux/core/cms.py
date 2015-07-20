@@ -1,6 +1,6 @@
 import os
 
-from pulsar.apps.wsgi import Route
+from pulsar.apps.wsgi import Route, Html
 from pulsar.utils.structures import AttributeDictionary
 
 from lux.utils.files import skipfile, get_rel_dir
@@ -54,6 +54,8 @@ class CMS:
         ``html`` is the html rendered by the Router, indipendently from the
         CMS layout. It can be en empty string.
         '''
+        if isinstance(html, Html):
+            html = html.render(request)
         return html
 
     def match(self, path, sitemap=None):
@@ -103,7 +105,7 @@ class CMS:
         if path:
             return static_context(self.app, path, context)
         else:
-            return context
+            return {}
 
 
 def static_context(app, location, context):

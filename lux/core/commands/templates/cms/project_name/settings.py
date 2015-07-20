@@ -1,13 +1,16 @@
 """
-lux/pulsar settings for $project_name project.
+$project_name settings
 """
+APP_NAME = '$project_name'
 HTML_TITLE = '$project_name'
-DESCRIPTION = ('$project_name')
+DESCRIPTION = '$project_name'
 
 SECRET_KEY = '$secret_key'
-SESSION_COOKIE_NAME = '$project_name'
+SESSION_COOKIE_NAME = APP_NAME.lower()
 
-AUTHENTICATION_BACKEND = 'lux.extensions.auth.models.SessionBackend'
+AUTHENTICATION_BACKENDS = ['lux.extensions.auth.SessionBackend',
+                           'lux.extensions.rest.backends.CsrfBackend',
+                           'lux.extensions.auth.BrowserBackend']
 
 
 EXTENSIONS = ['lux.extensions.base',

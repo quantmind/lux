@@ -36,27 +36,30 @@ def add_css(all):
                 padding_bottom=navbar.padding)),
         min_height=navbar.height)
 
-    media(max_width=collapse_width).css(
-        '.collapse',
-        css(' ul',
-            display='none'),
-        display='block !important',
-        visibility='hidden',
-        transition='all 0.1s cubic-bezier(0.2, 0.3, 0.25, 0.9) 0s',
-        height=px(0)).css(
-        '.collapse.in',
-        css(' ul',
-            display='block'),
-        visibility='visible',
-        transition='all 0.1s cubic-bezier(0.2, 0.3, 0.25, 0.9) 0s',
-        height=px(120)).css(
-        '.navbar-collapse.in',
-        overflow_y='hidden !important').css(
-        '.navbar.navbar-static-top',
-        css(' .navbar-brand',
-            css(' img', height=navbar.small_height),
-            padding=0),
-        min_height=navbar.small_height)
+    small = media(max_width=collapse_width)
+
+    if False:
+        small.css('.collapse',
+                  css(' ul', display='none'),
+                  display='block !important',
+                  visibility='hidden',
+                  transition='all 0.5s cubic-bezier(0.2, 0.3, 0.25, 0.9) 0s')
+
+    if False:
+        small.css('.collapse.in',
+                  css(' ul', display='block'),
+                  visibility='visible',
+                  transition='all 0.5s cubic-bezier(0.2, 0.3, 0.25, 0.9) 0s')
+
+    if False:
+        small.css('.navbar-collapse.in',
+                  overflow_y='hidden !important')
+
+    small.css('.navbar.navbar-static-top',
+              css(' .navbar-brand',
+                  css(' img', height=navbar.small_height),
+                  padding=0),
+              min_height=navbar.small_height)
 
     css('.navbar.navbar-static-top',
         css(' .navbar-nav',
