@@ -128,11 +128,17 @@
 
                 scope.delete = function($event) {
                     var modalTitle, modalContent,
-                        pk = gridOptions.columnDefs[0].field,
+                        first_field = gridOptions.columnDefs[0].field,
+                        repr_field = scope.gridOptions.reprField || first_field,
                         icon = '<i class="fa fa-trash"></i>',
                         modalTemplate = 'grid/modal.tpl.html',
                         results = [],
-                        success = false;
+                        success = false,
+                        subPath = scope.options.target.path || '';
+
+                    var pkForItem = function(item) {
+                        return item.hasOwnProperty('id') ? item.id : item[first_field];
+                    };
 
                     scope.selected = scope.gridApi.selection.getSelectedRows();
 
@@ -145,7 +151,7 @@
                         modalContent = 'Are you sure you want to delete ' + stateName;
 
                         forEach(scope.selected, function(item) {
-                            results.push(item[pk]);
+                            results.push(item[repr_field]);
                         });
 
                         results = results.join(',');
@@ -157,7 +163,7 @@
                     modalScope.ok = function() {
                         var defer = $lux.q.defer();
                         forEach(scope.selected, function(item, _) {
-                            api.delete({path: '/' + item[pk]})
+                            api.delete({path: subPath + '/' + pkForItem(item)})
                                 .success(function(resp) {
                                     success = true;
                                     defer.resolve(success);
@@ -204,6 +210,8 @@
                 api.get({path: sub_path + '/metadata'}).success(function(resp) {
                     scope.gridState.limit = resp['default-limit'];
                     scope.gridOptions.columnDefs = parseColumns(resp.columns);
+                    if (resp.repr)
+                        scope.gridOptions.reprField = resp.repr;
 
                     api.get({path: sub_path}, {limit: scope.gridState.limit}).success(function(resp) {
                         scope.gridOptions.totalItems = resp.total;
@@ -222,7 +230,7 @@
                 scope.gridState = {
                     page: 1,
                     limit: 25,
-                    offset: 0,
+                    offset: 0
                 };
 
                 scope.objectUrl = function(objectId) {
