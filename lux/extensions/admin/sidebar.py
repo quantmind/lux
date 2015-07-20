@@ -18,7 +18,6 @@ def add_css(all):
     sidebar.toggle.padding = 0.5*(navbar.height-sidebar.toggle.size) - px(1)
     sidebar.toggle.border = '1px solid #ddd'
     sidebar.info.p.color = '#ccc'
-    sidebar.info.a.color = '#fff'
     sidebar.info.background = '#425466'
 
     collapse_width = px(cfg['NAVBAR_COLLAPSE_WIDTH'])
@@ -143,7 +142,6 @@ def add_css(all):
                 css(' > a',
                     css(' .fa',
                         margin_right=px(3)),
-                    color=sidebar.info.a.color,
                     text_decoration='none',
                     padding_right=px(5),
                     font_weight=600,
@@ -216,19 +214,6 @@ def add_css(all):
         padding_bottom=px(10))
 
     media(max_width=collapse_width).css(
-        '.collapse',
-        display='block !important',
-        visibility='hidden',
-        transform='translate(-100px, 0)',
-        transition='all 0.15s cubic-bezier(0.2, 0.3, 0.25, 0.9) 0s',
-        height=px(0)).css(
-        '.collapse.in',
-        visibility='visible',
-        transform='translate(0, 0)',
-        transition='all 0.15s cubic-bezier(0.2, 0.3, 0.25, 0.9) 0s',
-        height=px(120)).css(
-        '.navbar-collapse.in',
-        overflow_y='hidden !important').css(
         '.sidebar .nav-panel',
         height=px(navbar.small_height)).css(
         '.navbar-header > .navbar-nav',
