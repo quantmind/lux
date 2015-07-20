@@ -26,8 +26,6 @@ def add_css(all):
     collapse_width = px(cfg['NAVBAR_COLLAPSE_WIDTH'])
 
     media(min_width=collapse_width).css(
-        '.navbar-collapse.in',
-        overflow_y='hidden !important').css(
         '.navbar.navbar-static-top',
         css(' .navbar-brand',
             css(' img', height=navbar.height),
