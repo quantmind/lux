@@ -55,6 +55,7 @@ class AdminRouter(lux.HtmlRouter):
         if admin:
             doc = request.html_document
             doc.jscontext['navigation'] = admin.sitemap(request.app)
+        return context
 
     def get_html(self, request):
         return request.app.render_template('partials/admin.html')

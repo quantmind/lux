@@ -26,3 +26,6 @@ def add_css(all):
             width=pc(100),
             min_height=pc(100)),
         position='relative')
+
+    css('.large',
+        font_size=pc(150))
