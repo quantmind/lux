@@ -60,10 +60,10 @@ def add_css(all):
     css('.right-sidebar',
         css(' .content-wrapper, .navbar-static-top',
             transform='translate(0px, 0px)',
-            transition='transform 0.15s cubic-bezier(0.2, 0.3, 0.25, 0.9) 0s'),
+            transition='0.15s cubic-bezier(0.2, 0.3, 0.25, 0.9) 0s'),
         css(' .main-sidebar',
             transform='translate(250px, 0px)',
-            transition='transform 0.15s cubic-bezier(0.2, 0.3, 0.25, 0.9) 0s',
+            transition='0.15s cubic-bezier(0.2, 0.3, 0.25, 0.9) 0s',
             right=0),
         css(' .navbar-static-top',
             css(' .navbar-main',
@@ -80,10 +80,10 @@ def add_css(all):
     css('.left-sidebar',
         css(' .content-wrapper, .navbar-static-top',
             transform='translate(0px, 0px)',
-            transition='transform 0.15s cubic-bezier(0.2, 0.3, 0.25, 0.9) 0s'),
+            transition='0.15s cubic-bezier(0.2, 0.3, 0.25, 0.9) 0s'),
         css(' .main-sidebar',
             transform='translate(-250px, 0px)',
-            transition='transform 0.15s cubic-bezier(0.2, 0.3, 0.25, 0.9) 0s',
+            transition='0.15s cubic-bezier(0.2, 0.3, 0.25, 0.9) 0s',
             left=0),
         css(' .navbar-static-top',
             css(' .navbar-main',
@@ -105,7 +105,7 @@ def add_css(all):
             display='none'),
         css(' .content-wrapper, .navbar-static-top',
             transform='translate(250px, 0px)',
-            transition='transform 0.15s cubic-bezier(0.2, 0.3, 0.25, 0.9) 0s'),
+            transition='0.15s cubic-bezier(0.2, 0.3, 0.25, 0.9) 0s'),
         css(' .main-sidebar',
             Transform(x=px(0), y=px(0))),
         )
@@ -118,7 +118,7 @@ def add_css(all):
             display='none'),
         css(' .content-wrapper, .navbar-static-top',
             transform='translate(-250px, 0px)',
-            transition='transform 0.15s cubic-bezier(0.2, 0.3, 0.25, 0.9) 0s'),
+            transition='0.15s cubic-bezier(0.2, 0.3, 0.25, 0.9) 0s'),
         css(' .main-sidebar',
             Transform(x=px(0), y=px(0)))
         )
@@ -216,6 +216,19 @@ def add_css(all):
         padding_bottom=px(10))
 
     media(max_width=collapse_width).css(
+        '.collapse',
+        display='block !important',
+        visibility='hidden',
+        transform='translate(-100px, 0)',
+        transition='all 0.15s cubic-bezier(0.2, 0.3, 0.25, 0.9) 0s',
+        height=px(0)).css(
+        '.collapse.in',
+        visibility='visible',
+        transform='translate(0, 0)',
+        transition='all 0.15s cubic-bezier(0.2, 0.3, 0.25, 0.9) 0s',
+        height=px(120)).css(
+        '.navbar-collapse.in',
+        overflow_y='hidden !important').css(
         '.sidebar .nav-panel',
         height=px(navbar.small_height)).css(
         '.navbar-header > .navbar-nav',
