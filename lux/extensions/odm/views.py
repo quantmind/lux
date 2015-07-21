@@ -63,6 +63,10 @@ class RestRouter(rest.RestRouter):
                 self.set_instance_value(instance, name, value)
         return instance
 
+    def delete_model(self, request, instance):
+        with request.app.odm().begin() as session:
+            session.delete(instance)
+
     def set_instance_value(self, instance, name, value):
         setattr(instance, name, value)
 
@@ -219,8 +223,7 @@ class CRUD(RestRouter):
         elif request.method == 'DELETE':
 
             if backend.has_permission(request, self.model.name, rest.DELETE):
-                with request.app.odm().begin() as session:
-                    session.delete(instance)
+                self.delete_model(request, instance)
                 request.response.status_code = 204
                 return request.response
 

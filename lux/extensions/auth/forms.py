@@ -76,10 +76,16 @@ class CreateUserForm(PasswordForm):
     model = 'user'
     username = forms.SlugField(required=True,
                                validator=odm.UniqueField(),
-                               minlength=6,
                                maxlength=30)
     email = forms.EmailField(required=True,
                              validator=odm.UniqueField())
+
+    def clean_username(self, value):
+        request = self.request
+        if request.config['CHECK_USERNAME'](request, value):
+            return value
+        else:
+            raise forms.ValidationError('Username not available')
 
 
 class ChangePasswordForm(PasswordForm):

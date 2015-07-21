@@ -55,7 +55,7 @@ class Extension(AuthBackend):
         Parameter('SESSION_MESSAGES', True, 'Handle messages'),
         Parameter('SESSION_EXPIRY', 7*24*60*60,
                   'Expiry for a session/token in seconds.'),
-        Parameter('CHECK_USERNAME', lambda u: True,
+        Parameter('CHECK_USERNAME', lambda request, username: True,
                   'Check if the username is valid'),
         Parameter('PERMISSION_LEVELS', {'read': 10,
                                         'create': 20,
