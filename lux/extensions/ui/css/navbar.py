@@ -38,22 +38,20 @@ def add_css(all):
 
     small = media(max_width=collapse_width)
 
-    if False:
-        small.css('.collapse',
-                  css(' ul', display='none'),
-                  display='block !important',
-                  visibility='hidden',
-                  transition='all 0.5s cubic-bezier(0.2, 0.3, 0.25, 0.9) 0s')
+    small.css('.collapse',
+              max_height=px(0),
+              visibility='hidden',
+              display='block !important',
+              transition='max-height 0.8s cubic-bezier(0, 1, 0, 1) -0.1s')
 
-    if False:
-        small.css('.collapse.in',
-                  css(' ul', display='block'),
-                  visibility='visible',
-                  transition='all 0.5s cubic-bezier(0.2, 0.3, 0.25, 0.9) 0s')
+    small.css('.collapse.in',
+              max_height=px(999),
+              visibility='visible',
+              transition_timing_function='cubic-bezier(0.1, 0, 1, 0)',
+              transition_delay='0s')
 
-    if False:
-        small.css('.navbar-collapse.in',
-                  overflow_y='hidden !important')
+    small.css('.navbar-collapse.in',
+              overflow_y='hidden !important')
 
     small.css('.navbar.navbar-static-top',
               css(' .navbar-brand',
