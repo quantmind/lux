@@ -1,5 +1,4 @@
 import lux
-from lux import Html
 
 from .ui import add_css
 

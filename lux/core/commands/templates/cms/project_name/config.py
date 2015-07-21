@@ -1,4 +1,4 @@
-from .settings import *
+from .settings import *     # noqa
 
 MINIFIED_MEDIA = False
 DATASTORE = 'sqlite:///$project_name.sqlite'
