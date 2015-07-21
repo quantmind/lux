@@ -14,6 +14,7 @@ class GithubHook(lux.Router):
     response_content_types = ['application/json']
     repo = None
     secret = None
+    branch = 'master'
 
     @task
     def post(self, request):
@@ -62,4 +63,4 @@ class GithubHook(lux.Router):
 
     def command(self):
         # git checkout HEAD path/to/your/dir/or/file
-        return 'cd %s; git fetch; git checkout HEAD' % self.repo
+        return 'cd %s; git pull origin %s;' % (self.repo, self.branch)
