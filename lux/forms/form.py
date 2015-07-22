@@ -102,7 +102,9 @@ class Form(metaclass=FormType):
     :parameter files: dictionary type object containing files to upload.
     :parameter initial: set the :attr:`initial` attribute.
     :parameter prefix: set the :attr:`prefix` attribute.
-    :parameter instance: An optional instance of a model class.
+    :parameter previous_state:  An optional instance of a model class,
+                                representing the state before changes
+                                have been made.
     :parameter request: Optional client request.
 
     .. attribute:: is_bound
@@ -148,9 +150,10 @@ class Form(metaclass=FormType):
 
         Default: ``{}``.
 
-    .. attribute:: instance
+    .. attribute:: previous_state
 
-        An optional instance of a model.
+        An optional instance of a model, representing the state before changes
+        have been made.
 
         Default: ``None``.
 
@@ -159,7 +162,7 @@ class Form(metaclass=FormType):
     model = None
 
     def __init__(self, request=None, data=None, files=None, initial=None,
-                 prefix=None):
+                 prefix=None, previous_state=None):
         self.request = request
         self.is_bound = data is not None or files is not None
         if self.is_bound:
@@ -183,6 +186,7 @@ class Form(metaclass=FormType):
         self.forms = []
         if not self.is_bound:
             self._fill_initial()
+        self.previous_state = previous_state
         if request:
             request.app.fire('on_form', self)
 

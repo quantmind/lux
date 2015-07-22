@@ -1,5 +1,7 @@
 import logging
 
+from sqlalchemy.inspection import inspect
+
 from lux import forms
 from lux.forms.fields import MultipleMixin
 
@@ -69,14 +71,20 @@ class UniqueField:
     def __call__(self, value, bfield):
         model = self.model or bfield.form.model
         field = self.field or bfield.name
+        previous_state = bfield.form.previous_state
         assert model, 'model not available'
         assert field, 'field not available'
         app = bfield.request.app
         # Get a reference to the object data mapper
         odm = app.odm()
         model = odm[model]
+        pkey = inspect(model).primary_key
         with odm.begin() as session:
             q = session.query(model).filter_by(**{field: value})
+            if previous_state:
+                for pkey_col in pkey:
+                    q = q.filter(pkey_col != getattr(previous_state,
+                                                     pkey_col.name))
             if q.count():
                 raise forms.ValidationError(
                     self.validation_error.format(value))
