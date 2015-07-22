@@ -148,12 +148,12 @@
 
                     if (sidebar.sections) {
                         // content-wrapper
-                        wrapper = angular.element(document.createElement('div'))
-                                    .addClass('content-wrapper')
-                                    .append(content),
-                        // overlay
-                        overlay = angular.element(document.createElement('div'))
-                                    .addClass('overlay');
+                        var wrapper = angular.element(document.createElement('div'))
+                                        .addClass('content-wrapper')
+                                        .append(content),
+                            // overlay
+                            overlay = angular.element(document.createElement('div'))
+                                        .addClass('overlay');
 
                         page.append(wrapper).append(overlay).addClass('sidebar-page');
                     } else
