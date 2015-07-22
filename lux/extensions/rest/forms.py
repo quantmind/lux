@@ -10,12 +10,12 @@ __all__ = ['LoginForm',
 class LoginForm(forms.Form):
     '''The Standard login form'''
     error_message = 'Incorrect username or password'
-    username = forms.CharField(required=True, minlength=6, maxlength=30)
-    password = forms.PasswordField(required=True, minlength=6, maxlength=128)
+    username = forms.CharField(required=True, maxlength=30)
+    password = forms.PasswordField(required=True, maxlength=128)
 
 
 class PasswordForm(forms.Form):
-    password = forms.PasswordField(required=True, minlength=6, maxlength=128)
+    password = forms.PasswordField(required=True, maxlength=128)
     password_repeat = forms.PasswordField(
         label='Confirm password',
         data_check_repeat='password')
