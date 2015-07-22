@@ -15,6 +15,7 @@ def add_css(all):
     sidebar.width = px(250)
     sidebar.toggle.margin = px(15)
     sidebar.toggle.size = px(21)
+    sidebar.toggle.size_small = px(19)
     sidebar.toggle.padding = 0.5*(navbar.height-sidebar.toggle.size) - px(1)
     sidebar.toggle.border = '1px solid #ddd'
     sidebar.info.p.color = '#ccc'
@@ -213,22 +214,31 @@ def add_css(all):
         margin_top=px(0),
         padding_bottom=px(10))
 
-    media(max_width=collapse_width).css(
-        '.sidebar .nav-panel',
-        height=px(navbar.small_height)).css(
-        '.navbar-header > .navbar-nav',
-        float='left',
-        margin=px(0)).css(
-        '.right-sidebar',
-        css(' .navbar-static-top',
-            css(' .navbar-main',
-                float='right',
-                margin_right=px(1)))).css(
-        '.left-sidebar',
-        css(' .navbar-static-top',
-            css(' .navbar-main',
-                float='left',
-                margin_left=px(1))))
+    small = media(max_width=collapse_width)
+
+    small.css('.sidebar .nav-panel',
+              height=px(navbar.small_height))
+
+    small.css('.navbar-header > .navbar-nav',
+              float='left',
+              margin=px(0))
+
+    small.css('.sidebar-toggle',
+              font_size=sidebar.toggle.size_small,
+              padding_top='20px !important',
+              height=px(navbar.small_height))
+
+    small.css('.right-sidebar',
+              css(' .navbar-static-top',
+                  css(' .navbar-main',
+                      float='right',
+                      margin_right=px(1))))
+
+    small.css('.left-sidebar',
+              css(' .navbar-static-top',
+                  css(' .navbar-main',
+                      float='left',
+                      margin_left=px(1))))
 
     sidebar_skin(all)
 
