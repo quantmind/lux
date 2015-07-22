@@ -211,7 +211,8 @@ class CRUD(RestRouter):
 
             if backend.has_permission(request, model.name, rest.UPDATE):
                 data, files = request.data_and_files()
-                form = form_class(request, data=data, files=files)
+                form = form_class(request, data=data, files=files,
+                                  previous_state=instance)
                 if form.is_valid(exclude_missing=True):
                     instance = self.update_model(request, instance,
                                                  form.cleaned_data)
