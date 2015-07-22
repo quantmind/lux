@@ -74,17 +74,6 @@
         return ostring.call(o) === '[object Object]';
     },
     //
-    getRootAttribute = function (name) {
-        var obj = root,
-            bits= name.split('.');
-
-        for (var i=0; i<bits.length; ++i) {
-            obj = obj[bits[i]];
-            if (!obj) break;
-        }
-        return obj;
-    },
-    //
     //  getOPtions
     //  ===============
     //
@@ -94,7 +83,7 @@
     getOptions = lux.getOptions = function (attrs) {
         var options;
         if (attrs && typeof attrs.options === 'string') {
-            options = getRootAttribute(attrs.options);
+            options = getAttribute(root, attrs.options);
             if (typeof options === 'function')
                 options = options();
         } else {
@@ -196,4 +185,44 @@
             ++n;
         });
         return n;
+    },
+    //
+    // Used by the getObject function
+    getAttribute = function (obj, name) {
+        var bits= name.split('.');
+
+        for (var i=0; i<bits.length; ++i) {
+            obj = obj[bits[i]];
+            if (!obj) break;
+        }
+        if (typeof obj === 'function')
+            obj = obj();
+
+        return obj;
+    },
+    //
+    //
+    //  Get Options
+    //  ==============================================
+    //
+    //  Obtain an object from scope (if available) with fallback to
+    //  the global javascript object
+    getObject = lux.getObject = function (attrs, name, scope) {
+        var key = attrs[name],
+            exclude = [name, 'class', 'style'],
+            options;
+
+        if (key) {
+            // Try the scope first
+            if (scope) options = getAttribute(scope, key);
+
+            if (!options) options = getAttribute(root, key);
+        }
+        if (!options) options = {};
+
+        forEach(attrs, function (value, name) {
+            if (name.substring(0, 1) !== '$' && exclude.indexOf(name) === -1)
+                options[name] = value;
+        });
+        return options;
     };

@@ -31,7 +31,7 @@
             $lux.api('googlesheets', googlesheets);
         }])
         //
-        .directive('googleMap', function () {
+        .directive('googleMap', ['$lux', function ($lux) {
             return {
                 //
                 // Create via element tag
@@ -39,29 +39,37 @@
                 restrict: 'AE',
                 //
                 link: function (scope, element, attrs) {
-                    require(['google-maps'], function () {
-                        on_google_map_loaded(function () {
-                            var lat = +attrs.lat,
-                                lng = +attrs.lng,
-                                loc = new google.maps.LatLng(lat, lng),
-                                opts = {
-                                    center: loc,
-                                    zoom: attrs.zoom ? +attrs.zoom : 8
-                                },
-                                map = new google.maps.Map(element[0], opts);
-                            var marker = new google.maps.Marker({
+                    if(!scope.googlemaps) {
+                        $lux.log.error('Google maps url not available. Cannot load google maps directive');
+                        return;
+                    }
+                    require([scope.googlemaps], function () {
+                        var config = lux.getObject(attrs, 'config', scope),
+                            lat = +config.lat,
+                            lng = +config.lng,
+                            loc = new google.maps.LatLng(lat, lng),
+                            opts = {
+                                center: loc,
+                                zoom: config.zoom ? +config.zoom : 8,
+                                mapTypeId: google.maps.MapTypeId.ROADMAP,
+                                scrollwheel: config.scrollwheel ? true : false,
+                            },
+                            map = new google.maps.Map(element[0], opts),
+                            //
+                            marker = config.marker;
+
+                        if (marker)
+                            var gmarker = new google.maps.Marker(angular.extend({
                                 position: loc,
                                 map: map,
-                                title: attrs.marker
-                            });
-                            //
-                            windowResize(function () {
-                                google.maps.event.trigger(map, 'resize');
-                                map.setCenter(loc);
-                                map.setZoom(map.getZoom());
-                            }, 500);
-                        });
+                            }, marker));
+                        //
+                        windowResize(function () {
+                            google.maps.event.trigger(map, 'resize');
+                            map.setCenter(loc);
+                            map.setZoom(map.getZoom());
+                        }, 500);
                     });
                 }
             };
-        });
+        }]);

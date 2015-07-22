@@ -185,17 +185,6 @@ function(angular, root) {
         return ostring.call(o) === '[object Object]';
     },
     //
-    getRootAttribute = function (name) {
-        var obj = root,
-            bits= name.split('.');
-
-        for (var i=0; i<bits.length; ++i) {
-            obj = obj[bits[i]];
-            if (!obj) break;
-        }
-        return obj;
-    },
-    //
     //  getOPtions
     //  ===============
     //
@@ -205,7 +194,7 @@ function(angular, root) {
     getOptions = lux.getOptions = function (attrs) {
         var options;
         if (attrs && typeof attrs.options === 'string') {
-            options = getRootAttribute(attrs.options);
+            options = getAttribute(root, attrs.options);
             if (typeof options === 'function')
                 options = options();
         } else {
@@ -307,6 +296,46 @@ function(angular, root) {
             ++n;
         });
         return n;
+    },
+    //
+    // Used by the getObject function
+    getAttribute = function (obj, name) {
+        var bits= name.split('.');
+
+        for (var i=0; i<bits.length; ++i) {
+            obj = obj[bits[i]];
+            if (!obj) break;
+        }
+        if (typeof obj === 'function')
+            obj = obj();
+
+        return obj;
+    },
+    //
+    //
+    //  Get Options
+    //  ==============================================
+    //
+    //  Obtain an object from scope (if available) with fallback to
+    //  the global javascript object
+    getObject = lux.getObject = function (attrs, name, scope) {
+        var key = attrs[name],
+            exclude = [name, 'class', 'style'],
+            options;
+
+        if (key) {
+            // Try the scope first
+            if (scope) options = getAttribute(scope, key);
+
+            if (!options) options = getAttribute(root, key);
+        }
+        if (!options) options = {};
+
+        forEach(attrs, function (value, name) {
+            if (name.substring(0, 1) !== '$' && exclude.indexOf(name) === -1)
+                options[name] = value;
+        });
+        return options;
     };
 
     lux.messages.no_api = function (url) {
@@ -4483,20 +4512,23 @@ angular.module("nav/templates/sidebar.tpl.html", []).run(["$templateCache", func
                     var sidebar = scope.sidebar,
                         // get the original content
                         content = scope.sidebarContent,
+                        // page
+                        page = angular.element(document.createElement('div'));
+
+                    delete scope.sidebarContent;
+
+                    if (sidebar.sections) {
                         // content-wrapper
                         wrapper = angular.element(document.createElement('div'))
                                     .addClass('content-wrapper')
                                     .append(content),
                         // overlay
                         overlay = angular.element(document.createElement('div'))
-                                    .addClass('overlay'),
-                        // page
-                        page = angular.element(document.createElement('div'))
-                                    .attr('id', 'page')
-                                    .append(wrapper)
-                                    .append(overlay);
+                                    .addClass('overlay');
 
-                    delete scope.sidebarContent;
+                        page.append(wrapper).append(overlay).addClass('sidebar-page');
+                    } else
+                        page.append(content).addClass('navbar-page');
 
                     // compile
                     page = $compile(page)(scope);
@@ -4875,7 +4907,7 @@ angular.module("nav/templates/sidebar.tpl.html", []).run(["$templateCache", func
             $lux.api('googlesheets', googlesheets);
         }])
         //
-        .directive('googleMap', function () {
+        .directive('googleMap', ['$lux', function ($lux) {
             return {
                 //
                 // Create via element tag
@@ -4883,32 +4915,41 @@ angular.module("nav/templates/sidebar.tpl.html", []).run(["$templateCache", func
                 restrict: 'AE',
                 //
                 link: function (scope, element, attrs) {
-                    require(['google-maps'], function () {
-                        on_google_map_loaded(function () {
-                            var lat = +attrs.lat,
-                                lng = +attrs.lng,
-                                loc = new google.maps.LatLng(lat, lng),
-                                opts = {
-                                    center: loc,
-                                    zoom: attrs.zoom ? +attrs.zoom : 8
-                                },
-                                map = new google.maps.Map(element[0], opts);
-                            var marker = new google.maps.Marker({
+                    if(!scope.googlemaps) {
+                        $lux.log.error('Google maps url not available. Cannot load google maps directive');
+                        return;
+                    }
+                    require([scope.googlemaps], function () {
+                        var config = lux.getObject(attrs, 'config', scope),
+                            lat = +config.lat,
+                            lng = +config.lng,
+                            loc = new google.maps.LatLng(lat, lng),
+                            opts = {
+                                center: loc,
+                                zoom: config.zoom ? +config.zoom : 8,
+                                mapTypeId: google.maps.MapTypeId.ROADMAP,
+                                scrollwheel: config.scrollwheel ? true : false,
+                            },
+                            map = new google.maps.Map(element[0], opts),
+                            //
+                            marker = config.marker;
+
+                        if (marker)
+                            var gmarker = new google.maps.Marker(angular.extend({
                                 position: loc,
                                 map: map,
-                                title: attrs.marker
-                            });
-                            //
-                            windowResize(function () {
-                                google.maps.event.trigger(map, 'resize');
-                                map.setCenter(loc);
-                                map.setZoom(map.getZoom());
-                            }, 500);
-                        });
+                            }, marker));
+                        //
+                        windowResize(function () {
+                            google.maps.event.trigger(map, 'resize');
+                            map.setCenter(loc);
+                            map.setZoom(map.getZoom());
+                        }, 500);
                     });
                 }
             };
-        });
+        }]);
+
 
     var googlesheets = function (url, $lux) {
         url = "https://spreadsheets.google.com";

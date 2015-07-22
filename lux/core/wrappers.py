@@ -121,9 +121,10 @@ class HtmlRouter(Router):
         html = cms.inner_html(request, page, html)
 
         context = self.context(request, {'html_main': html})
+        template = self.get_inner_template(request)
 
-        if self.template:
-            html = app.render_template(self.template, context, request)
+        if template:
+            html = app.render_template(template, context, request)
             context['html_main'] = html
 
         # This request is for the inner template only
@@ -137,6 +138,9 @@ class HtmlRouter(Router):
                                           parents=True)
 
         return app.html_response(request, page, context=context)
+
+    def get_inner_template(self, request):
+        return self.template
 
     def get_html(self, request):
         '''Must be implemented by subclasses.

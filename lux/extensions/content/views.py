@@ -44,8 +44,7 @@ class TextCRUD(rest.RestMixin, HtmlRouter):
                 return self._read(request, slug)
             except Http404:
                 pass
-        target = self.model.get_target(request, path='_all')
-        return Html('div').attr({'blog-pagination': {'target': target}})
+        raise Http404
 
     def post(self, request):
         '''Create a new model

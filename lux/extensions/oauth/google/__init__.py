@@ -68,8 +68,7 @@ class Google(OAuth2):
         key = self.config.get('simple_key')
         if key:
             sensor = 'true' if self.config.get('map_sensor') else 'false'
-            url = google_map_url % (key, sensor)
-            doc.jscontext['googlemaps'] = url
+            doc.jscontext['googlemaps'] = google_map_url % (key, sensor)
 
     def google_context(self, doc):
         add_ng_modules(doc, 'lux.google')
@@ -101,28 +100,5 @@ GOOGLE_ANALYTICS = Template('''\
 </script>''')
 
 
-run_google_maps_callbacks = '''
-var google_maps_callbacks = [],
-    google_maps_loaded = false,
-    run_google_maps_callbacks = function () {
-        while (google_maps_callbacks.length) {
-            var callbacks = google_maps_callbacks;
-            google_maps_callbacks = [];
-            for (var i=0;i<callbacks.length;i++) {
-                callbacks[i]();
-            }
-        }
-        google_maps_loaded = true;
-    },
-    on_google_map_loaded = function (callback) {
-        if (google_maps_loaded) callback()
-        else google_maps_callbacks.push(callback);
-    };
-'''
-
-
-google_map_url = ('https://maps.googleapis.com/maps/api/js?'
-                  'key=%s&sensor=%s&'
-                  'callback=run_google_maps_callbacks')
-google_map_url = ('https://maps.googleapis.com/maps/api/js?'
+google_map_url = ('async!https://maps.googleapis.com/maps/api/js?'
                   'key=%s&sensor=%s')

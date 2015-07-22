@@ -141,20 +141,23 @@
                     var sidebar = scope.sidebar,
                         // get the original content
                         content = scope.sidebarContent,
+                        // page
+                        page = angular.element(document.createElement('div'));
+
+                    delete scope.sidebarContent;
+
+                    if (sidebar.sections) {
                         // content-wrapper
                         wrapper = angular.element(document.createElement('div'))
                                     .addClass('content-wrapper')
                                     .append(content),
                         // overlay
                         overlay = angular.element(document.createElement('div'))
-                                    .addClass('overlay'),
-                        // page
-                        page = angular.element(document.createElement('div'))
-                                    .attr('id', 'page')
-                                    .append(wrapper)
-                                    .append(overlay);
+                                    .addClass('overlay');
 
-                    delete scope.sidebarContent;
+                        page.append(wrapper).append(overlay).addClass('sidebar-page');
+                    } else
+                        page.append(content).addClass('navbar-page');
 
                     // compile
                     page = $compile(page)(scope);
