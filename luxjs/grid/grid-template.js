@@ -9,7 +9,7 @@ angular.module("grid/modal.empty.tpl.html", []).run(["$templateCache", function(
     "        <button type=\"button\" class=\"close\" aria-label=\"Close\" ng-click=\"$hide()\"><span aria-hidden=\"true\">&times;</span></button>\n" +
     "        <h4 class=\"modal-title\" ng-bind-html=\"title\"></h4>\n" +
     "      </div>\n" +
-    "      <div class=\"modal-body\" ng-bind=\"content\"></div>\n" +
+    "      <div class=\"modal-body\" ng-bind-html=\"content\"></div>\n" +
     "      <div class=\"modal-footer\">\n" +
     "        <button type=\"button\" class=\"btn btn-default\" ng-click=\"$hide()\">Close</button>\n" +
     "      </div>\n" +
@@ -28,7 +28,7 @@ angular.module("grid/modal.tpl.html", []).run(["$templateCache", function($templ
     "        <button type=\"button\" class=\"close\" aria-label=\"Close\" ng-click=\"$hide()\"><span aria-hidden=\"true\">&times;</span></button>\n" +
     "        <h4 class=\"modal-title\" ng-bind-html=\"title\"></h4>\n" +
     "      </div>\n" +
-    "      <div class=\"modal-body\" ng-bind=\"content\"></div>\n" +
+    "      <div class=\"modal-body\" ng-bind-html=\"content\"></div>\n" +
     "      <div class=\"modal-footer\">\n" +
     "        <button type=\"button\" class=\"btn btn-default\" ng-click=\"$hide()\">No</button>\n" +
     "        <button type=\"button\" class=\"btn btn-primary\" ng-click=\"ok()\">Yes</button>\n" +

@@ -30,6 +30,13 @@
                     icon: 'fa fa-trash'
                 }
             },
+            modal: {
+                height: 350,
+                templates: {
+                    'default': 'grid/modal.tpl.html',
+                    'empty': 'grid/modal.empty.tpl.html',
+                }
+            },
             // dictionary of call-backs for columns types
             // The function is called with four parameters
             //	* `column` ui-grid object
@@ -60,8 +67,8 @@
             }
         })
         //
-        .service('GridService', ['$lux', '$location', '$compile', '$modal', 'uiGridConstants', 'gridDefaults',
-            function($lux, $location, $compile, $modal, uiGridConstants, gridDefaults) {
+        .service('GridService', ['$lux', '$document', '$location', '$compile', '$modal', 'uiGridConstants', 'gridDefaults',
+            function($lux, $document, $location, $compile, $modal, uiGridConstants, gridDefaults) {
 
             function parseColumns(columns) {
                 var columnDefs = [],
@@ -127,14 +134,24 @@
                 };
 
                 scope.delete = function($event) {
-                    var modalTitle, modalContent,
+                    var modalTemplate,
                         first_field = gridOptions.columnDefs[0].field,
                         repr_field = scope.gridOptions.reprField || first_field,
                         icon = '<i class="fa fa-trash"></i>',
-                        modalTemplate = 'grid/modal.tpl.html',
-                        results = [],
                         success = false,
-                        subPath = scope.options.target.path || '';
+                        subPath = scope.options.target.path || '',
+                        //
+                        item,
+                        info = angular.element($document[0].createElement('p'))
+                                    .css('font-weight', 600),
+                        warning = angular.element($document[0].createElement('p'))
+                                    .css({'font-weight': 600, 'color': 'red'})
+                                    .html('DANGER - THIS CANNOT BE UNDONE'),
+                        itemWrapper = angular.element($document[0].createElement('ul'))
+                                            .css({'max-height': gridDefaults.modal.height + 'px',
+                                                  'overflow-y': 'auto'}),
+                        contentWrapper = angular.element($document[0].createElement('div'))
+                                            .append(info);
 
                     var pkForItem = function(item) {
                         return item.hasOwnProperty('id') ? item.id : item[first_field];
@@ -142,23 +159,25 @@
 
                     scope.selected = scope.gridApi.selection.getSelectedRows();
 
-                    if (!scope.selected.length) {
-                        modalTitle = icon + ' Lack of ' + stateName + ' to delete';
-                        modalContent = 'Please, select some ' + stateName + '.';
-                        modalTemplate = 'grid/modal.empty.tpl.html';
-                    } else {
-                        modalTitle = icon + ' Delete ' + stateName;
-                        modalContent = 'Are you sure you want to delete ' + stateName;
+                    if (scope.selected.length > 0) {
+                        modalTemplate = gridDefaults.modal.templates.default;
+                        title = icon + ' Delete ' + stateName;
+                        info.html('Are you sure you want to delete ' + stateName + ':');
 
-                        forEach(scope.selected, function(item) {
-                            results.push(item[repr_field]);
+                        // Add selected items and warning message
+                        contentWrapper.append(itemWrapper).append(warning);
+
+                        forEach(scope.selected, function(selItem) {
+                            item = angular.element($document[0].createElement('li')),
+                            itemWrapper.append(item.html(selItem[repr_field]));
                         });
-
-                        results = results.join(',');
-                        modalContent += ' ' + results + '? This cannot be undone!';
+                    } else {
+                        modalTemplate = gridDefaults.modal.templates.empty;
+                        title = icon + ' Lack of ' + stateName + ' to delete';
+                        info.html('Please, select some ' + stateName + '.');
                     }
 
-                    modal = $modal({scope: modalScope, title: modalTitle, content: modalContent, template: modalTemplate, show: true});
+                    modal = $modal({scope: modalScope, title: title, content: contentWrapper.html(), template: modalTemplate, show: true});
 
                     modalScope.ok = function() {
                         var defer = $lux.q.defer();
@@ -171,11 +190,12 @@
                         });
 
                         defer.promise.then(function() {
+                            var alertMsg = scope.selected.length + ' ' + stateName + '.';
                             if (success) {
                                 getPage(scope, api);
-                                $lux.messages.success('Successfully deleted ' + stateName + ' ' + results);
+                                $lux.messages.success('Successfully deleted ' + alertMsg);
                             } else
-                                $lux.messages.error('Error while deleting ' + stateName + ' ' + results);
+                                $lux.messages.error('Error while deleting ' + alertMsg);
 
                             modal.hide();
                         });
