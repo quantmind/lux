@@ -97,6 +97,12 @@ class CMS:
             page = Page(template=page)
         return self.app.render_template(page.template, context)
 
+    def cache_key(self):
+        key = 'cms:sitemap'
+        if self.key:
+            key = '%s:%s' (key, self.key)
+        return key
+
     @cached
     def context(self, context):
         '''Static context dictionary for this cms

@@ -14,11 +14,11 @@ class ContactForm(forms.Form):
                            label='Your name')
     email = forms.EmailField(max_length=200,
                              label='Your email address')
-    body = forms.TextField(label='Your message')
+    body = forms.TextField(label='Your message', rows=10)
 
 
 HtmlContactForm = Layout(ContactForm,
-                         Fieldset(all=True),
+                         Fieldset(all=True, showLabels=False),
                          Submit('Send'))
 
 

@@ -3,9 +3,10 @@ import logging
 import os
 
 from pulsar import PermissionDenied, Http404
-from pulsar.apps.wsgi import route, Json, Html
+from pulsar.apps.wsgi import route, Json, RouterParam
 from pulsar.utils.slugify import slugify
 
+import lux
 from lux import forms, HtmlRouter
 from lux.utils.content import get_reader
 from lux.extensions import rest
@@ -27,21 +28,24 @@ class TextForm(forms.Form):
     published = forms.DateTimeField(required=False)
 
 
-class TextCRUD(rest.RestMixin, HtmlRouter):
-    '''CRUD views for the text APIs
-    '''
+class TextCRUDBase(rest.RestMixin, HtmlRouter):
     response_content_types = ('text/html', 'text/plain', 'application/json')
+    render_file = RouterParam()
     uimodules = ('lux.blog',)
     content_meta = None
     '''Metadata dictionary for content routes
     '''
 
+
+class TextCRUD(TextCRUDBase):
+    '''CRUD views for the text APIs
+    '''
     def get_html(self, request):
         '''Return a div for pagination
         '''
         for slug in ('', '_'):
             try:
-                return self._read(request, slug)
+                return self.render_file(request, slug)
             except Http404:
                 pass
         raise Http404
@@ -86,7 +90,7 @@ class TextCRUD(rest.RestMixin, HtmlRouter):
         backend = request.cache.auth_backend
 
         if request.method == 'GET':
-            return self._read(request, path, True)
+            return self.render_file(request, path, True)
 
         content = self.get_model(request, path)
         if request.method == 'HEAD':
@@ -123,7 +127,11 @@ class TextCRUD(rest.RestMixin, HtmlRouter):
     def serialise_model(self, request, data, in_list=False):
         return data
 
-    def _read(self, request, slug='', as_response=False):
+    def cms_html(self, request, slug, html):
+        if not slug:
+            slug = ('', '_')
+
+    def render_file(self, request, slug='', as_response=False):
         content = self.get_model(request, slug)
         backend = request.cache.auth_backend
 
@@ -145,3 +153,38 @@ class TextCRUD(rest.RestMixin, HtmlRouter):
             else:
                 return text
         raise PermissionDenied
+
+
+class CMS(lux.CMS):
+    '''Override default lux :class:`.CMS` handler
+
+    This CMS handler reads page information from the database and
+    '''
+    def __init__(self, app):
+        super().__init__(app)
+        self.middleware = []
+
+    def inner_html(self, request, page, self_comp=''):
+        html = super().inner_html(request, page, self_comp)
+        request.cache.html_main = html
+        path = request.path[1:]
+
+        try:
+            for router in self.middleware:
+                router_args = router.resolve(path)
+                if router_args:
+                    router, args = router_args
+                    slug = None
+                    if args:
+                        slugs = tuple(args.values())
+                    else:
+                        slugs = ('', '_')
+                    for slug in slugs:
+                        try:
+                            return router.render_file(request, slug)
+                        except Http404:
+                            pass
+
+            return html
+        finally:
+            request.cache.pop('html_main')

@@ -149,6 +149,7 @@ class Application(ConsoleParser, Extension, EventMixin):
     handler = None
     auth_backend = None
     thread_pool = True
+    cms = None
     _worker = None
     _WsgiHandler = WsgiHandler
     _config = [
@@ -294,7 +295,8 @@ class Application(ConsoleParser, Extension, EventMixin):
     def get_handler(self):
         if self.handler is None:
             self._worker = pulsar.get_actor()
-            self.cms = CMS(self)
+            if not self.cms:
+                self.cms = CMS(self)
             self.handler = self._build_handler()
             self.fire('on_loaded')
             wsgi = None
