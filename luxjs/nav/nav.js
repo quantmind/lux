@@ -117,10 +117,10 @@
                 link: function (scope, element, attrs) {
                     navService.initScope(scope, attrs);
                     //
-                    windowResize(function () {
-                        if (navService.maybeCollapse(scope.navbar))
-                            scope.$apply();
-                    });
+                    //windowResize(function () {
+                    //    if (navService.maybeCollapse(scope.navbar))
+                    //        scope.$apply();
+                    //});
                     //
                     // When using ui-router, and a view changes collapse the
                     //  navigation if needed
@@ -156,11 +156,6 @@
 
                             inner = $compile('<div data-nav-side-bar></div>')(scope);
                             element.replaceWith(inner.addClass(className));
-                            //
-                            windowResize(function () {
-                                if (navService.maybeCollapse(scope.navbar))
-                                    scope.$apply();
-                            });
                         }
                     };
                 }
@@ -190,7 +185,7 @@
                         inner.attr('style', 'min-height: ' + windowHeight() + 'px');
                     }
                     //
-                    windowResize(resize);
+                    //windowResize(resize);
                     //
                     resize();
                 }
