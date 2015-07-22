@@ -32,6 +32,6 @@
     "tests"
   ],
   "dependencies": {
-    "angular": ""
+    "angular-ui-grid": ""
   }
 }

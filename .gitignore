@@ -20,5 +20,6 @@ example/luxweb/settings.py
 *.log
 npm*
 node_modules
+bower_components
 MANIFEST
 .DS_Store

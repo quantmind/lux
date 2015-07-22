@@ -21,7 +21,11 @@ var lux = {context: {MINIFIED_MEDIA: true}};
     // Delay onLoad function until we are ready
     var startTests = window.onload;
     window.onload = null;
-    lux.config({});
+    lux.config({
+      paths: {
+        'angular-ui-grid': 'bower_components/angular-ui-grid/ui-grid'
+      }
+    });
     require(['<%= [].concat(options.deps).join("', '") %>'], function() {
         require(['<%= [].concat(scripts.specs,scripts.reporters).join("','") %>'], function(){
             startTests();

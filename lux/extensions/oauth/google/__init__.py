@@ -51,6 +51,8 @@ you do not need to access user data::
 '''
 from string import Template
 
+from lux.extensions.angular import add_ng_modules
+
 from ..oauth import OAuth2, register_oauth
 
 
@@ -67,13 +69,10 @@ class Google(OAuth2):
         if key:
             sensor = 'true' if self.config.get('map_sensor') else 'false'
             url = google_map_url % (key, sensor)
-            doc.head.scripts.paths['google-maps'] = {'url': url}
-            doc.head.embedded_js.append(run_google_maps_callbacks)
+            doc.jscontext['googlemaps'] = url
 
     def google_context(self, doc):
-        ngmodules = set(doc.jscontext.get('ngModules', ()))
-        ngmodules.add('lux.google')
-        doc.jscontext['ngModules'] = list(ngmodules)
+        add_ng_modules(doc, 'lux.google')
         google = doc.jscontext.get('google')
         if google is None:
             doc.jscontext['google'] = {}
@@ -125,3 +124,5 @@ var google_maps_callbacks = [],
 google_map_url = ('https://maps.googleapis.com/maps/api/js?'
                   'key=%s&sensor=%s&'
                   'callback=run_google_maps_callbacks')
+google_map_url = ('https://maps.googleapis.com/maps/api/js?'
+                  'key=%s&sensor=%s')
