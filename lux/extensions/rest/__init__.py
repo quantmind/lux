@@ -118,16 +118,16 @@ class Extension(AuthBackend):
         for backend in self.backends:
             middleware.extend(backend.middleware(app) or ())
 
+        dotted_path = app.config['PAGINATION']
+        pagination = module_attribute(dotted_path)
+        if not pagination:
+            raise ImproperlyConfigured('Could not load paginator "%s"',
+                                       dotted_path)
+        app.pagination = pagination()
+
         url = app.config['API_URL']
         # If the api url is not absolute, add the api middleware
         if not is_absolute_uri(url):
-            dotted_path = app.config['PAGINATION']
-            pagination = module_attribute(dotted_path)
-            if not pagination:
-                raise ImproperlyConfigured('Could not loaf paginator "%s"',
-                                           dotted_path)
-            app.pagination = pagination()
-
             # Add the preflight and token events
             events = ('on_preflight', 'on_token')
             app.add_events(events)

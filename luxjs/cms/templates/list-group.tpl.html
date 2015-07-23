@@ -1,3 +1,4 @@
 <div class="list-group">
-  <a ng-repeat="link in links" ng-href="{{link.url}}" class="list-group-item" ng-bind="link.title"></a>
+  <a ng-repeat="link in links" ng-href="{{link.url}}" class="list-group-item"
+  ng-bind="link.title" ng-class="{active: link.url === $location.absUrl()}"></a>
 </div>

@@ -1,4 +1,4 @@
-angular.module('lux.cms.component', ['lux.services'])
+angular.module('lux.cms.component', ['lux.services', 'templates-cms'])
     //
     // Defaults for cms components
     .value('cmsDefaults', {

@@ -7,8 +7,7 @@ from pulsar.apps.wsgi import route, Json, RouterParam
 from pulsar.utils.slugify import slugify
 
 import lux
-from lux import forms, HtmlRouter
-from lux.utils.content import get_reader
+from lux import forms, HtmlRouter, cached
 from lux.extensions import rest
 
 from .models import DataError
@@ -32,9 +31,6 @@ class TextCRUDBase(rest.RestMixin, HtmlRouter):
     response_content_types = ('text/html', 'text/plain', 'application/json')
     render_file = RouterParam()
     uimodules = ('lux.blog',)
-    content_meta = None
-    '''Metadata dictionary for content routes
-    '''
 
 
 class TextCRUD(TextCRUDBase):
@@ -77,12 +73,12 @@ class TextCRUD(TextCRUDBase):
         raise PermissionDenied
 
     @route('_all', response_content_types=('application/json',))
-    def pagination(self, request):
-        pass
-        # reader = get_reader(request.app, '.%s' % self.model.ext)
-        # for file in self.model.all():
-        #     data = reader.process(data['content'], data['path'], slug=slug)
-        # return data
+    def all(self, request):
+        return self.collection_response(request, sortby='date:desc')
+
+    @route('_links', response_content_types=('application/json',))
+    def links(self, request):
+        return self.collection_response(request, sortby='priority:desc')
 
     @route('<path:path>', method=('get', 'head', 'post'))
     def read_update(self, request):
@@ -102,17 +98,17 @@ class TextCRUD(TextCRUDBase):
 
         raise PermissionDenied
 
+    def query(self, request, session):
+        return session
+
     def get_model(self, request, path, sha=None):
         try:
-            data = self.model.read(path)
+            return self.model.read(request, path)
         except DataError:
             try:
-                data = self.model.read(os.path.join(path, '_'))
+                return self.model.read(request, os.path.join(path, '_'))
             except DataError:
                 raise Http404
-        reader = get_reader(request.app, data['filename'])
-        meta = self.content_meta or {}
-        return reader.process(data['content'], data['path'], path, meta=meta)
 
     def create_model(self, request, data):
         '''Create a new document
@@ -124,7 +120,10 @@ class TextCRUD(TextCRUDBase):
     def update_model(self, request, instance, data):
         pass
 
-    def serialise_model(self, request, data, in_list=False):
+    def serialise_model(self, request, data, in_list=False, **kw):
+        if in_list:
+            data.pop('html', None)
+            data.pop('site', None)
         return data
 
     def cms_html(self, request, slug, html):
@@ -153,6 +152,12 @@ class TextCRUD(TextCRUDBase):
             else:
                 return text
         raise PermissionDenied
+
+    def _do_sortby(self, request, query, field, direction):
+        return query.sortby(field, direction)
+
+    def _do_filter(self, request, model, query, field, op, value):
+        return query.filter(field, op, value)
 
 
 class CMS(lux.CMS):

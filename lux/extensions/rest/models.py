@@ -96,6 +96,13 @@ class RestModel:
         '''
         raise NotImplementedError
 
+    def session(self, request):
+        '''Return a session for aggregating a query.
+        The retunred object should be context manager and support the query
+        method.
+        '''
+        raise NotImplementedError
+
     def columns(self, app):
         '''Return a list fields describing the entries for a given model
         instance'''

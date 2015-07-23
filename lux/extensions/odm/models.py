@@ -18,6 +18,9 @@ RestColumn = rest.RestColumn
 class RestModel(rest.RestModel):
     '''A rest model based on SqlAlchemy ORM
     '''
+    def session(self, request):
+        return request.app.odm().begin()
+
     def tojson(self, request, obj, exclude=None):
         '''Override the method from the base class.
 

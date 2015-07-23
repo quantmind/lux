@@ -367,8 +367,10 @@ function(angular, root) {
         }])
         //
         .service('$lux', ['$location', '$window', '$q', '$http', '$log',
-                          '$timeout', 'ApiTypes', 'AuthApis',
-                function ($location, $window, $q, $http, $log, $timeout, ApiTypes, AuthApis) {
+                          '$timeout', 'ApiTypes', 'AuthApis', '$templateCache',
+                          '$compile',
+                          function ($location, $window, $q, $http, $log, $timeout,
+                                      ApiTypes, AuthApis, $templateCache, $compile) {
             var $lux = this;
 
             this.location = $location;
@@ -435,6 +437,22 @@ function(angular, root) {
                         return JSON.stringify(data);
                     }
                 };
+            };
+            //
+            // Render a template from a url
+            this.renderTemplate = function (url, element, scope) {
+                var template = $templateCache.get(url);
+                if (!template) {
+                    $http.get(url).then(function (resp) {
+                        template = resp.data;
+                        $templateCache.put(url, template);
+                        element.append($compile(template)(scope));
+                    }, function (resp) {
+                        $lux.messages.error('Could not load template from ' + url);
+                    });
+                } else
+                    element.append($compile(template)(scope));
+
             };
         }]);
     //
@@ -1326,7 +1344,6 @@ function(angular, root) {
 
     angular.module('lux.cms', [
         'lux.cms.core',
-        'lux.cms.component',
         'lux.cms.component.text'])
 
     .run(['$rootScope', 'CMS', function(scope, CMS) {
@@ -1345,7 +1362,7 @@ function(angular, root) {
         return CMS;
     }]);
 
-angular.module('lux.cms.component', ['lux.services'])
+angular.module('lux.cms.component', ['lux.services', 'templates-cms'])
     //
     // Defaults for cms components
     .value('cmsDefaults', {
@@ -1598,18 +1615,21 @@ angular.module('lux.cms.component.text', ['lux.cms.component'])
     }])
     //
     // Display a div with links to content
-    .directive('cmsLinks', ['$lux', 'cmsDefaults', function ($lux, cmsDefaults) {
+    .directive('cmsLinks', ['$lux', 'cmsDefaults',
+                            function ($lux, cmsDefaults, $templateCache) {
 
         return {
-            templateUrl: cmsDefaults.linksTemplate,
             restrict: 'AE',
             link: function (scope, element, attrs) {
-                var config = lux.getObject(attrs, 'config', scope);
+                var config = lux.getObject(attrs, 'config', scope),
+                    http = $lux.http;
+
                 if (config.url) {
-                    $lux.http.get(config.url).then(function (response) {
-
+                    http.get(config.url).then(function (response) {
+                        scope.links = response.data.result;
+                        $lux.renderTemplate(cmsDefaults.linksTemplate, element, scope);
                     }, function (response) {
-
+                        $lux.messages.error('Could not load links');
                     });
                 }
             }
@@ -1721,8 +1741,10 @@ angular.module('templates-cms', ['cms/templates/list-group.tpl.html']);
 angular.module("cms/templates/list-group.tpl.html", []).run(["$templateCache", function($templateCache) {
   $templateCache.put("cms/templates/list-group.tpl.html",
     "<div class=\"list-group\">\n" +
-    "  <a ng-repeat=\"link in links\" ng-href=\"{{link.url}}\" class=\"list-group-item\" ng-bind=\"link.title\"></a>\n" +
-    "</div>");
+    "  <a ng-repeat=\"link in links\" ng-href=\"{{link.url}}\" class=\"list-group-item\"\n" +
+    "  ng-bind=\"link.title\" ng-class=\"{active: link.url === $location.absUrl()}\"></a>\n" +
+    "</div>\n" +
+    "");
 }]);
 
 angular.module('templates-page', ['page/breadcrumbs.tpl.html']);

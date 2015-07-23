@@ -11,27 +11,15 @@ from lux import route
 from lux.extensions import rest
 
 
-DIRECTIONS = ('asc', 'desc')
-
-
 class RestRouter(rest.RestRouter):
     '''A REST Router base on database models
     '''
-    # RestView implementation
-    def collection(self, request, limit, offset, text):
-        app = request.app
-        odm = app.odm()
+    def query(self, request, session):
+        odm = request.app.odm()
         model = odm[self.model.name]
+        return session.query(model)
 
-        with odm.begin() as session:
-            query = session.query(model)
-            query = self.filter(request, query, text)
-            total = query.count()
-            query = self.sortby(request, query)
-            data = query.limit(limit).offset(offset).all()
-            data = self.serialise(request, data)
-            return app.pagination(request, data, total, limit, offset)
-
+    # RestView implementation
     def get_model(self, request):
         odm = request.app.odm()
         model = odm[self.model.name]
@@ -79,38 +67,6 @@ class RestRouter(rest.RestRouter):
             meta['total'] = query.count()
         return meta
 
-    def sortby(self, request, query):
-        sortby = request.url_data.get('sortby')
-        if sortby:
-            if not isinstance(sortby, list):
-                sortby = (sortby,)
-            for entry in sortby:
-                direction = None
-                if ':' in entry:
-                    entry, direction = entry.split(':')
-                if direction not in DIRECTIONS:
-                    direction = DIRECTIONS[0]
-                if direction == 'desc':
-                    entry = desc(entry)
-                query = query.order_by(entry)
-        return query
-
-    def filter(self, request, query, text, model=None):
-        model = model or self.model
-        columns = model.columnsMapping(request.app)
-
-        for key, value in request.url_data.items():
-            bits = key.split(':')
-            field = bits[0]
-            if field in columns:
-                col = columns[field]
-                op = bits[1] if len(bits) == 2 else 'eq'
-                field = col.get('field')
-                if field:
-                    query = self._do_filter(request, model, query,
-                                            field, op, value)
-        return query
-
     def _do_filter(self, request, model, query, field, op, value):
         if value == '':
             value = None
@@ -128,6 +84,11 @@ class RestRouter(rest.RestRouter):
             query = query.filter(field <= value)
         return query
 
+    def _do_sortby(self, request, query, entry, direction):
+        if direction == 'desc':
+            entry = desc(entry)
+        return query.order_by(entry)
+
 
 class CRUD(RestRouter):
     '''A Router for handling CRUD JSON requests for a database model
@@ -135,15 +96,7 @@ class CRUD(RestRouter):
     def get(self, request):
         '''Get a list of models
         '''
-        backend = request.cache.auth_backend
-        model = self.model
-        if backend.has_permission(request, model.name, rest.READ):
-            limit = self.limit(request)
-            offset = self.offset(request)
-            text = self.query(request)
-            data = self.collection(request, limit, offset, text)
-            return Json(data).http_response(request)
-        raise PermissionDenied
+        return self.collection_response(request)
 
     def post(self, request):
         '''Create a new model

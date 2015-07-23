@@ -67,6 +67,7 @@ class TestContentModel(test.TestCase):
         self.assertEqual(str(e.exception), 'Nothing to delete')
 
     def test_all(self):
+        request = self.request()
         data = {'slug': 'all_file', 'body': 'nothing'}
         self.repo.write(self.user, data, new=True)
         models = dict(((v['filename'], v) for v in self.repo.all()))

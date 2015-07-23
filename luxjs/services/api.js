@@ -27,8 +27,10 @@
         }])
         //
         .service('$lux', ['$location', '$window', '$q', '$http', '$log',
-                          '$timeout', 'ApiTypes', 'AuthApis',
-                function ($location, $window, $q, $http, $log, $timeout, ApiTypes, AuthApis) {
+                          '$timeout', 'ApiTypes', 'AuthApis', '$templateCache',
+                          '$compile',
+                          function ($location, $window, $q, $http, $log, $timeout,
+                                      ApiTypes, AuthApis, $templateCache, $compile) {
             var $lux = this;
 
             this.location = $location;
@@ -95,6 +97,22 @@
                         return JSON.stringify(data);
                     }
                 };
+            };
+            //
+            // Render a template from a url
+            this.renderTemplate = function (url, element, scope) {
+                var template = $templateCache.get(url);
+                if (!template) {
+                    $http.get(url).then(function (resp) {
+                        template = resp.data;
+                        $templateCache.put(url, template);
+                        element.append($compile(template)(scope));
+                    }, function (resp) {
+                        $lux.messages.error('Could not load template from ' + url);
+                    });
+                } else
+                    element.append($compile(template)(scope));
+
             };
         }]);
     //

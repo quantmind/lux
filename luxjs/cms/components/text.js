@@ -67,18 +67,21 @@ angular.module('lux.cms.component.text', ['lux.cms.component'])
     }])
     //
     // Display a div with links to content
-    .directive('cmsLinks', ['$lux', 'cmsDefaults', function ($lux, cmsDefaults) {
+    .directive('cmsLinks', ['$lux', 'cmsDefaults',
+                            function ($lux, cmsDefaults, $templateCache) {
 
         return {
-            templateUrl: cmsDefaults.linksTemplate,
             restrict: 'AE',
             link: function (scope, element, attrs) {
-                var config = lux.getObject(attrs, 'config', scope);
+                var config = lux.getObject(attrs, 'config', scope),
+                    http = $lux.http;
+
                 if (config.url) {
-                    $lux.http.get(config.url).then(function (response) {
-
+                    http.get(config.url).then(function (response) {
+                        scope.links = response.data.result;
+                        $lux.renderTemplate(cmsDefaults.linksTemplate, element, scope);
                     }, function (response) {
-
+                        $lux.messages.error('Could not load links');
                     });
                 }
             }

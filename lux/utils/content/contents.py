@@ -53,7 +53,7 @@ METADATA_PROCESSORS = dict(((p.name, p) for p in (
     Processor('image'),
     Processor('date', lambda x, cfg: parse_date(x)),
     Processor('status'),
-    Processor('priority'),
+    Processor('priority', lambda x, cfg: int(x)),
     MultiValue('keywords', Tag),
     MultiValue('category', Category),
     MultiValue('author', Author),
@@ -372,10 +372,10 @@ class Content(object):
                          for k, v in value.items()))
         elif isinstance(value, (list, tuple)):
             return [self._render_meta(v, context) for v in value]
-        elif isinstance(value, date):
-            return value
-        elif value is not None:
+        elif isinstance(value, str):
             return self._engine(to_string(value), context)
+        else:
+            return value
 
     def _to_json(self, value):
         if isinstance(value, Mapping):
