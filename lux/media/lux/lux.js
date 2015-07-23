@@ -3253,20 +3253,27 @@ angular.module("message/message.tpl.html", []).run(["$templateCache", function($
         }]);
 
 
-angular.module('templates-grid', ['grid/modal.empty.tpl.html', 'grid/modal.tpl.html']);
+angular.module('templates-grid', ['grid/templates/modal.delete.tpl.html', 'grid/templates/modal.empty.tpl.html']);
 
-angular.module("grid/modal.empty.tpl.html", []).run(["$templateCache", function($templateCache) {
-  $templateCache.put("grid/modal.empty.tpl.html",
+angular.module("grid/templates/modal.delete.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("grid/templates/modal.delete.tpl.html",
     "<div class=\"modal\" tabindex=\"-1\" role=\"dialog\" aria-hidden=\"true\">\n" +
     "  <div class=\"modal-dialog\">\n" +
     "    <div class=\"modal-content\">\n" +
-    "      <div class=\"modal-header\" ng-show=\"title\">\n" +
+    "      <div class=\"modal-header\" >\n" +
     "        <button type=\"button\" class=\"close\" aria-label=\"Close\" ng-click=\"$hide()\"><span aria-hidden=\"true\">&times;</span></button>\n" +
-    "        <h4 class=\"modal-title\" ng-bind-html=\"title\"></h4>\n" +
+    "        <h4 class=\"modal-title\"><i class=\"fa fa-trash\"></i> Delete {{stateName}}</h4>\n" +
     "      </div>\n" +
-    "      <div class=\"modal-body\" ng-bind=\"content\"></div>\n" +
+    "      <div class=\"modal-body\">\n" +
+    "        <p class=\"modal-info\">{{infoMessage}}</p>\n" +
+    "        <ul class=\"modal-items\">\n" +
+    "          <li ng-repeat=\"item in selected\">{{item[repr_field]}}</li>\n" +
+    "        </ul>\n" +
+    "        <p class=\"text-danger cannot-undo\">{{dangerMessage}}</p>\n" +
+    "      </div>\n" +
     "      <div class=\"modal-footer\">\n" +
-    "        <button type=\"button\" class=\"btn btn-default\" ng-click=\"$hide()\">Close</button>\n" +
+    "        <button type=\"button\" class=\"btn btn-default\" ng-click=\"$hide()\">No</button>\n" +
+    "        <button type=\"button\" class=\"btn btn-primary\" ng-click=\"ok()\">Yes</button>\n" +
     "      </div>\n" +
     "    </div>\n" +
     "  </div>\n" +
@@ -3274,19 +3281,20 @@ angular.module("grid/modal.empty.tpl.html", []).run(["$templateCache", function(
     "");
 }]);
 
-angular.module("grid/modal.tpl.html", []).run(["$templateCache", function($templateCache) {
-  $templateCache.put("grid/modal.tpl.html",
+angular.module("grid/templates/modal.empty.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("grid/templates/modal.empty.tpl.html",
     "<div class=\"modal\" tabindex=\"-1\" role=\"dialog\" aria-hidden=\"true\">\n" +
     "  <div class=\"modal-dialog\">\n" +
     "    <div class=\"modal-content\">\n" +
-    "      <div class=\"modal-header\" ng-show=\"title\">\n" +
+    "      <div class=\"modal-header\">\n" +
     "        <button type=\"button\" class=\"close\" aria-label=\"Close\" ng-click=\"$hide()\"><span aria-hidden=\"true\">&times;</span></button>\n" +
-    "        <h4 class=\"modal-title\" ng-bind-html=\"title\"></h4>\n" +
+    "        <h4 class=\"modal-title\"><i class=\"fa fa-trash\"></i> Lack of {{stateName}} to delete</h4>\n" +
     "      </div>\n" +
-    "      <div class=\"modal-body\" ng-bind=\"content\"></div>\n" +
+    "      <div class=\"modal-body\">\n" +
+    "        <p class=\"modal-info\">{{emptyMessage}}</p>\n" +
+    "      </div>\n" +
     "      <div class=\"modal-footer\">\n" +
-    "        <button type=\"button\" class=\"btn btn-default\" ng-click=\"$hide()\">No</button>\n" +
-    "        <button type=\"button\" class=\"btn btn-primary\" ng-click=\"ok()\">Yes</button>\n" +
+    "        <button type=\"button\" class=\"btn btn-default\" ng-click=\"$hide()\">Close</button>\n" +
     "      </div>\n" +
     "    </div>\n" +
     "  </div>\n" +
@@ -3324,6 +3332,21 @@ angular.module("grid/modal.tpl.html", []).run(["$templateCache", function($templ
                 'delete': {
                     title: 'Delete',
                     icon: 'fa fa-trash'
+                }
+            },
+            modal: {
+                delete: {
+                    templates: {
+                        'empty': 'grid/templates/modal.empty.tpl.html',
+                        'delete': 'grid/templates/modal.delete.tpl.html',
+                    },
+                    messages: {
+                        'info': 'Are you sure you want to delete',
+                        'danger': 'DANGER - THIS CANNOT BE UNDONE',
+                        'success': 'Successfully deleted',
+                        'error': 'Error while deleting ',
+                        'empty': 'Please, select some',
+                    }
                 }
             },
             // dictionary of call-backs for columns types
@@ -3423,57 +3446,52 @@ angular.module("grid/modal.tpl.html", []).run(["$templateCache", function($templ
                 };
 
                 scope.delete = function($event) {
-                    var modalTitle, modalContent,
-                        first_field = gridOptions.columnDefs[0].field,
-                        repr_field = scope.gridOptions.reprField || first_field,
-                        icon = '<i class="fa fa-trash"></i>',
-                        modalTemplate = 'grid/modal.tpl.html',
-                        results = [],
-                        success = false,
+                    modalScope.selected = scope.gridApi.selection.getSelectedRows();
+
+                    var template,
+                        firstField = gridOptions.columnDefs[0].field,
+                        itemMessage = modalScope.selected.length + ' ' + stateName + '.',
                         subPath = scope.options.target.path || '';
 
+                    // Modal settings
+                    angular.extend(modalScope, {
+                        'stateName': stateName,
+                        'repr_field': scope.gridOptions.reprField || firstField,
+                        'infoMessage': gridDefaults.modal.delete.messages.info + ' ' + stateName + ':',
+                        'dangerMessage': gridDefaults.modal.delete.messages.danger,
+                        'emptyMessage': gridDefaults.modal.delete.messages.empty + ' ' + stateName + '.',
+                    });
+
                     var pkForItem = function(item) {
-                        return item.hasOwnProperty('id') ? item.id : item[first_field];
+                        return item.hasOwnProperty('id') ? item.id : item[firstField];
                     };
 
-                    scope.selected = scope.gridApi.selection.getSelectedRows();
+                    if (modalScope.selected.length > 0)
+                        template = gridDefaults.modal.delete.templates.delete;
+                    else
+                        template = gridDefaults.modal.delete.templates.empty;
 
-                    if (!scope.selected.length) {
-                        modalTitle = icon + ' Lack of ' + stateName + ' to delete';
-                        modalContent = 'Please, select some ' + stateName + '.';
-                        modalTemplate = 'grid/modal.empty.tpl.html';
-                    } else {
-                        modalTitle = icon + ' Delete ' + stateName;
-                        modalContent = 'Are you sure you want to delete ' + stateName;
-
-                        forEach(scope.selected, function(item) {
-                            results.push(item[repr_field]);
-                        });
-
-                        results = results.join(',');
-                        modalContent += ' ' + results + '? This cannot be undone!';
-                    }
-
-                    modal = $modal({scope: modalScope, title: modalTitle, content: modalContent, template: modalTemplate, show: true});
+                    modal = $modal({scope: modalScope, template: template, show: true});
 
                     modalScope.ok = function() {
                         var defer = $lux.q.defer();
-                        forEach(scope.selected, function(item, _) {
+                        forEach(modalScope.selected, function(item, _) {
                             api.delete({path: subPath + '/' + pkForItem(item)})
                                 .success(function(resp) {
-                                    success = true;
-                                    defer.resolve(success);
+                                    defer.resolve(gridDefaults.modal.delete.messages.success + ' ' + itemMessage);
+                                })
+                                .error(function(error) {
+                                    defer.reject(gridDefaults.modal.delete.messages.error + ' ' + itemMessage);
                                 });
                         });
 
-                        defer.promise.then(function() {
-                            if (success) {
-                                getPage(scope, api);
-                                $lux.messages.success('Successfully deleted ' + stateName + ' ' + results);
-                            } else
-                                $lux.messages.error('Error while deleting ' + stateName + ' ' + results);
-
+                        defer.promise.then(function(message) {
+                            getPage(scope, api);
                             modal.hide();
+                            $lux.messages.success(message);
+                        }, function(message) {
+                            modal.hide();
+                            $lux.messages.error(message);
                         });
                     };
                 };
