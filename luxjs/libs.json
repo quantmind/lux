@@ -16,7 +16,7 @@
             "dest": "luxjs/message/message-template.js"
         },
         "grid": {
-            "src": "luxjs/grid/*.tpl.html",
+            "src": "luxjs/grid/templates/*.tpl.html",
             "dest": "luxjs/grid/grid-template.js"
         },
         "blog": {

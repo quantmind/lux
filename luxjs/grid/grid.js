@@ -31,10 +31,18 @@
                 }
             },
             modal: {
-                height: 350,
-                templates: {
-                    'default': 'grid/modal.tpl.html',
-                    'empty': 'grid/modal.empty.tpl.html',
+                delete: {
+                    templates: {
+                        'empty': 'grid/templates/modal.empty.tpl.html',
+                        'delete': 'grid/templates/modal.delete.tpl.html',
+                    },
+                    messages: {
+                        'info': 'Are you sure you want to delete',
+                        'danger': 'DANGER - THIS CANNOT BE UNDONE',
+                        'success': 'Successfully deleted',
+                        'error': 'Error while deleting ',
+                        'empty': 'Please, select some',
+                    }
                 }
             },
             // dictionary of call-backs for columns types
@@ -134,70 +142,52 @@
                 };
 
                 scope.delete = function($event) {
-                    var modalTemplate,
-                        first_field = gridOptions.columnDefs[0].field,
-                        repr_field = scope.gridOptions.reprField || first_field,
-                        icon = '<i class="fa fa-trash"></i>',
-                        success = false,
-                        subPath = scope.options.target.path || '',
-                        //
-                        item,
-                        info = angular.element($document[0].createElement('p'))
-                                    .css('font-weight', 600),
-                        warning = angular.element($document[0].createElement('p'))
-                                    .css({'font-weight': 600, 'color': 'red'})
-                                    .html('DANGER - THIS CANNOT BE UNDONE'),
-                        itemWrapper = angular.element($document[0].createElement('ul'))
-                                            .css({'max-height': gridDefaults.modal.height + 'px',
-                                                  'overflow-y': 'auto'}),
-                        contentWrapper = angular.element($document[0].createElement('div'))
-                                            .append(info);
+                    modalScope.selected = scope.gridApi.selection.getSelectedRows();
+
+                    var template,
+                        firstField = gridOptions.columnDefs[0].field,
+                        itemMessage = modalScope.selected.length + ' ' + stateName + '.',
+                        subPath = scope.options.target.path || '';
+
+                    // Modal settings
+                    angular.extend(modalScope, {
+                        'stateName': stateName,
+                        'repr_field': scope.gridOptions.reprField || firstField,
+                        'infoMessage': gridDefaults.modal.delete.messages.info + ' ' + stateName + ':',
+                        'dangerMessage': gridDefaults.modal.delete.messages.danger,
+                        'emptyMessage': gridDefaults.modal.delete.messages.empty + ' ' + stateName + '.',
+                    });
 
                     var pkForItem = function(item) {
-                        return item.hasOwnProperty('id') ? item.id : item[first_field];
+                        return item.hasOwnProperty('id') ? item.id : item[firstField];
                     };
 
-                    scope.selected = scope.gridApi.selection.getSelectedRows();
+                    if (modalScope.selected.length > 0)
+                        template = gridDefaults.modal.delete.templates.delete;
+                    else
+                        template = gridDefaults.modal.delete.templates.empty;
 
-                    if (scope.selected.length > 0) {
-                        modalTemplate = gridDefaults.modal.templates.default;
-                        title = icon + ' Delete ' + stateName;
-                        info.html('Are you sure you want to delete ' + stateName + ':');
-
-                        // Add selected items and warning message
-                        contentWrapper.append(itemWrapper).append(warning);
-
-                        forEach(scope.selected, function(selItem) {
-                            item = angular.element($document[0].createElement('li')),
-                            itemWrapper.append(item.html(selItem[repr_field]));
-                        });
-                    } else {
-                        modalTemplate = gridDefaults.modal.templates.empty;
-                        title = icon + ' Lack of ' + stateName + ' to delete';
-                        info.html('Please, select some ' + stateName + '.');
-                    }
-
-                    modal = $modal({scope: modalScope, title: title, content: contentWrapper.html(), template: modalTemplate, show: true});
+                    modal = $modal({scope: modalScope, template: template, show: true});
 
                     modalScope.ok = function() {
                         var defer = $lux.q.defer();
-                        forEach(scope.selected, function(item, _) {
+                        forEach(modalScope.selected, function(item, _) {
                             api.delete({path: subPath + '/' + pkForItem(item)})
                                 .success(function(resp) {
-                                    success = true;
-                                    defer.resolve(success);
+                                    defer.resolve(gridDefaults.modal.delete.messages.success + ' ' + itemMessage);
+                                })
+                                .error(function(error) {
+                                    defer.reject(gridDefaults.modal.delete.messages.error + ' ' + itemMessage);
                                 });
                         });
 
-                        defer.promise.then(function() {
-                            var alertMsg = scope.selected.length + ' ' + stateName + '.';
-                            if (success) {
-                                getPage(scope, api);
-                                $lux.messages.success('Successfully deleted ' + alertMsg);
-                            } else
-                                $lux.messages.error('Error while deleting ' + alertMsg);
-
+                        defer.promise.then(function(message) {
+                            getPage(scope, api);
                             modal.hide();
+                            $lux.messages.success(message);
+                        }, function(message) {
+                            modal.hide();
+                            $lux.messages.error(message);
                         });
                     };
                 };
