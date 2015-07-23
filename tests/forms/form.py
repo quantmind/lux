@@ -1,3 +1,4 @@
+from enum import Enum
 import json
 from datetime import date, datetime
 
@@ -8,12 +9,18 @@ from lux import forms
 from lux.extensions.cms.views import PageForm
 
 
+class TestEnum(Enum):
+    opt1 = '1'
+    opt2 = '2'
+
+
 class SimpleForm(forms.Form):
     name = forms.CharField()
     email = forms.CharField(required=False)
     rank = forms.IntegerField(required=False)
     dt = forms.DateField(required=False)
     timestamp = forms.DateTimeField(required=False)
+    enum_field = forms.EnumField(required=False, enum_class=TestEnum)
 
 
 class FailForm(SimpleForm):
@@ -150,6 +157,18 @@ class FormTests(test.TestCase):
         self.assertFalse(form.is_valid())
         self.assertValidationError(form.tojson(), 'timestamp',
                                    '"xyz" is not a valid date')
+
+    def test_enum_field(self):
+        form = SimpleForm(data=dict(name='luca', enum_field='opt1'))
+        self.assertTrue(form.is_valid())
+        self.assertEqual(len(form.cleaned_data), 2)
+        self.assertEqual(form.cleaned_data['enum_field'], TestEnum.opt1)
+
+    def test_enum_field_error(self):
+        form = SimpleForm(data=dict(name='luca', enum_field='optfail'))
+        self.assertFalse(form.is_valid())
+        self.assertValidationError(form.tojson(), 'enum_field',
+                                   'optfail is not a valid choice')
 
     def test_clean_field_in_form(self):
         form = PageForm(data=dict(title='Just a test',
