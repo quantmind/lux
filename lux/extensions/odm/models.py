@@ -1,5 +1,6 @@
 import json
 from datetime import date, datetime
+from enum import Enum
 
 import pytz
 
@@ -39,6 +40,8 @@ class RestModel(rest.RestModel):
                     if isinstance(data, datetime) and not data.tzinfo:
                         data = pytz.utc.localize(data)
                     data = data.isoformat()
+                elif isinstance(data, Enum):
+                    data = data.name
                 else:   # Test Json
                     json.dumps(data)
             except TypeError:

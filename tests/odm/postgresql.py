@@ -2,6 +2,8 @@ from dateutil.parser import parse
 
 from lux.utils import test
 
+from . import TestEnum
+
 
 class TestPostgreSql(test.AppTestCase):
     config_file = 'tests.odm'
@@ -47,6 +49,17 @@ class TestPostgreSql(test.AppTestCase):
         self.assertTrue('id' in data)
         self.assertEqual(data['subject'], subject)
         self.assertTrue('created' in data)
+        return data
+
+    def _get_task(self, token, id):
+        request = yield from self.client.get(
+            '/tasks/{}'.format(id),
+            token=token)
+        response = request.response
+        self.assertEqual(response.status_code, 200)
+        data = self.json(response)
+        self.assertIsInstance(data, dict)
+        self.assertTrue('id' in data)
         return data
 
     def _create_person(self, token, username, name=None):
@@ -129,7 +142,7 @@ class TestPostgreSql(test.AppTestCase):
         self.assertIsInstance(data, dict)
         columns = data['columns']
         self.assertIsInstance(columns, list)
-        self.assertEqual(len(columns), 5)
+        self.assertEqual(len(columns), 6)
 
     def test_create_task(self):
         token = yield from self._token()
@@ -265,6 +278,24 @@ class TestPostgreSql(test.AppTestCase):
         data = yield from self._create_person(token, 'spiderstale1', 'luca')
         yield from self._update_person(token, data['id'], 'spiderstale1',
                                        'lucachanged')
+
+    def test_enum_field(self):
+        token = yield from self._token()
+        data = yield from self._create_task(token, enum_field='opt1')
+        self.assertEqual(data['enum_field'], 'opt1')
+        data = yield from self._get_task(token, id=data['id'])
+        self.assertEqual(data['enum_field'], 'opt1')
+
+    def test_enum_field_fail(self):
+        token = yield from self._token()
+        request = yield from self.client.post(
+            '/tasks',
+            body={'enum_field': 'opt3'},
+            token=token,
+            content_type='application/json')
+        response = request.response
+        self.assertValidationError(response, 'enum_field',
+                                   'opt3 is not a valid choice')
 
     def test_metadata_custom(self):
         request = yield from self.client.get('/users/metadata',

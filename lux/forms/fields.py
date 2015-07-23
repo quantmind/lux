@@ -1,4 +1,5 @@
 from datetime import datetime, date
+from enum import Enum
 
 import json
 import pytz
@@ -11,8 +12,7 @@ from pulsar.utils.slugify import slugify
 
 from ..utils.files import File
 from .options import Options
-from .errors import *   # noqa
-
+from .errors import *  # noqa
 
 __all__ = ['Field',
            'CharField',
@@ -29,8 +29,8 @@ __all__ = ['Field',
            'HiddenField',
            'PasswordField',
            'UrlField',
-           'SlugField']
-
+           'SlugField',
+           'EnumField']
 
 standard_validation_error = 'Not a valid value'
 standard_required_error = 'required'
@@ -102,6 +102,7 @@ class Field:
 
     def __repr__(self):
         return self.name if self.name else self.__class__.__name__
+
     __str__ = __repr__
 
     def handle_params(self, **kwargs):
@@ -294,7 +295,6 @@ class JsonField(TextField):
 
 
 class MultipleMixin:
-
     @property
     def multiple(self):
         return bool(self.attrs.get('multiple'))
@@ -347,6 +347,32 @@ class ChoiceField(MultipleMixin, Field):
         return value
 
 
+class EnumField(ChoiceField):
+    validation_error = '{} is not a valid value'
+
+    def handle_params(self, enum_class=None, **kwargs):
+        if enum_class is None:
+            raise ValueError
+
+        kwargs.update(options=tuple(e.name for e in enum_class))
+        super().handle_params(**kwargs)
+        self.enum_class = enum_class
+
+        if isinstance(self.default, Enum):
+            self.default = self.default.name
+
+    def _clean(self, value, instance):
+        value = super()._clean(value, instance)
+        ret = None
+        for e in self.enum_class:
+            if e.name.lower() == value.lower():
+                ret = e
+        if ret is None:
+            raise ValidationError(
+                self.validation_error.format(value))
+        return ret
+
+
 class EmailField(CharField):
     attrs = {'type': 'email'}
 
@@ -377,7 +403,6 @@ class FileField(MultipleMixin, Field):
 
 
 class SlugField(CharField):
-
     def _clean(self, value, field):
         value = super()._clean(value, field)
         return slugify(value)

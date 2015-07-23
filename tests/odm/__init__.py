@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import Enum
 
 from sqlalchemy.orm import relationship
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
@@ -8,8 +9,9 @@ from lux import forms
 from lux.extensions import odm
 from lux.extensions.auth.views import PermissionCRUD, GroupCRUD
 
-from tests.config import *  # noqa
+from odm.types import ChoiceType
 
+from tests.config import *  # noqa
 
 EXTENSIONS = ['lux.extensions.base',
               'lux.extensions.odm',
@@ -20,8 +22,12 @@ AUTHENTICATION_BACKENDS = ['lux.extensions.auth.TokenBackend']
 CORS_ALLOWED_METHODS = 'GET, POST, DELETE'
 
 
-class Extension(lux.Extension):
+class TestEnum(Enum):
+    opt1 = '1'
+    opt2 = '2'
 
+
+class Extension(lux.Extension):
     def api_sections(self, app):
         return [CRUDTask(), CRUDPerson(), UserCRUD(),
                 PermissionCRUD(), GroupCRUD()]
@@ -33,6 +39,7 @@ class TaskForm(forms.Form):
     assigned_id = odm.RelationshipField(model='person',
                                         label='assigned',
                                         required=False)
+    enum_field = forms.EnumField(enum_class=TestEnum, default=TestEnum.opt1)
 
 
 class PersonForm(forms.Form):
@@ -87,3 +94,4 @@ class Task(Model):
     done = Column(Boolean, default=False)
     created = Column(DateTime, default=datetime.utcnow)
     assigned_id = Column(Integer, ForeignKey('person.id'))
+    enum_field = Column(ChoiceType(TestEnum), default=TestEnum.opt1)
