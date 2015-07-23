@@ -1,11 +1,16 @@
+from enum import Enum
 import json
 
 from lux.utils import test
 from lux import forms
 
 
-class FieldTests(test.TestCase):
+class TestEnum(Enum):
+    opt1 = '1'
+    opt2 = '2'
 
+
+class FieldTests(test.TestCase):
     def test_ChoiceField(self):
         field = forms.ChoiceField()
         self.assertEqual(field.attrs.get('name'), None)
@@ -36,6 +41,7 @@ class FieldTests(test.TestCase):
 
     def test_options_call(self):
         result = ((1, 'uno'), (2, 'due'), (3, 'tre'))
+
         def opts(form):
             self.assertEqual(form, None)
             return result
@@ -44,6 +50,16 @@ class FieldTests(test.TestCase):
         self.assertEqual(field.options.all(), result)
         #
         self.assertEqual(repr(field), 'foo')
+
+    def test_EnumField(self):
+        field = forms.EnumField(enum_class=TestEnum)
+        self.assertEqual(field.attrs.get('name'), None)
+        #
+        self.assertEqual(field.options.all(), ('opt1', 'opt2'))
+        attrs = field.getattrs()
+        self.assertEqual(attrs['options'], ('opt1', 'opt2'))
+        #
+        self.assertEqual(repr(field), 'EnumField')
 
     def test_JsonField(self):
         field = forms.JsonField()
