@@ -1,6 +1,6 @@
 //      Lux Library - v0.2.0
 
-//      Compiled 2015-07-22.
+//      Compiled 2015-07-23.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -4263,10 +4263,23 @@ angular.module("nav/templates/sidebar.tpl.html", []).run(["$templateCache", func
             this.maybeCollapse = function (navbar) {
                 var width = window.innerWidth > 0 ? window.innerWidth : screen.width,
                     c = navbar.collapse;
+
                 if (width < navbar.collapseWidth)
                     navbar.collapse = 'collapse';
                 else
                     navbar.collapse = '';
+                return c !== navbar.collapse;
+            };
+
+            this.collapseForWide = function(navbar, element) {
+                var width = window.innerWidth > 0 ? window.innerWidth : screen.width,
+                    c = navbar.collapse;
+
+                if (width > navbar.collapseWidth) {
+                    // If dropdown was opened then collapse
+                    if (element.find('nav')[1].classList.contains('in'))
+                        navbar.collapse = 'collapse';
+                }
                 return c !== navbar.collapse;
             };
         }])
@@ -4290,7 +4303,7 @@ angular.module("nav/templates/sidebar.tpl.html", []).run(["$templateCache", func
                     navService.initScope(scope, attrs);
                     //
                     windowResize(function () {
-                        if (navService.maybeCollapse(scope.navbar))
+                        if (navService.collapseForWide(scope.navbar, element))
                             scope.$apply();
                     });
                     //
