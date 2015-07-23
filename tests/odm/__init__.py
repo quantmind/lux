@@ -39,6 +39,7 @@ class TaskForm(forms.Form):
     assigned_id = odm.RelationshipField(model='person',
                                         label='assigned',
                                         required=False)
+    enum_field = forms.EnumField(enum_class=TestEnum, default=TestEnum.opt1)
 
 
 class PersonForm(forms.Form):

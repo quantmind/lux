@@ -1,4 +1,5 @@
 from datetime import datetime, date
+from enum import Enum
 
 import json
 import pytz
@@ -357,12 +358,15 @@ class EnumField(ChoiceField):
         super().handle_params(**kwargs)
         self.enum_class = enum_class
 
+        if isinstance(self.default, Enum):
+            self.default = self.default.name
+
     def _clean(self, value, instance):
         value = super()._clean(value, instance)
         ret = None
         for e in self.enum_class:
             if e.name.lower() == value.lower():
-                ret = e.value
+                ret = e
         if ret is None:
             raise ValidationError(
                 self.validation_error.format(value))
