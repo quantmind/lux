@@ -160,7 +160,7 @@ class TestMixin:
         '''Return a BeautifulSoup object from the ``response``
         '''
         from bs4 import BeautifulSoup
-        return BeautifulSoup(self.html(response), mode or 'html5lib')
+        return BeautifulSoup(self.html(response))
 
     def html(self, response):
         '''Get html/text content from response
