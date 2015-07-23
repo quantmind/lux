@@ -1,6 +1,5 @@
     angular.module('lux.cms', [
         'lux.cms.core',
-        'lux.cms.component',
         'lux.cms.component.text'])
 
     .run(['$rootScope', 'CMS', function(scope, CMS) {
