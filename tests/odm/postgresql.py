@@ -64,6 +64,21 @@ class TestPostgreSql(test.AppTestCase):
         self.assertEqual(data['name'], name)
         return data
 
+    def _update_person(self, token, id, username=None, name=None):
+        request = yield from self.client.post(
+            '/people/{}'.format(id),
+            body={'username': username, 'name': name},
+            token=token,
+            content_type='application/json')
+        response = request.response
+        self.assertEqual(response.status_code, 200)
+        data = self.json(response)
+        self.assertIsInstance(data, dict)
+        self.assertTrue('id' in data)
+        if name:
+            self.assertEqual(data['name'], name)
+        return data
+
     def test_odm(self):
         tables = yield from self.app.odm.tables()
         self.assertTrue(tables)
@@ -223,9 +238,37 @@ class TestPostgreSql(test.AppTestCase):
         self.assertValidationError(request.response, 'username',
                                    'spiderman1 not available')
 
+    def test_unique_field_update_fail(self):
+        """
+        Tests that it's not possible to update a unique field of an
+        existing record to that of another
+        """
+        token = yield from self._token()
+        yield from self._create_person(token, 'spiderfail1', 'luca')
+        data = yield from self._create_person(token, 'spiderfail2', 'luca')
+
+        request = yield from self.client.post(
+            '/people/{}'.format(data['id']),
+            body={'username': 'spiderfail1', 'name': 'luca'},
+            token=token,
+            content_type='application/json')
+        response = request.response
+        self.assertValidationError(response, 'username',
+                                   'spiderfail1 not available')
+
+    def test_unique_field_update_unchanged(self):
+        """
+        Tests that an update of an existing model instance works if the the
+        unique field hasn't changed
+        """
+        token = yield from self._token()
+        data = yield from self._create_person(token, 'spiderstale1', 'luca')
+        yield from self._update_person(token, data['id'], 'spiderstale1',
+                                       'lucachanged')
+
     def test_metadata_custom(self):
         request = yield from self.client.get('/users/metadata',
-                                              content_type='application/json')
+                                             content_type='application/json')
         response = request.response
         self.assertEqual(response.status_code, 200)
         data = self.json(response)
