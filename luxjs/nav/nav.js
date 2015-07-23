@@ -91,10 +91,23 @@
             this.maybeCollapse = function (navbar) {
                 var width = window.innerWidth > 0 ? window.innerWidth : screen.width,
                     c = navbar.collapse;
+
                 if (width < navbar.collapseWidth)
                     navbar.collapse = 'collapse';
                 else
                     navbar.collapse = '';
+                return c !== navbar.collapse;
+            };
+
+            this.collapseForWide = function(navbar, element) {
+                var width = window.innerWidth > 0 ? window.innerWidth : screen.width,
+                    c = navbar.collapse;
+
+                if (width > navbar.collapseWidth) {
+                    // If dropdown was opened then collapse
+                    if (element.find('nav')[1].classList.contains('in'))
+                        navbar.collapse = 'collapse';
+                }
                 return c !== navbar.collapse;
             };
         }])
@@ -118,7 +131,7 @@
                     navService.initScope(scope, attrs);
                     //
                     windowResize(function () {
-                        if (navService.maybeCollapse(scope.navbar))
+                        if (navService.collapseForWide(scope.navbar, element))
                             scope.$apply();
                     });
                     //
