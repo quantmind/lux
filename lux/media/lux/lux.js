@@ -1345,7 +1345,11 @@ function(angular, root) {
         return CMS;
     }]);
 
-angular.module('lux.cms.component', [])
+angular.module('lux.cms.component', ['lux.services'])
+    //
+    // Defaults for cms components
+    .value('cmsDefaults', {
+    })
     //
     .factory('Component', ['$q', '$rootScope', function($q, $rootScope) {
         /**
@@ -1526,7 +1530,15 @@ angular.module('lux.cms.component', [])
     }]);
 
 
-angular.module('lux.cms.component.text', ['lux.services'])
+angular.module('lux.cms.component.text', ['lux.cms.component'])
+
+    .run(['cmsDefaults', function (cmsDefaults) {
+
+        // Add cms text defaults to cmsDefaults
+        angular.extend(cmsDefaults, {
+            linksTemplate: 'cms/templates/list-group.tpl.html'
+        });
+    }])
 
     .factory('textComponent', ['$rootScope', '$lux', function($rootScope, $lux) {
 
@@ -1580,6 +1592,25 @@ angular.module('lux.cms.component.text', ['lux.services'])
                     var componentId = attrs.id;
                     textComponent.initialize(componentId, element);
                     scope.cms.components.text.render();
+                }
+            }
+        };
+    }])
+    //
+    // Display a div with links to content
+    .directive('cmsLinks', ['$lux', 'cmsDefaults', function ($lux, cmsDefaults) {
+
+        return {
+            templateUrl: cmsDefaults.linksTemplate,
+            restrict: 'AE',
+            link: function (scope, element, attrs) {
+                var config = lux.getObject(attrs, 'config', scope);
+                if (config.url) {
+                    $lux.http.get(config.url).then(function (response) {
+
+                    }, function (response) {
+
+                    });
                 }
             }
         };
@@ -1684,6 +1715,15 @@ angular.module('lux.cms.core', [])
 
 
 
+
+angular.module('templates-cms', ['cms/templates/list-group.tpl.html']);
+
+angular.module("cms/templates/list-group.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("cms/templates/list-group.tpl.html",
+    "<div class=\"list-group\">\n" +
+    "  <a ng-repeat=\"link in links\" ng-href=\"{{link.url}}\" class=\"list-group-item\" ng-bind=\"link.title\"></a>\n" +
+    "</div>");
+}]);
 
 angular.module('templates-page', ['page/breadcrumbs.tpl.html']);
 

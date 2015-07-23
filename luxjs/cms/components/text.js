@@ -1,5 +1,13 @@
 
-angular.module('lux.cms.component.text', ['lux.services'])
+angular.module('lux.cms.component.text', ['lux.cms.component'])
+
+    .run(['cmsDefaults', function (cmsDefaults) {
+
+        // Add cms text defaults to cmsDefaults
+        angular.extend(cmsDefaults, {
+            linksTemplate: 'cms/templates/list-group.tpl.html'
+        });
+    }])
 
     .factory('textComponent', ['$rootScope', '$lux', function($rootScope, $lux) {
 
@@ -53,6 +61,25 @@ angular.module('lux.cms.component.text', ['lux.services'])
                     var componentId = attrs.id;
                     textComponent.initialize(componentId, element);
                     scope.cms.components.text.render();
+                }
+            }
+        };
+    }])
+    //
+    // Display a div with links to content
+    .directive('cmsLinks', ['$lux', 'cmsDefaults', function ($lux, cmsDefaults) {
+
+        return {
+            templateUrl: cmsDefaults.linksTemplate,
+            restrict: 'AE',
+            link: function (scope, element, attrs) {
+                var config = lux.getObject(attrs, 'config', scope);
+                if (config.url) {
+                    $lux.http.get(config.url).then(function (response) {
+
+                    }, function (response) {
+
+                    });
                 }
             }
         };

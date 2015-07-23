@@ -7,6 +7,10 @@
         "options": {
             "base": "luxjs"
         },
+        "cms": {
+            "src": "luxjs/cms/templates/*.tpl.html",
+            "dest": "luxjs/cms/templates.js"
+        },
         "page": {
             "src": "luxjs/page/*.tpl.html",
             "dest": "luxjs/page/page-template.js"

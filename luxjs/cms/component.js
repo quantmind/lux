@@ -1,4 +1,8 @@
-angular.module('lux.cms.component', [])
+angular.module('lux.cms.component', ['lux.services'])
+    //
+    // Defaults for cms components
+    .value('cmsDefaults', {
+    })
     //
     .factory('Component', ['$q', '$rootScope', function($q, $rootScope) {
         /**
