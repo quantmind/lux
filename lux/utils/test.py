@@ -156,11 +156,11 @@ class TestMixin:
         headers = response.get_headers()
         return dict(headers).get('Set-Cookie')
 
-    def bs(self, response):
+    def bs(self, response, mode=None):
         '''Return a BeautifulSoup object from the ``response``
         '''
         from bs4 import BeautifulSoup
-        return BeautifulSoup(self.html(response))
+        return BeautifulSoup(self.html(response), mode or 'html5lib')
 
     def html(self, response):
         '''Get html/text content from response

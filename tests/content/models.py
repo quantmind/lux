@@ -67,18 +67,21 @@ class TestContentModel(test.TestCase):
         self.assertEqual(str(e.exception), 'Nothing to delete')
 
     def test_all(self):
-        request = self.request()
+        app = self.application()
+        request = app.wsgi_request()
         data = {'slug': 'all_file', 'body': 'nothing'}
         self.repo.write(self.user, data, new=True)
-        models = dict(((v['filename'], v) for v in self.repo.all()))
-        self.assertIn('all_file.md', models)
+        models = dict(((v['slug'], v) for v in self.repo.all(request)))
+        self.assertIn('all_file', models)
 
     def test_read(self):
+        app = self.application()
+        request = app.wsgi_request()
         data = {'slug': 'README', 'body': 'Readme message'}
         self.repo.write(self.user, data, new=True)
-        content = self.repo.read('README')
-        self.assertEqual(content['content'], 'Readme message')
+        content = self.repo.read(request, 'README')
+        self.assertEqual(content._content, '<p>Readme message</p>')
         # try to read wrong file
         with self.assertRaises(DataError) as e:
-            self.repo.read('Not_exist')
+            self.repo.read(request, 'Not_exist')
         self.assertEqual(str(e.exception), 'Not_exist not available')

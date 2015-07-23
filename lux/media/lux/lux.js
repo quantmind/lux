@@ -4337,7 +4337,7 @@ angular.module("nav/templates/sidebar.tpl.html", []).run(["$templateCache", func
                 var width = window.innerWidth > 0 ? window.innerWidth : screen.width,
                     c = navbar.collapse;
 
-                if (width > navbar.collapseWidth) {
+                if (width > navbar.collapseWidth || navbar.collapse === '') {
                     // If dropdown was opened then collapse
                     if (element.find('nav')[1].classList.contains('in'))
                         navbar.collapse = 'collapse';

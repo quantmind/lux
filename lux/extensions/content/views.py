@@ -7,7 +7,7 @@ from pulsar.apps.wsgi import route, Json, RouterParam
 from pulsar.utils.slugify import slugify
 
 import lux
-from lux import forms, HtmlRouter, cached
+from lux import forms, HtmlRouter
 from lux.extensions import rest
 
 from .models import DataError
