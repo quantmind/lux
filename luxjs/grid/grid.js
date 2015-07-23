@@ -75,8 +75,8 @@
             }
         })
         //
-        .service('GridService', ['$lux', '$document', '$location', '$compile', '$modal', 'uiGridConstants', 'gridDefaults',
-            function($lux, $document, $location, $compile, $modal, uiGridConstants, gridDefaults) {
+        .service('GridService', ['$lux', '$location', '$compile', '$modal', 'uiGridConstants', 'gridDefaults',
+            function($lux, $location, $compile, $modal, uiGridConstants, gridDefaults) {
 
             function parseColumns(columns) {
                 var columnDefs = [],
