@@ -21,6 +21,10 @@ def guess(value):
     return value if len(value) > 1 else value[-1]
 
 
+DEFAULTS = (('priority', 1),
+            ('order', 0))
+
+
 @register_reader
 class BaseReader(object):
     """Base class to read files.
@@ -76,8 +80,8 @@ class BaseReader(object):
         context = {}
         head_meta = {}
         meta_input = meta_input.items()
-        if meta:
-            meta_input = chain(meta.items(), meta_input)
+        meta = meta.items() if meta else ()
+        meta_input = chain(DEFAULTS, meta, meta_input)
         meta = {}
         as_list = MultiValue()
         for key, values in meta_input:

@@ -54,6 +54,7 @@ METADATA_PROCESSORS = dict(((p.name, p) for p in (
     Processor('date', lambda x, cfg: parse_date(x)),
     Processor('status'),
     Processor('priority', lambda x, cfg: int(x)),
+    Processor('order', lambda x, cfg: int(x)),
     MultiValue('keywords', Tag),
     MultiValue('category', Category),
     MultiValue('author', Author),

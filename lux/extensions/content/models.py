@@ -233,7 +233,8 @@ class Query:
 
     @cached
     def read_files(self, request):
-        return [d for d in self.model.all(request) if d.get('priority')]
+        return [d for d in self.model.all(request)
+                if d.get('priority') and d.get('order')]
 
 
 class asc:
