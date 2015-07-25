@@ -11,8 +11,10 @@ import lux
 
 
 class GithubHook(lux.Router):
+    '''A Router for handling Github webhooks
+    '''
     response_content_types = ['application/json']
-    repo = None
+    handle_payload = None
     secret = None
 
     @task
@@ -29,23 +31,11 @@ class GithubHook(lux.Router):
                     raise BadRequest
 
         event = request.get('HTTP_X_GITHUB_EVENT')
-        data = self.handle_payload(request, event, data)
+        if self.handle_payload:
+            data = yield from self.handle_payload(request, event, data)
+        else:
+            data = dict(success=True, event=event)
         return Json(data).http_response(request)
-
-    def handle_payload(self, request, event, data):
-        response = dict(success=True, event=event)
-        if event == 'push':
-            if self.repo and os.path.isdir(self.repo):
-                command = 'cd %s; git symbolic-ref --short HEAD' % self.repo
-                branch = yield from self.execute(command)
-                branch = branch.split('\n')[0]
-                response['command'] = self.command(branch)
-                result = yield from self.execute(response['command'])
-                response['result'] = result
-            else:
-                raise HttpException('Repo directory not valid', status=412)
-
-        return response
 
     def validate(self, request):
         secret = to_bytes(self.secret)
@@ -64,12 +54,40 @@ class GithubHook(lux.Router):
         if sig.hexdigest() != signature:
             raise PermissionDenied('Bad signature')
 
+
+class EventHandler:
+
+    def __call__(self, request, event, data):
+        raise NotImplementedError
+
     def execute(self, command):
         p = yield from create_subprocess_shell(command,
                                                stdout=subprocess.PIPE,
                                                stderr=subprocess.PIPE)
-        b, _ = yield from p.communicate()
+        b, e = yield from p.communicate()
+        if e:
+            raise HttpException(e.decode('utf-8'), status=412)
         return b.decode('utf-8')
+
+
+class PullRepo:
+
+    def __init__(self, repo):
+        self.repo = repo
+
+    def __call__(self, request, event, data):
+        response = dict(success=True, event=event)
+        if event == 'push':
+            if os.path.isdir(self.repo):
+                command = 'cd %s; git symbolic-ref --short HEAD' % self.repo
+                branch = yield from self.execute(command)
+                branch = branch.split('\n')[0]
+                response['command'] = self.command(branch)
+                result = yield from self.execute(response['command'])
+                response['result'] = result
+            else:
+                raise HttpException('Repo directory not valid', status=412)
+        return response
 
     def command(self, branch):
         # git checkout HEAD path/to/your/dir/or/file
