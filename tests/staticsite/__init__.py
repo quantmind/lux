@@ -17,7 +17,7 @@ EXTENSIONS = ['lux.extensions.base',
 
 base = os.path.dirname(__file__)
 STATIC_LOCATION = os.path.join(base, 'build')
-CONTEXT_LOCATION = os.path.join(base, 'content', 'context')
+CMS_PARTIALS_PATH = os.path.join(base, 'content', 'context')
 
 
 class TestStaticSite(test.AppTestCase):

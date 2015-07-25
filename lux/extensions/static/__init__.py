@@ -45,9 +45,8 @@ from pulsar.apps.wsgi import FileRouter, WsgiHandler, MediaRouter
 
 import lux
 from lux import Parameter, Router
-from lux.utils.content import Content
 
-from .builder import Builder, DirBuilder, ContextBuilder, DirContent
+from .builder import Builder, DirBuilder, DirContent
 from .routers import (MediaBuilder, HtmlContent, Blog, ErrorRouter,
                       JsonRoot, JsonRedirect, Sitemap, HtmlFile)
 from .rst import SphinxDocs
@@ -55,8 +54,7 @@ from .ui import add_css
 
 
 __all__ = ['Builder', 'DirBuilder', 'DirContent', 'ErrorRouter',
-           'Sitemap', 'HtmlFile', 'Blog', 'Content', 'SphinxDocs',
-           'add_css']
+           'Sitemap', 'HtmlFile', 'Blog', 'SphinxDocs', 'add_css']
 
 
 class StaticHandler(WsgiHandler):
@@ -75,15 +73,16 @@ class Extension(lux.Extension):
                   'Default static template'),
         Parameter('STATIC_LOCATION', 'build',
                   'Directory where the static site is created'),
-        Parameter('CONTEXT_LOCATION', 'context',
-                  'Directory where to find files to populate the context '
-                  'dictionary'),
         Parameter('STATIC_API', 'api',
                   'Build a JSON api, required when using angular in Html5 '
                   ' navigation mode'),
         Parameter('STATIC_MEDIA', True, 'Add handler for media files'),
         Parameter('STATIC_SPECIALS', ('404',),
-                  "paths included in this list won't create the json api")
+                  "paths included in this list won't create the json api"),
+        Parameter('CACHE_SERVER', 'static://',
+                  ('Cache server, can be a connection string to a valid '
+                   'datastore which support the cache protocol or an object '
+                   'supporting the cache protocol'))
     ]
     _static_info = None
     _global_context = None
@@ -167,22 +166,6 @@ class Extension(lux.Extension):
                     middleware.add_api_urls(request, apiUrls)
             jscontext['apiUrls'] = apiUrls
 
-    def context(self, request, context):
-        if request.cache.building_static:
-            # Building the static web site
-            content = request.cache.content
-            app = request.app
-            ctx = request.cache.static_context
-            if not ctx:
-                if not self._global_context:
-                    ctx = ContextBuilder(app)
-                    self._global_context = ctx.copy()
-                ctx = ContextBuilder(app, self._global_context,
-                                     content=content)
-                request.cache.static_context = ctx
-            ctx.update(context)
-            return ctx
-
     def build_info(self, app):
         '''Return a dictionary with information about the build
         '''
@@ -239,6 +222,28 @@ class Extension(lux.Extension):
             app.handler.middleware.append(JsonRedirect(router.api.route))
             for route in router.routes:
                 self.add_api(app, route)
+
+
+class StaticCache(lux.Cache):
+
+    def __init__(self, app, scheme, url):
+        super().__init__(app, scheme, url)
+        self._cache = {}
+
+    def set(self, key, value, **params):
+        self._cache[key] = value
+
+    def get(self, key):
+        self._cache.get(key)
+
+    def hmset(self, key, iterable):
+        self._cache.set(tuple(iterable))
+
+    def hmget(self, key, *fields):
+        self._cache.get(key)
+
+
+lux.register_cache('static', 'lux.extensions.static.StaticCache')
 
 
 REDIRECT_TEMPLATE = '''\

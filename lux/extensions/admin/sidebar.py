@@ -13,7 +13,9 @@ def add_css(all):
     navbar = vars.navbar
     sidebar = vars.sidebar
     sidebar.width = px(250)
-    sidebar.easing = 'cubic-bezier(0.2, 0.3, 0.25, 0.9)'
+    sidebar.transition.easing = 'cubic-bezier(0.2, 0.3, 0.25, 0.9)'
+    sidebar.transition.duration = '0.2s'
+    sidebar.overlay.color = color(0, 0, 0, 0.1)
     sidebar.toggle.margin = px(15)
     sidebar.toggle.size = px(21)
     sidebar.toggle.size_small = px(19)
@@ -22,6 +24,7 @@ def add_css(all):
     sidebar.info.p.color = '#ccc'
     sidebar.info.background = '#425466'
 
+    trans = sidebar.transition
     # Why this? because unitary operations don't work yet and px(0) fails
     sidebar.width_neg = px(1) - sidebar.width - px(1)
     collapse_width = px(cfg['NAVBAR_COLLAPSE_WIDTH'])
@@ -63,10 +66,10 @@ def add_css(all):
     css('.right-sidebar',
         css(' .content-wrapper, .navbar-static-top',
             Transform(0, 0),
-            Transition('all', '0.15s', sidebar.easing)),
+            Transition('all', trans.duration, trans.easing)),
         css(' .main-sidebar',
             Transform(sidebar.width, 0),
-            Transition('all', '0.15s', sidebar.easing),
+            Transition('all', trans.duration, trans.easing),
             right=0),
         css(' .navbar-static-top',
             css(' .navbar-main',
@@ -83,10 +86,10 @@ def add_css(all):
     css('.left-sidebar',
         css(' .content-wrapper, .navbar-static-top',
             Transform(0, 0),
-            Transition('all', '0.15s', sidebar.easing)),
+            Transition('all', trans.duration, trans.easing)),
         css(' .main-sidebar',
             Transform(sidebar.width_neg, 0),
-            Transition('all', '0.15s', sidebar.easing),
+            Transition('all', trans.duration, trans.easing),
             left=0),
         css(' .navbar-static-top',
             css(' .navbar-main',
@@ -102,12 +105,12 @@ def add_css(all):
     css('.sidebar-open-left',
         css(' .overlay',
             display='block',
-            background_color='rgba(0, 0, 0, 0.1)'),
+            background_color=sidebar.overlay.color),
         css(' .navbar-side',
             display='none'),
         css(' .content-wrapper, .navbar-static-top',
             Transform(sidebar.width, 0),
-            Transition('all', '0.15s', sidebar.easing)),
+            Transition('all', trans.duration, trans.easing)),
         css(' .main-sidebar',
             Transform(0, 0))
         )
@@ -115,12 +118,12 @@ def add_css(all):
     css('.sidebar-open-right',
         css(' .overlay',
             display='block',
-            background_color='rgba(0, 0, 0, 0.1)'),
+            background_color=sidebar.overlay.color),
         css(' .navbar-side',
             display='none'),
         css(' .content-wrapper, .navbar-static-top',
             Transform(sidebar.width_neg, 0),
-            Transition('all', '0.15s', sidebar.easing)),
+            Transition('all', trans.duration, trans.easing)),
         css(' .main-sidebar',
             Transform(0, 0))
         )
@@ -156,7 +159,7 @@ def add_css(all):
             background=sidebar.info.background),
         css(' .sidebar-menu',
             css(' .treeview-menu',
-                Transition('height', '0.15s', 'linear'),
+                Transition('height', trans.duration, 'linear'),
                 css('.active',
                     opacity=1,
                     height='100%'),

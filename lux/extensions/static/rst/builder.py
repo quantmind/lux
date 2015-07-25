@@ -4,14 +4,6 @@ from sphinx.builders.html import StandaloneHTMLBuilder
 from sphinx.application import Sphinx
 
 from ..builder import normpath
-from ..contents import Content
-
-
-class SphinxContent(Content):
-
-    def __init__(self, app, ctx):
-        content_type = 'text/html'
-        super().__init__(app, content_type=content_type)
 
 
 class LuxSphinx(Sphinx):

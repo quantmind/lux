@@ -2,10 +2,11 @@ import os
 from collections import namedtuple
 from datetime import datetime
 
-from lux.utils.files import skipfile, get_rel_dir
+from pulsar.utils.string import to_bytes
 
-from .contents import SkipBuild, BuildError, Unsupported, CONTENT_EXTENSIONS
-from .contents import Content, get_reader
+from lux.utils.files import skipfile, get_rel_dir
+from lux import (SkipBuild, BuildError, Unsupported, static_context,
+                 CONTENT_EXTENSIONS, Content, get_reader)
 
 
 Item = namedtuple('Item', 'loc lastmod priority file content_type body')
@@ -202,7 +203,7 @@ class Builder(BaseBuilder):
                 content = request.cache.content
                 content_type = response.content_type
             else:
-                body = content._content
+                body = to_bytes(content._content)
                 content_type = content.content_type
             #
             if content:
@@ -312,78 +313,6 @@ class DirBuilder(Builder):
         return '%s/' % route
 
 
-class ContextBuilder(dict, BaseBuilder):
-    '''Build context dictionary entry for the static site
-    '''
-    def __init__(self, app, ctx=None, content=None, location=None,
-                 exclude=None, render=True):
-        self.app = app
-        self.waiting = {}
-        self.content = content
-        self.render = render
-        exclude = exclude or ()
-        if ctx:
-            self.update(ctx)
-        location = location or app.config['CONTEXT_LOCATION']
-        if location and os.path.isdir(location):
-            for dirpath, _, filenames in os.walk(location):
-                rel_dir = get_rel_dir(dirpath, location)
-                if rel_dir and rel_dir[0] in ('.', '_'):
-                    continue
-                for filename in filenames:
-                    if skipfile(filename) or filename in exclude:
-                        continue
-                    name, _ = os.path.join(rel_dir, filename).split('.', 1)
-                    src = os.path.join(dirpath, filename)
-                    self.add(self.read_file(app, src, name))
-        elif location:
-            app.logger.warning('Context location "%s" not available', location)
-        self._on_loaded()
-
-    def __setitem__(self, key, value):
-        super(ContextBuilder, self).__setitem__(key, value)
-        self._refresh()
-
-    def update(self, *args):
-        super(ContextBuilder, self).update(*args)
-        self._refresh()
-
-    def add(self, content, waiting=None):
-        if waiting is None:
-            ctx = content.context_for
-            content_for = self.content
-            if ctx or content_for:
-                if content_for and ctx:
-                    for name, values in ctx.items():
-                        if content_for.name in values:
-                            content_for.additional_context[name] = content
-                return
-            waiting = set(content._meta.require_context or ())
-        # Loop through the require context of content
-        for name in tuple(waiting):
-            if name in self:
-                waiting.discard(name)
-
-        if waiting:
-            self.waiting[content.key()] = (content, waiting)
-        elif self.render:
-            self[content.key()] = content.render(self)
-        else:
-            self[content.key()] = content
-
-    def _refresh(self):
-        all = list(self.waiting.values())
-        self.waiting.clear()
-        for content, waiting in all:
-            self.add(content, waiting)
-
-    def _on_loaded(self):
-        waiting = self.waiting
-        if waiting:
-            waiting = ', '.join((str(c) for c, _ in waiting.values()))
-            self.app.logger.warning('%s is still waiting to be built', waiting)
-
-
 class DirContent(Content):
     '''Create a single html content from a directory
     '''
@@ -395,8 +324,7 @@ class DirContent(Content):
             # No index file no joy
             raise BuildError('A Directory content without index.md!!')
         reader = get_reader(app, index)
-        ctx = ContextBuilder(app, location=path, exclude=('index.md',),
-                             render=False)
+        ctx = static_context(app, path, {})
         for key, content in list(ctx.items()):
             if content.is_text:
                 value = content.render()

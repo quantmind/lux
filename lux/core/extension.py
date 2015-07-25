@@ -50,6 +50,7 @@ class Parameter(object):
         self.doc = doc
         self.extension = None
         self.jscontext = jscontext
+        self.override = False
 
     def __repr__(self):
         return '%s: %s' % (self.name, self.default)
@@ -186,8 +187,11 @@ class Extension(metaclass=ExtensionType):
         '''
         if '_parameters' not in config:
             config['_parameters'] = {}
+        parameters = config['_parameters']
         for setting in self.meta.config.values():
-            config['_parameters'][setting.name] = setting
+            if setting.name in parameters:
+                setting.override = True
+            parameters[setting.name] = setting
             if setting.name in params:
                 value = params[setting.name]
             else:

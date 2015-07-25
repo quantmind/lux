@@ -4,12 +4,12 @@ from pulsar.apps.wsgi import Route, Html
 from pulsar.utils.structures import AttributeDictionary
 
 from lux.utils.files import skipfile, get_rel_dir
-from lux.utils.content import get_reader
 
+from .content import get_reader
 from .cache import cached
 
 
-__all__ = ['CMS']
+__all__ = ['CMS', 'static_context']
 
 
 class Page(AttributeDictionary):

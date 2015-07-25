@@ -2,17 +2,22 @@ import os
 import json
 from copy import copy
 
-import lux
-from lux import JSON_CONTENT_TYPES
-from lux.extensions import base, sitemap
+from dateutil.parser import parse as parse_date
 
 from pulsar import ImproperlyConfigured
 from pulsar.utils.slugify import slugify
 from pulsar.apps.wsgi import Json, Html, Router
 
-from .builder import (DirBuilder, FileBuilder, SkipBuild,
-                      Unsupported, normpath)
-from .contents import Article, parse_date, page_info
+import lux
+from lux import JSON_CONTENT_TYPES, SkipBuild, Unsupported, Content, page_info
+from lux.extensions import base, sitemap
+
+from .builder import DirBuilder, FileBuilder, normpath
+
+
+class Article(Content):
+    mandatory_properties = ('title', 'date', 'category')
+    template = 'article.html'
 
 
 class ErrorRouter(lux.Router, DirBuilder):

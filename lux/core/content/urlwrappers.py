@@ -53,9 +53,13 @@ class URLWrapper(object):
         self._name = name
         self.slug = slugify(name)
 
-    def as_dict(self):
-        d = self.__dict__
-        d['name'] = self.name
+    def to_json(self, request):
+        base = self.__class__.__name__
+        name = self.name
+        path = ('/%s/%s' % (base, self.name)).lower()
+        d = {'name': name}
+        if path:
+            d['url'] = request.absolute_uri(path)
         return d
 
     def __hash__(self):

@@ -5,8 +5,10 @@ import os
 
 from pulsar import ImproperlyConfigured
 
+from lux import Content
+
 from ..routers import JsonContent, JsonFile, HtmlContent, HtmlFile, normpath
-from ..contents import Content
+
 try:
     from .builder import LuxSphinx
 except ImportError:

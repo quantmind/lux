@@ -10,9 +10,11 @@ from pulsar.utils.slugify import slugify
 from pulsar.utils.structures import AttributeDictionary, mapping_iterator
 from pulsar.utils.pep import to_string
 
-from .. import iso8601
+from lux.utils import iso8601
 
-from .urlwrappers import Processor, MultiValue, Tag, Author, Category
+from ..cache import cached
+from .urlwrappers import (URLWrapper, Processor, MultiValue, Tag, Author,
+                          Category)
 
 
 class SkipBuild(Http404):
@@ -109,8 +111,6 @@ class Content(object):
     '''
     template = None
     template_engine = None
-    _json_dict = None
-    _loc = None
     mandatory_properties = ()
 
     def __init__(self, app, content, metadata, src=None,
@@ -162,14 +162,6 @@ class Content(object):
     def src(self):
         '''Absolute path of source file. Can be None if not provided'''
         return self._src
-
-    @property
-    def loc(self):
-        return self._loc or self._src
-
-    @loc.setter
-    def loc(self, value):
-        self._loc = value
 
     @property
     def content_type(self):
@@ -272,14 +264,15 @@ class Content(object):
     def text(self, request):
         return self._content
 
+    @cached
     def json(self, request):
         '''Convert the content into a Json dictionary for the API
         '''
-        if not self._json_dict and self.is_html:
+        if self.is_html:
             context = self._app.context(request)
             context = self.context(context)
             #
-            data = self._to_json(self._meta)
+            data = self._to_json(request, self._meta)
             text = data.get(self.suffix) or {}
             data[self.suffix] = text
             text['main'] = self.render(context)
@@ -294,8 +287,7 @@ class Content(object):
                 head.update(data['head'])
 
             data['head'] = head
-            self._json_dict = data
-        return self._json_dict
+            return data
 
     def html(self, request):
         '''Build the ``html_main`` key for this content and set
@@ -378,17 +370,15 @@ class Content(object):
         else:
             return value
 
-    def _to_json(self, value):
+    def _to_json(self, request, value):
         if isinstance(value, Mapping):
-            return dict(((k, self._to_json(v)) for k, v in value.items()))
+            return dict(((k, self._to_json(request, v))
+                         for k, v in value.items()))
         elif isinstance(value, (list, tuple)):
-            return [self._to_json(v) for v in value]
+            return [self._to_json(request, v) for v in value]
         elif isinstance(value, date):
             return iso8601(value)
+        elif isinstance(value, URLWrapper):
+            return value.to_json(request)
         else:
             return value
-
-
-class Article(Content):
-    mandatory_properties = ('title', 'date', 'category')
-    template = 'article.html'

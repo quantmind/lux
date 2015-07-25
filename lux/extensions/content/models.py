@@ -9,10 +9,9 @@ from dulwich.porcelain import open_repo
 from dulwich.file import GitFile
 from dulwich.errors import NotGitRepository
 
-from lux import cached
+from lux import cached, get_reader
 from lux.extensions import rest
 from lux.utils.files import get_rel_dir
-from lux.utils.content import get_reader
 
 
 __all__ = ('_b', 'DataError', 'Content')
