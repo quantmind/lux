@@ -65,12 +65,10 @@ class EventHandler:
                                                stdout=subprocess.PIPE,
                                                stderr=subprocess.PIPE)
         b, e = yield from p.communicate()
-        if e:
-            raise HttpException(e.decode('utf-8'), status=412)
-        return b.decode('utf-8')
+        return b.decode('utf-8'), e.decode('utf-8')
 
 
-class PullRepo:
+class PullRepo(EventHandler):
 
     def __init__(self, repo):
         self.repo = repo
@@ -80,11 +78,14 @@ class PullRepo:
         if event == 'push':
             if os.path.isdir(self.repo):
                 command = 'cd %s; git symbolic-ref --short HEAD' % self.repo
-                branch = yield from self.execute(command)
+                branch, e = yield from self.execute(command)
+                if e:
+                    raise HttpException(e, status=412)
                 branch = branch.split('\n')[0]
                 response['command'] = self.command(branch)
-                result = yield from self.execute(response['command'])
+                result, e = yield from self.execute(response['command'])
                 response['result'] = result
+                response['error'] = e
             else:
                 raise HttpException('Repo directory not valid', status=412)
         return response

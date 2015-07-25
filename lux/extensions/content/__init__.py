@@ -4,11 +4,11 @@ from lux.extensions.angular import add_ng_modules
 from .models import Content
 from .views import TextCRUD, TextForm, CMS
 from .ui import add_css
-from .github import GithubHook, PullRepo
+from .github import GithubHook, EventHandler, PullRepo
 
 
 __all__ = ['Content', 'TextCRUD', 'CMS', 'TextForm', 'add_css',
-           'GithubHook', 'PullRepo']
+           'GithubHook', 'EventHandler', 'PullRepo']
 
 
 class Extension(lux.Extension):
