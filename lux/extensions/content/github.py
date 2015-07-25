@@ -1,7 +1,7 @@
 import os
 import hmac
 import hashlib
-import asyncio
+from asyncio import create_subprocess_shell, subprocess
 
 from pulsar.apps.wsgi import Json
 from pulsar.utils.string import to_bytes
@@ -14,7 +14,6 @@ class GithubHook(lux.Router):
     response_content_types = ['application/json']
     repo = None
     secret = None
-    branch = 'master'
 
     @task
     def post(self, request):
@@ -37,8 +36,12 @@ class GithubHook(lux.Router):
         response = dict(success=True, event=event)
         if event == 'push':
             if self.repo and os.path.isdir(self.repo):
-                response['command'] = self.command()
-                yield from asyncio.create_subprocess_shell(response['command'])
+                command = 'cd %s; git symbolic-ref --short HEAD' % self.repo
+                branch = yield from self.execute(command)
+                branch = branch.split('\n')[0]
+                response['command'] = self.command(branch)
+                result = yield from self.execute(response['command'])
+                response['result'] = result
             else:
                 raise HttpException('Repo directory not valid', status=412)
 
@@ -61,6 +64,13 @@ class GithubHook(lux.Router):
         if sig.hexdigest() != signature:
             raise PermissionDenied('Bad signature')
 
-    def command(self):
+    def execute(self, command):
+        p = yield from create_subprocess_shell(command,
+                                               stdout=subprocess.PIPE,
+                                               stderr=subprocess.PIPE)
+        b, _ = yield from p.communicate()
+        return b.decode('utf-8')
+
+    def command(self, branch):
         # git checkout HEAD path/to/your/dir/or/file
-        return 'cd %s; git pull origin %s;' % (self.repo, self.branch)
+        return 'cd %s; git pull origin %s;' % (self.repo, branch)
