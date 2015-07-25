@@ -51,16 +51,30 @@ class Extension(lux.Extension):
                          'Dictionary of dictionary of OAuth providers'),
                Parameter('DEFAULT_OG_TYPE', 'website',
                          'Default object graph protocol type. '
-                         'Set to None to disable OGP')]
+                         'Set to None to disable OGP'),
+               Parameter('CANONICAL_URL', True,
+                         'Add canonical meta tag to website. '
+                         'Can be a function or False')]
 
     def on_html_document(self, app, request, doc):
         doc.meta = NamespaceHeadMeta(doc.head)
+        canonical = app.config['CANONICAL_URL']
+        if hasattr(canonical, '__call__'):
+            canonical = canonical(request, doc)
+        if canonical:
+            if not isinstance(canonical, str):
+                canonical = request.absolute_uri()
+            doc.head.links.append(canonical, 'canonical')
+
         type = app.config['DEFAULT_OG_TYPE']
+        # add canonical if not available
         if type:
             # add default OGP entries
             doc.meta['og:type'] = type
-            doc.meta['og:url'] = app.site_url(request.path)
+            if canonical:
+                doc.meta['og:url'] = canonical
             doc.meta['og:locale'] = app.config['LOCALE']
+            doc.meta['og:site_name'] = app.config['APP_NAME']
             oauths = get_oauths(request)
             if oauths:
                 for provider in oauths.values():
@@ -69,6 +83,8 @@ class Extension(lux.Extension):
         doc.jscontext['oauths'] = oauth_context(request)
 
     def meta_add_tags(self, request, doc):
+        '''Add meta tags to the html document just before rendering
+        '''
         with OGP(doc) as ogp:
             if request:
                 oauth = request.cache.oauths

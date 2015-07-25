@@ -48,6 +48,8 @@ class OGPType(object):
         pass
 
     def set(self, doc, key, tag_key=None, array=False):
+        '''Set a key in the doc meta tags
+        '''
         value = doc.meta.namespaces['og'].get(key)
         if not value and tag_key:
             value = doc.meta.get(tag_key)
@@ -67,12 +69,11 @@ class OGPType(object):
 class Website(OGPType):
 
     def __call__(self, doc):
-        self.defaults(doc)
-
-    def defaults(self, doc):
         self.set(doc, 'url')
         self.set(doc, 'title', 'title')
         self.set(doc, 'description', 'description')
+        self.set(doc, 'locale')
+        self.set(doc, 'site_name')
         self.set(doc, 'image', array=True)
 
 
@@ -80,7 +81,7 @@ class Website(OGPType):
 class Profile(Website):
 
     def __call__(self, doc):
-        self.defaults(doc)
+        super().__call__(doc)
         self.set(doc, 'first_name')
         self.set(doc, 'last_name')
         self.set(doc, 'username')
@@ -91,7 +92,7 @@ class Profile(Website):
 class Article(Website):
 
     def __call__(self, doc):
-        self.defaults(doc)
+        super().__call__(doc)
         self.set(doc, 'published_time')
         self.set(doc, 'modified_time')
         self.set(doc, 'expiration_time')

@@ -51,7 +51,7 @@ class TwitterCard(object):
     default_meta_key = 'name'
 
     def set(self, doc, key, array=False):
-        twitter = doc.meta.namespaces.get('twitter')
+        twitter = doc.meta.namespaces.get(self.prefix)
         if twitter and key in twitter:
             value = twitter[key]
         else:
