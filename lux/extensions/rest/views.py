@@ -100,25 +100,22 @@ class RestMixin:
                             text=None, sortby=None, **params):
         '''Handle a response for a list of models
         '''
-        backend = request.cache.auth_backend
         model = self.model
         app = request.app
-        if backend.has_permission(request, model.name, READ):
-            limit = self.limit(request, limit)
-            offset = self.offset(request, offset)
-            text = self.search_text(request, text)
-            sortby = request.url_data.get('sortby', sortby)
-            params.update(request.url_data)
-            with model.session(request) as session:
-                query = self.query(request, session)
-                query = self.filter(request, query, text, params)
-                total = query.count()
-                query = self.sortby(request, query, sortby)
-                data = query.limit(limit).offset(offset).all()
-                data = self.serialise(request, data, **params)
-            data = app.pagination(request, data, total, limit, offset)
-            return Json(data).http_response(request)
-        raise PermissionDenied
+        limit = self.limit(request, limit)
+        offset = self.offset(request, offset)
+        text = self.search_text(request, text)
+        sortby = request.url_data.get('sortby', sortby)
+        params.update(request.url_data)
+        with model.session(request) as session:
+            query = self.query(request, session)
+            query = self.filter(request, query, text, params)
+            total = query.count()
+            query = self.sortby(request, query, sortby)
+            data = query.limit(limit).offset(offset).all()
+            data = self.serialise(request, data, **params)
+        data = app.pagination(request, data, total, limit, offset)
+        return Json(data).http_response(request)
 
     def query(self, request, session):
         '''Return a Query object

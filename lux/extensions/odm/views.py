@@ -1,5 +1,7 @@
 from sqlalchemy.exc import DataError
 from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.inspection import inspect
+from sqlalchemy.orm import load_only
 from sqlalchemy import desc
 
 from pulsar import PermissionDenied, MethodNotAllowed, Http404
@@ -14,6 +16,7 @@ from lux.extensions import rest
 class RestRouter(rest.RestRouter):
     '''A REST Router base on database models
     '''
+
     def query(self, request, session):
         odm = request.app.odm()
         model = odm[self.model.name]
@@ -22,12 +25,11 @@ class RestRouter(rest.RestRouter):
     # RestView implementation
     def get_model(self, request):
         odm = request.app.odm()
-        model = odm[self.model.name]
         args = request.urlargs
-        if not args:    # pragma    nocover
+        if not args:  # pragma    nocover
             raise Http404
         with odm.begin() as session:
-            query = session.query(model)
+            query = self.query(request, session)
             try:
                 return query.filter_by(**args).one()
             except (DataError, NoResultFound):
@@ -93,34 +95,80 @@ class RestRouter(rest.RestRouter):
 class CRUD(RestRouter):
     '''A Router for handling CRUD JSON requests for a database model
     '''
+
+    def has_permission_for_column(self, request, column, level):
+        backend = request.cache.auth_backend
+        permission_name = "{}:{}".format(self.model.name, column.name)
+        return backend.has_permission(request, permission_name, level)
+
+    def column_permissions(self, request, level):
+        ret = None
+        if 'model_permissions' not in request.cache:
+            request.cache.model_permissions = {}
+        elif level in request.cache.model_permissions:
+            ret = request.cache.model_permissions[level]
+        if not ret:
+            odm = request.app.odm()
+            model = odm[self.model.name]
+            ins = inspect(model)
+            ret = {
+                col.name: self.has_permission_for_column(request,
+                                                         col, level) for
+                col in ins.columns
+                }
+            request.cache.model_permissions[level] = ret
+        return ret
+
+    def columns_with_permission(self, request, level):
+        perms = self.column_permissions(request, level)
+        ret = [k for k, v in perms.items() if v]
+        return ret
+
+    def columns_without_permission(self, request, level):
+        perms = self.column_permissions(request, level)
+        ret = [k for k, v in perms.items() if not v]
+        return ret
+
+    def check_model_permission(self, request, level):
+        backend = request.cache.auth_backend
+        if not backend.has_permission(request, self.model.name, level):
+            raise PermissionDenied
+
+    def query(self, request, session):
+        entities = self.columns_with_permission(request, rest.READ)
+        return super().query(request, session).options(load_only(*entities))
+
+    def serialise_model(self, request, data, **kw):
+        exclusions = self.columns_without_permission(request, rest.READ)
+        return self.model.tojson(request, data, exclude=exclusions)
+
     def get(self, request):
         '''Get a list of models
         '''
+        self.check_model_permission(request, rest.READ)
         return self.collection_response(request)
 
     def post(self, request):
         '''Create a new model
         '''
-        backend = request.cache.auth_backend
         model = self.model
-        if backend.has_permission(request, model.name, rest.CREATE):
-            assert model.form
-            data, files = request.data_and_files()
-            form = model.form(request, data=data, files=files)
-            if form.is_valid():
-                try:
-                    instance = self.create_model(request, form.cleaned_data)
-                except DataError as exc:
-                    odm.logger.exception('Could not create model')
-                    form.add_error_message(str(exc))
-                    data = form.tojson()
-                else:
-                    data = self.serialise(request, instance)
-                    request.response.status_code = 201
-            else:
+        self.check_model_permission(request, rest.CREATE)
+        assert model.form
+        data, files = request.data_and_files()
+        form = model.form(request, data=data, files=files)
+        if form.is_valid():
+            try:
+                instance = self.create_model(request, form.cleaned_data)
+            except DataError as exc:
+                odm.logger.exception('Could not create model')
+                form.add_error_message(str(exc))
                 data = form.tojson()
-            return Json(data).http_response(request)
-        raise PermissionDenied
+            else:
+                data = self.serialise(request, instance)
+                request.response.status_code = 201
+        else:
+            data = form.tojson()
+        return Json(data).http_response(request)
 
     # Additional Routes
 
@@ -149,6 +197,7 @@ class CRUD(RestRouter):
             return request.response
 
         elif request.method == 'GET':
+            self.check_model_permission(request, rest.READ)
             # url = request.absolute_uri()
             data = self.serialise(request, instance)
             return Json(data).http_response(request)
