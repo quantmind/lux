@@ -3,6 +3,8 @@ from collections import Hashable
 from functools import partial
 from urllib.parse import urlsplit
 
+from pulsar.utils.httpurl import is_absolute_uri
+
 
 def unique_tuple(*iterables):
     vals = []
@@ -75,3 +77,9 @@ def grouper(n, iterable, padvalue=None):
 
 def iso8601(dt):
     return dt.strftime('%Y-%m-%dT%H:%M:%S')
+
+
+def absolute_uri(request, url):
+    if url and not is_absolute_uri(url):
+        return request.absolute_uri(url)
+    return url

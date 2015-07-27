@@ -53,31 +53,32 @@ class BaseReader(object):
     def __str__(self):
         return self.__class__.__name__
 
-    def process(self, raw, source_path, name=None, **params):
-        ct, encoding = mimetypes.guess_type(source_path)
+    def read(self, src, path, **params):
+        """Parse content and metadata of markdown files"""
+        with open(src, 'rb') as text:
+            raw = text.read()
+        return self.process(raw, path, src=src, **params)
+
+    def process(self, raw, path, src=None, **params):
+        ct, encoding = None, None
+        if src:
+            ct, encoding = mimetypes.guess_type(src)
         body = raw
         if is_html(ct):
             if isinstance(raw, bytes):
                 body = raw.decode(encoding=encoding or 'utf-8')
         else:
             ct = ct or 'application/octet-stream'
-            if name and self.ext and not name.endswith('.%s' % self.ext):
-                name = '%s.%s' % (name, self.ext)
+            if self.ext and not path.endswith('.%s' % self.ext):
+                path = '%s.%s' % (path, self.ext)
         metadata = {'content_type': ct}
-        return self.post_process(body, metadata, source_path, name, **params)
+        return self.post_process(body, metadata, path, src=src, **params)
 
-    def read(self, source_path, name, **params):
-        """Parse content and metadata of markdown files"""
-        with open(source_path, 'rb') as text:
-            raw = text.read()
-        return self.process(raw, source_path, name, **params)
-
-    def post_process(self, body, meta_input, src, name, content=None,
+    def post_process(self, body, meta_input, path, content=None,
                      meta=None, **params):
         """Return the dict containing document metadata
         """
         cfg = self.config
-        context = {}
         head_meta = {}
         meta_input = meta_input.items()
         meta = meta.items() if meta else ()
@@ -92,9 +93,6 @@ class BaseReader(object):
                 bits = key.split('_', 1)
                 if len(bits) > 1:
                     k = ':'.join(bits[1:])
-                    if bits[0] == 'context':
-                        context[k] = as_list(values, cfg)
-                        continue
                     if bits[0] == 'meta':
                         meta[k] = guess(as_list(values, cfg))
                         continue
@@ -105,7 +103,7 @@ class BaseReader(object):
                         k = ':'.join(bits)
                         head_meta[k] = guess(as_list(values, cfg))
                         continue
-                self.logger.warning("Unknown meta '%s' in '%s'", key, src)
+                self.logger.warning("Unknown meta '%s' in '%s'", key, path)
             #
             elif values:
                 # Remove default values if any
@@ -118,7 +116,7 @@ class BaseReader(object):
         meta['head'] = head_meta
         if params:
             pass
-        return content(self.app, body, meta, src, name, context, **params)
+        return content(self.app, body, meta, path, **params)
 
 
 @register_reader
@@ -134,7 +132,7 @@ class MarkdownReader(BaseReader):
         if 'meta' not in self.extensions:
             self.extensions.append('meta')
 
-    def process(self, raw, source_path=None, name=None, **params):
+    def process(self, raw, path, src=None, **params):
         if isinstance(raw, bytes):
             raw = raw.decode('utf-8')
         self._md = md = Markdown(extensions=self.extensions)
@@ -142,7 +140,7 @@ class MarkdownReader(BaseReader):
         body = md.convert(raw)
         meta = self._md.Meta
         meta['content_type'] = 'text/html'
-        return self.post_process(body, meta, source_path, name, **params)
+        return self.post_process(body, meta, path, src=src, **params)
 
     def links(self):
         links = self.app.config.get('_MARKDOWN_LINKS_')
@@ -166,14 +164,14 @@ class PythonReader(BaseReader):
     '''
     file_extensions = ['py']
 
-    def read(self, source_path, name, **params):
-        name = os.path.basename(source_path).split('.')[0]
-        mod = imp.load_source(name, source_path)
+    def read(self, src, path, **params):
+        name = os.path.basename(src).split('.')[0]
+        mod = imp.load_source(name, src)
         if not hasattr(mod, 'template'):
             raise SkipBuild
-        return self.process(mod.template(), source_path, name, **params)
+        return self.process(mod.template(), path, src=src, **params)
 
-    def process(self, raw, source_path, name=None, **params):
+    def process(self, raw, path, **params):
         if isinstance(raw, String):
             ct = raw._content_type
             body = raw.render()
@@ -181,7 +179,7 @@ class PythonReader(BaseReader):
             body = raw
             ct = 'text/plain'
         metadata = {'content_type': [ct]}
-        return self.post_process(body, metadata, source_path, name, **params)
+        return self.post_process(body, metadata, path, **params)
 
 
 @register_reader
@@ -189,8 +187,8 @@ class RestructuredReader(BaseReader):
     enabled = bool(Restructured)
     file_extensions = ['rst']
 
-    def process(self, raw, source_path, name=None, **params):
+    def process(self, raw, path, **params):
         raw = raw.decode('utf-8')
         re = Restructured(raw)
         body = re.convert()
-        return self.post_process(body, re.Meta, source_path, name, **params)
+        return self.post_process(body, re.Meta, path, **params)

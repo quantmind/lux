@@ -141,4 +141,15 @@ class RestModel:
                 id=self.id_field, repr=self.repr_field, options=self.api_name)
 
     def _load_columns(self, app):
-        return self._columns or []
+        '''List of column definitions
+        '''
+        input_columns = self._columns or []
+        columns = []
+
+        for info in input_columns:
+            col = RestColumn.make(info)
+            info = col.as_dict(True)
+            info['field'] = info['name']
+            columns.append(info)
+
+        return columns

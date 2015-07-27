@@ -38,7 +38,7 @@ class CommandTests(test.TestCase):
     def test_serve(self):
         command = self.fetch_command('serve')
         self.assertTrue(command.help)
-        self.assertEqual(len(command.option_list), 0)
+        self.assertEqual(len(command.option_list), 1)
         app = command(['-b', ':9000'], start=False)
         self.assertEqual(app, command.app)
 
