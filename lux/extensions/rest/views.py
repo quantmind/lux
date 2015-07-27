@@ -149,9 +149,12 @@ class RestMixin:
                 query = self._do_sortby(request, query, entry, direction)
         return query
 
+    def columns(self, request):
+        return self.model.columns(request.app)
+
     def meta(self, request):
         app = request.app
-        columns = self.model.columns(app)
+        columns = self.columns(request)
 
         return {'id': self.model.id_field,
                 'repr': self.model.repr_field,
