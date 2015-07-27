@@ -96,6 +96,18 @@ class CRUD(RestRouter):
     '''A Router for handling CRUD JSON requests for a database model
     '''
 
+    def columns(self, request):
+        """
+        Returns column objects for this model
+
+        :param request:     request object
+        :return:            columns generator
+        """
+        odm = request.app.odm()
+        model = odm[self.model.name]
+        ins = inspect(model)
+        return ins.columns
+
     def has_permission_for_column(self, request, column, level):
         """
         Checks permission for a column in the model
@@ -127,13 +139,11 @@ class CRUD(RestRouter):
         elif level in request.cache.model_permissions:
             ret = request.cache.model_permissions[level]
         if not ret:
-            odm = request.app.odm()
-            model = odm[self.model.name]
-            ins = inspect(model)
+            columns = self.columns(request)
             ret = {
                 col.name: self.has_permission_for_column(request,
                                                          col, level) for
-                col in ins.columns
+                col in columns
                 }
             request.cache.model_permissions[level] = ret
         return ret
@@ -204,7 +214,7 @@ class CRUD(RestRouter):
         exclusions = self.columns_without_permission(request, rest.READ)
         return self.model.tojson(request, data, exclude=exclusions)
 
-    def columns(self, request):
+    def columns_for_meta(self, request):
         """
         Returns column metadata, excluding columns the user does
         not have read access to
@@ -212,7 +222,7 @@ class CRUD(RestRouter):
         :param request:     request object
         :return:            dict
         """
-        columns = super().columns(request)
+        columns = super().columns_for_meta(request)
         allowed_columns = self.columns_with_permission(request, rest.READ)
         ret = tuple(c for c in columns if c['name'] in allowed_columns)
         return ret
