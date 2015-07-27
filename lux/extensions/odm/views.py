@@ -199,6 +199,8 @@ class CRUD(RestRouter):
         :return:            query object
         """
         entities = self.columns_with_permission(request, rest.READ)
+        if not entities:
+            raise PermissionDenied
         return super().query(request, session).options(load_only(*entities))
 
     def serialise_model(self, request, data, **kw):
