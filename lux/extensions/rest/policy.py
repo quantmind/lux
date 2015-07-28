@@ -53,6 +53,14 @@ def validate_single_policy(policy):
 
 
 def _check_policies(policies, name, level):
+    """
+    Checks an action against a list of policies
+    :param policies:    dict of policies
+    :param name:        action name
+    :param level:       access level
+    :return:            True if access is granted, False if denied,
+                        None if no specific determination made
+    """
     if isinstance(policies, dict):
         for policy in policies.values():
             permission = _has_permission(policy, name, level)
@@ -62,6 +70,12 @@ def _check_policies(policies, name, level):
 
 
 def _check_default_level(default, level):
+    """
+    Compares a default permission level with requested level
+    :param default:     integer or level name
+    :param level:       requested level
+    :return:            Boolean
+    """
     if isinstance(default, str):
         default = PERMISSION_LEVELS.get(default.upper(), 0)
     return level <= default

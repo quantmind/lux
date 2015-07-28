@@ -209,6 +209,7 @@ class TestSqlite(test.AppTestCase):
         self.assertEqual(request.response.status_code, 201)
 
     def test_column_permissions_read(self):
+        """Tests read requests against columns with permission level 0"""
         su_token = yield from self._token(self.su_credentials)
 
         objective = yield from self._create_objective(su_token)
@@ -267,6 +268,10 @@ class TestSqlite(test.AppTestCase):
             any(field['name'] == 'subject' for field in data['columns']))
 
     def test_column_permissions_update_create(self):
+        """
+        Tests create and update requests against columns
+        with permission levels 10 and 20
+        """
         su_token = yield from self._token(self.su_credentials)
 
         objective = yield from self._create_objective(su_token,
@@ -304,6 +309,10 @@ class TestSqlite(test.AppTestCase):
         self.assertEqual(data['outcome'], "under achieved")
 
     def test_column_permissions_policy(self):
+        """
+        Checks that a custom policy works on a column with default access
+        level 0
+        """
         user_token = yield from self._token(self.user_credentials)
 
         objective = yield from self._create_objective(user_token)
