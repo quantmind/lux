@@ -23,15 +23,30 @@ class TestSqlite(test.AppTestCase):
     @classmethod
     def populatedb(cls):
         backend = cls.app.auth_backend
+        odm = cls.app.odm()
         backend.create_superuser(cls.app.wsgi_request(),
                                  email='bigpippo@pluto.com',
                                  first_name='Big Pippo',
                                  **cls.su_credentials)
-        backend.create_user(cls.app.wsgi_request(),
-                            email='littlepippo@charon.com',
-                            first_name='Little Pippo',
-                            active=True,
-                            **cls.user_credentials)
+        user = backend.create_user(cls.app.wsgi_request(),
+                                   email='littlepippo@charon.com',
+                                   first_name='Little Pippo',
+                                   active=True,
+                                   **cls.user_credentials)
+
+        with odm.begin() as session:
+            group = odm.group(name='permission_test')
+            group.users.append(user)
+            session.add(group)
+
+            permission = odm.permission(
+                name='objective subject',
+                description='Can use objective:subject',
+                policy={
+                    'action': 'objective:subject',
+                    'effect': 'allow'
+                })
+            group.permissions.append(permission)
 
     def test_backend(self):
         backend = self.app.auth_backend
@@ -195,7 +210,6 @@ class TestSqlite(test.AppTestCase):
 
     def test_column_permissions_read(self):
         su_token = yield from self._token(self.su_credentials)
-        user_token = yield from self._token(self.user_credentials)
 
         objective = yield from self._create_objective(su_token)
 
@@ -254,7 +268,6 @@ class TestSqlite(test.AppTestCase):
 
     def test_column_permissions_update_create(self):
         su_token = yield from self._token(self.su_credentials)
-        user_token = yield from self._token(self.user_credentials)
 
         objective = yield from self._create_objective(su_token,
                                                       deadline="next week",
@@ -268,6 +281,7 @@ class TestSqlite(test.AppTestCase):
                 'deadline': 'end of May',
                 'outcome': 'exceeded'
             })
+
         response = request.response
         self.assertEqual(response.status_code, 200)
         data = self.json(response)
@@ -275,7 +289,7 @@ class TestSqlite(test.AppTestCase):
         self.assertTrue('outcome' in data)
         self.assertEqual(data['outcome'], "under achieved")
         self.assertTrue('deadline' in data)
-        self.assertEqual('deadline', "end of May")
+        self.assertEqual(data['deadline'], "end of May")
 
         request = yield from self.client.get(
             '/objectives/{}'.format(objective['id']), token=su_token)
@@ -288,6 +302,51 @@ class TestSqlite(test.AppTestCase):
         self.assertTrue('deadline' in data)
         self.assertEqual(data['deadline'], "end of May")
         self.assertEqual(data['outcome'], "under achieved")
+
+    def test_column_permissions_policy(self):
+        user_token = yield from self._token(self.user_credentials)
+
+        objective = yield from self._create_objective(user_token)
+
+        request = yield from self.client.get(
+            '/objectives/{}'.format(objective['id']), token=user_token)
+        response = request.response
+        self.assertEqual(response.status_code, 200)
+        data = self.json(response)
+        self.assertTrue('id' in data)
+        self.assertTrue('subject' in data)
+
+        request = yield from self.client.get(
+            '/objectives', token=user_token)
+        response = request.response
+        self.assertEqual(response.status_code, 200)
+        data = self.json(response)
+        self.assertTrue('result' in data)
+        for item in data['result']:
+            self.assertTrue('id' in item)
+            self.assertTrue('subject' in item)
+
+        request = yield from self.client.get(
+            '/objectives/metadata', token=user_token)
+        response = request.response
+        self.assertEqual(response.status_code, 200)
+        data = self.json(response)
+        self.assertTrue(
+            any(field['name'] == 'subject' for field in data['columns']))
+
+        request = yield from self.client.post(
+            '/objectives/{}'.format(objective['id']),
+            token=user_token,
+            body={
+                'subject': 'subject changed'
+            })
+
+        response = request.response
+        self.assertEqual(response.status_code, 200)
+        data = self.json(response)
+        self.assertTrue('id' in data)
+        self.assertTrue('subject' in data)
+        self.assertEqual(data['subject'], "subject changed")
 
     def _create_objective(self, token, subject='My objective',
                           **data):

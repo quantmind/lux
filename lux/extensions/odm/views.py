@@ -286,7 +286,6 @@ class CRUD(RestRouter):
     @route('<id>', method=('get', 'post', 'delete', 'head', 'options'))
     def read_update_delete(self, request):
         instance = self.get_model(request)
-        backend = request.cache.auth_backend
 
         if request.method == 'OPTIONS':
             request.app.fire('on_preflight', request)

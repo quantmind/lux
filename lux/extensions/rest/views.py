@@ -4,21 +4,19 @@ import lux
 from lux import route
 from lux.forms import Form
 
-from pulsar import Http404, MethodNotAllowed, BadRequest, PermissionDenied
+from pulsar import Http404, MethodNotAllowed, BadRequest
 from pulsar.apps.wsgi import Json
 
 from .forms import CreateUserForm, ChangePasswordForm
-from .user import AuthenticationError, logout, READ
+from .user import AuthenticationError, logout
 from .models import RestModel
 from .html import (Login, LoginPost, Logout, SignUp, ProcessLoginMixin,
                    ForgotPassword, ComingSoon)
-
 
 __all__ = ['RestRoot', 'RestRouter', 'RestMixin', 'Authorization',
            #
            'Login', 'LoginPost', 'Logout', 'SignUp', 'ProcessLoginMixin',
            'ForgotPassword', 'ComingSoon']
-
 
 REST_CONTENT_TYPES = ['application/json']
 DIRECTIONS = ('asc', 'desc')
@@ -51,6 +49,7 @@ class RestMixin:
     model = None
     '''Instance of a :class:`~lux.extensions.rest.RestModel`
     '''
+
     def __init__(self, *args, **kwargs):
         if self.model is None and args:
             self.model, args = args[0], args[1:]
