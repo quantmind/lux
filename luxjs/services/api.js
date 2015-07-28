@@ -100,20 +100,25 @@
             };
             //
             // Render a template from a url
-            this.renderTemplate = function (url, element, scope) {
+            this.renderTemplate = function (url, element, scope, callback) {
                 var template = $templateCache.get(url);
                 if (!template) {
                     $http.get(url).then(function (resp) {
                         template = resp.data;
                         $templateCache.put(url, template);
-                        element.append($compile(template)(scope));
+                        _render(element, template, scope, callback);
                     }, function (resp) {
                         $lux.messages.error('Could not load template from ' + url);
                     });
                 } else
-                    element.append($compile(template)(scope));
-
+                    _render(element, template, scope, callback);
             };
+
+            function _render(element, template, scope, callback) {
+                var elem = $compile(template)(scope);
+                element.append(elem);
+                if (callback) callback(elem);
+            }
         }]);
     //
     function wrapPromise (promise) {

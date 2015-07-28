@@ -68,7 +68,7 @@ class Extension(AuthBackend):
                   'Dictionary of default permission levels'),
         Parameter('ACCOUNT_ACTIVATION_DAYS', 2,
                   'Number of days the activation code is valid'),
-        Parameter('API_URL', '', 'URL FOR THE REST API', True),
+        Parameter('API_URL', None, 'URL FOR THE REST API', True),
         Parameter('API_SEARCH_KEY', 'q',
                   'The query key for full text search'),
         Parameter('API_OFFSET_KEY', 'offset', ''),
@@ -92,7 +92,7 @@ class Extension(AuthBackend):
         self.backends = []
 
         url = app.config['API_URL']
-        if not is_absolute_uri(url):
+        if url is not None and not is_absolute_uri(url):
             app.config['API_URL'] = str(RestRoot(url))
 
         module = import_module(app.meta.module_name)
@@ -127,21 +127,24 @@ class Extension(AuthBackend):
 
         url = app.config['API_URL']
         # If the api url is not absolute, add the api middleware
-        if not is_absolute_uri(url):
-            # Add the preflight and token events
-            events = ('on_preflight', 'on_token')
-            app.add_events(events)
-            for backend in self.backends:
-                app.bind_events(backend, events)
+        if url is not None:
+            if not is_absolute_uri(url):
+                # Add the preflight and token events
+                events = ('on_preflight', 'on_token')
+                app.add_events(events)
+                for backend in self.backends:
+                    app.bind_events(backend, events)
 
-            api = RestRoot(url)
-            middleware.append(api)
-            for extension in app.extensions.values():
-                api_sections = getattr(extension, 'api_sections', None)
-                if api_sections:
-                    for router in api_sections(app):
-                        api.add_child(router)
-        app.api = ApiClient(app)
+                api = RestRoot(url)
+                middleware.append(api)
+                for extension in app.extensions.values():
+                    api_sections = getattr(extension, 'api_sections', None)
+                    if api_sections:
+                        for router in api_sections(app):
+                            api.add_child(router)
+
+            app.api = ApiClient(app)
+
         return middleware
 
     def response_middleware(self, app):

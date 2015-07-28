@@ -55,7 +55,7 @@ def add_css(all):
         z_index=800)
 
     css('.main-sidebar',
-        position='absolute',
+        position='fixed',
         overflow_y='auto',
         overflow_x='hidden',
         top=px(0),

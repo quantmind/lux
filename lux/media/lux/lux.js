@@ -1,6 +1,6 @@
 //      Lux Library - v0.2.0
 
-//      Compiled 2015-07-27.
+//      Compiled 2015-07-28.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -440,20 +440,25 @@ function(angular, root) {
             };
             //
             // Render a template from a url
-            this.renderTemplate = function (url, element, scope) {
+            this.renderTemplate = function (url, element, scope, callback) {
                 var template = $templateCache.get(url);
                 if (!template) {
                     $http.get(url).then(function (resp) {
                         template = resp.data;
                         $templateCache.put(url, template);
-                        element.append($compile(template)(scope));
+                        _render(element, template, scope, callback);
                     }, function (resp) {
                         $lux.messages.error('Could not load template from ' + url);
                     });
                 } else
-                    element.append($compile(template)(scope));
-
+                    _render(element, template, scope, callback);
             };
+
+            function _render(element, template, scope, callback) {
+                var elem = $compile(template)(scope);
+                element.append(elem);
+                if (callback) callback(elem);
+            }
         }]);
     //
     function wrapPromise (promise) {
@@ -1615,8 +1620,8 @@ angular.module('lux.cms.component.text', ['lux.cms.component'])
     }])
     //
     // Display a div with links to content
-    .directive('cmsLinks', ['$lux', 'cmsDefaults',
-                            function ($lux, cmsDefaults, $templateCache) {
+    .directive('cmsLinks', ['$lux', 'cmsDefaults', '$scrollspy',
+                            function ($lux, cmsDefaults, $scrollspy) {
 
         return {
             restrict: 'AE',
@@ -1627,7 +1632,10 @@ angular.module('lux.cms.component.text', ['lux.cms.component'])
                 if (config.url) {
                     http.get(config.url).then(function (response) {
                         scope.links = response.data.result;
-                        $lux.renderTemplate(cmsDefaults.linksTemplate, element, scope);
+                        $lux.renderTemplate(cmsDefaults.linksTemplate, element, scope, function (elem) {
+                            if (config.hasOwnProperty('scrollspy'))
+                                $scrollspy(element);
+                        });
                     }, function (response) {
                         $lux.messages.error('Could not load links');
                     });
@@ -4527,6 +4535,8 @@ angular.module("nav/templates/sidebar.tpl.html", []).run(["$templateCache", func
                 // No navbar, add an object
                 if (!navbar)
                     sidebar.navbar = navbar = {};
+                navbar.fixed = true;
+                navbar.top = true;
                 //
                 // Add toggle to the navbar
                 if (sidebar.toggle) {
