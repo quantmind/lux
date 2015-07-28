@@ -2,8 +2,6 @@ from dateutil.parser import parse
 
 from lux.utils import test
 
-from . import TestEnum
-
 
 class TestPostgreSql(test.AppTestCase):
     config_file = 'tests.odm'
@@ -11,8 +9,6 @@ class TestPostgreSql(test.AppTestCase):
         'DATASTORE': 'postgresql+green://lux:luxtest@127.0.0.1:5432/luxtests'}
     su_credentials = {'username': 'pippo',
                       'password': 'pluto'}
-    user_credentials = {'username': 'littlepippo',
-                        'password': 'charon'}
 
     @classmethod
     def populatedb(cls):
@@ -21,10 +17,6 @@ class TestPostgreSql(test.AppTestCase):
                                  email='pippo@pippo.com',
                                  first_name='Pippo',
                                  **cls.su_credentials)
-        backend.create_user(cls.app.wsgi_request(),
-                            email='littlepippo@charon.com',
-                            first_name='Little Pippo',
-                            **cls.user_credentials)
 
     def _token(self, credentials=None):
         '''Create an authentication token

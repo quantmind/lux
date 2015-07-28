@@ -5,7 +5,33 @@ from lux.utils import test
 
 class TestSqlite(test.AppTestCase):
     config_file = 'tests.auth'
-    config_params = {'DATASTORE': 'sqlite://'}
+    config_params = {
+        'DATASTORE': 'sqlite://',
+        'DEFAULT_PERMISSION_LEVELS': {
+            'objective': 40,
+            'objective:subject': 0,
+            'objective:deadline': 20,
+            'objective:outcome': 10
+        }
+    }
+
+    su_credentials = {'username': 'bigpippo',
+                      'password': 'pluto'}
+    user_credentials = {'username': 'littlepippo',
+                        'password': 'charon'}
+
+    @classmethod
+    def populatedb(cls):
+        backend = cls.app.auth_backend
+        backend.create_superuser(cls.app.wsgi_request(),
+                                 email='bigpippo@pluto.com',
+                                 first_name='Big Pippo',
+                                 **cls.su_credentials)
+        backend.create_user(cls.app.wsgi_request(),
+                            email='littlepippo@charon.com',
+                            first_name='Little Pippo',
+                            active=True,
+                            **cls.user_credentials)
 
     def test_backend(self):
         backend = self.app.auth_backend
@@ -167,23 +193,140 @@ class TestSqlite(test.AppTestCase):
                                               content_type='application/json')
         self.assertEqual(request.response.status_code, 201)
 
-    def _token(self):
+    def test_column_permissions_read(self):
+        su_token = yield from self._token(self.su_credentials)
+        user_token = yield from self._token(self.user_credentials)
+
+        objective = yield from self._create_objective(su_token)
+
+        request = yield from self.client.get(
+            '/objectives/{}'.format(objective['id']))
+        response = request.response
+        self.assertEqual(response.status_code, 200)
+        data = self.json(response)
+        self.assertTrue('id' in data)
+        self.assertFalse('subject' in data)
+
+        request = yield from self.client.get(
+            '/objectives')
+        response = request.response
+        self.assertEqual(response.status_code, 200)
+        data = self.json(response)
+        self.assertTrue('result' in data)
+        for item in data['result']:
+            self.assertTrue('id' in item)
+            self.assertFalse('subject' in item)
+
+        request = yield from self.client.get(
+            '/objectives/metadata')
+        response = request.response
+        self.assertEqual(response.status_code, 200)
+        data = self.json(response)
+        self.assertFalse(
+            any(field['name'] == 'subject' for field in data['columns']))
+
+        request = yield from self.client.get(
+            '/objectives/{}'.format(objective['id']), token=su_token)
+        response = request.response
+        self.assertEqual(response.status_code, 200)
+        data = self.json(response)
+        self.assertTrue('id' in data)
+        self.assertTrue('subject' in data)
+
+        request = yield from self.client.get(
+            '/objectives', token=su_token)
+        response = request.response
+        self.assertEqual(response.status_code, 200)
+        data = self.json(response)
+        self.assertTrue('result' in data)
+        for item in data['result']:
+            self.assertTrue('id' in item)
+            if item['id'] == objective['id']:
+                self.assertTrue('subject' in item)
+
+        request = yield from self.client.get(
+            '/objectives/metadata', token=su_token)
+        response = request.response
+        self.assertEqual(response.status_code, 200)
+        data = self.json(response)
+        self.assertTrue(
+            any(field['name'] == 'subject' for field in data['columns']))
+
+    def test_column_permissions_update_create(self):
+        su_token = yield from self._token(self.su_credentials)
+        user_token = yield from self._token(self.user_credentials)
+
+        objective = yield from self._create_objective(su_token,
+                                                      deadline="next week",
+                                                      outcome="under achieved")
+        self.assertTrue('deadline' in objective)
+        self.assertTrue('outcome' in objective)
+
+        request = yield from self.client.post(
+            '/objectives/{}'.format(objective['id']),
+            body={
+                'deadline': 'end of May',
+                'outcome': 'exceeded'
+            })
+        response = request.response
+        self.assertEqual(response.status_code, 200)
+        data = self.json(response)
+        self.assertTrue('id' in data)
+        self.assertTrue('outcome' in data)
+        self.assertEqual(data['outcome'], "under achieved")
+        self.assertTrue('deadline' in data)
+        self.assertEqual('deadline', "end of May")
+
+        request = yield from self.client.get(
+            '/objectives/{}'.format(objective['id']), token=su_token)
+        response = request.response
+        self.assertEqual(response.status_code, 200)
+        data = self.json(response)
+        self.assertTrue('id' in data)
+        self.assertTrue('subject' in data)
+        self.assertTrue('outcome' in data)
+        self.assertTrue('deadline' in data)
+        self.assertEqual(data['deadline'], "end of May")
+        self.assertEqual(data['outcome'], "under achieved")
+
+    def _create_objective(self, token, subject='My objective',
+                          **data):
+        data['subject'] = subject
+        request = yield from self.client.post(
+            '/objectives', body=data, token=token,
+            content_type='application/json')
+        response = request.response
+        self.assertEqual(response.status_code, 201)
+        data = self.json(response)
+        self.assertIsInstance(data, dict)
+        self.assertTrue('id' in data)
+        self.assertEqual(data['subject'], subject)
+        self.assertTrue('created' in data)
+        return data
+
+    def _token(self, credentials=None):
         '''Return a token for a new superuser
         '''
-        username = test.randomname()
-        password = test.randomname()
-        email = '%s@%s.com' % (username, test.randomname())
-        user = yield from self.create_superuser(username,
-                                                email,
-                                                password)
-        self.assertEqual(user.username, username)
-        self.assertNotEqual(user.password, password)
+        if credentials is None:
+            username = test.randomname()
+            password = test.randomname()
+
+            credentials = {
+                'username': username,
+                'password': password
+            }
+
+            email = '%s@%s.com' % (username, test.randomname())
+            user = yield from self.create_superuser(username,
+                                                    email,
+                                                    password)
+            self.assertEqual(user.username, username)
+            self.assertNotEqual(user.password, password)
 
         # Get new token
         request = yield from self.client.post('/authorizations',
                                               content_type='application/json',
-                                              body={'username': username,
-                                                    'password': password})
+                                              body=credentials)
         response = request.response
         self.assertEqual(response.status_code, 201)
         user = request.cache.user

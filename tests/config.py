@@ -8,8 +8,3 @@ MEDIA_URL = 'static'
 GREEN_POOL = 50
 
 thread_workers = 1
-
-DEFAULT_PERMISSION_LEVELS = {
-    'task': 10,
-    'task:assigned_id': 0
-}
