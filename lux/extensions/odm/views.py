@@ -92,10 +92,7 @@ class RestRouter(rest.RestRouter):
         return query.order_by(entry)
 
 
-class CRUD(RestRouter):
-    '''A Router for handling CRUD JSON requests for a database model
-    '''
-
+class ColumnPermissionsBase:
     def columns(self, request):
         """
         Returns column objects for this model
@@ -186,6 +183,11 @@ class CRUD(RestRouter):
         backend = request.cache.auth_backend
         if not backend.has_permission(request, self.model.name, level):
             raise PermissionDenied
+
+
+class CRUD(RestRouter, ColumnPermissionsBase):
+    '''A Router for handling CRUD JSON requests for a database model
+    '''
 
     def query(self, request, session):
         """
