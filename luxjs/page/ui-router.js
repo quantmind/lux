@@ -103,11 +103,9 @@
         //
         .config(['$locationProvider', function ($locationProvider) {
             //
-            //	Set-up HTML5 navigation if available
-            if (lux.context.HTML5_NAVIGATION) {
-                $locationProvider.html5Mode(true).hashPrefix(lux.context.hashPrefix);
-                $(document.querySelector('#seo-view')).remove();
-            }
+            $locationProvider.html5Mode(true).hashPrefix(lux.context.hashPrefix);
+            $(document.querySelector('#seo-view')).remove();
+            lux.context.uiRouterEnabled = true;
         }])
         //
         // Default controller for an Html5 page loaded via the ui router

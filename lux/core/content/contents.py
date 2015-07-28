@@ -10,9 +10,9 @@ from pulsar.utils.slugify import slugify
 from pulsar.utils.structures import AttributeDictionary, mapping_iterator
 from pulsar.utils.pep import to_string
 
-from lux.utils import iso8601
+from lux.utils import iso8601, absolute_uri
 
-from ..cache import cached
+from ..cache import Cacheable, cached
 from .urlwrappers import (URLWrapper, Processor, MultiValue, Tag, Author,
                           Category)
 
@@ -106,62 +106,29 @@ def get_reader(app, src):
     return Reader(app, ext)
 
 
-class Content(object):
+class Content(Cacheable):
     '''A class for managing a file-based content
     '''
     template = None
     template_engine = None
-    mandatory_properties = ()
 
-    def __init__(self, app, content, metadata, src=None,
-                 path=None, context=None, **params):
+    def __init__(self, app, content, metadata, path, src=None, **params):
         self._app = app
         self._content = content
+        self._path = path
         self._src = src
-        self._path = path if path is not None else src
         self._meta = AttributeDictionary(params)
-        if src:
-            self._meta.modified = modified_datetime(src)
-        else:
-            self._meta.modified = datetime.now()
-        # Get the site meta data dictionary.
-        # Used to render Content metadata
         self._update_meta(metadata)
-        meta = self._meta
-        if self.is_html:
-            dir, slug = os.path.split(self._path)
-            if not meta.slug:
-                if not slug:
-                    slug = self._path
-                    dir = None
-                meta.slug = slugify(slug, separator='_')
-            if dir:
-                meta.slug = '%s/%s' % (dir, meta.slug)
-        else:
-            if self.suffix:  # Any other file
-                suffix = '.%s' % self.suffix
-                if not self._path.endswith(suffix):
-                    self._path = self._path + suffix
-            if not meta.slug:
-                meta.slug = self._path
-        meta.name = slugify(meta.slug, separator='_')
-        for name in self.mandatory_properties:
-            if not meta.get(name):
-                raise BuildError("Property '%s' not available in %s"
-                                 % (name, self))
-
-    @property
-    def name(self):
-        return self._meta.name
+        if not self._meta.modified:
+            if src:
+                self._meta.modified = modified_datetime(src)
+            else:
+                self._meta.modified = datetime.now()
+        self._meta.name = slugify(self._path, separator='_')
 
     @property
     def app(self):
         return self._app
-
-    @property
-    def src(self):
-        '''Absolute path of source file. Can be None if not provided'''
-        return self._src
 
     @property
     def content_type(self):
@@ -206,10 +173,13 @@ class Content(object):
     @property
     def id(self):
         if self.is_html:
-            return '%s.json' % self._meta.slug
+            return '%s.json' % self._path
+
+    def cache_key(self, app):
+        return self._meta.name
 
     def __repr__(self):
-        return self._src
+        return self._path
     __str__ = __repr__
 
     def key(self, name=None):
@@ -253,15 +223,12 @@ class Content(object):
                     context[self.key('main')] = content
                     with open(template, 'r') as file:
                         template_str = file.read()
-                    raw = self._engine(template_str, context)
-                    reader = get_reader(self._app, template)
-                    ct = reader.process(raw, template)
-                    content = ct._content
+                    content = self._engine(template_str, context)
             return content
         else:
             return self._content
 
-    def text(self, request):
+    def raw(self, request):
         return self._content
 
     @cached
@@ -286,6 +253,7 @@ class Content(object):
             if 'head' in data:
                 head.update(data['head'])
 
+            data['url'] = request.absolute_uri(self._path)
             data['head'] = head
             return data
 
@@ -301,7 +269,8 @@ class Content(object):
         doc = request.html_document
         doc.jscontext['page'] = dict(page_info(data))
         #
-        doc.meta.update({'og:image': data.get('image'),
+        image = absolute_uri(request, data.get('image'))
+        doc.meta.update({'og:image': image,
                          'og:published_time': data.get('date'),
                          'og:modified_time': data.get('modified')})
         doc.meta.update(data['head'])

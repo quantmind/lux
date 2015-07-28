@@ -39,8 +39,6 @@ class MultiValue(Processor):
 class URLWrapper(object):
 
     def __init__(self, name, settings):
-        # next 2 lines are redundant with the setter of the name property
-        # but are here for clarity
         self.settings = settings
         self.name = name
 
@@ -54,7 +52,7 @@ class URLWrapper(object):
         self.slug = slugify(name)
 
     def to_json(self, request):
-        base = self.__class__.__name__
+        base = type(self).__name__
         name = self.name
         path = ('/%s/%s' % (base, self.name)).lower()
         d = {'name': name}
@@ -72,7 +70,7 @@ class URLWrapper(object):
         return self.name
 
     def __repr__(self):
-        return '<{} {}>'.format(type(self).__name__, str(self))
+        return '<%s %s>' % (type(self).__name__, self)
 
 
 class Category(URLWrapper):

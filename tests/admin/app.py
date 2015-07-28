@@ -41,17 +41,6 @@ class AdminTest(test.AppTestCase):
         response = request.response
         self.assertEqual(response.status_code, 200)
 
-    def test_angular_sitemap(self):
-        request = yield from self.client.get('/admin/blogs')
-        jscontext = request.html_document.jscontext
-        pages = jscontext.get('pages')
-        self.assertTrue(pages)
-        updates = pages.get('admin_blogs_update')
-        self.assertTrue(updates)
-        self.assertEqual(updates['url'], '/admin/blogs/:id')
-        self.assertEqual(updates['templateUrl'],
-                         '/admin/blogs/:id?template=ui')
-
     def test_edit_template_view(self):
         request = yield from self.client.get('/admin/html_templates/1')
         response = request.response

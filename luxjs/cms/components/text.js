@@ -67,8 +67,8 @@ angular.module('lux.cms.component.text', ['lux.cms.component'])
     }])
     //
     // Display a div with links to content
-    .directive('cmsLinks', ['$lux', 'cmsDefaults',
-                            function ($lux, cmsDefaults, $templateCache) {
+    .directive('cmsLinks', ['$lux', 'cmsDefaults', '$scrollspy',
+                            function ($lux, cmsDefaults, $scrollspy) {
 
         return {
             restrict: 'AE',
@@ -79,7 +79,10 @@ angular.module('lux.cms.component.text', ['lux.cms.component'])
                 if (config.url) {
                     http.get(config.url).then(function (response) {
                         scope.links = response.data.result;
-                        $lux.renderTemplate(cmsDefaults.linksTemplate, element, scope);
+                        $lux.renderTemplate(cmsDefaults.linksTemplate, element, scope, function (elem) {
+                            if (config.hasOwnProperty('scrollspy'))
+                                $scrollspy(element);
+                        });
                     }, function (response) {
                         $lux.messages.error('Could not load links');
                     });

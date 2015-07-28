@@ -72,12 +72,9 @@ class Extension(lux.Extension):
         if favicon:
             parsed = urlparse(favicon)
             if not parsed.scheme and not parsed.netloc:
-                site_url = app.config['SITE_URL']
                 media = app.config['MEDIA_URL']
                 if not favicon.startswith(media):
                     favicon = remove_double_slash('%s%s' % (media, favicon))
-                if site_url:
-                    favicon = '%s%s' % (site_url, favicon)
             doc.head.links.append(favicon, rel="icon",
                                   type='image/x-icon')
 

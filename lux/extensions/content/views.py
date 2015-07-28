@@ -1,16 +1,18 @@
 import json
 import logging
-import os
 
-from pulsar import PermissionDenied, Http404
+from pulsar import PermissionDenied, Http404, HttpRedirect
 from pulsar.apps.wsgi import route, Json, RouterParam
 from pulsar.utils.slugify import slugify
+from pulsar.utils.structures import AttributeDictionary
+from pulsar.utils.httpurl import remove_double_slash
 
 import lux
 from lux import forms, HtmlRouter
 from lux.extensions import rest
+from lux.extensions.sitemap import Sitemap, SitemapIndex
 
-from .models import DataError
+from .models import Content, DataError
 
 
 SLUG_LENGTH = 64
@@ -28,7 +30,7 @@ class TextForm(forms.Form):
 
 
 class TextCRUDBase(rest.RestMixin, HtmlRouter):
-    response_content_types = ('text/html', 'text/plain', 'application/json')
+    response_content_types = None
     render_file = RouterParam()
     uimodules = ('lux.blog',)
 
@@ -39,12 +41,7 @@ class TextCRUD(TextCRUDBase):
     def get_html(self, request):
         '''Return a div for pagination
         '''
-        for slug in ('', '_'):
-            try:
-                return self.render_file(request, slug)
-            except Http404:
-                pass
-        raise Http404
+        return self.render_file(request, 'index')
 
     def post(self, request):
         '''Create a new model
@@ -78,7 +75,9 @@ class TextCRUD(TextCRUDBase):
 
     @route('_links', response_content_types=('application/json',))
     def links(self, request):
-        return self.collection_response(request, sortby='order:desc')
+        return self.collection_response(request,
+                                        sortby='order:desc',
+                                        **{'order:gt': 0})
 
     @route('<path:path>', method=('get', 'head', 'post'))
     def read_update(self, request):
@@ -86,7 +85,13 @@ class TextCRUD(TextCRUDBase):
         backend = request.cache.auth_backend
 
         if request.method == 'GET':
-            return self.render_file(request, path, True)
+            try:
+                return self.render_file(request, path, True)
+            except Http404:
+                if not path.endswith('/'):
+                    if self.model.exist(request, '%s/index' % path):
+                        raise HttpRedirect('%s/' % path)
+                raise
 
         content = self.get_model(request, path)
         if request.method == 'HEAD':
@@ -105,16 +110,13 @@ class TextCRUD(TextCRUDBase):
         try:
             return self.model.read(request, path)
         except DataError:
-            try:
-                return self.model.read(request, os.path.join(path, '_'))
-            except DataError:
-                raise Http404
+            raise Http404
 
     def create_model(self, request, data):
         '''Create a new document
         '''
-        slug = data.get('slug') or data['title']
-        data['slug'] = slugify(slug, max_length=SLUG_LENGTH)
+        name = data.get('name') or data['title']
+        data['name'] = slugify(name, max_length=SLUG_LENGTH)
         return self.model.write(request.cache.user, data, new=True)
 
     def update_model(self, request, instance, data):
@@ -126,31 +128,39 @@ class TextCRUD(TextCRUDBase):
             data.pop('site', None)
         return data
 
-    def cms_html(self, request, slug, html):
-        if not slug:
-            slug = ('', '_')
-
-    def render_file(self, request, slug='', as_response=False):
-        content = self.get_model(request, slug)
+    def render_file(self, request, path='', as_response=False):
+        if path.endswith('/'):
+            path = '%sindex' % path
+        content = self.get_model(request, path)
         backend = request.cache.auth_backend
 
         if backend.has_permission(request, self.model.name, rest.READ):
             response = request.response
-            if response.content_type == 'text/html':
-                html = content.html(request)
-                if as_response:
-                    return self.html_response(request, html)
+            response.content_type = content.content_type
+            if content.content_type == 'text/html':
+                #
+                # Update with context from this router
+                content._meta.update(self.context(request) or ())
+
+                if response.content_type == 'application/json':
+                    data = content.json(request)
+                    if as_response:
+                        return Json(data).http_response(request)
+                    else:
+                        return data
                 else:
-                    return html
-            elif response.content_type == 'text/plain':
-                text = content.text(request)
-            else:
-                text = content.json(request)
-            if as_response:
-                response.content = text
+                    html = content.html(request)
+                    if as_response:
+                        return self.html_response(request, html)
+                    else:
+                        return html
+            elif as_response:
+                response.content_type = content.content_type
+                response.content = content.raw(request)
                 return response
             else:
-                return text
+                return content.raw(request)
+
         raise PermissionDenied
 
     def _do_sortby(self, request, query, field, direction):
@@ -160,6 +170,39 @@ class TextCRUD(TextCRUDBase):
         return query.filter(field, op, value)
 
 
+class TextCMS(TextCRUD):
+    '''A Text CRUD Router which can be used as CMS Router
+    '''
+    def response_wrapper(self, callable, request):
+        try:
+            return callable(request)
+        except Http404:
+            pass
+
+
+class CMSmap(SitemapIndex):
+    '''Build the sitemap for this Content Management System'''
+    cms = None
+
+    def items(self, request):
+        for index, map in enumerate(self.cms.sitemaps):
+            if not index:
+                continue
+            url = request.absolute_uri(str(map.route))
+            _, last_modified = map.sitemap(request)
+            yield AttributeDictionary(loc=url, lastmod=last_modified)
+
+
+class RouterMap(Sitemap):
+    content_router = None
+
+    def items(self, request):
+        for item in self.content_router.model.all(request):
+            yield AttributeDictionary(loc=item['url'],
+                                      lastmod=item['modified'],
+                                      priority=item['priority'])
+
+
 class CMS(lux.CMS):
     '''Override default lux :class:`.CMS` handler
 
@@ -167,7 +210,28 @@ class CMS(lux.CMS):
     '''
     def __init__(self, app):
         super().__init__(app)
-        self.middleware = []
+        self.sitemaps = [CMSmap('/sitemap.xml', cms=self)]
+        self._middleware = []
+
+    def add_router(self, router, sitemap=True):
+        if isinstance(router, Content):
+            router = TextCMS(router)
+
+        if sitemap:
+            path = str(router.route)
+            if path != '/':
+                url = remove_double_slash('%s/sitemap.xml' % path)
+            else:
+                url = '/sitemap1.xml'
+            sitemap = RouterMap(url, content_router=router)
+            self.sitemaps.append(sitemap)
+
+        self._middleware.append(router)
+
+    def middleware(self):
+        all = self.sitemaps[:]
+        all.extend(self._middleware)
+        return all
 
     def inner_html(self, request, page, self_comp=''):
         html = super().inner_html(request, page, self_comp)
@@ -175,20 +239,15 @@ class CMS(lux.CMS):
         path = request.path[1:]
 
         try:
-            for router in self.middleware:
+            for router in self._middleware:
                 router_args = router.resolve(path)
                 if router_args:
                     router, args = router_args
-                    slug = None
-                    if args:
-                        slugs = tuple(args.values())
-                    else:
-                        slugs = ('', '_')
-                    for slug in slugs:
-                        try:
-                            return router.render_file(request, slug)
-                        except Http404:
-                            pass
+                    path = tuple(args.values())[0] if args else 'index'
+                    try:
+                        return router.render_file(request, path)
+                    except Http404:
+                        return html
 
             return html
         finally:

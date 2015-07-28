@@ -4,7 +4,7 @@ from pulsar import Http404, PermissionDenied
 from pulsar.utils.html import nicename
 
 import lux
-from lux import route
+from lux import route, cached
 from lux.extensions import rest
 from lux.extensions.angular import grid
 
@@ -46,7 +46,7 @@ class AdminRouter(lux.HtmlRouter):
         else:
             raise Http404
 
-    def context(self, request, context):
+    def context(self, request):
         '''Override to add the admin navigation to the javascript context.
 
         The navigation entry can be used to build the admin web pages
@@ -54,8 +54,7 @@ class AdminRouter(lux.HtmlRouter):
         admin = self.admin_root()
         if admin:
             doc = request.html_document
-            doc.jscontext['navigation'] = admin.sitemap(request.app)
-        return context
+            doc.jscontext['navigation'] = admin.sitemap(request)
 
     def get_html(self, request):
         return request.app.render_template('partials/admin.html')
@@ -72,33 +71,30 @@ class Admin(AdminRouter):
 
     This router containes all Admin routers managing models.
     '''
-    _sitemap = None
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # set self as the angular root
         self._angular_root = self
 
-    def sitemap(self, app):
-        if self._sitemap is None:
-            sections = {}
-            sitemap = []
-            for child in self.routes:
-                if isinstance(child, AdminModel):
-                    section, info = child.info(app)
+    @cached
+    def sitemap(self, request):
+        sections = {}
+        sitemap = []
+        for child in self.routes:
+            if isinstance(child, AdminModel):
+                section, info = child.info(request)
 
-                    if section not in sections:
-                        items = []
-                        sections[section] = {'name': section,
-                                             'items': items}
-                        sitemap.append(sections[section])
-                    else:
-                        items = sections[section]['items']
+                if section not in sections:
+                    items = []
+                    sections[section] = {'name': section,
+                                         'items': items}
+                    sitemap.append(sections[section])
+                else:
+                    items = sections[section]['items']
 
-                    items.append(info)
+                items.append(info)
 
-            self._sitemap = sitemap
-        return self._sitemap
+        return sitemap
 
 
 class AdminModel(rest.RestMixin, AdminRouter):
@@ -111,7 +107,7 @@ class AdminModel(rest.RestMixin, AdminRouter):
     '''
     uimodules = ('lux.grid',)
 
-    def info(self, app):
+    def info(self, request):
         '''Information for admin navigation
         '''
         name = nicename(self.model.name)

@@ -36,7 +36,7 @@ class TestContentModel(test.TestCase):
 
     def test_write(self):
         # no file but trying to open one
-        data = {'body': 'Test message', 'slug': 'Test'}
+        data = {'body': 'Test message', 'name': 'Test'}
 
         with self.assertRaises(DataError) as e:
             self.repo.write(self.user, data)
@@ -53,7 +53,7 @@ class TestContentModel(test.TestCase):
         self.assertEqual(str(e.exception), 'Test not available')
 
     def test_delete(self):
-        data = {'slug': 'delete_me', 'body': 'Delete me!',
+        data = {'name': 'delete_me', 'body': 'Delete me!',
                 'files': 'delete_me'}
         # create file and delete it
         self.repo.write(self.user, data, new=True)
@@ -69,15 +69,15 @@ class TestContentModel(test.TestCase):
     def test_all(self):
         app = self.application()
         request = app.wsgi_request()
-        data = {'slug': 'all_file', 'body': 'nothing'}
+        data = {'name': 'all_file', 'body': 'nothing'}
         self.repo.write(self.user, data, new=True)
-        models = dict(((v['slug'], v) for v in self.repo.all(request)))
-        self.assertIn('all_file', models)
+        models = dict(((v['url'], v) for v in self.repo.all(request)))
+        self.assertIn('http://0.0.0.0/Testss/all_file', models)
 
     def test_read(self):
         app = self.application()
         request = app.wsgi_request()
-        data = {'slug': 'README', 'body': 'Readme message'}
+        data = {'name': 'README', 'body': 'Readme message'}
         self.repo.write(self.user, data, new=True)
         content = self.repo.read(request, 'README')
         self.assertEqual(content._content, '<p>Readme message</p>')

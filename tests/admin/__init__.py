@@ -15,7 +15,6 @@ EXTENSIONS = ['lux.extensions.base',
               'lux.extensions.angular',
               'lux.extensions.admin']
 
-HTML5_NAVIGATION = True
 API_URL = 'api'
 AUTHENTICATION_BACKENDS = ['lux.extensions.auth.TokenBackend']
 DATASTORE = 'postgresql+green://lux:luxtest@127.0.0.1:5432/luxtests'

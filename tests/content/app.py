@@ -38,7 +38,7 @@ class TestContentViews(test.AppTestCase):
         data = yield from self._create_blog(
             title='test reading',
             body='This is a simple post for testing')
-        self.assertEqual(data['slug'], 'test-reading')
+        self.assertEqual(data['name'], 'test-reading')
         self.assertEqual(data['filename'],
                          os.path.join('blog', 'test-reading.md'))
         request = yield from self.client.get('/blog/test-reading')

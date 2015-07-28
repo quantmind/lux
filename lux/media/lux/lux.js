@@ -1,6 +1,6 @@
 //      Lux Library - v0.2.0
 
-//      Compiled 2015-07-23.
+//      Compiled 2015-07-28.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -440,20 +440,25 @@ function(angular, root) {
             };
             //
             // Render a template from a url
-            this.renderTemplate = function (url, element, scope) {
+            this.renderTemplate = function (url, element, scope, callback) {
                 var template = $templateCache.get(url);
                 if (!template) {
                     $http.get(url).then(function (resp) {
                         template = resp.data;
                         $templateCache.put(url, template);
-                        element.append($compile(template)(scope));
+                        _render(element, template, scope, callback);
                     }, function (resp) {
                         $lux.messages.error('Could not load template from ' + url);
                     });
                 } else
-                    element.append($compile(template)(scope));
-
+                    _render(element, template, scope, callback);
             };
+
+            function _render(element, template, scope, callback) {
+                var elem = $compile(template)(scope);
+                element.append(elem);
+                if (callback) callback(elem);
+            }
         }]);
     //
     function wrapPromise (promise) {
@@ -1615,8 +1620,8 @@ angular.module('lux.cms.component.text', ['lux.cms.component'])
     }])
     //
     // Display a div with links to content
-    .directive('cmsLinks', ['$lux', 'cmsDefaults',
-                            function ($lux, cmsDefaults, $templateCache) {
+    .directive('cmsLinks', ['$lux', 'cmsDefaults', '$scrollspy',
+                            function ($lux, cmsDefaults, $scrollspy) {
 
         return {
             restrict: 'AE',
@@ -1627,7 +1632,10 @@ angular.module('lux.cms.component.text', ['lux.cms.component'])
                 if (config.url) {
                     http.get(config.url).then(function (response) {
                         scope.links = response.data.result;
-                        $lux.renderTemplate(cmsDefaults.linksTemplate, element, scope);
+                        $lux.renderTemplate(cmsDefaults.linksTemplate, element, scope, function (elem) {
+                            if (config.hasOwnProperty('scrollspy'))
+                                $scrollspy(element);
+                        });
                     }, function (response) {
                         $lux.messages.error('Could not load links');
                     });
@@ -1917,26 +1925,15 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
     //	Drop in replacement for lux.ui.router when HTML5_NAVIGATION is off.
     //
     angular.module('lux.router', ['lux.page'])
-
         //
-        //  Convert all internal links to have a target so that the page reload
-        .directive('page', ['$log', '$timeout', function (log, timer) {
-            return {
-                link: function (scope, element) {
-                    var toTarget = function () {
-                            log.info('Transforming links into targets');
-                            forEach($(element)[0].querySelectorAll('a'), function(link) {
-                                link = $(link);
-                                if (!link.attr('target'))
-                                    link.attr('target', '_self');
-                            });
-                        };
-                    // Put the toTarget function into the queue so that it is
-                    // processed after all
-                    if (lux.context.HTML5_NAVIGATION)
-                        timer(toTarget, 0);
-                }
-            };
+        .config(['$locationProvider', function ($locationProvider) {
+            //
+            // Enable html5mode but set the hash prefix to something different from #
+            $locationProvider.html5Mode({
+                enabled: true,
+                requireBase: false,
+                rewriteLinks: false
+            }).hashPrefix(lux.context.hashPrefix);
         }]);
 
     //
@@ -2044,11 +2041,9 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
         //
         .config(['$locationProvider', function ($locationProvider) {
             //
-            //	Set-up HTML5 navigation if available
-            if (lux.context.HTML5_NAVIGATION) {
-                $locationProvider.html5Mode(true).hashPrefix(lux.context.hashPrefix);
-                $(document.querySelector('#seo-view')).remove();
-            }
+            $locationProvider.html5Mode(true).hashPrefix(lux.context.hashPrefix);
+            $(document.querySelector('#seo-view')).remove();
+            lux.context.uiRouterEnabled = true;
         }])
         //
         // Default controller for an Html5 page loaded via the ui router
@@ -3253,20 +3248,27 @@ angular.module("message/message.tpl.html", []).run(["$templateCache", function($
         }]);
 
 
-angular.module('templates-grid', ['grid/modal.empty.tpl.html', 'grid/modal.tpl.html']);
+angular.module('templates-grid', ['grid/templates/modal.delete.tpl.html', 'grid/templates/modal.empty.tpl.html']);
 
-angular.module("grid/modal.empty.tpl.html", []).run(["$templateCache", function($templateCache) {
-  $templateCache.put("grid/modal.empty.tpl.html",
+angular.module("grid/templates/modal.delete.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("grid/templates/modal.delete.tpl.html",
     "<div class=\"modal\" tabindex=\"-1\" role=\"dialog\" aria-hidden=\"true\">\n" +
     "  <div class=\"modal-dialog\">\n" +
     "    <div class=\"modal-content\">\n" +
-    "      <div class=\"modal-header\" ng-show=\"title\">\n" +
+    "      <div class=\"modal-header\" >\n" +
     "        <button type=\"button\" class=\"close\" aria-label=\"Close\" ng-click=\"$hide()\"><span aria-hidden=\"true\">&times;</span></button>\n" +
-    "        <h4 class=\"modal-title\" ng-bind-html=\"title\"></h4>\n" +
+    "        <h4 class=\"modal-title\"><i class=\"fa fa-trash\"></i> Delete {{stateName}}</h4>\n" +
     "      </div>\n" +
-    "      <div class=\"modal-body\" ng-bind=\"content\"></div>\n" +
+    "      <div class=\"modal-body\">\n" +
+    "        <p class=\"modal-info\">{{infoMessage}}</p>\n" +
+    "        <ul class=\"modal-items\">\n" +
+    "          <li ng-repeat=\"item in selected\">{{item[repr_field]}}</li>\n" +
+    "        </ul>\n" +
+    "        <p class=\"text-danger cannot-undo\">{{dangerMessage}}</p>\n" +
+    "      </div>\n" +
     "      <div class=\"modal-footer\">\n" +
-    "        <button type=\"button\" class=\"btn btn-default\" ng-click=\"$hide()\">Close</button>\n" +
+    "        <button type=\"button\" class=\"btn btn-default\" ng-click=\"$hide()\">No</button>\n" +
+    "        <button type=\"button\" class=\"btn btn-primary\" ng-click=\"ok()\">Yes</button>\n" +
     "      </div>\n" +
     "    </div>\n" +
     "  </div>\n" +
@@ -3274,19 +3276,20 @@ angular.module("grid/modal.empty.tpl.html", []).run(["$templateCache", function(
     "");
 }]);
 
-angular.module("grid/modal.tpl.html", []).run(["$templateCache", function($templateCache) {
-  $templateCache.put("grid/modal.tpl.html",
+angular.module("grid/templates/modal.empty.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("grid/templates/modal.empty.tpl.html",
     "<div class=\"modal\" tabindex=\"-1\" role=\"dialog\" aria-hidden=\"true\">\n" +
     "  <div class=\"modal-dialog\">\n" +
     "    <div class=\"modal-content\">\n" +
-    "      <div class=\"modal-header\" ng-show=\"title\">\n" +
+    "      <div class=\"modal-header\">\n" +
     "        <button type=\"button\" class=\"close\" aria-label=\"Close\" ng-click=\"$hide()\"><span aria-hidden=\"true\">&times;</span></button>\n" +
-    "        <h4 class=\"modal-title\" ng-bind-html=\"title\"></h4>\n" +
+    "        <h4 class=\"modal-title\"><i class=\"fa fa-trash\"></i> Lack of {{stateName}} to delete</h4>\n" +
     "      </div>\n" +
-    "      <div class=\"modal-body\" ng-bind=\"content\"></div>\n" +
+    "      <div class=\"modal-body\">\n" +
+    "        <p class=\"modal-info\">{{emptyMessage}}</p>\n" +
+    "      </div>\n" +
     "      <div class=\"modal-footer\">\n" +
-    "        <button type=\"button\" class=\"btn btn-default\" ng-click=\"$hide()\">No</button>\n" +
-    "        <button type=\"button\" class=\"btn btn-primary\" ng-click=\"ok()\">Yes</button>\n" +
+    "        <button type=\"button\" class=\"btn btn-default\" ng-click=\"$hide()\">Close</button>\n" +
     "      </div>\n" +
     "    </div>\n" +
     "  </div>\n" +
@@ -3324,6 +3327,21 @@ angular.module("grid/modal.tpl.html", []).run(["$templateCache", function($templ
                 'delete': {
                     title: 'Delete',
                     icon: 'fa fa-trash'
+                }
+            },
+            modal: {
+                delete: {
+                    templates: {
+                        'empty': 'grid/templates/modal.empty.tpl.html',
+                        'delete': 'grid/templates/modal.delete.tpl.html',
+                    },
+                    messages: {
+                        'info': 'Are you sure you want to delete',
+                        'danger': 'DANGER - THIS CANNOT BE UNDONE',
+                        'success': 'Successfully deleted',
+                        'error': 'Error while deleting ',
+                        'empty': 'Please, select some',
+                    }
                 }
             },
             // dictionary of call-backs for columns types
@@ -3416,64 +3434,59 @@ angular.module("grid/modal.tpl.html", []).run(["$templateCache", function($templ
 
                 scope.create = function($event) {
                     // if location path is available then we use ui-router
-                    if ($location.path().length)
+                    if (lux.context.uiRouterEnabled)
                         $location.path($location.path() + '/add');
                     else
                         $lux.window.location.href += '/add';
                 };
 
                 scope.delete = function($event) {
-                    var modalTitle, modalContent,
-                        first_field = gridOptions.columnDefs[0].field,
-                        repr_field = scope.gridOptions.reprField || first_field,
-                        icon = '<i class="fa fa-trash"></i>',
-                        modalTemplate = 'grid/modal.tpl.html',
-                        results = [],
-                        success = false,
+                    modalScope.selected = scope.gridApi.selection.getSelectedRows();
+
+                    var template,
+                        firstField = gridOptions.columnDefs[0].field,
+                        itemMessage = modalScope.selected.length + ' ' + stateName + '.',
                         subPath = scope.options.target.path || '';
 
+                    // Modal settings
+                    angular.extend(modalScope, {
+                        'stateName': stateName,
+                        'repr_field': scope.gridOptions.reprField || firstField,
+                        'infoMessage': gridDefaults.modal.delete.messages.info + ' ' + stateName + ':',
+                        'dangerMessage': gridDefaults.modal.delete.messages.danger,
+                        'emptyMessage': gridDefaults.modal.delete.messages.empty + ' ' + stateName + '.',
+                    });
+
                     var pkForItem = function(item) {
-                        return item.hasOwnProperty('id') ? item.id : item[first_field];
+                        return item.hasOwnProperty('id') ? item.id : item[firstField];
                     };
 
-                    scope.selected = scope.gridApi.selection.getSelectedRows();
+                    if (modalScope.selected.length > 0)
+                        template = gridDefaults.modal.delete.templates.delete;
+                    else
+                        template = gridDefaults.modal.delete.templates.empty;
 
-                    if (!scope.selected.length) {
-                        modalTitle = icon + ' Lack of ' + stateName + ' to delete';
-                        modalContent = 'Please, select some ' + stateName + '.';
-                        modalTemplate = 'grid/modal.empty.tpl.html';
-                    } else {
-                        modalTitle = icon + ' Delete ' + stateName;
-                        modalContent = 'Are you sure you want to delete ' + stateName;
-
-                        forEach(scope.selected, function(item) {
-                            results.push(item[repr_field]);
-                        });
-
-                        results = results.join(',');
-                        modalContent += ' ' + results + '? This cannot be undone!';
-                    }
-
-                    modal = $modal({scope: modalScope, title: modalTitle, content: modalContent, template: modalTemplate, show: true});
+                    modal = $modal({scope: modalScope, template: template, show: true});
 
                     modalScope.ok = function() {
                         var defer = $lux.q.defer();
-                        forEach(scope.selected, function(item, _) {
+                        forEach(modalScope.selected, function(item, _) {
                             api.delete({path: subPath + '/' + pkForItem(item)})
                                 .success(function(resp) {
-                                    success = true;
-                                    defer.resolve(success);
+                                    defer.resolve(gridDefaults.modal.delete.messages.success + ' ' + itemMessage);
+                                })
+                                .error(function(error) {
+                                    defer.reject(gridDefaults.modal.delete.messages.error + ' ' + itemMessage);
                                 });
                         });
 
-                        defer.promise.then(function() {
-                            if (success) {
-                                getPage(scope, api);
-                                $lux.messages.success('Successfully deleted ' + stateName + ' ' + results);
-                            } else
-                                $lux.messages.error('Error while deleting ' + stateName + ' ' + results);
-
+                        defer.promise.then(function(message) {
+                            getPage(scope, api);
                             modal.hide();
+                            $lux.messages.success(message);
+                        }, function(message) {
+                            modal.hide();
+                            $lux.messages.error(message);
                         });
                     };
                 };
@@ -4522,6 +4535,8 @@ angular.module("nav/templates/sidebar.tpl.html", []).run(["$templateCache", func
                 // No navbar, add an object
                 if (!navbar)
                     sidebar.navbar = navbar = {};
+                navbar.fixed = true;
+                navbar.top = true;
                 //
                 // Add toggle to the navbar
                 if (sidebar.toggle) {

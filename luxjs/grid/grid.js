@@ -135,7 +135,7 @@
 
                 scope.create = function($event) {
                     // if location path is available then we use ui-router
-                    if ($location.path().length)
+                    if (lux.context.uiRouterEnabled)
                         $location.path($location.path() + '/add');
                     else
                         $lux.window.location.href += '/add';
