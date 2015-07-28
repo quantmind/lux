@@ -1,5 +1,6 @@
 import json
 import time
+import re
 from copy import copy
 from importlib import import_module
 from collections import Mapping
@@ -12,7 +13,7 @@ from pulsar.apps import wsgi
 
 __all__ = ['Css', 'Variable', 'Symbol', 'Mixin',
            'px', 'em', 'pc', 'size', 'as_value', 'Lazy',
-           'spacing', 'Variables', 'as_params']
+           'spacing', 'Variables', 'as_params', 'split_string']
 
 nan = float('nan')
 
@@ -51,6 +52,13 @@ def as_value(value):
         return value.value()
     else:
         return value
+
+
+SPLIT_RE = re.compile(r'(?:[^,(]|\([^)]*\))+')
+
+
+def split_string(value):
+    return SPLIT_RE.findall(value) if value else ['']
 
 
 def as_params(value, default_name=None):

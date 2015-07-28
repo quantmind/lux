@@ -29,3 +29,6 @@ def add_css(all):
 
     css('.large',
         font_size=pc(150))
+
+    css(".equal, .equal > div[class*='col-']",
+        Flex())

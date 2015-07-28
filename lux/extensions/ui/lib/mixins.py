@@ -28,6 +28,7 @@ __all__ = ['Animation',
            'CssInclude',
            'Image',
            'FontSmoothing',
+           'Flex',
            'Stack']
 
 
@@ -667,23 +668,25 @@ class Transition(Mixin):
 
     .. _`easing function`: http://easings.net/
     '''
-    def __init__(self, property, duration=None, easing=None, delay=None):
+    def __init__(self, property=None, duration=None, easing=None, delay=None):
         self.property = property
         self.duration = duration
         self.easing = easing
         self.delay = delay
 
     def __call__(self, elem):
-        property = as_value(self.property)
+        property = as_value(self.property) or 'all'
         duration = as_value(self.duration)
+        easing = as_value(self.easing)
+        delay = as_value(self.delay)
         if property == 'none':
             transition = 'none'
         elif duration:
-            ds = duration.split(',')
-            es = (self.easing or 'linear').split(',')
-            ls = (self.delay or '').split(',')
+            ds = split_string(duration)
+            es = split_string(easing or 'linear')
+            ls = split_string(delay or '')
             all = []
-            for i, property in enumerate(property.split(',')):
+            for i, property in enumerate(split_string(property)):
                 property = property.replace(' ', '')
                 if property:
                     dur = (ds[i] if i < len(ds) else ds[-1]).replace(' ', '')
@@ -824,6 +827,15 @@ class FontSmoothing(Mixin):
         elem['text_rendering'] = 'optimizeLegibility'
         elem['-moz-osx-font-smoothing'] = 'grayscale'
         elem['-webkit-font-smoothing'] = 'antialiased'
+
+
+# ################################################ Flex
+class Flex(Mixin):
+
+    def __call__(self, elem):
+        elem['display'] = '-webkit-flex'
+        elem['display'] = 'flex'
+        elem['flex'] = '1 1 auto'
 
 
 # ################################################ Stack

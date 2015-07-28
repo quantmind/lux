@@ -18,6 +18,21 @@ class TestMedia(test.TestCase):
 }
 ''')
 
+    def test_cubic(self):
+        all = Css()
+        css = all.css
+        css('.collapse',
+            Transition('transform', '0.35s',
+                       'cubic-bezier(0.2, 0.3, 0.25, 0.9)'))
+        txt = all.render()
+        self.assertEqual(txt, '''.collapse {
+    -webkit-transition: transform 0.35s cubic-bezier(0.2,0.3,0.25,0.9);
+       -moz-transition: transform 0.35s cubic-bezier(0.2,0.3,0.25,0.9);
+         -o-transition: transform 0.35s cubic-bezier(0.2,0.3,0.25,0.9);
+            transition: transform 0.35s cubic-bezier(0.2,0.3,0.25,0.9);
+}
+''')
+
     def test_two_properties(self):
         all = Css()
         css = all.css

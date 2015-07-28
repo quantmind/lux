@@ -11,7 +11,7 @@ from pulsar import ImproperlyConfigured
 from .wrappers import WsgiRequest
 
 
-__all__ = ['cached', 'register_cache']
+__all__ = ['cached', 'Cacheable', 'Cache', 'register_cache']
 
 
 logger = logging.getLogger('lux.cache')
@@ -93,6 +93,13 @@ class RedisCache(Cache):
         return value
 
 
+class Cacheable:
+    '''An class which can create its how cache key
+    '''
+    def cache_key(self, app):
+        return ''
+
+
 class CacheObject:
     '''Object which implement cache functionality on callables.
 
@@ -107,14 +114,19 @@ class CacheObject:
 
     def cache_key(self, app):
         key = ''
+        if isinstance(self.instance, Cacheable):
+            key = self.instance.cache_key(app.app)
+
         if isinstance(app, WsgiRequest):
-            key = app.path
+            if not key:
+                key = app.path
             if self.user:
                 key = '%s:%s' % (key, app.cache.user)
 
         base = self.callable.__name__
         if self.instance:
-            base = '%s:%s' % (self.instance.__class__.__name__, base)
+            base = '%s:%s' % (type(self.instance).__name__, base)
+
         base = '%s:%s' % (app.config['APP_NAME'], base)
         key = '%s:%s' % (base, key) if key else base
         return key.lower()
@@ -152,6 +164,8 @@ class CacheObject:
 
         if app:
             timeout = self.timeout
+            if timeout in app.config:
+                timeout = app.config[timeout]
             if timeout is None:
                 timeout = app.config['DEFAULT_CACHE_TIMEOUT']
 

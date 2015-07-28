@@ -201,8 +201,6 @@ class Application(ConsoleParser, Extension, EventMixin):
         Parameter('DEFAULT_TEMPLATE_ENGINE', 'python',
                   'Default template engine'),
         Parameter('APP_NAME', 'Lux', 'Application site name', True),
-        Parameter('SITE_URL', None,
-                  'Web site url'),
         Parameter('LINKS',
                   {'python': 'https://www.python.org/',
                    'lux': 'https://github.com/quantmind/lux',
@@ -242,6 +240,7 @@ class Application(ConsoleParser, Extension, EventMixin):
         self.callable = callable
         self.meta.argv = callable._argv
         self.meta.script = callable._script
+        self.auth_backend = self
         self.config = self._build_config(callable._config_file)
         self.fire('on_config')
         if handler:
@@ -252,8 +251,13 @@ class Application(ConsoleParser, Extension, EventMixin):
         request = self.wsgi_request(environ)
         if self.debug:
             self.logger.debug('Serving request %s' % request.path)
+        request.cache.auth_backend = self
         self.fire('on_request', request)
         return self.handler(environ, start_response)
+
+    @property
+    def app(self):
+        return self
 
     @property
     def config_module(self):
@@ -347,12 +351,8 @@ class Application(ConsoleParser, Extension, EventMixin):
         Instead one can use the :attr:`.WsgiRequest.html_document`.
         '''
         cfg = self.config
-        site_url = cfg['SITE_URL']
-        media_path = cfg['MEDIA_URL']
-        if site_url:
-            media_path = site_url + media_path
         doc = HtmlDocument(title=cfg['HTML_TITLE'],
-                           media_path=media_path,
+                           media_path=cfg['MEDIA_URL'],
                            minified=cfg['MINIFIED_MEDIA'],
                            data_debug=self.debug,
                            charset=cfg['ENCODING'],

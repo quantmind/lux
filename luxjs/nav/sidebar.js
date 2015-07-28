@@ -76,6 +76,8 @@
                 // No navbar, add an object
                 if (!navbar)
                     sidebar.navbar = navbar = {};
+                navbar.fixed = true;
+                navbar.top = true;
                 //
                 // Add toggle to the navbar
                 if (sidebar.toggle) {

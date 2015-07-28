@@ -57,19 +57,20 @@ class LuxExtensionDirective(Directive):
 
     def text(self, params):
         for p in sorted(params, key=lambda x: x.name):
-            yield ''
-            yield '.. setting:: %s' % p.name
-            yield ''
-            yield '%s' % p.name
-            yield '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
-            yield ''
-            try:
-                yield 'Default: ``%r``' % str(p.default)
-            except Exception as e:
-                yield 'Default: ``%r``' % str(e)
-            yield ''
-            yield p.doc
-            yield ''
+            if not p.override:
+                yield ''
+                yield '.. setting:: %s' % p.name
+                yield ''
+                yield '%s' % p.name
+                yield '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
+                yield ''
+                try:
+                    yield 'Default: ``%r``' % str(p.default)
+                except Exception as e:
+                    yield 'Default: ``%r``' % str(e)
+                yield ''
+                yield p.doc
+                yield ''
 
 
 def setup(app):

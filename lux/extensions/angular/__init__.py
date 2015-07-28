@@ -24,10 +24,8 @@ Include ``lux.extensions.angular`` into the :setting:`EXTENSIONS` list in your
 .. _AngularJS: https://angularjs.org/
 .. _`ui-router`: https://github.com/angular-ui/ui-router
 '''
-from urllib.parse import urlparse
-
 import lux
-from lux import Parameter
+from lux import Parameter, cached
 
 from pulsar.apps.wsgi import Html
 
@@ -48,7 +46,7 @@ def add_ng_modules(doc, modules):
 
 
 LUX_ROUTER = ('lux.router',)
-LUX_UIROUTER = ('lux.ui.router',)
+LUX_UI_ROUTER = ('lux.ui.router',)
 
 
 class Extension(lux.Extension):
@@ -71,19 +69,16 @@ class Extension(lux.Extension):
 
         # Use HTML5 navigation and angular router
         if app.config['HTML5_NAVIGATION']:
-            add_ng_modules(doc, LUX_UIROUTER)
-            root = angular_root(app, router)
+            add_ng_modules(doc, LUX_UI_ROUTER)
 
             doc.body.data({'ng-model': 'page',
                            'ng-controller': 'Page',
                            'page': ''})
 
             doc.head.meta.append(Html('base', href="/"))
-
-            if not hasattr(root, '_angular_sitemap'):
-                root._angular_sitemap = {'states': [], 'pages': {}}
-                add_to_sitemap(root._angular_sitemap, app, doc, root)
-            doc.jscontext.update(root._angular_sitemap)
+            sitemap = angular_sitemap(request, router)
+            add_ng_modules(doc, sitemap.pop('modules'))
+            doc.jscontext.update(sitemap)
             doc.jscontext['page'] = router.state
         else:
             add_ng_modules(doc, LUX_ROUTER)
@@ -139,18 +134,13 @@ def angular_compatible(app, router1, router2):
     return False
 
 
-def router_href(app, route):
+def router_href(request, route):
     url = '/'.join(_angular_route(route))
     if url:
         url = '/%s' % url if route.is_leaf else '/%s/' % url
     else:
         url = '/'
-    site_url = app.config['SITE_URL']
-    if site_url:
-        p = urlparse(site_url + url)
-        return p.path
-    else:
-        return url
+    return url
 
 
 def _angular_route(route):
@@ -162,9 +152,19 @@ def _angular_route(route):
             yield val
 
 
-def add_to_sitemap(sitemap, app, doc, router, parent=None, angular=None):
+@cached
+def angular_sitemap(request, router):
+    app = request.app
+    root = angular_root(app, router)
+    sitemap = {'states': [], 'pages': {}, 'modules': set()}
+    add_to_sitemap(request, sitemap, root)
+    sitemap['modules'] = tuple(sitemap['modules'])
+    return sitemap
+
+
+def add_to_sitemap(request, sitemap, router, parent=None, angular=None):
     # path for the current router
-    path = router_href(app, router.full_route)
+    path = router_href(request, router.full_route)
 
     # Set the angular router if the router has a callable method
     # named angular_page
@@ -181,12 +181,12 @@ def add_to_sitemap(sitemap, app, doc, router, parent=None, angular=None):
     page = {'url': path, 'name': name}
 
     if angular:
-        angular.angular_page(app, router, page)
+        angular.angular_page(request.app, router, page)
 
     sitemap['states'].append(name)
     sitemap['pages'][name] = page
-    add_ng_modules(doc, router.uimodules)
+    sitemap['modules'].update(router.uimodules or ())
     #
     # Loop over children routes
     for child in router.routes:
-        add_to_sitemap(sitemap, app, doc, child, name, angular)
+        add_to_sitemap(request, sitemap, child, name, angular)

@@ -10,9 +10,11 @@ from pulsar.utils.slugify import slugify
 from pulsar.utils.structures import AttributeDictionary, mapping_iterator
 from pulsar.utils.pep import to_string
 
-from .. import iso8601
+from lux.utils import iso8601, absolute_uri
 
-from .urlwrappers import Processor, MultiValue, Tag, Author, Category
+from ..cache import Cacheable, cached
+from .urlwrappers import (URLWrapper, Processor, MultiValue, Tag, Author,
+                          Category)
 
 
 class SkipBuild(Http404):
@@ -54,6 +56,7 @@ METADATA_PROCESSORS = dict(((p.name, p) for p in (
     Processor('date', lambda x, cfg: parse_date(x)),
     Processor('status'),
     Processor('priority', lambda x, cfg: int(x)),
+    Processor('order', lambda x, cfg: int(x)),
     MultiValue('keywords', Tag),
     MultiValue('category', Category),
     MultiValue('author', Author),
@@ -103,72 +106,29 @@ def get_reader(app, src):
     return Reader(app, ext)
 
 
-class Content(object):
+class Content(Cacheable):
     '''A class for managing a file-based content
     '''
     template = None
     template_engine = None
-    _json_dict = None
-    _loc = None
-    mandatory_properties = ()
 
-    def __init__(self, app, content, metadata, src=None,
-                 path=None, context=None, **params):
+    def __init__(self, app, content, metadata, path, src=None, **params):
         self._app = app
         self._content = content
+        self._path = path
         self._src = src
-        self._path = path if path is not None else src
         self._meta = AttributeDictionary(params)
-        if src:
-            self._meta.modified = modified_datetime(src)
-        else:
-            self._meta.modified = datetime.now()
-        # Get the site meta data dictionary.
-        # Used to render Content metadata
         self._update_meta(metadata)
-        meta = self._meta
-        if self.is_html:
-            dir, slug = os.path.split(self._path)
-            if not meta.slug:
-                if not slug:
-                    slug = self._path
-                    dir = None
-                meta.slug = slugify(slug, separator='_')
-            if dir:
-                meta.slug = '%s/%s' % (dir, meta.slug)
-        else:
-            if self.suffix:  # Any other file
-                suffix = '.%s' % self.suffix
-                if not self._path.endswith(suffix):
-                    self._path = self._path + suffix
-            if not meta.slug:
-                meta.slug = self._path
-        meta.name = slugify(meta.slug, separator='_')
-        for name in self.mandatory_properties:
-            if not meta.get(name):
-                raise BuildError("Property '%s' not available in %s"
-                                 % (name, self))
-
-    @property
-    def name(self):
-        return self._meta.name
+        if not self._meta.modified:
+            if src:
+                self._meta.modified = modified_datetime(src)
+            else:
+                self._meta.modified = datetime.now()
+        self._meta.name = slugify(self._path, separator='_')
 
     @property
     def app(self):
         return self._app
-
-    @property
-    def src(self):
-        '''Absolute path of source file. Can be None if not provided'''
-        return self._src
-
-    @property
-    def loc(self):
-        return self._loc or self._src
-
-    @loc.setter
-    def loc(self, value):
-        self._loc = value
 
     @property
     def content_type(self):
@@ -213,10 +173,13 @@ class Content(object):
     @property
     def id(self):
         if self.is_html:
-            return '%s.json' % self._meta.slug
+            return '%s.json' % self._path
+
+    def cache_key(self, app):
+        return self._meta.name
 
     def __repr__(self):
-        return self._src
+        return self._path
     __str__ = __repr__
 
     def key(self, name=None):
@@ -260,25 +223,23 @@ class Content(object):
                     context[self.key('main')] = content
                     with open(template, 'r') as file:
                         template_str = file.read()
-                    raw = self._engine(template_str, context)
-                    reader = get_reader(self._app, template)
-                    ct = reader.process(raw, template)
-                    content = ct._content
+                    content = self._engine(template_str, context)
             return content
         else:
             return self._content
 
-    def text(self, request):
+    def raw(self, request):
         return self._content
 
+    @cached
     def json(self, request):
         '''Convert the content into a Json dictionary for the API
         '''
-        if not self._json_dict and self.is_html:
+        if self.is_html:
             context = self._app.context(request)
             context = self.context(context)
             #
-            data = self._to_json(self._meta)
+            data = self._to_json(request, self._meta)
             text = data.get(self.suffix) or {}
             data[self.suffix] = text
             text['main'] = self.render(context)
@@ -292,9 +253,9 @@ class Content(object):
             if 'head' in data:
                 head.update(data['head'])
 
+            data['url'] = request.absolute_uri(self._path)
             data['head'] = head
-            self._json_dict = data
-        return self._json_dict
+            return data
 
     def html(self, request):
         '''Build the ``html_main`` key for this content and set
@@ -308,7 +269,8 @@ class Content(object):
         doc = request.html_document
         doc.jscontext['page'] = dict(page_info(data))
         #
-        doc.meta.update({'og:image': data.get('image'),
+        image = absolute_uri(request, data.get('image'))
+        doc.meta.update({'og:image': image,
                          'og:published_time': data.get('date'),
                          'og:modified_time': data.get('modified')})
         doc.meta.update(data['head'])
@@ -377,17 +339,15 @@ class Content(object):
         else:
             return value
 
-    def _to_json(self, value):
+    def _to_json(self, request, value):
         if isinstance(value, Mapping):
-            return dict(((k, self._to_json(v)) for k, v in value.items()))
+            return dict(((k, self._to_json(request, v))
+                         for k, v in value.items()))
         elif isinstance(value, (list, tuple)):
-            return [self._to_json(v) for v in value]
+            return [self._to_json(request, v) for v in value]
         elif isinstance(value, date):
             return iso8601(value)
+        elif isinstance(value, URLWrapper):
+            return value.to_json(request)
         else:
             return value
-
-
-class Article(Content):
-    mandatory_properties = ('title', 'date', 'category')
-    template = 'article.html'

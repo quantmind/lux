@@ -9,18 +9,11 @@ class Command(lux.Command):
                            action="store_true",
                            default=False,
                            desc='Use relative urls rather than absolute ones. '
-                                'Useful during development.'),
-                   Setting('nominify',
-                           ['--nominify'],
-                           action="store_true",
-                           default=False,
-                           desc="Don't use minified media files"))
+                                'Useful during development.'),)
 
     help = "create the static site"
 
     def run(self, options):
         if options.relative_url:
             self.app.config['SITE_URL'] = ''
-        if options.nominify:
-            self.app.config['MINIFIED_MEDIA'] = False
         return self.app.extensions['lux.extensions.static'].build(self.app)

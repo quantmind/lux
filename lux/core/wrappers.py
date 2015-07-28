@@ -1,4 +1,5 @@
 import json
+from collections import Mapping
 
 from pulsar import ImproperlyConfigured
 from pulsar.apps.wsgi import (route, wsgi_request, cached_property,
@@ -120,7 +121,8 @@ class HtmlRouter(Router):
         # render the inner part of the html page
         html = cms.inner_html(request, page, html)
 
-        context = self.context(request, {'html_main': html})
+        context = self.context(request) or {}
+        context['html_main'] = html
         template = self.get_inner_template(request)
 
         if template:
@@ -150,10 +152,10 @@ class HtmlRouter(Router):
         '''
         return ''
 
-    def context(self, request, context):
+    def context(self, request):
         '''Add router specific entries to the template
         ``context`` dictionary'''
-        return context
+        pass
 
     def cms(self, app):
         return app.cms
@@ -192,9 +194,14 @@ class HtmlRouter(Router):
 
 class HeadMeta(object):
     '''Wrapper for HTML5 head metatags.
+
+     Handle meta tags and the Object graph protocol (OGP_)
+
+    .. _OGP: http://ogp.me/
     '''
     def __init__(self, head):
         self.head = head
+        self.namespaces = {}
 
     def __repr__(self):
         return repr(self.head.meta.children)
@@ -218,22 +225,48 @@ class HeadMeta(object):
     def __iter__(self):
         return iter(self.head.meta.children)
 
-    def set(self, entry, content, meta_key=None):
+    def set(self, entry, content):
         '''Set the a meta tag with ``content`` and ``entry`` in the HTML5 head.
         The ``key`` for ``entry`` is either ``name`` or ``property`` depending
         on the value of ``entry``.
         '''
-        if content:
-            if entry == 'title':
-                self.head.title = content
-            else:
-                self.head.replace_meta(entry, content, meta_key)
+        content = self.as_string(content)
+        if not content:
+            return
+        if entry == 'title':
+            self.head.title = content
+            return
+        namespace = None
+        bits = entry.split(':')
+        if len(bits) > 1:
+            namespace = bits[0]
+            entry = ':'.join(bits[1:])
+        if namespace:
+            if namespace not in self.namespaces:
+                self.namespaces[namespace] = {}
+            self.namespaces[namespace][entry] = content
+        else:
+            self.head.replace_meta(entry, content)
 
     def get(self, entry, meta_key=None):
         if entry == 'title':
             return self.head.title
         else:
             return self.head.get_meta(entry, meta_key=meta_key)
+
+    def as_string(self, content):
+        if isinstance(content, Mapping):
+            return content.get('name')
+        elif isinstance(content, (list, tuple)):
+            return ', '.join(self._list_as_string(content))
+        elif content:
+            return content
+
+    def _list_as_string(self, content_list):
+        for c in content_list:
+            c = self.as_string(c)
+            if c:
+                yield c
 
 
 def error_handler(request, exc):

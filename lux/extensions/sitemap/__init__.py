@@ -6,18 +6,24 @@ sitemap_ XML files easy.
 '''
 from urllib.parse import urlencode
 
+from dateutil.parser import parse as parse_date
+
 from pulsar.apps.wsgi import Router
 from pulsar.utils.httpurl import urllibr
 
 import lux
+from lux import Parameter, cached
+from lux.utils import iso8601
 
 
 PING_URL = "http://www.google.com/webmasters/tools/ping"
 
 
 class Extension(lux.Extension):
-    '''Dummy extension just to add the ping_google command'''
-    pass
+
+    _config = [Parameter('SITEMAP_CACHE_TIMEOUT', None,
+                         ('Sitemap cache timeout, if not set it defaults to '
+                          'the DEFAULT_CACHE_TIMEOUT parameter'))]
 
 
 def ping_google(sitemap_url, ping_url=PING_URL):
@@ -28,11 +34,15 @@ def ping_google(sitemap_url, ping_url=PING_URL):
     return urllibr.urlopen("%s?%s" % (ping_url, params))
 
 
-class Sitemap(Router):
+class BaseSitemap(Router):
     # This limit is defined by Google. See the index documentation at
     # http://www.sitemaps.org/protocol.html
     limit = 50000
-
+    tag = None
+    item_tag = None
+    extra_item_tags = ()
+    version = '<?xml version="1.0" encoding="UTF-8"?>'
+    xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'
     response_content_types = ('application/xml', 'text/xml')
 
     def items(self, request):
@@ -41,14 +51,18 @@ class Sitemap(Router):
         return ()
 
     def get(self, request):
-        sitemap = [
-            '<?xml version="1.0" encoding="UTF-8"?>',
-            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
-        sitemap.extend(self._urls(request))
-        sitemap.append('</urlset>')
         response = request.response
-        response.content = '\n'.join(sitemap)
+        sitemap, _ = self.sitemap(request)
+        response.content = sitemap
         return response
+
+    @cached(timeout='SITEMAP_CACHE_TIMEOUT')
+    def sitemap(self, request):
+        sitemap = [self.version,
+                   '<%s xmlns="%s">' % (self.tag, self.xmlns)]
+        sitemap.extend(self._urls(request))
+        sitemap.append('</%s>' % self.tag)
+        return '\n'.join(sitemap), request.cache.pop('latest_lastmod')
 
     def _urls(self, request):
         latest_lastmod = None
@@ -57,24 +71,40 @@ class Sitemap(Router):
         for item in self.items(request):
             loc = self._get('loc', item)
             priority = self._get('priority', item)
+            # No location or priority set to 0
             if not loc or priority == 0 or priority == '0':
                 continue
             count += 1
             if count > self.limit:
+                request.error('Maximum number of sitemap entries reached')
                 break
+
             lastmod = self._get('lastmod', item)
-            changefreq = self._get('changefreq', item)
             if lastmod:
+                if isinstance(lastmod, str):
+                    lastmodv = parse_date(lastmod)
+                else:
+                    lastmodv = lastmod
+                    lastmod = iso8601(lastmod)
+
                 if (all_items_lastmod and
-                        (latest_lastmod is None or lastmod > latest_lastmod)):
-                    latest_lastmod = lastmod
-                lastmod = lastmod.strftime('%Y-%m-%d')
+                        (latest_lastmod is None or lastmodv > latest_lastmod)):
+                    latest_lastmod = lastmodv
             else:
                 all_items_lastmod = False
-            yield '<url>%s%s%s%s</url>' % (self._xml('loc', loc),
-                                           self._xml('lastmod', lastmod),
-                                           self._xml('priority', priority),
-                                           self._xml('changefreq', changefreq))
+
+            values = [self._xml('loc', loc), self._xml('lastmod', lastmod)]
+
+            for tag in self.extra_item_tags:
+                values.append(self._xml(tag, self._get(tag, item)))
+
+            yield self._xml(self.item_tag, ''.join(values))
+
+        if all_items_lastmod and latest_lastmod:
+            latest_lastmod = iso8601(latest_lastmod)
+        else:
+            latest_lastmod = None
+        request.cache.latest_lastmod = latest_lastmod
 
     def _get(self, name, obj):
         try:
@@ -87,3 +117,14 @@ class Sitemap(Router):
 
     def _xml(self, name, value):
         return '<%s>%s</%s>' % (name, value, name) if value else ''
+
+
+class Sitemap(BaseSitemap):
+    tag = 'urlset'
+    item_tag = 'url'
+    extra_item_tags = ('priority', 'changefreq')
+
+
+class SitemapIndex(BaseSitemap):
+    tag = 'sitemapindex'
+    item_tag = 'sitemap'

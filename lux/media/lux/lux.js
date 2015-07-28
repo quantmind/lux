@@ -1,6 +1,6 @@
 //      Lux Library - v0.2.0
 
-//      Compiled 2015-07-23.
+//      Compiled 2015-07-28.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -440,20 +440,25 @@ function(angular, root) {
             };
             //
             // Render a template from a url
-            this.renderTemplate = function (url, element, scope) {
+            this.renderTemplate = function (url, element, scope, callback) {
                 var template = $templateCache.get(url);
                 if (!template) {
                     $http.get(url).then(function (resp) {
                         template = resp.data;
                         $templateCache.put(url, template);
-                        element.append($compile(template)(scope));
+                        _render(element, template, scope, callback);
                     }, function (resp) {
                         $lux.messages.error('Could not load template from ' + url);
                     });
                 } else
-                    element.append($compile(template)(scope));
-
+                    _render(element, template, scope, callback);
             };
+
+            function _render(element, template, scope, callback) {
+                var elem = $compile(template)(scope);
+                element.append(elem);
+                if (callback) callback(elem);
+            }
         }]);
     //
     function wrapPromise (promise) {
@@ -1615,8 +1620,8 @@ angular.module('lux.cms.component.text', ['lux.cms.component'])
     }])
     //
     // Display a div with links to content
-    .directive('cmsLinks', ['$lux', 'cmsDefaults',
-                            function ($lux, cmsDefaults, $templateCache) {
+    .directive('cmsLinks', ['$lux', 'cmsDefaults', '$scrollspy',
+                            function ($lux, cmsDefaults, $scrollspy) {
 
         return {
             restrict: 'AE',
@@ -1627,7 +1632,10 @@ angular.module('lux.cms.component.text', ['lux.cms.component'])
                 if (config.url) {
                     http.get(config.url).then(function (response) {
                         scope.links = response.data.result;
-                        $lux.renderTemplate(cmsDefaults.linksTemplate, element, scope);
+                        $lux.renderTemplate(cmsDefaults.linksTemplate, element, scope, function (elem) {
+                            if (config.hasOwnProperty('scrollspy'))
+                                $scrollspy(element);
+                        });
                     }, function (response) {
                         $lux.messages.error('Could not load links');
                     });
@@ -1917,26 +1925,15 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
     //	Drop in replacement for lux.ui.router when HTML5_NAVIGATION is off.
     //
     angular.module('lux.router', ['lux.page'])
-
         //
-        //  Convert all internal links to have a target so that the page reload
-        .directive('page', ['$log', '$timeout', function (log, timer) {
-            return {
-                link: function (scope, element) {
-                    var toTarget = function () {
-                            log.info('Transforming links into targets');
-                            forEach($(element)[0].querySelectorAll('a'), function(link) {
-                                link = $(link);
-                                if (!link.attr('target'))
-                                    link.attr('target', '_self');
-                            });
-                        };
-                    // Put the toTarget function into the queue so that it is
-                    // processed after all
-                    if (lux.context.HTML5_NAVIGATION)
-                        timer(toTarget, 0);
-                }
-            };
+        .config(['$locationProvider', function ($locationProvider) {
+            //
+            // Enable html5mode but set the hash prefix to something different from #
+            $locationProvider.html5Mode({
+                enabled: true,
+                requireBase: false,
+                rewriteLinks: false
+            }).hashPrefix(lux.context.hashPrefix);
         }]);
 
     //
@@ -2044,11 +2041,9 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
         //
         .config(['$locationProvider', function ($locationProvider) {
             //
-            //	Set-up HTML5 navigation if available
-            if (lux.context.HTML5_NAVIGATION) {
-                $locationProvider.html5Mode(true).hashPrefix(lux.context.hashPrefix);
-                $(document.querySelector('#seo-view')).remove();
-            }
+            $locationProvider.html5Mode(true).hashPrefix(lux.context.hashPrefix);
+            $(document.querySelector('#seo-view')).remove();
+            lux.context.uiRouterEnabled = true;
         }])
         //
         // Default controller for an Html5 page loaded via the ui router
@@ -3439,7 +3434,7 @@ angular.module("grid/templates/modal.empty.tpl.html", []).run(["$templateCache",
 
                 scope.create = function($event) {
                     // if location path is available then we use ui-router
-                    if ($location.path().length)
+                    if (lux.context.uiRouterEnabled)
                         $location.path($location.path() + '/add');
                     else
                         $lux.window.location.href += '/add';
@@ -4540,6 +4535,8 @@ angular.module("nav/templates/sidebar.tpl.html", []).run(["$templateCache", func
                 // No navbar, add an object
                 if (!navbar)
                     sidebar.navbar = navbar = {};
+                navbar.fixed = true;
+                navbar.top = true;
                 //
                 // Add toggle to the navbar
                 if (sidebar.toggle) {

@@ -13,6 +13,9 @@ def add_css(all):
     navbar = vars.navbar
     sidebar = vars.sidebar
     sidebar.width = px(250)
+    sidebar.transition.easing = 'cubic-bezier(0.2, 0.3, 0.25, 0.9)'
+    sidebar.transition.duration = '0.2s'
+    sidebar.overlay.color = color(0, 0, 0, 0.1)
     sidebar.toggle.margin = px(15)
     sidebar.toggle.size = px(21)
     sidebar.toggle.size_small = px(19)
@@ -21,6 +24,9 @@ def add_css(all):
     sidebar.info.p.color = '#ccc'
     sidebar.info.background = '#425466'
 
+    trans = sidebar.transition
+    # Why this? because unitary operations don't work yet and px(0) fails
+    sidebar.width_neg = px(1) - sidebar.width - px(1)
     collapse_width = px(cfg['NAVBAR_COLLAPSE_WIDTH'])
 
     media(min_width=collapse_width).css(
@@ -49,7 +55,7 @@ def add_css(all):
         z_index=800)
 
     css('.main-sidebar',
-        position='absolute',
+        position='fixed',
         overflow_y='auto',
         overflow_x='hidden',
         top=px(0),
@@ -59,11 +65,11 @@ def add_css(all):
 
     css('.right-sidebar',
         css(' .content-wrapper, .navbar-static-top',
-            transform='translate(0px, 0px)',
-            transition='0.15s cubic-bezier(0.2, 0.3, 0.25, 0.9) 0s'),
+            Transform(0, 0),
+            Transition('all', trans.duration, trans.easing)),
         css(' .main-sidebar',
-            transform='translate(250px, 0px)',
-            transition='0.15s cubic-bezier(0.2, 0.3, 0.25, 0.9) 0s',
+            Transform(sidebar.width, 0),
+            Transition('all', trans.duration, trans.easing),
             right=0),
         css(' .navbar-static-top',
             css(' .navbar-main',
@@ -79,11 +85,11 @@ def add_css(all):
 
     css('.left-sidebar',
         css(' .content-wrapper, .navbar-static-top',
-            transform='translate(0px, 0px)',
-            transition='0.15s cubic-bezier(0.2, 0.3, 0.25, 0.9) 0s'),
+            Transform(0, 0),
+            Transition('all', trans.duration, trans.easing)),
         css(' .main-sidebar',
-            transform='translate(-250px, 0px)',
-            transition='0.15s cubic-bezier(0.2, 0.3, 0.25, 0.9) 0s',
+            Transform(sidebar.width_neg, 0),
+            Transition('all', trans.duration, trans.easing),
             left=0),
         css(' .navbar-static-top',
             css(' .navbar-main',
@@ -94,33 +100,32 @@ def add_css(all):
                 float='right'),
             css(' .sidebar-toggle',
                 margin_right=sidebar.toggle.margin,
-                border_right=sidebar.toggle.border)),
-        )
+                border_right=sidebar.toggle.border)))
 
     css('.sidebar-open-left',
         css(' .overlay',
             display='block',
-            background_color='rgba(0, 0, 0, 0.1)'),
+            background_color=sidebar.overlay.color),
         css(' .navbar-side',
             display='none'),
         css(' .content-wrapper, .navbar-static-top',
-            transform='translate(250px, 0px)',
-            transition='0.15s cubic-bezier(0.2, 0.3, 0.25, 0.9) 0s'),
+            Transform(sidebar.width, 0),
+            Transition('all', trans.duration, trans.easing)),
         css(' .main-sidebar',
-            Transform(x=px(0), y=px(0))),
+            Transform(0, 0))
         )
 
     css('.sidebar-open-right',
         css(' .overlay',
             display='block',
-            background_color='rgba(0, 0, 0, 0.1)'),
+            background_color=sidebar.overlay.color),
         css(' .navbar-side',
             display='none'),
         css(' .content-wrapper, .navbar-static-top',
-            transform='translate(-250px, 0px)',
-            transition='0.15s cubic-bezier(0.2, 0.3, 0.25, 0.9) 0s'),
+            Transform(sidebar.width_neg, 0),
+            Transition('all', trans.duration, trans.easing)),
         css(' .main-sidebar',
-            Transform(x=px(0), y=px(0)))
+            Transform(0, 0))
         )
 
     css('.sidebar-fixed',
@@ -154,6 +159,7 @@ def add_css(all):
             background=sidebar.info.background),
         css(' .sidebar-menu',
             css(' .treeview-menu',
+                Transition('height', trans.duration, 'linear'),
                 css('.active',
                     opacity=1,
                     height='100%'),
@@ -174,12 +180,7 @@ def add_css(all):
                 margin=px(0),
                 padding_left=px(5),
                 opacity=0,
-                height=px(0),
-                _webkit_transition='0.2s linear',
-                _moz_transition='0.2s linear',
-                _ms_transition='0.2s linear',
-                _o_transition='0.2s linear',
-                transition='0.2s linear'),
+                height=px(0)),
             css(' li',
                 css('.active',
                     css(' > a > .fa-angle-left',

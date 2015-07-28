@@ -1,5 +1,6 @@
 import os
 import glob
+import mimetypes
 
 from dulwich.porcelain import rm
 from dulwich.porcelain import add
@@ -9,10 +10,12 @@ from dulwich.porcelain import open_repo
 from dulwich.file import GitFile
 from dulwich.errors import NotGitRepository
 
-from lux import cached
+from pulsar.utils.httpurl import remove_double_slash
+
+from lux import cached, get_reader
 from lux.extensions import rest
+from lux.extensions.rest import RestColumn
 from lux.utils.files import get_rel_dir
-from lux.utils.content import get_reader
 
 
 __all__ = ('_b', 'DataError', 'Content')
@@ -28,6 +31,21 @@ class DataError(Exception):
     pass
 
 
+COLUMNS = [
+    RestColumn('priority', sortable=True, type='int'),
+    RestColumn('order', sortable=True, type='int'),
+    RestColumn('title')]
+
+
+OPERATORS = {
+    'eq': lambda x, y: x == y,
+    'gt': lambda x, y: x > y,
+    'ge': lambda x, y: x >= y,
+    'lt': lambda x, y: x < y,
+    'le': lambda x, y: x <= y
+    }
+
+
 class Content(rest.RestModel):
     '''A Rest model with git backend using dulwich_
 
@@ -36,7 +54,7 @@ class Content(rest.RestModel):
     .. _dulwich: https://www.samba.org/~jelmer/dulwich/docs/
     '''
     def __init__(self, name, repo, path=None, ext='md', content_meta=None,
-                 **kwargs):
+                 columns=None, **kwargs):
         try:
             self.repo = open_repo(repo)
         except NotGitRepository:
@@ -48,7 +66,8 @@ class Content(rest.RestModel):
             path = name
         if path:
             self.path = os.path.join(self.path, path)
-        super().__init__(name, **kwargs)
+        columns = columns or COLUMNS[:]
+        super().__init__(name, columns=columns, **kwargs)
 
     def session(self, request):
         return Query(request, self)
@@ -69,22 +88,22 @@ class Content(rest.RestModel):
         When ``new`` the file must not exist, when not
         ``new``, the file must exist.
         '''
-        slug = data['slug']
-        filepath = os.path.join(self.path, self._format_filename(slug))
+        name = data['name']
+        filepath = os.path.join(self.path, self._format_filename(name))
         if new:
             if not message:
-                message = "Created %s" % slug
+                message = "Created %s" % name
             if os.path.isfile(filepath):
-                raise DataError('%s not available' % slug)
+                raise DataError('%s not available' % name)
             else:
                 dir = os.path.dirname(filepath)
                 if not os.path.isdir(dir):
                     os.makedirs(dir)
         else:
             if not message:
-                message = "Updated %s" % slug
+                message = "Updated %s" % name
             if not os.path.isfile(filepath):
-                raise DataError('%s not available' % slug)
+                raise DataError('%s not available' % name)
 
         content = self.content(data)
 
@@ -101,7 +120,7 @@ class Content(rest.RestModel):
         return dict(hash=commit_hash.decode('utf-8'),
                     body=content,
                     filename=filename,
-                    slug=slug)
+                    name=name)
 
     def delete(self, user, data, message=None):
         '''Delete file(s) from repository
@@ -132,23 +151,24 @@ class Content(rest.RestModel):
             return commit(self.repo, _b(message),
                           committer=_b(user.username))
 
-    def read(self, request, name):
-        '''Read content from file in repository
+    def exist(self, request, name):
+        '''Check if a resource ``name`` exists
         '''
-        filename = self._format_filename(name)
-        path = os.path.join(self.path, filename)
         try:
-            # use dulwich GitFile to obeys the git file locking protocol
-            with GitFile(path, 'rb') as f:
-                content = f.read()
+            self._content(request, name)
+            return True
+        except IOError:
+            return False
 
-            reader = get_reader(request.app, filename)
-            name = self._slug(filename)
-            content = reader.process(content, path, name, slug=name,
-                                     meta=self.content_meta)
-            path = '/%s/%s' % (self.url, content._meta.slug)
-            content._meta.url = request.absolute_uri(path)
-            return content
+    def read(self, request, name):
+        '''Read content from file in the repository
+        '''
+        try:
+            src, name, content = self._content(request, name)
+            reader = get_reader(request.app, src)
+            path = self._path(name)
+            return reader.process(content, path, src=src,
+                                  meta=self.content_meta)
         except IOError:
             raise DataError('%s not available' % name)
 
@@ -160,18 +180,35 @@ class Content(rest.RestModel):
             filename = get_rel_dir(file, self.path)
             yield self.read(request, filename).json(request)
 
+    def _content(self, request, name):
+        '''Read content from file in the repository
+        '''
+        name = self._format_filename(name)
+        src = os.path.join(self.path, name)
+        # use dulwich GitFile to obeys the git file locking protocol
+        with GitFile(src, 'rb') as f:
+            content = f.read()
+
+        ext = '.%s' % self.ext
+        if name.endswith(ext):
+            name = name[:-len(ext)]
+
+        return src, name, content
+
     def _format_filename(self, filename):
         '''Append extension to file name
         '''
-        ext = '.%s' % self.ext
-        if not filename.endswith(ext):
-            filename = '%s%s' % (filename, ext)
+        content_type, _ = mimetypes.guess_type(filename)
+        if not content_type:
+            ext = '.%s' % self.ext
+            if not filename.endswith(ext):
+                filename = '%s%s' % (filename, ext)
         return filename
 
-    def _slug(self, filename):
+    def _path(self, path):
         '''Append extension to file name
         '''
-        return filename[:-len(self.ext)-1]
+        return remove_double_slash('/%s/%s' % (self.url, path))
 
     def content(self, data):
         body = data['body']
@@ -213,6 +250,20 @@ class Query:
         self._data = [s.d for s in sorted(data)]
         return self
 
+    def filter(self, field, op, value):
+        data = []
+        op = OPERATORS.get(op)
+        if op:
+            for content in self._get_data():
+                val = content.get(field)
+                try:
+                    if op(val, value):
+                        data.append(content)
+                except Exception:
+                    pass
+        self._data = data
+        return self
+
     def all(self):
         data = self._get_data()
         if self._offset:
@@ -233,7 +284,7 @@ class Query:
 
     @cached
     def read_files(self, request):
-        return [d for d in self.model.all(request) if d.get('priority')]
+        return [d for d in self.model.all(request) if d['priority']]
 
 
 class asc:
