@@ -24,7 +24,7 @@
                     options.push.apply(options, data.data.result);
                 }, function (data) {
                     /** TODO: add error alert */
-                    options[0][name] = '(error loading options)';
+                    options[0][name] = 'Error loading options';
                 });
                 ctrl.$setViewValue('');
                 ctrl.$render();

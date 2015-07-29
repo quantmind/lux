@@ -8,6 +8,9 @@
             "angular-strap-tpl": {
                 deps: ["angular", "angular-strap"]
             },
+            "angular-ui-select": {
+                deps: ['angular']
+            },
             "google-analytics": {
                 exports: root.GoogleAnalyticsObject || "ga"
             },

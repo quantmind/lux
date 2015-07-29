@@ -66,7 +66,8 @@ class RestModel:
 
         Form class for this REST model in editing mode
     '''
-    remote_options_str = 'item.{id} as item.{repr} for item in {options}'
+    remote_options_str = 'item in {options} track by $index'
+    #remote_options_str = 'item.{id} as item.{repr} for item in {options}'
     _loaded = False
 
     def __init__(self, name, form=None, updateform=None, columns=None,
