@@ -89,6 +89,7 @@ def add_css(all):
         width=sidebar.width,
         z_index=810)
 
+    # LEFT SIDEBAR OPEN
     css('.sidebar-open-left',
         css(' .sidebar',
             Transform(0, 0)),
@@ -188,6 +189,10 @@ def add_css(all):
         margin_top=px(0),
         padding_bottom=px(10))
 
+    #sidebar_skin(all)
+
+
+def small():
     small = media(max_width=collapse_width)
 
     small.css('.sidebar .nav-panel',
@@ -213,45 +218,6 @@ def add_css(all):
                   css(' .navbar-main',
                       float='left',
                       margin_left=px(1))))
-
-    #right()
-    #sidebar_skin(all)
-
-
-def right(all):
-
-    css('.right-sidebar',
-        css(' .content-wrapper, .navbar-static-top',
-            Transform(0, 0),
-            Transition('all', trans.duration, trans.easing)),
-        css(' .sidebar',
-            Transform(sidebar.width, 0),
-            Transition('all', trans.duration, trans.easing),
-            right=0),
-        css(' .navbar-static-top',
-            css(' .navbar-main',
-                css(' > li',
-                    float='right'),
-                float='right'),
-            css(' .navbar-side',
-                float='left'),
-            css(' .sidebar-toggle',
-                margin_left=sidebar.toggle.margin,
-                border_left=sidebar.toggle.border)),
-        )
-
-    css('.sidebar-open-right',
-        css(' .overlay',
-            display='block',
-            background_color=sidebar.overlay.color),
-        css(' .navbar-side',
-            display='none'),
-        css(' .content-wrapper, .navbar-static-top',
-            Transform(sidebar.width_neg, 0),
-            Transition('all', trans.duration, trans.easing)),
-        css(' .sidebar',
-            Transform(0, 0))
-        )
 
 
 def sidebar_skin(all):
