@@ -113,8 +113,8 @@ angular.module("nav/templates/sidebar.tpl.html", []).run(["$templateCache", func
     "ng-class=\"{'sidebar-fixed':sidebar.fixed}\" bs-collapse>\n" +
     "    <div class=\"nav-panel\">\n" +
     "        <div ng-if=\"sidebar.user\">\n" +
-    "            <div ng-if=\"sidebar.user.avatar\" class=\"pull-left image\">\n" +
-    "                <img ng-src=\"{{sidebar.user.avatar}}\" alt=\"User Image\" />\n" +
+    "            <div ng-if=\"sidebar.user.avatar_url\" class=\"pull-{{ sidebar.position }} image\">\n" +
+    "                <img ng-src=\"{{sidebar.user.avatar_url}}\" alt=\"User Image\" />\n" +
     "            </div>\n" +
     "            <div class=\"pull-left info\">\n" +
     "                <p>{{ sidebar.infoText }}</p>\n" +

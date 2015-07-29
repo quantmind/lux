@@ -103,16 +103,15 @@ def add_css(all):
         )
 
     css('.sidebar-fixed',
-        position='fixed'),
+        position='fixed')
 
+    # IMAGE in the navbar-panel
     css('.sidebar',
         css(' .nav-panel',
             Clearfix(),
             css(' .image > img',
-                width=px(35),
-                height=px(35),
-                margin_top=px(8),
-                margin_left=px(8)),
+                height=navbar.small_height-px(20),
+                margin=spacing(10, 5)),
             css(' .info',
                 css(' > p',
                     margin_bottom=px(4),
@@ -129,7 +128,7 @@ def add_css(all):
                 padding=spacing(5, 5, 5, 15),
                 line_height=1),
             padding=spacing(3, 10),
-            height=navbar.height,
+            height=navbar.small_height,
             background=sidebar.info.background),
         css(' .sidebar-menu',
             css(' .treeview-menu',
@@ -185,6 +184,13 @@ def add_css(all):
             padding=px(0)),
         margin_top=px(0),
         padding_bottom=px(10))
+
+    large = media(min_width=collapse_width)
+
+    large.css('.sidebar .nav-panel',
+              css(' .image > img',
+                height=navbar.height-px(20)),
+              height=navbar.height)
 
     #sidebar_skin(all)
 

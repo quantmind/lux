@@ -3,8 +3,8 @@
 ng-class="{'sidebar-fixed':sidebar.fixed}" bs-collapse>
     <div class="nav-panel">
         <div ng-if="sidebar.user">
-            <div ng-if="sidebar.user.avatar" class="pull-left image">
-                <img ng-src="{{sidebar.user.avatar}}" alt="User Image" />
+            <div ng-if="sidebar.user.avatar_url" class="pull-{{ sidebar.position }} image">
+                <img ng-src="{{sidebar.user.avatar_url}}" alt="User Image" />
             </div>
             <div class="pull-left info">
                 <p>{{ sidebar.infoText }}</p>
