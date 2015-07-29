@@ -20,6 +20,7 @@ EXTENSIONS = ['lux.extensions.base',
 
 AUTHENTICATION_BACKENDS = ['lux.extensions.auth.TokenBackend']
 CORS_ALLOWED_METHODS = 'GET, POST, DELETE'
+API_URL = ''
 
 
 class TestEnum(Enum):
@@ -28,6 +29,7 @@ class TestEnum(Enum):
 
 
 class Extension(lux.Extension):
+
     def api_sections(self, app):
         return [CRUDTask(), CRUDPerson(), UserCRUD(),
                 PermissionCRUD(), GroupCRUD()]

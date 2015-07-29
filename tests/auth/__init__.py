@@ -18,6 +18,7 @@ EXTENSIONS = ['lux.extensions.base',
               'lux.extensions.admin',
               'lux.extensions.auth']
 
+API_URL = ''
 AUTHENTICATION_BACKENDS = ['lux.extensions.auth.TokenBackend',
                            'lux.extensions.auth.BrowserBackend']
 
