@@ -102,6 +102,6 @@ class TestMigrationsCommands(test.TestCase):
         template_path = cmd.get_lux_template_directory()
         path = os.path.join(
             lux.PACKAGE_DIR,
-            'extensions/odm/commands/template'
+            'extensions', 'odm', 'commands', 'template'
         )
         self.assertEqual(template_path, path)

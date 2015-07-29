@@ -2,15 +2,13 @@ from dateutil.parser import parse
 
 from lux.utils import test
 
-from . import TestEnum
-
 
 class TestPostgreSql(test.AppTestCase):
     config_file = 'tests.odm'
     config_params = {
         'DATASTORE': 'postgresql+green://lux:luxtest@127.0.0.1:5432/luxtests'}
-    credentials = {'username': 'pippo',
-                   'password': 'pluto'}
+    su_credentials = {'username': 'pippo',
+                      'password': 'pluto'}
 
     @classmethod
     def populatedb(cls):
@@ -18,14 +16,16 @@ class TestPostgreSql(test.AppTestCase):
         backend.create_superuser(cls.app.wsgi_request(),
                                  email='pippo@pippo.com',
                                  first_name='Pippo',
-                                 **cls.credentials)
+                                 **cls.su_credentials)
 
-    def _token(self):
+    def _token(self, credentials=None):
         '''Create an authentication token
         '''
+        if credentials is None:
+            credentials = self.su_credentials
         request = yield from self.client.post('/authorizations',
                                               content_type='application/json',
-                                              body=self.credentials)
+                                              body=credentials)
         response = request.response
         self.assertEqual(response.status_code, 201)
         user = request.cache.user

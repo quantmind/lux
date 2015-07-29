@@ -16,7 +16,7 @@ from pulsar.utils.log import LocalMixin
 
 from .exc import *     # noqa
 from .mapper import Mapper, model_base
-from .views import CRUD, RestRouter
+from .views import CRUD, RestRouter, ColumnPermissionsBase
 from .models import RestModel
 from .forms import RelationshipField, UniqueField
 
