@@ -176,14 +176,14 @@ class TestSqlite(test.AppTestCase):
                                               token=token)
         data = self.json(request.response)
 
-        request = yield from self.client.post('/groups/' + data['id'],
+        yield from self.client.post('/groups/{}'.format(data['id']),
                                               body=payload,
                                               content_type='application/json',
                                               token=token)
 
         payload['name'] = 'ABC'
 
-        request = yield from self.client.post('/groups/',
+        request = yield from self.client.post('/groups',
                                               body=payload,
                                               content_type='application/json',
                                               token=token)
