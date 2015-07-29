@@ -112,6 +112,23 @@
             };
         }])
         //
+        .directive('fullPage', ['$window', function ($window) {
+
+            return {
+                restrict: 'AE',
+
+                link: function (scope, element, attrs) {
+                    element.css('min-height', $window.innerHeight+'px');
+
+                    scope.$watch(function(){
+                        return $window.innerHeight;
+                    }, function(value) {
+                        element.css('min-height', value+'px');
+                    });
+                }
+            };
+        }])
+        //
         .directive('navbarLink', function () {
             return {
                 templateUrl: "nav/templates/link.tpl.html",
