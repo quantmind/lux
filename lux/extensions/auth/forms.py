@@ -30,11 +30,13 @@ PermissionModel = odm.RestModel('permission', PermissionForm,
 class GroupForm(forms.Form):
     model = 'group'
     id = forms.HiddenField(required=False)
-    name = forms.CharField(validator=odm.UniqueField(),
-                           transform=lambda x: x.lower())
+    name = forms.CharField(validator=odm.UniqueField())
     permissions = odm.RelationshipField(PermissionModel,
                                         multiple=True,
                                         required=False)
+
+    def clean_name(self, value):
+        return value.lower()
 
 
 GroupModel = odm.RestModel('group', GroupForm, repr_field='name')

@@ -88,7 +88,7 @@ class Field:
     def __init__(self, name=None, required=None, default=None,
                  validation_error=None, help_text=None,
                  label=None, attrs=None, validator=None,
-                 required_error=None, transform=None,
+                 required_error=None,
                  **kwargs):
         self.name = name
         self.default = default if default is not None else self.default
@@ -97,7 +97,6 @@ class Field:
         self.required_error = required_error or self.required_error
         self.help_text = escape(help_text)
         self.label = label
-        self.transform = transform
         self.validator = validator
         self.attrs = dict(self.attrs or ())
         self.attrs.update(attrs or ())
@@ -143,11 +142,12 @@ class Field:
                 raise ValidationError(self.required_error.format(value))
             elif not self.required:
                 return value
-        if self.transform:
-            value = self.transform(value)
+        return self._clean(value, bfield)
+
+    def validate(self, value, bfield):
         if self.validator:
             value = self.validator(value, bfield)
-        return self._clean(value, bfield)
+        return value
 
     def _clean(self, value, bfield):
         return value
