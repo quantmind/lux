@@ -14,13 +14,18 @@ angular.module('lux.form.utils', ['lux.services'])
                 options = [];
 
             scope[target.name] = options;
+
             initialValue.id = '';
             initialValue.name = 'Loading...';
 
             options.push(initialValue);
 
             api.get().then(function (data) {
-                options[0].name = 'Please select...';
+                if (attrs.multiple) {
+                    options.splice(0, 1);
+                } else {
+                    options[0].name = 'Please select...';
+                }
                 scope[scope.formModelName][attrs.name] = '';
                 angular.forEach(data.data.result, function (val) {
                     options.push({
