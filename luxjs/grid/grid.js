@@ -101,7 +101,7 @@
         .service('GridService', ['$lux', '$q', '$location', '$compile', '$modal', 'uiGridConstants', 'gridDefaults',
             function($lux, $q, $location, $compile, $modal, uiGridConstants, gridDefaults) {
 
-            function parseColumns(columns) {
+            function parseColumns(columns, repr_field) {
                 var columnDefs = [],
                     column;
 
@@ -119,8 +119,8 @@
                     if (!col.hasOwnProperty('filter'))
                         column.enableFiltering = false;
 
-                    if (column.field === 'id')
-                        column.cellTemplate = gridDefaults.wrapCell('<a ng-href="{{grid.appScope.objectUrl(COL_FIELD)}}">{{COL_FIELD}}</a>');
+                    if (column.field === repr_field)
+                        column.cellTemplate = gridDefaults.wrapCell('<a ng-href="{{grid.appScope.objectUrl(row.entity.id)}}">{{COL_FIELD}}</a>');
 
                     var callback = gridDefaults.columns[col.type];
                     if (callback) callback(column, col, uiGridConstants, gridDefaults);
@@ -254,7 +254,7 @@
 
                 api.get({path: sub_path + '/metadata'}).success(function(resp) {
                     scope.gridState.limit = resp['default-limit'];
-                    scope.gridOptions.columnDefs = parseColumns(resp.columns);
+                    scope.gridOptions.columnDefs = parseColumns(resp.columns, resp.repr);
                     if (resp.repr)
                         scope.gridOptions.reprField = resp.repr;
 
