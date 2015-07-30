@@ -108,10 +108,12 @@ class RestModel:
         instance'''
         if not self._loaded:
             self._loaded = True
-            self._columns = self._load_columns(app)
+            self._columns = self._load_columns(app.app)
         return self._columns
 
     def columnsMapping(self, app):
+        '''Returns a dictionary of names/columns objects
+        '''
         return dict(((c['name'], c) for c in self.columns(app)))
 
     def get_target(self, request, **extra_data):

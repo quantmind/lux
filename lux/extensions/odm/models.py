@@ -20,6 +20,8 @@ class RestModel(rest.RestModel):
     '''A rest model based on SqlAlchemy ORM
     '''
     def session(self, request):
+        '''Obtain a session
+        '''
         return request.app.odm().begin()
 
     def tojson(self, request, obj, exclude=None):
