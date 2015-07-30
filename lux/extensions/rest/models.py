@@ -140,7 +140,7 @@ class RestModel:
             yield 'data-remote-options-id', self.id_field
             yield 'data-remote-options-value', self.repr_field
             yield 'data-ng-options', self.remote_options_str.format(
-                id=self.id_field, repr=self.repr_field, options=self.api_name)
+                id='id', repr='name', options=self.api_name)
 
     def _load_columns(self, app):
         '''List of column definitions
