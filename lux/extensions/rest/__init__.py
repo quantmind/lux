@@ -21,12 +21,13 @@ from pulsar.utils.httpurl import is_absolute_uri
 from lux import Parameter
 from lux.core.wrappers import wsgi_request
 
-from .user import *     # noqa
+from .user import *             # noqa
 from .auth import AuthBackend
-from .models import *   # noqa
-from .pagination import *   # noqa
+from .models import *           # noqa
+from .pagination import *       # noqa
 from .client import ApiClient
-from .views import *    # noqa
+from .permissions import *      # noqa
+from .views import *            # noqa
 
 
 def luxrest(url, **rest):
