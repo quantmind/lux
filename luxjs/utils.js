@@ -134,12 +134,17 @@
     //  =======================
     //
     //  Load a style sheet link
+    loadedCss = {},
+    //
     loadCss = lux.loadCss = function (filename) {
-        var fileref = document.createElement("link");
-        fileref.setAttribute("rel", "stylesheet");
-        fileref.setAttribute("type", "text/css");
-        fileref.setAttribute("href", filename);
-        document.getElementsByTagName("head")[0].appendChild(fileref);
+        if (!loadedCss[filename]) {
+            loadedCss[filename] = true; 
+            var fileref = document.createElement("link");
+            fileref.setAttribute("rel", "stylesheet");
+            fileref.setAttribute("type", "text/css");
+            fileref.setAttribute("href", filename);
+            document.getElementsByTagName("head")[0].appendChild(fileref);
+        }
     },
     //
     //

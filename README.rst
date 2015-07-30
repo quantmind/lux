@@ -65,7 +65,7 @@ Testing
 For testing postgreSQL create a new role::
 
     CREATE ROLE lux WITH PASSWORD 'luxtest';
-    ALTER ROLE lux CREATEDB;
+    ALTER ROLE lux CREATEDB LOGIN;
     CREATE DATABASE luxtests;
     GRANT ALL PRIVILEGES ON DATABASE luxtests to lux;
 
@@ -85,4 +85,3 @@ For testing postgreSQL create a new role::
 .. _sphinx: http://sphinx-doc.org/
 .. _`grunt-html2js`: https://github.com/karlgoldstein/grunt-html2js
 .. _lux.js: https://raw.githubusercontent.com/quantmind/lux/master/lux/media/lux/lux.js
-
