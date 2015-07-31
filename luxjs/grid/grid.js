@@ -30,7 +30,7 @@
             //
             rowHeight: 30,
             minGridHeight: 250,
-            offsetGridHeight: 94,
+            offsetGridHeight: 102,
             //
             paginationOptions: {
                 sizes: [25, 50, 100]
@@ -119,12 +119,16 @@
                     if (!col.hasOwnProperty('filter'))
                         column.enableFiltering = false;
 
-                    if (column.field === metaFields.repr)
-                        column.cellTemplate = gridDefaults.wrapCell('<a ng-href="{{grid.appScope.objectUrl(row.entity)}}">{{COL_FIELD}}</a>');
-
                     var callback = gridDefaults.columns[col.type];
                     if (callback) callback(column, col, uiGridConstants, gridDefaults);
-                    columnDefs.push(column);
+
+                    if (column.field === metaFields.repr) {
+                        column.cellTemplate = gridDefaults.wrapCell('<a ng-href="{{grid.appScope.objectUrl(row.entity)}}">{{COL_FIELD}}</a>');
+                        // Add repr column as the first column
+                        columnDefs.splice(0, 0, column);
+                    }
+                    else
+                        columnDefs.push(column);
                 });
 
                 return columnDefs;
