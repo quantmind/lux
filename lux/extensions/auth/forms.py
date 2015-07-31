@@ -57,7 +57,7 @@ class CreateUserForm(PasswordForm):
     '''Form for creating a new user form username, email and password
     '''
     model = 'user'
-    username = forms.SlugField(required=True,
+    username = forms.CharField(required=True,
                                validator=odm.UniqueField(),
                                maxlength=30)
     email = forms.EmailField(required=True,

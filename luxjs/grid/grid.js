@@ -107,7 +107,7 @@
 
                 angular.forEach(columns, function(col) {
                     column = {
-                        field: col.field,
+                        field: col.name,
                         displayName: col.displayName,
                         type: getColumnType(col.type),
                         name: col.name

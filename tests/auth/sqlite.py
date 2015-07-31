@@ -200,7 +200,7 @@ class TestSqlite(test.AppTestCase):
     def test_signup(self):
         return self._signup()
 
-    def test_user_crud(self):
+    def __test_user_crud(self):
         user = yield from self._signup()
         username = user['username']
         self.assertNotEqual(username, user['id'])
@@ -428,7 +428,7 @@ class TestSqlite(test.AppTestCase):
     def _signup(self):
         request = yield from self.client.get('/signup')
         self.assertEqual(request.response.status_code, 200)
-        username = test.randomname()
+        username = test.randomname(prefix='u-')
         password = test.randomname()
         email = '%s@%s.com' % (username, test.randomname())
 

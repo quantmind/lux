@@ -23,6 +23,11 @@ class GroupCRUD(CRUD):
 class UserCRUD(CRUD):
     model = UserModel
 
+    def create_model(self, request, data):
+        '''Override create model so that it calls the backend method
+        '''
+        return request.cache.auth_backend.create_user(request, **data)
+
 
 class RegistrationCRUD(CRUD):
     model = RestModel('registration')

@@ -63,21 +63,25 @@ class RestModel(rest.RestModel):
         model = app.odm()[self.name]
         cols = get_columns(model)._data.copy()
         columns = []
+        all = set()
 
         for info in input_columns:
             col = RestColumn.make(info)
-            dbcol = cols.pop(col.name, None)
-            # If a database column
-            if isinstance(dbcol, Column):
-                info = column_info(col.name, dbcol)
-                info.update(col.as_dict(defaults=False))
-            else:
-                info = col.as_dict()
+            if col.name not in all:
+                all.add(col.name)
+                dbcol = cols.pop(col.name, None)
+                # If a database column
+                if isinstance(dbcol, Column):
+                    info = column_info(col.name, dbcol)
+                    info.update(col.as_dict(defaults=False))
+                else:
+                    info = col.as_dict()
 
-            columns.append(info)
+                columns.append(info)
 
         for name, col in cols.items():
-            if name not in self._exclude:
+            if name not in all:
+                all.add(name)
                 columns.append(column_info(name, col))
 
         return columns
