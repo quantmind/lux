@@ -230,4 +230,16 @@
                 options[name] = value;
         });
         return options;
+    },
+
+    /**
+    * Formats a string (using simple substitution)
+    * @param   {String}    str         e.g. "Hello {name}!"
+    * @param   {Object}    values      e.g. {name: "King George III"}
+    * @returns {String}                e.g. "Hello King George III!"
+    */
+    formatString = function (str, values) {
+        return str.replace(/{(\w+)}/g, function (match, placeholder) {
+            return values.hasOwnProperty(placeholder) ? values[placeholder] : '';
+        });
     };

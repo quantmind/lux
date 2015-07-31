@@ -22,13 +22,15 @@ class RelationshipField(MultipleMixin, forms.Field):
 
     attrs = {'type': 'select'}
 
-    def __init__(self, model=None, request_params=None, **kwargs):
+    def __init__(self, model=None, request_params=None, format_string=None,
+                 **kwargs):
         super().__init__(**kwargs)
         assert model, 'no model defined'
         if not isinstance(model, RestModel):
             model = RestModel(model)
         self.model = model
         self.request_params = request_params
+        self.format_string = format_string
 
     def getattrs(self, form=None):
         attrs = super().getattrs(form)
@@ -37,6 +39,10 @@ class RelationshipField(MultipleMixin, forms.Field):
                          self.__class__.__name__, self.name)
         else:
             attrs.update(self.model.field_options(form.request))
+            if self.format_string:
+                attrs['data-remote-options-value'] = json.dumps({
+                    'type': 'formatString',
+                    'source': self.format_string})
             if self.request_params:
                 attrs['data-remote-options-params'] = json.dumps(
                     self.request_params)

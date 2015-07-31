@@ -3,7 +3,6 @@ import logging
 
 from pulsar.utils.html import nicename
 
-
 logger = logging.getLogger('lux.extensions.rest')
 
 __all__ = ['RestModel', 'RestColumn']
@@ -13,6 +12,7 @@ class RestColumn:
     '''A class for specifying attributes of a REST column/field
     for a model
     '''
+
     def __init__(self, name, sortable=None, filter=None, type=None,
                  displayName=None):
         self.name = name
@@ -28,8 +28,9 @@ class RestColumn:
         assert isinstance(col, str), 'Not a string'
         return cls(col)
 
-    def __repr__(self):     # pragma    nocover
+    def __repr__(self):  # pragma    nocover
         return self.name
+
     __str__ = __repr__
 
     def as_dict(self, defaults=False):
@@ -88,6 +89,7 @@ class RestModel:
 
     def __repr__(self):
         return self.name
+
     __str__ = __repr__
 
     def tojson(self, request, object, exclude=None, decoder=None):
@@ -138,7 +140,9 @@ class RestModel:
             target = self.get_target(request)
             yield 'data-remote-options', json.dumps(target)
             yield 'data-remote-options-id', self.id_field
-            yield 'data-remote-options-value', self.repr_field
+            yield 'data-remote-options-value', json.dumps({
+                'type': 'field',
+                'source': self.repr_field})
             yield 'data-ng-options', self.remote_options_str.format(
                 id='id', repr='name', options=self.api_name)
 

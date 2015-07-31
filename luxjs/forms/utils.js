@@ -9,7 +9,11 @@ angular.module('lux.form.utils', ['lux.services'])
         function fill(api, target, scope, attrs) {
 
             var id = attrs.remoteOptionsId || 'id',
-                name = attrs.remoteOptionsValue || 'id',
+                nameOpts = JSON.parse(attrs.remoteOptionsValue || {
+                        type: 'field',
+                        source: 'id'
+                    }),
+                nameFromFormat = nameOpts.type === 'formatString',
                 initialValue = {},
                 params = JSON.parse(attrs.remoteOptionsParams || '{}'),
                 options = [];
@@ -29,9 +33,15 @@ angular.module('lux.form.utils', ['lux.services'])
                 }
                 scope[scope.formModelName][attrs.name] = '';
                 angular.forEach(data.data.result, function (val) {
+                    var name;
+                    if (nameFromFormat) {
+                        name = formatString(nameOpts.source, val);
+                    } else {
+                        name = val[nameOpts.source];
+                    }
                     options.push({
                         id: val[id],
-                        name: val[name]
+                        name: name
                     });
                 });
             }, function (data) {
