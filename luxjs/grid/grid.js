@@ -101,7 +101,7 @@
         .service('GridService', ['$lux', '$q', '$location', '$compile', '$modal', 'uiGridConstants', 'gridDefaults',
             function($lux, $q, $location, $compile, $modal, uiGridConstants, gridDefaults) {
 
-            function parseColumns(columns, repr_field) {
+            function parseColumns(columns, metaFields) {
                 var columnDefs = [],
                     column;
 
@@ -119,8 +119,8 @@
                     if (!col.hasOwnProperty('filter'))
                         column.enableFiltering = false;
 
-                    if (column.field === repr_field)
-                        column.cellTemplate = gridDefaults.wrapCell('<a ng-href="{{grid.appScope.objectUrl(row.entity.id)}}">{{COL_FIELD}}</a>');
+                    if (column.field === metaFields.repr)
+                        column.cellTemplate = gridDefaults.wrapCell('<a ng-href="{{grid.appScope.objectUrl(row.entity)}}">{{COL_FIELD}}</a>');
 
                     var callback = gridDefaults.columns[col.type];
                     if (callback) callback(column, col, uiGridConstants, gridDefaults);
@@ -177,15 +177,11 @@
                     // Modal settings
                     angular.extend(modalScope, {
                         'stateName': stateName,
-                        'repr_field': scope.gridOptions.reprField || firstField,
+                        'repr_field': scope.gridOptions.metaFields.repr || firstField,
                         'infoMessage': gridDefaults.modal.delete.messages.info + ' ' + stateName + ':',
                         'dangerMessage': gridDefaults.modal.delete.messages.danger,
                         'emptyMessage': gridDefaults.modal.delete.messages.empty + ' ' + stateName + '.',
                     });
-
-                    var pkForItem = function(item) {
-                        return item.hasOwnProperty('id') ? item.id : item[firstField];
-                    };
 
                     if (modalScope.selected.length > 0)
                         template = gridDefaults.modal.delete.templates.delete;
@@ -197,9 +193,10 @@
                     modalScope.ok = function() {
 
                         function deleteItem(item) {
-                            var defer = $lux.q.defer();
+                            var defer = $lux.q.defer(),
+                                pk = item[scope.gridOptions.metaFields.id];
 
-                            api.delete({path: subPath + '/' + pkForItem(item)})
+                            api.delete({path: subPath + '/' + pk})
                                 .success(function(resp) {
                                     defer.resolve(gridDefaults.modal.delete.messages.success);
                                 })
@@ -254,9 +251,11 @@
 
                 api.get({path: sub_path + '/metadata'}).success(function(resp) {
                     scope.gridState.limit = resp['default-limit'];
-                    scope.gridOptions.columnDefs = parseColumns(resp.columns, resp.repr);
-                    if (resp.repr)
-                        scope.gridOptions.reprField = resp.repr;
+                    scope.gridOptions.metaFields = {
+                        id: resp.id,
+                        repr: resp.repr
+                    };
+                    scope.gridOptions.columnDefs = parseColumns(resp.columns, scope.gridOptions.metaFields);
 
                     api.get({path: sub_path}, {limit: scope.gridState.limit}).success(function(resp) {
                         scope.gridOptions.totalItems = resp.total;
@@ -274,8 +273,8 @@
                 scope.paginationOptions = gridDefaults.paginationOptions;
                 scope.gridState = gridDefaults.gridState;
 
-                scope.objectUrl = function(objectId) {
-                    return $lux.window.location + '/' + objectId;
+                scope.objectUrl = function(entity) {
+                    return $lux.window.location + '/' + entity[scope.gridOptions.metaFields.id];
                 };
 
                 scope.updateGridHeight = function () {
