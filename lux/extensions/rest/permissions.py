@@ -19,7 +19,14 @@ class ColumnPermissionsMixin:
         '''Return a list column fields from the list of columns object
         '''
         field = field or 'field'
-        return tuple((c[field] for c in columns))
+        fields = set()
+        for c in columns:
+            value = c[field]
+            if isinstance(value, (tuple, list)):
+                fields.update(value)
+            else:
+                fields.add(value)
+        return tuple(fields)
 
     def has_permission_for_column(self, request, column, level):
         """

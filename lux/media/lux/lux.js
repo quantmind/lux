@@ -3998,10 +3998,19 @@ angular.module("blog/pagination.tpl.html", []).run(["$templateCache", function($
             };
         })
         //
-        .directive('katex', ['blogDefaults', function (blogDefaults) {
+        .directive('katex', ['$log', 'blogDefaults', function ($log, blogDefaults) {
 
             function error (element, err) {
                 element.html("<div class='alert alert-danger' role='alert'>" + err + "</div>");
+            }
+
+            function configMaxJax (mathjax) {
+                mathjax.Hub.Register.MessageHook("TeX Jax - parse error", function (message) {
+                    var a = 1;
+                });
+                mathjax.Hub.Register.MessageHook("Math Processing Error", function (message) {
+                    var a = 1;
+                });
             }
 
             function render(katex, text, element, fallback) {
@@ -4011,6 +4020,10 @@ angular.module("blog/pagination.tpl.html", []).run(["$templateCache", function($
                 catch(err) {
                     if (fallback) {
                         require(['mathjax'], function (mathjax) {
+                            if (!blogDefaults.mathjaxConfig) {
+                                blogDefaults.mathjaxConfig = true;
+                                configMaxJax(mathjax);
+                            }
                             try {
                                 if (text.substring(0, 15) === '\\displaystyle {')
                                     text = text.substring(15, text.length-1);

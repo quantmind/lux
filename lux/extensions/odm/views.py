@@ -35,9 +35,9 @@ class RestRouter(rest.RestRouter):
         return session.query(model).options(load_only(*entities))
 
     # RestView implementation
-    def get_model(self, request):
+    def get_model(self, request, **args):
         odm = request.app.odm()
-        args = request.urlargs
+        args = args or request.urlargs
         if not args:  # pragma    nocover
             raise Http404
         with odm.begin() as session:
@@ -181,7 +181,8 @@ class CRUD(RestRouter):
 
     @route('<id>', method=('get', 'post', 'delete', 'head', 'options'))
     def read_update_delete(self, request):
-        instance = self.get_model(request)
+        args = {self.model.id_field: request.urlargs['id']}
+        instance = self.get_model(request, **args)
 
         if request.method == 'OPTIONS':
             request.app.fire('on_preflight', request)

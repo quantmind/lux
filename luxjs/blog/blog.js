@@ -34,10 +34,30 @@
             };
         })
         //
-        .directive('katex', ['blogDefaults', function (blogDefaults) {
+        .directive('katex', ['$log', 'blogDefaults', function ($log, blogDefaults) {
 
             function error (element, err) {
                 element.html("<div class='alert alert-danger' role='alert'>" + err + "</div>");
+            }
+
+            function configMaxJax (mathjax) {
+                mathjax.Hub.Register.MessageHook("TeX Jax - parse error", function (message) {
+                    var a = 1;
+                });
+                mathjax.Hub.Register.MessageHook("Math Processing Error", function (message) {
+                    var a = 1;
+                });
+            }
+
+            //
+            //  Render the text using MathJax
+            //
+            //  Check: http://docs.mathjax.org/en/latest/typeset.html
+            function render_mathjax (mathjax, text, element) {
+                if (text.substring(0, 15) === '\\displaystyle {')
+                    text = text.substring(15, text.length-1);
+                element.append(text);
+                mathjax.Hub.Queue(["Typeset", mathjax.Hub, element[0]]);
             }
 
             function render(katex, text, element, fallback) {
@@ -48,10 +68,7 @@
                     if (fallback) {
                         require(['mathjax'], function (mathjax) {
                             try {
-                                if (text.substring(0, 15) === '\\displaystyle {')
-                                    text = text.substring(15, text.length-1);
-                                element.append(text);
-                                mathjax.Hub.Queue(["Typeset", mathjax.Hub, element[0]]);
+                                render_mathjax(mathjax, text, element);
                             } catch (e) {
                                 error(element, err += ' - ' + e);
                             }

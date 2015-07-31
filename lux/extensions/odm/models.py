@@ -70,9 +70,9 @@ class RestModel(rest.RestModel):
             # If a database column
             if isinstance(dbcol, Column):
                 info = column_info(col.name, dbcol)
-                info.update(col.as_dict())
+                info.update(col.as_dict(defaults=False))
             else:
-                info = col.as_dict(True)
+                info = col.as_dict()
 
             columns.append(info)
 

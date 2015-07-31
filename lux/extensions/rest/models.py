@@ -14,12 +14,13 @@ class RestColumn:
     for a model
     '''
     def __init__(self, name, sortable=None, filter=None, type=None,
-                 displayName=None):
+                 displayName=None, field=None):
         self.name = name
         self.sortable = sortable
         self.filter = filter
-        self.type = None
-        self.displayName = None
+        self.type = type
+        self.displayName = displayName
+        self.field = field
 
     @classmethod
     def make(cls, col):
@@ -32,7 +33,7 @@ class RestColumn:
         return self.name
     __str__ = __repr__
 
-    def as_dict(self, defaults=False):
+    def as_dict(self, defaults=True):
         return dict(self._as_dict(defaults))
 
     def _as_dict(self, defaults):
@@ -40,7 +41,9 @@ class RestColumn:
             if v is None and defaults:
                 if k == 'displayName':
                     v = nicename(self.name)
-                elif k == type:
+                elif k == 'field':
+                    v = self.name
+                elif k == 'type':
                     v = 'string'
             if v is not None:
                 yield k, v
@@ -150,8 +153,6 @@ class RestModel:
 
         for info in input_columns:
             col = RestColumn.make(info)
-            info = col.as_dict(True)
-            info['field'] = info['name']
-            columns.append(info)
+            columns.append(col.as_dict())
 
         return columns

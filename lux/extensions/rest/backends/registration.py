@@ -1,7 +1,9 @@
+from urllib.parse import urljoin
+
 from pulsar.apps.wsgi import Json
 
 from lux import Parameter
-from lux.extensions.rest import AuthenticationError
+from lux.extensions.rest import AuthenticationError, website_url
 
 
 class RegistrationMixin:
@@ -20,6 +22,8 @@ class RegistrationMixin:
     ]
 
     def signup_response(self, request, user):
+        '''handle the response to a signup request
+        '''
         auth_backend = request.cache.auth_backend
         reg_token = auth_backend.create_registration(request, user)
         if reg_token:
@@ -69,11 +73,9 @@ class RegistrationMixin:
             return
         app = request.app
         cfg = app.config
-        site = cfg['WEB_SITE_URL'] or request.absolute_uri('/')
-        if site.endswith('/'):
-            site = site[:-1]
+        site = website_url(request)
         ctx = {'auth_key': auth_key,
-               'register_url': cfg['REGISTER_URL'],
+               'register_url': urljoin(site, cfg['REGISTER_URL'], auth_key),
                'reset_password_url': cfg['RESET_PASSWORD_URL'],
                'expiration_days': cfg['ACCOUNT_ACTIVATION_DAYS'],
                'email': user.email,
