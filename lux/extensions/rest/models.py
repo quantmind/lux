@@ -103,16 +103,18 @@ class RestModel:
         '''
         raise NotImplementedError
 
-    def columns(self, app):
+    def columns(self, request):
         '''Return a list fields describing the entries for a given model
         instance'''
         if not self._loaded:
             self._loaded = True
-            self._columns = self._load_columns(app)
+            self._columns = self._load_columns(request.app)
         return self._columns
 
-    def columnsMapping(self, app):
-        return dict(((c['name'], c) for c in self.columns(app)))
+    def columnsMapping(self, request):
+        '''Returns a dictionary of names/columns objects
+        '''
+        return dict(((c['name'], c) for c in self.columns(request)))
 
     def get_target(self, request, **extra_data):
         '''Get a target for a form

@@ -5,7 +5,8 @@
     angular.module('lux.blog', ['lux.page', 'templates-blog', 'highlight'])
         .value('blogDefaults', {
             centerMath: true,
-            fallback: true
+            fallback: true,
+            katexCss: 'https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.3.0/katex.min.css'
         })
         //
         .controller('BlogEntry', ['$scope', 'pageService', '$lux', function ($scope, pageService, $lux) {
@@ -73,10 +74,13 @@
                         text = '\\displaystyle {' + text + '}';
                         element.addClass('katex-outer');
                     }
-                    if (typeof(katex) === 'undefined')
+                    if (typeof(katex) === 'undefined') {
+                        // Load Katex css file first
+                        loadCss(blogDefaults.katexCss);
                         require(['katex'], function (katex) {
                             render(katex, text, element, fallback);
                         });
+                    }
                     else
                         render(katex, text, element);
                 }

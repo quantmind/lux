@@ -1,3 +1,7 @@
+from datetime import datetime
+
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
+
 import lux
 
 from lux import forms
@@ -8,21 +12,20 @@ from lux.extensions.auth.forms import PermissionForm, GroupForm, UserForm
 
 from tests.config import *  # noqa
 
-
 EXTENSIONS = ['lux.extensions.base',
               'lux.extensions.odm',
               'lux.extensions.rest',
               'lux.extensions.admin',
               'lux.extensions.auth']
 
+API_URL = ''
 AUTHENTICATION_BACKENDS = ['lux.extensions.auth.TokenBackend',
                            'lux.extensions.auth.BrowserBackend']
 
 
 class Extension(lux.Extension):
-
     def api_sections(self, app):
-        return [UserCRUD(), GroupCRUD(), PermissionCRUD()]
+        return [UserCRUD(), GroupCRUD(), PermissionCRUD(), ObjectiveCRUD()]
 
 
 class UserCRUD(CRUD):
@@ -31,6 +34,29 @@ class UserCRUD(CRUD):
                       exclude=('password', 'permissions', 'first_name',
                                'last_name', 'superuser'),
                       columns=('full_name',))
+
+
+Model = odm.model_base('odmtest')
+
+
+class Objective(Model):
+    id = Column(Integer, primary_key=True)
+    subject = Column(String(250))
+    deadline = Column(String(250))
+    outcome = Column(String(250))
+    done = Column(Boolean, default=False)
+    created = Column(DateTime, default=datetime.utcnow)
+
+
+class ObjectiveForm(forms.Form):
+    subject = forms.CharField(required=False)
+    deadline = forms.CharField(required=False)
+    outcome = forms.CharField(required=False)
+    done = forms.BooleanField(default=False)
+
+
+class ObjectiveCRUD(odm.CRUD):
+    model = odm.RestModel('objective', ObjectiveForm)
 
 
 class GroupCRUD(CRUD):

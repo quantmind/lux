@@ -1,3 +1,4 @@
+import os.path
 import hmac
 import hashlib
 import json
@@ -38,7 +39,8 @@ class TestContentViews(test.AppTestCase):
             title='test reading',
             body='This is a simple post for testing')
         self.assertEqual(data['name'], 'test-reading')
-        self.assertEqual(data['filename'], 'blog/test-reading.md')
+        self.assertEqual(data['filename'],
+                         os.path.join('blog', 'test-reading.md'))
         request = yield from self.client.get('/blog/test-reading')
         response = request.response
         self.assertEqual(response.status_code, 200)

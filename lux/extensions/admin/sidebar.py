@@ -189,10 +189,10 @@ def add_css(all):
 
     large.css('.sidebar .nav-panel',
               css(' .image > img',
-                height=navbar.height-px(20)),
+                  height=navbar.height-px(20)),
               height=navbar.height)
 
-    #sidebar_skin(all)
+    #  sidebar_skin(all)
 
 
 def small():
