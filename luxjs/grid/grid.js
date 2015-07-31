@@ -24,6 +24,7 @@
             enableRowHeaderSelection: false,
             useExternalPagination: true,
             useExternalSorting: true,
+            useExternalFiltering: true,
             // Scrollbar display: 0 - never, 1 - always, 2 - when needed
             enableHorizontalScrollbar: 0,
             enableVerticalScrollbar: 0,
@@ -41,6 +42,7 @@
                 limit: 25,
                 offset: 0
             },
+            gridFilters: {},
             //
             showMenu: true,
             gridMenu: {
@@ -81,7 +83,7 @@
 
                 // Font-awesome icon by default
                 boolean: function (column, col, uiGridConstants, gridDefaults) {
-                    column.cellTemplate = gridDefaults.wrapCell('<i ng-class="{{COL_FIELD == true}} ? \'fa fa-check-circle text-success\' : \'fa fa-times-circle text-danger\'"></i>');
+                    column.cellTemplate = gridDefaults.wrapCell('<i ng-class="{{COL_FIELD === true}} ? \'fa fa-check-circle text-success\' : \'fa fa-times-circle text-danger\'">{{COL_FIELD}}</i>');
 
                     if (col.hasOwnProperty('filter')) {
                         column.filter = {
@@ -124,7 +126,7 @@
 
                     if (column.field === metaFields.repr) {
                         column.cellTemplate = gridDefaults.wrapCell('<a ng-href="{{grid.appScope.objectUrl(row.entity)}}">{{COL_FIELD}}</a>');
-                        // Add repr column as the first column
+                        // Set repr column as the first column
                         columnDefs.splice(0, 0, column);
                     }
                     else
@@ -136,7 +138,13 @@
 
             // Get specified page using params
             function getPage(scope, api) {
-                api.get({}, scope.gridState).success(function(resp) {
+                var query = angular.extend({}, scope.gridState);
+
+                // Add filter if available
+                if (scope.gridFilters)
+                    query = angular.extend(query, scope.gridFilters);
+
+                api.get({}, query).success(function(resp) {
                     scope.gridOptions.totalItems = resp.total;
                     scope.gridOptions.data = resp.result;
 
@@ -276,6 +284,7 @@
                 scope.options = options;
                 scope.paginationOptions = gridDefaults.paginationOptions;
                 scope.gridState = gridDefaults.gridState;
+                scope.gridFilters = gridDefaults.gridFilters;
 
                 scope.objectUrl = function(entity) {
                     return $lux.window.location + '/' + entity[scope.gridOptions.metaFields.id];
@@ -287,7 +296,7 @@
                         totalPages = scope.gridApi.pagination.getTotalPages(),
                         currentPage = scope.gridState.page,
                         lastPage = scope.gridOptions.totalItems % scope.gridState.limit,
-                        gridHeight;
+                        gridHeight = 0;
 
                     // Calculate grid height
                     if (length > 0) {
@@ -296,7 +305,8 @@
                         else
                             gridHeight = lastPage * gridDefaults.rowHeight + gridDefaults.offsetGridHeight;
                     }
-                    else
+
+                    if (gridHeight < gridDefaults.minGridHeight)
                         gridHeight = gridDefaults.minGridHeight;
 
                     element.css('height', gridHeight + 'px');
@@ -315,6 +325,8 @@
                         rowHeight: gridDefaults.rowHeight,
                         onRegisterApi: function(gridApi) {
                             scope.gridApi = gridApi;
+                            //
+                            // Pagination
                             scope.gridApi.pagination.on.paginationChanged(scope, function(pageNumber, pageSize) {
                                 scope.gridState.page = pageNumber;
                                 scope.gridState.limit = pageSize;
@@ -322,7 +334,8 @@
 
                                 getPage(scope, api);
                             });
-
+                            //
+                            // Sorting
                             scope.gridApi.core.on.sortChanged(scope, function(grid, sortColumns) {
                                 if( sortColumns.length === 0) {
                                     delete scope.gridState.sortby;
@@ -345,6 +358,22 @@
                                             break;
                                     }
                                 }
+                            });
+                            //
+                            // Filtering
+                            scope.gridApi.core.on.filterChanged(scope, function() {
+                                // TODO: add lodash debouncer
+                                var grid = this.grid;
+                                scope.gridFilters = {};
+
+                                // Add filters
+                                angular.forEach(grid.columns, function(value, _) {
+                                    if (value.filters[0].term)
+                                        scope.gridFilters[value.colDef.name] = value.filters[0].term;
+                                });
+
+                                // Get results
+                                getPage(scope, api);
                             });
                         }
                     };
