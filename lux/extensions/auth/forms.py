@@ -6,7 +6,6 @@ from lux.extensions.rest import AuthenticationError
 from lux.extensions.rest.forms import PasswordForm
 from lux.extensions.rest.policy import validate_policy
 
-
 __all__ = ['PermissionForm', 'GroupForm',
            'UserForm', 'CreateUserForm',
            'ChangePasswordForm']
@@ -31,20 +30,10 @@ PermissionModel = odm.RestModel('permission', PermissionForm,
 class GroupForm(forms.Form):
     model = 'group'
     id = forms.HiddenField(required=False)
-    name = forms.CharField()
+    name = forms.SlugField(validator=odm.UniqueField())
     permissions = odm.RelationshipField(PermissionModel,
                                         multiple=True,
                                         required=False)
-
-    def clean_name(self, value):
-        value = value.lower()
-        odm = self.request.app.odm()
-        with odm.begin() as session:
-            query = session.query(odm.group).filter_by(name=value)
-            if query.count():
-                raise forms.ValidationError('group %s already available'
-                                            % value)
-        return value
 
 
 GroupModel = odm.RestModel('group', GroupForm, repr_field='name')

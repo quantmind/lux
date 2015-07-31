@@ -1,6 +1,6 @@
 //      Lux Library - v0.2.0
 
-//      Compiled 2015-07-29.
+//      Compiled 2015-07-30.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -245,12 +245,17 @@ function(angular, root) {
     //  =======================
     //
     //  Load a style sheet link
+    loadedCss = {},
+    //
     loadCss = lux.loadCss = function (filename) {
-        var fileref = document.createElement("link");
-        fileref.setAttribute("rel", "stylesheet");
-        fileref.setAttribute("type", "text/css");
-        fileref.setAttribute("href", filename);
-        document.getElementsByTagName("head")[0].appendChild(fileref);
+        if (!loadedCss[filename]) {
+            loadedCss[filename] = true; 
+            var fileref = document.createElement("link");
+            fileref.setAttribute("rel", "stylesheet");
+            fileref.setAttribute("type", "text/css");
+            fileref.setAttribute("href", filename);
+            document.getElementsByTagName("head")[0].appendChild(fileref);
+        }
     },
     //
     //
@@ -3964,7 +3969,8 @@ angular.module("blog/pagination.tpl.html", []).run(["$templateCache", function($
     angular.module('lux.blog', ['lux.page', 'templates-blog', 'highlight'])
         .value('blogDefaults', {
             centerMath: true,
-            fallback: true
+            fallback: true,
+            katexCss: 'https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.3.0/katex.min.css'
         })
         //
         .controller('BlogEntry', ['$scope', 'pageService', '$lux', function ($scope, pageService, $lux) {
@@ -4032,10 +4038,13 @@ angular.module("blog/pagination.tpl.html", []).run(["$templateCache", function($
                         text = '\\displaystyle {' + text + '}';
                         element.addClass('katex-outer');
                     }
-                    if (typeof(katex) === 'undefined')
+                    if (typeof(katex) === 'undefined') {
+                        // Load Katex css file first
+                        loadCss(blogDefaults.katexCss);
                         require(['katex'], function (katex) {
                             render(katex, text, element, fallback);
                         });
+                    }
                     else
                         render(katex, text, element);
                 }

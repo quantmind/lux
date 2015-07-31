@@ -208,6 +208,30 @@ class TestSqlite(test.AppTestCase):
                                               content_type='application/json')
         self.assertEqual(request.response.status_code, 201)
 
+    def test_group_validation(self):
+        token = yield from self._token()
+        payload = {'name': 'abc'}
+        request = yield from self.client.post('/groups',
+                                              body=payload,
+                                              content_type='application/json',
+                                              token=token)
+        data = self.json(request.response)
+
+        yield from self.client.post('/groups/{}'.format(data['id']),
+                                    body=payload,
+                                    content_type='application/json',
+                                    token=token)
+
+        payload['name'] = 'ABC'
+
+        request = yield from self.client.post('/groups',
+                                              body=payload,
+                                              content_type='application/json',
+                                              token=token)
+
+        self.assertValidationError(request.response, 'name',
+                                   'abc not available')
+
     def test_column_permissions_read(self):
         """Tests read requests against columns with permission level 0"""
         su_token = yield from self._token(self.su_credentials)

@@ -1,6 +1,5 @@
 from sqlalchemy.exc import DataError
 from sqlalchemy.orm.exc import NoResultFound
-from sqlalchemy.inspection import inspect
 from sqlalchemy.orm import load_only
 from sqlalchemy import desc
 
@@ -13,7 +12,7 @@ from lux import route
 from lux.extensions import rest
 
 
-class RestRouter(rest.RestRouter, rest.ColumnPermissionsMixin):
+class RestRouter(rest.RestRouter):
     '''A REST Router based on database models
     '''
     def query(self, request, session):
@@ -27,26 +26,13 @@ class RestRouter(rest.RestRouter, rest.ColumnPermissionsMixin):
         :param session:     SQLAlchemy session
         :return:            query object
         """
-        entities = self.columns_with_permission(request, self.model, rest.READ)
+        entities = self.columns_with_permission(request, rest.READ)
         if not entities:
             raise PermissionDenied
+        entities = self.column_fields(entities)
         odm = request.app.odm()
         model = odm[self.model.name]
         return session.query(model).options(load_only(*entities))
-
-    def columns_for_meta(self, request):
-        """
-        Returns column metadata, excluding columns the user does
-        not have read access to
-
-        :param request:     request object
-        :return:            dict
-        """
-        columns = super().columns_for_meta(request)
-        allowed_columns = self.columns_with_permission(request, self.model,
-                                                       rest.READ)
-        ret = tuple(c for c in columns if c['name'] in allowed_columns)
-        return ret
 
     # RestView implementation
     def get_model(self, request):
@@ -93,9 +79,9 @@ class RestRouter(rest.RestRouter, rest.ColumnPermissionsMixin):
         :param kw:          not used
         :return:            dict
         """
-        exclusions = self.columns_without_permission(request, self.model,
-                                                     rest.READ)
-        return self.model.tojson(request, data, exclude=exclusions)
+        exclude = self.columns_without_permission(request, rest.READ)
+        exclude = self.column_fields(exclude, 'name')
+        return self.model.tojson(request, data, exclude=exclude)
 
     def set_instance_value(self, instance, name, value):
         setattr(instance, name, value)
@@ -140,7 +126,7 @@ class CRUD(RestRouter):
     def get(self, request):
         '''Get a list of models
         '''
-        self.check_model_permission(request, self.model, rest.READ)
+        self.check_model_permission(request, rest.READ)
         # Columns the user doesn't have access to are dropped by
         # serialise_model
         return self.collection_response(request)
@@ -151,9 +137,10 @@ class CRUD(RestRouter):
         model = self.model
         assert model.form
 
-        self.check_model_permission(request, self.model, rest.CREATE)
-        columns = self.columns_with_permission(request, self.model,
-                                               rest.CREATE)
+        self.check_model_permission(request, rest.CREATE)
+        columns = self.columns_with_permission(request, rest.CREATE)
+        columns = self.column_fields(columns)
+
         data, files = request.data_and_files()
         form = model.form(request, data=data, files=files)
         if form.is_valid():
@@ -201,7 +188,7 @@ class CRUD(RestRouter):
             return request.response
 
         elif request.method == 'GET':
-            self.check_model_permission(request, self.model, rest.READ)
+            self.check_model_permission(request, rest.READ)
             # url = request.absolute_uri()
             # Columns the user doesn't have access to are dropped by
             # serialise_model
@@ -209,16 +196,17 @@ class CRUD(RestRouter):
             return Json(data).http_response(request)
 
         elif request.method == 'HEAD':
-            self.check_model_permission(request, self.model, rest.READ)
+            self.check_model_permission(request, rest.READ)
             return request.response
 
         elif request.method == 'POST':
             model = self.model
             form_class = model.updateform
 
-            self.check_model_permission(request, self.model, rest.UPDATE)
-            columns = self.columns_with_permission(request, self.model,
-                                                   rest.UPDATE)
+            self.check_model_permission(request, rest.UPDATE)
+            columns = self.columns_with_permission(request, rest.UPDATE)
+            columns = self.column_fields(columns)
+
             if not form_class:
                 raise MethodNotAllowed
 
@@ -241,7 +229,7 @@ class CRUD(RestRouter):
 
         elif request.method == 'DELETE':
 
-            self.check_model_permission(request, self.model, rest.DELETE)
+            self.check_model_permission(request, rest.DELETE)
             self.delete_model(request, instance)
             request.response.status_code = 204
             return request.response

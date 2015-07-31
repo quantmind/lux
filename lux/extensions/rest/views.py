@@ -8,10 +8,12 @@ from pulsar import Http404, MethodNotAllowed, BadRequest
 from pulsar.apps.wsgi import Json
 
 from .forms import CreateUserForm, ChangePasswordForm
-from .user import AuthenticationError, logout
+from .user import AuthenticationError, logout, READ
 from .models import RestModel
 from .html import (Login, LoginPost, Logout, SignUp, ProcessLoginMixin,
                    ForgotPassword, ComingSoon)
+from .permissions import ColumnPermissionsMixin
+
 
 __all__ = ['RestRoot', 'RestRouter', 'RestMixin', 'Authorization',
            #
@@ -45,7 +47,7 @@ class RestRoot(lux.Router):
         return Json(self.apis(request)).http_response(request)
 
 
-class RestMixin:
+class RestMixin(ColumnPermissionsMixin):
     model = None
     '''Instance of a :class:`~lux.extensions.rest.RestModel`
     '''
@@ -148,12 +150,9 @@ class RestMixin:
                 query = self._do_sortby(request, query, entry, direction)
         return query
 
-    def columns_for_meta(self, request):
-        return self.model.columns(request.app)
-
     def meta(self, request):
         app = request.app
-        columns = self.columns_for_meta(request)
+        columns = self.columns_with_permission(request, READ)
 
         return {'id': self.model.id_field,
                 'repr': self.model.repr_field,

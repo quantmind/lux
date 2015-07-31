@@ -69,6 +69,11 @@ class Field:
 
         Template string for validation errors
 
+    .. attribute:: transform
+
+        function that transforms a field value before the validator and
+        cleaning functions are called
+
     .. attribute:: attrs
 
         dictionary of attributes.
@@ -83,7 +88,8 @@ class Field:
     def __init__(self, name=None, required=None, default=None,
                  validation_error=None, help_text=None,
                  label=None, attrs=None, validator=None,
-                 required_error=None, **kwargs):
+                 required_error=None,
+                 **kwargs):
         self.name = name
         self.default = default if default is not None else self.default
         self.required = required if required is not None else self.required
@@ -136,9 +142,12 @@ class Field:
                 raise ValidationError(self.required_error.format(value))
             elif not self.required:
                 return value
+        return self._clean(value, bfield)
+
+    def validate(self, value, bfield):
         if self.validator:
             value = self.validator(value, bfield)
-        return self._clean(value, bfield)
+        return value
 
     def _clean(self, value, bfield):
         return value
