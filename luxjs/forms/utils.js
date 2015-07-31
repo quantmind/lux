@@ -11,6 +11,7 @@ angular.module('lux.form.utils', ['lux.services'])
             var id = attrs.remoteOptionsId || 'id',
                 name = attrs.remoteOptionsValue || 'id',
                 initialValue = {},
+                params = JSON.parse(attrs.remoteOptionsParams || '{}'),
                 options = [];
 
             scope[target.name] = options;
@@ -20,7 +21,7 @@ angular.module('lux.form.utils', ['lux.services'])
 
             options.push(initialValue);
 
-            api.get().then(function (data) {
+            api.get(null, params).then(function (data) {
                 if (attrs.multiple) {
                     options.splice(0, 1);
                 } else {

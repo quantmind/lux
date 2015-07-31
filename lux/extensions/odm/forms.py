@@ -1,4 +1,5 @@
 import logging
+import json
 
 from sqlalchemy.inspection import inspect
 
@@ -6,7 +7,6 @@ from lux import forms
 from lux.forms.fields import MultipleMixin
 
 from .models import RestModel
-
 
 logger = logging.getLogger('lux.extensions.odm')
 
@@ -22,12 +22,13 @@ class RelationshipField(MultipleMixin, forms.Field):
 
     attrs = {'type': 'select'}
 
-    def __init__(self, model=None, **kwargs):
+    def __init__(self, model=None, request_params=None, **kwargs):
         super().__init__(**kwargs)
         assert model, 'no model defined'
         if not isinstance(model, RestModel):
             model = RestModel(model)
         self.model = model
+        self.request_params = request_params
 
     def getattrs(self, form=None):
         attrs = super().getattrs(form)
@@ -36,6 +37,9 @@ class RelationshipField(MultipleMixin, forms.Field):
                          self.__class__.__name__, self.name)
         else:
             attrs.update(self.model.field_options(form.request))
+            if self.request_params:
+                attrs['data-remote-options-params'] = json.dumps(
+                    self.request_params)
         return attrs
 
     def _clean(self, value, bfield):
