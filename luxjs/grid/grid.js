@@ -24,13 +24,17 @@
             enableRowHeaderSelection: false,
             useExternalPagination: true,
             useExternalSorting: true,
+            useExternalFiltering: true,
             // Scrollbar display: 0 - never, 1 - always, 2 - when needed
             enableHorizontalScrollbar: 0,
             enableVerticalScrollbar: 0,
             //
             rowHeight: 30,
             minGridHeight: 250,
-            offsetGridHeight: 94,
+            offsetGridHeight: 102,
+            //
+            // request delay in ms
+            requestDelay: 100,
             //
             paginationOptions: {
                 sizes: [25, 50, 100]
@@ -41,6 +45,7 @@
                 limit: 25,
                 offset: 0
             },
+            gridFilters: {},
             //
             showMenu: true,
             gridMenu: {
@@ -81,7 +86,7 @@
 
                 // Font-awesome icon by default
                 boolean: function (column, col, uiGridConstants, gridDefaults) {
-                    column.cellTemplate = gridDefaults.wrapCell('<i ng-class="{{COL_FIELD == true}} ? \'fa fa-check-circle text-success\' : \'fa fa-times-circle text-danger\'"></i>');
+                    column.cellTemplate = gridDefaults.wrapCell('<i ng-class="{{COL_FIELD === true}} ? \'fa fa-check-circle text-success\' : \'fa fa-times-circle text-danger\'"></i>');
 
                     if (col.hasOwnProperty('filter')) {
                         column.filter = {
@@ -113,18 +118,25 @@
                         name: col.name
                     };
 
+                    if (col.hasOwnProperty('hidden') && col.hidden)
+                        column.visible = false;
+
                     if (!col.hasOwnProperty('sortable'))
                         column.enableSorting = false;
 
                     if (!col.hasOwnProperty('filter'))
                         column.enableFiltering = false;
 
-                    if (column.field === metaFields.repr)
-                        column.cellTemplate = gridDefaults.wrapCell('<a ng-href="{{grid.appScope.objectUrl(row.entity)}}">{{COL_FIELD}}</a>');
-
                     var callback = gridDefaults.columns[col.type];
                     if (callback) callback(column, col, uiGridConstants, gridDefaults);
-                    columnDefs.push(column);
+
+                    if (column.field === metaFields.repr) {
+                        column.cellTemplate = gridDefaults.wrapCell('<a ng-href="{{grid.appScope.objectUrl(row.entity)}}">{{COL_FIELD}}</a>');
+                        // Set repr column as the first column
+                        columnDefs.splice(0, 0, column);
+                    }
+                    else
+                        columnDefs.push(column);
                 });
 
                 return columnDefs;
@@ -132,7 +144,13 @@
 
             // Get specified page using params
             function getPage(scope, api) {
-                api.get({}, scope.gridState).success(function(resp) {
+                var query = angular.extend({}, scope.gridState);
+
+                // Add filter if available
+                if (scope.gridFilters)
+                    query = angular.extend(query, scope.gridFilters);
+
+                api.get({}, query).success(function(resp) {
                     scope.gridOptions.totalItems = resp.total;
                     scope.gridOptions.data = resp.result;
 
@@ -272,9 +290,14 @@
                 scope.options = options;
                 scope.paginationOptions = gridDefaults.paginationOptions;
                 scope.gridState = gridDefaults.gridState;
+                scope.gridFilters = gridDefaults.gridFilters;
 
                 scope.objectUrl = function(entity) {
                     return $lux.window.location + '/' + entity[scope.gridOptions.metaFields.id];
+                };
+
+                scope.clearData = function() {
+                    scope.gridOptions.data = [];
                 };
 
                 scope.updateGridHeight = function () {
@@ -283,7 +306,7 @@
                         totalPages = scope.gridApi.pagination.getTotalPages(),
                         currentPage = scope.gridState.page,
                         lastPage = scope.gridOptions.totalItems % scope.gridState.limit,
-                        gridHeight;
+                        gridHeight = 0;
 
                     // Calculate grid height
                     if (length > 0) {
@@ -292,7 +315,8 @@
                         else
                             gridHeight = lastPage * gridDefaults.rowHeight + gridDefaults.offsetGridHeight;
                     }
-                    else
+
+                    if (gridHeight < gridDefaults.minGridHeight)
                         gridHeight = gridDefaults.minGridHeight;
 
                     element.css('height', gridHeight + 'px');
@@ -311,36 +335,62 @@
                         rowHeight: gridDefaults.rowHeight,
                         onRegisterApi: function(gridApi) {
                             scope.gridApi = gridApi;
-                            scope.gridApi.pagination.on.paginationChanged(scope, function(pageNumber, pageSize) {
-                                scope.gridState.page = pageNumber;
-                                scope.gridState.limit = pageSize;
-                                scope.gridState.offset = pageSize*(pageNumber - 1);
 
-                                getPage(scope, api);
-                            });
+                            require(['lodash'], function(_) {
+                                //
+                                // Pagination
+                                scope.gridApi.pagination.on.paginationChanged(scope, _.debounce(function(pageNumber, pageSize) {
+                                    scope.gridState.page = pageNumber;
+                                    scope.gridState.limit = pageSize;
+                                    scope.gridState.offset = pageSize*(pageNumber - 1);
 
-                            scope.gridApi.core.on.sortChanged(scope, function(grid, sortColumns) {
-                                if( sortColumns.length === 0) {
-                                    delete scope.gridState.sortby;
                                     getPage(scope, api);
-                                } else {
-                                    // Build query string for sorting
-                                    angular.forEach(sortColumns, function(column) {
-                                        scope.gridState.sortby = column.name + ':' + column.sort.direction;
+                                }, gridDefaults.requestDelay));
+                                //
+                                // Sorting
+                                scope.gridApi.core.on.sortChanged(scope, _.debounce(function(grid, sortColumns) {
+                                    if( sortColumns.length === 0) {
+                                        delete scope.gridState.sortby;
+                                        getPage(scope, api);
+                                    } else {
+                                        // Build query string for sorting
+                                        angular.forEach(sortColumns, function(column) {
+                                            scope.gridState.sortby = column.name + ':' + column.sort.direction;
+                                        });
+
+                                        switch( sortColumns[0].sort.direction ) {
+                                            case uiGridConstants.ASC:
+                                                getPage(scope, api);
+                                                break;
+                                            case uiGridConstants.DESC:
+                                                getPage(scope, api);
+                                                break;
+                                            case undefined:
+                                                getPage(scope, api);
+                                                break;
+                                        }
+                                    }
+                                }, gridDefaults.requestDelay));
+                                //
+                                // Filtering
+                                scope.gridApi.core.on.filterChanged(scope, _.debounce(function() {
+                                    var grid = this.grid;
+                                    scope.gridFilters = {};
+
+                                    // Add filters
+                                    angular.forEach(grid.columns, function(value, _) {
+                                        // Clear data in order to refresh icons
+                                        if (value.filter.type === 'select')
+                                            scope.clearData();
+
+                                        if (value.filters[0].term)
+                                            scope.gridFilters[value.colDef.name] = value.filters[0].term;
                                     });
 
-                                    switch( sortColumns[0].sort.direction ) {
-                                        case uiGridConstants.ASC:
-                                            getPage(scope, api);
-                                            break;
-                                        case uiGridConstants.DESC:
-                                            getPage(scope, api);
-                                            break;
-                                        case undefined:
-                                            getPage(scope, api);
-                                            break;
-                                    }
-                                }
+                                    // Get results
+                                    getPage(scope, api);
+
+                                }, gridDefaults.requestDelay));
                             });
                         }
                     };
