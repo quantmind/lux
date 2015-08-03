@@ -83,7 +83,7 @@
 
                 // Font-awesome icon by default
                 boolean: function (column, col, uiGridConstants, gridDefaults) {
-                    column.cellTemplate = gridDefaults.wrapCell('<i ng-class="{{COL_FIELD === true}} ? \'fa fa-check-circle text-success\' : \'fa fa-times-circle text-danger\'">{{COL_FIELD}}</i>');
+                    column.cellTemplate = gridDefaults.wrapCell('<i ng-class="{{COL_FIELD === true}} ? \'fa fa-check-circle text-success\' : \'fa fa-times-circle text-danger\'"></i>');
 
                     if (col.hasOwnProperty('filter')) {
                         column.filter = {
@@ -290,6 +290,10 @@
                     return $lux.window.location + '/' + entity[scope.gridOptions.metaFields.id];
                 };
 
+                scope.clearData = function() {
+                    scope.gridOptions.data = [];
+                };
+
                 scope.updateGridHeight = function () {
                     var length = scope.gridOptions.totalItems,
                         element = angular.element(document.getElementsByClassName('grid')[0]),
@@ -368,6 +372,10 @@
 
                                 // Add filters
                                 angular.forEach(grid.columns, function(value, _) {
+                                    // Clear data in order to refresh icons
+                                    if (value.filter.type === 'select')
+                                        scope.clearData();
+
                                     if (value.filters[0].term)
                                         scope.gridFilters[value.colDef.name] = value.filters[0].term;
                                 });
