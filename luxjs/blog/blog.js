@@ -22,19 +22,20 @@
         //
         .directive('blogPagination', function () {
             return {
-                templateUrl: "blog/pagination.tpl.html",
+                templateUrl: "blog/templates/pagination.tpl.html",
                 restrict: 'AE'
             };
         })
         //
         .directive('blogHeader', function () {
             return {
-                templateUrl: "blog/header.tpl.html",
+                templateUrl: "blog/templates/header.tpl.html",
                 restrict: 'AE'
             };
         })
         //
-        .directive('katex', ['$log', 'blogDefaults', function ($log, blogDefaults) {
+        // Compile latex makup with katex and mathjax fallback
+        .directive('latex', ['$log', 'blogDefaults', function ($log, blogDefaults) {
 
             function error (element, err) {
                 element.html("<div class='alert alert-danger' role='alert'>" + err + "</div>");

@@ -1,6 +1,6 @@
 //      Lux Library - v0.2.0
 
-//      Compiled 2015-07-31.
+//      Compiled 2015-08-03.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -341,6 +341,18 @@ function(angular, root) {
                 options[name] = value;
         });
         return options;
+    },
+
+    /**
+    * Formats a string (using simple substitution)
+    * @param   {String}    str         e.g. "Hello {name}!"
+    * @param   {Object}    values      e.g. {name: "King George III"}
+    * @returns {String}                e.g. "Hello King George III!"
+    */
+    formatString = function (str, values) {
+        return str.replace(/{(\w+)}/g, function (match, placeholder) {
+            return values.hasOwnProperty(placeholder) ? values[placeholder] : '';
+        });
     };
 
     lux.messages.no_api = function (url) {
@@ -2416,7 +2428,10 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                 // Create a select element
                 select: function (scope) {
                     var field = scope.field,
-                        options = [];
+                        groups = {},
+                        groupList = [],
+                        options = [],
+                        group, grp;
 
                     forEach(field.options, function (opt) {
                         if (typeof(opt) === 'string') {
@@ -2424,7 +2439,16 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                         } else if (isArray(opt)) {
                             opt = {'value': opt[0], 'repr': opt[1] || opt[0]};
                         }
-                        options.push(opt);
+                        if (opt.group) {
+                            group = groups[opt.group];
+                            if (!group) {
+                                group = {name: opt.group, options: []};
+                                groups[opt.group] = group;
+                                groupList.push(group);
+                            }
+                            group.options.push(opt);
+                        } else
+                            options.push(opt);
                         // Set the default value if not available
                         if (!field.value) field.value = opt.value;
                     });
@@ -2433,11 +2457,26 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                         element = this.input(scope),
                         select = this._select(info.element, element);
 
-                    forEach(options, function (opt) {
-                        opt = $($document[0].createElement('option'))
-                                .attr('value', opt.value).html(opt.repr || opt.value);
-                        select.append(opt);
-                    });
+                    if (groupList.length) {
+                        if (options.length)
+                            groupList.push({name: 'other', options: options});
+
+                        forEach(groupList, function (group) {
+                            grp = $($document[0].createElement('optgroup'))
+                                    .attr('label', group.name);
+                            select.append(grp);
+                            forEach(group.options, function (opt) {
+                                opt = $($document[0].createElement('option'))
+                                        .attr('value', opt.value).html(opt.repr || opt.value);
+                                grp.append(opt);
+                            });
+                        });
+                    } else
+                        forEach(options, function (opt) {
+                            opt = $($document[0].createElement('option'))
+                                    .attr('value', opt.value).html(opt.repr || opt.value);
+                            select.append(opt);
+                        });
 
                     if (field.multiple)
                         select.attr('multiple', true);
@@ -2999,69 +3038,89 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
             });
     };
 
-    /**
-     * Created by Reupen on 02/06/2015.
-     */
+/**
+ * Created by Reupen on 02/06/2015.
+ */
 
-    angular.module('lux.form.utils', ['lux.services'])
+angular.module('lux.form.utils', ['lux.services'])
 
-        .directive('remoteOptions', ['$lux', function ($lux) {
+    .directive('remoteOptions', ['$lux', function ($lux) {
 
-            function fill(api, target, scope, attrs, ctrl) {
+        function fill(api, target, scope, attrs) {
 
-                var id = attrs.remoteOptionsId || 'id',
-                    name = attrs.remoteOptionsValue || 'id',
-                    initialValue = {},
-                    options = [];
+            var id = attrs.remoteOptionsId || 'id',
+                nameOpts = attrs.remoteOptionsValue ? JSON.parse(attrs.remoteOptionsValue) : {
+                    type: 'field',
+                    source: 'id'
+                },
+                nameFromFormat = nameOpts.type === 'formatString',
+                initialValue = {},
+                params = JSON.parse(attrs.remoteOptionsParams || '{}'),
+                options = [];
 
-                scope[target.name] = options;
-                initialValue[id] = '';
-                initialValue[name] = 'Loading...';
+            scope[target.name] = options;
 
-                options.push(initialValue);
+            initialValue.id = '';
+            initialValue.name = 'Loading...';
 
-                api.get().then(function (data) {
-                    options[0][name] = 'Please select...';
-                    options.push.apply(options, data.data.result);
-                }, function (data) {
-                    /** TODO: add error alert */
-                    options[0][name] = '(error loading options)';
-                });
-                ctrl.$setViewValue('');
-                ctrl.$render();
-            }
+            options.push(initialValue);
 
-            function link(scope, element, attrs, ctrl) {
-
-                if (attrs.remoteOptions) {
-                    var target = JSON.parse(attrs.remoteOptions),
-                        api = $lux.api(target);
-
-                    if (api && target.name)
-                        return fill(api, target, scope, attrs, ctrl);
+            api.get(null, params).then(function (data) {
+                if (attrs.multiple) {
+                    options.splice(0, 1);
+                } else {
+                    options[0].name = 'Please select...';
                 }
-                // TODO: message
-            }
-
-            return {
-                require: 'ngModel',
-                link: link
-            };
-        }])
-
-        .directive('selectOnClick', function () {
-            return {
-                restrict: 'A',
-                link: function (scope, element, attrs) {
-                    element.on('click', function () {
-                        if (!window.getSelection().toString()) {
-                            // Required for mobile Safari
-                            this.setSelectionRange(0, this.value.length);
-                        }
+                scope[scope.formModelName][attrs.name] = '';
+                angular.forEach(data.data.result, function (val) {
+                    var name;
+                    if (nameFromFormat) {
+                        name = formatString(nameOpts.source, val);
+                    } else {
+                        name = val[nameOpts.source];
+                    }
+                    options.push({
+                        id: val[id],
+                        name: name
                     });
-                }
-            };
-        });
+                });
+            }, function (data) {
+                /** TODO: add error alert */
+                options[0] = '(error loading options)';
+            });
+            scope[scope.formModelName][attrs.name] = '';
+        }
+
+        function link(scope, element, attrs) {
+
+            if (attrs.remoteOptions) {
+                var target = JSON.parse(attrs.remoteOptions),
+                    api = $lux.api(target);
+
+                if (api && target.name)
+                    return fill(api, target, scope, attrs);
+            }
+            // TODO: message
+        }
+
+        return {
+            link: link
+        };
+    }])
+
+    .directive('selectOnClick', function () {
+        return {
+            restrict: 'A',
+            link: function (scope, element, attrs) {
+                element.on('click', function () {
+                    if (!window.getSelection().toString()) {
+                        // Required for mobile Safari
+                        this.setSelectionRange(0, this.value.length);
+                    }
+                });
+            }
+        };
+    });
 
     function asMessage (level, message) {
         if (isString(message)) message = {text: message};
@@ -3328,13 +3387,17 @@ angular.module("grid/templates/modal.empty.tpl.html", []).run(["$templateCache",
             enableRowHeaderSelection: false,
             useExternalPagination: true,
             useExternalSorting: true,
+            useExternalFiltering: true,
             // Scrollbar display: 0 - never, 1 - always, 2 - when needed
             enableHorizontalScrollbar: 0,
             enableVerticalScrollbar: 0,
             //
             rowHeight: 30,
             minGridHeight: 250,
-            offsetGridHeight: 94,
+            offsetGridHeight: 102,
+            //
+            // request delay in ms
+            requestDelay: 100,
             //
             paginationOptions: {
                 sizes: [25, 50, 100]
@@ -3345,6 +3408,7 @@ angular.module("grid/templates/modal.empty.tpl.html", []).run(["$templateCache",
                 limit: 25,
                 offset: 0
             },
+            gridFilters: {},
             //
             showMenu: true,
             gridMenu: {
@@ -3385,7 +3449,7 @@ angular.module("grid/templates/modal.empty.tpl.html", []).run(["$templateCache",
 
                 // Font-awesome icon by default
                 boolean: function (column, col, uiGridConstants, gridDefaults) {
-                    column.cellTemplate = gridDefaults.wrapCell('<i ng-class="{{COL_FIELD == true}} ? \'fa fa-check-circle text-success\' : \'fa fa-times-circle text-danger\'"></i>');
+                    column.cellTemplate = gridDefaults.wrapCell('<i ng-class="{{COL_FIELD === true}} ? \'fa fa-check-circle text-success\' : \'fa fa-times-circle text-danger\'"></i>');
 
                     if (col.hasOwnProperty('filter')) {
                         column.filter = {
@@ -3417,18 +3481,25 @@ angular.module("grid/templates/modal.empty.tpl.html", []).run(["$templateCache",
                         name: col.name
                     };
 
+                    if (col.hasOwnProperty('hidden') && col.hidden)
+                        column.visible = false;
+
                     if (!col.hasOwnProperty('sortable'))
                         column.enableSorting = false;
 
                     if (!col.hasOwnProperty('filter'))
                         column.enableFiltering = false;
 
-                    if (column.field === metaFields.repr)
-                        column.cellTemplate = gridDefaults.wrapCell('<a ng-href="{{grid.appScope.objectUrl(row.entity)}}">{{COL_FIELD}}</a>');
-
                     var callback = gridDefaults.columns[col.type];
                     if (callback) callback(column, col, uiGridConstants, gridDefaults);
-                    columnDefs.push(column);
+
+                    if (column.field === metaFields.repr) {
+                        column.cellTemplate = gridDefaults.wrapCell('<a ng-href="{{grid.appScope.objectUrl(row.entity)}}">{{COL_FIELD}}</a>');
+                        // Set repr column as the first column
+                        columnDefs.splice(0, 0, column);
+                    }
+                    else
+                        columnDefs.push(column);
                 });
 
                 return columnDefs;
@@ -3436,7 +3507,13 @@ angular.module("grid/templates/modal.empty.tpl.html", []).run(["$templateCache",
 
             // Get specified page using params
             function getPage(scope, api) {
-                api.get({}, scope.gridState).success(function(resp) {
+                var query = angular.extend({}, scope.gridState);
+
+                // Add filter if available
+                if (scope.gridFilters)
+                    query = angular.extend(query, scope.gridFilters);
+
+                api.get({}, query).success(function(resp) {
                     scope.gridOptions.totalItems = resp.total;
                     scope.gridOptions.data = resp.result;
 
@@ -3576,9 +3653,14 @@ angular.module("grid/templates/modal.empty.tpl.html", []).run(["$templateCache",
                 scope.options = options;
                 scope.paginationOptions = gridDefaults.paginationOptions;
                 scope.gridState = gridDefaults.gridState;
+                scope.gridFilters = gridDefaults.gridFilters;
 
                 scope.objectUrl = function(entity) {
                     return $lux.window.location + '/' + entity[scope.gridOptions.metaFields.id];
+                };
+
+                scope.clearData = function() {
+                    scope.gridOptions.data = [];
                 };
 
                 scope.updateGridHeight = function () {
@@ -3587,7 +3669,7 @@ angular.module("grid/templates/modal.empty.tpl.html", []).run(["$templateCache",
                         totalPages = scope.gridApi.pagination.getTotalPages(),
                         currentPage = scope.gridState.page,
                         lastPage = scope.gridOptions.totalItems % scope.gridState.limit,
-                        gridHeight;
+                        gridHeight = 0;
 
                     // Calculate grid height
                     if (length > 0) {
@@ -3596,7 +3678,8 @@ angular.module("grid/templates/modal.empty.tpl.html", []).run(["$templateCache",
                         else
                             gridHeight = lastPage * gridDefaults.rowHeight + gridDefaults.offsetGridHeight;
                     }
-                    else
+
+                    if (gridHeight < gridDefaults.minGridHeight)
                         gridHeight = gridDefaults.minGridHeight;
 
                     element.css('height', gridHeight + 'px');
@@ -3615,36 +3698,62 @@ angular.module("grid/templates/modal.empty.tpl.html", []).run(["$templateCache",
                         rowHeight: gridDefaults.rowHeight,
                         onRegisterApi: function(gridApi) {
                             scope.gridApi = gridApi;
-                            scope.gridApi.pagination.on.paginationChanged(scope, function(pageNumber, pageSize) {
-                                scope.gridState.page = pageNumber;
-                                scope.gridState.limit = pageSize;
-                                scope.gridState.offset = pageSize*(pageNumber - 1);
 
-                                getPage(scope, api);
-                            });
+                            require(['lodash'], function(_) {
+                                //
+                                // Pagination
+                                scope.gridApi.pagination.on.paginationChanged(scope, _.debounce(function(pageNumber, pageSize) {
+                                    scope.gridState.page = pageNumber;
+                                    scope.gridState.limit = pageSize;
+                                    scope.gridState.offset = pageSize*(pageNumber - 1);
 
-                            scope.gridApi.core.on.sortChanged(scope, function(grid, sortColumns) {
-                                if( sortColumns.length === 0) {
-                                    delete scope.gridState.sortby;
                                     getPage(scope, api);
-                                } else {
-                                    // Build query string for sorting
-                                    angular.forEach(sortColumns, function(column) {
-                                        scope.gridState.sortby = column.name + ':' + column.sort.direction;
+                                }, gridDefaults.requestDelay));
+                                //
+                                // Sorting
+                                scope.gridApi.core.on.sortChanged(scope, _.debounce(function(grid, sortColumns) {
+                                    if( sortColumns.length === 0) {
+                                        delete scope.gridState.sortby;
+                                        getPage(scope, api);
+                                    } else {
+                                        // Build query string for sorting
+                                        angular.forEach(sortColumns, function(column) {
+                                            scope.gridState.sortby = column.name + ':' + column.sort.direction;
+                                        });
+
+                                        switch( sortColumns[0].sort.direction ) {
+                                            case uiGridConstants.ASC:
+                                                getPage(scope, api);
+                                                break;
+                                            case uiGridConstants.DESC:
+                                                getPage(scope, api);
+                                                break;
+                                            case undefined:
+                                                getPage(scope, api);
+                                                break;
+                                        }
+                                    }
+                                }, gridDefaults.requestDelay));
+                                //
+                                // Filtering
+                                scope.gridApi.core.on.filterChanged(scope, _.debounce(function() {
+                                    var grid = this.grid;
+                                    scope.gridFilters = {};
+
+                                    // Add filters
+                                    angular.forEach(grid.columns, function(value, _) {
+                                        // Clear data in order to refresh icons
+                                        if (value.filter.type === 'select')
+                                            scope.clearData();
+
+                                        if (value.filters[0].term)
+                                            scope.gridFilters[value.colDef.name] = value.filters[0].term;
                                     });
 
-                                    switch( sortColumns[0].sort.direction ) {
-                                        case uiGridConstants.ASC:
-                                            getPage(scope, api);
-                                            break;
-                                        case uiGridConstants.DESC:
-                                            getPage(scope, api);
-                                            break;
-                                        case undefined:
-                                            getPage(scope, api);
-                                            break;
-                                    }
-                                }
+                                    // Get results
+                                    getPage(scope, api);
+
+                                }, gridDefaults.requestDelay));
                             });
                         }
                     };
@@ -3980,17 +4089,18 @@ angular.module("users/messages.tpl.html", []).run(["$templateCache", function($t
         }
     };
 
-angular.module('templates-blog', ['blog/header.tpl.html', 'blog/pagination.tpl.html']);
+angular.module('templates-blog', ['blog/templates/header.tpl.html', 'blog/templates/pagination.tpl.html']);
 
-angular.module("blog/header.tpl.html", []).run(["$templateCache", function($templateCache) {
-  $templateCache.put("blog/header.tpl.html",
-    "<h2 data-ng-bind=\"page.title\"></h2>\n" +
+angular.module("blog/templates/header.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("blog/templates/header.tpl.html",
+    "<h1 data-ng-bind=\"page.title\"></h1>\n" +
     "<p class=\"small\">by {{page.authors}} on {{page.dateText}}</p>\n" +
-    "<p class=\"lead storyline\">{{page.description}}</p>");
+    "<p class=\"lead storyline\">{{page.description}}</p>\n" +
+    "");
 }]);
 
-angular.module("blog/pagination.tpl.html", []).run(["$templateCache", function($templateCache) {
-  $templateCache.put("blog/pagination.tpl.html",
+angular.module("blog/templates/pagination.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("blog/templates/pagination.tpl.html",
     "<ul class=\"media-list\">\n" +
     "    <li ng-repeat=\"post in items\" class=\"media\" data-ng-controller='BlogEntry'>\n" +
     "        <a href=\"{{post.html_url}}\" ng-attr-target=\"{{postTarget}}\">\n" +
@@ -4039,19 +4149,20 @@ angular.module("blog/pagination.tpl.html", []).run(["$templateCache", function($
         //
         .directive('blogPagination', function () {
             return {
-                templateUrl: "blog/pagination.tpl.html",
+                templateUrl: "blog/templates/pagination.tpl.html",
                 restrict: 'AE'
             };
         })
         //
         .directive('blogHeader', function () {
             return {
-                templateUrl: "blog/header.tpl.html",
+                templateUrl: "blog/templates/header.tpl.html",
                 restrict: 'AE'
             };
         })
         //
-        .directive('katex', ['$log', 'blogDefaults', function ($log, blogDefaults) {
+        // Compile latex makup with katex and mathjax fallback
+        .directive('latex', ['$log', 'blogDefaults', function ($log, blogDefaults) {
 
             function error (element, err) {
                 element.html("<div class='alert alert-danger' role='alert'>" + err + "</div>");

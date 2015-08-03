@@ -24,7 +24,7 @@
             "dest": "luxjs/grid/grid-template.js"
         },
         "blog": {
-            "src": "luxjs/blog/*.tpl.html",
+            "src": "luxjs/blog/templates/*.tpl.html",
             "dest": "luxjs/blog/blog-template.js"
         },
         "nav": {
