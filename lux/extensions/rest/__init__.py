@@ -13,6 +13,7 @@ just after the :mod:`lux.extensions.base`::
 
 '''
 from importlib import import_module
+from urllib.parse import urljoin
 
 from pulsar import ImproperlyConfigured
 from pulsar.utils.importer import module_attribute
@@ -37,6 +38,16 @@ def luxrest(url, **rest):
     return rest
 
 
+def website_url(request, location=None):
+    '''A website url
+    '''
+    url = request.config.get('WEB_SITE_URL')
+    url = url or request.absolute_uri('/')
+    if location:
+        url = urljoin(url, location)
+    return url
+
+
 class Extension(AuthBackend):
 
     _config = [
@@ -56,7 +67,7 @@ class Extension(AuthBackend):
         Parameter('SESSION_MESSAGES', True, 'Handle messages'),
         Parameter('SESSION_EXPIRY', 7*24*60*60,
                   'Expiry for a session/token in seconds.'),
-        Parameter('CHECK_USERNAME', lambda request, username: True,
+        Parameter('CHECK_USERNAME', check_username,
                   'Check if the username is valid'),
         Parameter('PERMISSION_LEVELS', {'read': 10,
                                         'create': 20,

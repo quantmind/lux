@@ -153,6 +153,11 @@ class RestMixin(ColumnPermissionsMixin):
     def meta(self, request):
         app = request.app
         columns = self.columns_with_permission(request, READ)
+        #
+        # Don't include columns which are excluded from meta
+        exclude = self.model._exclude
+        if exclude:
+            columns = [c for c in columns if c['name'] not in exclude]
 
         return {'id': self.model.id_field,
                 'repr': self.model.repr_field,

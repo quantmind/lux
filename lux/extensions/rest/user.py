@@ -3,14 +3,16 @@ from importlib import import_module
 from pulsar.utils.structures import AttributeDictionary
 from pulsar.utils.pep import to_bytes
 from pulsar.apps.wsgi import Json
+from pulsar.utils.slugify import slugify
 
-from lux.forms import Form
+from lux.forms import Form, ValidationError
 
 
 __all__ = ['AuthenticationError', 'MessageMixin',
            'UserMixin', 'SessionMixin',
            'normalise_email', 'PasswordMixin',
            'logout', 'User', 'Session',
+           'check_username',
            'NONE', 'CREATE', 'READ', 'UPDATE', 'DELETE', 'PERMISSION_LEVELS']
 
 
@@ -246,3 +248,12 @@ def normalise_email(email):
     email_name, domain_part = email.strip().rsplit('@', 1)
     email = '@'.join([email_name, domain_part.lower()])
     return email
+
+
+def check_username(request, username):
+    correct = slugify(username)
+    if correct != username:
+        raise ValidationError('Username may only contain lowercase '
+                              'alphanumeric characters or single hyphens, '
+                              'and cannot begin or end with a hyphen')
+    return username

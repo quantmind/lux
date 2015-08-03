@@ -101,25 +101,6 @@ class TestSqlite(test.AppTestCase):
         self.assertTrue(user.is_superuser())
         self.assertTrue(user.is_active())
 
-    def test_get(self):
-        request = yield from self.client.get('/')
-        response = request.response
-        self.assertEqual(response.status_code, 200)
-        user = request.cache.user
-        self.assertFalse(user.is_authenticated())
-
-    def test_login_fail(self):
-        data = {'username': 'jdshvsjhvcsd',
-                'password': 'dksjhvckjsahdvsf'}
-        request = yield from self.client.post('/authorizations',
-                                              content_type='application/json',
-                                              body=data)
-        self.assertValidationError(request.response, '',
-                                   'Invalid username or password')
-
-    def test_create_superuser_command_and_token(self):
-        return self._token()
-
     @test.green
     def test_permissions(self):
         '''Test permission models
@@ -146,6 +127,26 @@ class TestSqlite(test.AppTestCase):
                                         description='Can access the admin',
                                         policy={})
             group.permissions.append(permission)
+
+    # REST API
+    def test_get(self):
+        request = yield from self.client.get('/')
+        response = request.response
+        self.assertEqual(response.status_code, 200)
+        user = request.cache.user
+        self.assertFalse(user.is_authenticated())
+
+    def test_login_fail(self):
+        data = {'username': 'jdshvsjhvcsd',
+                'password': 'dksjhvckjsahdvsf'}
+        request = yield from self.client.post('/authorizations',
+                                              content_type='application/json',
+                                              body=data)
+        self.assertValidationError(request.response, '',
+                                   'Invalid username or password')
+
+    def test_create_superuser_command_and_token(self):
+        return self._token()
 
     def test_create_permission_errors(self):
         token = yield from self._token()
@@ -197,16 +198,12 @@ class TestSqlite(test.AppTestCase):
                                    '"action" must be defined')
 
     def test_signup(self):
-        request = yield from self.client.get('/signup')
-        self.assertEqual(request.response.status_code, 200)
-        data = {'username': 'whaaazaaa',
-                'password': 'annamo',
-                'password_repeat': 'annamo',
-                'email': 'whaaazaaa@whaaazaaa.com'}
-        request = yield from self.client.post('/authorizations/signup',
-                                              body=data,
-                                              content_type='application/json')
-        self.assertEqual(request.response.status_code, 201)
+        return self._signup()
+
+    def __test_user_crud(self):
+        user = yield from self._signup()
+        username = user['username']
+        self.assertNotEqual(username, user['id'])
 
     def test_group_validation(self):
         token = yield from self._token()
@@ -381,6 +378,7 @@ class TestSqlite(test.AppTestCase):
         self.assertTrue('subject' in data)
         self.assertEqual(data['subject'], "subject changed")
 
+    # INTERNALS
     def _create_objective(self, token, subject='My objective',
                           **data):
         data['subject'] = subject
@@ -426,3 +424,20 @@ class TestSqlite(test.AppTestCase):
         data = self.json(response)
         self.assertTrue('token' in data)
         return data['token']
+
+    def _signup(self):
+        request = yield from self.client.get('/signup')
+        self.assertEqual(request.response.status_code, 200)
+        username = test.randomname(prefix='u-')
+        password = test.randomname()
+        email = '%s@%s.com' % (username, test.randomname())
+
+        data = {'username': username,
+                'password': 'sadvsavdsfvdadf',
+                'password_repeat': 'sadvsavdsfvdadf',
+                'email': email}
+        request = yield from self.client.post('/authorizations/signup',
+                                              body=data,
+                                              content_type='application/json')
+        self.assertEqual(request.response.status_code, 201)
+        return self.json(request.response)
