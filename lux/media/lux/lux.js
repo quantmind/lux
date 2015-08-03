@@ -2197,6 +2197,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                     //  Pseudo-non-editables (containers)
                     'checklist': {element: 'div', editable: false, textBased: false},
                     'fieldset': {element: 'fieldset', editable: false, textBased: false},
+                    'div': {element: 'div', editable: false, textBased: false},
                     'form': {element: 'form', editable: false, textBased: false},
                     'radio': {element: 'div', editable: false, textBased: false},
                     //  Non-editables (mostly buttons)
@@ -2241,10 +2242,11 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                 createElement: function (driver, scope) {
                     var self = this,
                         thisField = scope.field,
-                        info = supported[thisField.type],
-
+                        tc = thisField.type.split('.'),
+                        info = supported[tc.splice(0, 1)[0]],
                         renderer;
 
+                    scope.extraClasses = tc.join(' ');
                     scope.info = info;
 
                     if (info) {
@@ -2253,9 +2255,8 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                             renderer = this[info.type];
 
                         // If no element type, use the `element`
-                        if (!renderer) {
+                        if (!renderer)
                             renderer = this[info.element];
-                        }
                     }
 
                     if (!renderer)
@@ -2350,6 +2351,12 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                         element = $($document[0].createElement(info.element));
                     if (field.label)
                         element.append($($document[0].createElement('legend')).html(field.label));
+                    return element;
+                },
+                //
+                div: function (scope) {
+                    var info = scope.info,
+                        element = $($document[0].createElement(info.element)).addClass(scope.extraClasses);
                     return element;
                 },
                 //

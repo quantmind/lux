@@ -176,7 +176,7 @@ class CharField(Field):
     '''A text :class:`Field` which introduces three
     optional parameter (attribute):
 
-    .. attribute:: max_length
+    .. attribute:: maxlength
 
         If provided, the text length will be validated accordingly.
 
