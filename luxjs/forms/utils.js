@@ -9,10 +9,10 @@ angular.module('lux.form.utils', ['lux.services'])
         function fill(api, target, scope, attrs) {
 
             var id = attrs.remoteOptionsId || 'id',
-                nameOpts = JSON.parse(attrs.remoteOptionsValue || {
-                        type: 'field',
-                        source: 'id'
-                    }),
+                nameOpts = attrs.remoteOptionsValue ? JSON.parse(attrs.remoteOptionsValue) : {
+                    type: 'field',
+                    source: 'id'
+                },
                 nameFromFormat = nameOpts.type === 'formatString',
                 initialValue = {},
                 params = JSON.parse(attrs.remoteOptionsParams || '{}'),
