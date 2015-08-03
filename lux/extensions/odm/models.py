@@ -30,6 +30,7 @@ class RestModel(rest.RestModel):
         It uses sqlalchemy model information about columns
         '''
         exclude = set(exclude or ())
+        exclude.update(self._exclude)
         columns = self.columns(request.app)
 
         fields = {}
