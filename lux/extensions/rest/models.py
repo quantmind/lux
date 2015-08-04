@@ -14,13 +14,14 @@ class RestColumn:
     '''
 
     def __init__(self, name, sortable=None, filter=None, type=None,
-                 displayName=None, field=None):
+                 displayName=None, field=None, hidden=None):
         self.name = name
         self.sortable = sortable
         self.filter = filter
         self.type = type
         self.displayName = displayName
         self.field = field
+        self.hidden = hidden
 
     @classmethod
     def make(cls, col):
@@ -76,7 +77,7 @@ class RestModel:
     def __init__(self, name, form=None, updateform=None, columns=None,
                  url=None, api_name=None, exclude=None,
                  api_url=None, html_url=None, id_field=None,
-                 repr_field=None):
+                 repr_field=None, hidden=None):
         assert name, 'model name not available'
         self.name = name
         self.form = form
@@ -89,6 +90,7 @@ class RestModel:
         self._html_url = html_url
         self._columns = columns
         self._exclude = frozenset(exclude or ())
+        self._hidden = frozenset(hidden or ())
 
     def __repr__(self):
         return self.name
@@ -157,6 +159,8 @@ class RestModel:
 
         for info in input_columns:
             col = RestColumn.make(info)
+            if col.name in self._hidden:
+                col.hidden = True
             columns.append(col.as_dict())
 
         return columns

@@ -69,7 +69,6 @@ class RestModel(rest.RestModel):
         for info in input_columns:
             col = RestColumn.make(info)
             if col.name not in all:
-                all.add(col.name)
                 dbcol = cols.pop(col.name, None)
                 # If a database column
                 if isinstance(dbcol, Column):
@@ -77,15 +76,20 @@ class RestModel(rest.RestModel):
                     info.update(col.as_dict(defaults=False))
                 else:
                     info = col.as_dict()
-
-                columns.append(info)
+                self._append_col(all, columns, info)
 
         for name, col in cols.items():
             if name not in all:
-                all.add(name)
-                columns.append(column_info(name, col))
+                self._append_col(all, columns, column_info(name, col))
 
         return columns
+
+    def _append_col(self, all, columns, info):
+        name = info['name']
+        all.add(name)
+        if name in self._hidden:
+            info['hidden'] = True
+        columns.append(info)
 
 
 def column_info(name, col):

@@ -1,6 +1,6 @@
 //      Lux Library - v0.2.0
 
-//      Compiled 2015-08-03.
+//      Compiled 2015-08-04.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -3319,7 +3319,33 @@ angular.module("message/message.tpl.html", []).run(["$templateCache", function($
         }]);
 
 
-angular.module('templates-grid', ['grid/templates/modal.delete.tpl.html', 'grid/templates/modal.empty.tpl.html']);
+angular.module('templates-grid', ['grid/templates/modal.columns.tpl.html', 'grid/templates/modal.delete.tpl.html', 'grid/templates/modal.empty.tpl.html']);
+
+angular.module("grid/templates/modal.columns.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("grid/templates/modal.columns.tpl.html",
+    "<div class=\"modal\" tabindex=\"-1\" role=\"dialog\" aria-hidden=\"true\">\n" +
+    "  <div class=\"modal-dialog\">\n" +
+    "    <div class=\"modal-content\">\n" +
+    "      <div class=\"modal-header\" >\n" +
+    "        <button type=\"button\" class=\"close\" aria-label=\"Close\" ng-click=\"$hide()\"><span aria-hidden=\"true\">&times;</span></button>\n" +
+    "        <h4 class=\"modal-title\"><i class=\"fa fa-eye\"></i> Change columns visibility</h4>\n" +
+    "      </div>\n" +
+    "      <div class=\"modal-body\">\n" +
+    "        <p class=\"modal-info\">{{infoMessage}}</p>\n" +
+    "        <ul class=\"modal-items list-inline\">\n" +
+    "          <li ng-repeat=\"col in columns\">\n" +
+    "            <a class=\"btn btn-default\" ng-class=\"activeClass(col)\" ng-click=\"toggleVisible(col)\">{{col.displayName}}</a>\n" +
+    "          </li>\n" +
+    "        </ul>\n" +
+    "      </div>\n" +
+    "      <div class=\"modal-footer\">\n" +
+    "        <button type=\"button\" class=\"btn btn-default\" ng-click=\"$hide()\">Close</button>\n" +
+    "      </div>\n" +
+    "    </div>\n" +
+    "  </div>\n" +
+    "</div>\n" +
+    "");
+}]);
 
 angular.module("grid/templates/modal.delete.tpl.html", []).run(["$templateCache", function($templateCache) {
   $templateCache.put("grid/templates/modal.delete.tpl.html",
@@ -3426,6 +3452,10 @@ angular.module("grid/templates/modal.empty.tpl.html", []).run(["$templateCache",
                 'delete': {
                     title: 'Delete',
                     icon: 'fa fa-trash'
+                },
+                'columnsVisibility': {
+                    title: 'Columns visibility',
+                    icon: 'fa fa-eye'
                 }
             },
             modal: {
@@ -3440,6 +3470,14 @@ angular.module("grid/templates/modal.empty.tpl.html", []).run(["$templateCache",
                         'success': 'Successfully deleted',
                         'error': 'Error while deleting ',
                         'empty': 'Please, select some',
+                    }
+                },
+                columnsVisibility: {
+                    templates: {
+                        'default': 'grid/templates/modal.columns.tpl.html',
+                    },
+                    messages: {
+                        'info': 'Click button with column name to toggle visibility'
                     }
                 }
             },
@@ -3544,8 +3582,7 @@ angular.module("grid/templates/modal.empty.tpl.html", []).run(["$templateCache",
                     stateName = window.location.href.split('/').pop(-1),
                     model = stateName.slice(0, -1),
                     modalScope = scope.$new(true),
-                    modal,
-                    title;
+                    modal, title, template;
 
                 scope.create = function($event) {
                     // if location path is available then we use ui-router
@@ -3558,8 +3595,7 @@ angular.module("grid/templates/modal.empty.tpl.html", []).run(["$templateCache",
                 scope.delete = function($event) {
                     modalScope.selected = scope.gridApi.selection.getSelectedRows();
 
-                    var template,
-                        firstField = gridOptions.columnDefs[0].field,
+                    var firstField = gridOptions.columnDefs[0].field,
                         subPath = scope.options.target.path || '';
 
                     // Modal settings
@@ -3610,6 +3646,31 @@ angular.module("grid/templates/modal.empty.tpl.html", []).run(["$templateCache",
                             $lux.messages.error(results + ' ' + stateName);
                         });
                     };
+                };
+
+                scope.columnsVisibility = function() {
+                    modalScope.columns = scope.gridOptions.columnDefs;
+                    modalScope.infoMessage = gridDefaults.modal.columnsVisibility.messages.info;
+
+                    modalScope.toggleVisible = function(column) {
+                        if (column.hasOwnProperty('visible'))
+                            column.visible = !column.visible;
+                        else
+                            column.visible = false;
+
+                        scope.gridApi.core.refresh();
+                    };
+
+                    modalScope.activeClass = function(column) {
+                        if (column.hasOwnProperty('visible')) {
+                            if (column.visible) return 'btn-success';
+                            return 'btn-danger';
+                        } else
+                            return 'btn-success';
+                    };
+                    //
+                    template = gridDefaults.modal.columnsVisibility.templates.default;
+                    modal = $modal({scope: modalScope, template: template, show: true});
                 };
 
                 forEach(gridDefaults.gridMenu, function(item, key) {

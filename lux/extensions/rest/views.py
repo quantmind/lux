@@ -151,6 +151,9 @@ class RestMixin(ColumnPermissionsMixin):
         return query
 
     def meta(self, request):
+        '''Return an object representing the metadata for the model
+        served by this router
+        '''
         app = request.app
         columns = self.columns_with_permission(request, READ)
         #
