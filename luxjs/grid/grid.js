@@ -56,6 +56,10 @@
                 'delete': {
                     title: 'Delete',
                     icon: 'fa fa-trash'
+                },
+                'columnsVisibility': {
+                    title: 'Columns visibility',
+                    icon: 'fa fa-eye'
                 }
             },
             modal: {
@@ -70,6 +74,14 @@
                         'success': 'Successfully deleted',
                         'error': 'Error while deleting ',
                         'empty': 'Please, select some',
+                    }
+                },
+                columnsVisibility: {
+                    templates: {
+                        'default': 'grid/templates/modal.columns.tpl.html',
+                    },
+                    messages: {
+                        'info': 'Click button with column name to toggle visibility'
                     }
                 }
             },
@@ -174,8 +186,7 @@
                     stateName = window.location.href.split('/').pop(-1),
                     model = stateName.slice(0, -1),
                     modalScope = scope.$new(true),
-                    modal,
-                    title;
+                    modal, title, template;
 
                 scope.create = function($event) {
                     // if location path is available then we use ui-router
@@ -188,8 +199,7 @@
                 scope.delete = function($event) {
                     modalScope.selected = scope.gridApi.selection.getSelectedRows();
 
-                    var template,
-                        firstField = gridOptions.columnDefs[0].field,
+                    var firstField = gridOptions.columnDefs[0].field,
                         subPath = scope.options.target.path || '';
 
                     // Modal settings
@@ -240,6 +250,31 @@
                             $lux.messages.error(results + ' ' + stateName);
                         });
                     };
+                };
+
+                scope.columnsVisibility = function() {
+                    modalScope.columns = scope.gridOptions.columnDefs;
+                    modalScope.infoMessage = gridDefaults.modal.columnsVisibility.messages.info;
+
+                    modalScope.toggleVisible = function(column) {
+                        if (column.hasOwnProperty('visible'))
+                            column.visible = !column.visible;
+                        else
+                            column.visible = false;
+
+                        scope.gridApi.core.refresh();
+                    };
+
+                    modalScope.activeClass = function(column) {
+                        if (column.hasOwnProperty('visible')) {
+                            if (column.visible) return 'btn-success';
+                            return 'btn-danger';
+                        } else
+                            return 'btn-success';
+                    };
+                    //
+                    template = gridDefaults.modal.columnsVisibility.templates.default;
+                    modal = $modal({scope: modalScope, template: template, show: true});
                 };
 
                 forEach(gridDefaults.gridMenu, function(item, key) {
