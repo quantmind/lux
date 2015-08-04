@@ -16,3 +16,6 @@ def add_css(all):
     css('.modal-items',
         max_height=px(vars.modal_height),
         overflow_y='auto')
+
+    css('.list-inline li',
+        margin_bottom=px(10))
