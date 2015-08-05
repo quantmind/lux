@@ -53,6 +53,8 @@ class RelationshipField(MultipleMixin, forms.Field):
         # Get a reference to the object data mapper
         odm = app.odm()
         model = odm[self.model.name]
+        # TODO: this works but it is not general
+        pkname = model.__mapper__.primary_key[0].key
         if not self.multiple:
             value = (value,)
         idcolumn = getattr(model, self.model.id_field)
@@ -62,7 +64,7 @@ class RelationshipField(MultipleMixin, forms.Field):
                 return list(all)
             else:
                 if all.count() == 1:
-                    return getattr(all.one(), self.model.id_field)
+                    return getattr(all.one(), pkname)
                 else:
                     raise forms.ValidationError(
                         self.validation_error.format(self.model))

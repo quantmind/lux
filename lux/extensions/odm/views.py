@@ -54,7 +54,7 @@ class RestRouter(rest.RestRouter):
             instance = model()
             session.add(instance)
             for name, value in data.items():
-                self.set_instance_value(instance, name, value)
+                setattr(instance, name, value)
         return instance
 
     def update_model(self, request, instance, data):
@@ -62,7 +62,7 @@ class RestRouter(rest.RestRouter):
         with odm.begin() as session:
             session.add(instance)
             for name, value in data.items():
-                self.set_instance_value(instance, name, value)
+                setattr(instance, name, value)
         return instance
 
     def delete_model(self, request, instance):
@@ -82,9 +82,6 @@ class RestRouter(rest.RestRouter):
         exclude = self.columns_without_permission(request, rest.READ)
         exclude = self.column_fields(exclude, 'name')
         return self.model.tojson(request, data, exclude=exclude)
-
-    def set_instance_value(self, instance, name, value):
-        setattr(instance, name, value)
 
     def meta(self, request):
         meta = super().meta(request)
