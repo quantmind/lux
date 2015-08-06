@@ -43,6 +43,7 @@ angular.module('lux.form.utils', ['lux.services'])
                         id: val[id],
                         name: name
                     });
+
                 });
             }, function (data) {
                 /** TODO: add error alert */

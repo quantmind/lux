@@ -26,7 +26,17 @@
             labelSpan: 2,
             showLabels: true,
             novalidate: true,
-            selectWidgets: ['default', 'ui-select'],
+            //
+            select: {
+                widget: {
+                    default: 'ui-select',
+                    list: ['standard', 'ui-select']
+                },
+                theme: {
+                    default: 'select2',
+                    list: ['select2', 'bootstrap']
+                }
+            },
             //
             formErrorClass: 'form-error',
             FORMKEY: 'm__form'
@@ -70,36 +80,6 @@
             });
         }])
         //
-        // Select2 filter
-        .filter('propsFilter', function() {
-            return function(items, props) {
-                var out = [];
-
-                if (angular.isArray(items)) {
-                    items.forEach(function(item) {
-                        var itemMatches = false;
-
-                        var keys = Object.keys(props);
-                        for (var i = 0; i < keys.length; i++) {
-                            var prop = keys[i];
-                            var text = props[prop].toLowerCase();
-                            if (item[prop].toString().toLowerCase().indexOf(text) !== -1) {
-                                itemMatches = true;
-                                break;
-                            }
-                        }
-
-                        if (itemMatches)
-                            out.push(item);
-                    });
-                } else {
-                  // Let the output be the input untouched
-                  out = items;
-                }
-                return out;
-            };
-        })
-        //
         // The formService is a reusable component for redering form fields
         .service('standardForm', ['$log', '$http', '$document', '$templateCache', 'formDefaults',
                                   function (log, $http, $document, $templateCache, formDefaults) {
@@ -125,7 +105,7 @@
                     'color': {element: 'input', type: 'color', editable: true, textBased: false},
                     'file': {element: 'input', type: 'file', editable: true, textBased: false},
                     'range': {element: 'input', type: 'range', editable: true, textBased: false},
-                    'select': {element: 'select', editable: true, textBased: false, widget: 'ui-select'},
+                    'select': {element: 'select', editable: true, textBased: false, widget: formDefaults.select.widget.default},
                     //  Pseudo-non-editables (containers)
                     'checklist': {element: 'div', editable: false, textBased: false},
                     'fieldset': {element: 'fieldset', editable: false, textBased: false},
@@ -419,7 +399,7 @@
                         select.attr('multiple', true);
 
                     // replace old select with ui-select element
-                    if (info.hasOwnProperty('widget') && info.widget == 'ui-select')
+                    if (info.hasOwnProperty('widget') && info.widget === 'ui-select')
                         this.uiSelect(scope, element, field);
 
                     return this.onChange(scope, element);
@@ -428,14 +408,19 @@
                 // UI-Select wrapper for select element
                 uiSelect: function(scope, element, field) {
                     // TODO:
-                    // optionaly apply UI-SELECT
-                    // set default skins BOOTSTRAP + SELECT2
+                    // optionaly apply UI-SELECT                --OK
+                    // set default skins BOOTSTRAP + SELECT2    --OK
                     // apply filter
+                    // showing error
+                    // correctly post data
                     var uiSelect = $($document[0].createElement('ui-select'))
+                                    .attr('id', field.id)
+                                    .attr('name', field.name)
                                     .attr('ng-model', scope.formModelName + '["' + field.name + '"]')
-                                    .attr('theme', 'select2')
-                                    .attr('ng-disabled', 'disabled')
-                                    .attr('reset-search-input', false),
+                                    .attr('theme', formDefaults.select.theme.default)
+                                    //.attr('ng-disabled', 'disabled')
+                                    //.attr('reset-search-input', false)
+                                    .attr('ng-change', 'fireFieldChange("' + field.name + '")'),
                                     //.attr('data-remote-options', field['data-remote-options']);
                                     //.attr('id', field.id)
                                     //.attr('data-remote-options-id', field['data-remote-options-id'])
@@ -447,18 +432,27 @@
                         choices = $($document[0].createElement('ui-select-choices'))
                                     .append(choices_inner);
 
+                    //console.log(field);
+                    console.log('ok', field);
+
                     if (field.hasOwnProperty('data-remote-options')) {
                         // Load remote options
-                        uiSelect.attr('data-remote-options', field['data-remote-options']);
-                        match.html('{{$select.selected["' + field['data-remote-options-value'] + '"]}}');
-                        choices.attr('repeat', field['data-ng-options']);
-                        choices_inner.html('{{item.' + field['data-remote-options-value'] + '}}');
+                        uiSelect.attr('data-remote-options', field['data-remote-options'])
+                                .attr('data-remote-options-id', field['data-remote-options-id'])
+                                .attr('data-remote-options-value', field['data-remote-options-value']);
+                        match.html('{{$select.selected.name}}');
+                        choices.attr('repeat', field['data-ng-options-ui-select'] + ' | filter: $select.search');
+                        choices_inner.html('{{item.name}}');
                     } else {
                         // Load local options
                         scope.options = field.options;
+                        match.html('{{$select.selected}}');
                         choices.attr('repeat', 'item in options');
                         choices_inner.html('{{item}}');
                     }
+
+                    console.log(scope);
+                    console.log(scope[scope.formModelName]);
 
                     uiSelect.append(match);
                     uiSelect.append(choices);
