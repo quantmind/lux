@@ -109,7 +109,7 @@ class Layout(Fieldset):
     type = 'form'
     form_class = None
     default_element = Fieldset
-    all = False
+    all = True
 
     def __init__(self, form, *children, **attrs):
         super().__init__(*children, **attrs)
