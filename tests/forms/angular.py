@@ -7,7 +7,8 @@ class TestAForm1(forms.Form):
     name = forms.CharField()
 
 
-Layout1 = Layout(TestAForm1)
+Layout1 = Layout(TestAForm1,
+                 Fieldset(all=True))
 
 Layout2 = Layout(TestAForm1,
                  Fieldset(all=True),
@@ -20,7 +21,8 @@ class PageForm(forms.Form):
     body = forms.CharField(type='textarea', required=False)
 
 
-PageForm1 = Layout(PageForm)
+PageForm1 = Layout(PageForm,
+                   Fieldset(all=True))
 
 
 class FormAngularLayoutTests(test.TestCase):
