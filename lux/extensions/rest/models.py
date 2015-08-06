@@ -3,7 +3,6 @@ import logging
 
 from pulsar.utils.html import nicename
 
-
 logger = logging.getLogger('lux.extensions.rest')
 
 __all__ = ['RestModel', 'RestColumn']
@@ -13,13 +12,16 @@ class RestColumn:
     '''A class for specifying attributes of a REST column/field
     for a model
     '''
+
     def __init__(self, name, sortable=None, filter=None, type=None,
-                 displayName=None):
+                 displayName=None, field=None, hidden=None):
         self.name = name
         self.sortable = sortable
         self.filter = filter
-        self.type = None
-        self.displayName = None
+        self.type = type
+        self.displayName = displayName
+        self.field = field
+        self.hidden = hidden
 
     @classmethod
     def make(cls, col):
@@ -28,11 +30,12 @@ class RestColumn:
         assert isinstance(col, str), 'Not a string'
         return cls(col)
 
-    def __repr__(self):     # pragma    nocover
+    def __repr__(self):  # pragma    nocover
         return self.name
+
     __str__ = __repr__
 
-    def as_dict(self, defaults=False):
+    def as_dict(self, defaults=True):
         return dict(self._as_dict(defaults))
 
     def _as_dict(self, defaults):
@@ -40,7 +43,9 @@ class RestColumn:
             if v is None and defaults:
                 if k == 'displayName':
                     v = nicename(self.name)
-                elif k == type:
+                elif k == 'field':
+                    v = self.name
+                elif k == 'type':
                     v = 'string'
             if v is not None:
                 yield k, v
@@ -66,14 +71,15 @@ class RestModel:
 
         Form class for this REST model in editing mode
     '''
-    remote_options_str = 'item in {options} track by $index'
+    #remote_options_str = 'item in {options} track by $index'
     #remote_options_str = 'item.{id} as item.{repr} for item in {options}'
+    remote_options_str = 'item.id as item.name for item in {options}'
     _loaded = False
 
     def __init__(self, name, form=None, updateform=None, columns=None,
                  url=None, api_name=None, exclude=None,
                  api_url=None, html_url=None, id_field=None,
-                 repr_field=None):
+                 repr_field=None, hidden=None):
         assert name, 'model name not available'
         self.name = name
         self.form = form
@@ -86,9 +92,11 @@ class RestModel:
         self._html_url = html_url
         self._columns = columns
         self._exclude = frozenset(exclude or ())
+        self._hidden = frozenset(hidden or ())
 
     def __repr__(self):
         return self.name
+
     __str__ = __repr__
 
     def tojson(self, request, object, exclude=None, decoder=None):
@@ -104,16 +112,18 @@ class RestModel:
         '''
         raise NotImplementedError
 
-    def columns(self, app):
+    def columns(self, request):
         '''Return a list fields describing the entries for a given model
         instance'''
         if not self._loaded:
             self._loaded = True
-            self._columns = self._load_columns(app)
+            self._columns = self._load_columns(request.app)
         return self._columns
 
-    def columnsMapping(self, app):
-        return dict(((c['name'], c) for c in self.columns(app)))
+    def columnsMapping(self, request):
+        '''Returns a dictionary of names/columns objects
+        '''
+        return dict(((c['name'], c) for c in self.columns(request)))
 
     def get_target(self, request, **extra_data):
         '''Get a target for a form
@@ -137,9 +147,11 @@ class RestModel:
             target = self.get_target(request)
             yield 'data-remote-options', json.dumps(target)
             yield 'data-remote-options-id', self.id_field
-            yield 'data-remote-options-value', self.repr_field
+            yield 'data-remote-options-value', json.dumps({
+                'type': 'field',
+                'source': self.repr_field})
             yield 'data-ng-options', self.remote_options_str.format(
-                id=self.id_field, repr=self.repr_field, options=self.api_name)
+                options=self.api_name)
 
     def _load_columns(self, app):
         '''List of column definitions
@@ -149,8 +161,8 @@ class RestModel:
 
         for info in input_columns:
             col = RestColumn.make(info)
-            info = col.as_dict(True)
-            info['field'] = info['name']
-            columns.append(info)
+            if col.name in self._hidden:
+                col.hidden = True
+            columns.append(col.as_dict())
 
         return columns

@@ -6,7 +6,8 @@ from lux import Html
 from lux.utils.crypt import get_random_string
 
 
-__all__ = ['Fieldset', 'Submit', 'Layout', 'Row', 'as_angular_dict']
+__all__ = ['Fieldset', 'Submit', 'Layout', 'Row', 'Col',
+           'as_angular_dict']
 
 
 def angular_fields(form_class, fields, missings):
@@ -96,7 +97,11 @@ class Fieldset(AngularFormElement):
 
 
 class Row(Fieldset):
-    type = 'div'
+    type = 'div.row'
+
+
+class Col(Fieldset):
+    type = 'div.col-sm-12'
 
 
 class Layout(Fieldset):

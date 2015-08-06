@@ -1,14 +1,15 @@
-angular.module('templates-blog', ['blog/header.tpl.html', 'blog/pagination.tpl.html']);
+angular.module('templates-blog', ['blog/templates/header.tpl.html', 'blog/templates/pagination.tpl.html']);
 
-angular.module("blog/header.tpl.html", []).run(["$templateCache", function($templateCache) {
-  $templateCache.put("blog/header.tpl.html",
-    "<h2 data-ng-bind=\"page.title\"></h2>\n" +
+angular.module("blog/templates/header.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("blog/templates/header.tpl.html",
+    "<h1 data-ng-bind=\"page.title\"></h1>\n" +
     "<p class=\"small\">by {{page.authors}} on {{page.dateText}}</p>\n" +
-    "<p class=\"lead storyline\">{{page.description}}</p>");
+    "<p class=\"lead storyline\">{{page.description}}</p>\n" +
+    "");
 }]);
 
-angular.module("blog/pagination.tpl.html", []).run(["$templateCache", function($templateCache) {
-  $templateCache.put("blog/pagination.tpl.html",
+angular.module("blog/templates/pagination.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("blog/templates/pagination.tpl.html",
     "<ul class=\"media-list\">\n" +
     "    <li ng-repeat=\"post in items\" class=\"media\" data-ng-controller='BlogEntry'>\n" +
     "        <a href=\"{{post.html_url}}\" ng-attr-target=\"{{postTarget}}\">\n" +

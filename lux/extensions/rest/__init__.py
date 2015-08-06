@@ -13,6 +13,7 @@ just after the :mod:`lux.extensions.base`::
 
 '''
 from importlib import import_module
+from urllib.parse import urljoin
 
 from pulsar import ImproperlyConfigured
 from pulsar.utils.importer import module_attribute
@@ -21,12 +22,13 @@ from pulsar.utils.httpurl import is_absolute_uri
 from lux import Parameter
 from lux.core.wrappers import wsgi_request
 
-from .user import *     # noqa
+from .user import *             # noqa
 from .auth import AuthBackend
-from .models import *   # noqa
-from .pagination import *   # noqa
+from .models import *           # noqa
+from .pagination import *       # noqa
 from .client import ApiClient
-from .views import *    # noqa
+from .permissions import *      # noqa
+from .views import *            # noqa
 
 
 def luxrest(url, **rest):
@@ -34,6 +36,16 @@ def luxrest(url, **rest):
     '''
     rest['url'] = url
     return rest
+
+
+def website_url(request, location=None):
+    '''A website url
+    '''
+    url = request.config.get('WEB_SITE_URL')
+    url = url or request.absolute_uri('/')
+    if location:
+        url = urljoin(url, location)
+    return url
 
 
 class Extension(AuthBackend):
@@ -55,7 +67,7 @@ class Extension(AuthBackend):
         Parameter('SESSION_MESSAGES', True, 'Handle messages'),
         Parameter('SESSION_EXPIRY', 7*24*60*60,
                   'Expiry for a session/token in seconds.'),
-        Parameter('CHECK_USERNAME', lambda request, username: True,
+        Parameter('CHECK_USERNAME', check_username,
                   'Check if the username is valid'),
         Parameter('PERMISSION_LEVELS', {'read': 10,
                                         'create': 20,

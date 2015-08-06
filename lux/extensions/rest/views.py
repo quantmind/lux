@@ -4,7 +4,7 @@ import lux
 from lux import route
 from lux.forms import Form
 
-from pulsar import Http404, MethodNotAllowed, BadRequest, PermissionDenied
+from pulsar import Http404, MethodNotAllowed, BadRequest
 from pulsar.apps.wsgi import Json
 
 from .forms import CreateUserForm, ChangePasswordForm
@@ -12,13 +12,13 @@ from .user import AuthenticationError, logout, READ
 from .models import RestModel
 from .html import (Login, LoginPost, Logout, SignUp, ProcessLoginMixin,
                    ForgotPassword, ComingSoon)
+from .permissions import ColumnPermissionsMixin
 
 
 __all__ = ['RestRoot', 'RestRouter', 'RestMixin', 'Authorization',
            #
            'Login', 'LoginPost', 'Logout', 'SignUp', 'ProcessLoginMixin',
            'ForgotPassword', 'ComingSoon']
-
 
 REST_CONTENT_TYPES = ['application/json']
 DIRECTIONS = ('asc', 'desc')
@@ -47,10 +47,11 @@ class RestRoot(lux.Router):
         return Json(self.apis(request)).http_response(request)
 
 
-class RestMixin:
+class RestMixin(ColumnPermissionsMixin):
     model = None
     '''Instance of a :class:`~lux.extensions.rest.RestModel`
     '''
+
     def __init__(self, *args, **kwargs):
         if self.model is None and args:
             self.model, args = args[0], args[1:]
@@ -100,25 +101,22 @@ class RestMixin:
                             text=None, sortby=None, **params):
         '''Handle a response for a list of models
         '''
-        backend = request.cache.auth_backend
         model = self.model
         app = request.app
-        if backend.has_permission(request, model.name, READ):
-            limit = self.limit(request, limit)
-            offset = self.offset(request, offset)
-            text = self.search_text(request, text)
-            sortby = request.url_data.get('sortby', sortby)
-            params.update(request.url_data)
-            with model.session(request) as session:
-                query = self.query(request, session)
-                query = self.filter(request, query, text, params)
-                total = query.count()
-                query = self.sortby(request, query, sortby)
-                data = query.limit(limit).offset(offset).all()
-                data = self.serialise(request, data, **params)
-            data = app.pagination(request, data, total, limit, offset)
-            return Json(data).http_response(request)
-        raise PermissionDenied
+        limit = self.limit(request, limit)
+        offset = self.offset(request, offset)
+        text = self.search_text(request, text)
+        sortby = request.url_data.get('sortby', sortby)
+        params.update(request.url_data)
+        with model.session(request) as session:
+            query = self.query(request, session)
+            query = self.filter(request, query, text, params)
+            total = query.count()
+            query = self.sortby(request, query, sortby)
+            data = query.limit(limit).offset(offset).all()
+            data = self.serialise(request, data, **params)
+        data = app.pagination(request, data, total, limit, offset)
+        return Json(data).http_response(request)
 
     def query(self, request, session):
         '''Return a Query object
@@ -153,8 +151,16 @@ class RestMixin:
         return query
 
     def meta(self, request):
+        '''Return an object representing the metadata for the model
+        served by this router
+        '''
         app = request.app
-        columns = self.model.columns(app)
+        columns = self.columns_with_permission(request, READ)
+        #
+        # Don't include columns which are excluded from meta
+        exclude = self.model._exclude
+        if exclude:
+            columns = [c for c in columns if c['name'] not in exclude]
 
         return {'id': self.model.id_field,
                 'repr': self.model.repr_field,

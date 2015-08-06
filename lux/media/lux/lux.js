@@ -1,6 +1,6 @@
 //      Lux Library - v0.2.0
 
-//      Compiled 2015-07-28.
+//      Compiled 2015-08-04.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -245,12 +245,17 @@ function(angular, root) {
     //  =======================
     //
     //  Load a style sheet link
+    loadedCss = {},
+    //
     loadCss = lux.loadCss = function (filename) {
-        var fileref = document.createElement("link");
-        fileref.setAttribute("rel", "stylesheet");
-        fileref.setAttribute("type", "text/css");
-        fileref.setAttribute("href", filename);
-        document.getElementsByTagName("head")[0].appendChild(fileref);
+        if (!loadedCss[filename]) {
+            loadedCss[filename] = true; 
+            var fileref = document.createElement("link");
+            fileref.setAttribute("rel", "stylesheet");
+            fileref.setAttribute("type", "text/css");
+            fileref.setAttribute("href", filename);
+            document.getElementsByTagName("head")[0].appendChild(fileref);
+        }
     },
     //
     //
@@ -336,6 +341,18 @@ function(angular, root) {
                 options[name] = value;
         });
         return options;
+    },
+
+    /**
+    * Formats a string (using simple substitution)
+    * @param   {String}    str         e.g. "Hello {name}!"
+    * @param   {Object}    values      e.g. {name: "King George III"}
+    * @returns {String}                e.g. "Hello King George III!"
+    */
+    formatString = function (str, values) {
+        return str.replace(/{(\w+)}/g, function (match, placeholder) {
+            return values.hasOwnProperty(placeholder) ? values[placeholder] : '';
+        });
     };
 
     lux.messages.no_api = function (url) {
@@ -2180,6 +2197,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                     //  Pseudo-non-editables (containers)
                     'checklist': {element: 'div', editable: false, textBased: false},
                     'fieldset': {element: 'fieldset', editable: false, textBased: false},
+                    'div': {element: 'div', editable: false, textBased: false},
                     'form': {element: 'form', editable: false, textBased: false},
                     'radio': {element: 'div', editable: false, textBased: false},
                     //  Non-editables (mostly buttons)
@@ -2224,10 +2242,11 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                 createElement: function (driver, scope) {
                     var self = this,
                         thisField = scope.field,
-                        info = supported[thisField.type],
-
+                        tc = thisField.type.split('.'),
+                        info = supported[tc.splice(0, 1)[0]],
                         renderer;
 
+                    scope.extraClasses = tc.join(' ');
                     scope.info = info;
 
                     if (info) {
@@ -2236,9 +2255,8 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                             renderer = this[info.type];
 
                         // If no element type, use the `element`
-                        if (!renderer) {
+                        if (!renderer)
                             renderer = this[info.element];
-                        }
                     }
 
                     if (!renderer)
@@ -2336,6 +2354,12 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                     return element;
                 },
                 //
+                div: function (scope) {
+                    var info = scope.info,
+                        element = $($document[0].createElement(info.element)).addClass(scope.extraClasses);
+                    return element;
+                },
+                //
                 radio: function (scope) {
                     this.fillDefaults(scope);
 
@@ -2411,7 +2435,10 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                 // Create a select element
                 select: function (scope) {
                     var field = scope.field,
-                        options = [];
+                        groups = {},
+                        groupList = [],
+                        options = [],
+                        group, grp;
 
                     forEach(field.options, function (opt) {
                         if (typeof(opt) === 'string') {
@@ -2419,7 +2446,16 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                         } else if (isArray(opt)) {
                             opt = {'value': opt[0], 'repr': opt[1] || opt[0]};
                         }
-                        options.push(opt);
+                        if (opt.group) {
+                            group = groups[opt.group];
+                            if (!group) {
+                                group = {name: opt.group, options: []};
+                                groups[opt.group] = group;
+                                groupList.push(group);
+                            }
+                            group.options.push(opt);
+                        } else
+                            options.push(opt);
                         // Set the default value if not available
                         if (!field.value) field.value = opt.value;
                     });
@@ -2428,11 +2464,26 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                         element = this.input(scope),
                         select = this._select(info.element, element);
 
-                    forEach(options, function (opt) {
-                        opt = $($document[0].createElement('option'))
-                                .attr('value', opt.value).html(opt.repr || opt.value);
-                        select.append(opt);
-                    });
+                    if (groupList.length) {
+                        if (options.length)
+                            groupList.push({name: 'other', options: options});
+
+                        forEach(groupList, function (group) {
+                            grp = $($document[0].createElement('optgroup'))
+                                    .attr('label', group.name);
+                            select.append(grp);
+                            forEach(group.options, function (opt) {
+                                opt = $($document[0].createElement('option'))
+                                        .attr('value', opt.value).html(opt.repr || opt.value);
+                                grp.append(opt);
+                            });
+                        });
+                    } else
+                        forEach(options, function (opt) {
+                            opt = $($document[0].createElement('option'))
+                                    .attr('value', opt.value).html(opt.repr || opt.value);
+                            select.append(opt);
+                        });
 
                     if (field.multiple)
                         select.attr('multiple', true);
@@ -2994,69 +3045,89 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
             });
     };
 
-    /**
-     * Created by Reupen on 02/06/2015.
-     */
+/**
+ * Created by Reupen on 02/06/2015.
+ */
 
-    angular.module('lux.form.utils', ['lux.services'])
+angular.module('lux.form.utils', ['lux.services'])
 
-        .directive('remoteOptions', ['$lux', function ($lux) {
+    .directive('remoteOptions', ['$lux', function ($lux) {
 
-            function fill(api, target, scope, attrs, ctrl) {
+        function fill(api, target, scope, attrs) {
 
-                var id = attrs.remoteOptionsId || 'id',
-                    name = attrs.remoteOptionsValue || 'id',
-                    initialValue = {},
-                    options = [];
+            var id = attrs.remoteOptionsId || 'id',
+                nameOpts = attrs.remoteOptionsValue ? JSON.parse(attrs.remoteOptionsValue) : {
+                    type: 'field',
+                    source: 'id'
+                },
+                nameFromFormat = nameOpts.type === 'formatString',
+                initialValue = {},
+                params = JSON.parse(attrs.remoteOptionsParams || '{}'),
+                options = [];
 
-                scope[target.name] = options;
-                initialValue[id] = '';
-                initialValue[name] = 'Loading...';
+            scope[target.name] = options;
 
-                options.push(initialValue);
+            initialValue.id = '';
+            initialValue.name = 'Loading...';
 
-                api.get().then(function (data) {
-                    options[0][name] = 'Please select...';
-                    options.push.apply(options, data.data.result);
-                }, function (data) {
-                    /** TODO: add error alert */
-                    options[0][name] = '(error loading options)';
-                });
-                ctrl.$setViewValue('');
-                ctrl.$render();
-            }
+            options.push(initialValue);
 
-            function link(scope, element, attrs, ctrl) {
-
-                if (attrs.remoteOptions) {
-                    var target = JSON.parse(attrs.remoteOptions),
-                        api = $lux.api(target);
-
-                    if (api && target.name)
-                        return fill(api, target, scope, attrs, ctrl);
+            api.get(null, params).then(function (data) {
+                if (attrs.multiple) {
+                    options.splice(0, 1);
+                } else {
+                    options[0].name = 'Please select...';
                 }
-                // TODO: message
-            }
-
-            return {
-                require: 'ngModel',
-                link: link
-            };
-        }])
-
-        .directive('selectOnClick', function () {
-            return {
-                restrict: 'A',
-                link: function (scope, element, attrs) {
-                    element.on('click', function () {
-                        if (!window.getSelection().toString()) {
-                            // Required for mobile Safari
-                            this.setSelectionRange(0, this.value.length);
-                        }
+                scope[scope.formModelName][attrs.name] = '';
+                angular.forEach(data.data.result, function (val) {
+                    var name;
+                    if (nameFromFormat) {
+                        name = formatString(nameOpts.source, val);
+                    } else {
+                        name = val[nameOpts.source];
+                    }
+                    options.push({
+                        id: val[id],
+                        name: name
                     });
-                }
-            };
-        });
+                });
+            }, function (data) {
+                /** TODO: add error alert */
+                options[0] = '(error loading options)';
+            });
+            scope[scope.formModelName][attrs.name] = '';
+        }
+
+        function link(scope, element, attrs) {
+
+            if (attrs.remoteOptions) {
+                var target = JSON.parse(attrs.remoteOptions),
+                    api = $lux.api(target);
+
+                if (api && target.name)
+                    return fill(api, target, scope, attrs);
+            }
+            // TODO: message
+        }
+
+        return {
+            link: link
+        };
+    }])
+
+    .directive('selectOnClick', function () {
+        return {
+            restrict: 'A',
+            link: function (scope, element, attrs) {
+                element.on('click', function () {
+                    if (!window.getSelection().toString()) {
+                        // Required for mobile Safari
+                        this.setSelectionRange(0, this.value.length);
+                    }
+                });
+            }
+        };
+    });
 
     function asMessage (level, message) {
         if (isString(message)) message = {text: message};
@@ -3248,7 +3319,33 @@ angular.module("message/message.tpl.html", []).run(["$templateCache", function($
         }]);
 
 
-angular.module('templates-grid', ['grid/templates/modal.delete.tpl.html', 'grid/templates/modal.empty.tpl.html']);
+angular.module('templates-grid', ['grid/templates/modal.columns.tpl.html', 'grid/templates/modal.delete.tpl.html', 'grid/templates/modal.empty.tpl.html']);
+
+angular.module("grid/templates/modal.columns.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("grid/templates/modal.columns.tpl.html",
+    "<div class=\"modal\" tabindex=\"-1\" role=\"dialog\" aria-hidden=\"true\">\n" +
+    "  <div class=\"modal-dialog\">\n" +
+    "    <div class=\"modal-content\">\n" +
+    "      <div class=\"modal-header\" >\n" +
+    "        <button type=\"button\" class=\"close\" aria-label=\"Close\" ng-click=\"$hide()\"><span aria-hidden=\"true\">&times;</span></button>\n" +
+    "        <h4 class=\"modal-title\"><i class=\"fa fa-eye\"></i> Change columns visibility</h4>\n" +
+    "      </div>\n" +
+    "      <div class=\"modal-body\">\n" +
+    "        <p class=\"modal-info\">{{infoMessage}}</p>\n" +
+    "        <ul class=\"modal-items list-inline\">\n" +
+    "          <li ng-repeat=\"col in columns\">\n" +
+    "            <a class=\"btn btn-default\" ng-class=\"activeClass(col)\" ng-click=\"toggleVisible(col)\">{{col.displayName}}</a>\n" +
+    "          </li>\n" +
+    "        </ul>\n" +
+    "      </div>\n" +
+    "      <div class=\"modal-footer\">\n" +
+    "        <button type=\"button\" class=\"btn btn-default\" ng-click=\"$hide()\">Close</button>\n" +
+    "      </div>\n" +
+    "    </div>\n" +
+    "  </div>\n" +
+    "</div>\n" +
+    "");
+}]);
 
 angular.module("grid/templates/modal.delete.tpl.html", []).run(["$templateCache", function($templateCache) {
   $templateCache.put("grid/templates/modal.delete.tpl.html",
@@ -3315,9 +3412,37 @@ angular.module("grid/templates/modal.empty.tpl.html", []).run(["$templateCache",
     }
 
     angular.module('lux.grid', ['lux.services', 'templates-grid', 'ngTouch', 'ui.grid',
-                                'ui.grid.pagination', 'ui.grid.selection'])
+                                'ui.grid.pagination', 'ui.grid.selection', 'ui.grid.autoResize'])
         //
         .constant('gridDefaults', {
+            //
+            enableFiltering: true,
+            enableRowHeaderSelection: false,
+            useExternalPagination: true,
+            useExternalSorting: true,
+            useExternalFiltering: true,
+            // Scrollbar display: 0 - never, 1 - always, 2 - when needed
+            enableHorizontalScrollbar: 0,
+            enableVerticalScrollbar: 0,
+            //
+            rowHeight: 30,
+            minGridHeight: 250,
+            offsetGridHeight: 102,
+            //
+            // request delay in ms
+            requestDelay: 100,
+            //
+            paginationOptions: {
+                sizes: [25, 50, 100]
+            },
+            //
+            gridState: {
+                page: 1,
+                limit: 25,
+                offset: 0
+            },
+            gridFilters: {},
+            //
             showMenu: true,
             gridMenu: {
                 'create': {
@@ -3327,6 +3452,10 @@ angular.module("grid/templates/modal.empty.tpl.html", []).run(["$templateCache",
                 'delete': {
                     title: 'Delete',
                     icon: 'fa fa-trash'
+                },
+                'columnsVisibility': {
+                    title: 'Columns visibility',
+                    icon: 'fa fa-eye'
                 }
             },
             modal: {
@@ -3341,6 +3470,14 @@ angular.module("grid/templates/modal.empty.tpl.html", []).run(["$templateCache",
                         'success': 'Successfully deleted',
                         'error': 'Error while deleting ',
                         'empty': 'Please, select some',
+                    }
+                },
+                columnsVisibility: {
+                    templates: {
+                        'default': 'grid/templates/modal.columns.tpl.html',
+                    },
+                    messages: {
+                        'info': 'Click button with column name to toggle visibility'
                     }
                 }
             },
@@ -3357,7 +3494,7 @@ angular.module("grid/templates/modal.empty.tpl.html", []).run(["$templateCache",
 
                 // Font-awesome icon by default
                 boolean: function (column, col, uiGridConstants, gridDefaults) {
-                    column.cellTemplate = gridDefaults.wrapCell('<i ng-class="{{COL_FIELD == true}} ? \'fa fa-check-circle text-success\' : \'fa fa-times-circle text-danger\'"></i>');
+                    column.cellTemplate = gridDefaults.wrapCell('<i ng-class="{{COL_FIELD === true}} ? \'fa fa-check-circle text-success\' : \'fa fa-times-circle text-danger\'"></i>');
 
                     if (col.hasOwnProperty('filter')) {
                         column.filter = {
@@ -3374,20 +3511,23 @@ angular.module("grid/templates/modal.empty.tpl.html", []).run(["$templateCache",
             }
         })
         //
-        .service('GridService', ['$lux', '$location', '$compile', '$modal', 'uiGridConstants', 'gridDefaults',
-            function($lux, $location, $compile, $modal, uiGridConstants, gridDefaults) {
+        .service('GridService', ['$lux', '$q', '$location', '$compile', '$modal', 'uiGridConstants', 'gridDefaults',
+            function($lux, $q, $location, $compile, $modal, uiGridConstants, gridDefaults) {
 
-            function parseColumns(columns) {
+            function parseColumns(columns, metaFields) {
                 var columnDefs = [],
                     column;
 
                 angular.forEach(columns, function(col) {
                     column = {
-                        field: col.field,
+                        field: col.name,
                         displayName: col.displayName,
                         type: getColumnType(col.type),
                         name: col.name
                     };
+
+                    if (col.hasOwnProperty('hidden') && col.hidden)
+                        column.visible = false;
 
                     if (!col.hasOwnProperty('sortable'))
                         column.enableSorting = false;
@@ -3395,12 +3535,16 @@ angular.module("grid/templates/modal.empty.tpl.html", []).run(["$templateCache",
                     if (!col.hasOwnProperty('filter'))
                         column.enableFiltering = false;
 
-                    if (column.field === 'id')
-                        column.cellTemplate = gridDefaults.wrapCell('<a ng-href="{{grid.appScope.objectUrl(COL_FIELD)}}">{{COL_FIELD}}</a>');
-
                     var callback = gridDefaults.columns[col.type];
                     if (callback) callback(column, col, uiGridConstants, gridDefaults);
-                    columnDefs.push(column);
+
+                    if (column.field === metaFields.repr) {
+                        column.cellTemplate = gridDefaults.wrapCell('<a ng-href="{{grid.appScope.objectUrl(row.entity)}}">{{COL_FIELD}}</a>');
+                        // Set repr column as the first column
+                        columnDefs.splice(0, 0, column);
+                    }
+                    else
+                        columnDefs.push(column);
                 });
 
                 return columnDefs;
@@ -3408,9 +3552,18 @@ angular.module("grid/templates/modal.empty.tpl.html", []).run(["$templateCache",
 
             // Get specified page using params
             function getPage(scope, api) {
-                api.get({}, scope.gridState).success(function(resp) {
+                var query = angular.extend({}, scope.gridState);
+
+                // Add filter if available
+                if (scope.gridFilters)
+                    query = angular.extend(query, scope.gridFilters);
+
+                api.get({}, query).success(function(resp) {
                     scope.gridOptions.totalItems = resp.total;
                     scope.gridOptions.data = resp.result;
+
+                    // Update grid height depending on number of the rows
+                    scope.updateGridHeight();
                 });
             }
 
@@ -3429,8 +3582,7 @@ angular.module("grid/templates/modal.empty.tpl.html", []).run(["$templateCache",
                     stateName = window.location.href.split('/').pop(-1),
                     model = stateName.slice(0, -1),
                     modalScope = scope.$new(true),
-                    modal,
-                    title;
+                    modal, title, template;
 
                 scope.create = function($event) {
                     // if location path is available then we use ui-router
@@ -3443,23 +3595,17 @@ angular.module("grid/templates/modal.empty.tpl.html", []).run(["$templateCache",
                 scope.delete = function($event) {
                     modalScope.selected = scope.gridApi.selection.getSelectedRows();
 
-                    var template,
-                        firstField = gridOptions.columnDefs[0].field,
-                        itemMessage = modalScope.selected.length + ' ' + stateName + '.',
+                    var firstField = gridOptions.columnDefs[0].field,
                         subPath = scope.options.target.path || '';
 
                     // Modal settings
                     angular.extend(modalScope, {
                         'stateName': stateName,
-                        'repr_field': scope.gridOptions.reprField || firstField,
+                        'repr_field': scope.gridOptions.metaFields.repr || firstField,
                         'infoMessage': gridDefaults.modal.delete.messages.info + ' ' + stateName + ':',
                         'dangerMessage': gridDefaults.modal.delete.messages.danger,
                         'emptyMessage': gridDefaults.modal.delete.messages.empty + ' ' + stateName + '.',
                     });
-
-                    var pkForItem = function(item) {
-                        return item.hasOwnProperty('id') ? item.id : item[firstField];
-                    };
 
                     if (modalScope.selected.length > 0)
                         template = gridDefaults.modal.delete.templates.delete;
@@ -3469,26 +3615,62 @@ angular.module("grid/templates/modal.empty.tpl.html", []).run(["$templateCache",
                     modal = $modal({scope: modalScope, template: template, show: true});
 
                     modalScope.ok = function() {
-                        var defer = $lux.q.defer();
-                        forEach(modalScope.selected, function(item, _) {
-                            api.delete({path: subPath + '/' + pkForItem(item)})
+
+                        function deleteItem(item) {
+                            var defer = $lux.q.defer(),
+                                pk = item[scope.gridOptions.metaFields.id];
+
+                            api.delete({path: subPath + '/' + pk})
                                 .success(function(resp) {
-                                    defer.resolve(gridDefaults.modal.delete.messages.success + ' ' + itemMessage);
+                                    defer.resolve(gridDefaults.modal.delete.messages.success);
                                 })
                                 .error(function(error) {
-                                    defer.reject(gridDefaults.modal.delete.messages.error + ' ' + itemMessage);
+                                    defer.reject(gridDefaults.modal.delete.messages.error);
                                 });
+
+                            return defer.promise;
+                        }
+
+                        var promises = [];
+
+                        forEach(modalScope.selected, function(item, _) {
+                            promises.push(deleteItem(item));
                         });
 
-                        defer.promise.then(function(message) {
+                        $q.all(promises).then(function(results) {
                             getPage(scope, api);
                             modal.hide();
-                            $lux.messages.success(message);
-                        }, function(message) {
+                            $lux.messages.success(results[0] + ' ' + results.length + ' ' + stateName);
+                        }, function(results) {
                             modal.hide();
-                            $lux.messages.error(message);
+                            $lux.messages.error(results + ' ' + stateName);
                         });
                     };
+                };
+
+                scope.columnsVisibility = function() {
+                    modalScope.columns = scope.gridOptions.columnDefs;
+                    modalScope.infoMessage = gridDefaults.modal.columnsVisibility.messages.info;
+
+                    modalScope.toggleVisible = function(column) {
+                        if (column.hasOwnProperty('visible'))
+                            column.visible = !column.visible;
+                        else
+                            column.visible = false;
+
+                        scope.gridApi.core.refresh();
+                    };
+
+                    modalScope.activeClass = function(column) {
+                        if (column.hasOwnProperty('visible')) {
+                            if (column.visible) return 'btn-success';
+                            return 'btn-danger';
+                        } else
+                            return 'btn-success';
+                    };
+                    //
+                    template = gridDefaults.modal.columnsVisibility.templates.default;
+                    modal = $modal({scope: modalScope, template: template, show: true});
                 };
 
                 forEach(gridDefaults.gridMenu, function(item, key) {
@@ -3518,75 +3700,128 @@ angular.module("grid/templates/modal.empty.tpl.html", []).run(["$templateCache",
 
                 api.get({path: sub_path + '/metadata'}).success(function(resp) {
                     scope.gridState.limit = resp['default-limit'];
-                    scope.gridOptions.columnDefs = parseColumns(resp.columns);
-                    if (resp.repr)
-                        scope.gridOptions.reprField = resp.repr;
+                    scope.gridOptions.metaFields = {
+                        id: resp.id,
+                        repr: resp.repr
+                    };
+                    scope.gridOptions.columnDefs = parseColumns(resp.columns, scope.gridOptions.metaFields);
 
                     api.get({path: sub_path}, {limit: scope.gridState.limit}).success(function(resp) {
                         scope.gridOptions.totalItems = resp.total;
                         scope.gridOptions.data = resp.result;
+
+                        // Update grid height
+                        scope.updateGridHeight();
                     });
                 });
             };
 
+            // Builds grid options
             this.buildOptions = function(scope, options) {
                 scope.options = options;
+                scope.paginationOptions = gridDefaults.paginationOptions;
+                scope.gridState = gridDefaults.gridState;
+                scope.gridFilters = gridDefaults.gridFilters;
 
-                scope.paginationOptions = {
-                    sizes: [25, 50, 100]
+                scope.objectUrl = function(entity) {
+                    return $lux.window.location + '/' + entity[scope.gridOptions.metaFields.id];
                 };
 
-                scope.gridState = {
-                    page: 1,
-                    limit: 25,
-                    offset: 0
+                scope.clearData = function() {
+                    scope.gridOptions.data = [];
                 };
 
-                scope.objectUrl = function(objectId) {
-                    return $lux.window.location + '/' + objectId;
+                scope.updateGridHeight = function () {
+                    var length = scope.gridOptions.totalItems,
+                        element = angular.element(document.getElementsByClassName('grid')[0]),
+                        totalPages = scope.gridApi.pagination.getTotalPages(),
+                        currentPage = scope.gridState.page,
+                        lastPage = scope.gridOptions.totalItems % scope.gridState.limit,
+                        gridHeight = 0;
+
+                    // Calculate grid height
+                    if (length > 0) {
+                        if (currentPage < totalPages || lastPage === 0)
+                            gridHeight = scope.gridState.limit * gridDefaults.rowHeight + gridDefaults.offsetGridHeight;
+                        else
+                            gridHeight = lastPage * gridDefaults.rowHeight + gridDefaults.offsetGridHeight;
+                    }
+
+                    if (gridHeight < gridDefaults.minGridHeight)
+                        gridHeight = gridDefaults.minGridHeight;
+
+                    element.css('height', gridHeight + 'px');
                 };
 
                 var api = $lux.api(scope.options.target),
                     gridOptions = {
                         paginationPageSizes: scope.paginationOptions.sizes,
                         paginationPageSize: scope.gridState.limit,
-                        enableFiltering: true,
-                        enableRowHeaderSelection: false,
-                        useExternalPagination: true,
-                        useExternalSorting: true,
-                        rowHeight: 30,
+                        enableFiltering: gridDefaults.enableFiltering,
+                        enableRowHeaderSelection: gridDefaults.enableRowHeaderSelection,
+                        useExternalPagination: gridDefaults.useExternalPagination,
+                        useExternalSorting: gridDefaults.useExternalSorting,
+                        enableHorizontalScrollbar: gridDefaults.enableHorizontalScrollbar,
+                        enableVerticalScrollbar: gridDefaults.enableVerticalScrollbar,
+                        rowHeight: gridDefaults.rowHeight,
                         onRegisterApi: function(gridApi) {
                             scope.gridApi = gridApi;
-                            scope.gridApi.pagination.on.paginationChanged(scope, function(pageNumber, pageSize) {
-                                scope.gridState.page = pageNumber;
-                                scope.gridState.limit = pageSize;
-                                scope.gridState.offset = pageSize*(pageNumber - 1);
 
-                                getPage(scope, api);
-                            });
+                            require(['lodash'], function(_) {
+                                //
+                                // Pagination
+                                scope.gridApi.pagination.on.paginationChanged(scope, _.debounce(function(pageNumber, pageSize) {
+                                    scope.gridState.page = pageNumber;
+                                    scope.gridState.limit = pageSize;
+                                    scope.gridState.offset = pageSize*(pageNumber - 1);
 
-                            scope.gridApi.core.on.sortChanged(scope, function(grid, sortColumns) {
-                                if( sortColumns.length === 0) {
-                                    delete scope.gridState.sortby;
                                     getPage(scope, api);
-                                } else {
-                                    // Build query string for sorting
-                                    angular.forEach(sortColumns, function(column) {
-                                        scope.gridState.sortby = column.name + ':' + column.sort.direction;
+                                }, gridDefaults.requestDelay));
+                                //
+                                // Sorting
+                                scope.gridApi.core.on.sortChanged(scope, _.debounce(function(grid, sortColumns) {
+                                    if( sortColumns.length === 0) {
+                                        delete scope.gridState.sortby;
+                                        getPage(scope, api);
+                                    } else {
+                                        // Build query string for sorting
+                                        angular.forEach(sortColumns, function(column) {
+                                            scope.gridState.sortby = column.name + ':' + column.sort.direction;
+                                        });
+
+                                        switch( sortColumns[0].sort.direction ) {
+                                            case uiGridConstants.ASC:
+                                                getPage(scope, api);
+                                                break;
+                                            case uiGridConstants.DESC:
+                                                getPage(scope, api);
+                                                break;
+                                            case undefined:
+                                                getPage(scope, api);
+                                                break;
+                                        }
+                                    }
+                                }, gridDefaults.requestDelay));
+                                //
+                                // Filtering
+                                scope.gridApi.core.on.filterChanged(scope, _.debounce(function() {
+                                    var grid = this.grid;
+                                    scope.gridFilters = {};
+
+                                    // Add filters
+                                    angular.forEach(grid.columns, function(value, _) {
+                                        // Clear data in order to refresh icons
+                                        if (value.filter.type === 'select')
+                                            scope.clearData();
+
+                                        if (value.filters[0].term)
+                                            scope.gridFilters[value.colDef.name] = value.filters[0].term;
                                     });
 
-                                    switch( sortColumns[0].sort.direction ) {
-                                        case uiGridConstants.ASC:
-                                            getPage(scope, api);
-                                            break;
-                                        case uiGridConstants.DESC:
-                                            getPage(scope, api);
-                                            break;
-                                        case undefined:
-                                            getPage(scope, api);
-                                            break;
-                                    }
-                                }
+                                    // Get results
+                                    getPage(scope, api);
+
+                                }, gridDefaults.requestDelay));
                             });
                         }
                     };
@@ -3621,7 +3856,7 @@ angular.module("grid/templates/modal.empty.tpl.html", []).run(["$templateCache",
                             GridService.getInitialData(scope);
                         }
 
-                        var grid = '<div class="table-uigrid" ui-grid="gridOptions" ui-grid-pagination ui-grid-selection></div>';
+                        var grid = '<div ui-if="gridOptions.data.length>0" class="grid" ui-grid="gridOptions" ui-grid-pagination ui-grid-selection ui-grid-auto-resize></div>';
                         element.append($compile(grid)(scope));
                     },
                 },
@@ -3922,17 +4157,18 @@ angular.module("users/messages.tpl.html", []).run(["$templateCache", function($t
         }
     };
 
-angular.module('templates-blog', ['blog/header.tpl.html', 'blog/pagination.tpl.html']);
+angular.module('templates-blog', ['blog/templates/header.tpl.html', 'blog/templates/pagination.tpl.html']);
 
-angular.module("blog/header.tpl.html", []).run(["$templateCache", function($templateCache) {
-  $templateCache.put("blog/header.tpl.html",
-    "<h2 data-ng-bind=\"page.title\"></h2>\n" +
+angular.module("blog/templates/header.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("blog/templates/header.tpl.html",
+    "<h1 data-ng-bind=\"page.title\"></h1>\n" +
     "<p class=\"small\">by {{page.authors}} on {{page.dateText}}</p>\n" +
-    "<p class=\"lead storyline\">{{page.description}}</p>");
+    "<p class=\"lead storyline\">{{page.description}}</p>\n" +
+    "");
 }]);
 
-angular.module("blog/pagination.tpl.html", []).run(["$templateCache", function($templateCache) {
-  $templateCache.put("blog/pagination.tpl.html",
+angular.module("blog/templates/pagination.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("blog/templates/pagination.tpl.html",
     "<ul class=\"media-list\">\n" +
     "    <li ng-repeat=\"post in items\" class=\"media\" data-ng-controller='BlogEntry'>\n" +
     "        <a href=\"{{post.html_url}}\" ng-attr-target=\"{{postTarget}}\">\n" +
@@ -3964,7 +4200,8 @@ angular.module("blog/pagination.tpl.html", []).run(["$templateCache", function($
     angular.module('lux.blog', ['lux.page', 'templates-blog', 'highlight'])
         .value('blogDefaults', {
             centerMath: true,
-            fallback: true
+            fallback: true,
+            katexCss: 'https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.3.0/katex.min.css'
         })
         //
         .controller('BlogEntry', ['$scope', 'pageService', '$lux', function ($scope, pageService, $lux) {
@@ -3980,22 +4217,43 @@ angular.module("blog/pagination.tpl.html", []).run(["$templateCache", function($
         //
         .directive('blogPagination', function () {
             return {
-                templateUrl: "blog/pagination.tpl.html",
+                templateUrl: "blog/templates/pagination.tpl.html",
                 restrict: 'AE'
             };
         })
         //
         .directive('blogHeader', function () {
             return {
-                templateUrl: "blog/header.tpl.html",
+                templateUrl: "blog/templates/header.tpl.html",
                 restrict: 'AE'
             };
         })
         //
-        .directive('katex', ['blogDefaults', function (blogDefaults) {
+        // Compile latex makup with katex and mathjax fallback
+        .directive('latex', ['$log', 'blogDefaults', function ($log, blogDefaults) {
 
             function error (element, err) {
                 element.html("<div class='alert alert-danger' role='alert'>" + err + "</div>");
+            }
+
+            function configMaxJax (mathjax) {
+                mathjax.Hub.Register.MessageHook("TeX Jax - parse error", function (message) {
+                    var a = 1;
+                });
+                mathjax.Hub.Register.MessageHook("Math Processing Error", function (message) {
+                    var a = 1;
+                });
+            }
+
+            //
+            //  Render the text using MathJax
+            //
+            //  Check: http://docs.mathjax.org/en/latest/typeset.html
+            function render_mathjax (mathjax, text, element) {
+                if (text.substring(0, 15) === '\\displaystyle {')
+                    text = text.substring(15, text.length-1);
+                element.append(text);
+                mathjax.Hub.Queue(["Typeset", mathjax.Hub, element[0]]);
             }
 
             function render(katex, text, element, fallback) {
@@ -4006,10 +4264,7 @@ angular.module("blog/pagination.tpl.html", []).run(["$templateCache", function($
                     if (fallback) {
                         require(['mathjax'], function (mathjax) {
                             try {
-                                if (text.substring(0, 15) === '\\displaystyle {')
-                                    text = text.substring(15, text.length-1);
-                                element.append(text);
-                                mathjax.Hub.Queue(["Typeset", mathjax.Hub, element[0]]);
+                                render_mathjax(mathjax, text, element);
                             } catch (e) {
                                 error(element, err += ' - ' + e);
                             }
@@ -4032,10 +4287,13 @@ angular.module("blog/pagination.tpl.html", []).run(["$templateCache", function($
                         text = '\\displaystyle {' + text + '}';
                         element.addClass('katex-outer');
                     }
-                    if (typeof(katex) === 'undefined')
+                    if (typeof(katex) === 'undefined') {
+                        // Load Katex css file first
+                        loadCss(blogDefaults.katexCss);
                         require(['katex'], function (katex) {
                             render(katex, text, element, fallback);
                         });
+                    }
                     else
                         render(katex, text, element);
                 }
@@ -4112,9 +4370,16 @@ angular.module("nav/templates/link.tpl.html", []).run(["$templateCache", functio
   $templateCache.put("nav/templates/link.tpl.html",
     "<a ng-if=\"link.title\" ng-href=\"{{link.href}}\" title=\"{{link.title}}\" ng-click=\"clickLink($event, link)\"\n" +
     "ng-attr-target=\"{{link.target}}\" ng-class=\"link.klass\" bs-tooltip=\"tooltip\">\n" +
-    "<i ng-if=\"link.icon\" class=\"{{link.icon}}\"></i> {{link.label || link.name}}</a>\n" +
-    "<a ng-if=\"!link.title\" ng-href=\"{{link.href}}\" ng-attr-target=\"{{link.target}}\">\n" +
-    "<i ng-if=\"link.icon\" class=\"{{link.icon}}\"></i> {{link.label || link.name}}</a>");
+    "<span ng-if=\"link.left\" class=\"left-divider\"></span>\n" +
+    "<i ng-if=\"link.icon\" class=\"{{link.icon}}\"></i>\n" +
+    "<span>{{link.label || link.name}}</span>\n" +
+    "<span ng-if=\"link.right\" class=\"right-divider\"></span></a>\n" +
+    "<a ng-if=\"!link.title\" ng-href=\"{{link.href}}\" title=\"{{link.title}}\" ng-click=\"clickLink($event, link)\"\n" +
+    "ng-attr-target=\"{{link.target}}\" ng-class=\"link.klass\" bs-tooltip=\"tooltip\">\n" +
+    "<span ng-if=\"link.left\" class=\"left-divider\"></span>\n" +
+    "<i ng-if=\"link.icon\" class=\"{{link.icon}}\"></i>\n" +
+    "<span>{{link.label || link.name}}</span>\n" +
+    "<span ng-if=\"link.right\" class=\"right-divider\"></span></a>");
 }]);
 
 angular.module("nav/templates/navbar.tpl.html", []).run(["$templateCache", function($templateCache) {
@@ -4209,28 +4474,32 @@ angular.module("nav/templates/navbar2.tpl.html", []).run(["$templateCache", func
 
 angular.module("nav/templates/sidebar.tpl.html", []).run(["$templateCache", function($templateCache) {
   $templateCache.put("nav/templates/sidebar.tpl.html",
-    "<navbar></navbar>\n" +
-    "<aside ng-attr-id=\"{{sidebar.id}}\" class=\"main-sidebar\" ng-class=\"{'sidebar-fixed':sidebar.fixed}\">\n" +
-    "    <section ng-if=\"sidebar.sections\" class=\"sidebar\">\n" +
-    "        <div ng-if=\"user\" class=\"nav-panel\">\n" +
-    "            <div ng-if=\"user.avatar\" class=\"pull-left image\">\n" +
-    "                <img ng-src=\"{{user.avatar}}\" alt=\"User Image\" />\n" +
+    "<navbar class=\"sidebar-navbar\"></navbar>\n" +
+    "<aside ng-repeat=\"sidebar in sidebars\" class=\"sidebar sidebar-{{ sidebar.position }}\"\n" +
+    "ng-class=\"{'sidebar-fixed':sidebar.fixed}\" bs-collapse>\n" +
+    "    <div class=\"nav-panel\">\n" +
+    "        <div ng-if=\"sidebar.user\">\n" +
+    "            <div ng-if=\"sidebar.user.avatar_url\" class=\"pull-{{ sidebar.position }} image\">\n" +
+    "                <img ng-src=\"{{sidebar.user.avatar_url}}\" alt=\"User Image\" />\n" +
     "            </div>\n" +
     "            <div class=\"pull-left info\">\n" +
-    "                <p>SIGNED IN AS</p>\n" +
-    "                <a href=\"#\">{{user.name}}</a>\n" +
+    "                <p>{{ sidebar.infoText }}</p>\n" +
+    "                <a href=\"#\">{{sidebar.user.name}}</a>\n" +
     "            </div>\n" +
     "        </div>\n" +
-    "        <ul class=\"sidebar-menu\">\n" +
-    "            <li ng-if=\"section.name\" ng-repeat-start=\"section in sidebar.sections\" class=\"header\">\n" +
-    "                {{section.name}}\n" +
-    "            </li>\n" +
-    "            <li ng-repeat-end ng-repeat=\"link in section.items\" class=\"treeview\"\n" +
-    "            ng-class=\"{active:activeLink(link)}\" ng-include=\"'subnav'\"></li>\n" +
-    "        </ul>\n" +
-    "    </section>\n" +
+    "    </div>\n" +
+    "    <ul class=\"sidebar-menu\">\n" +
+    "        <li ng-if=\"section.name\" ng-repeat-start=\"section in sidebar.sections\" class=\"header\">\n" +
+    "            {{section.name}}\n" +
+    "        </li>\n" +
+    "        <li ng-repeat-end ng-repeat=\"link in section.items\" class=\"treeview\"\n" +
+    "        ng-class=\"{active:activeLink(link)}\" ng-include=\"'subnav'\"></li>\n" +
+    "    </ul>\n" +
     "</aside>\n" +
-    "\n" +
+    "<div class=\"sidebar-page\" ng-click=\"closeSideBar()\" full-page>\n" +
+    "    <div class=\"content-wrapper\"></div>\n" +
+    "    <div class=\"overlay\"></div>\n" +
+    "</div>\n" +
     "\n" +
     "<script type=\"text/ng-template\" id=\"subnav\">\n" +
     "    <a ng-href=\"{{link.href}}\" ng-attr-title=\"{{link.title}}\" ng-click=\"menuCollapse($event)\">\n" +
@@ -4239,10 +4508,10 @@ angular.module("nav/templates/sidebar.tpl.html", []).run(["$templateCache", func
     "        <i ng-if=\"link.subitems\" class=\"fa fa-angle-left pull-right\"></i>\n" +
     "    </a>\n" +
     "    <ul class=\"treeview-menu\" ng-class=\"link.class\" ng-if=\"link.subitems\">\n" +
-    "        <li ng-repeat=\"link in link.subitems\" ng-class=\"{active:activeLink(link)}\" ng-include=\"'subnav'\"></li>\n" +
+    "        <li ng-repeat=\"link in link.subitems\" ng-class=\"{active:activeLink(link)}\" ng-include=\"'subnav'\">\n" +
+    "        </li>\n" +
     "    </ul>\n" +
-    "</script>\n" +
-    "");
+    "</script>");
 }]);
 
 
@@ -4356,6 +4625,23 @@ angular.module("nav/templates/sidebar.tpl.html", []).run(["$templateCache", func
                         navbar.collapse = 'collapse';
                 }
                 return c !== navbar.collapse;
+            };
+        }])
+        //
+        .directive('fullPage', ['$window', function ($window) {
+
+            return {
+                restrict: 'AE',
+
+                link: function (scope, element, attrs) {
+                    element.css('min-height', $window.innerHeight+'px');
+
+                    scope.$watch(function(){
+                        return $window.innerHeight;
+                    }, function(value) {
+                        element.css('min-height', value+'px');
+                    });
+                }
             };
         }])
         //
@@ -4475,33 +4761,53 @@ angular.module("nav/templates/sidebar.tpl.html", []).run(["$templateCache", func
     //          }]
     //      };
     //
-    var sidebarDefaults = {
-        collapse: true,
-        position: 'left',
-        toggle: 'Menu',
-        url: lux.context.url || '/',
-    };
-
     angular.module('lux.sidebar', ['lux.nav'])
         //
-        .service('sidebarService', ['linkService', 'navService', function (linkService, navService) {
+        .value('sidebarDefaults', {
+            collapse: true,
+            toggle: 'Menu',
+            url: lux.context.url || '/',
+            infoText: 'Signed in as'
+        })
+        //
+        .value('sidebarTemplate', "nav/templates/sidebar.tpl.html")
+        //
+        .service('sidebarService', ['linkService', 'navService', 'sidebarDefaults',
+            function (linkService, navService, sidebarDefaults) {
+
+            function initSideBar (element, sidebar, position) {
+                sidebar = angular.extend({}, sidebarDefaults, sidebar);
+                sidebar.position = position;
+                if (!sidebar.collapse)
+                    element.addClass('sidebar-open-' + position);
+                return sidebar;
+            }
 
             this.initScope = function (scope, opts, element) {
 
-                var sidebar = angular.extend({}, sidebarDefaults, scope.sidebar, lux.getOptions(opts)),
-                    body = lux.querySelector(document, 'body');
+                var sidebar = angular.extend({}, scope.sidebar, lux.getOptions(opts)),
+                    sidebars = [],
+                    left = sidebar.left,
+                    right = sidebar.right;
 
-                sidebar.container = sidebar.fluid ? 'container-fluid' : 'container';
-                body.addClass(sidebar.position + '-sidebar skin');
+                if (left) sidebars.push(initSideBar(element, left, 'left'));
+                if (right) sidebars.push(initSideBar(element, right, 'right'));
+                if (!sidebars.length) sidebars.push(initSideBar(element, sidebar, 'left'));
+
+                scope.container = sidebar.fluid ? 'container-fluid' : 'container';
 
                 // Add link service functionality
                 linkService.initScope(scope);
 
-                if (!sidebar.collapse)
-                    element.addClass('sidebar-open-' + sidebar.position);
+                // Close sidebars
+                scope.closeSideBar = function () {
+                    element.removeClass('sidebar-open-left sidebar-open-right');
+                };
 
-                scope.toggleSidebar = function() {
-                    element.toggleClass('sidebar-open-' + sidebar.position);
+                // Toggle the sidebar
+                scope.toggleSidebar = function(e, position) {
+                    e.preventDefault();
+                    element.toggleClass('sidebar-open-' + position);
                 };
 
                 scope.menuCollapse = function($event) {
@@ -4519,38 +4825,34 @@ angular.module("nav/templates/sidebar.tpl.html", []).run(["$templateCache", func
                         submenu.addClass('active');
                     }
                 };
-
-                scope.sidebar = sidebar;
-                scope.navbar = initNavbar(sidebar);
-
-                if (!sidebar.sections && scope.navigation)
-                    sidebar.sections = scope.navigation;
-                return sidebar;
+                scope.navbar = initNavbar(sidebar.navbar, sidebars);
+                return sidebars;
             };
 
             // Initialise top navigation bar
-            function initNavbar (sidebar) {
-                var navbar = sidebar.navbar;
-
+            function initNavbar (navbar, sidebars) {
                 // No navbar, add an object
                 if (!navbar)
-                    sidebar.navbar = navbar = {};
+                    navbar = {};
                 navbar.fixed = true;
                 navbar.top = true;
                 //
                 // Add toggle to the navbar
-                if (sidebar.toggle) {
-                    if (!navbar.itemsLeft) navbar.itemsLeft = [];
+                forEach(sidebars, function (sidebar) {
+                    if (sidebar.toggle) {
+                        if (!navbar.itemsLeft) navbar.itemsLeft = [];
 
-                    navbar.itemsLeft.splice(0, 0, {
-                        href: '#',
-                        title: sidebar.toggle,
-                        name: sidebar.toggle,
-                        klass: 'sidebar-toggle',
-                        icon: 'fa fa-bars',
-                        action: 'toggleSidebar'
-                    });
-                }
+                        navbar.itemsLeft.splice(0, 0, {
+                            href: sidebar.position,
+                            title: sidebar.toggle,
+                            name: sidebar.toggle,
+                            klass: 'sidebar-toggle',
+                            icon: 'fa fa-bars',
+                            action: 'toggleSidebar',
+                            right: 'vert-divider'
+                        });
+                    }
+                });
 
                 return navbar;
             }
@@ -4564,7 +4866,8 @@ angular.module("nav/templates/sidebar.tpl.html", []).run(["$templateCache", func
         }])
         //
         //  Directive for the sidebar
-        .directive('sidebar', ['$compile', 'sidebarService', function ($compile, sidebarService) {
+        .directive('sidebar', ['$compile', 'sidebarService', 'sidebarTemplate', '$templateCache',
+                        function ($compile, sidebarService, sidebarTemplate, $templateCache, $sce) {
             //
             return {
                 restrict: 'AE',
@@ -4572,68 +4875,23 @@ angular.module("nav/templates/sidebar.tpl.html", []).run(["$templateCache", func
                 // We need to use the compile function so that we remove the
                 // content before it is included in the bootstraping algorithm
                 compile: function compile(element) {
-                    var inner = element.html(),
-                        className = element[0].className;
+                    var inner = element.html();
                     //
                     element.html('');
+                    element.addClass('sidebar-body fullwidth');
+                    lux.querySelector(document, 'body').addClass('fullwidth');
 
                     return {
-                        post: function (scope, element, attrs) {
-                            scope.sidebarContent = inner;
-                            sidebarService.initScope(scope, attrs, element);
+                        pre: function (scope, element, attrs) {
+                            var template = $templateCache.get(sidebarTemplate);
 
-                            inner = $compile('<div data-content-sidebar bs-collapse></div>')(scope);
-                            element.append(inner);
+                            scope.sidebars = sidebarService.initScope(scope, attrs, element);
+
+                            //element.replaceWith($compile(template)(scope));
+                            element.append($compile(template)(scope));
+                            lux.querySelector(element, '.content-wrapper').append($compile(inner)(scope));
                         }
                     };
-                }
-            };
-        }])
-
-        //
-        //  Inner directive for the sidebar
-        .directive('contentSidebar', ['$compile', '$document', function ($compile, $document) {
-            return {
-                templateUrl: "nav/templates/sidebar.tpl.html",
-
-                restrict: 'A',
-
-                link: function (scope, element, attrs) {
-                    var sidebar = scope.sidebar,
-                        // get the original content
-                        content = scope.sidebarContent,
-                        // page
-                        page = angular.element(document.createElement('div'));
-
-                    delete scope.sidebarContent;
-
-                    if (sidebar.sections) {
-                        // content-wrapper
-                        var wrapper = angular.element(document.createElement('div'))
-                                        .addClass('content-wrapper')
-                                        .append(content),
-                            // overlay
-                            overlay = angular.element(document.createElement('div'))
-                                        .addClass('overlay');
-
-                        page.append(wrapper).append(overlay).addClass('sidebar-page');
-                    } else
-                        page.append(content).addClass('navbar-page');
-
-                    // compile
-                    page = $compile(page)(scope);
-                    element.after(page);
-
-                    page.on('click', function() {
-                        var sidebarTag = page.parent();
-                        if (sidebarTag.hasClass('sidebar-open-left')) {
-                            sidebarTag.removeClass('sidebar-open-left');
-                        }
-
-                        if (sidebarTag.hasClass('sidebar-open-right')) {
-                            sidebarTag.removeClass('sidebar-open-right');
-                        }
-                    });
                 }
             };
         }]);

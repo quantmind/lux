@@ -16,33 +16,53 @@
     //          }]
     //      };
     //
-    var sidebarDefaults = {
-        collapse: true,
-        position: 'left',
-        toggle: 'Menu',
-        url: lux.context.url || '/',
-    };
-
     angular.module('lux.sidebar', ['lux.nav'])
         //
-        .service('sidebarService', ['linkService', 'navService', function (linkService, navService) {
+        .value('sidebarDefaults', {
+            collapse: true,
+            toggle: 'Menu',
+            url: lux.context.url || '/',
+            infoText: 'Signed in as'
+        })
+        //
+        .value('sidebarTemplate', "nav/templates/sidebar.tpl.html")
+        //
+        .service('sidebarService', ['linkService', 'navService', 'sidebarDefaults',
+            function (linkService, navService, sidebarDefaults) {
+
+            function initSideBar (element, sidebar, position) {
+                sidebar = angular.extend({}, sidebarDefaults, sidebar);
+                sidebar.position = position;
+                if (!sidebar.collapse)
+                    element.addClass('sidebar-open-' + position);
+                return sidebar;
+            }
 
             this.initScope = function (scope, opts, element) {
 
-                var sidebar = angular.extend({}, sidebarDefaults, scope.sidebar, lux.getOptions(opts)),
-                    body = lux.querySelector(document, 'body');
+                var sidebar = angular.extend({}, scope.sidebar, lux.getOptions(opts)),
+                    sidebars = [],
+                    left = sidebar.left,
+                    right = sidebar.right;
 
-                sidebar.container = sidebar.fluid ? 'container-fluid' : 'container';
-                body.addClass(sidebar.position + '-sidebar skin');
+                if (left) sidebars.push(initSideBar(element, left, 'left'));
+                if (right) sidebars.push(initSideBar(element, right, 'right'));
+                if (!sidebars.length) sidebars.push(initSideBar(element, sidebar, 'left'));
+
+                scope.container = sidebar.fluid ? 'container-fluid' : 'container';
 
                 // Add link service functionality
                 linkService.initScope(scope);
 
-                if (!sidebar.collapse)
-                    element.addClass('sidebar-open-' + sidebar.position);
+                // Close sidebars
+                scope.closeSideBar = function () {
+                    element.removeClass('sidebar-open-left sidebar-open-right');
+                };
 
-                scope.toggleSidebar = function() {
-                    element.toggleClass('sidebar-open-' + sidebar.position);
+                // Toggle the sidebar
+                scope.toggleSidebar = function(e, position) {
+                    e.preventDefault();
+                    element.toggleClass('sidebar-open-' + position);
                 };
 
                 scope.menuCollapse = function($event) {
@@ -60,38 +80,34 @@
                         submenu.addClass('active');
                     }
                 };
-
-                scope.sidebar = sidebar;
-                scope.navbar = initNavbar(sidebar);
-
-                if (!sidebar.sections && scope.navigation)
-                    sidebar.sections = scope.navigation;
-                return sidebar;
+                scope.navbar = initNavbar(sidebar.navbar, sidebars);
+                return sidebars;
             };
 
             // Initialise top navigation bar
-            function initNavbar (sidebar) {
-                var navbar = sidebar.navbar;
-
+            function initNavbar (navbar, sidebars) {
                 // No navbar, add an object
                 if (!navbar)
-                    sidebar.navbar = navbar = {};
+                    navbar = {};
                 navbar.fixed = true;
                 navbar.top = true;
                 //
                 // Add toggle to the navbar
-                if (sidebar.toggle) {
-                    if (!navbar.itemsLeft) navbar.itemsLeft = [];
+                forEach(sidebars, function (sidebar) {
+                    if (sidebar.toggle) {
+                        if (!navbar.itemsLeft) navbar.itemsLeft = [];
 
-                    navbar.itemsLeft.splice(0, 0, {
-                        href: '#',
-                        title: sidebar.toggle,
-                        name: sidebar.toggle,
-                        klass: 'sidebar-toggle',
-                        icon: 'fa fa-bars',
-                        action: 'toggleSidebar'
-                    });
-                }
+                        navbar.itemsLeft.splice(0, 0, {
+                            href: sidebar.position,
+                            title: sidebar.toggle,
+                            name: sidebar.toggle,
+                            klass: 'sidebar-toggle',
+                            icon: 'fa fa-bars',
+                            action: 'toggleSidebar',
+                            right: 'vert-divider'
+                        });
+                    }
+                });
 
                 return navbar;
             }
@@ -105,7 +121,8 @@
         }])
         //
         //  Directive for the sidebar
-        .directive('sidebar', ['$compile', 'sidebarService', function ($compile, sidebarService) {
+        .directive('sidebar', ['$compile', 'sidebarService', 'sidebarTemplate', '$templateCache',
+                        function ($compile, sidebarService, sidebarTemplate, $templateCache, $sce) {
             //
             return {
                 restrict: 'AE',
@@ -113,68 +130,23 @@
                 // We need to use the compile function so that we remove the
                 // content before it is included in the bootstraping algorithm
                 compile: function compile(element) {
-                    var inner = element.html(),
-                        className = element[0].className;
+                    var inner = element.html();
                     //
                     element.html('');
+                    element.addClass('sidebar-body fullwidth');
+                    lux.querySelector(document, 'body').addClass('fullwidth');
 
                     return {
-                        post: function (scope, element, attrs) {
-                            scope.sidebarContent = inner;
-                            sidebarService.initScope(scope, attrs, element);
+                        pre: function (scope, element, attrs) {
+                            var template = $templateCache.get(sidebarTemplate);
 
-                            inner = $compile('<div data-content-sidebar bs-collapse></div>')(scope);
-                            element.append(inner);
+                            scope.sidebars = sidebarService.initScope(scope, attrs, element);
+
+                            //element.replaceWith($compile(template)(scope));
+                            element.append($compile(template)(scope));
+                            lux.querySelector(element, '.content-wrapper').append($compile(inner)(scope));
                         }
                     };
-                }
-            };
-        }])
-
-        //
-        //  Inner directive for the sidebar
-        .directive('contentSidebar', ['$compile', '$document', function ($compile, $document) {
-            return {
-                templateUrl: "nav/templates/sidebar.tpl.html",
-
-                restrict: 'A',
-
-                link: function (scope, element, attrs) {
-                    var sidebar = scope.sidebar,
-                        // get the original content
-                        content = scope.sidebarContent,
-                        // page
-                        page = angular.element(document.createElement('div'));
-
-                    delete scope.sidebarContent;
-
-                    if (sidebar.sections) {
-                        // content-wrapper
-                        var wrapper = angular.element(document.createElement('div'))
-                                        .addClass('content-wrapper')
-                                        .append(content),
-                            // overlay
-                            overlay = angular.element(document.createElement('div'))
-                                        .addClass('overlay');
-
-                        page.append(wrapper).append(overlay).addClass('sidebar-page');
-                    } else
-                        page.append(content).addClass('navbar-page');
-
-                    // compile
-                    page = $compile(page)(scope);
-                    element.after(page);
-
-                    page.on('click', function() {
-                        var sidebarTag = page.parent();
-                        if (sidebarTag.hasClass('sidebar-open-left')) {
-                            sidebarTag.removeClass('sidebar-open-left');
-                        }
-
-                        if (sidebarTag.hasClass('sidebar-open-right')) {
-                            sidebarTag.removeClass('sidebar-open-right');
-                        }
-                    });
                 }
             };
         }]);

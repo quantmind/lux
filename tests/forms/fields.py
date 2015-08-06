@@ -11,18 +11,19 @@ class TestEnum(Enum):
 
 
 class FieldTests(test.TestCase):
+
     def test_ChoiceField(self):
         field = forms.ChoiceField()
         self.assertEqual(field.attrs.get('name'), None)
         #
-        self.assertEqual(field.options.all(), ())
+        self.assertEqual(field.options.all(), [])
         attrs = field.getattrs()
-        self.assertEqual(attrs['options'], ())
+        self.assertEqual(attrs['options'], [])
         #
         field = forms.ChoiceField(options=('bla', 'foo'))
-        self.assertEqual(field.options.all(), ('bla', 'foo'))
+        self.assertEqual(field.options.all(), ['bla', 'foo'])
         attrs = field.getattrs()
-        self.assertEqual(attrs['options'], ('bla', 'foo'))
+        self.assertEqual(attrs['options'], ['bla', 'foo'])
         #
         self.assertEqual(repr(field), 'ChoiceField')
 
@@ -36,11 +37,11 @@ class FieldTests(test.TestCase):
     def test_options(self):
         opts = ('uno', 'due', 'tre')
         field = forms.ChoiceField(options=opts)
-        self.assertEqual(field.options.all(), opts)
+        self.assertEqual(field.options.all(), list(opts))
         self.assertEqual(field.options.get_initial(), 'uno')
 
     def test_options_call(self):
-        result = ((1, 'uno'), (2, 'due'), (3, 'tre'))
+        result = [(1, 'uno'), (2, 'due'), (3, 'tre')]
 
         def opts(form):
             self.assertEqual(form, None)
@@ -55,9 +56,9 @@ class FieldTests(test.TestCase):
         field = forms.EnumField(enum_class=TestEnum)
         self.assertEqual(field.attrs.get('name'), None)
         #
-        self.assertEqual(field.options.all(), ('opt1', 'opt2'))
+        self.assertEqual(field.options.all(), ['opt1', 'opt2'])
         attrs = field.getattrs()
-        self.assertEqual(attrs['options'], ('opt1', 'opt2'))
+        self.assertEqual(attrs['options'], ['opt1', 'opt2'])
         #
         self.assertEqual(repr(field), 'EnumField')
 

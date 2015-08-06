@@ -23,6 +23,7 @@ def add_css(all):
     navbar.padding = 0.5*(navbar.height-navbar.lineheight)
     navbar.small_padding = 0.5*(navbar.small_height-navbar.lineheight)
     vars.animate.fade.top = navbar.height
+    navbar.divider.color = '#ddd'
     #
     trans = navbar.transition
     collapse_width = px(cfg['NAVBAR_COLLAPSE_WIDTH'])
@@ -72,3 +73,9 @@ def add_css(all):
 
     small.css('.navbar-collapse.in',
               overflow_y='hidden !important')
+
+    css('.right-divider',
+        Border(left=px(1), color=navbar.divider.color),
+        position='absolute',
+        right=0,
+        display='inline-block')

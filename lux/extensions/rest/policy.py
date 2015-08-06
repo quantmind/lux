@@ -2,12 +2,10 @@ from lux.forms import ValidationError
 
 from .user import PERMISSION_LEVELS
 
-
 POLICY = dict(effect=(str, frozenset(('allow', 'deny'))),
               action=((str, list), None),
               resource=((str, list), None),
               condition=(dict, None))
-
 
 EFFECTS = {'allow': True,
            'deny': False}
@@ -54,16 +52,49 @@ def validate_single_policy(policy):
     return p
 
 
-def has_permission(request, permissions, name, level):
-    if isinstance(permissions, dict):
-        for policy in permissions.values():
-            if _has_permission(policy, name, level):
-                return True
-    default = request.config['DEFAULT_PERMISSION_LEVEL']
-    default = request.config['DEFAULT_PERMISSION_LEVELS'].get(name, default)
+def _check_policies(policies, name, level):
+    """
+    Checks an action against a list of policies
+    :param policies:    dict of policies
+    :param name:        action name
+    :param level:       access level
+    :return:            True if access is granted, False if denied,
+                        None if no specific determination made
+    """
+    if isinstance(policies, dict):
+        for policy in policies.values():
+            permission = _has_permission(policy, name, level)
+            if permission is not None:
+                return permission
+    return None
+
+
+def _check_default_level(default, level):
+    """
+    Compares a default permission level with requested level
+    :param default:     integer or level name
+    :param level:       requested level
+    :return:            Boolean
+    """
     if isinstance(default, str):
         default = PERMISSION_LEVELS.get(default.upper(), 0)
     return level <= default
+
+
+def has_permission(request, permissions, name, level):
+    action = name
+    while action:
+        permission = _check_policies(permissions, action, level)
+        if permission is not None:
+            return permission
+        else:
+            default = request.config['DEFAULT_PERMISSION_LEVELS'].get(action)
+            if default is not None:
+                return _check_default_level(default, level)
+        action = action.rpartition(':')[0]
+
+    default = request.config['DEFAULT_PERMISSION_LEVEL']
+    return _check_default_level(default, level)
 
 
 def _has_permission(policy, name, level):
@@ -73,3 +104,4 @@ def _has_permission(policy, name, level):
     for action in actions:
         if name == action:
             return EFFECTS[policy.get('effect', 'allow')]
+    return None

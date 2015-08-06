@@ -129,6 +129,7 @@
                     //  Pseudo-non-editables (containers)
                     'checklist': {element: 'div', editable: false, textBased: false},
                     'fieldset': {element: 'fieldset', editable: false, textBased: false},
+                    'div': {element: 'div', editable: false, textBased: false},
                     'form': {element: 'form', editable: false, textBased: false},
                     'radio': {element: 'div', editable: false, textBased: false},
                     //  Non-editables (mostly buttons)
@@ -173,10 +174,11 @@
                 createElement: function (driver, scope) {
                     var self = this,
                         thisField = scope.field,
-                        info = supported[thisField.type],
-
+                        tc = thisField.type.split('.'),
+                        info = supported[tc.splice(0, 1)[0]],
                         renderer;
 
+                    scope.extraClasses = tc.join(' ');
                     scope.info = info;
 
                     if (info) {
@@ -185,9 +187,8 @@
                             renderer = this[info.type];
 
                         // If no element type, use the `element`
-                        if (!renderer) {
+                        if (!renderer)
                             renderer = this[info.element];
-                        }
                     }
 
                     if (!renderer)
@@ -283,6 +284,12 @@
                     return element;
                 },
                 //
+                div: function (scope) {
+                    var info = scope.info,
+                        element = $($document[0].createElement(info.element)).addClass(scope.extraClasses);
+                    return element;
+                },
+                //
                 radio: function (scope) {
                     this.fillDefaults(scope);
 
@@ -358,7 +365,10 @@
                 // Create a select element
                 select: function (scope) {
                     var field = scope.field,
-                        options = [];
+                        groups = {},
+                        groupList = [],
+                        options = [],
+                        group, grp;
 
                     forEach(field.options, function (opt) {
                         if (typeof(opt) === 'string') {
@@ -366,7 +376,16 @@
                         } else if (isArray(opt)) {
                             opt = {'value': opt[0], 'repr': opt[1] || opt[0]};
                         }
-                        options.push(opt);
+                        if (opt.group) {
+                            group = groups[opt.group];
+                            if (!group) {
+                                group = {name: opt.group, options: []};
+                                groups[opt.group] = group;
+                                groupList.push(group);
+                            }
+                            group.options.push(opt);
+                        } else
+                            options.push(opt);
                         // Set the default value if not available
                         if (!field.value) field.value = opt.value;
                     });
@@ -375,11 +394,26 @@
                         element = this.input(scope),
                         select = this._select(info.element, element);
 
-                    forEach(options, function (opt) {
-                        opt = $($document[0].createElement('option'))
-                                .attr('value', opt.value).html(opt.repr || opt.value);
-                        select.append(opt);
-                    });
+                    if (groupList.length) {
+                        if (options.length)
+                            groupList.push({name: 'other', options: options});
+
+                        forEach(groupList, function (group) {
+                            grp = $($document[0].createElement('optgroup'))
+                                    .attr('label', group.name);
+                            select.append(grp);
+                            forEach(group.options, function (opt) {
+                                opt = $($document[0].createElement('option'))
+                                        .attr('value', opt.value).html(opt.repr || opt.value);
+                                grp.append(opt);
+                            });
+                        });
+                    } else
+                        forEach(options, function (opt) {
+                            opt = $($document[0].createElement('option'))
+                                    .attr('value', opt.value).html(opt.repr || opt.value);
+                            select.append(opt);
+                        });
 
                     if (field.multiple)
                         select.attr('multiple', true);

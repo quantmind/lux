@@ -5,7 +5,8 @@
     angular.module('lux.blog', ['lux.page', 'templates-blog', 'highlight'])
         .value('blogDefaults', {
             centerMath: true,
-            fallback: true
+            fallback: true,
+            katexCss: 'https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.3.0/katex.min.css'
         })
         //
         .controller('BlogEntry', ['$scope', 'pageService', '$lux', function ($scope, pageService, $lux) {
@@ -21,22 +22,43 @@
         //
         .directive('blogPagination', function () {
             return {
-                templateUrl: "blog/pagination.tpl.html",
+                templateUrl: "blog/templates/pagination.tpl.html",
                 restrict: 'AE'
             };
         })
         //
         .directive('blogHeader', function () {
             return {
-                templateUrl: "blog/header.tpl.html",
+                templateUrl: "blog/templates/header.tpl.html",
                 restrict: 'AE'
             };
         })
         //
-        .directive('katex', ['blogDefaults', function (blogDefaults) {
+        // Compile latex makup with katex and mathjax fallback
+        .directive('latex', ['$log', 'blogDefaults', function ($log, blogDefaults) {
 
             function error (element, err) {
                 element.html("<div class='alert alert-danger' role='alert'>" + err + "</div>");
+            }
+
+            function configMaxJax (mathjax) {
+                mathjax.Hub.Register.MessageHook("TeX Jax - parse error", function (message) {
+                    var a = 1;
+                });
+                mathjax.Hub.Register.MessageHook("Math Processing Error", function (message) {
+                    var a = 1;
+                });
+            }
+
+            //
+            //  Render the text using MathJax
+            //
+            //  Check: http://docs.mathjax.org/en/latest/typeset.html
+            function render_mathjax (mathjax, text, element) {
+                if (text.substring(0, 15) === '\\displaystyle {')
+                    text = text.substring(15, text.length-1);
+                element.append(text);
+                mathjax.Hub.Queue(["Typeset", mathjax.Hub, element[0]]);
             }
 
             function render(katex, text, element, fallback) {
@@ -47,10 +69,7 @@
                     if (fallback) {
                         require(['mathjax'], function (mathjax) {
                             try {
-                                if (text.substring(0, 15) === '\\displaystyle {')
-                                    text = text.substring(15, text.length-1);
-                                element.append(text);
-                                mathjax.Hub.Queue(["Typeset", mathjax.Hub, element[0]]);
+                                render_mathjax(mathjax, text, element);
                             } catch (e) {
                                 error(element, err += ' - ' + e);
                             }
@@ -73,10 +92,13 @@
                         text = '\\displaystyle {' + text + '}';
                         element.addClass('katex-outer');
                     }
-                    if (typeof(katex) === 'undefined')
+                    if (typeof(katex) === 'undefined') {
+                        // Load Katex css file first
+                        loadCss(blogDefaults.katexCss);
                         require(['katex'], function (katex) {
                             render(katex, text, element, fallback);
                         });
+                    }
                     else
                         render(katex, text, element);
                 }

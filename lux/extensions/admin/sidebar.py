@@ -20,6 +20,9 @@ def add_css(all):
     sidebar.toggle.size = px(21)
     sidebar.toggle.size_small = px(19)
     sidebar.toggle.padding = 0.5*(navbar.height-sidebar.toggle.size) - px(1)
+    # Style
+    sidebar.background = '#2D3C4B'
+    sidebar.color = '#eee'
     sidebar.toggle.border = '1px solid #ddd'
     sidebar.info.p.color = '#ccc'
     sidebar.info.background = '#425466'
@@ -30,10 +33,6 @@ def add_css(all):
     collapse_width = px(cfg['NAVBAR_COLLAPSE_WIDTH'])
 
     media(min_width=collapse_width).css(
-        '.sidebar',
-        width=sidebar.width)
-
-    media(min_width=collapse_width).css(
         '.navbar.navbar-static-top .navbar-nav',
         css('> li > a.sidebar-toggle',
             font_size=sidebar.toggle.size,
@@ -41,104 +40,78 @@ def add_css(all):
             padding_top=sidebar.toggle.padding,
             padding_bottom=sidebar.toggle.padding))
 
+    css('.fullwidth',
+        width=pc(100),
+        overflow_x='hidden')
+
+    css('.sidebar-body',
+        position='relative')
+
+    css('.sidebar-page',
+        position='relative',
+        top=0,
+        bottom=0,
+        left=0,
+        right=0)
+
+    css('.sidebar-page, .sidebar-navbar > nav',
+        Transform(0, 0),
+        Transition('all', trans.duration, trans.easing))
+
     css('.overlay',
         position='absolute',
-        background_color='transparent',
+        background_color=sidebar.overlay.color,
         display='none',
         width='100%',
-        bottom=px(0),
-        left=px(0),
-        top=px(0),
+        bottom=0,
+        left=0,
+        top=0,
         z_index=800)
 
-    css('.content-wrapper',
-        z_index=800)
-
-    css('.main-sidebar',
+    css('.sidebar',
+        Transition('all', trans.duration, trans.easing),
+        css('.sidebar-left',
+            Transform(sidebar.width_neg, 0),
+            left=0),
+        css('.sidebar-right',
+            Transform(0, sidebar.width_neg),
+            right=0),
+        css(' a',
+            css(':hover',
+                text_decoration='none'),
+            outline='none',
+            text_decoration='none',
+            color=sidebar.color),
+        background=sidebar.background,
         position='fixed',
-        overflow_y='auto',
-        overflow_x='hidden',
         top=px(0),
         min_height='100%',
         width=sidebar.width,
         z_index=810)
 
-    css('.right-sidebar',
-        css(' .content-wrapper, .navbar-static-top',
-            Transform(0, 0),
-            Transition('all', trans.duration, trans.easing)),
-        css(' .main-sidebar',
-            Transform(sidebar.width, 0),
-            Transition('all', trans.duration, trans.easing),
-            right=0),
-        css(' .navbar-static-top',
-            css(' .navbar-main',
-                css(' > li',
-                    float='right'),
-                float='right'),
-            css(' .navbar-side',
-                float='left'),
-            css(' .sidebar-toggle',
-                margin_left=sidebar.toggle.margin,
-                border_left=sidebar.toggle.border)),
-        )
-
-    css('.left-sidebar',
-        css(' .content-wrapper, .navbar-static-top',
-            Transform(0, 0),
-            Transition('all', trans.duration, trans.easing)),
-        css(' .main-sidebar',
-            Transform(sidebar.width_neg, 0),
-            Transition('all', trans.duration, trans.easing),
-            left=0),
-        css(' .navbar-static-top',
-            css(' .navbar-main',
-                css(' > li',
-                    float='left'),
-                float='left'),
-            css(' .navbar-side',
-                float='right'),
-            css(' .sidebar-toggle',
-                margin_right=sidebar.toggle.margin,
-                border_right=sidebar.toggle.border)))
-
+    # LEFT SIDEBAR OPEN
     css('.sidebar-open-left',
+        css(' .sidebar',
+            Transform(0, 0)),
         css(' .overlay',
-            display='block',
-            background_color=sidebar.overlay.color),
+            display='block'),
         css(' .navbar-side',
             display='none'),
-        css(' .content-wrapper, .navbar-static-top',
+        css(' .sidebar-page, .sidebar-navbar > nav',
             Transform(sidebar.width, 0),
-            Transition('all', trans.duration, trans.easing)),
-        css(' .main-sidebar',
-            Transform(0, 0))
-        )
-
-    css('.sidebar-open-right',
-        css(' .overlay',
-            display='block',
-            background_color=sidebar.overlay.color),
-        css(' .navbar-side',
-            display='none'),
-        css(' .content-wrapper, .navbar-static-top',
-            Transform(sidebar.width_neg, 0),
-            Transition('all', trans.duration, trans.easing)),
-        css(' .main-sidebar',
-            Transform(0, 0))
+            Transition('all', trans.duration, trans.easing))
         )
 
     css('.sidebar-fixed',
-        position='fixed'),
+        position='fixed')
 
+    # IMAGE in the navbar-panel
     css('.sidebar',
         css(' .nav-panel',
             Clearfix(),
             css(' .image > img',
-                width=px(35),
-                height=px(35),
-                margin_top=px(8),
-                margin_left=px(8)),
+                height=navbar.small_height-px(20),
+                margin=spacing(10, 5)),
             css(' .info',
                 css(' > p',
                     margin_bottom=px(4),
@@ -155,7 +128,7 @@ def add_css(all):
                 padding=spacing(5, 5, 5, 15),
                 line_height=1),
             padding=spacing(3, 10),
-            height=navbar.height,
+            height=navbar.small_height,
             background=sidebar.info.background),
         css(' .sidebar-menu',
             css(' .treeview-menu',
@@ -184,10 +157,7 @@ def add_css(all):
             css(' li',
                 css('.active',
                     css(' > a > .fa-angle-left',
-                        _webkit_transform='rotate(-90deg)',
-                        _ms_transform='rotate(-90deg)',
-                        _o_transform='rotate(-90deg)',
-                        transform='rotate(-90deg)')),
+                        Transform('all', 'rotate(-90deg)'))),
                 css('.header',
                     padding=spacing(5, 25, 5, 15),
                     font_size=px(12)),
@@ -215,6 +185,17 @@ def add_css(all):
         margin_top=px(0),
         padding_bottom=px(10))
 
+    large = media(min_width=collapse_width)
+
+    large.css('.sidebar .nav-panel',
+              css(' .image > img',
+                  height=navbar.height-px(20)),
+              height=navbar.height)
+
+    #  sidebar_skin(all)
+
+
+def small():
     small = media(max_width=collapse_width)
 
     small.css('.sidebar .nav-panel',
@@ -235,13 +216,11 @@ def add_css(all):
                       float='right',
                       margin_right=px(1))))
 
-    small.css('.left-sidebar',
+    small.css('.sidebar-left',
               css(' .navbar-static-top',
                   css(' .navbar-main',
                       float='left',
                       margin_left=px(1))))
-
-    sidebar_skin(all)
 
 
 def sidebar_skin(all):
@@ -280,15 +259,7 @@ def sidebar_skin(all):
         skin = sidebar.skins[sidebar.skin]
 
     css('.skin',
-        css(' .main-sidebar',
-            background=skin.background),
         css(' .sidebar',
-            css(' a',
-                css(':hover',
-                    text_decoration='none'),
-                outline='none',
-                text_decoration='none',
-                color=skin.color),
             css(' > .sidebar-menu',
                 css(' > li',
                     css(' > .treeview-menu',

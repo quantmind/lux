@@ -1,4 +1,5 @@
 import logging
+import json
 
 from sqlalchemy.inspection import inspect
 
@@ -6,7 +7,6 @@ from lux import forms
 from lux.forms.fields import MultipleMixin
 
 from .models import RestModel
-
 
 logger = logging.getLogger('lux.extensions.odm')
 
@@ -22,12 +22,15 @@ class RelationshipField(MultipleMixin, forms.Field):
 
     attrs = {'type': 'select'}
 
-    def __init__(self, model=None, **kwargs):
+    def __init__(self, model=None, request_params=None, format_string=None,
+                 **kwargs):
         super().__init__(**kwargs)
         assert model, 'no model defined'
         if not isinstance(model, RestModel):
             model = RestModel(model)
         self.model = model
+        self.request_params = request_params
+        self.format_string = format_string
 
     def getattrs(self, form=None):
         attrs = super().getattrs(form)
@@ -36,6 +39,13 @@ class RelationshipField(MultipleMixin, forms.Field):
                          self.__class__.__name__, self.name)
         else:
             attrs.update(self.model.field_options(form.request))
+            if self.format_string:
+                attrs['data-remote-options-value'] = json.dumps({
+                    'type': 'formatString',
+                    'source': self.format_string})
+            if self.request_params:
+                attrs['data-remote-options-params'] = json.dumps(
+                    self.request_params)
         return attrs
 
     def _clean(self, value, bfield):
@@ -43,6 +53,8 @@ class RelationshipField(MultipleMixin, forms.Field):
         # Get a reference to the object data mapper
         odm = app.odm()
         model = odm[self.model.name]
+        # TODO: this works but it is not general
+        pkname = model.__mapper__.primary_key[0].key
         if not self.multiple:
             value = (value,)
         idcolumn = getattr(model, self.model.id_field)
@@ -52,7 +64,7 @@ class RelationshipField(MultipleMixin, forms.Field):
                 return list(all)
             else:
                 if all.count() == 1:
-                    return getattr(all.one(), self.model.id_field)
+                    return getattr(all.one(), pkname)
                 else:
                     raise forms.ValidationError(
                         self.validation_error.format(self.model))

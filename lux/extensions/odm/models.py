@@ -20,6 +20,8 @@ class RestModel(rest.RestModel):
     '''A rest model based on SqlAlchemy ORM
     '''
     def session(self, request):
+        '''Obtain a session
+        '''
         return request.app.odm().begin()
 
     def tojson(self, request, obj, exclude=None):
@@ -28,6 +30,7 @@ class RestModel(rest.RestModel):
         It uses sqlalchemy model information about columns
         '''
         exclude = set(exclude or ())
+        exclude.update(self._exclude)
         columns = self.columns(request.app)
 
         fields = {}
@@ -61,24 +64,32 @@ class RestModel(rest.RestModel):
         model = app.odm()[self.name]
         cols = get_columns(model)._data.copy()
         columns = []
+        all = set()
 
         for info in input_columns:
             col = RestColumn.make(info)
-            dbcol = cols.pop(col.name, None)
-            # If a database column
-            if isinstance(dbcol, Column):
-                info = column_info(col.name, dbcol)
-                info.update(col.as_dict())
-            else:
-                info = col.as_dict(True)
-
-            columns.append(info)
+            if col.name not in all:
+                dbcol = cols.pop(col.name, None)
+                # If a database column
+                if isinstance(dbcol, Column):
+                    info = column_info(col.name, dbcol)
+                    info.update(col.as_dict(defaults=False))
+                else:
+                    info = col.as_dict()
+                self._append_col(all, columns, info)
 
         for name, col in cols.items():
-            if name not in self._exclude:
-                columns.append(column_info(name, col))
+            if name not in all:
+                self._append_col(all, columns, column_info(name, col))
 
         return columns
+
+    def _append_col(self, all, columns, info):
+        name = info['name']
+        all.add(name)
+        if name in self._hidden:
+            info['hidden'] = True
+        columns.append(info)
 
 
 def column_info(name, col):

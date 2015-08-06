@@ -25,7 +25,7 @@
             "gridster": "//cdnjs.cloudflare.com/ajax/libs/jquery.gridster/0.5.6/jquery.gridster",
             "holder": "//cdnjs.cloudflare.com/ajax/libs/holder/2.3.1/holder",
             "highlight": "//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.3/highlight.min.js",
-            "katex": "//cdnjs.cloudflare.com/ajax/libs/KaTeX/0.1.0/katex.min.js",
+            "katex": "//cdnjs.cloudflare.com/ajax/libs/KaTeX/0.3.0/katex.min.js",
             "leaflet": "//cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.js",
             "lodash": "//cdnjs.cloudflare.com/ajax/libs/lodash.js/2.4.1/lodash",
             "marked": "//cdnjs.cloudflare.com/ajax/libs/marked/0.3.2/marked",

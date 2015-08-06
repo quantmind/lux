@@ -16,9 +16,37 @@
     }
 
     angular.module('lux.grid', ['lux.services', 'templates-grid', 'ngTouch', 'ui.grid',
-                                'ui.grid.pagination', 'ui.grid.selection'])
+                                'ui.grid.pagination', 'ui.grid.selection', 'ui.grid.autoResize'])
         //
         .constant('gridDefaults', {
+            //
+            enableFiltering: true,
+            enableRowHeaderSelection: false,
+            useExternalPagination: true,
+            useExternalSorting: true,
+            useExternalFiltering: true,
+            // Scrollbar display: 0 - never, 1 - always, 2 - when needed
+            enableHorizontalScrollbar: 0,
+            enableVerticalScrollbar: 0,
+            //
+            rowHeight: 30,
+            minGridHeight: 250,
+            offsetGridHeight: 102,
+            //
+            // request delay in ms
+            requestDelay: 100,
+            //
+            paginationOptions: {
+                sizes: [25, 50, 100]
+            },
+            //
+            gridState: {
+                page: 1,
+                limit: 25,
+                offset: 0
+            },
+            gridFilters: {},
+            //
             showMenu: true,
             gridMenu: {
                 'create': {
@@ -28,6 +56,10 @@
                 'delete': {
                     title: 'Delete',
                     icon: 'fa fa-trash'
+                },
+                'columnsVisibility': {
+                    title: 'Columns visibility',
+                    icon: 'fa fa-eye'
                 }
             },
             modal: {
@@ -42,6 +74,14 @@
                         'success': 'Successfully deleted',
                         'error': 'Error while deleting ',
                         'empty': 'Please, select some',
+                    }
+                },
+                columnsVisibility: {
+                    templates: {
+                        'default': 'grid/templates/modal.columns.tpl.html',
+                    },
+                    messages: {
+                        'info': 'Click button with column name to toggle visibility'
                     }
                 }
             },
@@ -58,7 +98,7 @@
 
                 // Font-awesome icon by default
                 boolean: function (column, col, uiGridConstants, gridDefaults) {
-                    column.cellTemplate = gridDefaults.wrapCell('<i ng-class="{{COL_FIELD == true}} ? \'fa fa-check-circle text-success\' : \'fa fa-times-circle text-danger\'"></i>');
+                    column.cellTemplate = gridDefaults.wrapCell('<i ng-class="{{COL_FIELD === true}} ? \'fa fa-check-circle text-success\' : \'fa fa-times-circle text-danger\'"></i>');
 
                     if (col.hasOwnProperty('filter')) {
                         column.filter = {
@@ -75,20 +115,23 @@
             }
         })
         //
-        .service('GridService', ['$lux', '$location', '$compile', '$modal', 'uiGridConstants', 'gridDefaults',
-            function($lux, $location, $compile, $modal, uiGridConstants, gridDefaults) {
+        .service('GridService', ['$lux', '$q', '$location', '$compile', '$modal', 'uiGridConstants', 'gridDefaults',
+            function($lux, $q, $location, $compile, $modal, uiGridConstants, gridDefaults) {
 
-            function parseColumns(columns) {
+            function parseColumns(columns, metaFields) {
                 var columnDefs = [],
                     column;
 
                 angular.forEach(columns, function(col) {
                     column = {
-                        field: col.field,
+                        field: col.name,
                         displayName: col.displayName,
                         type: getColumnType(col.type),
                         name: col.name
                     };
+
+                    if (col.hasOwnProperty('hidden') && col.hidden)
+                        column.visible = false;
 
                     if (!col.hasOwnProperty('sortable'))
                         column.enableSorting = false;
@@ -96,12 +139,16 @@
                     if (!col.hasOwnProperty('filter'))
                         column.enableFiltering = false;
 
-                    if (column.field === 'id')
-                        column.cellTemplate = gridDefaults.wrapCell('<a ng-href="{{grid.appScope.objectUrl(COL_FIELD)}}">{{COL_FIELD}}</a>');
-
                     var callback = gridDefaults.columns[col.type];
                     if (callback) callback(column, col, uiGridConstants, gridDefaults);
-                    columnDefs.push(column);
+
+                    if (column.field === metaFields.repr) {
+                        column.cellTemplate = gridDefaults.wrapCell('<a ng-href="{{grid.appScope.objectUrl(row.entity)}}">{{COL_FIELD}}</a>');
+                        // Set repr column as the first column
+                        columnDefs.splice(0, 0, column);
+                    }
+                    else
+                        columnDefs.push(column);
                 });
 
                 return columnDefs;
@@ -109,9 +156,18 @@
 
             // Get specified page using params
             function getPage(scope, api) {
-                api.get({}, scope.gridState).success(function(resp) {
+                var query = angular.extend({}, scope.gridState);
+
+                // Add filter if available
+                if (scope.gridFilters)
+                    query = angular.extend(query, scope.gridFilters);
+
+                api.get({}, query).success(function(resp) {
                     scope.gridOptions.totalItems = resp.total;
                     scope.gridOptions.data = resp.result;
+
+                    // Update grid height depending on number of the rows
+                    scope.updateGridHeight();
                 });
             }
 
@@ -130,8 +186,7 @@
                     stateName = window.location.href.split('/').pop(-1),
                     model = stateName.slice(0, -1),
                     modalScope = scope.$new(true),
-                    modal,
-                    title;
+                    modal, title, template;
 
                 scope.create = function($event) {
                     // if location path is available then we use ui-router
@@ -144,23 +199,17 @@
                 scope.delete = function($event) {
                     modalScope.selected = scope.gridApi.selection.getSelectedRows();
 
-                    var template,
-                        firstField = gridOptions.columnDefs[0].field,
-                        itemMessage = modalScope.selected.length + ' ' + stateName + '.',
+                    var firstField = gridOptions.columnDefs[0].field,
                         subPath = scope.options.target.path || '';
 
                     // Modal settings
                     angular.extend(modalScope, {
                         'stateName': stateName,
-                        'repr_field': scope.gridOptions.reprField || firstField,
+                        'repr_field': scope.gridOptions.metaFields.repr || firstField,
                         'infoMessage': gridDefaults.modal.delete.messages.info + ' ' + stateName + ':',
                         'dangerMessage': gridDefaults.modal.delete.messages.danger,
                         'emptyMessage': gridDefaults.modal.delete.messages.empty + ' ' + stateName + '.',
                     });
-
-                    var pkForItem = function(item) {
-                        return item.hasOwnProperty('id') ? item.id : item[firstField];
-                    };
 
                     if (modalScope.selected.length > 0)
                         template = gridDefaults.modal.delete.templates.delete;
@@ -170,26 +219,62 @@
                     modal = $modal({scope: modalScope, template: template, show: true});
 
                     modalScope.ok = function() {
-                        var defer = $lux.q.defer();
-                        forEach(modalScope.selected, function(item, _) {
-                            api.delete({path: subPath + '/' + pkForItem(item)})
+
+                        function deleteItem(item) {
+                            var defer = $lux.q.defer(),
+                                pk = item[scope.gridOptions.metaFields.id];
+
+                            api.delete({path: subPath + '/' + pk})
                                 .success(function(resp) {
-                                    defer.resolve(gridDefaults.modal.delete.messages.success + ' ' + itemMessage);
+                                    defer.resolve(gridDefaults.modal.delete.messages.success);
                                 })
                                 .error(function(error) {
-                                    defer.reject(gridDefaults.modal.delete.messages.error + ' ' + itemMessage);
+                                    defer.reject(gridDefaults.modal.delete.messages.error);
                                 });
+
+                            return defer.promise;
+                        }
+
+                        var promises = [];
+
+                        forEach(modalScope.selected, function(item, _) {
+                            promises.push(deleteItem(item));
                         });
 
-                        defer.promise.then(function(message) {
+                        $q.all(promises).then(function(results) {
                             getPage(scope, api);
                             modal.hide();
-                            $lux.messages.success(message);
-                        }, function(message) {
+                            $lux.messages.success(results[0] + ' ' + results.length + ' ' + stateName);
+                        }, function(results) {
                             modal.hide();
-                            $lux.messages.error(message);
+                            $lux.messages.error(results + ' ' + stateName);
                         });
                     };
+                };
+
+                scope.columnsVisibility = function() {
+                    modalScope.columns = scope.gridOptions.columnDefs;
+                    modalScope.infoMessage = gridDefaults.modal.columnsVisibility.messages.info;
+
+                    modalScope.toggleVisible = function(column) {
+                        if (column.hasOwnProperty('visible'))
+                            column.visible = !column.visible;
+                        else
+                            column.visible = false;
+
+                        scope.gridApi.core.refresh();
+                    };
+
+                    modalScope.activeClass = function(column) {
+                        if (column.hasOwnProperty('visible')) {
+                            if (column.visible) return 'btn-success';
+                            return 'btn-danger';
+                        } else
+                            return 'btn-success';
+                    };
+                    //
+                    template = gridDefaults.modal.columnsVisibility.templates.default;
+                    modal = $modal({scope: modalScope, template: template, show: true});
                 };
 
                 forEach(gridDefaults.gridMenu, function(item, key) {
@@ -219,75 +304,128 @@
 
                 api.get({path: sub_path + '/metadata'}).success(function(resp) {
                     scope.gridState.limit = resp['default-limit'];
-                    scope.gridOptions.columnDefs = parseColumns(resp.columns);
-                    if (resp.repr)
-                        scope.gridOptions.reprField = resp.repr;
+                    scope.gridOptions.metaFields = {
+                        id: resp.id,
+                        repr: resp.repr
+                    };
+                    scope.gridOptions.columnDefs = parseColumns(resp.columns, scope.gridOptions.metaFields);
 
                     api.get({path: sub_path}, {limit: scope.gridState.limit}).success(function(resp) {
                         scope.gridOptions.totalItems = resp.total;
                         scope.gridOptions.data = resp.result;
+
+                        // Update grid height
+                        scope.updateGridHeight();
                     });
                 });
             };
 
+            // Builds grid options
             this.buildOptions = function(scope, options) {
                 scope.options = options;
+                scope.paginationOptions = gridDefaults.paginationOptions;
+                scope.gridState = gridDefaults.gridState;
+                scope.gridFilters = gridDefaults.gridFilters;
 
-                scope.paginationOptions = {
-                    sizes: [25, 50, 100]
+                scope.objectUrl = function(entity) {
+                    return $lux.window.location + '/' + entity[scope.gridOptions.metaFields.id];
                 };
 
-                scope.gridState = {
-                    page: 1,
-                    limit: 25,
-                    offset: 0
+                scope.clearData = function() {
+                    scope.gridOptions.data = [];
                 };
 
-                scope.objectUrl = function(objectId) {
-                    return $lux.window.location + '/' + objectId;
+                scope.updateGridHeight = function () {
+                    var length = scope.gridOptions.totalItems,
+                        element = angular.element(document.getElementsByClassName('grid')[0]),
+                        totalPages = scope.gridApi.pagination.getTotalPages(),
+                        currentPage = scope.gridState.page,
+                        lastPage = scope.gridOptions.totalItems % scope.gridState.limit,
+                        gridHeight = 0;
+
+                    // Calculate grid height
+                    if (length > 0) {
+                        if (currentPage < totalPages || lastPage === 0)
+                            gridHeight = scope.gridState.limit * gridDefaults.rowHeight + gridDefaults.offsetGridHeight;
+                        else
+                            gridHeight = lastPage * gridDefaults.rowHeight + gridDefaults.offsetGridHeight;
+                    }
+
+                    if (gridHeight < gridDefaults.minGridHeight)
+                        gridHeight = gridDefaults.minGridHeight;
+
+                    element.css('height', gridHeight + 'px');
                 };
 
                 var api = $lux.api(scope.options.target),
                     gridOptions = {
                         paginationPageSizes: scope.paginationOptions.sizes,
                         paginationPageSize: scope.gridState.limit,
-                        enableFiltering: true,
-                        enableRowHeaderSelection: false,
-                        useExternalPagination: true,
-                        useExternalSorting: true,
-                        rowHeight: 30,
+                        enableFiltering: gridDefaults.enableFiltering,
+                        enableRowHeaderSelection: gridDefaults.enableRowHeaderSelection,
+                        useExternalPagination: gridDefaults.useExternalPagination,
+                        useExternalSorting: gridDefaults.useExternalSorting,
+                        enableHorizontalScrollbar: gridDefaults.enableHorizontalScrollbar,
+                        enableVerticalScrollbar: gridDefaults.enableVerticalScrollbar,
+                        rowHeight: gridDefaults.rowHeight,
                         onRegisterApi: function(gridApi) {
                             scope.gridApi = gridApi;
-                            scope.gridApi.pagination.on.paginationChanged(scope, function(pageNumber, pageSize) {
-                                scope.gridState.page = pageNumber;
-                                scope.gridState.limit = pageSize;
-                                scope.gridState.offset = pageSize*(pageNumber - 1);
 
-                                getPage(scope, api);
-                            });
+                            require(['lodash'], function(_) {
+                                //
+                                // Pagination
+                                scope.gridApi.pagination.on.paginationChanged(scope, _.debounce(function(pageNumber, pageSize) {
+                                    scope.gridState.page = pageNumber;
+                                    scope.gridState.limit = pageSize;
+                                    scope.gridState.offset = pageSize*(pageNumber - 1);
 
-                            scope.gridApi.core.on.sortChanged(scope, function(grid, sortColumns) {
-                                if( sortColumns.length === 0) {
-                                    delete scope.gridState.sortby;
                                     getPage(scope, api);
-                                } else {
-                                    // Build query string for sorting
-                                    angular.forEach(sortColumns, function(column) {
-                                        scope.gridState.sortby = column.name + ':' + column.sort.direction;
+                                }, gridDefaults.requestDelay));
+                                //
+                                // Sorting
+                                scope.gridApi.core.on.sortChanged(scope, _.debounce(function(grid, sortColumns) {
+                                    if( sortColumns.length === 0) {
+                                        delete scope.gridState.sortby;
+                                        getPage(scope, api);
+                                    } else {
+                                        // Build query string for sorting
+                                        angular.forEach(sortColumns, function(column) {
+                                            scope.gridState.sortby = column.name + ':' + column.sort.direction;
+                                        });
+
+                                        switch( sortColumns[0].sort.direction ) {
+                                            case uiGridConstants.ASC:
+                                                getPage(scope, api);
+                                                break;
+                                            case uiGridConstants.DESC:
+                                                getPage(scope, api);
+                                                break;
+                                            case undefined:
+                                                getPage(scope, api);
+                                                break;
+                                        }
+                                    }
+                                }, gridDefaults.requestDelay));
+                                //
+                                // Filtering
+                                scope.gridApi.core.on.filterChanged(scope, _.debounce(function() {
+                                    var grid = this.grid;
+                                    scope.gridFilters = {};
+
+                                    // Add filters
+                                    angular.forEach(grid.columns, function(value, _) {
+                                        // Clear data in order to refresh icons
+                                        if (value.filter.type === 'select')
+                                            scope.clearData();
+
+                                        if (value.filters[0].term)
+                                            scope.gridFilters[value.colDef.name] = value.filters[0].term;
                                     });
 
-                                    switch( sortColumns[0].sort.direction ) {
-                                        case uiGridConstants.ASC:
-                                            getPage(scope, api);
-                                            break;
-                                        case uiGridConstants.DESC:
-                                            getPage(scope, api);
-                                            break;
-                                        case undefined:
-                                            getPage(scope, api);
-                                            break;
-                                    }
-                                }
+                                    // Get results
+                                    getPage(scope, api);
+
+                                }, gridDefaults.requestDelay));
                             });
                         }
                     };
@@ -322,7 +460,7 @@
                             GridService.getInitialData(scope);
                         }
 
-                        var grid = '<div class="table-uigrid" ui-grid="gridOptions" ui-grid-pagination ui-grid-selection></div>';
+                        var grid = '<div ui-if="gridOptions.data.length>0" class="grid" ui-grid="gridOptions" ui-grid-pagination ui-grid-selection ui-grid-auto-resize></div>';
                         element.append($compile(grid)(scope));
                     },
                 },
