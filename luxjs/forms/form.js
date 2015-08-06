@@ -678,7 +678,7 @@
                                 message = {message: message};
 
                             var field = message.field;
-                            if (message.field && !scope[scope.formName].hasOwnProperty(message.field)) {
+                            if (field && !scope[scope.formName].hasOwnProperty(field)) {
                                 message.message = field + ' ' + message.message;
                                 field = formDefaults.FORMKEY;
                             } else if (!field) {
