@@ -353,7 +353,7 @@
                         groups = {},
                         groupList = [],
                         options = [],
-                        group, grp;
+                        group;
 
                     forEach(field.options, function (opt) {
                         if (typeof(opt) === 'string') {
@@ -433,11 +433,6 @@
                     if (field.hasOwnProperty('search'))
                         scope.isSearchEnabled = field.search;
 
-                    // TODO:
-                    // optionaly apply UI-SELECT                --OK
-                    // set default skins BOOTSTRAP + SELECT2    --OK
-                    // apply filter                             --OK
-                    // error validation for remote options      --OK                            --
                     var selectUI = $($document[0].createElement('ui-select'))
                                     .attr('id', field.id)
                                     .attr('name', field.name)
