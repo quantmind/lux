@@ -29,13 +29,18 @@
             //
             select: {
                 widget: {
-                    default: 'ui-select',
-                    list: ['standard', 'ui-select']
+                    selectStandard: {
+                        name: 'selectStandard',
+                    },
+                    selectUI: {
+                        name: 'selectUI',
+                        search: true,
+                        theme: {
+                            selected: 'select2',
+                            available: ['select2', 'bootstrap']
+                        }
+                    }
                 },
-                theme: {
-                    default: 'select2',
-                    list: ['select2', 'bootstrap']
-                }
             },
             //
             formErrorClass: 'form-error',
@@ -105,7 +110,7 @@
                     'color': {element: 'input', type: 'color', editable: true, textBased: false},
                     'file': {element: 'input', type: 'file', editable: true, textBased: false},
                     'range': {element: 'input', type: 'range', editable: true, textBased: false},
-                    'select': {element: 'select', editable: true, textBased: false, widget: formDefaults.select.widget.default},
+                    'select': {element: 'select', editable: true, textBased: false, widget: formDefaults.select.widget.selectUI},
                     //  Pseudo-non-editables (containers)
                     'checklist': {element: 'div', editable: false, textBased: false},
                     'fieldset': {element: 'fieldset', editable: false, textBased: false},
@@ -371,8 +376,23 @@
                     });
 
                     var info = scope.info,
-                        element = this.input(scope),
-                        select = this._select(info.element, element);
+                        element = this.input(scope);
+
+                    if (info.hasOwnProperty('widget') && info.widget.name === 'selectUI')
+                        // UI-Select widget
+                        this.selectUI(scope, element, field, groupList, options);
+                    else
+                        // Standard select
+                        this.selectStandard(scope, element, field, groupList, options);
+
+                    return this.onChange(scope, element);
+                },
+                //
+                // Standard select widget
+                selectStandard: function(scope, element, field, groupList, options) {
+                    var groups = {},
+                        group, grp,
+                        select = this._select(scope.info.element, element);
 
                     if (groupList.length) {
                         if (options.length)
@@ -397,66 +417,92 @@
 
                     if (field.multiple)
                         select.attr('multiple', true);
-
-                    // replace old select with ui-select element
-                    if (info.hasOwnProperty('widget') && info.widget === 'ui-select')
-                        this.uiSelect(scope, element, field);
-
-                    return this.onChange(scope, element);
                 },
                 //
-                // UI-Select wrapper for select element
-                uiSelect: function(scope, element, field) {
+                // UI-Select widget
+                selectUI: function(scope, element, field, groupList, options) {
+                    //
+                    scope.groupBy = function (item) {
+                        return item.group;
+                    };
+
+                    // Search specified global
+                    scope.isSearchEnabled = formDefaults.select.widget.selectUI.search;
+
+                    // Search specified for field
+                    if (field.hasOwnProperty('search'))
+                        scope.isSearchEnabled = field.search;
+
                     // TODO:
                     // optionaly apply UI-SELECT                --OK
                     // set default skins BOOTSTRAP + SELECT2    --OK
-                    // apply filter
-                    // showing error
-                    // correctly post data
-                    var uiSelect = $($document[0].createElement('ui-select'))
+                    // apply filter                             --OK
+                    // error validation for remote options      --OK                            --
+                    var selectUI = $($document[0].createElement('ui-select'))
                                     .attr('id', field.id)
                                     .attr('name', field.name)
                                     .attr('ng-model', scope.formModelName + '["' + field.name + '"]')
-                                    .attr('theme', formDefaults.select.theme.default)
-                                    //.attr('ng-disabled', 'disabled')
-                                    //.attr('reset-search-input', false)
+                                    .attr('theme', scope.info.widget.theme.selected)
+                                    .attr('search-enabled', 'isSearchEnabled')
                                     .attr('ng-change', 'fireFieldChange("' + field.name + '")'),
-                                    //.attr('data-remote-options', field['data-remote-options']);
-                                    //.attr('id', field.id)
-                                    //.attr('data-remote-options-id', field['data-remote-options-id'])
-                                    //.attr('data-remote-options', field['data-remote-options'])
-                                    //.attr('ng-change', 'fireFieldChange("' + field.name + '")');
                         match = $($document[0].createElement('ui-select-match'))
                                     .attr('placeholder', 'Select or search ' + field.label.toLowerCase()),
                         choices_inner = $($document[0].createElement('div')),
+                        choices_inner_small = $($document[0].createElement('small')),
                         choices = $($document[0].createElement('ui-select-choices'))
                                     .append(choices_inner);
 
-                    //console.log(field);
-                    console.log('ok', field);
+                    if (field.multiple)
+                        selectUI.attr('multiple', true);
 
                     if (field.hasOwnProperty('data-remote-options')) {
-                        // Load remote options
-                        uiSelect.attr('data-remote-options', field['data-remote-options'])
+                        // Remote options
+                        selectUI.attr('data-remote-options', field['data-remote-options'])
                                 .attr('data-remote-options-id', field['data-remote-options-id'])
                                 .attr('data-remote-options-value', field['data-remote-options-value']);
-                        match.html('{{$select.selected.name}}');
+
+                        if (field.multiple)
+                            match.html('{{$item.name}}');
+                        else
+                            match.html('{{$select.selected.name}}');
+
                         choices.attr('repeat', field['data-ng-options-ui-select'] + ' | filter: $select.search');
                         choices_inner.html('{{item.name}}');
                     } else {
-                        // Load local options
-                        scope.options = field.options;
-                        match.html('{{$select.selected}}');
-                        choices.attr('repeat', 'item in options');
-                        choices_inner.html('{{item}}');
+                        // Local options
+                        var optsId = field.name + '_opts',
+                            repeatItems = 'opt.value as opt in ' + optsId + ' | filter: $select.search';
+
+                        if (field.multiple)
+                            match.html('{{$item.value}}');
+                        else
+                            match.html('{{$select.selected.value}}');
+
+                        if (groupList.length) {
+                            // Groups require raw options
+                            scope[optsId] = field.options;
+                            choices.attr('group-by', 'groupBy')
+                                   .attr('repeat', repeatItems);
+                            choices_inner.attr('ng-bind-html', 'opt.repr || opt.value');
+                        } else {
+                            scope[optsId] = options;
+                            choices.attr('repeat', repeatItems);
+
+                            if (options.length > 0) {
+                                var attrsNumber = Object.keys(options[0]).length;
+                                choices_inner.attr('ng-bind-html', 'opt.repr || opt.value');
+
+                                if (attrsNumber > 1) {
+                                    choices_inner_small.attr('ng-bind-html', 'opt.value');
+                                    choices.append(choices_inner_small);
+                                }
+                            }
+                        }
                     }
 
-                    console.log(scope);
-                    console.log(scope[scope.formModelName]);
-
-                    uiSelect.append(match);
-                    uiSelect.append(choices);
-                    element[0].replaceChild(uiSelect[0], element[0].childNodes[1]);
+                    selectUI.append(match);
+                    selectUI.append(choices);
+                    element[0].replaceChild(selectUI[0], element[0].childNodes[1]);
                 },
                 //
                 button: function (scope) {

@@ -72,7 +72,7 @@ class RestModel:
         Form class for this REST model in editing mode
     '''
     remote_options_str = 'item.id as item.name for item in {options}'
-    remote_options_str_ui_select = 'item in {options}'
+    remote_options_str_ui_select = 'item.id as item in {options}'
     _loaded = False
 
     def __init__(self, name, form=None, updateform=None, columns=None,
