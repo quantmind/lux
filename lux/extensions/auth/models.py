@@ -37,7 +37,7 @@ class User(Model, UserMixin):
     email = Column(String(120), unique=True)
     password = Column(String(120))
     groups = relationship("Group", secondary=users_groups,
-                          backref='users')
+                          backref='users', enable_typechecks=False)
     active = Column(Boolean)
     superuser = Column(Boolean)
     joined = Column(DateTime, default=datetime.utcnow)
