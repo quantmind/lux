@@ -36,7 +36,7 @@
                         name: 'selectUI',
                         search: true,
                         theme: {
-                            selected: 'select2',
+                            selected: 'bootstrap',
                             available: ['select2', 'bootstrap']
                         }
                     }
