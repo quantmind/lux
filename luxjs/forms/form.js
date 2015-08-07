@@ -677,7 +677,13 @@
                             if (isString(message))
                                 message = {message: message};
 
-                            var field = message.field || formDefaults.FORMKEY;
+                            var field = message.field;
+                            if (field && !scope[scope.formName].hasOwnProperty(field)) {
+                                message.message = field + ' ' + message.message;
+                                field = formDefaults.FORMKEY;
+                            } else if (!field) {
+                                field = formDefaults.FORMKEY;
+                            }
 
                             if (error) message.error = error;
 
