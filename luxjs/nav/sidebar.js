@@ -27,17 +27,23 @@
         //
         .value('sidebarTemplate', "nav/templates/sidebar.tpl.html")
         //
+        .value('navbarTemplate', "nav/templates/navbar.tpl.html")
+        //
         .service('sidebarService', ['linkService', 'navService', 'sidebarDefaults',
-            function (linkService, navService, sidebarDefaults) {
+                function (linkService, navService, sidebarDefaults) {
 
-            function initSideBar (element, sidebar, position) {
+            function initSideBar (sidebars, element, sidebar, position) {
                 sidebar = angular.extend({}, sidebarDefaults, sidebar);
                 sidebar.position = position;
                 if (!sidebar.collapse)
                     element.addClass('sidebar-open-' + position);
-                return sidebar;
+                if (sidebar.sections) {
+                    sidebars.push(sidebar);
+                    return sidebar;
+                }
             }
 
+            // Initialise scope and build left and right sidebar if available
             this.initScope = function (scope, opts, element) {
 
                 var sidebar = angular.extend({}, scope.sidebar, lux.getOptions(opts)),
@@ -45,9 +51,9 @@
                     left = sidebar.left,
                     right = sidebar.right;
 
-                if (left) sidebars.push(initSideBar(element, left, 'left'));
-                if (right) sidebars.push(initSideBar(element, right, 'right'));
-                if (!sidebars.length) sidebars.push(initSideBar(element, sidebar, 'left'));
+                if (left) initSideBar(sidebars, element, left, 'left');
+                if (right) initSideBar(sidebars, element, right, 'right');
+                if (!sidebars.length) initSideBar(sidebars, element, sidebar, 'left');
 
                 scope.container = sidebar.fluid ? 'container-fluid' : 'container';
 
@@ -80,7 +86,9 @@
                         submenu.addClass('active');
                     }
                 };
+
                 scope.navbar = initNavbar(sidebar.navbar, sidebars);
+                navService.initScope(scope);
                 return sidebars;
             };
 
@@ -121,8 +129,10 @@
         }])
         //
         //  Directive for the sidebar
-        .directive('sidebar', ['$compile', 'sidebarService', 'sidebarTemplate', '$templateCache',
-                        function ($compile, sidebarService, sidebarTemplate, $templateCache, $sce) {
+        .directive('sidebar', ['$compile', 'sidebarService', 'sidebarTemplate',
+                               'navbarTemplate', '$templateCache',
+                        function ($compile, sidebarService, sidebarTemplate, navbarTemplate,
+                                  $templateCache, $sce) {
             //
             return {
                 restrict: 'AE',
@@ -133,18 +143,26 @@
                     var inner = element.html();
                     //
                     element.html('');
-                    element.addClass('sidebar-body fullwidth');
-                    lux.querySelector(document, 'body').addClass('fullwidth');
 
                     return {
                         pre: function (scope, element, attrs) {
-                            var template = $templateCache.get(sidebarTemplate);
+                            var sidebars = sidebarService.initScope(scope, attrs, element),
+                                template;
 
-                            scope.sidebars = sidebarService.initScope(scope, attrs, element);
+                            if (sidebars.length) {
+                                scope.sidebars = sidebars;
+                                template = $templateCache.get(sidebarTemplate);
+                            } else
+                                template = $templateCache.get(navbarTemplate);
 
                             //element.replaceWith($compile(template)(scope));
                             element.append($compile(template)(scope));
-                            lux.querySelector(element, '.content-wrapper').append($compile(inner)(scope));
+                            inner = $compile(inner)(scope);
+
+                            if (sidebars.length)
+                                lux.querySelector(element, '.content-wrapper').append(inner);
+                            else
+                                element.after(inner);
                         }
                     };
                 }
