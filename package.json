@@ -3,6 +3,7 @@
     "title": "Lux Library",
     "contributors": [],
     "scripts": {
+        "postinstall": "bower install",
         "test": "grunt jasmine"
     },
     "version": "0.2.0",

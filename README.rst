@@ -43,9 +43,10 @@ Python Requirements
 Developing with lux.js
 ==========================
 
-First you need to install nodejs_ and  grunt_ cli::
+First you need to install nodejs_,  grunt_ cli and bower_::
 
     npm install -g grunt-cli
+    npm install -g bower
 
 Subsequently install the development packages via::
 
@@ -81,6 +82,7 @@ For testing postgreSQL create a new role::
 .. _gruntjs: http://gruntjs.com/
 .. _nodejs: http://nodejs.org/
 .. _grunt: http://gruntjs.com/
+.. _bower: http://bower.io/
 .. _markdown: https://pypi.python.org/pypi/Markdown
 .. _sphinx: http://sphinx-doc.org/
 .. _`grunt-html2js`: https://github.com/karlgoldstein/grunt-html2js
