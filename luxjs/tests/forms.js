@@ -64,11 +64,11 @@
             //
             var tags = form.children().children();
             expect(tags[0].tagName).toBe('LABEL');
-            expect(tags[1].tagName).toBe('SELECT');
+            expect(tags[1].tagName).toBe('DIV');
 
             var select = lux.$(tags[1]),
                 options = select.children();
-            expect(options.length).toBe(3);
+            expect(options.length).toBe(5);
             //
         }));
     });
