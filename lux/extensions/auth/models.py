@@ -3,7 +3,7 @@ SQLAlchemy models for Authentications
 '''
 from datetime import datetime
 
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, DateTime
 
 from odm.types import IPAddressType, UUIDType, JSONType
@@ -36,8 +36,10 @@ class User(Model, UserMixin):
     last_name = Column(String(30))
     email = Column(String(120), unique=True)
     password = Column(String(120))
-    groups = relationship("Group", secondary=users_groups,
-                          backref='users')
+    groups = relationship("Group",
+                          secondary=users_groups,
+                          enable_typechecks=False,
+                          backref=backref('users', enable_typechecks=False))
     active = Column(Boolean)
     superuser = Column(Boolean)
     joined = Column(DateTime, default=datetime.utcnow)

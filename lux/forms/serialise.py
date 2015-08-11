@@ -72,11 +72,12 @@ class Fieldset(AngularFormElement):
     '''A :class:`.Fieldset` is a collection of form fields
     '''
     type = 'fieldset'
+    all = False
 
     def __init__(self, *children, **attrs):
         self.children = children
         self.attrs = attrs
-        self.all = attrs.pop('all', False)
+        self.all = attrs.pop('all', self.all)
         if not self.attrs.get('type'):
             self.attrs['type'] = self.type
         self.type = self.attrs['type']
@@ -108,6 +109,7 @@ class Layout(Fieldset):
     type = 'form'
     form_class = None
     default_element = Fieldset
+    all = True
 
     def __init__(self, form, *children, **attrs):
         super().__init__(*children, **attrs)
@@ -124,7 +126,7 @@ class Layout(Fieldset):
         self.children = []
         for field in angular_fields(self.form_class, children, missings):
             self.children.append(field)
-        if missings:
+        if missings and self.all:
             field = self.default_element(*missings)
             field.setup(self.form_class, missings)
             self.children.append(field)
