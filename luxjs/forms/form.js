@@ -27,22 +27,6 @@
             showLabels: true,
             novalidate: true,
             //
-            select: {
-                widget: {
-                    selectStandard: {
-                        name: 'selectStandard',
-                    },
-                    selectUI: {
-                        name: 'selectUI',
-                        search: true,
-                        theme: {
-                            selected: 'bootstrap',
-                            available: ['select2', 'bootstrap']
-                        }
-                    }
-                },
-            },
-            //
             formErrorClass: 'form-error',
             FORMKEY: 'm__form',
             //
@@ -379,7 +363,7 @@
                     var info = scope.info,
                         element = this.input(scope);
 
-                    if (formDefaults.select.hasOwnProperty('widget') && formDefaults.select.widget.name === 'selectUI')
+                    if (formDefaults.elements.select.hasOwnProperty('widget') && formDefaults.elements.select.widget.name === 'selectUI')
                         // UI-Select widget
                         this.selectUI(scope, element, field, groupList, options);
                     else
@@ -427,7 +411,7 @@
                         return item.group;
                     };
                     // Search specified global
-                    scope.enableSearch = formDefaults.select.widget.enableSearch;
+                    scope.enableSearch = formDefaults.elements.select.widget.enableSearch;
 
                     // Search specified for field
                     if (field.hasOwnProperty('search'))
@@ -437,7 +421,7 @@
                                     .attr('id', field.id)
                                     .attr('name', field.name)
                                     .attr('ng-model', scope.formModelName + '["' + field.name + '"]')
-                                    .attr('theme', formDefaults.select.widget.theme)
+                                    .attr('theme', formDefaults.elements.select.widget.theme)
                                     .attr('search-enabled', 'enableSearch')
                                     .attr('ng-change', 'fireFieldChange("' + field.name + '")'),
                         match = $($document[0].createElement('ui-select-match'))
