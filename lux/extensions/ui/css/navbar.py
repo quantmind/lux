@@ -21,7 +21,6 @@ def add_css(all):
     navbar.collapse.background = '#eaeaea'
     navbar.collapse.max_height = px(999)
     navbar.collapse.margin.top = px(2)
-    navbar.collapse.border = '1px solid #d5d5d5'
     #
     # Navbar Height
     navbar.height = px(60)
@@ -36,12 +35,6 @@ def add_css(all):
     #
     collapse_width = px(cfg['NAVBAR_COLLAPSE_WIDTH'])
 
-    css('.navbar',
-        border_top='none',
-        border_left=navbar.collapse.border,
-        border_right=navbar.collapse.border,
-        border_bottom=navbar.collapse.border)
-
     css('.navbar.navbar-static-top',
         css(' .navbar-nav',
             css('> li > a',
@@ -55,6 +48,9 @@ def add_css(all):
         css(' .navbar-nav',
             css('> li > a',
                 line_height=navbar.lineheight)))
+
+    css('.navbar',
+        border_top='none')
 
     css('.navbar-brand', height=navbar.small_height)
 
