@@ -15,10 +15,9 @@ def add_css(all):
     # STYLING
     navbar = vars.navbar
     #
-    navbar.big_height = px(80)
-    navbar.offset = px(1)
     navbar.transition.duration_in = '0.6s'
     navbar.transition.duration_out = '0.2s'
+    navbar.transition.duration = '0.8s'
     navbar.collapse.background = '#eaeaea'
     navbar.collapse.max_height = px(999)
     navbar.collapse.margin.top = px(2)
@@ -26,9 +25,10 @@ def add_css(all):
     #
     # Navbar Height
     navbar.height = px(60)
+    navbar.big_height = px(80)
     navbar.small_height = px(60)
+    navbar.offset = px(1)
     navbar.lineheight = px(20)
-    navbar.transition.duration = '0.8s'
     navbar.padding = 0.5*(navbar.height-navbar.lineheight)
     navbar.small_padding = 0.5*(navbar.small_height-navbar.lineheight)
     vars.animate.fade.top = navbar.height
