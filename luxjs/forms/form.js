@@ -17,7 +17,7 @@
     //      formFieldChange: triggered when a form field changes:
     //          arguments: formmodel, field (changed)
     //
-    angular.module('lux.form', ['lux.form.utils', 'ui.select'])
+    angular.module('lux.form', ['lux.form.utils'])
         //
         .constant('formDefaults', {
             // Default layout
@@ -44,7 +44,44 @@
             },
             //
             formErrorClass: 'form-error',
-            FORMKEY: 'm__form'
+            FORMKEY: 'm__form',
+            //
+            // Supported elements
+            elements: {
+                'text': {element: 'input', type: 'text', editable: true, textBased: true},
+                'date': {element: 'input', type: 'date', editable: true, textBased: true},
+                'datetime': {element: 'input', type: 'datetime', editable: true, textBased: true},
+                'datetime-local': {element: 'input', type: 'datetime-local', editable: true, textBased: true},
+                'email': {element: 'input', type: 'email', editable: true, textBased: true},
+                'month': {element: 'input', type: 'month', editable: true, textBased: true},
+                'number': {element: 'input', type: 'number', editable: true, textBased: true},
+                'password': {element: 'input', type: 'password', editable: true, textBased: true},
+                'search': {element: 'input', type: 'search', editable: true, textBased: true},
+                'tel': {element: 'input', type: 'tel', editable: true, textBased: true},
+                'textarea': {element: 'textarea', editable: true, textBased: true},
+                'time': {element: 'input', type: 'time', editable: true, textBased: true},
+                'url': {element: 'input', type: 'url', editable: true, textBased: true},
+                'week': {element: 'input', type: 'week', editable: true, textBased: true},
+                //  Specialized editables
+                'checkbox': {element: 'input', type: 'checkbox', editable: true, textBased: false},
+                'color': {element: 'input', type: 'color', editable: true, textBased: false},
+                'file': {element: 'input', type: 'file', editable: true, textBased: false},
+                'range': {element: 'input', type: 'range', editable: true, textBased: false},
+                'select': {element: 'select', editable: true, textBased: false},
+                //  Pseudo-non-editables (containers)
+                'checklist': {element: 'div', editable: false, textBased: false},
+                'fieldset': {element: 'fieldset', editable: false, textBased: false},
+                'div': {element: 'div', editable: false, textBased: false},
+                'form': {element: 'form', editable: false, textBased: false},
+                'radio': {element: 'div', editable: false, textBased: false},
+                //  Non-editables (mostly buttons)
+                'button': {element: 'button', type: 'button', editable: false, textBased: false},
+                'hidden': {element: 'input', type: 'hidden', editable: false, textBased: false},
+                'image': {element: 'input', type: 'image', editable: false, textBased: false},
+                'legend': {element: 'legend', editable: false, textBased: false},
+                'reset': {element: 'button', type: 'reset', editable: false, textBased: false},
+                'submit': {element: 'button', type: 'submit', editable: false, textBased: false}
+            }
         })
         //
         .run(['$rootScope', '$lux', function (scope, $lux) {
@@ -84,49 +121,13 @@
                 }
             });
         }])
+
         //
         // The formService is a reusable component for redering form fields
         .service('standardForm', ['$log', '$http', '$document', '$templateCache', 'formDefaults',
                                   function (log, $http, $document, $templateCache, formDefaults) {
-
-            var supported = {
-                    //  Text-based elements
-                    'text': {element: 'input', type: 'text', editable: true, textBased: true},
-                    'date': {element: 'input', type: 'date', editable: true, textBased: true},
-                    'datetime': {element: 'input', type: 'datetime', editable: true, textBased: true},
-                    'datetime-local': {element: 'input', type: 'datetime-local', editable: true, textBased: true},
-                    'email': {element: 'input', type: 'email', editable: true, textBased: true},
-                    'month': {element: 'input', type: 'month', editable: true, textBased: true},
-                    'number': {element: 'input', type: 'number', editable: true, textBased: true},
-                    'password': {element: 'input', type: 'password', editable: true, textBased: true},
-                    'search': {element: 'input', type: 'search', editable: true, textBased: true},
-                    'tel': {element: 'input', type: 'tel', editable: true, textBased: true},
-                    'textarea': {element: 'textarea', editable: true, textBased: true},
-                    'time': {element: 'input', type: 'time', editable: true, textBased: true},
-                    'url': {element: 'input', type: 'url', editable: true, textBased: true},
-                    'week': {element: 'input', type: 'week', editable: true, textBased: true},
-                    //  Specialized editables
-                    'checkbox': {element: 'input', type: 'checkbox', editable: true, textBased: false},
-                    'color': {element: 'input', type: 'color', editable: true, textBased: false},
-                    'file': {element: 'input', type: 'file', editable: true, textBased: false},
-                    'range': {element: 'input', type: 'range', editable: true, textBased: false},
-                    'select': {element: 'select', editable: true, textBased: false, widget: formDefaults.select.widget.selectUI},
-                    //  Pseudo-non-editables (containers)
-                    'checklist': {element: 'div', editable: false, textBased: false},
-                    'fieldset': {element: 'fieldset', editable: false, textBased: false},
-                    'div': {element: 'div', editable: false, textBased: false},
-                    'form': {element: 'form', editable: false, textBased: false},
-                    'radio': {element: 'div', editable: false, textBased: false},
-                    //  Non-editables (mostly buttons)
-                    'button': {element: 'button', type: 'button', editable: false, textBased: false},
-                    'hidden': {element: 'input', type: 'hidden', editable: false, textBased: false},
-                    'image': {element: 'input', type: 'image', editable: false, textBased: false},
-                    'legend': {element: 'legend', editable: false, textBased: false},
-                    'reset': {element: 'button', type: 'reset', editable: false, textBased: false},
-                    'submit': {element: 'button', type: 'submit', editable: false, textBased: false}
-                },
-                //
-                baseAttributes = ['id', 'name', 'title', 'style'],
+            //
+            var baseAttributes = ['id', 'name', 'title', 'style'],
                 inputAttributes = extendArray([], baseAttributes, ['disabled', 'readonly', 'type', 'value', 'placeholder']),
                 textareaAttributes = extendArray([], baseAttributes, ['disabled', 'readonly', 'placeholder', 'rows', 'cols']),
                 buttonAttributes = extendArray([], baseAttributes, ['disabled']),
@@ -160,7 +161,7 @@
                     var self = this,
                         thisField = scope.field,
                         tc = thisField.type.split('.'),
-                        info = supported[tc.splice(0, 1)[0]],
+                        info = formDefaults.elements[tc.splice(0, 1)[0]],
                         renderer;
 
                     scope.extraClasses = tc.join(' ');
@@ -177,7 +178,7 @@
                     }
 
                     if (!renderer)
-                        renderer = this.renderNotSupported;
+                        renderer = this.renderNotElements;
 
                     var element = renderer.call(this, scope);
 
@@ -233,7 +234,7 @@
                     return element;
                 },
                 //
-                renderNotSupported: function (scope) {
+                renderNotForm: function (scope) {
                     return $($document[0].createElement('span')).html(field.label || '');
                 },
                 //
@@ -378,7 +379,7 @@
                     var info = scope.info,
                         element = this.input(scope);
 
-                    if (info.hasOwnProperty('widget') && info.widget.name === 'selectUI')
+                    if (formDefaults.select.hasOwnProperty('widget') && formDefaults.select.widget.name === 'selectUI')
                         // UI-Select widget
                         this.selectUI(scope, element, field, groupList, options);
                     else
@@ -425,20 +426,19 @@
                     scope.groupBy = function (item) {
                         return item.group;
                     };
-
                     // Search specified global
-                    scope.isSearchEnabled = formDefaults.select.widget.selectUI.search;
+                    scope.enableSearch = formDefaults.select.widget.enableSearch;
 
                     // Search specified for field
                     if (field.hasOwnProperty('search'))
-                        scope.isSearchEnabled = field.search;
+                        scope.enableSearch = field.search;
 
                     var selectUI = $($document[0].createElement('ui-select'))
                                     .attr('id', field.id)
                                     .attr('name', field.name)
                                     .attr('ng-model', scope.formModelName + '["' + field.name + '"]')
-                                    .attr('theme', scope.info.widget.theme.selected)
-                                    .attr('search-enabled', 'isSearchEnabled')
+                                    .attr('theme', formDefaults.select.widget.theme)
+                                    .attr('search-enabled', 'enableSearch')
                                     .attr('ng-change', 'fireFieldChange("' + field.name + '")'),
                         match = $($document[0].createElement('ui-select-match'))
                                     .attr('placeholder', 'Select or search ' + field.label.toLowerCase()),
