@@ -29,16 +29,18 @@ angular.module("nav/templates/navbar.tpl.html", []).run(["$templateCache", funct
     "                <span class=\"icon-bar\"></span>\n" +
     "                <span class=\"icon-bar\"></span>\n" +
     "            </button>\n" +
-    "            <ul ng-if=\"navbar.itemsLeft\" class=\"nav navbar-nav\">\n" +
-    "                <li ng-repeat=\"link in navbar.itemsLeft\" ng-class=\"{active:activeLink(link)}\" navbar-link>\n" +
+    "            <ul class=\"nav navbar-nav main-nav\">\n" +
+    "                <li ng-if=\"navbar.itemsLeft\" ng-repeat=\"link in navbar.itemsLeft\" ng-class=\"{active:activeLink(link)}\" navbar-link>\n" +
+    "                </li>\n" +
+    "                <li>\n" +
+    "                    <a ng-if=\"navbar.brandImage\" href=\"{{navbar.url}}\" class=\"navbar-brand\" target=\"{{navbar.target}}\">\n" +
+    "                        <img ng-src=\"{{navbar.brandImage}}\" alt=\"{{navbar.brand || 'brand'}}\">\n" +
+    "                    </a>\n" +
+    "                    <a ng-if=\"!navbar.brandImage && navbar.brand\" href=\"{{navbar.url}}\" class=\"navbar-brand\" target=\"{{navbar.target}}\">\n" +
+    "                        {{navbar.brand}}\n" +
+    "                    </a>\n" +
     "                </li>\n" +
     "            </ul>\n" +
-    "            <a ng-if=\"navbar.brandImage\" href=\"{{navbar.url}}\" class=\"navbar-brand\" target=\"{{navbar.target}}\">\n" +
-    "                <img ng-src=\"{{navbar.brandImage}}\" alt=\"{{navbar.brand || 'brand'}}\">\n" +
-    "            </a>\n" +
-    "            <a ng-if=\"!navbar.brandImage && navbar.brand\" href=\"{{navbar.url}}\" class=\"navbar-brand\" target=\"{{navbar.target}}\">\n" +
-    "                {{navbar.brand}}\n" +
-    "            </a>\n" +
     "        </div>\n" +
     "        <nav class=\"navbar-collapse\" bs-collapse-target>\n" +
     "            <ul ng-if=\"navbar.itemsRight\" class=\"nav navbar-nav navbar-right\">\n" +
