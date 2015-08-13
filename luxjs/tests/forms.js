@@ -71,4 +71,38 @@
             expect(options.length).toBe(3);
             //
         }));
+
+        it("select input + widget", inject(function($compile, $rootScope, formDefaults) {
+            lux.formTests.select = createForm({
+                type: 'select',
+                name: 'choice',
+                required: true,
+                options: ['one', 'two', 'three']
+            });
+
+            formDefaults.elements.select.widget = {
+                name: 'selectUI',
+                enableSearch: true,
+                theme: 'bootstrap'
+            };
+
+            var element = digest($compile, $rootScope,
+                '<div><lux-form data-options="lux.formTests.select"></lux-form></div>'),
+                form = element.children();
+            //
+            expect(form.length).toBe(1);
+            expect(form[0].tagName).toBe('FORM');
+            expect(form.children().length).toBe(1);
+            expect(form.children()[0].tagName).toBe('DIV');
+            //
+            var tags = form.children().children();
+            expect(tags[0].tagName).toBe('LABEL');
+            expect(tags[1].tagName).toBe('UI-SELECT');
+            expect(tags[1].getAttribute('theme')).toBe('bootstrap');
+
+            var select = lux.$(tags[1]),
+                options = select.children();
+            expect(options.length).toBe(2);
+            //
+        }));
     });
