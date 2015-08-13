@@ -1,10 +1,6 @@
-
-    describe("Test lux.form module", function() {
-        //
-        lux.formTests = {};
-
-        // Utility for creating a JSON form for testing
-        function createForm() {
+ // Utility for creating a JSON form for testing
+    var testFormUtils = {
+        createForm: function () {
             var form = {
                 field: {
                     type: 'form'
@@ -15,22 +11,25 @@
                 form['children'].push({field: attrs});
             });
             return form;
-        }
-
-        function digest ($compile, $rootScope, template) {
+        },
+        digest: function ($compile, $rootScope, template) {
             var scope = $rootScope.$new(),
                 element = $compile(template)(scope);
             scope.$digest();
             return element;
         }
+    };
+
+    describe("Test lux.form module", function() {
+        lux.formTests = {};
 
         beforeEach(function () {
             module('lux.form');
         });
 
         it("simple form - one input", inject(function($compile, $rootScope) {
-            lux.formTests.simple = createForm({type: 'text', name: 'body'});
-            var element = digest($compile, $rootScope,
+            lux.formTests.simple = testFormUtils.createForm({type: 'text', name: 'body'});
+            var element = testFormUtils.digest($compile, $rootScope,
                 '<div><lux-form data-options="lux.formTests.simple"></lux-form></div>'),
                 form = element.children();
             //
@@ -46,14 +45,14 @@
         }));
 
         it("select input", inject(function($compile, $rootScope) {
-            lux.formTests.select = createForm({
+            lux.formTests.select = testFormUtils.createForm({
                 type: 'select',
                 name: 'choice',
                 required: true,
                 options: ['one', 'two', 'three']
             });
 
-            var element = digest($compile, $rootScope,
+            var element = testFormUtils.digest($compile, $rootScope,
                 '<div><lux-form data-options="lux.formTests.select"></lux-form></div>'),
                 form = element.children();
             //
@@ -72,22 +71,43 @@
             //
         }));
 
-        it("select input + widget", inject(function($compile, $rootScope, formDefaults) {
-            lux.formTests.select = createForm({
+    });
+
+
+    describe("Test lux.form with selectUI", function() {
+
+        // Angular module for select-UI forms
+        angular.module('lux.form.test.selectui', ['lux.form'])
+
+            .factory('formElements', ['defaultFormElements', function (defaultFormElements) {
+                return function () {
+                    var elements = defaultFormElements();
+                    elements.select.widget = {
+                        name: 'selectUI',
+                        enableSearch: true,
+                        theme: 'bootstrap'
+                    };
+                    return elements;
+                };
+            }]);
+        //
+        lux.formSelectUITests = {};
+
+        beforeEach(function () {
+            module('lux.form.test.selectui');
+        });
+
+        it("select input + widget", inject(function($compile, $rootScope) {
+
+            lux.formSelectUITests.select = testFormUtils.createForm({
                 type: 'select',
                 name: 'choice',
                 required: true,
                 options: ['one', 'two', 'three']
             });
 
-            formDefaults.elements.select.widget = {
-                name: 'selectUI',
-                enableSearch: true,
-                theme: 'bootstrap'
-            };
-
-            var element = digest($compile, $rootScope,
-                '<div><lux-form data-options="lux.formTests.select"></lux-form></div>'),
+            var element = testFormUtils.digest($compile, $rootScope,
+                '<div><lux-form data-options="lux.formSelectUITests.select"></lux-form></div>'),
                 form = element.children();
             //
             expect(form.length).toBe(1);

@@ -28,10 +28,11 @@
             novalidate: true,
             //
             formErrorClass: 'form-error',
-            FORMKEY: 'm__form',
-            //
-            // Supported elements
-            elements: {
+            FORMKEY: 'm__form'
+        })
+        //
+        .constant('defaultFormElements', function () {
+            return {
                 'text': {element: 'input', type: 'text', editable: true, textBased: true},
                 'date': {element: 'input', type: 'date', editable: true, textBased: true},
                 'datetime': {element: 'input', type: 'datetime', editable: true, textBased: true},
@@ -65,8 +66,12 @@
                 'legend': {element: 'legend', editable: false, textBased: false},
                 'reset': {element: 'button', type: 'reset', editable: false, textBased: false},
                 'submit': {element: 'button', type: 'submit', editable: false, textBased: false}
-            }
+            };
         })
+        //
+        .factory('formElements', ['defaultFormElements', function (defaultFormElements) {
+            return defaultFormElements;
+        }])
         //
         .run(['$rootScope', '$lux', function (scope, $lux) {
             var formHandlers = {};
@@ -108,8 +113,8 @@
 
         //
         // The formService is a reusable component for redering form fields
-        .service('standardForm', ['$log', '$http', '$document', '$templateCache', 'formDefaults',
-                                  function (log, $http, $document, $templateCache, formDefaults) {
+        .service('standardForm', ['$log', '$http', '$document', '$templateCache', 'formDefaults', 'formElements',
+                                  function (log, $http, $document, $templateCache, formDefaults, formElements) {
             //
             var baseAttributes = ['id', 'name', 'title', 'style'],
                 inputAttributes = extendArray([], baseAttributes, ['disabled', 'readonly', 'type', 'value', 'placeholder']),
@@ -119,7 +124,8 @@
                 formAttributes = extendArray([], baseAttributes, ['accept-charset','autocomplete',
                                                                   'enctype', 'method', 'novalidate', 'target']),
                 validationAttributes = ['minlength', 'maxlength', 'min', 'max', 'required'],
-                ngAttributes = ['disabled', 'minlength', 'maxlength', 'required'];
+                ngAttributes = ['disabled', 'minlength', 'maxlength', 'required'],
+                elements = formElements();
 
             extend(this, {
                 name: 'default',
@@ -145,7 +151,7 @@
                     var self = this,
                         thisField = scope.field,
                         tc = thisField.type.split('.'),
-                        info = formDefaults.elements[tc.splice(0, 1)[0]],
+                        info = elements[tc.splice(0, 1)[0]],
                         renderer;
 
                     scope.extraClasses = tc.join(' ');
@@ -363,7 +369,7 @@
                     var info = scope.info,
                         element = this.input(scope);
 
-                    if (formDefaults.elements.select.hasOwnProperty('widget') && formDefaults.elements.select.widget.name === 'selectUI')
+                    if (elements.select.hasOwnProperty('widget') && elements.select.widget.name === 'selectUI')
                         // UI-Select widget
                         this.selectUI(scope, element, field, groupList, options);
                     else
@@ -411,7 +417,7 @@
                         return item.group;
                     };
                     // Search specified global
-                    scope.enableSearch = formDefaults.elements.select.widget.enableSearch;
+                    scope.enableSearch = elements.select.widget.enableSearch;
 
                     // Search specified for field
                     if (field.hasOwnProperty('search'))
@@ -421,7 +427,7 @@
                                     .attr('id', field.id)
                                     .attr('name', field.name)
                                     .attr('ng-model', scope.formModelName + '["' + field.name + '"]')
-                                    .attr('theme', formDefaults.elements.select.widget.theme)
+                                    .attr('theme', elements.select.widget.theme)
                                     .attr('search-enabled', 'enableSearch')
                                     .attr('ng-change', 'fireFieldChange("' + field.name + '")'),
                         match = $($document[0].createElement('ui-select-match'))

@@ -1,6 +1,6 @@
 //      Lux Library - v0.2.0
 
-//      Compiled 2015-08-11.
+//      Compiled 2015-08-13.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -2130,6 +2130,48 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
             FORMKEY: 'm__form'
         })
         //
+        .constant('defaultFormElements', function () {
+            return {
+                'text': {element: 'input', type: 'text', editable: true, textBased: true},
+                'date': {element: 'input', type: 'date', editable: true, textBased: true},
+                'datetime': {element: 'input', type: 'datetime', editable: true, textBased: true},
+                'datetime-local': {element: 'input', type: 'datetime-local', editable: true, textBased: true},
+                'email': {element: 'input', type: 'email', editable: true, textBased: true},
+                'month': {element: 'input', type: 'month', editable: true, textBased: true},
+                'number': {element: 'input', type: 'number', editable: true, textBased: true},
+                'password': {element: 'input', type: 'password', editable: true, textBased: true},
+                'search': {element: 'input', type: 'search', editable: true, textBased: true},
+                'tel': {element: 'input', type: 'tel', editable: true, textBased: true},
+                'textarea': {element: 'textarea', editable: true, textBased: true},
+                'time': {element: 'input', type: 'time', editable: true, textBased: true},
+                'url': {element: 'input', type: 'url', editable: true, textBased: true},
+                'week': {element: 'input', type: 'week', editable: true, textBased: true},
+                //  Specialized editables
+                'checkbox': {element: 'input', type: 'checkbox', editable: true, textBased: false},
+                'color': {element: 'input', type: 'color', editable: true, textBased: false},
+                'file': {element: 'input', type: 'file', editable: true, textBased: false},
+                'range': {element: 'input', type: 'range', editable: true, textBased: false},
+                'select': {element: 'select', editable: true, textBased: false},
+                //  Pseudo-non-editables (containers)
+                'checklist': {element: 'div', editable: false, textBased: false},
+                'fieldset': {element: 'fieldset', editable: false, textBased: false},
+                'div': {element: 'div', editable: false, textBased: false},
+                'form': {element: 'form', editable: false, textBased: false},
+                'radio': {element: 'div', editable: false, textBased: false},
+                //  Non-editables (mostly buttons)
+                'button': {element: 'button', type: 'button', editable: false, textBased: false},
+                'hidden': {element: 'input', type: 'hidden', editable: false, textBased: false},
+                'image': {element: 'input', type: 'image', editable: false, textBased: false},
+                'legend': {element: 'legend', editable: false, textBased: false},
+                'reset': {element: 'button', type: 'reset', editable: false, textBased: false},
+                'submit': {element: 'button', type: 'submit', editable: false, textBased: false}
+            };
+        })
+        //
+        .factory('formElements', ['defaultFormElements', function (defaultFormElements) {
+            return defaultFormElements;
+        }])
+        //
         .run(['$rootScope', '$lux', function (scope, $lux) {
             var formHandlers = {};
             $lux.formHandlers = formHandlers;
@@ -2167,49 +2209,13 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                 }
             });
         }])
+
         //
         // The formService is a reusable component for redering form fields
-        .service('standardForm', ['$log', '$http', '$document', '$templateCache', 'formDefaults',
-                                  function (log, $http, $document, $templateCache, formDefaults) {
-
-            var supported = {
-                    //  Text-based elements
-                    'text': {element: 'input', type: 'text', editable: true, textBased: true},
-                    'date': {element: 'input', type: 'date', editable: true, textBased: true},
-                    'datetime': {element: 'input', type: 'datetime', editable: true, textBased: true},
-                    'datetime-local': {element: 'input', type: 'datetime-local', editable: true, textBased: true},
-                    'email': {element: 'input', type: 'email', editable: true, textBased: true},
-                    'month': {element: 'input', type: 'month', editable: true, textBased: true},
-                    'number': {element: 'input', type: 'number', editable: true, textBased: true},
-                    'password': {element: 'input', type: 'password', editable: true, textBased: true},
-                    'search': {element: 'input', type: 'search', editable: true, textBased: true},
-                    'tel': {element: 'input', type: 'tel', editable: true, textBased: true},
-                    'textarea': {element: 'textarea', editable: true, textBased: true},
-                    'time': {element: 'input', type: 'time', editable: true, textBased: true},
-                    'url': {element: 'input', type: 'url', editable: true, textBased: true},
-                    'week': {element: 'input', type: 'week', editable: true, textBased: true},
-                    //  Specialized editables
-                    'checkbox': {element: 'input', type: 'checkbox', editable: true, textBased: false},
-                    'color': {element: 'input', type: 'color', editable: true, textBased: false},
-                    'file': {element: 'input', type: 'file', editable: true, textBased: false},
-                    'range': {element: 'input', type: 'range', editable: true, textBased: false},
-                    'select': {element: 'select', editable: true, textBased: false},
-                    //  Pseudo-non-editables (containers)
-                    'checklist': {element: 'div', editable: false, textBased: false},
-                    'fieldset': {element: 'fieldset', editable: false, textBased: false},
-                    'div': {element: 'div', editable: false, textBased: false},
-                    'form': {element: 'form', editable: false, textBased: false},
-                    'radio': {element: 'div', editable: false, textBased: false},
-                    //  Non-editables (mostly buttons)
-                    'button': {element: 'button', type: 'button', editable: false, textBased: false},
-                    'hidden': {element: 'input', type: 'hidden', editable: false, textBased: false},
-                    'image': {element: 'input', type: 'image', editable: false, textBased: false},
-                    'legend': {element: 'legend', editable: false, textBased: false},
-                    'reset': {element: 'button', type: 'reset', editable: false, textBased: false},
-                    'submit': {element: 'button', type: 'submit', editable: false, textBased: false}
-                },
-                //
-                baseAttributes = ['id', 'name', 'title', 'style'],
+        .service('standardForm', ['$log', '$http', '$document', '$templateCache', 'formDefaults', 'formElements',
+                                  function (log, $http, $document, $templateCache, formDefaults, formElements) {
+            //
+            var baseAttributes = ['id', 'name', 'title', 'style'],
                 inputAttributes = extendArray([], baseAttributes, ['disabled', 'readonly', 'type', 'value', 'placeholder']),
                 textareaAttributes = extendArray([], baseAttributes, ['disabled', 'readonly', 'placeholder', 'rows', 'cols']),
                 buttonAttributes = extendArray([], baseAttributes, ['disabled']),
@@ -2217,7 +2223,8 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                 formAttributes = extendArray([], baseAttributes, ['accept-charset','autocomplete',
                                                                   'enctype', 'method', 'novalidate', 'target']),
                 validationAttributes = ['minlength', 'maxlength', 'min', 'max', 'required'],
-                ngAttributes = ['disabled', 'minlength', 'maxlength', 'required'];
+                ngAttributes = ['disabled', 'minlength', 'maxlength', 'required'],
+                elements = formElements();
 
             extend(this, {
                 name: 'default',
@@ -2243,7 +2250,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                     var self = this,
                         thisField = scope.field,
                         tc = thisField.type.split('.'),
-                        info = supported[tc.splice(0, 1)[0]],
+                        info = elements[tc.splice(0, 1)[0]],
                         renderer;
 
                     scope.extraClasses = tc.join(' ');
@@ -2260,7 +2267,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                     }
 
                     if (!renderer)
-                        renderer = this.renderNotSupported;
+                        renderer = this.renderNotElements;
 
                     var element = renderer.call(this, scope);
 
@@ -2311,14 +2318,12 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                 //
                 addDirectives: function(scope, element) {
                     // lux-codemirror directive
-                    if (scope.field.hasOwnProperty('text_edit')) {
+                    if (scope.field.hasOwnProperty('text_edit'))
                         element.attr('lux-codemirror', scope.field.text_edit);
-                    }
-
                     return element;
                 },
                 //
-                renderNotSupported: function (scope) {
+                renderNotForm: function (scope) {
                     return $($document[0].createElement('span')).html(field.label || '');
                 },
                 //
@@ -2438,7 +2443,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                         groups = {},
                         groupList = [],
                         options = [],
-                        group, grp;
+                        group;
 
                     forEach(field.options, function (opt) {
                         if (typeof(opt) === 'string') {
@@ -2461,8 +2466,23 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                     });
 
                     var info = scope.info,
-                        element = this.input(scope),
-                        select = this._select(info.element, element);
+                        element = this.input(scope);
+
+                    if (elements.select.hasOwnProperty('widget') && elements.select.widget.name === 'selectUI')
+                        // UI-Select widget
+                        this.selectUI(scope, element, field, groupList, options);
+                    else
+                        // Standard select
+                        this.selectStandard(scope, element, field, groupList, options);
+
+                    return this.onChange(scope, element);
+                },
+                //
+                // Standard select widget
+                selectStandard: function(scope, element, field, groupList, options) {
+                    var groups = {},
+                        group, grp,
+                        select = this._select(scope.info.element, element);
 
                     if (groupList.length) {
                         if (options.length)
@@ -2487,8 +2507,86 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
 
                     if (field.multiple)
                         select.attr('multiple', true);
+                },
+                //
+                // UI-Select widget
+                selectUI: function(scope, element, field, groupList, options) {
+                    //
+                    scope.groupBy = function (item) {
+                        return item.group;
+                    };
+                    // Search specified global
+                    scope.enableSearch = elements.select.widget.enableSearch;
 
-                    return this.onChange(scope, element);
+                    // Search specified for field
+                    if (field.hasOwnProperty('search'))
+                        scope.enableSearch = field.search;
+
+                    var selectUI = $($document[0].createElement('ui-select'))
+                                    .attr('id', field.id)
+                                    .attr('name', field.name)
+                                    .attr('ng-model', scope.formModelName + '["' + field.name + '"]')
+                                    .attr('theme', elements.select.widget.theme)
+                                    .attr('search-enabled', 'enableSearch')
+                                    .attr('ng-change', 'fireFieldChange("' + field.name + '")'),
+                        match = $($document[0].createElement('ui-select-match'))
+                                    .attr('placeholder', 'Select or search ' + field.label.toLowerCase()),
+                        choices_inner = $($document[0].createElement('div')),
+                        choices_inner_small = $($document[0].createElement('small')),
+                        choices = $($document[0].createElement('ui-select-choices'))
+                                    .append(choices_inner);
+
+                    if (field.multiple)
+                        selectUI.attr('multiple', true);
+
+                    if (field.hasOwnProperty('data-remote-options')) {
+                        // Remote options
+                        selectUI.attr('data-remote-options', field['data-remote-options'])
+                                .attr('data-remote-options-id', field['data-remote-options-id'])
+                                .attr('data-remote-options-value', field['data-remote-options-value']);
+
+                        if (field.multiple)
+                            match.html('{{$item.name}}');
+                        else
+                            match.html('{{$select.selected.name}}');
+
+                        choices.attr('repeat', field['data-ng-options-ui-select'] + ' | filter: $select.search');
+                        choices_inner.html('{{item.name}}');
+                    } else {
+                        // Local options
+                        var optsId = field.name + '_opts',
+                            repeatItems = 'opt.value as opt in ' + optsId + ' | filter: $select.search';
+
+                        if (field.multiple)
+                            match.html('{{$item.value}}');
+                        else
+                            match.html('{{$select.selected.value}}');
+
+                        if (groupList.length) {
+                            // Groups require raw options
+                            scope[optsId] = field.options;
+                            choices.attr('group-by', 'groupBy')
+                                   .attr('repeat', repeatItems);
+                            choices_inner.attr('ng-bind-html', 'opt.repr || opt.value');
+                        } else {
+                            scope[optsId] = options;
+                            choices.attr('repeat', repeatItems);
+
+                            if (options.length > 0) {
+                                var attrsNumber = Object.keys(options[0]).length;
+                                choices_inner.attr('ng-bind-html', 'opt.repr || opt.value');
+
+                                if (attrsNumber > 1) {
+                                    choices_inner_small.attr('ng-bind-html', 'opt.value');
+                                    choices.append(choices_inner_small);
+                                }
+                            }
+                        }
+                    }
+
+                    selectUI.append(match);
+                    selectUI.append(choices);
+                    element[0].replaceChild(selectUI[0], element[0].childNodes[1]);
                 },
                 //
                 button: function (scope) {
@@ -3096,6 +3194,7 @@ angular.module('lux.form.utils', ['lux.services'])
                         id: val[id],
                         name: name
                     });
+
                 });
             }, function (data) {
                 /** TODO: add error alert */

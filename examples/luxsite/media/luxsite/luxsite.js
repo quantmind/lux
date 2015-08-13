@@ -1,6 +1,6 @@
 //      Lux Library - v0.2.0
 
-//      Compiled 2015-08-11.
+//      Compiled 2015-08-13.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -54,6 +54,7 @@
             "angular-strap": "//cdnjs.cloudflare.com/ajax/libs/angular-strap/2.2.1/angular-strap",
             "angular-strap-tpl": "//cdnjs.cloudflare.com/ajax/libs/angular-strap/2.2.4/angular-strap.tpl",
             "angular-ui-router": "//cdnjs.cloudflare.com/ajax/libs/angular-ui-router/0.2.14/angular-ui-router",
+            "angular-ui-select": "//cdnjs.cloudflare.com/ajax/libs/angular-ui-select/0.12.0/select",
             "angular-pusher": "//cdn.jsdelivr.net/angular.pusher/latest/pusher-angular.min.js",
             "async": "//cdnjs.cloudflare.com/ajax/libs/requirejs-async/0.1.1/async.js",
             "pusher": "//js.pusher.com/2.2/pusher",
@@ -91,6 +92,9 @@
             },
             "angular-strap-tpl": {
                 deps: ["angular", "angular-strap"]
+            },
+            "angular-ui-select": {
+                deps: ['angular']
             },
             "google-analytics": {
                 exports: root.GoogleAnalyticsObject || "ga"
