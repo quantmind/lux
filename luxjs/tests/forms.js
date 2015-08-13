@@ -80,7 +80,7 @@
                 options: ['one', 'two', 'three']
             });
 
-            formDefaults.select.widget = {
+            formDefaults.elements.select.widget = {
                 name: 'selectUI',
                 enableSearch: true,
                 theme: 'bootstrap'
