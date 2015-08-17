@@ -20,6 +20,13 @@
                 callbacks.push(callback);
             };
 
+            scope.sendMessage = function (url, msg, forceEncode) {
+                if (typeof msg !== 'string' || forceEncode) {
+                    msg = JSON.stringify(msg);
+                }
+                websockets[url].send(msg);
+            };
+
             scope.connectSockJs = function (url) {
                 if (websockets[url]) {
                     log.warn('Already connected with ' + url);
