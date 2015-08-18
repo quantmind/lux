@@ -39,6 +39,12 @@ function gridDataProviderRESTFactory ($lux) {
         getData.call(this, {}, options);
     };
 
+    GridDataProviderREST.prototype.deleteItem = function(identifier, onSuccess, onFailure) {
+        this.api.delete({path: this.subPath + '/' + identifier})
+            .success(onSuccess)
+            .error(onFailure);
+    };
+
     function getMetadata(callback) {
         /* jshint validthis:true */
         this.api.get({

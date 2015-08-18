@@ -177,7 +177,7 @@
             }
 
             // Add menu actions to grid
-            function addGridMenu(scope, api, gridOptions) {
+            function addGridMenu(scope, gridOptions) {
                 var menu = [],
                     stateName = window.location.href.split('/').pop(-1),
                     model = stateName.slice(0, -1),
@@ -220,13 +220,15 @@
                             var defer = $lux.q.defer(),
                                 pk = item[scope.gridOptions.metaFields.id];
 
-                            api.delete({path: subPath + '/' + pk})
-                                .success(function(resp) {
-                                    defer.resolve(gridDefaults.modal.delete.messages.success);
-                                })
-                                .error(function(error) {
-                                    defer.reject(gridDefaults.modal.delete.messages.error);
-                                });
+                            function onSuccess(resp) {
+                                defer.resolve(gridDefaults.modal.delete.messages.success);
+                            }
+
+                            function onFailure(error) {
+                                defer.reject(gridDefaults.modal.delete.messages.error);
+                            }
+
+                            gridDataProvider.deleteItem(pk, onSuccess, onFailure);
 
                             return defer.promise;
                         }
@@ -365,7 +367,6 @@
                     element.css('height', gridHeight + 'px');
                 };
 
-                var api = $lux.api(scope.options.target);
                 var gridOptions = {
                         paginationPageSizes: scope.paginationOptions.sizes,
                         paginationPageSize: scope.gridState.limit,
@@ -439,7 +440,7 @@
                     };
 
                 if (gridDefaults.showMenu)
-                    addGridMenu(scope, api, gridOptions);
+                    addGridMenu(scope, gridOptions);
 
                 return gridOptions;
             };
