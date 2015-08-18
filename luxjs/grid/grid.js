@@ -15,7 +15,7 @@
         };
     }
 
-    angular.module('lux.grid', ['lux.services', 'templates-grid', 'ngTouch', 'ui.grid',
+    angular.module('lux.grid', ['lux.services', 'lux.gridDataProviderREST', 'templates-grid', 'ngTouch', 'ui.grid',
                                 'ui.grid.pagination', 'ui.grid.selection', 'ui.grid.autoResize'])
         //
         .constant('gridDefaults', {
@@ -115,8 +115,10 @@
             }
         })
         //
-        .service('GridService', ['$lux', '$q', '$location', '$compile', '$modal', 'uiGridConstants', 'gridDefaults',
-            function($lux, $q, $location, $compile, $modal, uiGridConstants, gridDefaults) {
+        .service('GridService', ['$lux', '$q', '$location', '$compile', '$modal', 'uiGridConstants', 'gridDefaults', 'GridDataProviderREST',
+            function($lux, $q, $location, $compile, $modal, uiGridConstants, gridDefaults, GridDataProviderREST) {
+
+            var gridDataProvider;
 
             function parseColumns(columns, metaFields) {
                 var columnDefs = [],
@@ -171,7 +173,7 @@
                 });
             }
 
-            // Return column type accirding to type
+            // Return column type according to type
             function getColumnType(type) {
                 switch (type) {
                     case 'integer':     return 'number';
@@ -299,25 +301,38 @@
 
             // Get initial data
             this.getInitialData = function(scope) {
-                var api = $lux.api(scope.options.target),
-                    sub_path = scope.options.target.path || '';
+                gridDataProvider = new GridDataProviderREST(
+                    scope.options.target,
+                    scope.options.target.path || '',
+                    scope.gridState.limit
+                );
 
-                api.get({path: sub_path + '/metadata'}).success(function(resp) {
-                    scope.gridState.limit = resp['default-limit'];
+                function onMetadataReceived(metadata) {
+                    scope.gridState.limit = metadata['default-limit'];
                     scope.gridOptions.metaFields = {
-                        id: resp.id,
-                        repr: resp.repr
+                        id: metadata.id,
+                        repr: metadata.repr
                     };
-                    scope.gridOptions.columnDefs = parseColumns(resp.columns, scope.gridOptions.metaFields);
 
-                    api.get({path: sub_path}, {limit: scope.gridState.limit}).success(function(resp) {
-                        scope.gridOptions.totalItems = resp.total;
-                        scope.gridOptions.data = resp.result;
+                    scope.gridOptions.columnDefs = parseColumns(metadata.columns, scope.gridOptions.metaFields);
+                }
 
-                        // Update grid height
-                        scope.updateGridHeight();
-                    });
-                });
+                function onDataReceived(data) {
+                    scope.gridOptions.totalItems = data.total;
+                    scope.gridOptions.data = data.result;
+
+                    // Update grid height
+                    scope.updateGridHeight();
+
+                }
+
+                var listener = {
+                    onMetadataReceived: onMetadataReceived,
+                    onDataReceived: onDataReceived
+                };
+
+                gridDataProvider.addListener(listener);
+                gridDataProvider.connect();
             };
 
             // Builds grid options
@@ -357,8 +372,8 @@
                     element.css('height', gridHeight + 'px');
                 };
 
-                var api = $lux.api(scope.options.target),
-                    gridOptions = {
+                var api = $lux.api(scope.options.target);
+                var gridOptions = {
                         paginationPageSizes: scope.paginationOptions.sizes,
                         paginationPageSize: scope.gridState.limit,
                         enableFiltering: gridDefaults.enableFiltering,
