@@ -157,20 +157,14 @@
             }
 
             // Get specified page using params
-            function getPage(scope, api) {
+            function getPage(scope) {
                 var query = angular.extend({}, scope.gridState);
 
                 // Add filter if available
                 if (scope.gridFilters)
                     query = angular.extend(query, scope.gridFilters);
 
-                api.get({}, query).success(function(resp) {
-                    scope.gridOptions.totalItems = resp.total;
-                    scope.gridOptions.data = resp.result;
-
-                    // Update grid height depending on number of the rows
-                    scope.updateGridHeight();
-                });
+                gridDataProvider.getPage(query);
             }
 
             // Return column type according to type
@@ -244,7 +238,7 @@
                         });
 
                         $q.all(promises).then(function(results) {
-                            getPage(scope, api);
+                            getPage(scope);
                             modal.hide();
                             $lux.messages.success(results[0] + ' ' + results.length + ' ' + stateName);
                         }, function(results) {
@@ -304,7 +298,7 @@
                 gridDataProvider = new GridDataProviderREST(
                     scope.options.target,
                     scope.options.target.path || '',
-                    scope.gridState.limit
+                    scope.gridState
                 );
 
                 function onMetadataReceived(metadata) {
@@ -323,7 +317,6 @@
 
                     // Update grid height
                     scope.updateGridHeight();
-
                 }
 
                 var listener = {
@@ -394,14 +387,14 @@
                                     scope.gridState.limit = pageSize;
                                     scope.gridState.offset = pageSize*(pageNumber - 1);
 
-                                    getPage(scope, api);
+                                    getPage(scope);
                                 }, gridDefaults.requestDelay));
                                 //
                                 // Sorting
                                 scope.gridApi.core.on.sortChanged(scope, _.debounce(function(grid, sortColumns) {
                                     if( sortColumns.length === 0) {
                                         delete scope.gridState.sortby;
-                                        getPage(scope, api);
+                                        getPage(scope);
                                     } else {
                                         // Build query string for sorting
                                         angular.forEach(sortColumns, function(column) {
@@ -410,13 +403,13 @@
 
                                         switch( sortColumns[0].sort.direction ) {
                                             case uiGridConstants.ASC:
-                                                getPage(scope, api);
+                                                getPage(scope);
                                                 break;
                                             case uiGridConstants.DESC:
-                                                getPage(scope, api);
+                                                getPage(scope);
                                                 break;
                                             case undefined:
-                                                getPage(scope, api);
+                                                getPage(scope);
                                                 break;
                                         }
                                     }
@@ -438,7 +431,7 @@
                                     });
 
                                     // Get results
-                                    getPage(scope, api);
+                                    getPage(scope);
 
                                 }, gridDefaults.requestDelay));
                             });

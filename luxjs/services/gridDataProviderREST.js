@@ -32,7 +32,11 @@ function gridDataProviderRESTFactory ($lux) {
     };
 
     GridDataProviderREST.prototype.connect = function() {
-        getMetadata.call(this, getData.bind(this));
+        getMetadata.call(this, getData.bind(this, { path: this.subPath }, this.gridState));
+    };
+
+    GridDataProviderREST.prototype.getPage = function(options) {
+        getData.call(this, {}, options);
     };
 
     function getMetadata(callback) {
@@ -49,16 +53,12 @@ function gridDataProviderRESTFactory ($lux) {
         }.bind(this));
     }
 
-    function getData() {
+    function getData(path, options) {
         /* jshint validthis:true */
-        this.api.get(
-            { path: this.subPath },
-            { limit: this.gridState.limit }
-        ).success(function(data) {
+        this.api.get(path, options).success(function(data) {
             this.listeners.forEach(function(listener) {
                 listener.onDataReceived(data);
             });
-
         }.bind(this));
     }
 
