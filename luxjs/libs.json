@@ -55,7 +55,7 @@
                 "luxjs/page/*.js",
                 "luxjs/forms/*.js",
                 "luxjs/message/*.js",
-                "luxjs/grid/*.js",
+                "luxjs/grid/**/*.js",
                 "luxjs/users/*.js",
                 "luxjs/bootstrap.js",
                 "luxjs/blog/*.js",
