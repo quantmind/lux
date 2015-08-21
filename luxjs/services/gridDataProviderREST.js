@@ -8,31 +8,19 @@ angular.module('lux.gridDataProviderREST', ['lux.services'])
 
 function gridDataProviderRESTFactory ($lux) {
 
-    function GridDataProviderREST(target, subPath, gridState) {
-        this.api = $lux.api(target);
-        this.subPath = subPath;
-        this.gridState = gridState;
-
-        this.listeners = [];
+    function GridDataProviderREST(target, subPath, gridState, listener) {
+        this._api = $lux.api(target);
+        this._subPath = subPath;
+        this._gridState = gridState;
+        this._listener = listener;
     }
 
-    GridDataProviderREST.prototype.addListener = function(listener) {
-        this.listeners.push(listener);
-    };
-
-    GridDataProviderREST.prototype.removeListener = function(listener) {
-        var index = this.listeners.indexOf(listener);
-        if (index !== -1) {
-            this.listeners.splice(index, 1);
-        }
-    };
-
-    GridDataProviderREST.prototype.removeListeners = function() {
-        this.listeners = [];
+    GridDataProviderREST.prototype.destroy = function() {
+        this._listener = null;
     };
 
     GridDataProviderREST.prototype.connect = function() {
-        getMetadata.call(this, getData.bind(this, { path: this.subPath }, this.gridState));
+        getMetadata.call(this, getData.bind(this, { path: this._subPath }, this._gridState));
     };
 
     GridDataProviderREST.prototype.getPage = function(options) {
@@ -40,19 +28,17 @@ function gridDataProviderRESTFactory ($lux) {
     };
 
     GridDataProviderREST.prototype.deleteItem = function(identifier, onSuccess, onFailure) {
-        this.api.delete({path: this.subPath + '/' + identifier})
+        this._api.delete({path: this._subPath + '/' + identifier})
             .success(onSuccess)
             .error(onFailure);
     };
 
     function getMetadata(callback) {
         /* jshint validthis:true */
-        this.api.get({
-            path: this.subPath + '/metadata'
+        this._api.get({
+            path: this._subPath + '/metadata'
         }).success(function(metadata) {
-            this.listeners.forEach(function(listener) {
-                listener.onMetadataReceived(metadata);
-            });
+            this._listener.onMetadataReceived(metadata);
             if (typeof callback === 'function') {
                 callback();
             }
@@ -61,10 +47,8 @@ function gridDataProviderRESTFactory ($lux) {
 
     function getData(path, options) {
         /* jshint validthis:true */
-        this.api.get(path, options).success(function(data) {
-            this.listeners.forEach(function(listener) {
-                listener.onDataReceived(data);
-            });
+        this._api.get(path, options).success(function(data) {
+            this._listener.onDataReceived(data);
         }.bind(this));
     }
 

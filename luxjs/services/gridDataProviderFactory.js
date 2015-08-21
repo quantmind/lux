@@ -14,14 +14,14 @@ angular.module('lux.gridDataProviderFactory', [
 
 function gridDataProviderFactoryFactory (GridDataProviderREST, GridDataProviderWebsocket) {
 
-    function create(connectionType, target, subPath, gridState) {
+    function create(connectionType, target, subPath, gridState, listener) {
         switch (connectionType) {
             case 'GridDataProviderREST':
-                return new GridDataProviderREST(target, subPath, gridState);
+                return new GridDataProviderREST(target, subPath, gridState, listener);
             case 'GridDataProviderWebsocket':
-                return new GridDataProviderWebsocket(target.url + '/stream', gridState);
+                return new GridDataProviderWebsocket(target.url + '/stream', listener);
             default:
-                return new GridDataProviderREST(target, subPath, gridState);
+                return new GridDataProviderREST(target, subPath, gridState, listener);
         }
     }
 

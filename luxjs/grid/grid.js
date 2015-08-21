@@ -299,13 +299,6 @@ require(['lodash'], function(_) {
 
             // Get initial data
             this.getInitialData = function(scope, connectionType) {
-                gridDataProvider = GridDataProviderFactory.create(
-                    connectionType,
-                    scope.options.target,
-                    scope.options.target.path || '',
-                    scope.gridState
-                );
-
                 function onMetadataReceived(metadata) {
                     scope.gridState.limit = metadata['default-limit'];
                     scope.gridOptions.metaFields = {
@@ -348,7 +341,14 @@ require(['lodash'], function(_) {
                     onDataReceived: onDataReceived
                 };
 
-                gridDataProvider.addListener(listener);
+                gridDataProvider = GridDataProviderFactory.create(
+                    connectionType,
+                    scope.options.target,
+                    scope.options.target.path || '',
+                    scope.gridState,
+                    listener
+                );
+
                 gridDataProvider.connect();
 
             };
