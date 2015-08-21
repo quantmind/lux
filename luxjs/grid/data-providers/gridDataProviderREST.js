@@ -3,7 +3,7 @@
 //
 //	provides data to a lux.grid using REST calls
 
-angular.module('lux.gridDataProviderREST', ['lux.services'])
+angular.module('lux.grid.dataProviderREST', ['lux.services'])
     .factory('GridDataProviderREST', ['$lux', gridDataProviderRESTFactory]);
 
 function gridDataProviderRESTFactory ($lux) {

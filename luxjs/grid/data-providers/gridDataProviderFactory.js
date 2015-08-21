@@ -3,9 +3,9 @@
 //
 //	Selects appropriate grid data provider class depending on connection type
 
-angular.module('lux.gridDataProviderFactory', [
-    'lux.gridDataProviderREST',
-    'lux.gridDataProviderWebsocket'
+angular.module('lux.grid.dataProviderFactory', [
+    'lux.grid.dataProviderREST',
+    'lux.grid.dataProviderWebsocket'
 ])
     .factory('GridDataProviderFactory', [
         'GridDataProviderREST',

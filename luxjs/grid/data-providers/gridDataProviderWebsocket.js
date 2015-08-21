@@ -3,7 +3,7 @@
 //
 //	provides data to a lux.grid using websockets
 
-angular.module('lux.gridDataProviderWebsocket', ['lux.sockjs'])
+angular.module('lux.grid.dataProviderWebsocket', ['lux.sockjs'])
     .factory('GridDataProviderWebsocket', ['$lux', '$rootScope', gridDataProviderWebsocketFactory]);
 
 function gridDataProviderWebsocketFactory ($lux, $scope) {

@@ -17,7 +17,7 @@ require(['lodash'], function(_) {
         };
     }
 
-    angular.module('lux.grid', ['lux.services', 'lux.gridDataProviderFactory', 'templates-grid', 'ngTouch', 'ui.grid',
+    angular.module('lux.grid', ['lux.services', 'lux.grid.dataProviderFactory', 'templates-grid', 'ngTouch', 'ui.grid',
                                 'ui.grid.pagination', 'ui.grid.selection', 'ui.grid.autoResize'])
         //
         .constant('gridDefaults', {
