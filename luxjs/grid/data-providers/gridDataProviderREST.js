@@ -15,23 +15,33 @@ function gridDataProviderRESTFactory ($lux) {
         this._listener = listener;
     }
 
-    GridDataProviderREST.prototype.destroy = function() {
-        this._listener = null;
-    };
-
     GridDataProviderREST.prototype.connect = function() {
+        checkIfDestroyed.call(this);
         getMetadata.call(this, getData.bind(this, { path: this._subPath }, this._gridState));
     };
 
     GridDataProviderREST.prototype.getPage = function(options) {
+        checkIfDestroyed.call(this);
         getData.call(this, {}, options);
     };
 
     GridDataProviderREST.prototype.deleteItem = function(identifier, onSuccess, onFailure) {
+        checkIfDestroyed.call(this);
         this._api.delete({path: this._subPath + '/' + identifier})
             .success(onSuccess)
             .error(onFailure);
     };
+
+    GridDataProviderREST.prototype.destroy = function() {
+        this._listener = null;
+    };
+
+    function checkIfDestroyed() {
+        /* jshint validthis:true */
+        if (this._listener === null || typeof this._listener === 'undefined') {
+            throw 'GridDataProviderREST#connect error: either you forgot to define a listener, or you are attempting to use this data provider after it was destroyed.';
+        }
+    }
 
     function getMetadata(callback) {
         /* jshint validthis:true */
