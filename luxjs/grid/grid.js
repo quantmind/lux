@@ -401,6 +401,7 @@ require(['lodash'], function(_) {
                         enableRowHeaderSelection: gridDefaults.enableRowHeaderSelection,
                         useExternalPagination: gridDefaults.useExternalPagination,
                         useExternalSorting: gridDefaults.useExternalSorting,
+                        useExternalFiltering: gridDefaults.useExternalFiltering,
                         enableHorizontalScrollbar: gridDefaults.enableHorizontalScrollbar,
                         enableVerticalScrollbar: gridDefaults.enableVerticalScrollbar,
                         rowHeight: gridDefaults.rowHeight,
