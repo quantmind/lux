@@ -18,6 +18,8 @@ function gridDataProviderWebsocketFactory ($scope) {
     };
 
     GridDataProviderWebsocket.prototype.connect = function() {
+        checkIfDestroyed.call(this);
+
         // send dummy metadata until back-end is ready
         this._listener.onMetadataReceived({
             id: 'uuid',
@@ -126,6 +128,13 @@ function gridDataProviderWebsocketFactory ($scope) {
     GridDataProviderWebsocket.prototype.deleteItem = function(identifier, onSuccess, onFailure) {
         // not yet implemented
     };
+
+    function checkIfDestroyed() {
+        /* jshint validthis:true */
+        if (this._listener === null || typeof this._listener === 'undefined') {
+            throw 'GridDataProviderREST#connect error: either you forgot to define a listener, or you are attempting to use this data provider after it was destroyed.';
+        }
+    }
 
     return GridDataProviderWebsocket;
 }
