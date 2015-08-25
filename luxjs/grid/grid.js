@@ -18,10 +18,11 @@ require(['lodash'], function(_) {
     }
 
     angular.module('lux.grid', ['lux.services', 'lux.grid.dataProviderFactory', 'templates-grid', 'ngTouch', 'ui.grid',
-                                'ui.grid.pagination', 'ui.grid.selection', 'ui.grid.autoResize'])
+                                'ui.grid.pagination', 'ui.grid.selection', 'ui.grid.autoResize', 'ui.grid.resizeColumns'])
         //
         .constant('gridDefaults', {
             //
+            enableColumnResizing: true,
             enableFiltering: true,
             enableRowHeaderSelection: false,
             useExternalPagination: true,
@@ -405,6 +406,7 @@ require(['lodash'], function(_) {
                 var gridOptions = {
                         paginationPageSizes: scope.paginationOptions.sizes,
                         paginationPageSize: scope.gridState.limit,
+                        enableColumnResizing: gridDefaults.enableColumnResizing,
                         enableFiltering: gridDefaults.enableFiltering,
                         enableRowHeaderSelection: gridDefaults.enableRowHeaderSelection,
                         useExternalFiltering: gridDefaults.useExternalFiltering,
