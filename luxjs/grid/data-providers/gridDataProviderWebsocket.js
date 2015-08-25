@@ -114,7 +114,8 @@ function gridDataProviderWebsocketFactory ($scope) {
 
                 this._listener.onDataReceived({
                     total: 100, // TODO remove hard coded total
-                    result: tasks
+                    result: tasks,
+                    type: 'update'
                 });
             }
         }.bind(this));

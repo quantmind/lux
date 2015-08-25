@@ -312,6 +312,10 @@ require(['lodash'], function(_) {
                 function onDataReceived(data) {
                     scope.gridOptions.totalItems = data.total;
 
+                    if (data.type !== 'update') {
+                        scope.gridOptions.data = [];
+                    }
+
                     angular.forEach(data.result, function(row) {
                         var id = scope.gridOptions.metaFields.id;
                         var lookup = {};
