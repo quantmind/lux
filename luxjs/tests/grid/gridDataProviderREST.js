@@ -75,11 +75,13 @@ define(function(require) {
             expect(apiMock.success).toHaveBeenCalledWith(onSuccess);
             expect(apiMock.error).toHaveBeenCalledWith(onFailure);
         });
-/*
-        it('destroy() disables data provider', function() {
 
+        it('destroy() disables the data provider', function() {
+            dataProvider.destroy();
+
+            expect(dataProvider.connect).toThrow();
         });
-*/
+
         function createLuxMock(apiMock) {
             var $luxMock = {
                 api: function() {

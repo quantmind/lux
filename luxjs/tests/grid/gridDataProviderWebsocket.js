@@ -7,16 +7,21 @@ define(function(require) {
         var dataProvider;
         var websocketUrl = 'websocket://url';
         var scope = {};
+        var connectSockJsSpy;
+        var websocketListenerSpy;
 
         beforeEach(function () {
+            connectSockJsSpy = jasmine.createSpy();
+            websocketListenerSpy = jasmine.createSpy();
+
             angular.mock.module('lux.grid.dataProviderWebsocket', function ($provide) {
                 $provide.value('$lux', {});
             });
 
             inject(function (_GridDataProviderWebsocket_, $rootScope) {
                 GridDataProviderWebsocket = _GridDataProviderWebsocket_;
-                $rootScope.connectSockJs = jasmine.createSpy();
-                $rootScope.websocketListener = jasmine.createSpy();
+                $rootScope.connectSockJs = connectSockJsSpy;
+                $rootScope.websocketListener = websocketListenerSpy;
             });
 
             listener = {
@@ -36,21 +41,30 @@ define(function(require) {
             // TODO this callback is currently called immediately because we are mocking it out.
             // TODO in the future it will only be called when the socket connection responds.
             expect(listener.onMetadataReceived).toHaveBeenCalled();
-            /*
-             expect(apiMock.get).toHaveBeenCalledWith({ path: 'dummy/subPath/metadata' });
 
-             var onMetadataReceivedSuccessCallback = apiMock.success.calls.all()[0].args[0];
-             onMetadataReceivedSuccessCallback('metadata');
+            expect(connectSockJsSpy).toHaveBeenCalledWith(websocketUrl);
+            expect(websocketListenerSpy).toHaveBeenCalledWith('bmll_celery', jasmine.any(Function));
+        });
 
-             expect(listener.onMetadataReceived).toHaveBeenCalledWith('metadata');
+        it('connect() passes data from websocket response to onDataReceived', function () {
+            dataProvider.connect();
 
-             expect(apiMock.get).toHaveBeenCalledWith({ path: subPath }, gridState);
+            var callback = websocketListenerSpy.calls.all()[0].args[1];
 
-             var onDataReceivedSuccessCallback = apiMock.success.calls.all()[1].args[0];
-             onDataReceivedSuccessCallback('data');
+            callback({}, {
+                data: {
+                    event: 'task-status',
+                    data: 'dummy data'
+                }
+            });
 
-             expect(listener.onDataReceived).toHaveBeenCalledWith('data');
-             */
+            expect(listener.onDataReceived).toHaveBeenCalled();
+        });
+
+        it('destroy() disables the data provider', function () {
+            dataProvider.destroy();
+
+            expect(dataProvider.connect).toThrow();
         });
 
     });

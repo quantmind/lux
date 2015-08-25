@@ -5,6 +5,10 @@ define(function(require) {
         var GridDataProviderFactory;
         var GridDataProviderRESTMock = jasmine.createSpy('GridDataProviderREST');
         var GridDataProviderWebsocketMock = jasmine.createSpy('GridDataProviderWebsocket');
+        var target;
+        var subPath;
+        var gridState;
+        var listener;
 
         beforeEach(function () {
             angular.mock.module('lux.grid.dataProviderFactory', function($provide) {
@@ -15,6 +19,11 @@ define(function(require) {
             inject(function (_GridDataProviderFactory_) {
                 GridDataProviderFactory = _GridDataProviderFactory_;
             });
+
+            target = { url: 'dummy://url'};
+            subPath = 'dummy/subPath';
+            gridState = { dummy: 'gridstate' };
+            listener = { dummy: 'listener' };
         });
 
         afterEach(function () {
@@ -30,21 +39,11 @@ define(function(require) {
         });
 
         it('instantiates GridDataProviderREST given that connectionType and passes on other arguments', function() {
-            var target = { url: 'dummy://url'};
-            var subPath = 'dummy/subPath';
-            var gridState = { dummy: 'gridstate' };
-            var listener = { dummy: 'listener' };
-
             GridDataProviderFactory.create('GridDataProviderREST', target, subPath, gridState, listener);
             expect(GridDataProviderRESTMock).toHaveBeenCalledWith(target, subPath, gridState, listener);
         });
 
         it('instantiates GridDataProviderWebsocket given that connectionType and passes on other arguments', function() {
-            var target = { url: 'dummy://url'};
-            var subPath = 'dummy/subPath';
-            var gridState = { dummy: 'gridstate' };
-            var listener = { dummy: 'listener' };
-
             GridDataProviderFactory.create('GridDataProviderWebsocket', target, subPath, gridState, listener);
             expect(GridDataProviderWebsocketMock).toHaveBeenCalledWith('dummy://url/stream', listener);
         });
