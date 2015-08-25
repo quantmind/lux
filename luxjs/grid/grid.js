@@ -146,7 +146,7 @@ require(['lodash'], function(_) {
                     var callback = gridDefaults.columns[col.type];
                     if (callback) callback(column, col, uiGridConstants, gridDefaults);
 
-                    if (column.field === metaFields.repr) {
+                    if (typeof column.field !== 'undefined' && column.field === metaFields.repr) {
                         column.cellTemplate = gridDefaults.wrapCell('<a ng-href="{{grid.appScope.objectUrl(row.entity)}}">{{COL_FIELD}}</a>');
                         // Set repr column as the first column
                         columnDefs.splice(0, 0, column);
