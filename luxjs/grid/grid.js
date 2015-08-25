@@ -146,6 +146,14 @@ require(['lodash'], function(_) {
                     var callback = gridDefaults.columns[col.type];
                     if (callback) callback(column, col, uiGridConstants, gridDefaults);
 
+                    if (typeof col.cellFilter === 'string') {
+                        column.cellFilter = col.cellFilter;
+                    }
+
+                    if (typeof col.cellTemplate === 'string') {
+                        column.cellTemplate = gridDefaults.wrapCell(col.cellTemplate);
+                    }
+
                     if (typeof column.field !== 'undefined' && column.field === metaFields.repr) {
                         column.cellTemplate = gridDefaults.wrapCell('<a ng-href="{{grid.appScope.objectUrl(row.entity)}}">{{COL_FIELD}}</a>');
                         // Set repr column as the first column
@@ -399,9 +407,9 @@ require(['lodash'], function(_) {
                         paginationPageSize: scope.gridState.limit,
                         enableFiltering: gridDefaults.enableFiltering,
                         enableRowHeaderSelection: gridDefaults.enableRowHeaderSelection,
+                        useExternalFiltering: gridDefaults.useExternalFiltering,
                         useExternalPagination: gridDefaults.useExternalPagination,
                         useExternalSorting: gridDefaults.useExternalSorting,
-                        useExternalFiltering: gridDefaults.useExternalFiltering,
                         enableHorizontalScrollbar: gridDefaults.enableHorizontalScrollbar,
                         enableVerticalScrollbar: gridDefaults.enableVerticalScrollbar,
                         rowHeight: gridDefaults.rowHeight,

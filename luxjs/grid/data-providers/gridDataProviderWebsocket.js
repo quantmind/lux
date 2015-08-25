@@ -41,16 +41,15 @@ function gridDataProviderWebsocketFactory ($scope) {
                     sortable: true,
                     type: "string",
                     resizable: true
-
                 },
                 {
                     name: 'timestamp',
                     displayName: 'last event',
                     filter: true,
                     sortable: true,
-                    type: "string",
+                    type: "number",
                     resizable: true,
-                    cellFilter: 'amDateFormat:"YYYY-MM-DD HH:mm:ss"'
+                    cellTemplate: '<span>{{COL_FIELD * 1000 | amDateFormat:"YYYY-MM-DD HH:mm:ss"}}</span>'
                 },
                 {
                     name: 'name',
@@ -91,8 +90,9 @@ function gridDataProviderWebsocketFactory ($scope) {
                     displayName: 'eta',
                     filter: true,
                     sortable: true,
-                    type: "string",
-                    resizable: true
+                    type: "number",
+                    resizable: true,
+                    cellFilter: 'amDateFormat:"YYYY-MM-DD HH:mm:ss"'
                 },
                 {
                     name: 'result',
@@ -119,6 +119,24 @@ function gridDataProviderWebsocketFactory ($scope) {
                 });
             }
         }.bind(this));
+
+        // TODO Remove this. It's a dummy status update for development.
+        setTimeout(function() {
+            this._listener.onDataReceived({
+                total: 100,
+                result: [{
+                    args: "[]",
+                    eta: 1440517140003.5932,
+                    hostname: "gen25880@oxygen.bmll.local",
+                    kwargs: "{}",
+                    name: "bmll.server_status",
+                    status: "sent",
+                    timestamp: 1440517140.0035932,
+                    uuid: "fa5b8e1b-2be7-4ec5-a7a6-f3c82db14117"
+                }],
+                type: 'update'
+            });
+        }.bind(this), 1000);
 
     };
 
