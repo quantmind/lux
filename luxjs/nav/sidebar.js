@@ -97,8 +97,8 @@
                 // No navbar, add an object
                 if (!navbar)
                     navbar = {};
-                navbar.fixed = true;
-                navbar.top = true;
+                navbar.fixed = false;
+                navbar.top = false;
                 //
                 // Add toggle to the navbar
                 forEach(sidebars, function (sidebar) {

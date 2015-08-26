@@ -18,7 +18,6 @@ def add_css(all):
     navbar.transition.duration_in = '0.6s'
     navbar.transition.duration_out = '0.2s'
     navbar.transition.duration = '0.8s'
-    navbar.collapse.background = '#eaeaea'
     navbar.collapse.max_height = px(999)
     navbar.collapse.margin.top = px(2)
     #
@@ -26,8 +25,8 @@ def add_css(all):
     navbar.height = px(60)
     navbar.big_height = px(80)
     navbar.small_height = px(60)
-    navbar.offset = px(1)
     navbar.lineheight = px(20)
+    navbar.offset = px(1)
     navbar.padding = 0.5*(navbar.height-navbar.lineheight)
     navbar.small_padding = 0.5*(navbar.small_height-navbar.lineheight)
     vars.animate.fade.top = navbar.height
@@ -35,26 +34,18 @@ def add_css(all):
     #
     collapse_width = px(cfg['NAVBAR_COLLAPSE_WIDTH'])
 
-    css('.navbar.navbar-static-top',
+    css('.navbar',
         css(' .navbar-nav',
             css('> li > a',
-                line_height=navbar.lineheight)),
+                line_height=navbar.lineheight),
+            float='left',
+            margin=px(0),
+            height=px(navbar.small_height)),
         css(' .navbar-brand',
             css(' img', height=navbar.small_height),
             padding=0),
-        height=navbar.small_height)
-
-    css('.navbar.navbar-static-top',
-        css(' .navbar-nav',
-            css('> li > a',
-                line_height=navbar.lineheight)))
-
-    css('.navbar',
-        border_top='none')
-
-    css('.navbar-brand', height=navbar.small_height)
-
-    css('.navbar-nav', height=px(navbar.small_height))
+        margin_bottom=px(0),
+        min_height=navbar.small_height)
 
     css('.nav-second-level li a',
         padding_left=px(37))
@@ -65,16 +56,13 @@ def add_css(all):
     css('.nav.main-nav > li',
         float='left')
 
-    css('.navbar-nav',
-        margin=px(0))
-
     css('.right-divider',
         Border(left=px(1), color=navbar.divider.color),
         position='absolute',
         right=0,
         top=0,
         display='inline-block',
-        height=px(navbar.height) - px(navbar.offset))
+        height=px(navbar.height))
 
     css('.navbar-collapse',
         css(' .navbar-nav',
@@ -87,10 +75,10 @@ def add_css(all):
             css('.in',
                 Transition('max-height',
                            navbar.transition.duration_in, 'ease-in'),
+                border_top='1px solid #ddd',
                 max_height=px(navbar.collapse.max_height)),
             Transition('max-height',
                        navbar.transition.duration_out, 'ease-out'),
-            background=navbar.collapse.background,
             border_top='none',
             display='block',
             overflow='hidden',
@@ -98,7 +86,7 @@ def add_css(all):
 
     large = media(min_width=collapse_width)
 
-    large.css('.navbar.navbar-static-top',
+    large.css('.navbar',
               css(' .navbar-brand',
                   css(' img', height=navbar.height),
                   padding=spacing(0, 0, 0, 15)),
