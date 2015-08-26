@@ -6,7 +6,6 @@
     //      - use $modal service from angular-strap library
     //
     //
-require(['lodash'], function(_) {
 
     function dateSorting(column) {
 
@@ -319,34 +318,37 @@ require(['lodash'], function(_) {
                 }
 
                 function onDataReceived(data) {
-                    scope.gridOptions.totalItems = data.total;
+                    require(['lodash'], function(_) {
 
-                    if (data.type !== 'update') {
-                        scope.gridOptions.data = [];
-                    }
+                        scope.gridOptions.totalItems = data.total;
 
-                    angular.forEach(data.result, function(row) {
-                        var id = scope.gridOptions.metaFields.id;
-                        var lookup = {};
-                        lookup[id] = row[id];
-
-                        var index = _.findIndex(scope.gridOptions.data, lookup);
-                        if (index === -1) {
-                            scope.gridOptions.data.push(row);
-                        } else {
-                            scope.gridOptions.data[index] = _.merge(scope.gridOptions.data[index], row);
+                        if (data.type !== 'update') {
+                            scope.gridOptions.data = [];
                         }
 
+                        angular.forEach(data.result, function (row) {
+                            var id = scope.gridOptions.metaFields.id;
+                            var lookup = {};
+                            lookup[id] = row[id];
+
+                            var index = _.findIndex(scope.gridOptions.data, lookup);
+                            if (index === -1) {
+                                scope.gridOptions.data.push(row);
+                            } else {
+                                scope.gridOptions.data[index] = _.merge(scope.gridOptions.data[index], row);
+                            }
+
+                        });
+
+                        // Update grid height
+                        scope.updateGridHeight();
+
+                        // This only needs to be done when onDataReceived is called from an event outside the current execution block,
+                        // e.g. when using websockets.
+                        $timeout(function () {
+                            scope.$apply();
+                        }, 0);
                     });
-
-                    // Update grid height
-                    scope.updateGridHeight();
-
-                    // This only needs to be done when onDataReceived is called from an event outside the current execution block,
-                    // e.g. when using websockets.
-                    $timeout(function() {
-                        scope.$apply();
-                    }, 0);
                 }
 
                 var listener = {
@@ -416,62 +418,65 @@ require(['lodash'], function(_) {
                         enableVerticalScrollbar: gridDefaults.enableVerticalScrollbar,
                         rowHeight: gridDefaults.rowHeight,
                         onRegisterApi: function(gridApi) {
-                            scope.gridApi = gridApi;
+                            require(['lodash'], function(_) {
 
-                            //
-                            // Pagination
-                            scope.gridApi.pagination.on.paginationChanged(scope, _.debounce(function(pageNumber, pageSize) {
-                                scope.gridState.page = pageNumber;
-                                scope.gridState.limit = pageSize;
-                                scope.gridState.offset = pageSize*(pageNumber - 1);
+                                scope.gridApi = gridApi;
 
-                                getPage(scope);
-                            }, gridDefaults.requestDelay));
-                            //
-                            // Sorting
-                            scope.gridApi.core.on.sortChanged(scope, _.debounce(function(grid, sortColumns) {
-                                if( sortColumns.length === 0) {
-                                    delete scope.gridState.sortby;
+                                //
+                                // Pagination
+                                scope.gridApi.pagination.on.paginationChanged(scope, _.debounce(function (pageNumber, pageSize) {
+                                    scope.gridState.page = pageNumber;
+                                    scope.gridState.limit = pageSize;
+                                    scope.gridState.offset = pageSize * (pageNumber - 1);
+
                                     getPage(scope);
-                                } else {
-                                    // Build query string for sorting
-                                    angular.forEach(sortColumns, function(column) {
-                                        scope.gridState.sortby = column.name + ':' + column.sort.direction;
+                                }, gridDefaults.requestDelay));
+                                //
+                                // Sorting
+                                scope.gridApi.core.on.sortChanged(scope, _.debounce(function (grid, sortColumns) {
+                                    if (sortColumns.length === 0) {
+                                        delete scope.gridState.sortby;
+                                        getPage(scope);
+                                    } else {
+                                        // Build query string for sorting
+                                        angular.forEach(sortColumns, function (column) {
+                                            scope.gridState.sortby = column.name + ':' + column.sort.direction;
+                                        });
+
+                                        switch (sortColumns[0].sort.direction) {
+                                            case uiGridConstants.ASC:
+                                                getPage(scope);
+                                                break;
+                                            case uiGridConstants.DESC:
+                                                getPage(scope);
+                                                break;
+                                            case undefined:
+                                                getPage(scope);
+                                                break;
+                                        }
+                                    }
+                                }, gridDefaults.requestDelay));
+                                //
+                                // Filtering
+                                scope.gridApi.core.on.filterChanged(scope, _.debounce(function () {
+                                    var grid = this.grid;
+                                    scope.gridFilters = {};
+
+                                    // Add filters
+                                    angular.forEach(grid.columns, function (value, _) {
+                                        // Clear data in order to refresh icons
+                                        if (value.filter.type === 'select')
+                                            scope.clearData();
+
+                                        if (value.filters[0].term)
+                                            scope.gridFilters[value.colDef.name] = value.filters[0].term;
                                     });
 
-                                    switch( sortColumns[0].sort.direction ) {
-                                        case uiGridConstants.ASC:
-                                            getPage(scope);
-                                            break;
-                                        case uiGridConstants.DESC:
-                                            getPage(scope);
-                                            break;
-                                        case undefined:
-                                            getPage(scope);
-                                            break;
-                                    }
-                                }
-                            }, gridDefaults.requestDelay));
-                            //
-                            // Filtering
-                            scope.gridApi.core.on.filterChanged(scope, _.debounce(function() {
-                                var grid = this.grid;
-                                scope.gridFilters = {};
+                                    // Get results
+                                    getPage(scope);
 
-                                // Add filters
-                                angular.forEach(grid.columns, function(value, _) {
-                                    // Clear data in order to refresh icons
-                                    if (value.filter.type === 'select')
-                                        scope.clearData();
-
-                                    if (value.filters[0].term)
-                                        scope.gridFilters[value.colDef.name] = value.filters[0].term;
-                                });
-
-                                // Get results
-                                getPage(scope);
-
-                            }, gridDefaults.requestDelay));
+                                }, gridDefaults.requestDelay));
+                            });
                         }
                     };
 
@@ -480,6 +485,7 @@ require(['lodash'], function(_) {
 
                 return gridOptions;
             };
+
         }])
         //
         // Directive to build Angular-UI grid options using Lux REST API
@@ -516,4 +522,3 @@ require(['lodash'], function(_) {
             };
 
         }]);
-});
