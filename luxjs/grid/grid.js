@@ -20,6 +20,8 @@
                                 'ui.grid.pagination', 'ui.grid.selection', 'ui.grid.autoResize', 'ui.grid.resizeColumns'])
         //
         .constant('gridDefaults', {
+
+
             //
             enableColumnResizing: true,
             enableFiltering: true,
@@ -117,8 +119,8 @@
             }
         })
         //
-        .service('GridService', ['$lux', '$q', '$location', '$compile', '$modal', 'uiGridConstants', 'gridDefaults', 'GridDataProviderFactory', '$timeout',
-            function($lux, $q, $location, $compile, $modal, uiGridConstants, gridDefaults, GridDataProviderFactory, $timeout) {
+        .service('GridService', ['$lux', '$q', '$location', '$compile', '$modal', 'uiGridConstants', 'gridDefaults', 'GridDataProviderFactory', '$timeout', '$templateCache',
+            function($lux, $q, $location, $compile, $modal, uiGridConstants, gridDefaults, GridDataProviderFactory, $timeout, $templateCache) {
 
             var gridDataProvider;
 
@@ -150,8 +152,8 @@
                         column.cellFilter = col.cellFilter;
                     }
 
-                    if (typeof col.cellTemplate === 'string') {
-                        column.cellTemplate = gridDefaults.wrapCell(col.cellTemplate);
+                    if (typeof col.cellTemplateName === 'string') {
+                        column.cellTemplate = gridDefaults.wrapCell($templateCache.get(col.cellTemplateName));
                     }
 
                     if (typeof column.field !== 'undefined' && column.field === metaFields.repr) {
@@ -306,7 +308,7 @@
             }
 
             // Get initial data
-            this.getInitialData = function(scope, connectionType) {
+            this.getInitialData = function(scope, connectionType, gridConfig) {
                 function onMetadataReceived(metadata) {
                     scope.gridState.limit = metadata['default-limit'];
                     scope.gridOptions.metaFields = {
@@ -314,7 +316,11 @@
                         repr: metadata.repr
                     };
 
-                    scope.gridOptions.columnDefs = parseColumns(metadata.columns, scope.gridOptions.metaFields);
+                    scope.gridOptions.columnDefs = parseColumns(gridConfig.columns || metadata.columns, scope.gridOptions.metaFields);
+
+                    if (gridConfig.rowTemplate) {
+                        scope.gridOptions.rowTemplate = gridConfig.rowTemplate;
+                    }
                 }
 
                 function onDataReceived(data) {
@@ -504,15 +510,41 @@
                         var opts = attrs;
                         if (attrs.restGrid) opts = {options: attrs.restGrid};
 
-                        if (typeof attrs.gridDataProvider === 'string') {
-                            opts.gridDataProvider = attrs.gridDataProvider;
+                        opts = getOptions(opts);
+
+                        if (opts) {
+                            scope.gridOptions = GridService.buildOptions(scope, opts);
+                            GridService.getInitialData(scope, 'GridDataProviderRest', opts);
                         }
+
+                        var grid = '<div ui-if="gridOptions.data.length>0" class="grid" ui-grid="gridOptions" ui-grid-pagination ui-grid-selection ui-grid-auto-resize></div>';
+                        element.append($compile(grid)(scope));
+                    },
+                },
+            };
+
+        }])
+        // Directive to build Angular-UI grid options using Websockets
+        .directive('websocketGrid', ['$compile', 'GridService', function ($compile, GridService) {
+
+            return {
+                restrict: 'A',
+                link: {
+                    pre: function (scope, element, attrs) {
+                        var scripts= element[0].getElementsByTagName('script');
+
+                        forEach(scripts, function (js) {
+                            globalEval(js.innerHTML);
+                        });
+
+                        var opts = attrs;
+                        if (attrs.websocketGrid) opts = {options: attrs.websocketGrid};
 
                         opts = getOptions(opts);
 
                         if (opts) {
                             scope.gridOptions = GridService.buildOptions(scope, opts);
-                            GridService.getInitialData(scope, opts.gridDataProvider);
+                            GridService.getInitialData(scope, 'GridDataProviderWebsocket', opts.config);
                         }
 
                         var grid = '<div ui-if="gridOptions.data.length>0" class="grid" ui-grid="gridOptions" ui-grid-pagination ui-grid-selection ui-grid-auto-resize></div>';

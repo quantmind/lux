@@ -4,9 +4,9 @@
 //	provides data to a lux.grid using websockets
 
 angular.module('lux.grid.dataProviderWebsocket', ['lux.sockjs'])
-    .factory('GridDataProviderWebsocket', ['$rootScope', gridDataProviderWebsocketFactory]);
+    .factory('GridDataProviderWebsocket', ['$rootScope', '$templateCache', gridDataProviderWebsocketFactory]);
 
-function gridDataProviderWebsocketFactory ($scope) {
+function gridDataProviderWebsocketFactory ($scope, $templateCache) {
 
     function GridDataProviderWebsocket(websocketUrl, listener) {
         this._websocketUrl = websocketUrl;
@@ -23,87 +23,8 @@ function gridDataProviderWebsocketFactory ($scope) {
         // send dummy metadata until back-end is ready
         this._listener.onMetadataReceived({
             id: 'uuid',
-            total: 1,
             'default-limit': 25,
-            columns: [
-                {
-                    name: 'uuid',
-                    displayName: 'uuid',
-                    filter: true,
-                    sortable: true,
-                    type: "string",
-                    resizable: true
-                },
-                {
-                    name: 'hostname',
-                    displayName: 'worker',
-                    filter: true,
-                    sortable: true,
-                    type: "string",
-                    resizable: true
-                },
-                {
-                    name: 'timestamp',
-                    displayName: 'last event',
-                    filter: true,
-                    sortable: true,
-                    type: "number",
-                    resizable: true,
-                    cellTemplate: '<span>{{COL_FIELD * 1000 | amDateFormat:"YYYY-MM-DD HH:mm:ss"}}</span>'
-                },
-                {
-                    name: 'name',
-                    displayName: 'name',
-                    filter: true,
-                    //hidden: true,
-                    sortable: true,
-                    //field: "id",
-                    type: "string",
-                    resizable: true
-                },
-                {
-                    name: 'status',
-                    displayName: 'status',
-                    filter: true,
-                    sortable: true,
-                    type: "string",
-                    resizable: true
-                },
-                {
-                    name: 'args',
-                    displayName: 'args',
-                    filter: true,
-                    sortable: true,
-                    type: "string",
-                    resizable: true
-                },
-                {
-                    name: 'kwargs',
-                    displayName: 'kwargs',
-                    filter: true,
-                    sortable: true,
-                    type: "string",
-                    resizable: true
-                },
-                {
-                    name: 'eta',
-                    displayName: 'eta',
-                    filter: true,
-                    sortable: true,
-                    type: "number",
-                    resizable: true,
-                    cellFilter: 'amDateFormat:"YYYY-MM-DD HH:mm:ss"'
-                },
-                {
-                    name: 'result',
-                    displayName: 'result',
-                    filter: true,
-                    sortable: true,
-                    type: "string",
-                    resizable: true
-                }
-            ]
-        });
+            columns: [ 'uuid', 'hostname', 'timestamp', 'name', 'status', 'args', 'kwargs', 'eta', 'result' ]});
 
         $scope.connectSockJs(this._websocketUrl);
 
@@ -132,7 +53,8 @@ function gridDataProviderWebsocketFactory ($scope) {
                     name: "bmll.server_status",
                     status: "sent",
                     timestamp: 1440517140.0035932,
-                    uuid: "fa5b8e1b-2be7-4ec5-a7a6-f3c82db14117"
+                    uuid: "fa5b8e1b-2be7-4ec5-a7a6-f3c82db14117",
+                    result: ""
                 }],
                 type: 'update'
             });
