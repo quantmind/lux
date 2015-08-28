@@ -27,6 +27,10 @@
                 websockets[url].send(msg);
             };
 
+            scope.disconnectSockJs = function(url) {
+                websockets[url].close();
+            };
+
             scope.connectSockJs = function (url) {
                 if (websockets[url]) {
                     log.warn('Already connected with ' + url);
