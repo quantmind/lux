@@ -28,7 +28,8 @@
             };
 
             scope.disconnectSockJs = function(url) {
-                websockets[url].close();
+                if (websockets[url])
+                    websockets[url].close();
             };
 
             scope.connectSockJs = function (url) {
