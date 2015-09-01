@@ -19,13 +19,19 @@ def add_css(all):
     sidebar.toggle.margin = px(15)
     sidebar.toggle.size = px(21)
     sidebar.toggle.size_small = px(19)
-    sidebar.toggle.padding = 0.5*(navbar.height-sidebar.toggle.size) - px(1)
+    sidebar.toggle.padding = spacing(28, 22)
     # Style
     sidebar.background = '#2D3C4B'
     sidebar.color = '#eee'
     sidebar.toggle.border = '1px solid #ddd'
     sidebar.info.p.color = '#ccc'
     sidebar.info.background = '#425466'
+    sidebar.link.color = '#fff'
+    sidebar.link.background = '#263647'
+    #
+    sidebar.menu.max_height = px(999)
+    sidebar.menu.trans.duration_in = '0.6s'
+    sidebar.menu.trans.duration_out = '0.4s'
 
     trans = sidebar.transition
     # Why this? because unitary operations don't work yet and px(0) fails
@@ -33,12 +39,10 @@ def add_css(all):
     collapse_width = px(cfg['NAVBAR_COLLAPSE_WIDTH'])
 
     media(min_width=collapse_width).css(
-        '.navbar.navbar-static-top .navbar-nav',
-        css('> li > a.sidebar-toggle',
+        '.navbar',
+        css(' a.sidebar-toggle',
             font_size=sidebar.toggle.size,
-            line_height=sidebar.toggle.size,
-            padding_top=sidebar.toggle.padding,
-            padding_bottom=sidebar.toggle.padding))
+            padding=sidebar.toggle.padding))
 
     css('.fullwidth',
         width=pc(100),
@@ -47,9 +51,9 @@ def add_css(all):
     css('.sidebar-body',
         position='relative')
 
-    css('.sidebar-page',
+    css('.content-wrapper',
         position='relative',
-        top=0,
+        top=px(navbar.height),
         bottom=0,
         left=0,
         right=0)
@@ -131,9 +135,38 @@ def add_css(all):
             height=navbar.small_height,
             background=sidebar.info.background),
         css(' .sidebar-menu',
+            css(' > li',
+                css(' > .treeview-menu',
+                    background=sidebar.info.background),
+                css('.active > a',
+                    color=sidebar.link.color,
+                    background=sidebar.link.background,
+                    border_left_color=sidebar.link.color),
+                css(' > a',
+                    css(':hover',
+                        color=sidebar.link.color,
+                        background=sidebar.link.background,
+                        border_left_color=sidebar.link.color),
+                    margin_right=px(1),
+                    border_left='3px solid transparent',
+                    font_size=px(15)),
+                css('.header',
+                    background=sidebar.link.background,
+                    color=sidebar.link.color)),
             css(' .treeview-menu',
-                Transition('height', trans.duration, 'linear'),
+                Transition('max-height',
+                           sidebar.menu.trans.duration_out, 'ease-out'),
+                css(' > li',
+                    css('.active > a',
+                        color=sidebar.link.color),
+                    css(' > a',
+                        css(':hover',
+                            color=sidebar.link.color),
+                        color=sidebar.info.p.color)),
                 css('.active',
+                    Transition('max-height',
+                               sidebar.menu.trans.duration_in, 'ease-in'),
+                    max_height=px(sidebar.menu.max_height),
                     opacity=1,
                     height='100%'),
                 css(' .treeview-menu',
@@ -148,6 +181,7 @@ def add_css(all):
                         display='block',
                         font_size=px(14)),
                     margin=px(0)),
+                max_height=px(0),
                 list_style='none',
                 padding=px(0),
                 margin=px(0),
@@ -185,6 +219,15 @@ def add_css(all):
         margin_top=px(0),
         padding_bottom=px(10))
 
+    css('.treeview .active ~ .treeview-menu',
+        Transition('max-height', sidebar.menu.trans.duration_out, 'ease-out'),
+        css('.active',
+            Transition('max-height',
+                       sidebar.menu.trans.duration_in, 'ease-in'),
+            max_height=px(sidebar.menu.max_height)),
+        overflow='hidden',
+        max_height=px(0))
+
     large = media(min_width=collapse_width)
 
     large.css('.sidebar .nav-panel',
@@ -192,101 +235,5 @@ def add_css(all):
                   height=navbar.height-px(20)),
               height=navbar.height)
 
-    #  sidebar_skin(all)
-
-
-def small():
-    small = media(max_width=collapse_width)
-
-    small.css('.sidebar .nav-panel',
-              height=px(navbar.small_height))
-
-    small.css('.navbar-header > .navbar-nav',
-              float='left',
-              margin=px(0))
-
-    small.css('.sidebar-toggle',
-              font_size=sidebar.toggle.size_small,
-              padding_top='20px !important',
-              height=px(navbar.small_height))
-
-    small.css('.right-sidebar',
-              css(' .navbar-static-top',
-                  css(' .navbar-main',
-                      float='right',
-                      margin_right=px(1))))
-
-    small.css('.sidebar-left',
-              css(' .navbar-static-top',
-                  css(' .navbar-main',
-                      float='left',
-                      margin_left=px(1))))
-
-
-def sidebar_skin(all):
-    '''Sidebar default skin styles
-    '''
-    css = all.css
-    sidebar = all.variables.sidebar
-
-    # Dark skin
-    default = sidebar.skins.default
-    default.border_color = '#eee'
-    default.border_size = 1
-    default.color = '#eee'
-    default.background = '#2D3C4B'
-
-    default.header.background = '#fff'
-    default.header.color = '#eee'
-
-    default.menu.link.color = '#fff'
-    default.menu.link.background = '#263647'
-    default.menu.link.border_color = '#fff'
-    default.menu.section.color = '#fff'
-    default.menu.section.background = '#243241'
-
-    default.toggle.link.color = '#333'
-    default.toggle.link.color_hover = '#999'
-    default.toggle.link.background_hover = '#fff'
-
-    default.treeview.background = '#3E5165'
-    default.treeview.link.color = '#ccc'
-    default.treeview.link.color_active = '#fff'
-
-    if not sidebar.skin or sidebar.skin == 'default':
-        skin = default
-    else:
-        skin = sidebar.skins[sidebar.skin]
-
-    css('.skin',
-        css(' .sidebar',
-            css(' > .sidebar-menu',
-                css(' > li',
-                    css(' > .treeview-menu',
-                        background=skin.treeview.background),
-                    css('.active > a',
-                        color=skin.menu.link.color,
-                        background=skin.menu.link.background,
-                        border_left_color=skin.menu.link.border_color),
-                    css(' > a',
-                        css(':hover',
-                            color=skin.menu.link.color,
-                            background=skin.menu.link.background,
-                            border_left_color=skin.menu.link.border_color),
-                        margin_right=px(1),
-                        border_left='3px solid transparent',
-                        font_size=px(15)),
-                    css('.header',
-                        background=skin.menu.section.background,
-                        color=skin.menu.section.color),
-                    ))),
-        css(' .treeview-menu',
-            css(' > li',
-                css('.active > a',
-                    color=skin.treeview.link.color_active),
-                css(' > a',
-                    css(':hover',
-                        color=skin.treeview.link.color_active),
-                    color=skin.treeview.link.color),
-                ))
-        )
+    large.css('.content-wrapper',
+              top=px(navbar.big_height))
