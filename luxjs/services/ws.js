@@ -21,10 +21,15 @@
             };
 
             scope.sendMessage = function (url, msg, forceEncode) {
-                if (typeof msg !== 'string' || forceEncode) {
-                    msg = JSON.stringify(msg);
+                var sock = websockets[url];
+                if (!sock) {
+                    log.warn('Attempted to send message to disconnected WebSocket: ' + url);
+                } else {
+                    if (typeof msg !== 'string' || forceEncode) {
+                        msg = JSON.stringify(msg);
+                    }
+                    sock.send(msg);
                 }
-                websockets[url].send(msg);
             };
 
             scope.disconnectSockJs = function(url) {
