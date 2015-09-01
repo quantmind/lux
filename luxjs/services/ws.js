@@ -23,7 +23,7 @@
             scope.sendMessage = function (url, msg, forceEncode) {
                 var sock = websockets[url];
                 if (!sock) {
-                    log.warn('Attempted to send message to disconnected WebSocket: ' + url);
+                    log.error('Attempted to send message to disconnected WebSocket: ' + url);
                 } else {
                     if (typeof msg !== 'string' || forceEncode) {
                         msg = JSON.stringify(msg);
