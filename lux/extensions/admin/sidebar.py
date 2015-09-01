@@ -30,8 +30,6 @@ def add_css(all):
     sidebar.link.background = '#263647'
     #
     sidebar.menu.max_height = px(999)
-    sidebar.menu.trans.duration_in = '0.6s'
-    sidebar.menu.trans.duration_out = '0.4s'
 
     trans = sidebar.transition
     # Why this? because unitary operations don't work yet and px(0) fails
@@ -155,7 +153,7 @@ def add_css(all):
                     color=sidebar.link.color)),
             css(' .treeview-menu',
                 Transition('max-height',
-                           sidebar.menu.trans.duration_out, 'ease-out'),
+                           trans.duration, 'ease-out'),
                 css(' > li',
                     css('.active > a',
                         color=sidebar.link.color),
@@ -165,7 +163,7 @@ def add_css(all):
                         color=sidebar.info.p.color)),
                 css('.active',
                     Transition('max-height',
-                               sidebar.menu.trans.duration_in, 'ease-in'),
+                               trans.duration, 'ease-in'),
                     max_height=px(sidebar.menu.max_height),
                     opacity=1,
                     height='100%'),
@@ -220,10 +218,10 @@ def add_css(all):
         padding_bottom=px(10))
 
     css('.treeview .active ~ .treeview-menu',
-        Transition('max-height', sidebar.menu.trans.duration_out, 'ease-out'),
+        Transition('max-height', trans.duration, 'ease-out'),
         css('.active',
             Transition('max-height',
-                       sidebar.menu.trans.duration_in, 'ease-in'),
+                       trans.duration, 'ease-in'),
             max_height=px(sidebar.menu.max_height)),
         overflow='hidden',
         max_height=px(0))

@@ -81,8 +81,11 @@
                         item.removeClass('active');
                         submenu.removeClass('active');
                     } else {
-                        item.parent().parent().find('ul').removeClass('active');
-                        item.addClass('active');
+                        var itemRoot = item.parent().parent();
+                        itemRoot.find('ul').removeClass('active');
+                        itemRoot.find('li').removeClass('active');
+
+                        item.parent().addClass('active');
                         submenu.addClass('active');
                     }
                 };
