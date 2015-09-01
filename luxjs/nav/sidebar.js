@@ -98,7 +98,7 @@
                 if (!navbar)
                     navbar = {};
                 navbar.fixed = false;
-                navbar.top = false;
+                navbar.top = true;
                 //
                 // Add toggle to the navbar
                 forEach(sidebars, function (sidebar) {
