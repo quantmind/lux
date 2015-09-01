@@ -357,7 +357,7 @@
                     element.css('height', gridHeight + 'px');
                 };
 
-                var api = $lux.api(scope.options.target),
+                var api = scope.options.target ? $lux.api(scope.options.target) : null,
                     gridOptions = {
                         paginationPageSizes: scope.paginationOptions.sizes,
                         paginationPageSize: scope.gridState.limit,

@@ -15,9 +15,9 @@ class SocketIO(Router):
     info_cache = CacheControl(nostore=True)
     home_cache = CacheControl(maxage=60*60*24*30)
 
-    def __init__(self, route, **kwargs):
+    def __init__(self, route, handler_class=LuxWs, **kwargs):
         super().__init__(route, **kwargs)
-        self.handle = LuxWs()
+        self.handle = handler_class()
         self.add_child(WebSocket('/websocket', self.handle, **kwargs))
         self.add_child(WebSocket('<server_id>/<session_id>/websocket',
                                  self.handle, **kwargs))
