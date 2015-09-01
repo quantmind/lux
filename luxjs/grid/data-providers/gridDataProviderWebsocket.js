@@ -20,24 +20,28 @@ function gridDataProviderWebsocketFactory ($scope) {
     GridDataProviderWebsocket.prototype.connect = function() {
         checkIfDestroyed.call(this);
 
-        // send dummy metadata until back-end is ready
-        this._listener.onMetadataReceived({
-            id: 'uuid',
-            'default-limit': 25,
-            columns: [ 'uuid', 'hostname', 'timestamp', 'name', 'status', 'args', 'kwargs', 'eta', 'result' ]});
-
         $scope.connectSockJs(this._websocketUrl);
 
-        // TODO This websocket subscription will get everything: metadata and data (once back-end is working)
         $scope.websocketListener('bmll_celery', function(sock, msg) {
-            if (msg.data.event == 'task-status') {
-                var tasks = msg.data.data;
+            var tasks;
+
+            if (msg.data.event === 'record-update') {
+                tasks = msg.data.data;
 
                 this._listener.onDataReceived({
                     total: 100, // TODO remove hard coded total
                     result: tasks,
                     type: 'update'
                 });
+            } else if (msg.data.event === 'records') {
+                tasks = msg.data.data;
+
+                this._listener.onDataReceived({
+                    total: 100, // TODO remove hard coded total
+                    result: tasks
+                });
+            } else if (msg.data.event === 'columns-metadata') {
+                this._listener.onMetadataReceived(msg.data.data);
             }
         }.bind(this));
 
@@ -52,7 +56,7 @@ function gridDataProviderWebsocketFactory ($scope) {
                     kwargs: "{}",
                     name: "bmll.server_status",
                     status: "sent",
-                    timestamp: 1440517140.0035932,
+                    timestamp: 1440517140003.5932,
                     uuid: "fa5b8e1b-2be7-4ec5-a7a6-f3c82db14117",
                     result: "12:24:47 [p=20856, t=2828, ERROR, concurrent.futures] exception calling callback for <Future at 0x71854a8 state=finished raised RuntimeError>\n" +
 "Traceback (most recent call last):\n" +
@@ -116,7 +120,7 @@ function gridDataProviderWebsocketFactory ($scope) {
                 }],
                 type: 'update'
             });
-        }.bind(this), 0);
+        }.bind(this), 1000);
 
     };
 
