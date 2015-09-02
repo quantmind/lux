@@ -38,27 +38,65 @@ define(function(require) {
         it('connect() calls connectSockJs and websocketListener', function () {
             dataProvider.connect();
 
-            // TODO this callback is currently called immediately because we are mocking it out.
-            // TODO in the future it will only be called when the socket connection responds.
-            expect(listener.onMetadataReceived).toHaveBeenCalled();
-
             expect(connectSockJsSpy).toHaveBeenCalledWith(websocketUrl);
             expect(websocketListenerSpy).toHaveBeenCalledWith('bmll_celery', jasmine.any(Function));
         });
 
-        it('connect() passes data from websocket response to onDataReceived', function () {
+        it('connect() passes record-update data from websocket response to onDataReceived', function () {
+            var msg = {
+                data: {
+                    event: 'record-update',
+                    data: 'dummy data'
+                }
+            };
+
             dataProvider.connect();
 
             var callback = websocketListenerSpy.calls.all()[0].args[1];
 
-            callback({}, {
+            callback({}, msg);
+
+            expect(listener.onDataReceived).toHaveBeenCalledWith(jasmine.any(Object));
+            var obj = listener.onDataReceived.calls.all()[0].args[0];
+            expect(obj.result).toBe('dummy data');
+
+        });
+
+        it('connect() passes records data from websocket response to onDataReceived', function () {
+            var msg = {
                 data: {
-                    event: 'task-status',
+                    event: 'records',
                     data: 'dummy data'
                 }
-            });
+            };
 
-            expect(listener.onDataReceived).toHaveBeenCalled();
+            dataProvider.connect();
+
+            var callback = websocketListenerSpy.calls.all()[0].args[1];
+
+            callback({}, msg);
+
+            expect(listener.onDataReceived).toHaveBeenCalledWith(jasmine.any(Object));
+            var obj = listener.onDataReceived.calls.all()[0].args[0];
+            expect(obj.result).toBe('dummy data');
+
+        });
+
+        it('connect() passes columns-metadata data from websocket response to onMetadataReceived', function () {
+            var msg = {
+                data: {
+                    event: 'columns-metadata',
+                    data: 'dummy data'
+                }
+            };
+
+            dataProvider.connect();
+
+            var callback = websocketListenerSpy.calls.all()[0].args[1];
+
+            callback({}, msg);
+
+            expect(listener.onMetadataReceived).toHaveBeenCalledWith('dummy data');
         });
 
         it('destroy() disables the data provider', function () {
