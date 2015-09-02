@@ -337,10 +337,11 @@
 
                 function onDataReceived(data) {
                     require(['lodash'], function(_) {
-
                         scope.gridOptions.totalItems = data.total;
 
-                        if (data.type !== 'update') {
+                        if (data.type === 'update') {
+                            scope.gridState.limit = data.total;
+                        } else {
                             scope.gridOptions.data = [];
                         }
 
