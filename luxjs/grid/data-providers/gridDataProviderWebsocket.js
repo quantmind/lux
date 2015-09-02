@@ -33,6 +33,7 @@ function gridDataProviderWebsocketFactory ($scope) {
                     result: tasks,
                     type: 'update'
                 });
+
             } else if (msg.data.event === 'records') {
                 tasks = msg.data.data;
 
@@ -41,13 +42,17 @@ function gridDataProviderWebsocketFactory ($scope) {
                     result: tasks,
                     type: 'update'
                 });
+
+                setTimeout(sendFakeRecordOnce.bind(this), 0); // TODO Remove this. It's a dummy status update for development.
+
             } else if (msg.data.event === 'columns-metadata') {
                 this._listener.onMetadataReceived(msg.data.data);
             }
         }.bind(this));
 
         // TODO Remove this. It's a dummy status update for development.
-        setTimeout(function() {
+        var sendFakeRecordOnce = function() {
+            /* jshint validthis:true */
             this._listener.onDataReceived({
                 total: 100,
                 result: [{
@@ -121,7 +126,9 @@ function gridDataProviderWebsocketFactory ($scope) {
                 }],
                 type: 'update'
             });
-        }.bind(this), 1000);
+
+        sendFakeRecordOnce = function() {};
+        };
 
     };
 
