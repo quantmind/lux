@@ -122,10 +122,8 @@
                         api.login();
                     else if (!status)
                         $lux.log.error('Server down, could not complete request');
-                    else if (status === 404) {
-                        $lux.window.location.href = '/';
-                        $lux.window.reload();
-                    }
+                    else if (status === 404)
+                        $lux.log.info('Endpoint not found' + ((opts.path) ? ' @ ' + opts.path : ''));
                 });
                 return promise;
             };
