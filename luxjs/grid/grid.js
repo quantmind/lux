@@ -321,6 +321,10 @@
                     });
                 };
 
+                if (gridConfig.rowTemplate) {
+                    scope.gridOptions.rowTemplate = gridConfig.rowTemplate;
+                }
+
                 function onMetadataReceived(metadata) {
                     scope.gridState.limit = metadata['default-limit'];
                     scope.gridOptions.metaFields = {
@@ -329,10 +333,6 @@
                     };
 
                     scope.gridOptions.columnDefs = parseColumns(gridConfig.columns || metadata.columns, scope.gridOptions.metaFields);
-
-                    if (gridConfig.rowTemplate) {
-                        scope.gridOptions.rowTemplate = gridConfig.rowTemplate;
-                    }
                 }
 
                 function onDataReceived(data) {
