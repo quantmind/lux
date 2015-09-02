@@ -29,7 +29,7 @@ function gridDataProviderWebsocketFactory ($scope) {
                 tasks = msg.data.data;
 
                 this._listener.onDataReceived({
-                    total: 100, // TODO remove hard coded total
+                    total: msg.data.total,
                     result: tasks,
                     type: 'update'
                 });
@@ -37,8 +37,9 @@ function gridDataProviderWebsocketFactory ($scope) {
                 tasks = msg.data.data;
 
                 this._listener.onDataReceived({
-                    total: 100, // TODO remove hard coded total
-                    result: tasks
+                    total: msg.data.total,
+                    result: tasks,
+                    type: 'update'
                 });
             } else if (msg.data.event === 'columns-metadata') {
                 this._listener.onMetadataReceived(msg.data.data);
