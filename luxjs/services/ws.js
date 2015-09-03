@@ -20,6 +20,23 @@
                 callbacks.push(callback);
             };
 
+            scope.sendMessage = function (url, msg, forceEncode) {
+                var sock = websockets[url];
+                if (!sock) {
+                    log.error('Attempted to send message to disconnected WebSocket: ' + url);
+                } else {
+                    if (typeof msg !== 'string' || forceEncode) {
+                        msg = JSON.stringify(msg);
+                    }
+                    sock.send(msg);
+                }
+            };
+
+            scope.disconnectSockJs = function(url) {
+                if (websockets[url])
+                    websockets[url].close();
+            };
+
             scope.connectSockJs = function (url) {
                 if (websockets[url]) {
                     log.warn('Already connected with ' + url);
