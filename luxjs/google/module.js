@@ -43,17 +43,29 @@
 
                     // Add a marker to the map
                     self.addMarker = function(map, marker, location) {
-                        if (marker)
+                        if (marker) {
                             var gmarker = new google.maps.Marker(angular.extend({
                                 position: location,
                                 map: map,
                             }, marker));
+                            return gmarker;
+                        }
                     };
 
                     // Add marker using lat and lng
                     self.addLocation = function(map, marker, lat, lng) {
                         var loc = new google.maps.LatLng(lat, lng);
-                        self.addMarker(map, marker, loc);
+                        return self.addMarker(map, marker, loc);
+                    };
+
+                    // Returns an instance of location for specific lat and lng
+                    self.getLocation = function(lat, lng) {
+                        return new google.maps.LatLng(lat, lng);
+                    };
+
+                    // Returns an instance of InfoWindow for specific content
+                    self.getInfoWindow = function(content) {
+                        return new google.maps.InfoWindow({content: content});
                     };
 
                     // Initialize google maps
