@@ -28,7 +28,8 @@
         "grunt-contrib-uglify": "",
         "grunt": "",
         "docco": "",
-        "grunt-contrib-copy": ""
+        "grunt-contrib-copy": "",
+        "grunt-contrib-watch": ""
     },
     "keywords": [],
     "author": {
