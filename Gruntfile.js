@@ -23,6 +23,17 @@ module.exports = function (grunt) {
                                'lodash']
                     }
                 }
+            },
+            watch: {
+                options: {
+                    atBegin: true,
+                    livereload: true
+                },
+                files: [
+                    '<%= concat.lux.src %>',
+                    'luxjs/**/*.tpl.html'
+                ],
+                tasks: ['html2js', 'concat', 'jshint', 'uglify', 'jasmine']
             }
         };
     //
@@ -128,7 +139,7 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-contrib-concat');
     grunt.loadNpmTasks('grunt-contrib-jasmine');
     //grunt.loadNpmTasks('grunt-contrib-nodeunit');
-    //grunt.loadNpmTasks('grunt-contrib-watch');
+    grunt.loadNpmTasks('grunt-contrib-watch');
     //grunt.loadNpmTasks('grunt-docco');
     //
     grunt.registerTask('gruntfile', 'jshint Gruntfile.js',
