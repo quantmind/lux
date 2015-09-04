@@ -1301,65 +1301,72 @@ function(angular, root) {
         return decodeURIComponent(escape(window.atob(output)));
     }
 
-    //
-    //  SockJS Module
-    //  ==================
-    //
-    //
-    //
-    angular.module('lux.sockjs', [])
+ //
+ // Websocket handler for RPC and pub/sub messages
+ function sockJs (url, websockets, websocketChannels, log) {
+        var hnd = {},
+            context = websockets[url];
 
-        .run(['$rootScope', '$log', function (scope, log) {
-
-            var websockets = {},
-                websocketChannels = {};
-
-            scope.websocketListener = function (channel, callback) {
-                var callbacks = websocketChannels[channel];
-                if (!callbacks) {
-                    callbacks = [];
-                    websocketChannels[channel] = callbacks;
-                }
-                callbacks.push(callback);
+        if (!context) {
+            context = {
+                executed: {},
+                id: 0
             };
 
-            scope.sendMessage = function (url, msg, forceEncode) {
-                var sock = websockets[url];
-                if (!sock) {
-                    log.error('Attempted to send message to disconnected WebSocket: ' + url);
-                } else {
-                    if (typeof msg !== 'string' || forceEncode) {
-                        msg = JSON.stringify(msg);
-                    }
-                    sock.send(msg);
-                }
-            };
+            websockets[url] = context;
+        }
 
-            scope.disconnectSockJs = function(url) {
-                if (websockets[url])
-                    websockets[url].close();
-            };
+        hnd.url = function () {
+            return url;
+        };
 
-            scope.connectSockJs = function (url) {
-                if (websockets[url]) {
-                    log.warn('Already connected with ' + url);
-                    return;
-                }
+        // RPC call
+        //
+        //  method: rpc method to call
+        //  data: optional object with rpc parameters
+        //  callback: optinal callback invoked when a response is received
+        hnd.rpc = function (method, data, callback) {
+            data = {
+                method: method,
+                id: ++context.id,
+                data: data
+            };
+            var msg = JSON.stringify(data);
+            data.callback = callback;
+            context.executed[data.id] = data;
+            return hnd.sendMessage(msg);
+        };
+
+        hnd.connect = function (onopen) {
+            var sock = context.sock;
+
+            if (angular.isArray(sock)) {
+                if (onopen) sock.push(onopen);
+            }
+            else if (sock) {
+                if (onopen) onopen(sock);
+            } else {
+                sock = [];
+                context.sock = sock;
+                if (onopen) sock.push(onopen);
 
                 require(['sockjs'], function (SockJs) {
                     var sock = new SockJs(url);
 
-                    websockets[url] = sock;
-
                     sock.onopen = function() {
-                        websockets[url] = sock;
+                        var callbacks = context.sock;
+                        context.sock = sock;
                         log.info('New connection with ' + url);
+                        callbacks.forEach(function (cbk) {
+                            cbk(sock);
+                        });
                     };
 
                     sock.onmessage = function (e) {
                         var msg = angular.fromJson(e.data),
                             listeners;
-                        log.info('event', msg.event);
+                        if (msg.event)
+                            log.info('event', msg.event);
                         if (msg.channel)
                             listeners = websocketChannels[msg.channel];
                         if (msg.data)
@@ -1375,10 +1382,60 @@ function(angular, root) {
                         log.warn('Connection with ' + url + ' CLOSED');
                     };
                 });
+            }
+            return hnd;
+        };
+
+        hnd.sendMessage = function (msg, forceEncode) {
+            return hnd.connect(function (sock) {
+                if (typeof msg !== 'string' || forceEncode) {
+                    msg = JSON.stringify(msg);
+                }
+                sock.send(msg);
+            });
+        };
+
+        hnd.disconnect = function (url) {
+            var sock = context.sock;
+
+            if (angular.isArray(sock))
+                sock.push(function (s) {
+                    s.close();
+                });
+            else if (sock)
+                sock.close();
+            return hnd;
+        };
+
+        hnd.listener = function (channel, callback) {
+            var callbacks = websocketChannels[channel];
+            if (!callbacks) {
+                callbacks = [];
+                websocketChannels[channel] = callbacks;
+            }
+            callbacks.push(callback);
+        };
+
+        return hnd;
+    }
+
+    //
+    //  Sockodule
+    //  ==================
+    //
+    //
+    //
+    angular.module('lux.sockjs', [])
+
+        .run(['$rootScope', '$log', function (scope, log) {
+
+            var websockets = {},
+                websocketChannels = {};
+
+            scope.sockJs = function (url) {
+                return sockJs(url, websockets, websocketChannels, log);
             };
 
-            if (scope.STREAM_URL)
-                scope.connectSockJs(scope.STREAM_URL);
         }]);
 
     angular.module('lux.cms', [
