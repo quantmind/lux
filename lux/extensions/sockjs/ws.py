@@ -35,6 +35,12 @@ class WsClient:
         transport.cache.wsclient = self
         transport.on_open(self)
 
+    @property
+    def cache(self):
+        '''A cache object to store session persistent data
+        '''
+        return self.transport.cache
+
     def __str__(self):
         return '%s - %s' % (self.address, self.session_id)
 
@@ -72,7 +78,48 @@ class WsClient:
         self.write(LUX_ERROR, data=data)
 
 
-class LuxWs(ws.WS):
+class WsApi:
+    '''Web socket API handler
+    '''
+    def __init__(self, app):
+        self.methods = dict(self._ws_methods(app))
+
+    def __call__(self, ws, msg):
+        try:
+            if 'method' in msg:
+                method = msg['method']
+                if method in self.methods:
+                    self.methods[method](ws, msg.get('data'))
+                else:
+                    raise rpc.NoSuchFunction
+            else:
+                raise rpc.InvalidRequest
+
+        except rpc.InvalidRequest as exc:
+
+            ws.logger.warning(str(exc))
+            ws.error_message(exc)
+
+        except Exception as exc:
+
+            ws.logger.exception('Unhandlerd excption')
+            ws.error_message(exc)
+
+    def _ws_methods(self, app):
+        '''Search for web-socket rpc-handlers in all registered extensions.
+
+        A websocket handler is a method prefixed by ``ws_``.
+        '''
+        for ext in app.extensions.values():
+            for name in dir(ext):
+                if name.startswith('ws_'):
+                    handler = getattr(ext, name, None)
+                    if hasattr(handler, '__call__'):
+                        name = '_'.join(name.split('_')[1:])
+                        yield name, handler
+
+
+class LuxWs(WsApi, ws.WS):
     '''Lux websocket
     '''
     pubsub = None
