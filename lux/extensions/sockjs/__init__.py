@@ -18,6 +18,7 @@ class Extension(lux.Extension):
 
     _config = [
         Parameter('WS_URL', '/ws', 'Websocket base url'),
+        Parameter('WS_HANDLER', LuxWs, 'Websocket handler'),
         Parameter('PUBSUB_STORE', None,
                   'Connection string for a Publish/Subscribe data-store'),
         Parameter('WEBSOCKET_HARTBEAT', 25, 'Hartbeat in seconds'),
