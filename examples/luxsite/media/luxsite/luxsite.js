@@ -103,7 +103,7 @@
                 exports: "hljs"
             },
             lux: {
-                deps: ["angular"]
+                deps: ["angular", "lodash"]
             },
             "ui-bootstrap": {
                 deps: ["angular"]

@@ -3405,6 +3405,255 @@ angular.module('lux.form.utils', ['lux.services'])
         }]);
 
 
+//  Grid Data Provider Factory
+//	===================
+//
+//	Selects appropriate grid data provider class depending on connection type
+
+angular.module('lux.grid.dataProviderFactory', [
+    'lux.grid.dataProviderREST',
+    'lux.grid.dataProviderWebsocket'
+])
+    .factory('GridDataProviderFactory', [
+        'GridDataProviderREST',
+        'GridDataProviderWebsocket',
+        gridDataProviderFactoryFactory]);
+
+function gridDataProviderFactoryFactory (GridDataProviderREST, GridDataProviderWebsocket) {
+
+    function create(connectionType, target, subPath, gridState, listener) {
+        switch (connectionType) {
+            case 'GridDataProviderREST':
+                return new GridDataProviderREST(target, subPath, gridState, listener);
+            case 'GridDataProviderWebsocket':
+                return new GridDataProviderWebsocket(target.url + '/stream', listener);
+            default:
+                return new GridDataProviderREST(target, subPath, gridState, listener);
+        }
+    }
+
+    return { create: create };
+}
+
+//  Grid Data Provider
+//	===================
+//
+//	provides data to a lux.grid using REST calls
+
+angular.module('lux.grid.dataProviderREST', ['lux.services'])
+    .factory('GridDataProviderREST', ['$lux', gridDataProviderRESTFactory]);
+
+function gridDataProviderRESTFactory ($lux) {
+
+    function GridDataProviderREST(target, subPath, gridState, listener) {
+        this._api = $lux.api(target);
+        this._subPath = subPath;
+        this._gridState = gridState;
+        this._listener = listener;
+    }
+
+    GridDataProviderREST.prototype.connect = function() {
+        checkIfDestroyed.call(this);
+        getMetadata.call(this, getData.bind(this, { path: this._subPath }, this._gridState));
+    };
+
+    GridDataProviderREST.prototype.getPage = function(options) {
+        checkIfDestroyed.call(this);
+        getData.call(this, {}, options);
+    };
+
+    GridDataProviderREST.prototype.deleteItem = function(identifier, onSuccess, onFailure) {
+        checkIfDestroyed.call(this);
+        this._api.delete({path: this._subPath + '/' + identifier})
+            .success(onSuccess)
+            .error(onFailure);
+    };
+
+    GridDataProviderREST.prototype.destroy = function() {
+        this._listener = null;
+    };
+
+    function checkIfDestroyed() {
+        /* jshint validthis:true */
+        if (this._listener === null || typeof this._listener === 'undefined') {
+            throw 'GridDataProviderREST#connect error: either you forgot to define a listener, or you are attempting to use this data provider after it was destroyed.';
+        }
+    }
+
+    function getMetadata(callback) {
+        /* jshint validthis:true */
+        this._api.get({
+            path: this._subPath + '/metadata'
+        }).success(function(metadata) {
+            this._listener.onMetadataReceived(metadata);
+            if (typeof callback === 'function') {
+                callback();
+            }
+        }.bind(this));
+    }
+
+    function getData(path, options) {
+        /* jshint validthis:true */
+        this._api.get(path, options).success(function(data) {
+            this._listener.onDataReceived(data);
+        }.bind(this));
+    }
+
+    return GridDataProviderREST;
+}
+
+//  Grid Data Provider
+//	===================
+//
+//	provides data to a lux.grid using websockets
+
+angular.module('lux.grid.dataProviderWebsocket', ['lux.sockjs'])
+    .factory('GridDataProviderWebsocket', ['$rootScope', gridDataProviderWebsocketFactory]);
+
+function gridDataProviderWebsocketFactory ($scope) {
+
+    function GridDataProviderWebsocket(websocketUrl, listener) {
+        this._websocketUrl = websocketUrl;
+        this._listener = listener;
+    }
+
+    GridDataProviderWebsocket.prototype.destroy = function() {
+        this._listener = null;
+    };
+
+    GridDataProviderWebsocket.prototype.connect = function() {
+        checkIfDestroyed.call(this);
+
+        $scope.connectSockJs(this._websocketUrl);
+
+        $scope.websocketListener('bmll_celery', function(sock, msg) {
+            var tasks;
+
+            if (msg.data.event === 'record-update') {
+                tasks = msg.data.data;
+
+                this._listener.onDataReceived({
+                    total: msg.data.total,
+                    result: tasks,
+                    type: 'update'
+                });
+
+            } else if (msg.data.event === 'records') {
+                tasks = msg.data.data;
+
+                this._listener.onDataReceived({
+                    total: msg.data.total,
+                    result: tasks,
+                    type: 'update'
+                });
+
+                setTimeout(sendFakeRecordOnce.bind(this), 0); // TODO Remove this. It's a dummy status update for development.
+
+            } else if (msg.data.event === 'columns-metadata') {
+                this._listener.onMetadataReceived(msg.data.data);
+            }
+        }.bind(this));
+
+        // TODO Remove this. It's a dummy status update for development.
+        var sendFakeRecordOnce = function() {
+            /* jshint validthis:true */
+            this._listener.onDataReceived({
+                total: 100,
+                result: [{
+                    args: "[]",
+                    eta: 1440517140003.5932,
+                    hostname: "gen25880@oxygen.bmll.local",
+                    kwargs: "{}",
+                    name: "bmll.server_status",
+                    status: "sent",
+                    timestamp: 1440517140003.5932,
+                    uuid: "fa5b8e1b-2be7-4ec5-a7a6-f3c82db14117",
+                    result: "12:24:47 [p=20856, t=2828, ERROR, concurrent.futures] exception calling callback for <Future at 0x71854a8 state=finished raised RuntimeError>\n" +
+"Traceback (most recent call last):\n" +
+"  File \"c:\Python34\lib\concurrent\futures\thread.py\", line 54, in run\n" +
+"    result = self.fn(*self.args, **self.kwargs)\n" +
+"  File \"c:\Users\jeremy\Git\bmll\bmll-api\bmll\monitor\celeryapp.py\", line 179, in _receive_events\n" +
+"    self._next_event_call(self.polling_interval, self._receive_events)\n" +
+"  File \"c:\Users\jeremy\Git\bmll\bmll-api\bmll\monitor\celeryapp.py\", line 166, in _next_event_call\n" +
+"    callable)\n" +
+"  File \"c:\Python34\lib\asyncio\base_events.py\", line 462, in call_soon_threadsafe\n" +
+"    handle = self._call_soon(callback, args)\n" +
+"  File \"c:\Python34\lib\asyncio\base_events.py\", line 436, in _call_soon\n" +
+"    self._check_closed()\n" +
+"  File \"c:\Python34\lib\asyncio\base_events.py\", line 265, in _check_closed\n" +
+"    raise RuntimeError('Event loop is closed')\n" +
+"RuntimeError: Event loop is closed\n" +
+"\n" +
+"During handling of the above exception, another exception occurred:\n" +
+"\n" +
+"Traceback (most recent call last):\n" +
+"  File \"c:\Python34\lib\concurrent\futures\_base.py\", line 297, in _invoke_callbacks\n" +
+"    callback(self)\n" +
+"  File \"c:\Python34\lib\asyncio\futures.py\", line 408, in <lambda>\n" +
+"    new_future._copy_state, future))\n" +
+"  File \"c:\Python34\lib\asyncio\base_events.py\", line 462, in call_soon_threadsafe\n" +
+"    handle = self._call_soon(callback, args)\n" +
+"  File \"c:\Python34\lib\asyncio\base_events.py\", line 436, in _call_soon\n" +
+"    self._check_closed()\n" +
+"  File \"c:\Python34\lib\asyncio\base_events.py\", line 265, in _check_closed\n" +
+"    raise RuntimeError('Event loop is closed')\n" +
+"RuntimeError: Event loop is closed,\n" +
+"Traceback (most recent call last):\n" +
+"  File \"c:\Python34\lib\concurrent\futures\thread.py\", line 54, in run\n" +
+"    result = self.fn(*self.args, **self.kwargs)\n" +
+"  File \"c:\Users\jeremy\Git\bmll\bmll-api\bmll\monitor\celeryapp.py\", line 179, in _receive_events\n" +
+"    self._next_event_call(self.polling_interval, self._receive_events)\n" +
+"  File \"c:\Users\jeremy\Git\bmll\bmll-api\bmll\monitor\celeryapp.py\", line 166, in _next_event_call\n" +
+"    callable)\n" +
+"  File \"c:\Python34\lib\asyncio\base_events.py\", line 462, in call_soon_threadsafe\n" +
+"    handle = self._call_soon(callback, args)\n" +
+"  File \"c:\Python34\lib\asyncio\base_events.py\", line 436, in _call_soon\n" +
+"    self._check_closed()\n" +
+"  File \"c:\Python34\lib\asyncio\base_events.py\", line 265, in _check_closed\n" +
+"    raise RuntimeError('Event loop is closed')\n" +
+"RuntimeError: Event loop is closed\n" +
+"\n" +
+"During handling of the above exception, another exception occurred:\n" +
+"\n" +
+"Traceback (most recent call last):\n" +
+"  File \"c:\Python34\lib\concurrent\futures\_base.py\", line 297, in _invoke_callbacks\n" +
+"    callback(self)\n" +
+"  File \"c:\Python34\lib\asyncio\futures.py\", line 408, in <lambda>\n" +
+"    new_future._copy_state, future))\n" +
+"  File \"c:\Python34\lib\asyncio\base_events.py\", line 462, in call_soon_threadsafe\n" +
+"    handle = self._call_soon(callback, args)\n" +
+"  File \"c:\Python34\lib\asyncio\base_events.py\", line 436, in _call_soon\n" +
+"    self._check_closed()\n" +
+"  File \"c:\Python34\lib\asyncio\base_events.py\", line 265, in _check_closed\n" +
+"    raise RuntimeError('Event loop is closed')\n" +
+"RuntimeError: Event loop is closed,\n"
+                }],
+                type: 'update'
+            });
+
+        sendFakeRecordOnce = function() {};
+        };
+
+    };
+
+    GridDataProviderWebsocket.prototype.getPage = function(options) {
+        // not yet implemented
+    };
+
+    GridDataProviderWebsocket.prototype.deleteItem = function(identifier, onSuccess, onFailure) {
+        // not yet implemented
+    };
+
+    function checkIfDestroyed() {
+        /* jshint validthis:true */
+        if (this._listener === null || typeof this._listener === 'undefined') {
+            throw 'GridDataProviderREST#connect error: either you forgot to define a listener, or you are attempting to use this data provider after it was destroyed.';
+        }
+    }
+
+    return GridDataProviderWebsocket;
+}
+
     //
     // Grid module for lux
     //
@@ -3413,6 +3662,7 @@ angular.module('lux.form.utils', ['lux.services'])
     //      - use $modal service from angular-strap library
     //
     //
+
     function dateSorting(column) {
 
         column.sortingAlgorithm = function(a, b) {
@@ -3422,11 +3672,14 @@ angular.module('lux.form.utils', ['lux.services'])
         };
     }
 
-    angular.module('lux.grid', ['lux.services', 'templates-grid', 'ngTouch', 'ui.grid',
-                                'ui.grid.pagination', 'ui.grid.selection', 'ui.grid.autoResize'])
+    angular.module('lux.grid', ['lux.services', 'lux.grid.dataProviderFactory', 'templates-grid', 'ngTouch', 'ui.grid',
+                                'ui.grid.pagination', 'ui.grid.selection', 'ui.grid.autoResize', 'ui.grid.resizeColumns'])
         //
         .constant('gridDefaults', {
+
+
             //
+            enableColumnResizing: true,
             enableFiltering: true,
             enableRowHeaderSelection: false,
             useExternalPagination: true,
@@ -3522,8 +3775,10 @@ angular.module('lux.form.utils', ['lux.services'])
             }
         })
         //
-        .service('GridService', ['$lux', '$q', '$location', '$compile', '$modal', 'uiGridConstants', 'gridDefaults',
-            function($lux, $q, $location, $compile, $modal, uiGridConstants, gridDefaults) {
+        .service('GridService', ['$lux', '$q', '$location', '$compile', '$modal', 'uiGridConstants', 'gridDefaults', 'GridDataProviderFactory', '$timeout', '$templateCache',
+            function($lux, $q, $location, $compile, $modal, uiGridConstants, gridDefaults, GridDataProviderFactory, $timeout, $templateCache) {
+
+            var gridDataProvider;
 
             function parseColumns(columns, metaFields) {
                 var columnDefs = [],
@@ -3549,7 +3804,15 @@ angular.module('lux.form.utils', ['lux.services'])
                     var callback = gridDefaults.columns[col.type];
                     if (callback) callback(column, col, uiGridConstants, gridDefaults);
 
-                    if (column.field === metaFields.repr) {
+                    if (typeof col.cellFilter === 'string') {
+                        column.cellFilter = col.cellFilter;
+                    }
+
+                    if (typeof col.cellTemplateName === 'string') {
+                        column.cellTemplate = gridDefaults.wrapCell($templateCache.get(col.cellTemplateName));
+                    }
+
+                    if (typeof column.field !== 'undefined' && column.field === metaFields.repr) {
                         column.cellTemplate = gridDefaults.wrapCell('<a ng-href="{{grid.appScope.objectUrl(row.entity)}}">{{COL_FIELD}}</a>');
                         // Set repr column as the first column
                         columnDefs.splice(0, 0, column);
@@ -3562,23 +3825,17 @@ angular.module('lux.form.utils', ['lux.services'])
             }
 
             // Get specified page using params
-            function getPage(scope, api) {
+            function getPage(scope) {
                 var query = angular.extend({}, scope.gridState);
 
                 // Add filter if available
                 if (scope.gridFilters)
                     query = angular.extend(query, scope.gridFilters);
 
-                api.get({}, query).success(function(resp) {
-                    scope.gridOptions.totalItems = resp.total;
-                    scope.gridOptions.data = resp.result;
-
-                    // Update grid height depending on number of the rows
-                    scope.updateGridHeight();
-                });
+                gridDataProvider.getPage(query);
             }
 
-            // Return column type accirding to type
+            // Return column type according to type
             function getColumnType(type) {
                 switch (type) {
                     case 'integer':     return 'number';
@@ -3588,7 +3845,7 @@ angular.module('lux.form.utils', ['lux.services'])
             }
 
             // Add menu actions to grid
-            function addGridMenu(scope, api, gridOptions) {
+            function addGridMenu(scope, gridOptions) {
                 var menu = [],
                     stateName = window.location.href.split('/').pop(-1),
                     model = stateName.slice(0, -1),
@@ -3631,13 +3888,15 @@ angular.module('lux.form.utils', ['lux.services'])
                             var defer = $lux.q.defer(),
                                 pk = item[scope.gridOptions.metaFields.id];
 
-                            api.delete({path: subPath + '/' + pk})
-                                .success(function(resp) {
-                                    defer.resolve(gridDefaults.modal.delete.messages.success);
-                                })
-                                .error(function(error) {
-                                    defer.reject(gridDefaults.modal.delete.messages.error);
-                                });
+                            function onSuccess(resp) {
+                                defer.resolve(gridDefaults.modal.delete.messages.success);
+                            }
+
+                            function onFailure(error) {
+                                defer.reject(gridDefaults.modal.delete.messages.error);
+                            }
+
+                            gridDataProvider.deleteItem(pk, onSuccess, onFailure);
 
                             return defer.promise;
                         }
@@ -3649,7 +3908,7 @@ angular.module('lux.form.utils', ['lux.services'])
                         });
 
                         $q.all(promises).then(function(results) {
-                            getPage(scope, api);
+                            getPage(scope);
                             modal.hide();
                             $lux.messages.success(results[0] + ' ' + results.length + ' ' + stateName);
                         }, function(results) {
@@ -3705,26 +3964,81 @@ angular.module('lux.form.utils', ['lux.services'])
             }
 
             // Get initial data
-            this.getInitialData = function(scope) {
-                var api = $lux.api(scope.options.target),
-                    sub_path = scope.options.target.path || '';
+            this.getInitialData = function(scope, connectionType, gridConfig) {
+                scope.gridCellDetailsModal = function(id, content) {
+                    $modal({
+                        "title": "Details for " + id,
+                        "content": content,
+                        "placement": "center",
+                        "backdrop": true,
+                        "template": 'grid/templates/modal.record.details.tpl.html'
+                    });
+                };
 
-                api.get({path: sub_path + '/metadata'}).success(function(resp) {
-                    scope.gridState.limit = resp['default-limit'];
+                if (gridConfig.rowTemplate) {
+                    scope.gridOptions.rowTemplate = gridConfig.rowTemplate;
+                }
+
+                function onMetadataReceived(metadata) {
+                    scope.gridState.limit = metadata['default-limit'];
                     scope.gridOptions.metaFields = {
-                        id: resp.id,
-                        repr: resp.repr
+                        id: metadata.id,
+                        repr: metadata.repr
                     };
-                    scope.gridOptions.columnDefs = parseColumns(resp.columns, scope.gridOptions.metaFields);
 
-                    api.get({path: sub_path}, {limit: scope.gridState.limit}).success(function(resp) {
-                        scope.gridOptions.totalItems = resp.total;
-                        scope.gridOptions.data = resp.result;
+                    scope.gridOptions.columnDefs = parseColumns(gridConfig.columns || metadata.columns, scope.gridOptions.metaFields);
+                }
+
+                function onDataReceived(data) {
+                    require(['lodash'], function(_) {
+                        scope.gridOptions.totalItems = data.total;
+
+                        if (data.type === 'update') {
+                            scope.gridState.limit = data.total;
+                        } else {
+                            scope.gridOptions.data = [];
+                        }
+
+                        angular.forEach(data.result, function (row) {
+                            var id = scope.gridOptions.metaFields.id;
+                            var lookup = {};
+                            lookup[id] = row[id];
+
+                            var index = _.findIndex(scope.gridOptions.data, lookup);
+                            if (index === -1) {
+                                scope.gridOptions.data.push(row);
+                            } else {
+                                scope.gridOptions.data[index] = _.merge(scope.gridOptions.data[index], row);
+                            }
+
+                        });
 
                         // Update grid height
                         scope.updateGridHeight();
+
+                        // This only needs to be done when onDataReceived is called from an event outside the current execution block,
+                        // e.g. when using websockets.
+                        $timeout(function () {
+                            scope.$apply();
+                        }, 0);
                     });
-                });
+                }
+
+                var listener = {
+                    onMetadataReceived: onMetadataReceived,
+                    onDataReceived: onDataReceived
+                };
+
+                gridDataProvider = GridDataProviderFactory.create(
+                    connectionType,
+                    scope.options.target,
+                    scope.options.target.path || '',
+                    scope.gridState,
+                    listener
+                );
+
+                gridDataProvider.connect();
+
             };
 
             // Builds grid options
@@ -3764,63 +4078,65 @@ angular.module('lux.form.utils', ['lux.services'])
                     element.css('height', gridHeight + 'px');
                 };
 
-                var api = scope.options.target ? $lux.api(scope.options.target) : null,
-                    gridOptions = {
+                var gridOptions = {
                         paginationPageSizes: scope.paginationOptions.sizes,
                         paginationPageSize: scope.gridState.limit,
+                        enableColumnResizing: gridDefaults.enableColumnResizing,
                         enableFiltering: gridDefaults.enableFiltering,
                         enableRowHeaderSelection: gridDefaults.enableRowHeaderSelection,
+                        useExternalFiltering: gridDefaults.useExternalFiltering,
                         useExternalPagination: gridDefaults.useExternalPagination,
                         useExternalSorting: gridDefaults.useExternalSorting,
                         enableHorizontalScrollbar: gridDefaults.enableHorizontalScrollbar,
                         enableVerticalScrollbar: gridDefaults.enableVerticalScrollbar,
                         rowHeight: gridDefaults.rowHeight,
                         onRegisterApi: function(gridApi) {
-                            scope.gridApi = gridApi;
-
                             require(['lodash'], function(_) {
+
+                                scope.gridApi = gridApi;
+
                                 //
                                 // Pagination
-                                scope.gridApi.pagination.on.paginationChanged(scope, _.debounce(function(pageNumber, pageSize) {
+                                scope.gridApi.pagination.on.paginationChanged(scope, _.debounce(function (pageNumber, pageSize) {
                                     scope.gridState.page = pageNumber;
                                     scope.gridState.limit = pageSize;
-                                    scope.gridState.offset = pageSize*(pageNumber - 1);
+                                    scope.gridState.offset = pageSize * (pageNumber - 1);
 
-                                    getPage(scope, api);
+                                    getPage(scope);
                                 }, gridDefaults.requestDelay));
                                 //
                                 // Sorting
-                                scope.gridApi.core.on.sortChanged(scope, _.debounce(function(grid, sortColumns) {
-                                    if( sortColumns.length === 0) {
+                                scope.gridApi.core.on.sortChanged(scope, _.debounce(function (grid, sortColumns) {
+                                    if (sortColumns.length === 0) {
                                         delete scope.gridState.sortby;
-                                        getPage(scope, api);
+                                        getPage(scope);
                                     } else {
                                         // Build query string for sorting
-                                        angular.forEach(sortColumns, function(column) {
+                                        angular.forEach(sortColumns, function (column) {
                                             scope.gridState.sortby = column.name + ':' + column.sort.direction;
                                         });
 
-                                        switch( sortColumns[0].sort.direction ) {
+                                        switch (sortColumns[0].sort.direction) {
                                             case uiGridConstants.ASC:
-                                                getPage(scope, api);
+                                                getPage(scope);
                                                 break;
                                             case uiGridConstants.DESC:
-                                                getPage(scope, api);
+                                                getPage(scope);
                                                 break;
                                             case undefined:
-                                                getPage(scope, api);
+                                                getPage(scope);
                                                 break;
                                         }
                                     }
                                 }, gridDefaults.requestDelay));
                                 //
                                 // Filtering
-                                scope.gridApi.core.on.filterChanged(scope, _.debounce(function() {
+                                scope.gridApi.core.on.filterChanged(scope, _.debounce(function () {
                                     var grid = this.grid;
                                     scope.gridFilters = {};
 
                                     // Add filters
-                                    angular.forEach(grid.columns, function(value, _) {
+                                    angular.forEach(grid.columns, function (value, _) {
                                         // Clear data in order to refresh icons
                                         if (value.filter.type === 'select')
                                             scope.clearData();
@@ -3830,7 +4146,7 @@ angular.module('lux.form.utils', ['lux.services'])
                                     });
 
                                     // Get results
-                                    getPage(scope, api);
+                                    getPage(scope);
 
                                 }, gridDefaults.requestDelay));
                             });
@@ -3838,10 +4154,11 @@ angular.module('lux.form.utils', ['lux.services'])
                     };
 
                 if (gridDefaults.showMenu)
-                    addGridMenu(scope, api, gridOptions);
+                    addGridMenu(scope, gridOptions);
 
                 return gridOptions;
             };
+
         }])
         //
         // Directive to build Angular-UI grid options using Lux REST API
@@ -3864,7 +4181,37 @@ angular.module('lux.form.utils', ['lux.services'])
 
                         if (opts) {
                             scope.gridOptions = GridService.buildOptions(scope, opts);
-                            GridService.getInitialData(scope);
+                            GridService.getInitialData(scope, 'GridDataProviderRest', opts);
+                        }
+
+                        var grid = '<div ui-if="gridOptions.data.length>0" class="grid" ui-grid="gridOptions" ui-grid-pagination ui-grid-selection ui-grid-auto-resize></div>';
+                        element.append($compile(grid)(scope));
+                    },
+                },
+            };
+
+        }])
+        // Directive to build Angular-UI grid options using Websockets
+        .directive('websocketGrid', ['$compile', 'GridService', function ($compile, GridService) {
+
+            return {
+                restrict: 'A',
+                link: {
+                    pre: function (scope, element, attrs) {
+                        var scripts= element[0].getElementsByTagName('script');
+
+                        forEach(scripts, function (js) {
+                            globalEval(js.innerHTML);
+                        });
+
+                        var opts = attrs;
+                        if (attrs.websocketGrid) opts = {options: attrs.websocketGrid};
+
+                        opts = getOptions(opts);
+
+                        if (opts) {
+                            scope.gridOptions = GridService.buildOptions(scope, opts);
+                            GridService.getInitialData(scope, 'GridDataProviderWebsocket', opts.config);
                         }
 
                         var grid = '<div ui-if="gridOptions.data.length>0" class="grid" ui-grid="gridOptions" ui-grid-pagination ui-grid-selection ui-grid-auto-resize></div>';
@@ -5267,7 +5614,7 @@ angular.module("templates/modal.tpl.html", []).run(["$templateCache", function($
     "</div>");
 }]);
 
-angular.module('templates-grid', ['grid/templates/modal.columns.tpl.html', 'grid/templates/modal.delete.tpl.html', 'grid/templates/modal.empty.tpl.html']);
+angular.module('templates-grid', ['grid/templates/modal.columns.tpl.html', 'grid/templates/modal.delete.tpl.html', 'grid/templates/modal.empty.tpl.html', 'grid/templates/modal.record.details.tpl.html']);
 
 angular.module("grid/templates/modal.columns.tpl.html", []).run(["$templateCache", function($templateCache) {
   $templateCache.put("grid/templates/modal.columns.tpl.html",
@@ -5338,6 +5685,29 @@ angular.module("grid/templates/modal.empty.tpl.html", []).run(["$templateCache",
     "      </div>\n" +
     "    </div>\n" +
     "  </div>\n" +
+    "</div>\n" +
+    "");
+}]);
+
+angular.module("grid/templates/modal.record.details.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("grid/templates/modal.record.details.tpl.html",
+    "<div class=\"modal\" tabindex=\"-1\" role=\"dialog\" aria-hidden=\"true\">\n" +
+    "    <div class=\"modal-dialog record-details\">\n" +
+    "        <div class=\"modal-content\">\n" +
+    "            <div class=\"modal-header\" ng-show=\"title\">\n" +
+    "                <button type=\"button\" class=\"close\" aria-label=\"Close\" ng-click=\"$hide()\">\n" +
+    "                    <span aria-hidden=\"true\">&times;</span>\n" +
+    "                </button>\n" +
+    "                <h4 class=\"modal-title\" ng-bind=\"title\"></h4>\n" +
+    "            </div>\n" +
+    "            <div class=\"modal-body\" >\n" +
+    "                <pre ng-bind=\"content\"></pre>\n" +
+    "            </div>\n" +
+    "            <div class=\"modal-footer\">\n" +
+    "                <button type=\"button\" class=\"btn btn-default\" ng-click=\"$hide()\">Close</button>\n" +
+    "            </div>\n" +
+    "        </div>\n" +
+    "    </div>\n" +
     "</div>\n" +
     "");
 }]);
