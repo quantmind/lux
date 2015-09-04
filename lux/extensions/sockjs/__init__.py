@@ -34,9 +34,11 @@ class Extension(lux.Extension):
     def middleware(self, app):
         '''Add middleware to edit content
         '''
-        socketio = SocketIO(app.config['WS_URL'])
-        self.websocket = socketio.handle
-        return [socketio]
+        handler = app.config['WS_HANDLER']
+        if handler:
+            socketio = SocketIO(app.config['WS_URL'], handler_class=handler)
+            self.websocket = socketio.handle
+            return [socketio]
 
     def on_loaded(self, app):
         '''Once the application has loaded, create the pub/sub

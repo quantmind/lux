@@ -80,9 +80,7 @@ class LuxWs(ws.WS):
 
     def on_open(self, websocket):
         ws = WsClient(websocket)
-        if self.pubsub:
-            self.pubsub.add_client(ws)
-            websocket.app.fire('on_websocket_open', ws)
+        websocket.app.fire('on_websocket_open', ws)
         #
         # Send the LUX_CONNECTION event with socket id and start time
         ws.write(LUX_CONNECTION, socket_id=ws.session_id, time=ws.started)
