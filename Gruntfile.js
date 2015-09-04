@@ -17,11 +17,23 @@ module.exports = function (grunt) {
                     specs : 'luxjs/tests/**/*.js',
                     template: 'luxjs/tests/test.tpl.html',
                     templateOptions: {
-                        deps: ['lux/media/lux/lux.min.js', 'angular-ui-grid',
-                               'angular-mocks', 'angular-strap', 'codemirror',
-                               'angular-touch', 'lodash']
+                        deps: ['lux/media/lux/lux.min.js', 'angular-ui-select',
+                               'angular-ui-grid', 'angular-mocks',
+                               'angular-strap', 'codemirror', 'angular-touch',
+                               'lodash']
                     }
                 }
+            },
+            watch: {
+                options: {
+                    atBegin: true,
+                    livereload: true
+                },
+                files: [
+                    '<%= concat.lux.src %>',
+                    'luxjs/**/*.tpl.html'
+                ],
+                tasks: ['html2js', 'concat', 'jshint', 'uglify', 'jasmine']
             }
         };
     //
@@ -127,7 +139,7 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-contrib-concat');
     grunt.loadNpmTasks('grunt-contrib-jasmine');
     //grunt.loadNpmTasks('grunt-contrib-nodeunit');
-    //grunt.loadNpmTasks('grunt-contrib-watch');
+    grunt.loadNpmTasks('grunt-contrib-watch');
     //grunt.loadNpmTasks('grunt-docco');
     //
     grunt.registerTask('gruntfile', 'jshint Gruntfile.js',
