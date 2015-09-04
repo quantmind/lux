@@ -4637,7 +4637,7 @@ angular.module('lux.form.utils', ['lux.services'])
                 // No navbar, add an object
                 if (!navbar)
                     navbar = {};
-                navbar.fixed = true;
+                navbar.fixed = false;
                 navbar.top = true;
                 //
                 // Add toggle to the navbar
@@ -5387,8 +5387,8 @@ angular.module("nav/templates/navbar.tpl.html", []).run(["$templateCache", funct
     "                <span class=\"icon-bar\"></span>\n" +
     "                <span class=\"icon-bar\"></span>\n" +
     "            </button>\n" +
-    "            <ul ng-if=\"navbar.itemsLeft\" class=\"nav navbar-nav\">\n" +
-    "                <li ng-repeat=\"link in navbar.itemsLeft\" ng-class=\"{active:activeLink(link)}\" navbar-link>\n" +
+    "            <ul class=\"nav navbar-nav main-nav\">\n" +
+    "                <li ng-if=\"navbar.itemsLeft\" ng-repeat=\"link in navbar.itemsLeft\" ng-class=\"{active:activeLink(link)}\" navbar-link>\n" +
     "                </li>\n" +
     "            </ul>\n" +
     "            <a ng-if=\"navbar.brandImage\" href=\"{{navbar.url}}\" class=\"navbar-brand\" target=\"{{navbar.target}}\">\n" +

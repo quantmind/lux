@@ -33,7 +33,7 @@ def add_css(all):
     collapse_width = px(cfg['NAVBAR_COLLAPSE_WIDTH'])
 
     media(min_width=collapse_width).css(
-        '.navbar.navbar-static-top .navbar-nav',
+        '.navbar .navbar-nav',
         css('> li > a.sidebar-toggle',
             font_size=sidebar.toggle.size,
             line_height=sidebar.toggle.size,
@@ -211,16 +211,14 @@ def small():
               height=px(navbar.small_height))
 
     small.css('.right-sidebar',
-              css(' .navbar-static-top',
-                  css(' .navbar-main',
-                      float='right',
-                      margin_right=px(1))))
+              css(' .navbar-main',
+                  float='right',
+                  margin_right=px(1)))
 
     small.css('.sidebar-left',
-              css(' .navbar-static-top',
-                  css(' .navbar-main',
-                      float='left',
-                      margin_left=px(1))))
+              css(' .navbar-main',
+                  float='left',
+                  margin_left=px(1)))
 
 
 def sidebar_skin(all):

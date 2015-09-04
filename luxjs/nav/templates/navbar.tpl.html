@@ -9,8 +9,8 @@ ng-model="navbar.collapse" bs-collapse>
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
             </button>
-            <ul ng-if="navbar.itemsLeft" class="nav navbar-nav">
-                <li ng-repeat="link in navbar.itemsLeft" ng-class="{active:activeLink(link)}" navbar-link>
+            <ul class="nav navbar-nav main-nav">
+                <li ng-if="navbar.itemsLeft" ng-repeat="link in navbar.itemsLeft" ng-class="{active:activeLink(link)}" navbar-link>
                 </li>
             </ul>
             <a ng-if="navbar.brandImage" href="{{navbar.url}}" class="navbar-brand" target="{{navbar.target}}">
