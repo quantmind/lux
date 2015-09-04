@@ -1,6 +1,6 @@
 //      Lux Library - v0.2.0
 
-//      Compiled 2015-08-14.
+//      Compiled 2015-09-04.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -1323,6 +1323,23 @@ function(angular, root) {
                 callbacks.push(callback);
             };
 
+            scope.sendMessage = function (url, msg, forceEncode) {
+                var sock = websockets[url];
+                if (!sock) {
+                    log.error('Attempted to send message to disconnected WebSocket: ' + url);
+                } else {
+                    if (typeof msg !== 'string' || forceEncode) {
+                        msg = JSON.stringify(msg);
+                    }
+                    sock.send(msg);
+                }
+            };
+
+            scope.disconnectSockJs = function(url) {
+                if (websockets[url])
+                    websockets[url].close();
+            };
+
             scope.connectSockJs = function (url) {
                 if (websockets[url]) {
                     log.warn('Already connected with ' + url);
@@ -1760,29 +1777,6 @@ angular.module('lux.cms.core', [])
 
 
 
-
-angular.module('templates-cms', ['cms/templates/list-group.tpl.html']);
-
-angular.module("cms/templates/list-group.tpl.html", []).run(["$templateCache", function($templateCache) {
-  $templateCache.put("cms/templates/list-group.tpl.html",
-    "<div class=\"list-group\">\n" +
-    "  <a ng-repeat=\"link in links\" ng-href=\"{{link.url}}\" class=\"list-group-item\"\n" +
-    "  ng-bind=\"link.title\" ng-class=\"{active: link.url === $location.absUrl()}\"></a>\n" +
-    "</div>\n" +
-    "");
-}]);
-
-angular.module('templates-page', ['page/breadcrumbs.tpl.html']);
-
-angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function($templateCache) {
-  $templateCache.put("page/breadcrumbs.tpl.html",
-    "<ol class=\"breadcrumb\">\n" +
-    "    <li ng-repeat=\"step in steps\" ng-class=\"{active: step.last}\">\n" +
-    "        <a ng-if=\"!step.last\" href=\"{{step.href}}\">{{step.label}}</a>\n" +
-    "        <span ng-if=\"step.last\">{{step.label}}</span>\n" +
-    "    </li>\n" +
-    "</ol>");
-}]);
 
     //  Lux Page
     //  ==============
@@ -2386,7 +2380,8 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
                     });
 
                     label.append(input).append(span);
-                    return this.onChange(scope, element.append(label));
+                    element.append(label);
+                    return this.onChange(scope, this.inputError(scope, element));
                 },
                 //
                 checkbox: function (scope) {
@@ -3270,20 +3265,6 @@ angular.module('lux.form.utils', ['lux.services'])
         }
     };
 
-angular.module('templates-message', ['message/message.tpl.html']);
-
-angular.module("message/message.tpl.html", []).run(["$templateCache", function($templateCache) {
-  $templateCache.put("message/message.tpl.html",
-    "<div>\n" +
-    "    <div class=\"alert alert-{{ message.type }}\" role=\"alert\" ng-repeat=\"message in messages\">\n" +
-    "        <a href=\"#\" class=\"close\" ng-click=\"removeMessage(message)\">&times;</a>\n" +
-    "        <i ng-if=\"message.icon\" ng-class=\"message.icon\"></i>\n" +
-    "        <span>{{ message.text }}</span>\n" +
-    "    </div>\n" +
-    "</div>\n" +
-    "");
-}]);
-
     //
     //  Lux messages
     //  =================
@@ -3424,80 +3405,254 @@ angular.module("message/message.tpl.html", []).run(["$templateCache", function($
         }]);
 
 
-angular.module('templates-grid', ['grid/templates/modal.columns.tpl.html', 'grid/templates/modal.delete.tpl.html', 'grid/templates/modal.empty.tpl.html']);
+//  Grid Data Provider Factory
+//	===================
+//
+//	Selects appropriate grid data provider class depending on connection type
 
-angular.module("grid/templates/modal.columns.tpl.html", []).run(["$templateCache", function($templateCache) {
-  $templateCache.put("grid/templates/modal.columns.tpl.html",
-    "<div class=\"modal\" tabindex=\"-1\" role=\"dialog\" aria-hidden=\"true\">\n" +
-    "  <div class=\"modal-dialog\">\n" +
-    "    <div class=\"modal-content\">\n" +
-    "      <div class=\"modal-header\" >\n" +
-    "        <button type=\"button\" class=\"close\" aria-label=\"Close\" ng-click=\"$hide()\"><span aria-hidden=\"true\">&times;</span></button>\n" +
-    "        <h4 class=\"modal-title\"><i class=\"fa fa-eye\"></i> Change columns visibility</h4>\n" +
-    "      </div>\n" +
-    "      <div class=\"modal-body\">\n" +
-    "        <p class=\"modal-info\">{{infoMessage}}</p>\n" +
-    "        <ul class=\"modal-items list-inline\">\n" +
-    "          <li ng-repeat=\"col in columns\">\n" +
-    "            <a class=\"btn btn-default\" ng-class=\"activeClass(col)\" ng-click=\"toggleVisible(col)\">{{col.displayName}}</a>\n" +
-    "          </li>\n" +
-    "        </ul>\n" +
-    "      </div>\n" +
-    "      <div class=\"modal-footer\">\n" +
-    "        <button type=\"button\" class=\"btn btn-default\" ng-click=\"$hide()\">Close</button>\n" +
-    "      </div>\n" +
-    "    </div>\n" +
-    "  </div>\n" +
-    "</div>\n" +
-    "");
-}]);
+angular.module('lux.grid.dataProviderFactory', [
+    'lux.grid.dataProviderREST',
+    'lux.grid.dataProviderWebsocket'
+])
+    .factory('GridDataProviderFactory', [
+        'GridDataProviderREST',
+        'GridDataProviderWebsocket',
+        gridDataProviderFactoryFactory]);
 
-angular.module("grid/templates/modal.delete.tpl.html", []).run(["$templateCache", function($templateCache) {
-  $templateCache.put("grid/templates/modal.delete.tpl.html",
-    "<div class=\"modal\" tabindex=\"-1\" role=\"dialog\" aria-hidden=\"true\">\n" +
-    "  <div class=\"modal-dialog\">\n" +
-    "    <div class=\"modal-content\">\n" +
-    "      <div class=\"modal-header\" >\n" +
-    "        <button type=\"button\" class=\"close\" aria-label=\"Close\" ng-click=\"$hide()\"><span aria-hidden=\"true\">&times;</span></button>\n" +
-    "        <h4 class=\"modal-title\"><i class=\"fa fa-trash\"></i> Delete {{stateName}}</h4>\n" +
-    "      </div>\n" +
-    "      <div class=\"modal-body\">\n" +
-    "        <p class=\"modal-info\">{{infoMessage}}</p>\n" +
-    "        <ul class=\"modal-items\">\n" +
-    "          <li ng-repeat=\"item in selected\">{{item[repr_field]}}</li>\n" +
-    "        </ul>\n" +
-    "        <p class=\"text-danger cannot-undo\">{{dangerMessage}}</p>\n" +
-    "      </div>\n" +
-    "      <div class=\"modal-footer\">\n" +
-    "        <button type=\"button\" class=\"btn btn-default\" ng-click=\"$hide()\">No</button>\n" +
-    "        <button type=\"button\" class=\"btn btn-primary\" ng-click=\"ok()\">Yes</button>\n" +
-    "      </div>\n" +
-    "    </div>\n" +
-    "  </div>\n" +
-    "</div>\n" +
-    "");
-}]);
+function gridDataProviderFactoryFactory (GridDataProviderREST, GridDataProviderWebsocket) {
 
-angular.module("grid/templates/modal.empty.tpl.html", []).run(["$templateCache", function($templateCache) {
-  $templateCache.put("grid/templates/modal.empty.tpl.html",
-    "<div class=\"modal\" tabindex=\"-1\" role=\"dialog\" aria-hidden=\"true\">\n" +
-    "  <div class=\"modal-dialog\">\n" +
-    "    <div class=\"modal-content\">\n" +
-    "      <div class=\"modal-header\">\n" +
-    "        <button type=\"button\" class=\"close\" aria-label=\"Close\" ng-click=\"$hide()\"><span aria-hidden=\"true\">&times;</span></button>\n" +
-    "        <h4 class=\"modal-title\"><i class=\"fa fa-trash\"></i> Lack of {{stateName}} to delete</h4>\n" +
-    "      </div>\n" +
-    "      <div class=\"modal-body\">\n" +
-    "        <p class=\"modal-info\">{{emptyMessage}}</p>\n" +
-    "      </div>\n" +
-    "      <div class=\"modal-footer\">\n" +
-    "        <button type=\"button\" class=\"btn btn-default\" ng-click=\"$hide()\">Close</button>\n" +
-    "      </div>\n" +
-    "    </div>\n" +
-    "  </div>\n" +
-    "</div>\n" +
-    "");
-}]);
+    function create(connectionType, target, subPath, gridState, listener) {
+        switch (connectionType) {
+            case 'GridDataProviderREST':
+                return new GridDataProviderREST(target, subPath, gridState, listener);
+            case 'GridDataProviderWebsocket':
+                return new GridDataProviderWebsocket(target.url + '/stream', listener);
+            default:
+                return new GridDataProviderREST(target, subPath, gridState, listener);
+        }
+    }
+
+    return { create: create };
+}
+
+//  Grid Data Provider
+//	===================
+//
+//	provides data to a lux.grid using REST calls
+
+angular.module('lux.grid.dataProviderREST', ['lux.services'])
+    .factory('GridDataProviderREST', ['$lux', gridDataProviderRESTFactory]);
+
+function gridDataProviderRESTFactory ($lux) {
+
+    function GridDataProviderREST(target, subPath, gridState, listener) {
+        this._api = $lux.api(target);
+        this._subPath = subPath;
+        this._gridState = gridState;
+        this._listener = listener;
+    }
+
+    GridDataProviderREST.prototype.connect = function() {
+        checkIfDestroyed.call(this);
+        getMetadata.call(this, getData.bind(this, { path: this._subPath }, this._gridState));
+    };
+
+    GridDataProviderREST.prototype.getPage = function(options) {
+        checkIfDestroyed.call(this);
+        getData.call(this, {}, options);
+    };
+
+    GridDataProviderREST.prototype.deleteItem = function(identifier, onSuccess, onFailure) {
+        checkIfDestroyed.call(this);
+        this._api.delete({path: this._subPath + '/' + identifier})
+            .success(onSuccess)
+            .error(onFailure);
+    };
+
+    GridDataProviderREST.prototype.destroy = function() {
+        this._listener = null;
+    };
+
+    function checkIfDestroyed() {
+        /* jshint validthis:true */
+        if (this._listener === null || typeof this._listener === 'undefined') {
+            throw 'GridDataProviderREST#connect error: either you forgot to define a listener, or you are attempting to use this data provider after it was destroyed.';
+        }
+    }
+
+    function getMetadata(callback) {
+        /* jshint validthis:true */
+        this._api.get({
+            path: this._subPath + '/metadata'
+        }).success(function(metadata) {
+            this._listener.onMetadataReceived(metadata);
+            if (typeof callback === 'function') {
+                callback();
+            }
+        }.bind(this));
+    }
+
+    function getData(path, options) {
+        /* jshint validthis:true */
+        this._api.get(path, options).success(function(data) {
+            this._listener.onDataReceived(data);
+        }.bind(this));
+    }
+
+    return GridDataProviderREST;
+}
+
+//  Grid Data Provider
+//	===================
+//
+//	provides data to a lux.grid using websockets
+
+angular.module('lux.grid.dataProviderWebsocket', ['lux.sockjs'])
+    .factory('GridDataProviderWebsocket', ['$rootScope', gridDataProviderWebsocketFactory]);
+
+function gridDataProviderWebsocketFactory ($scope) {
+
+    function GridDataProviderWebsocket(websocketUrl, listener) {
+        this._websocketUrl = websocketUrl;
+        this._listener = listener;
+    }
+
+    GridDataProviderWebsocket.prototype.destroy = function() {
+        this._listener = null;
+    };
+
+    GridDataProviderWebsocket.prototype.connect = function() {
+        checkIfDestroyed.call(this);
+
+        $scope.connectSockJs(this._websocketUrl);
+
+        $scope.websocketListener('bmll_celery', function(sock, msg) {
+            var tasks;
+
+            if (msg.data.event === 'record-update') {
+                tasks = msg.data.data;
+
+                this._listener.onDataReceived({
+                    total: msg.data.total,
+                    result: tasks,
+                    type: 'update'
+                });
+
+            } else if (msg.data.event === 'records') {
+                tasks = msg.data.data;
+
+                this._listener.onDataReceived({
+                    total: msg.data.total,
+                    result: tasks,
+                    type: 'update'
+                });
+
+                setTimeout(sendFakeRecordOnce.bind(this), 0); // TODO Remove this. It's a dummy status update for development.
+
+            } else if (msg.data.event === 'columns-metadata') {
+                this._listener.onMetadataReceived(msg.data.data);
+            }
+        }.bind(this));
+
+        // TODO Remove this. It's a dummy status update for development.
+        var sendFakeRecordOnce = function() {
+            /* jshint validthis:true */
+            this._listener.onDataReceived({
+                total: 100,
+                result: [{
+                    args: "[]",
+                    eta: 1440517140003.5932,
+                    hostname: "gen25880@oxygen.bmll.local",
+                    kwargs: "{}",
+                    name: "bmll.server_status",
+                    status: "sent",
+                    timestamp: 1440517140003.5932,
+                    uuid: "fa5b8e1b-2be7-4ec5-a7a6-f3c82db14117",
+                    result: "12:24:47 [p=20856, t=2828, ERROR, concurrent.futures] exception calling callback for <Future at 0x71854a8 state=finished raised RuntimeError>\n" +
+"Traceback (most recent call last):\n" +
+"  File \"c:\Python34\lib\concurrent\futures\thread.py\", line 54, in run\n" +
+"    result = self.fn(*self.args, **self.kwargs)\n" +
+"  File \"c:\Users\jeremy\Git\bmll\bmll-api\bmll\monitor\celeryapp.py\", line 179, in _receive_events\n" +
+"    self._next_event_call(self.polling_interval, self._receive_events)\n" +
+"  File \"c:\Users\jeremy\Git\bmll\bmll-api\bmll\monitor\celeryapp.py\", line 166, in _next_event_call\n" +
+"    callable)\n" +
+"  File \"c:\Python34\lib\asyncio\base_events.py\", line 462, in call_soon_threadsafe\n" +
+"    handle = self._call_soon(callback, args)\n" +
+"  File \"c:\Python34\lib\asyncio\base_events.py\", line 436, in _call_soon\n" +
+"    self._check_closed()\n" +
+"  File \"c:\Python34\lib\asyncio\base_events.py\", line 265, in _check_closed\n" +
+"    raise RuntimeError('Event loop is closed')\n" +
+"RuntimeError: Event loop is closed\n" +
+"\n" +
+"During handling of the above exception, another exception occurred:\n" +
+"\n" +
+"Traceback (most recent call last):\n" +
+"  File \"c:\Python34\lib\concurrent\futures\_base.py\", line 297, in _invoke_callbacks\n" +
+"    callback(self)\n" +
+"  File \"c:\Python34\lib\asyncio\futures.py\", line 408, in <lambda>\n" +
+"    new_future._copy_state, future))\n" +
+"  File \"c:\Python34\lib\asyncio\base_events.py\", line 462, in call_soon_threadsafe\n" +
+"    handle = self._call_soon(callback, args)\n" +
+"  File \"c:\Python34\lib\asyncio\base_events.py\", line 436, in _call_soon\n" +
+"    self._check_closed()\n" +
+"  File \"c:\Python34\lib\asyncio\base_events.py\", line 265, in _check_closed\n" +
+"    raise RuntimeError('Event loop is closed')\n" +
+"RuntimeError: Event loop is closed,\n" +
+"Traceback (most recent call last):\n" +
+"  File \"c:\Python34\lib\concurrent\futures\thread.py\", line 54, in run\n" +
+"    result = self.fn(*self.args, **self.kwargs)\n" +
+"  File \"c:\Users\jeremy\Git\bmll\bmll-api\bmll\monitor\celeryapp.py\", line 179, in _receive_events\n" +
+"    self._next_event_call(self.polling_interval, self._receive_events)\n" +
+"  File \"c:\Users\jeremy\Git\bmll\bmll-api\bmll\monitor\celeryapp.py\", line 166, in _next_event_call\n" +
+"    callable)\n" +
+"  File \"c:\Python34\lib\asyncio\base_events.py\", line 462, in call_soon_threadsafe\n" +
+"    handle = self._call_soon(callback, args)\n" +
+"  File \"c:\Python34\lib\asyncio\base_events.py\", line 436, in _call_soon\n" +
+"    self._check_closed()\n" +
+"  File \"c:\Python34\lib\asyncio\base_events.py\", line 265, in _check_closed\n" +
+"    raise RuntimeError('Event loop is closed')\n" +
+"RuntimeError: Event loop is closed\n" +
+"\n" +
+"During handling of the above exception, another exception occurred:\n" +
+"\n" +
+"Traceback (most recent call last):\n" +
+"  File \"c:\Python34\lib\concurrent\futures\_base.py\", line 297, in _invoke_callbacks\n" +
+"    callback(self)\n" +
+"  File \"c:\Python34\lib\asyncio\futures.py\", line 408, in <lambda>\n" +
+"    new_future._copy_state, future))\n" +
+"  File \"c:\Python34\lib\asyncio\base_events.py\", line 462, in call_soon_threadsafe\n" +
+"    handle = self._call_soon(callback, args)\n" +
+"  File \"c:\Python34\lib\asyncio\base_events.py\", line 436, in _call_soon\n" +
+"    self._check_closed()\n" +
+"  File \"c:\Python34\lib\asyncio\base_events.py\", line 265, in _check_closed\n" +
+"    raise RuntimeError('Event loop is closed')\n" +
+"RuntimeError: Event loop is closed,\n"
+                }],
+                type: 'update'
+            });
+
+        sendFakeRecordOnce = function() {};
+        };
+
+    };
+
+    GridDataProviderWebsocket.prototype.getPage = function(options) {
+        // not yet implemented
+    };
+
+    GridDataProviderWebsocket.prototype.deleteItem = function(identifier, onSuccess, onFailure) {
+        // not yet implemented
+    };
+
+    function checkIfDestroyed() {
+        /* jshint validthis:true */
+        if (this._listener === null || typeof this._listener === 'undefined') {
+            throw 'GridDataProviderREST#connect error: either you forgot to define a listener, or you are attempting to use this data provider after it was destroyed.';
+        }
+    }
+
+    return GridDataProviderWebsocket;
+}
 
     //
     // Grid module for lux
@@ -3507,6 +3662,7 @@ angular.module("grid/templates/modal.empty.tpl.html", []).run(["$templateCache",
     //      - use $modal service from angular-strap library
     //
     //
+
     function dateSorting(column) {
 
         column.sortingAlgorithm = function(a, b) {
@@ -3516,11 +3672,14 @@ angular.module("grid/templates/modal.empty.tpl.html", []).run(["$templateCache",
         };
     }
 
-    angular.module('lux.grid', ['lux.services', 'templates-grid', 'ngTouch', 'ui.grid',
-                                'ui.grid.pagination', 'ui.grid.selection', 'ui.grid.autoResize'])
+    angular.module('lux.grid', ['lux.services', 'lux.grid.dataProviderFactory', 'templates-grid', 'ngTouch', 'ui.grid',
+                                'ui.grid.pagination', 'ui.grid.selection', 'ui.grid.autoResize', 'ui.grid.resizeColumns'])
         //
         .constant('gridDefaults', {
+
+
             //
+            enableColumnResizing: true,
             enableFiltering: true,
             enableRowHeaderSelection: false,
             useExternalPagination: true,
@@ -3616,8 +3775,10 @@ angular.module("grid/templates/modal.empty.tpl.html", []).run(["$templateCache",
             }
         })
         //
-        .service('GridService', ['$lux', '$q', '$location', '$compile', '$modal', 'uiGridConstants', 'gridDefaults',
-            function($lux, $q, $location, $compile, $modal, uiGridConstants, gridDefaults) {
+        .service('GridService', ['$lux', '$q', '$location', '$compile', '$modal', 'uiGridConstants', 'gridDefaults', 'GridDataProviderFactory', '$timeout', '$templateCache',
+            function($lux, $q, $location, $compile, $modal, uiGridConstants, gridDefaults, GridDataProviderFactory, $timeout, $templateCache) {
+
+            var gridDataProvider;
 
             function parseColumns(columns, metaFields) {
                 var columnDefs = [],
@@ -3643,7 +3804,15 @@ angular.module("grid/templates/modal.empty.tpl.html", []).run(["$templateCache",
                     var callback = gridDefaults.columns[col.type];
                     if (callback) callback(column, col, uiGridConstants, gridDefaults);
 
-                    if (column.field === metaFields.repr) {
+                    if (typeof col.cellFilter === 'string') {
+                        column.cellFilter = col.cellFilter;
+                    }
+
+                    if (typeof col.cellTemplateName === 'string') {
+                        column.cellTemplate = gridDefaults.wrapCell($templateCache.get(col.cellTemplateName));
+                    }
+
+                    if (typeof column.field !== 'undefined' && column.field === metaFields.repr) {
                         column.cellTemplate = gridDefaults.wrapCell('<a ng-href="{{grid.appScope.objectUrl(row.entity)}}">{{COL_FIELD}}</a>');
                         // Set repr column as the first column
                         columnDefs.splice(0, 0, column);
@@ -3656,23 +3825,17 @@ angular.module("grid/templates/modal.empty.tpl.html", []).run(["$templateCache",
             }
 
             // Get specified page using params
-            function getPage(scope, api) {
+            function getPage(scope) {
                 var query = angular.extend({}, scope.gridState);
 
                 // Add filter if available
                 if (scope.gridFilters)
                     query = angular.extend(query, scope.gridFilters);
 
-                api.get({}, query).success(function(resp) {
-                    scope.gridOptions.totalItems = resp.total;
-                    scope.gridOptions.data = resp.result;
-
-                    // Update grid height depending on number of the rows
-                    scope.updateGridHeight();
-                });
+                gridDataProvider.getPage(query);
             }
 
-            // Return column type accirding to type
+            // Return column type according to type
             function getColumnType(type) {
                 switch (type) {
                     case 'integer':     return 'number';
@@ -3682,7 +3845,7 @@ angular.module("grid/templates/modal.empty.tpl.html", []).run(["$templateCache",
             }
 
             // Add menu actions to grid
-            function addGridMenu(scope, api, gridOptions) {
+            function addGridMenu(scope, gridOptions) {
                 var menu = [],
                     stateName = window.location.href.split('/').pop(-1),
                     model = stateName.slice(0, -1),
@@ -3725,13 +3888,15 @@ angular.module("grid/templates/modal.empty.tpl.html", []).run(["$templateCache",
                             var defer = $lux.q.defer(),
                                 pk = item[scope.gridOptions.metaFields.id];
 
-                            api.delete({path: subPath + '/' + pk})
-                                .success(function(resp) {
-                                    defer.resolve(gridDefaults.modal.delete.messages.success);
-                                })
-                                .error(function(error) {
-                                    defer.reject(gridDefaults.modal.delete.messages.error);
-                                });
+                            function onSuccess(resp) {
+                                defer.resolve(gridDefaults.modal.delete.messages.success);
+                            }
+
+                            function onFailure(error) {
+                                defer.reject(gridDefaults.modal.delete.messages.error);
+                            }
+
+                            gridDataProvider.deleteItem(pk, onSuccess, onFailure);
 
                             return defer.promise;
                         }
@@ -3743,7 +3908,7 @@ angular.module("grid/templates/modal.empty.tpl.html", []).run(["$templateCache",
                         });
 
                         $q.all(promises).then(function(results) {
-                            getPage(scope, api);
+                            getPage(scope);
                             modal.hide();
                             $lux.messages.success(results[0] + ' ' + results.length + ' ' + stateName);
                         }, function(results) {
@@ -3799,26 +3964,81 @@ angular.module("grid/templates/modal.empty.tpl.html", []).run(["$templateCache",
             }
 
             // Get initial data
-            this.getInitialData = function(scope) {
-                var api = $lux.api(scope.options.target),
-                    sub_path = scope.options.target.path || '';
+            this.getInitialData = function(scope, connectionType, gridConfig) {
+                scope.gridCellDetailsModal = function(id, content) {
+                    $modal({
+                        "title": "Details for " + id,
+                        "content": content,
+                        "placement": "center",
+                        "backdrop": true,
+                        "template": 'grid/templates/modal.record.details.tpl.html'
+                    });
+                };
 
-                api.get({path: sub_path + '/metadata'}).success(function(resp) {
-                    scope.gridState.limit = resp['default-limit'];
+                if (gridConfig.rowTemplate) {
+                    scope.gridOptions.rowTemplate = gridConfig.rowTemplate;
+                }
+
+                function onMetadataReceived(metadata) {
+                    scope.gridState.limit = metadata['default-limit'];
                     scope.gridOptions.metaFields = {
-                        id: resp.id,
-                        repr: resp.repr
+                        id: metadata.id,
+                        repr: metadata.repr
                     };
-                    scope.gridOptions.columnDefs = parseColumns(resp.columns, scope.gridOptions.metaFields);
 
-                    api.get({path: sub_path}, {limit: scope.gridState.limit}).success(function(resp) {
-                        scope.gridOptions.totalItems = resp.total;
-                        scope.gridOptions.data = resp.result;
+                    scope.gridOptions.columnDefs = parseColumns(gridConfig.columns || metadata.columns, scope.gridOptions.metaFields);
+                }
+
+                function onDataReceived(data) {
+                    require(['lodash'], function(_) {
+                        scope.gridOptions.totalItems = data.total;
+
+                        if (data.type === 'update') {
+                            scope.gridState.limit = data.total;
+                        } else {
+                            scope.gridOptions.data = [];
+                        }
+
+                        angular.forEach(data.result, function (row) {
+                            var id = scope.gridOptions.metaFields.id;
+                            var lookup = {};
+                            lookup[id] = row[id];
+
+                            var index = _.findIndex(scope.gridOptions.data, lookup);
+                            if (index === -1) {
+                                scope.gridOptions.data.push(row);
+                            } else {
+                                scope.gridOptions.data[index] = _.merge(scope.gridOptions.data[index], row);
+                            }
+
+                        });
 
                         // Update grid height
                         scope.updateGridHeight();
+
+                        // This only needs to be done when onDataReceived is called from an event outside the current execution block,
+                        // e.g. when using websockets.
+                        $timeout(function () {
+                            scope.$apply();
+                        }, 0);
                     });
-                });
+                }
+
+                var listener = {
+                    onMetadataReceived: onMetadataReceived,
+                    onDataReceived: onDataReceived
+                };
+
+                gridDataProvider = GridDataProviderFactory.create(
+                    connectionType,
+                    scope.options.target,
+                    scope.options.target.path || '',
+                    scope.gridState,
+                    listener
+                );
+
+                gridDataProvider.connect();
+
             };
 
             // Builds grid options
@@ -3858,63 +4078,65 @@ angular.module("grid/templates/modal.empty.tpl.html", []).run(["$templateCache",
                     element.css('height', gridHeight + 'px');
                 };
 
-                var api = $lux.api(scope.options.target),
-                    gridOptions = {
+                var gridOptions = {
                         paginationPageSizes: scope.paginationOptions.sizes,
                         paginationPageSize: scope.gridState.limit,
+                        enableColumnResizing: gridDefaults.enableColumnResizing,
                         enableFiltering: gridDefaults.enableFiltering,
                         enableRowHeaderSelection: gridDefaults.enableRowHeaderSelection,
+                        useExternalFiltering: gridDefaults.useExternalFiltering,
                         useExternalPagination: gridDefaults.useExternalPagination,
                         useExternalSorting: gridDefaults.useExternalSorting,
                         enableHorizontalScrollbar: gridDefaults.enableHorizontalScrollbar,
                         enableVerticalScrollbar: gridDefaults.enableVerticalScrollbar,
                         rowHeight: gridDefaults.rowHeight,
                         onRegisterApi: function(gridApi) {
-                            scope.gridApi = gridApi;
-
                             require(['lodash'], function(_) {
+
+                                scope.gridApi = gridApi;
+
                                 //
                                 // Pagination
-                                scope.gridApi.pagination.on.paginationChanged(scope, _.debounce(function(pageNumber, pageSize) {
+                                scope.gridApi.pagination.on.paginationChanged(scope, _.debounce(function (pageNumber, pageSize) {
                                     scope.gridState.page = pageNumber;
                                     scope.gridState.limit = pageSize;
-                                    scope.gridState.offset = pageSize*(pageNumber - 1);
+                                    scope.gridState.offset = pageSize * (pageNumber - 1);
 
-                                    getPage(scope, api);
+                                    getPage(scope);
                                 }, gridDefaults.requestDelay));
                                 //
                                 // Sorting
-                                scope.gridApi.core.on.sortChanged(scope, _.debounce(function(grid, sortColumns) {
-                                    if( sortColumns.length === 0) {
+                                scope.gridApi.core.on.sortChanged(scope, _.debounce(function (grid, sortColumns) {
+                                    if (sortColumns.length === 0) {
                                         delete scope.gridState.sortby;
-                                        getPage(scope, api);
+                                        getPage(scope);
                                     } else {
                                         // Build query string for sorting
-                                        angular.forEach(sortColumns, function(column) {
+                                        angular.forEach(sortColumns, function (column) {
                                             scope.gridState.sortby = column.name + ':' + column.sort.direction;
                                         });
 
-                                        switch( sortColumns[0].sort.direction ) {
+                                        switch (sortColumns[0].sort.direction) {
                                             case uiGridConstants.ASC:
-                                                getPage(scope, api);
+                                                getPage(scope);
                                                 break;
                                             case uiGridConstants.DESC:
-                                                getPage(scope, api);
+                                                getPage(scope);
                                                 break;
                                             case undefined:
-                                                getPage(scope, api);
+                                                getPage(scope);
                                                 break;
                                         }
                                     }
                                 }, gridDefaults.requestDelay));
                                 //
                                 // Filtering
-                                scope.gridApi.core.on.filterChanged(scope, _.debounce(function() {
+                                scope.gridApi.core.on.filterChanged(scope, _.debounce(function () {
                                     var grid = this.grid;
                                     scope.gridFilters = {};
 
                                     // Add filters
-                                    angular.forEach(grid.columns, function(value, _) {
+                                    angular.forEach(grid.columns, function (value, _) {
                                         // Clear data in order to refresh icons
                                         if (value.filter.type === 'select')
                                             scope.clearData();
@@ -3924,7 +4146,7 @@ angular.module("grid/templates/modal.empty.tpl.html", []).run(["$templateCache",
                                     });
 
                                     // Get results
-                                    getPage(scope, api);
+                                    getPage(scope);
 
                                 }, gridDefaults.requestDelay));
                             });
@@ -3932,10 +4154,11 @@ angular.module("grid/templates/modal.empty.tpl.html", []).run(["$templateCache",
                     };
 
                 if (gridDefaults.showMenu)
-                    addGridMenu(scope, api, gridOptions);
+                    addGridMenu(scope, gridOptions);
 
                 return gridOptions;
             };
+
         }])
         //
         // Directive to build Angular-UI grid options using Lux REST API
@@ -3958,7 +4181,37 @@ angular.module("grid/templates/modal.empty.tpl.html", []).run(["$templateCache",
 
                         if (opts) {
                             scope.gridOptions = GridService.buildOptions(scope, opts);
-                            GridService.getInitialData(scope);
+                            GridService.getInitialData(scope, 'GridDataProviderRest', opts);
+                        }
+
+                        var grid = '<div ui-if="gridOptions.data.length>0" class="grid" ui-grid="gridOptions" ui-grid-pagination ui-grid-selection ui-grid-auto-resize></div>';
+                        element.append($compile(grid)(scope));
+                    },
+                },
+            };
+
+        }])
+        // Directive to build Angular-UI grid options using Websockets
+        .directive('websocketGrid', ['$compile', 'GridService', function ($compile, GridService) {
+
+            return {
+                restrict: 'A',
+                link: {
+                    pre: function (scope, element, attrs) {
+                        var scripts= element[0].getElementsByTagName('script');
+
+                        forEach(scripts, function (js) {
+                            globalEval(js.innerHTML);
+                        });
+
+                        var opts = attrs;
+                        if (attrs.websocketGrid) opts = {options: attrs.websocketGrid};
+
+                        opts = getOptions(opts);
+
+                        if (opts) {
+                            scope.gridOptions = GridService.buildOptions(scope, opts);
+                            GridService.getInitialData(scope, 'GridDataProviderWebsocket', opts.config);
                         }
 
                         var grid = '<div ui-if="gridOptions.data.length>0" class="grid" ui-grid="gridOptions" ui-grid-pagination ui-grid-selection ui-grid-auto-resize></div>';
@@ -4092,26 +4345,6 @@ angular.module("grid/templates/modal.empty.tpl.html", []).run(["$templateCache",
             return d.valueOf() < new Date().valueOf();
         };
     });
-
-angular.module('templates-users', ['users/login-help.tpl.html', 'users/messages.tpl.html']);
-
-angular.module("users/login-help.tpl.html", []).run(["$templateCache", function($templateCache) {
-  $templateCache.put("users/login-help.tpl.html",
-    "<p class=\"text-center\">Don't have an account? <a ng-href=\"{{REGISTER_URL}}\" target=\"_self\">Create one</a></p>\n" +
-    "<p class=\"text-center\">{{bla}}<a ng-href=\"{{RESET_PASSWORD_URL}}\" target=\"_self\">Forgot your username or password?</a></p>");
-}]);
-
-angular.module("users/messages.tpl.html", []).run(["$templateCache", function($templateCache) {
-  $templateCache.put("users/messages.tpl.html",
-    "<div ng-repeat=\"message in messages\" class=\"alert alert-dismissible\"\n" +
-    "ng-class=\"messageClass[message.level]\">\n" +
-    "<button type=\"button\" class=\"close\" data-dismiss=\"alert\" ng-click=\"dismiss($event, message)\">\n" +
-    "    <span aria-hidden=\"true\">&times;</span>\n" +
-    "    <span class=\"sr-only\">Close</span>\n" +
-    "</button>\n" +
-    "<span ng-bind-html=\"message.html\"></span>\n" +
-    "</div>");
-}]);
 
 
     // Controller for User.
@@ -4261,42 +4494,6 @@ angular.module("users/messages.tpl.html", []).run(["$templateCache", function($t
             });
         }
     };
-
-angular.module('templates-blog', ['blog/templates/header.tpl.html', 'blog/templates/pagination.tpl.html']);
-
-angular.module("blog/templates/header.tpl.html", []).run(["$templateCache", function($templateCache) {
-  $templateCache.put("blog/templates/header.tpl.html",
-    "<h1 data-ng-bind=\"page.title\"></h1>\n" +
-    "<p class=\"small\">by {{page.authors}} on {{page.dateText}}</p>\n" +
-    "<p class=\"lead storyline\">{{page.description}}</p>\n" +
-    "");
-}]);
-
-angular.module("blog/templates/pagination.tpl.html", []).run(["$templateCache", function($templateCache) {
-  $templateCache.put("blog/templates/pagination.tpl.html",
-    "<ul class=\"media-list\">\n" +
-    "    <li ng-repeat=\"post in items\" class=\"media\" data-ng-controller='BlogEntry'>\n" +
-    "        <a href=\"{{post.html_url}}\" ng-attr-target=\"{{postTarget}}\">\n" +
-    "            <div class=\"clearfix\">\n" +
-    "                <img ng-src=\"{{post.image}}\" class=\"hidden-xs post-image\" alt=\"{{post.title}}\">\n" +
-    "                <img ng-src=\"{{post.image}}\" alt=\"{{post.title}}\" class=\"visible-xs post-image-xs center-block\">\n" +
-    "                <div class=\"post-body hidden-xs\">\n" +
-    "                    <h3 class=\"media-heading\">{{post.title || \"Untitled\"}}</h3>\n" +
-    "                    <p data-ng-if=\"post.description\">{{post.description}}</p>\n" +
-    "                    <p class=\"text-info small\">by {{post.authors}} on {{post.dateText}}</p>\n" +
-    "                </div>\n" +
-    "                <div class=\"visible-xs\">\n" +
-    "                    <br>\n" +
-    "                    <h3 class=\"media-heading text-center\">{{post.title}}</h3>\n" +
-    "                    <p data-ng-if=\"post.description\">{{post.description}}</p>\n" +
-    "                    <p class=\"text-info small\">by {{post.authors}} on {{post.dateText}}</p>\n" +
-    "                </div>\n" +
-    "            </div>\n" +
-    "            <hr>\n" +
-    "        </a>\n" +
-    "    </li>\n" +
-    "</ul>");
-}]);
 
     //  Blog Module
     //  ===============
@@ -4459,166 +4656,6 @@ angular.module("blog/templates/pagination.tpl.html", []).run(["$templateCache", 
                 template: "bs/tooltip.tpl.html"
             });
         }]);
-angular.module('templates-bs', ['bs/tooltip.tpl.html']);
-
-angular.module("bs/tooltip.tpl.html", []).run(["$templateCache", function($templateCache) {
-  $templateCache.put("bs/tooltip.tpl.html",
-    "<div class=\"tooltip in\" ng-show=\"title\">\n" +
-    "    <div class=\"tooltip-arrow\"></div>\n" +
-    "    <div class=\"tooltip-inner\" ng-bind=\"title\"></div>\n" +
-    "</div>");
-}]);
-
-angular.module('templates-nav', ['nav/templates/link.tpl.html', 'nav/templates/navbar.tpl.html', 'nav/templates/navbar2.tpl.html', 'nav/templates/sidebar.tpl.html']);
-
-angular.module("nav/templates/link.tpl.html", []).run(["$templateCache", function($templateCache) {
-  $templateCache.put("nav/templates/link.tpl.html",
-    "<a ng-if=\"link.title\" ng-href=\"{{link.href}}\" title=\"{{link.title}}\" ng-click=\"clickLink($event, link)\"\n" +
-    "ng-attr-target=\"{{link.target}}\" ng-class=\"link.klass\" bs-tooltip=\"tooltip\">\n" +
-    "<span ng-if=\"link.left\" class=\"left-divider\"></span>\n" +
-    "<i ng-if=\"link.icon\" class=\"{{link.icon}}\"></i>\n" +
-    "<span>{{link.label || link.name}}</span>\n" +
-    "<span ng-if=\"link.right\" class=\"right-divider\"></span></a>\n" +
-    "<a ng-if=\"!link.title\" ng-href=\"{{link.href}}\" title=\"{{link.title}}\" ng-click=\"clickLink($event, link)\"\n" +
-    "ng-attr-target=\"{{link.target}}\" ng-class=\"link.klass\" bs-tooltip=\"tooltip\">\n" +
-    "<span ng-if=\"link.left\" class=\"left-divider\"></span>\n" +
-    "<i ng-if=\"link.icon\" class=\"{{link.icon}}\"></i>\n" +
-    "<span>{{link.label || link.name}}</span>\n" +
-    "<span ng-if=\"link.right\" class=\"right-divider\"></span></a>");
-}]);
-
-angular.module("nav/templates/navbar.tpl.html", []).run(["$templateCache", function($templateCache) {
-  $templateCache.put("nav/templates/navbar.tpl.html",
-    "<nav ng-attr-id=\"{{navbar.id}}\" class=\"navbar navbar-{{navbar.themeTop}}\"\n" +
-    "ng-class=\"{'navbar-fixed-top':navbar.fixed, 'navbar-static-top':navbar.top}\" role=\"navigation\"\n" +
-    "ng-model=\"navbar.collapse\" bs-collapse>\n" +
-    "    <div class=\"{{navbar.container}}\">\n" +
-    "        <div class=\"navbar-header\">\n" +
-    "            <button ng-if=\"navbar.toggle\" type=\"button\" class=\"navbar-toggle\" bs-collapse-toggle>\n" +
-    "                <span class=\"sr-only\">Toggle navigation</span>\n" +
-    "                <span class=\"icon-bar\"></span>\n" +
-    "                <span class=\"icon-bar\"></span>\n" +
-    "                <span class=\"icon-bar\"></span>\n" +
-    "            </button>\n" +
-    "            <ul ng-if=\"navbar.itemsLeft\" class=\"nav navbar-nav\">\n" +
-    "                <li ng-repeat=\"link in navbar.itemsLeft\" ng-class=\"{active:activeLink(link)}\" navbar-link>\n" +
-    "                </li>\n" +
-    "            </ul>\n" +
-    "            <a ng-if=\"navbar.brandImage\" href=\"{{navbar.url}}\" class=\"navbar-brand\" target=\"{{navbar.target}}\">\n" +
-    "                <img ng-src=\"{{navbar.brandImage}}\" alt=\"{{navbar.brand || 'brand'}}\">\n" +
-    "            </a>\n" +
-    "            <a ng-if=\"!navbar.brandImage && navbar.brand\" href=\"{{navbar.url}}\" class=\"navbar-brand\" target=\"{{navbar.target}}\">\n" +
-    "                {{navbar.brand}}\n" +
-    "            </a>\n" +
-    "        </div>\n" +
-    "        <nav class=\"navbar-collapse\" bs-collapse-target>\n" +
-    "            <ul ng-if=\"navbar.itemsRight\" class=\"nav navbar-nav navbar-right\">\n" +
-    "                <li ng-repeat=\"link in navbar.itemsRight\" ng-class=\"{active:activeLink(link)}\" navbar-link>\n" +
-    "                </li>\n" +
-    "            </ul>\n" +
-    "        </nav>\n" +
-    "    </div>\n" +
-    "</nav>\n" +
-    "");
-}]);
-
-angular.module("nav/templates/navbar2.tpl.html", []).run(["$templateCache", function($templateCache) {
-  $templateCache.put("nav/templates/navbar2.tpl.html",
-    "<nav class=\"navbar navbar-{{navbar.themeTop}}\"\n" +
-    "ng-class=\"{'navbar-fixed-top':navbar.fixed, 'navbar-static-top':navbar.top}\"\n" +
-    "role=\"navigation\" ng-model=\"navbar.collapse\" bs-collapse>\n" +
-    "    <div class=\"navbar-header\">\n" +
-    "        <button ng-if=\"navbar.toggle\" type=\"button\" class=\"navbar-toggle\" bs-collapse-toggle>\n" +
-    "            <span class=\"sr-only\">Toggle navigation</span>\n" +
-    "            <span class=\"icon-bar\"></span>\n" +
-    "            <span class=\"icon-bar\"></span>\n" +
-    "            <span class=\"icon-bar\"></span>\n" +
-    "        </button>\n" +
-    "        <a ng-if=\"navbar.brandImage\" href=\"{{navbar.url}}\" class=\"navbar-brand\" target=\"{{navbar.target}}\">\n" +
-    "            <img ng-src=\"{{navbar.brandImage}}\" alt=\"{{navbar.brand || 'brand'}}\">\n" +
-    "        </a>\n" +
-    "        <a ng-if=\"!navbar.brandImage && navbar.brand\" href=\"{{navbar.url}}\" class=\"navbar-brand\" target=\"{{navbar.target}}\">\n" +
-    "            {{navbar.brand}}\n" +
-    "        </a>\n" +
-    "    </div>\n" +
-    "    <ul ng-if=\"navbar.items\" class=\"nav navbar-nav\">\n" +
-    "        <li ng-repeat=\"link in navbar.items\" ng-class=\"{active:activeLink(link)}\" navbar-link></li>\n" +
-    "    </ul>\n" +
-    "    <ul ng-if=\"navbar.itemsRight\" class=\"nav navbar-nav navbar-right\">\n" +
-    "        <li ng-repeat=\"link in navbar.itemsRight\" ng-class=\"{active:activeLink(link)}\" navbar-link></li>\n" +
-    "    </ul>\n" +
-    "    <div class=\"sidebar navbar-{{navbar.theme}}\" role=\"navigation\">\n" +
-    "        <div class=\"sidebar-nav sidebar-collapse\" bs-collapse-target>\n" +
-    "            <ul id=\"side-menu\" class=\"nav nav-side\">\n" +
-    "                <li ng-if=\"navbar.search\" class=\"sidebar-search\">\n" +
-    "                    <div class=\"input-group custom-search-form\">\n" +
-    "                        <input class=\"form-control\" type=\"text\" placeholder=\"Search...\">\n" +
-    "                        <span class=\"input-group-btn\">\n" +
-    "                            <button class=\"btn btn-default\" type=\"button\" ng-click=\"search()\">\n" +
-    "                                <i class=\"fa fa-search\"></i>\n" +
-    "                            </button>\n" +
-    "                        </span>\n" +
-    "                    </div>\n" +
-    "                </li>\n" +
-    "                <li ng-repeat=\"link in navbar.items2\">\n" +
-    "                    <a ng-if=\"!link.links\" href=\"{{link.href}}\">{{link.label || link.value || link.href}}</a>\n" +
-    "                    <a ng-if=\"link.links\" href=\"{{link.href}}\" class=\"with-children\">{{link.label || link.value}}</a>\n" +
-    "                    <a ng-if=\"link.links\" href=\"#\" class=\"pull-right toggle\" ng-click=\"togglePage($event)\">\n" +
-    "                        <i class=\"fa\" ng-class=\"{'fa-chevron-left': !link.active, 'fa-chevron-down': link.active}\"></i></a>\n" +
-    "                    <ul ng-if=\"link.links\" class=\"nav nav-second-level collapse\" ng-class=\"{in: link.active}\">\n" +
-    "                        <li ng-repeat=\"link in link.links\">\n" +
-    "                            <a ng-if=\"!link.vars\" href=\"{{link.href}}\" ng-click=\"loadPage($event)\">{{link.label || link.value}}</a>\n" +
-    "                        </li>\n" +
-    "                    </ul>\n" +
-    "                </li>\n" +
-    "            </ul>\n" +
-    "        </div>\n" +
-    "    </div>\n" +
-    "</nav>");
-}]);
-
-angular.module("nav/templates/sidebar.tpl.html", []).run(["$templateCache", function($templateCache) {
-  $templateCache.put("nav/templates/sidebar.tpl.html",
-    "<navbar class=\"sidebar-navbar\"></navbar>\n" +
-    "<aside ng-repeat=\"sidebar in sidebars\" class=\"sidebar sidebar-{{ sidebar.position }}\"\n" +
-    "ng-class=\"{'sidebar-fixed':sidebar.fixed}\" bs-collapse>\n" +
-    "    <div class=\"nav-panel\">\n" +
-    "        <div ng-if=\"sidebar.user\">\n" +
-    "            <div ng-if=\"sidebar.user.avatar_url\" class=\"pull-{{ sidebar.position }} image\">\n" +
-    "                <img ng-src=\"{{sidebar.user.avatar_url}}\" alt=\"User Image\" />\n" +
-    "            </div>\n" +
-    "            <div class=\"pull-left info\">\n" +
-    "                <p>{{ sidebar.infoText }}</p>\n" +
-    "                <a href=\"#\">{{sidebar.user.name}}</a>\n" +
-    "            </div>\n" +
-    "        </div>\n" +
-    "    </div>\n" +
-    "    <ul class=\"sidebar-menu\">\n" +
-    "        <li ng-if=\"section.name\" ng-repeat-start=\"section in sidebar.sections\" class=\"header\">\n" +
-    "            {{section.name}}\n" +
-    "        </li>\n" +
-    "        <li ng-repeat-end ng-repeat=\"link in section.items\" class=\"treeview\"\n" +
-    "        ng-class=\"{active:activeLink(link)}\" ng-include=\"'subnav'\"></li>\n" +
-    "    </ul>\n" +
-    "</aside>\n" +
-    "<div class=\"sidebar-page\" ng-click=\"closeSideBar()\" full-page>\n" +
-    "    <div class=\"content-wrapper\"></div>\n" +
-    "    <div class=\"overlay\"></div>\n" +
-    "</div>\n" +
-    "\n" +
-    "<script type=\"text/ng-template\" id=\"subnav\">\n" +
-    "    <a ng-href=\"{{link.href}}\" ng-attr-title=\"{{link.title}}\" ng-click=\"menuCollapse($event)\">\n" +
-    "        <i ng-if=\"link.icon\" class=\"{{link.icon}}\"></i>\n" +
-    "        <span>{{link.name}}</span>\n" +
-    "        <i ng-if=\"link.subitems\" class=\"fa fa-angle-left pull-right\"></i>\n" +
-    "    </a>\n" +
-    "    <ul class=\"treeview-menu\" ng-class=\"link.class\" ng-if=\"link.subitems\">\n" +
-    "        <li ng-repeat=\"link in link.subitems\" ng-class=\"{active:activeLink(link)}\" ng-include=\"'subnav'\">\n" +
-    "        </li>\n" +
-    "    </ul>\n" +
-    "</script>");
-}]);
-
 
     //
     //  Lux Navigation module
@@ -4947,7 +4984,7 @@ angular.module("nav/templates/sidebar.tpl.html", []).run(["$templateCache", func
                 // No navbar, add an object
                 if (!navbar)
                     navbar = {};
-                navbar.fixed = true;
+                navbar.fixed = false;
                 navbar.top = true;
                 //
                 // Add toggle to the navbar
@@ -5453,6 +5490,424 @@ angular.module("nav/templates/sidebar.tpl.html", []).run(["$templateCache", func
 
         return api;
     };
+angular.module('templates-blog', ['blog/templates/header.tpl.html', 'blog/templates/pagination.tpl.html']);
+
+angular.module("blog/templates/header.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("blog/templates/header.tpl.html",
+    "<h1 data-ng-bind=\"page.title\"></h1>\n" +
+    "<p class=\"small\">by {{page.authors}} on {{page.dateText}}</p>\n" +
+    "<p class=\"lead storyline\">{{page.description}}</p>\n" +
+    "");
+}]);
+
+angular.module("blog/templates/pagination.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("blog/templates/pagination.tpl.html",
+    "<ul class=\"media-list\">\n" +
+    "    <li ng-repeat=\"post in items\" class=\"media\" data-ng-controller='BlogEntry'>\n" +
+    "        <a href=\"{{post.html_url}}\" ng-attr-target=\"{{postTarget}}\">\n" +
+    "            <div class=\"clearfix\">\n" +
+    "                <img ng-src=\"{{post.image}}\" class=\"hidden-xs post-image\" alt=\"{{post.title}}\">\n" +
+    "                <img ng-src=\"{{post.image}}\" alt=\"{{post.title}}\" class=\"visible-xs post-image-xs center-block\">\n" +
+    "                <div class=\"post-body hidden-xs\">\n" +
+    "                    <h3 class=\"media-heading\">{{post.title || \"Untitled\"}}</h3>\n" +
+    "                    <p data-ng-if=\"post.description\">{{post.description}}</p>\n" +
+    "                    <p class=\"text-info small\">by {{post.authors}} on {{post.dateText}}</p>\n" +
+    "                </div>\n" +
+    "                <div class=\"visible-xs\">\n" +
+    "                    <br>\n" +
+    "                    <h3 class=\"media-heading text-center\">{{post.title}}</h3>\n" +
+    "                    <p data-ng-if=\"post.description\">{{post.description}}</p>\n" +
+    "                    <p class=\"text-info small\">by {{post.authors}} on {{post.dateText}}</p>\n" +
+    "                </div>\n" +
+    "            </div>\n" +
+    "            <hr>\n" +
+    "        </a>\n" +
+    "    </li>\n" +
+    "</ul>");
+}]);
+
+angular.module('templates-bs', ['bs/tooltip.tpl.html']);
+
+angular.module("bs/tooltip.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("bs/tooltip.tpl.html",
+    "<div class=\"tooltip in\" ng-show=\"title\">\n" +
+    "    <div class=\"tooltip-arrow\"></div>\n" +
+    "    <div class=\"tooltip-inner\" ng-bind=\"title\"></div>\n" +
+    "</div>");
+}]);
+
+angular.module('templates-cms', ['cms/templates/list-group.tpl.html']);
+
+angular.module("cms/templates/list-group.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("cms/templates/list-group.tpl.html",
+    "<div class=\"list-group\">\n" +
+    "  <a ng-repeat=\"link in links\" ng-href=\"{{link.url}}\" class=\"list-group-item\"\n" +
+    "  ng-bind=\"link.title\" ng-class=\"{active: link.url === $location.absUrl()}\"></a>\n" +
+    "</div>\n" +
+    "");
+}]);
+
+angular.module('templates-gaeblog', ['templates/blog-actions.tpl.html', 'templates/blog-delete.tpl.html', 'templates/blog-page.tpl.html', 'templates/blog-publish.tpl.html', 'templates/blog-search.tpl.html', 'templates/modal.tpl.html']);
+
+angular.module("templates/blog-actions.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("templates/blog-actions.tpl.html",
+    "<ul class=\"blogActions\" ng-class=\"layout\" ng-if=\"page\">\n" +
+    "<li ng-if=\"page.id && !page.published\"><a class=\"btn btn-default\" ng-click=\"publishPost()\"> Publish</a></li>\n" +
+    "<li ng-if=\"page.preview_url\"><a class=\"btn btn-default\" ng-href=\"{{page.preview_url}}\"> Preview</a></li>\n" +
+    "<li ng-if=\"page.edit_url\"><a class=\"btn btn-default\" ng-href=\"{{page.edit_url}}\"> Write</a></li>\n" +
+    "<li ng-if=\"page.id\"><a class=\"btn btn-danger\" ng-click=\"deletePost()\"> Delete</a></li>\n" +
+    "</ul>");
+}]);
+
+angular.module("templates/blog-delete.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("templates/blog-delete.tpl.html",
+    "<div class=\"modal-body\">\n" +
+    "    Deleted stories are gone forever. Are you sure?\n" +
+    "</div>\n" +
+    "<div class=\"modal-footer\">\n" +
+    "  <button type=\"button\" class=\"btn btn-danger\" ng-click=\"deletePost(true)\">Delete</button>\n" +
+    "  <button type=\"button\" class=\"btn btn-default\" ng-click=\"$hide()\">Cancel</button>\n" +
+    "</div>");
+}]);
+
+angular.module("templates/blog-page.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("templates/blog-page.tpl.html",
+    "<div class=\"center-block blog-title w800\">\n" +
+    "    <h2 data-ng-bind=\"page.title\"></h2>\n" +
+    "    <p class=\"small\">by {{page.authors}} on {{page.dateText}}</p>\n" +
+    "    <p class=\"lead storyline\">{{page.description}}</p>\n" +
+    "</div>\n" +
+    "<div class=\"center-block w900\">\n" +
+    "    <br>\n" +
+    "    <br>\n" +
+    "    <section data-highlight data-compile-html>\n" +
+    "    </section>\n" +
+    "</div>");
+}]);
+
+angular.module("templates/blog-publish.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("templates/blog-publish.tpl.html",
+    "<div class=\"modal-body\">\n" +
+    "    Do you want to publish your story?\n" +
+    "</div>\n" +
+    "<div class=\"modal-footer\">\n" +
+    "  <button type=\"button\" class=\"btn btn-default\" ng-click=\"publishPost(true)\">Publish</button>\n" +
+    "  <button type=\"button\" class=\"btn btn-default\" ng-click=\"$hide()\">Cancel</button>\n" +
+    "</div>");
+}]);
+
+angular.module("templates/blog-search.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("templates/blog-search.tpl.html",
+    "<div class=\"searchBox\" ng-show=\"page.name == 'search'\">\n" +
+    "<input class=\"borderless text-jumbo\" type=\"text\" placeholder=\"Type to search\" ng-change='change($event)' ng-model='text'>\n" +
+    "<p class=\"lead text-center\" ng-if=\"message\" ng-bind=\"message\" style=\"margin-top: 20px\"></p>\n" +
+    "</div>");
+}]);
+
+angular.module("templates/modal.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("templates/modal.tpl.html",
+    "<div class=\"modal\" tabindex=\"-1\" role=\"dialog\">\n" +
+    "  <div class=\"modal-dialog\">\n" +
+    "    <h3 class=\"opverlay-title\" ng-show=\"title\" ng-bind=\"title\"></h3>\n" +
+    "    <div ng-bind=\"content\"></div>\n" +
+    "  </div>\n" +
+    "</div>");
+}]);
+
+angular.module('templates-grid', ['grid/templates/modal.columns.tpl.html', 'grid/templates/modal.delete.tpl.html', 'grid/templates/modal.empty.tpl.html', 'grid/templates/modal.record.details.tpl.html']);
+
+angular.module("grid/templates/modal.columns.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("grid/templates/modal.columns.tpl.html",
+    "<div class=\"modal\" tabindex=\"-1\" role=\"dialog\" aria-hidden=\"true\">\n" +
+    "  <div class=\"modal-dialog\">\n" +
+    "    <div class=\"modal-content\">\n" +
+    "      <div class=\"modal-header\" >\n" +
+    "        <button type=\"button\" class=\"close\" aria-label=\"Close\" ng-click=\"$hide()\"><span aria-hidden=\"true\">&times;</span></button>\n" +
+    "        <h4 class=\"modal-title\"><i class=\"fa fa-eye\"></i> Change columns visibility</h4>\n" +
+    "      </div>\n" +
+    "      <div class=\"modal-body\">\n" +
+    "        <p class=\"modal-info\">{{infoMessage}}</p>\n" +
+    "        <ul class=\"modal-items list-inline\">\n" +
+    "          <li ng-repeat=\"col in columns\">\n" +
+    "            <a class=\"btn btn-default\" ng-class=\"activeClass(col)\" ng-click=\"toggleVisible(col)\">{{col.displayName}}</a>\n" +
+    "          </li>\n" +
+    "        </ul>\n" +
+    "      </div>\n" +
+    "      <div class=\"modal-footer\">\n" +
+    "        <button type=\"button\" class=\"btn btn-default\" ng-click=\"$hide()\">Close</button>\n" +
+    "      </div>\n" +
+    "    </div>\n" +
+    "  </div>\n" +
+    "</div>\n" +
+    "");
+}]);
+
+angular.module("grid/templates/modal.delete.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("grid/templates/modal.delete.tpl.html",
+    "<div class=\"modal\" tabindex=\"-1\" role=\"dialog\" aria-hidden=\"true\">\n" +
+    "  <div class=\"modal-dialog\">\n" +
+    "    <div class=\"modal-content\">\n" +
+    "      <div class=\"modal-header\" >\n" +
+    "        <button type=\"button\" class=\"close\" aria-label=\"Close\" ng-click=\"$hide()\"><span aria-hidden=\"true\">&times;</span></button>\n" +
+    "        <h4 class=\"modal-title\"><i class=\"fa fa-trash\"></i> Delete {{stateName}}</h4>\n" +
+    "      </div>\n" +
+    "      <div class=\"modal-body\">\n" +
+    "        <p class=\"modal-info\">{{infoMessage}}</p>\n" +
+    "        <ul class=\"modal-items\">\n" +
+    "          <li ng-repeat=\"item in selected\">{{item[repr_field]}}</li>\n" +
+    "        </ul>\n" +
+    "        <p class=\"text-danger cannot-undo\">{{dangerMessage}}</p>\n" +
+    "      </div>\n" +
+    "      <div class=\"modal-footer\">\n" +
+    "        <button type=\"button\" class=\"btn btn-default\" ng-click=\"$hide()\">No</button>\n" +
+    "        <button type=\"button\" class=\"btn btn-primary\" ng-click=\"ok()\">Yes</button>\n" +
+    "      </div>\n" +
+    "    </div>\n" +
+    "  </div>\n" +
+    "</div>\n" +
+    "");
+}]);
+
+angular.module("grid/templates/modal.empty.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("grid/templates/modal.empty.tpl.html",
+    "<div class=\"modal\" tabindex=\"-1\" role=\"dialog\" aria-hidden=\"true\">\n" +
+    "  <div class=\"modal-dialog\">\n" +
+    "    <div class=\"modal-content\">\n" +
+    "      <div class=\"modal-header\">\n" +
+    "        <button type=\"button\" class=\"close\" aria-label=\"Close\" ng-click=\"$hide()\"><span aria-hidden=\"true\">&times;</span></button>\n" +
+    "        <h4 class=\"modal-title\"><i class=\"fa fa-trash\"></i> Lack of {{stateName}} to delete</h4>\n" +
+    "      </div>\n" +
+    "      <div class=\"modal-body\">\n" +
+    "        <p class=\"modal-info\">{{emptyMessage}}</p>\n" +
+    "      </div>\n" +
+    "      <div class=\"modal-footer\">\n" +
+    "        <button type=\"button\" class=\"btn btn-default\" ng-click=\"$hide()\">Close</button>\n" +
+    "      </div>\n" +
+    "    </div>\n" +
+    "  </div>\n" +
+    "</div>\n" +
+    "");
+}]);
+
+angular.module("grid/templates/modal.record.details.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("grid/templates/modal.record.details.tpl.html",
+    "<div class=\"modal\" tabindex=\"-1\" role=\"dialog\" aria-hidden=\"true\">\n" +
+    "    <div class=\"modal-dialog record-details\">\n" +
+    "        <div class=\"modal-content\">\n" +
+    "            <div class=\"modal-header\" ng-show=\"title\">\n" +
+    "                <button type=\"button\" class=\"close\" aria-label=\"Close\" ng-click=\"$hide()\">\n" +
+    "                    <span aria-hidden=\"true\">&times;</span>\n" +
+    "                </button>\n" +
+    "                <h4 class=\"modal-title\" ng-bind=\"title\"></h4>\n" +
+    "            </div>\n" +
+    "            <div class=\"modal-body\" >\n" +
+    "                <pre ng-bind=\"content\"></pre>\n" +
+    "            </div>\n" +
+    "            <div class=\"modal-footer\">\n" +
+    "                <button type=\"button\" class=\"btn btn-default\" ng-click=\"$hide()\">Close</button>\n" +
+    "            </div>\n" +
+    "        </div>\n" +
+    "    </div>\n" +
+    "</div>\n" +
+    "");
+}]);
+
+angular.module('templates-message', ['message/message.tpl.html']);
+
+angular.module("message/message.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("message/message.tpl.html",
+    "<div>\n" +
+    "    <div class=\"alert alert-{{ message.type }}\" role=\"alert\" ng-repeat=\"message in messages\">\n" +
+    "        <a href=\"#\" class=\"close\" ng-click=\"removeMessage(message)\">&times;</a>\n" +
+    "        <i ng-if=\"message.icon\" ng-class=\"message.icon\"></i>\n" +
+    "        <span>{{ message.text }}</span>\n" +
+    "    </div>\n" +
+    "</div>\n" +
+    "");
+}]);
+
+angular.module('templates-nav', ['nav/templates/link.tpl.html', 'nav/templates/navbar.tpl.html', 'nav/templates/navbar2.tpl.html', 'nav/templates/sidebar.tpl.html']);
+
+angular.module("nav/templates/link.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("nav/templates/link.tpl.html",
+    "<a ng-if=\"link.title\" ng-href=\"{{link.href}}\" title=\"{{link.title}}\" ng-click=\"clickLink($event, link)\"\n" +
+    "ng-attr-target=\"{{link.target}}\" ng-class=\"link.klass\" bs-tooltip=\"tooltip\">\n" +
+    "<span ng-if=\"link.left\" class=\"left-divider\"></span>\n" +
+    "<i ng-if=\"link.icon\" class=\"{{link.icon}}\"></i>\n" +
+    "<span>{{link.label || link.name}}</span>\n" +
+    "<span ng-if=\"link.right\" class=\"right-divider\"></span></a>\n" +
+    "<a ng-if=\"!link.title\" ng-href=\"{{link.href}}\" title=\"{{link.title}}\" ng-click=\"clickLink($event, link)\"\n" +
+    "ng-attr-target=\"{{link.target}}\" ng-class=\"link.klass\" bs-tooltip=\"tooltip\">\n" +
+    "<span ng-if=\"link.left\" class=\"left-divider\"></span>\n" +
+    "<i ng-if=\"link.icon\" class=\"{{link.icon}}\"></i>\n" +
+    "<span>{{link.label || link.name}}</span>\n" +
+    "<span ng-if=\"link.right\" class=\"right-divider\"></span></a>");
+}]);
+
+angular.module("nav/templates/navbar.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("nav/templates/navbar.tpl.html",
+    "<nav ng-attr-id=\"{{navbar.id}}\" class=\"navbar navbar-{{navbar.themeTop}}\"\n" +
+    "ng-class=\"{'navbar-fixed-top':navbar.fixed, 'navbar-static-top':navbar.top}\" role=\"navigation\"\n" +
+    "ng-model=\"navbar.collapse\" bs-collapse>\n" +
+    "    <div class=\"{{navbar.container}}\">\n" +
+    "        <div class=\"navbar-header\">\n" +
+    "            <button ng-if=\"navbar.toggle\" type=\"button\" class=\"navbar-toggle\" bs-collapse-toggle>\n" +
+    "                <span class=\"sr-only\">Toggle navigation</span>\n" +
+    "                <span class=\"icon-bar\"></span>\n" +
+    "                <span class=\"icon-bar\"></span>\n" +
+    "                <span class=\"icon-bar\"></span>\n" +
+    "            </button>\n" +
+    "            <ul class=\"nav navbar-nav main-nav\">\n" +
+    "                <li ng-if=\"navbar.itemsLeft\" ng-repeat=\"link in navbar.itemsLeft\" ng-class=\"{active:activeLink(link)}\" navbar-link>\n" +
+    "                </li>\n" +
+    "            </ul>\n" +
+    "            <a ng-if=\"navbar.brandImage\" href=\"{{navbar.url}}\" class=\"navbar-brand\" target=\"{{navbar.target}}\">\n" +
+    "                <img ng-src=\"{{navbar.brandImage}}\" alt=\"{{navbar.brand || 'brand'}}\">\n" +
+    "            </a>\n" +
+    "            <a ng-if=\"!navbar.brandImage && navbar.brand\" href=\"{{navbar.url}}\" class=\"navbar-brand\" target=\"{{navbar.target}}\">\n" +
+    "                {{navbar.brand}}\n" +
+    "            </a>\n" +
+    "        </div>\n" +
+    "        <nav class=\"navbar-collapse\" bs-collapse-target>\n" +
+    "            <ul ng-if=\"navbar.itemsRight\" class=\"nav navbar-nav navbar-right\">\n" +
+    "                <li ng-repeat=\"link in navbar.itemsRight\" ng-class=\"{active:activeLink(link)}\" navbar-link>\n" +
+    "                </li>\n" +
+    "            </ul>\n" +
+    "        </nav>\n" +
+    "    </div>\n" +
+    "</nav>\n" +
+    "");
+}]);
+
+angular.module("nav/templates/navbar2.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("nav/templates/navbar2.tpl.html",
+    "<nav class=\"navbar navbar-{{navbar.themeTop}}\"\n" +
+    "ng-class=\"{'navbar-fixed-top':navbar.fixed, 'navbar-static-top':navbar.top}\"\n" +
+    "role=\"navigation\" ng-model=\"navbar.collapse\" bs-collapse>\n" +
+    "    <div class=\"navbar-header\">\n" +
+    "        <button ng-if=\"navbar.toggle\" type=\"button\" class=\"navbar-toggle\" bs-collapse-toggle>\n" +
+    "            <span class=\"sr-only\">Toggle navigation</span>\n" +
+    "            <span class=\"icon-bar\"></span>\n" +
+    "            <span class=\"icon-bar\"></span>\n" +
+    "            <span class=\"icon-bar\"></span>\n" +
+    "        </button>\n" +
+    "        <a ng-if=\"navbar.brandImage\" href=\"{{navbar.url}}\" class=\"navbar-brand\" target=\"{{navbar.target}}\">\n" +
+    "            <img ng-src=\"{{navbar.brandImage}}\" alt=\"{{navbar.brand || 'brand'}}\">\n" +
+    "        </a>\n" +
+    "        <a ng-if=\"!navbar.brandImage && navbar.brand\" href=\"{{navbar.url}}\" class=\"navbar-brand\" target=\"{{navbar.target}}\">\n" +
+    "            {{navbar.brand}}\n" +
+    "        </a>\n" +
+    "    </div>\n" +
+    "    <ul ng-if=\"navbar.items\" class=\"nav navbar-nav\">\n" +
+    "        <li ng-repeat=\"link in navbar.items\" ng-class=\"{active:activeLink(link)}\" navbar-link></li>\n" +
+    "    </ul>\n" +
+    "    <ul ng-if=\"navbar.itemsRight\" class=\"nav navbar-nav navbar-right\">\n" +
+    "        <li ng-repeat=\"link in navbar.itemsRight\" ng-class=\"{active:activeLink(link)}\" navbar-link></li>\n" +
+    "    </ul>\n" +
+    "    <div class=\"sidebar navbar-{{navbar.theme}}\" role=\"navigation\">\n" +
+    "        <div class=\"sidebar-nav sidebar-collapse\" bs-collapse-target>\n" +
+    "            <ul id=\"side-menu\" class=\"nav nav-side\">\n" +
+    "                <li ng-if=\"navbar.search\" class=\"sidebar-search\">\n" +
+    "                    <div class=\"input-group custom-search-form\">\n" +
+    "                        <input class=\"form-control\" type=\"text\" placeholder=\"Search...\">\n" +
+    "                        <span class=\"input-group-btn\">\n" +
+    "                            <button class=\"btn btn-default\" type=\"button\" ng-click=\"search()\">\n" +
+    "                                <i class=\"fa fa-search\"></i>\n" +
+    "                            </button>\n" +
+    "                        </span>\n" +
+    "                    </div>\n" +
+    "                </li>\n" +
+    "                <li ng-repeat=\"link in navbar.items2\">\n" +
+    "                    <a ng-if=\"!link.links\" href=\"{{link.href}}\">{{link.label || link.value || link.href}}</a>\n" +
+    "                    <a ng-if=\"link.links\" href=\"{{link.href}}\" class=\"with-children\">{{link.label || link.value}}</a>\n" +
+    "                    <a ng-if=\"link.links\" href=\"#\" class=\"pull-right toggle\" ng-click=\"togglePage($event)\">\n" +
+    "                        <i class=\"fa\" ng-class=\"{'fa-chevron-left': !link.active, 'fa-chevron-down': link.active}\"></i></a>\n" +
+    "                    <ul ng-if=\"link.links\" class=\"nav nav-second-level collapse\" ng-class=\"{in: link.active}\">\n" +
+    "                        <li ng-repeat=\"link in link.links\">\n" +
+    "                            <a ng-if=\"!link.vars\" href=\"{{link.href}}\" ng-click=\"loadPage($event)\">{{link.label || link.value}}</a>\n" +
+    "                        </li>\n" +
+    "                    </ul>\n" +
+    "                </li>\n" +
+    "            </ul>\n" +
+    "        </div>\n" +
+    "    </div>\n" +
+    "</nav>");
+}]);
+
+angular.module("nav/templates/sidebar.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("nav/templates/sidebar.tpl.html",
+    "<navbar class=\"sidebar-navbar\"></navbar>\n" +
+    "<aside ng-repeat=\"sidebar in sidebars\" class=\"sidebar sidebar-{{ sidebar.position }}\"\n" +
+    "ng-class=\"{'sidebar-fixed':sidebar.fixed}\" bs-collapse>\n" +
+    "    <div class=\"nav-panel\">\n" +
+    "        <div ng-if=\"sidebar.user\">\n" +
+    "            <div ng-if=\"sidebar.user.avatar_url\" class=\"pull-{{ sidebar.position }} image\">\n" +
+    "                <img ng-src=\"{{sidebar.user.avatar_url}}\" alt=\"User Image\" />\n" +
+    "            </div>\n" +
+    "            <div class=\"pull-left info\">\n" +
+    "                <p>{{ sidebar.infoText }}</p>\n" +
+    "                <a href=\"#\">{{sidebar.user.name}}</a>\n" +
+    "            </div>\n" +
+    "        </div>\n" +
+    "    </div>\n" +
+    "    <ul class=\"sidebar-menu\">\n" +
+    "        <li ng-if=\"section.name\" ng-repeat-start=\"section in sidebar.sections\" class=\"header\">\n" +
+    "            {{section.name}}\n" +
+    "        </li>\n" +
+    "        <li ng-repeat-end ng-repeat=\"link in section.items\" class=\"treeview\"\n" +
+    "        ng-class=\"{active:activeLink(link)}\" ng-include=\"'subnav'\"></li>\n" +
+    "    </ul>\n" +
+    "</aside>\n" +
+    "<div class=\"sidebar-page\" ng-click=\"closeSideBar()\" full-page>\n" +
+    "    <div class=\"content-wrapper\"></div>\n" +
+    "    <div class=\"overlay\"></div>\n" +
+    "</div>\n" +
+    "\n" +
+    "<script type=\"text/ng-template\" id=\"subnav\">\n" +
+    "    <a ng-href=\"{{link.href}}\" ng-attr-title=\"{{link.title}}\" ng-click=\"menuCollapse($event)\">\n" +
+    "        <i ng-if=\"link.icon\" class=\"{{link.icon}}\"></i>\n" +
+    "        <span>{{link.name}}</span>\n" +
+    "        <i ng-if=\"link.subitems\" class=\"fa fa-angle-left pull-right\"></i>\n" +
+    "    </a>\n" +
+    "    <ul class=\"treeview-menu\" ng-class=\"link.class\" ng-if=\"link.subitems\">\n" +
+    "        <li ng-repeat=\"link in link.subitems\" ng-class=\"{active:activeLink(link)}\" ng-include=\"'subnav'\">\n" +
+    "        </li>\n" +
+    "    </ul>\n" +
+    "</script>");
+}]);
+
+angular.module('templates-page', ['page/breadcrumbs.tpl.html']);
+
+angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("page/breadcrumbs.tpl.html",
+    "<ol class=\"breadcrumb\">\n" +
+    "    <li ng-repeat=\"step in steps\" ng-class=\"{active: step.last}\">\n" +
+    "        <a ng-if=\"!step.last\" href=\"{{step.href}}\">{{step.label}}</a>\n" +
+    "        <span ng-if=\"step.last\">{{step.label}}</span>\n" +
+    "    </li>\n" +
+    "</ol>");
+}]);
+
+angular.module('templates-users', ['users/login-help.tpl.html', 'users/messages.tpl.html']);
+
+angular.module("users/login-help.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("users/login-help.tpl.html",
+    "<p class=\"text-center\">Don't have an account? <a ng-href=\"{{REGISTER_URL}}\" target=\"_self\">Create one</a></p>\n" +
+    "<p class=\"text-center\">{{bla}}<a ng-href=\"{{RESET_PASSWORD_URL}}\" target=\"_self\">Forgot your username or password?</a></p>");
+}]);
+
+angular.module("users/messages.tpl.html", []).run(["$templateCache", function($templateCache) {
+  $templateCache.put("users/messages.tpl.html",
+    "<div ng-repeat=\"message in messages\" class=\"alert alert-dismissible\"\n" +
+    "ng-class=\"messageClass[message.level]\">\n" +
+    "<button type=\"button\" class=\"close\" data-dismiss=\"alert\" ng-click=\"dismiss($event, message)\">\n" +
+    "    <span aria-hidden=\"true\">&times;</span>\n" +
+    "    <span class=\"sr-only\">Close</span>\n" +
+    "</button>\n" +
+    "<span ng-bind-html=\"message.html\"></span>\n" +
+    "</div>");
+}]);
+
 
 	return lux;
 }));

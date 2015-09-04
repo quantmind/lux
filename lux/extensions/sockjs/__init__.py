@@ -18,6 +18,7 @@ class Extension(lux.Extension):
 
     _config = [
         Parameter('WS_URL', '/ws', 'Websocket base url'),
+        Parameter('WS_HANDLER', LuxWs, 'Websocket handler'),
         Parameter('PUBSUB_STORE', None,
                   'Connection string for a Publish/Subscribe data-store'),
         Parameter('WEBSOCKET_HARTBEAT', 25, 'Hartbeat in seconds'),
@@ -33,9 +34,11 @@ class Extension(lux.Extension):
     def middleware(self, app):
         '''Add middleware to edit content
         '''
-        socketio = SocketIO(app.config['WS_URL'])
-        self.websocket = socketio.handle
-        return [socketio]
+        handler = app.config['WS_HANDLER']
+        if handler:
+            socketio = SocketIO(app.config['WS_URL'], handler(app))
+            self.websocket = socketio.handle
+            return [socketio]
 
     def on_loaded(self, app):
         '''Once the application has loaded, create the pub/sub
@@ -46,44 +49,3 @@ class Extension(lux.Extension):
         if pubsub_store:
             self.pubsub_store = create_store(pubsub_store)
             self.websocket.pubsub = self.pubsub_store.pubsub()
-
-
-class WsApi:
-    '''Web socket API handler
-    '''
-    def __init__(self, app):
-        self.methods = dict(self._ws_methods(app))
-
-    def __call__(self, ws, msg):
-        try:
-            if 'method' in msg:
-                method = msg['method']
-                if method in self.methods:
-                    self.methods[method](ws, msg.get('data'))
-                else:
-                    raise rpc.NoSuchFunction
-            else:
-                raise rpc.InvalidRequest
-
-        except rpc.InvalidRequest as exc:
-
-            ws.logger.warning(str(exc))
-            ws.error_message(exc)
-
-        except Exception as exc:
-
-            ws.logger.exception('Unhandlerd excption')
-            ws.error_message(exc)
-
-    def _ws_methods(self, app):
-        '''Search for web-socket rpc-handlers in all registered extensions.
-
-        A websocket handler is a method prefixed by ``ws_``.
-        '''
-        for ext in app.extensions.values():
-            for name in dir(ext):
-                if name.startswith('ws_'):
-                    handler = getattr(ext, name, None)
-                    if hasattr(handler, '__call__'):
-                        name = '_'.join(name.split('_')[1:])
-                        yield name, handler
