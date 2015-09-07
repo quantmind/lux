@@ -3,8 +3,7 @@ import json
 import hashlib
 import logging
 
-from pulsar.apps import ws
-from builtins import isinstance
+from pulsar.apps import ws, rpc
 
 LUX_CONNECTION = 'lux:connection_established'
 LUX_MESSAGE = 'lux:message'
@@ -78,9 +77,12 @@ class WsClient:
         self.write(LUX_ERROR, data=data)
 
 
-class WsApi:
-    '''Web socket API handler
+class LuxWs(ws.WS):
+    '''Lux websocket
     '''
+    pubsub = None
+    '''Publish/subscribe handler'''
+
     def __init__(self, app):
         self.methods = dict(self._ws_methods(app))
 
@@ -105,26 +107,6 @@ class WsApi:
             ws.logger.exception('Unhandlerd excption')
             ws.error_message(exc)
 
-    def _ws_methods(self, app):
-        '''Search for web-socket rpc-handlers in all registered extensions.
-
-        A websocket handler is a method prefixed by ``ws_``.
-        '''
-        for ext in app.extensions.values():
-            for name in dir(ext):
-                if name.startswith('ws_'):
-                    handler = getattr(ext, name, None)
-                    if hasattr(handler, '__call__'):
-                        name = '_'.join(name.split('_')[1:])
-                        yield name, handler
-
-
-class LuxWs(WsApi, ws.WS):
-    '''Lux websocket
-    '''
-    pubsub = None
-    '''Publish/subscribe handler'''
-
     def on_open(self, websocket):
         ws = WsClient(websocket)
         websocket.app.fire('on_websocket_open', ws)
@@ -147,7 +129,7 @@ class LuxWs(WsApi, ws.WS):
         except Exception as exc:
             ws.error_message(exc)
         else:
-            websocket.app.fire('on_websocket_message', ws, msg)
+            self(ws, msg)
 
     def on_close(self, websocket):
         ws = websocket.cache.wsclient
@@ -155,3 +137,16 @@ class LuxWs(WsApi, ws.WS):
             self.pubsub.remove_client(ws)
         websocket.app.fire('on_websocket_close', ws)
         ws.logger.info('closing socket %s', ws)
+
+    def _ws_methods(self, app):
+        '''Search for web-socket rpc-handlers in all registered extensions.
+
+        A websocket handler is a method prefixed by ``ws_``.
+        '''
+        for ext in app.extensions.values():
+            for name in dir(ext):
+                if name.startswith('ws_'):
+                    handler = getattr(ext, name, None)
+                    if hasattr(handler, '__call__'):
+                        name = '_'.join(name.split('_')[1:])
+                        yield name, handler

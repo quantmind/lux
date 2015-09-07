@@ -27,9 +27,7 @@ class Extension(lux.Extension):
     ]
 
     def on_config(self, app):
-        app.add_events(('on_websocket_open',
-                        'on_websocket_message',
-                        'on_websocket_close'))
+        app.add_events(('on_websocket_open', 'on_websocket_close'))
 
     def middleware(self, app):
         '''Add middleware to edit content
