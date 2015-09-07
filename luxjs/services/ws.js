@@ -11,13 +11,13 @@
             var websockets = {},
                 websocketChannels = {};
 
-            scope.websocketListener = function (channel, callback) {
-                var callbacks = websocketChannels[channel];
-                if (!callbacks) {
-                    callbacks = [];
-                    websocketChannels[channel] = callbacks;
+            scope.addWebsocketListener = function (channel, listener) {
+                var listeners = websocketChannels[channel];
+                if (!listeners) {
+                    listeners = [];
+                    websocketChannels[channel] = listeners;
                 }
-                callbacks.push(callback);
+                listeners.push(listener);
             };
 
             scope.sendMessage = function (url, msg, forceEncode) {
@@ -51,6 +51,12 @@
                     sock.onopen = function() {
                         websockets[url] = sock;
                         log.info('New connection with ' + url);
+
+                        angular.forEach(Object.keys(websocketChannels), function(channel) {
+                            angular.forEach(websocketChannels[channel], function(listener) {
+                                listener.onConnect();
+                            });
+                        });
                     };
 
                     sock.onmessage = function (e) {
@@ -62,7 +68,7 @@
                         if (msg.data)
                             msg.data = angular.fromJson(msg.data);
                         angular.forEach(listeners, function (listener) {
-                            listener(sock, msg);
+                            listener.onMessage(sock, msg);
                         });
 
                     };

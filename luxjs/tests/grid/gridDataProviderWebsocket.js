@@ -9,11 +9,11 @@ define(function(require) {
         var channel = 'some channel';
         var scope = {};
         var connectSockJsSpy;
-        var websocketListenerSpy;
+        var addWebsocketListenerSpy;
 
         beforeEach(function () {
             connectSockJsSpy = jasmine.createSpy();
-            websocketListenerSpy = jasmine.createSpy();
+            addWebsocketListenerSpy = jasmine.createSpy();
 
             angular.mock.module('lux.grid.dataProviderWebsocket', function ($provide) {
                 $provide.value('$lux', {});
@@ -22,7 +22,7 @@ define(function(require) {
             inject(function (_GridDataProviderWebsocket_, $rootScope) {
                 GridDataProviderWebsocket = _GridDataProviderWebsocket_;
                 $rootScope.connectSockJs = connectSockJsSpy;
-                $rootScope.websocketListener = websocketListenerSpy;
+                $rootScope.addWebsocketListener = addWebsocketListenerSpy;
             });
 
             listener = {
@@ -40,7 +40,7 @@ define(function(require) {
             dataProvider.connect();
 
             expect(connectSockJsSpy).toHaveBeenCalledWith(websocketUrl);
-            expect(websocketListenerSpy).toHaveBeenCalledWith(channel, jasmine.any(Function));
+            expect(addWebsocketListenerSpy).toHaveBeenCalledWith(channel, jasmine.any(Object));
         });
 
         it('connect() passes record-update data from websocket response to onDataReceived', function () {
@@ -53,9 +53,9 @@ define(function(require) {
 
             dataProvider.connect();
 
-            var callback = websocketListenerSpy.calls.all()[0].args[1];
+            var sockListener = addWebsocketListenerSpy.calls.all()[0].args[1];
 
-            callback({}, msg);
+            sockListener.onMessage({}, msg);
 
             expect(listener.onDataReceived).toHaveBeenCalledWith(jasmine.any(Object));
             var obj = listener.onDataReceived.calls.all()[0].args[0];
@@ -73,9 +73,9 @@ define(function(require) {
 
             dataProvider.connect();
 
-            var callback = websocketListenerSpy.calls.all()[0].args[1];
+            var sockListener = addWebsocketListenerSpy.calls.all()[0].args[1];
 
-            callback({}, msg);
+            sockListener.onMessage({}, msg);
 
             expect(listener.onDataReceived).toHaveBeenCalledWith(jasmine.any(Object));
             var obj = listener.onDataReceived.calls.all()[0].args[0];
@@ -93,9 +93,9 @@ define(function(require) {
 
             dataProvider.connect();
 
-            var callback = websocketListenerSpy.calls.all()[0].args[1];
+            var sockListener = addWebsocketListenerSpy.calls.all()[0].args[1];
 
-            callback({}, msg);
+            sockListener.onMessage({}, msg);
 
             expect(listener.onMetadataReceived).toHaveBeenCalledWith('dummy data');
         });
