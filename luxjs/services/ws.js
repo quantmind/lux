@@ -1,7 +1,7 @@
  //
  // Websocket handler for RPC and pub/sub messages
 function sockJs (url, websockets, websocketChannels, log) {
-    var hnd = {},
+    var handler = {},
         context = websockets[url];
 
     if (!context) {
@@ -13,7 +13,7 @@ function sockJs (url, websockets, websocketChannels, log) {
         websockets[url] = context;
     }
 
-    hnd.url = function () {
+    handler.getUrl = function () {
         return url;
     };
 
@@ -21,8 +21,8 @@ function sockJs (url, websockets, websocketChannels, log) {
     //
     //  method: rpc method to call
     //  data: optional object with rpc parameters
-    //  callback: optinal callback invoked when a response is received
-    hnd.rpc = function (method, data, callback) {
+    //  callback: optional callback invoked when a response is received
+    handler.rpc = function (method, data, callback) {
         data = {
             method: method,
             id: ++context.id,
@@ -31,10 +31,10 @@ function sockJs (url, websockets, websocketChannels, log) {
         var msg = JSON.stringify(data);
         data.callback = callback;
         context.executed[data.id] = data;
-        return hnd.sendMessage(msg);
+        return handler.sendMessage(msg);
     };
 
-    hnd.connect = function (onopen) {
+    handler.connect = function (onopen) {
         var sock = context.sock;
 
         if (angular.isArray(sock)) {
@@ -80,11 +80,11 @@ function sockJs (url, websockets, websocketChannels, log) {
                 };
             });
         }
-        return hnd;
+        return handler;
     };
 
-    hnd.sendMessage = function (msg, forceEncode) {
-        return hnd.connect(function (sock) {
+    handler.sendMessage = function (msg, forceEncode) {
+        return handler.connect(function (sock) {
             if (typeof msg !== 'string' || forceEncode) {
                 msg = JSON.stringify(msg);
             }
@@ -92,7 +92,7 @@ function sockJs (url, websockets, websocketChannels, log) {
         });
     };
 
-    hnd.disconnect = function (url) {
+    handler.disconnect = function () {
         var sock = context.sock;
 
         if (angular.isArray(sock))
@@ -101,10 +101,10 @@ function sockJs (url, websockets, websocketChannels, log) {
             });
         else if (sock)
             sock.close();
-        return hnd;
+        return handler;
     };
 
-    hnd.listener = function (channel, callback) {
+    handler.addListener = function (channel, callback) {
         var callbacks = websocketChannels[channel];
         if (!callbacks) {
             callbacks = [];
@@ -113,11 +113,11 @@ function sockJs (url, websockets, websocketChannels, log) {
         callbacks.push(callback);
     };
 
-    return hnd;
+    return handler;
 }
 
 //
-//  Sockodule
+//  Sock module
 //  ==================
 //
 //
