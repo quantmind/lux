@@ -6,6 +6,7 @@ define(function(require) {
         var listener;
         var dataProvider;
         var websocketUrl = 'websocket://url';
+        var channel = 'some channel';
         var scope = {};
         var connectSockJsSpy;
         var websocketListenerSpy;
@@ -29,7 +30,7 @@ define(function(require) {
                 onDataReceived: jasmine.createSpy()
             };
 
-            dataProvider = new GridDataProviderWebsocket(websocketUrl, listener);
+            dataProvider = new GridDataProviderWebsocket(websocketUrl, channel, listener);
         });
 
         afterEach(function () {
@@ -39,7 +40,7 @@ define(function(require) {
             dataProvider.connect();
 
             expect(connectSockJsSpy).toHaveBeenCalledWith(websocketUrl);
-            expect(websocketListenerSpy).toHaveBeenCalledWith('bmll_celery', jasmine.any(Function));
+            expect(websocketListenerSpy).toHaveBeenCalledWith(channel, jasmine.any(Function));
         });
 
         it('connect() passes record-update data from websocket response to onDataReceived', function () {

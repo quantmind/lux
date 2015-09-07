@@ -8,8 +8,9 @@ angular.module('lux.grid.dataProviderWebsocket', ['lux.sockjs'])
 
 function gridDataProviderWebsocketFactory ($scope) {
 
-    function GridDataProviderWebsocket(websocketUrl, listener) {
+    function GridDataProviderWebsocket(websocketUrl, channel, listener) {
         this._websocketUrl = websocketUrl;
+        this._channel= channel;
         this._listener = listener;
     }
 
@@ -22,7 +23,7 @@ function gridDataProviderWebsocketFactory ($scope) {
 
         $scope.connectSockJs(this._websocketUrl);
 
-        $scope.websocketListener('bmll_celery', function(sock, msg) {
+        $scope.websocketListener(this._channel, function(sock, msg) {
             var tasks;
 
             if (msg.data.event === 'record-update') {
