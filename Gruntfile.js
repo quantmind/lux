@@ -2,6 +2,16 @@
 /*global config:true, task:true, process:true*/
 module.exports = function (grunt) {
     "use strict";
+    var test_src = ['lux/media/lux/lux.js'];
+    var test_dependencies = [
+        'angular-ui-select',
+        'angular-ui-grid',
+        'angular-mocks',
+        'angular-strap',
+        'codemirror',
+        'angular-touch',
+        'lodash'
+    ];
     // Project configuration.
     var docco_output = 'docs/lux/html/docco',
         // All libraries
@@ -12,21 +22,17 @@ module.exports = function (grunt) {
             concat: libs,
             jasmine: {
                 test: {
-                    // need to set it even if we don't use it
-                    src: [],
-                    options: {
-                        specs: 'luxjs/tests/**/*.js',
+                    src : test_src,
+                    options : {
+                        specs : 'luxjs/tests/**/*.js',
                         template: 'luxjs/tests/test.tpl.html',
                         templateOptions: {
-                            deps: ['lux/media/lux/lux.js', 'angular-ui-select',
-                                'angular-ui-grid', 'angular-mocks',
-                                'angular-strap', 'codemirror', 'angular-touch',
-                                'lodash']
+                            deps: test_dependencies
                         }
                     }
                 },
                 coverage: {
-                    src: ['lux/media/lux/lux.js'],
+                    src: test_src,
                     options: {
                         specs: 'luxjs/tests/**/*.js',
                         template: require('grunt-template-jasmine-istanbul'),
@@ -51,10 +57,7 @@ module.exports = function (grunt) {
                             ],
                             template: 'luxjs/tests/test.tpl.html',
                             templateOptions: {
-                                deps: ['angular-ui-select',
-                                'angular-ui-grid', 'angular-mocks',
-                                'angular-strap', 'codemirror', 'angular-touch',
-                                'lodash']
+                                deps: test_dependencies
                             }
                         }
                     }
