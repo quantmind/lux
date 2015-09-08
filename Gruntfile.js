@@ -51,10 +51,10 @@ module.exports = function (grunt) {
                             ],
                             template: 'luxjs/tests/test.tpl.html',
                             templateOptions: {
-                                deps: ['lux/media/lux/lux.js', 'angular-ui-select',
-                                    'angular-ui-grid', 'angular-mocks',
-                                    'angular-strap', 'codemirror', 'angular-touch',
-                                    'lodash']
+                                deps: ['angular-ui-select',
+                                'angular-ui-grid', 'angular-mocks',
+                                'angular-strap', 'codemirror', 'angular-touch',
+                                'lodash']
                             }
                         }
                     }
