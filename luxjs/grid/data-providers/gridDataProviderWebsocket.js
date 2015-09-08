@@ -21,42 +21,45 @@ function gridDataProviderWebsocketFactory ($scope) {
     GridDataProviderWebsocket.prototype.connect = function() {
         checkIfDestroyed.call(this);
 
-        var listener = {
-            onConnect: function() {
-                this.getPage();
-            }.bind(this),
-            onMessage: function(sock, msg) {
-                var tasks;
+        function onConnect(sock) {
+            /*jshint validthis:true */
+            this.getPage();
+        }
 
-                if (msg.data.event === 'record-update') {
-                    tasks = msg.data.data;
+        function onMessage(sock, msg) {
+            /*jshint validthis:true */
+            var tasks;
 
-                    this._listener.onDataReceived({
-                        total: msg.data.total,
-                        result: tasks,
-                        type: 'update'
-                    });
+            if (msg.data.event === 'record-update') {
+                tasks = msg.data.data;
 
-                } else if (msg.data.event === 'records') {
-                    tasks = msg.data.data;
+                this._listener.onDataReceived({
+                    total: msg.data.total,
+                    result: tasks,
+                    type: 'update'
+                });
 
-                    this._listener.onDataReceived({
-                        total: msg.data.total,
-                        result: tasks,
-                        type: 'update'
-                    });
+            } else if (msg.data.event === 'records') {
+                tasks = msg.data.data;
 
-                    setTimeout(sendFakeRecordOnce.bind(this), 0); // TODO Remove this. It's a dummy status update for development.
+                this._listener.onDataReceived({
+                    total: msg.data.total,
+                    result: tasks,
+                    type: 'update'
+                });
 
-                } else if (msg.data.event === 'columns-metadata') {
-                    this._listener.onMetadataReceived(msg.data.data);
-                }
-            }.bind(this)
-        };
+                setTimeout(sendFakeRecordOnce.bind(this), 0); // TODO Remove this. It's a dummy status update for development.
 
-        $scope.addWebsocketListener(this._channel, listener);
+            } else if (msg.data.event === 'columns-metadata') {
+                this._listener.onMetadataReceived(msg.data.data);
+            }
+        }
 
-        $scope.connectSockJs(this._websocketUrl);
+        this._sockJs = $scope.sockJs(this._websocketUrl);
+
+        this._sockJs.addListener(this._channel, onMessage.bind(this));
+
+        this._sockJs.connect(onConnect.bind(this));
 
         // TODO Remove this. It's a dummy status update for development.
         var sendFakeRecordOnce = function() {
@@ -141,7 +144,7 @@ function gridDataProviderWebsocketFactory ($scope) {
     };
 
     GridDataProviderWebsocket.prototype.getPage = function(options) {
-        $scope.sendMessage(this._websocketUrl, { method: this._channel, data: {} });
+        this._sockJs.rpc(this._channel, {});
     };
 
     GridDataProviderWebsocket.prototype.deleteItem = function(identifier, onSuccess, onFailure) {
