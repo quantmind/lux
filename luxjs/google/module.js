@@ -53,18 +53,18 @@
                     };
 
                     // Add marker using lat and lng
-                    self.addLocation = function(map, marker, lat, lng) {
+                    self.addMarkerByLatLng = function(map, marker, lat, lng) {
                         var loc = new google.maps.LatLng(lat, lng);
                         return self.addMarker(map, marker, loc);
                     };
 
                     // Returns an instance of location for specific lat and lng
-                    self.getLocation = function(lat, lng) {
+                    self.createLocation = function(lat, lng) {
                         return new google.maps.LatLng(lat, lng);
                     };
 
                     // Returns an instance of InfoWindow for specific content
-                    self.getInfoWindow = function(content) {
+                    self.createInfoWindow = function(content) {
                         return new google.maps.InfoWindow({content: content});
                     };
 
@@ -105,7 +105,7 @@
                         controller.initialize(scope, element, attrs);
 
                         // Setup map by another directive
-                        if (scope.hasOwnProperty('setup'))
+                        if (typeof scope.setup === 'function')
                             scope.setup(scope.map);
                     });
                 }
