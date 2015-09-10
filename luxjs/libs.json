@@ -2,42 +2,42 @@
     "html2js": {
         "bs": {
             "src": "luxjs/bs/*.tpl.html",
-            "dest": "luxjs/bs/templates.js"
+            "dest": "luxjs/templates/bs-templates.js"
         },
         "options": {
             "base": "luxjs"
         },
         "cms": {
             "src": "luxjs/cms/templates/*.tpl.html",
-            "dest": "luxjs/cms/templates.js"
+            "dest": "luxjs/templates/cms-templates.js"
         },
         "page": {
             "src": "luxjs/page/*.tpl.html",
-            "dest": "luxjs/page/page-template.js"
+            "dest": "luxjs/templates/page-templates.js"
         },
         "message": {
             "src": "luxjs/message/*.tpl.html",
-            "dest": "luxjs/message/message-template.js"
+            "dest": "luxjs/templates/message-templates.js"
         },
         "grid": {
             "src": "luxjs/grid/templates/*.tpl.html",
-            "dest": "luxjs/grid/grid-template.js"
+            "dest": "luxjs/templates/grid-templates.js"
         },
         "blog": {
             "src": "luxjs/blog/templates/*.tpl.html",
-            "dest": "luxjs/blog/blog-template.js"
+            "dest": "luxjs/templates/blog-templates.js"
         },
         "nav": {
             "src": "luxjs/nav/templates/*.tpl.html",
-            "dest": "luxjs/nav/nav-template.js"
+            "dest": "luxjs/templates/nav-templates.js"
         },
         "users": {
             "src": "luxjs/users/*.tpl.html",
-            "dest": "luxjs/users/templates.js"
+            "dest": "luxjs/templates/users-templates.js"
         },
         "gaeblog": {
             "src": "luxjs/gaeblog/templates/*.tpl.html",
-            "dest": "luxjs/gaeblog/templates.js",
+            "dest": "luxjs/templates/gaeblog-templates.js",
             "options": {
                 "base": "luxjs/gaeblog"
             }
@@ -63,6 +63,7 @@
                 "luxjs/nav/*.js",
                 "luxjs/misc/*.js",
                 "luxjs/google/*.js",
+                "luxjs/templates/*.js",
                 "luxjs/close.js"],
         "dest": "lux/media/lux/lux.js"
     },

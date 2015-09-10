@@ -287,7 +287,8 @@
                     });
 
                     label.append(input).append(span);
-                    return this.onChange(scope, element.append(label));
+                    element.append(label);
+                    return this.onChange(scope, this.inputError(scope, element));
                 },
                 //
                 checkbox: function (scope) {

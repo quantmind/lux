@@ -17,6 +17,9 @@ lux.egg-info
 docs/build
 example/luxweb/settings.py
 
+# javascript
+luxjs/templates
+
 *.log
 npm*
 node_modules
