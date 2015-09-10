@@ -100,7 +100,7 @@
             scope.$on('formReady', function (e, model, formScope) {
                 var attrs = formScope.formAttrs,
                     action = attrs ? attrs.action : null;
-                if (isObject(action)) {
+                if (isObject(action) && action.type !== 'create') {
                     var api = $lux.api(action);
                     if (api) {
                         $lux.log.info('Form ' + formScope.formModelName + ' registered with "' +
