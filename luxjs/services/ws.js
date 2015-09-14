@@ -13,15 +13,19 @@
             websockets[url] = context;
         }
 
+        //
+        // Return this socket handler url
         hnd.url = function () {
             return url;
         };
 
-        // RPC call
         //
-        //  method: rpc method to call
-        //  data: optional object with rpc parameters
-        //  callback: optinal callback invoked when a response is received
+        //  RPC call
+        //
+        //  @param method: rpc method to call
+        //  @param data: optional object with rpc parameters
+        //  @param callback: optional callback invoked when a response is received
+        //  @return the handler
         hnd.rpc = function (method, data, callback) {
             data = {
                 method: method,
@@ -34,18 +38,22 @@
             return hnd.sendMessage(msg);
         };
 
-        hnd.connect = function (onopen) {
+        //
+        //  @param callback: optional callback to invoke once the connection
+        //      is established or an existing socket is already open
+        //  @return the handler
+        hnd.connect = function (callback) {
             var sock = context.sock;
 
             if (angular.isArray(sock)) {
-                if (onopen) sock.push(onopen);
+                if (callback) sock.push(callback);
             }
             else if (sock) {
-                if (onopen) onopen(sock);
+                if (callback) callback(sock);
             } else {
                 sock = [];
                 context.sock = sock;
-                if (onopen) sock.push(onopen);
+                if (callback) sock.push(callback);
 
                 require(['sockjs'], function (SockJs) {
                     var sock = new SockJs(url);
@@ -117,11 +125,8 @@
     }
 
     //
-    //  Sockodule
+    //  Sock module
     //  ==================
-    //
-    //
-    //
     angular.module('lux.sockjs', [])
 
         .run(['$rootScope', '$log', function (scope, log) {
