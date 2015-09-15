@@ -232,13 +232,14 @@ class AppTestCase(unittest.TestCase, TestMixin):
     '''Test calss for testing applications
     '''
     odm = None
+    '''Original odm handler'''
     app = None
 
     @classmethod
     def setUpClass(cls):
         # Create the application
         cls.dbs = {}
-        cls.app = test_app(cls)
+        cls.app = cls.test_application()
         cls.client = TestClient(cls.app)
         if hasattr(cls.app, 'odm'):
             cls.odm = cls.app.odm
@@ -248,6 +249,11 @@ class AppTestCase(unittest.TestCase, TestMixin):
     def tearDownClass(cls):
         if cls.odm:
             return cls.dropdb()
+
+    @classmethod
+    def test_application(cls):
+        '''Return the lux application'''
+        return test_app(cls)
 
     @classmethod
     def dbname(cls, engine):

@@ -148,7 +148,6 @@ class Application(ConsoleParser, Extension, EventMixin):
     admin = None
     handler = None
     auth_backend = None
-    thread_pool = True
     cms = None
     _worker = None
     _WsgiHandler = WsgiHandler
@@ -229,6 +228,8 @@ class Application(ConsoleParser, Extension, EventMixin):
                   'List/tuple of markdown extensions'),
         Parameter('GREEN_POOL', 0,
                   'Run the WSGI handle in a pool of greenlet'),
+        Parameter('THREAD_POOL', True,
+                  'Run the WSGI handle in the event loop executor'),
         Parameter('SECURE_PROXY_SSL_HEADER', None,
                   'A tuple representing a HTTP header/value combination that '
                   'signifies a request is secure.'),
@@ -293,6 +294,7 @@ class Application(ConsoleParser, Extension, EventMixin):
     @lazyproperty
     def green_pool(self):
         if self.config['GREEN_POOL']:
+            self.config['THREAD_POOL'] = False
             from pulsar.apps.greenio import GreenPool
             return GreenPool(self.config['GREEN_POOL'])
 
@@ -307,7 +309,7 @@ class Application(ConsoleParser, Extension, EventMixin):
             if self.green_pool:
                 self.logger.info('Setup green Wsgi handler')
                 wsgi = WsgiGreen(self.handler, self.green_pool)
-            elif self.thread_pool:
+            elif self.config['THREAD_POOL']:
                 wsgi = middleware_in_executor(self.handler)
 
             if wsgi:

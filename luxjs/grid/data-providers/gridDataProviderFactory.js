@@ -19,7 +19,7 @@ function gridDataProviderFactoryFactory (GridDataProviderREST, GridDataProviderW
             case 'GridDataProviderREST':
                 return new GridDataProviderREST(target, subPath, gridState, listener);
             case 'GridDataProviderWebsocket':
-                return new GridDataProviderWebsocket(target.url + '/stream', listener);
+                return new GridDataProviderWebsocket(target.url, target.channel, listener);
             default:
                 return new GridDataProviderREST(target, subPath, gridState, listener);
         }

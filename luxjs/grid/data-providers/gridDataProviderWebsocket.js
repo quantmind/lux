@@ -8,8 +8,9 @@ angular.module('lux.grid.dataProviderWebsocket', ['lux.sockjs'])
 
 function gridDataProviderWebsocketFactory ($scope) {
 
-    function GridDataProviderWebsocket(websocketUrl, listener) {
+    function GridDataProviderWebsocket(websocketUrl, channel, listener) {
         this._websocketUrl = websocketUrl;
+        this._channel= channel;
         this._listener = listener;
     }
 
@@ -20,9 +21,13 @@ function gridDataProviderWebsocketFactory ($scope) {
     GridDataProviderWebsocket.prototype.connect = function() {
         checkIfDestroyed.call(this);
 
-        $scope.connectSockJs(this._websocketUrl);
+        function onConnect(sock) {
+            /*jshint validthis:true */
+            this.getPage();
+        }
 
-        $scope.websocketListener('bmll_celery', function(sock, msg) {
+        function onMessage(sock, msg) {
+            /*jshint validthis:true */
             var tasks;
 
             if (msg.data.event === 'record-update') {
@@ -48,7 +53,13 @@ function gridDataProviderWebsocketFactory ($scope) {
             } else if (msg.data.event === 'columns-metadata') {
                 this._listener.onMetadataReceived(msg.data.data);
             }
-        }.bind(this));
+        }
+
+        this._sockJs = $scope.sockJs(this._websocketUrl);
+
+        this._sockJs.addListener(this._channel, onMessage.bind(this));
+
+        this._sockJs.connect(onConnect.bind(this));
 
         // TODO Remove this. It's a dummy status update for development.
         var sendFakeRecordOnce = function() {
@@ -133,7 +144,7 @@ function gridDataProviderWebsocketFactory ($scope) {
     };
 
     GridDataProviderWebsocket.prototype.getPage = function(options) {
-        // not yet implemented
+        this._sockJs.rpc(this._channel, {});
     };
 
     GridDataProviderWebsocket.prototype.deleteItem = function(identifier, onSuccess, onFailure) {

@@ -6,13 +6,21 @@ define(function(require) {
         var listener;
         var dataProvider;
         var websocketUrl = 'websocket://url';
+        var channel = 'some channel';
         var scope = {};
-        var connectSockJsSpy;
-        var websocketListenerSpy;
+        var connectSpy;
+        var addListenerSpy;
+        var sockJsSpy;
 
         beforeEach(function () {
-            connectSockJsSpy = jasmine.createSpy();
-            websocketListenerSpy = jasmine.createSpy();
+            sockJsSpy = jasmine.createSpy();
+            connectSpy = jasmine.createSpy();
+            addListenerSpy = jasmine.createSpy();
+
+            sockJsSpy.and.returnValue({
+                connect: connectSpy,
+                addListener: addListenerSpy
+            });
 
             angular.mock.module('lux.grid.dataProviderWebsocket', function ($provide) {
                 $provide.value('$lux', {});
@@ -20,8 +28,7 @@ define(function(require) {
 
             inject(function (_GridDataProviderWebsocket_, $rootScope) {
                 GridDataProviderWebsocket = _GridDataProviderWebsocket_;
-                $rootScope.connectSockJs = connectSockJsSpy;
-                $rootScope.websocketListener = websocketListenerSpy;
+                $rootScope.sockJs = sockJsSpy;
             });
 
             listener = {
@@ -29,7 +36,7 @@ define(function(require) {
                 onDataReceived: jasmine.createSpy()
             };
 
-            dataProvider = new GridDataProviderWebsocket(websocketUrl, listener);
+            dataProvider = new GridDataProviderWebsocket(websocketUrl, channel, listener);
         });
 
         afterEach(function () {
@@ -38,8 +45,9 @@ define(function(require) {
         it('connect() calls connectSockJs and websocketListener', function () {
             dataProvider.connect();
 
-            expect(connectSockJsSpy).toHaveBeenCalledWith(websocketUrl);
-            expect(websocketListenerSpy).toHaveBeenCalledWith('bmll_celery', jasmine.any(Function));
+            expect(sockJsSpy).toHaveBeenCalledWith(websocketUrl);
+            expect(addListenerSpy).toHaveBeenCalledWith(channel, jasmine.any(Function));
+            expect(connectSpy).toHaveBeenCalledWith(jasmine.any(Function));
         });
 
         it('connect() passes record-update data from websocket response to onDataReceived', function () {
@@ -52,9 +60,9 @@ define(function(require) {
 
             dataProvider.connect();
 
-            var callback = websocketListenerSpy.calls.all()[0].args[1];
+            var onMessage = addListenerSpy.calls.all()[0].args[1];
 
-            callback({}, msg);
+            onMessage({}, msg);
 
             expect(listener.onDataReceived).toHaveBeenCalledWith(jasmine.any(Object));
             var obj = listener.onDataReceived.calls.all()[0].args[0];
@@ -72,9 +80,9 @@ define(function(require) {
 
             dataProvider.connect();
 
-            var callback = websocketListenerSpy.calls.all()[0].args[1];
+            var onMessage = addListenerSpy.calls.all()[0].args[1];
 
-            callback({}, msg);
+            onMessage({}, msg);
 
             expect(listener.onDataReceived).toHaveBeenCalledWith(jasmine.any(Object));
             var obj = listener.onDataReceived.calls.all()[0].args[0];
@@ -92,9 +100,9 @@ define(function(require) {
 
             dataProvider.connect();
 
-            var callback = websocketListenerSpy.calls.all()[0].args[1];
+            var onMessage = addListenerSpy.calls.all()[0].args[1];
 
-            callback({}, msg);
+            onMessage({}, msg);
 
             expect(listener.onMetadataReceived).toHaveBeenCalledWith('dummy data');
         });

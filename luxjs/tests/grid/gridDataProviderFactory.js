@@ -21,6 +21,7 @@ define(function(require) {
             });
 
             target = { url: 'dummy://url'};
+            targetWebsocket = { url: 'dummy://url', channel: 'dummy_channel'};
             subPath = 'dummy/subPath';
             gridState = { dummy: 'gridstate' };
             listener = { dummy: 'listener' };
@@ -44,8 +45,8 @@ define(function(require) {
         });
 
         it('instantiates GridDataProviderWebsocket given that connectionType and passes on other arguments', function() {
-            GridDataProviderFactory.create('GridDataProviderWebsocket', target, subPath, gridState, listener);
-            expect(GridDataProviderWebsocketMock).toHaveBeenCalledWith('dummy://url/stream', listener);
+            GridDataProviderFactory.create('GridDataProviderWebsocket', targetWebsocket, subPath, gridState, listener);
+            expect(GridDataProviderWebsocketMock).toHaveBeenCalledWith(targetWebsocket.url, targetWebsocket.channel, listener);
         });
 
     });
