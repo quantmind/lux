@@ -708,7 +708,10 @@ class Application(ConsoleParser, Extension, EventMixin):
         cfg.set('loglevel', opts.loglevel)
         cfg.set('loghandlers', opts.loghandlers)
         self.debug = cfg.debug
-        self.logger = cfg.configured_logger('lux')
+        if self.params.get('SETUP_LOGGER', True):
+            self.logger = cfg.configured_logger('lux')
+        else:
+            super()._setup_logger(config, module, opts)
 
 
 class WsgiGreen:

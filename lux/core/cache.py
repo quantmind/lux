@@ -71,8 +71,8 @@ class Cache:
 
 class DummyCache(Cache):
 
-    def __init__(self, app, scheme, url):
-        super().__init__(app, scheme, url)
+    def __init__(self, app, name, url):
+        super().__init__(app, name, url)
         self._lock = threading.Lock()
 
     def lock(self, name, timeout=None):
@@ -81,8 +81,8 @@ class DummyCache(Cache):
 
 class RedisCache(Cache):
 
-    def __init__(self, app, scheme, url):
-        super().__init__(app, scheme, url)
+    def __init__(self, app, name, url):
+        super().__init__(app, name, url)
         if app.green_pool:
             from pulsar.apps.greenio import wait
             self._wait = wait
