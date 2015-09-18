@@ -188,6 +188,10 @@
             return api.request('put', opts, data);
         };
         //
+        api.head = function (opts, data) {
+            return api.request('head', opts, data);
+        };
+        //
         api.delete = function (opts, data) {
             return api.request('delete', opts, data);
         };

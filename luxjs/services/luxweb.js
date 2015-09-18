@@ -36,9 +36,6 @@
 
             // Set/Get the JWT token
             api.token = function (token) {
-                var auth = $lux.authApi(api);
-                if (auth) return auth.token();
-
                 var key = 'luxtoken-' + api.baseUrl();
 
                 if (arguments.length) {
@@ -64,9 +61,6 @@
 
             // Perform Logout
             api.logout = function (scope) {
-                var auth = $lux.authApi(api);
-                if (auth) return auth.logout(scope);
-
                 scope.$emit('pre-logout');
                 api.post({
                     name: api.authName(),
@@ -80,20 +74,32 @@
                 });
             };
 
-            // Get the user fro the JWT
-            api.user = function () {
+            // Get the user from the JWT
+            api.user = function (callback) {
                 var token = api.token();
                 if (token) {
                     var u = lux.decodeJWToken(token);
                     u.token = token;
+
+                    if (!$lux.user_checked) {
+                        $lux.user_checked = true;
+                        api.head({name: api.authName()}).then(function () {
+
+                        }, function (response) {
+                            api.token(undefined);
+                            $lux.window.location.reload();
+                        });
+                    }
+
                     return u;
                 }
             };
 
             // Redirect to the LOGIN_URL
             api.login = function () {
-                $lux.window.location.href = lux.context.LOGIN_URL;
-                $lux.window.reload();
+                var a = 1;
+                //$lux.window.location.href = lux.context.LOGIN_URL;
+                //$lux.window.reload();
             };
 
             //
@@ -167,9 +173,9 @@
                         e.preventDefault();
                         e.stopPropagation();
                     }
-                    if (api.user()) {
-                        api.logout(scope);
-                    }
+                    api.user(function (user) {
+                        if (user) api.logout(scope);
+                    });
                 };
             };
 
