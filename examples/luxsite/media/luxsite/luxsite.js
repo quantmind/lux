@@ -1,6 +1,6 @@
 //      Lux Library - v0.2.0
 
-//      Compiled 2015-09-04.
+//      Compiled 2015-09-21.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -46,11 +46,11 @@
 
     function defaultPaths () {
         return {
-            "angular": "//ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular",
-            "angular-animate": "//ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular-animate",
-            "angular-mocks": "//ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular-mocks.js",
-            "angular-sanitize": "//ajax.googleapis.com/ajax/libs/angularjs/1.3.15/angular-sanitize",
-            "angular-touch": "//cdnjs.cloudflare.com/ajax/libs/angular.js/1.3.15/angular-touch",
+            "angular": "//ajax.googleapis.com/ajax/libs/angularjs/1.4.4/angular",
+            "angular-animate": "//ajax.googleapis.com/ajax/libs/angularjs/1.4.4/angular-animate",
+            "angular-mocks": "//ajax.googleapis.com/ajax/libs/angularjs/1.4.4/angular-mocks.js",
+            "angular-sanitize": "//ajax.googleapis.com/ajax/libs/angularjs/1.4.4/angular-sanitize",
+            "angular-touch": "//cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.4/angular-touch",
             "angular-strap": "//cdnjs.cloudflare.com/ajax/libs/angular-strap/2.2.1/angular-strap",
             "angular-strap-tpl": "//cdnjs.cloudflare.com/ajax/libs/angular-strap/2.2.4/angular-strap.tpl",
             "angular-ui-router": "//cdnjs.cloudflare.com/ajax/libs/angular-ui-router/0.2.14/angular-ui-router",
@@ -77,7 +77,7 @@
             "mathjax": "//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML",
             "moment": "//cdnjs.cloudflare.com/ajax/libs/moment.js/2.10.3/moment",
             "restangular": "//cdnjs.cloudflare.com/ajax/libs/restangular/1.4.0/restangular",
-            "sockjs": "//cdnjs.cloudflare.com/ajax/libs/sockjs-client/0.3.4/sockjs.min.js",
+            "sockjs": "//cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.0.3/sockjs",
             "stats": "//cdnjs.cloudflare.com/ajax/libs/stats.js/r11/Stats",
             "topojson": "//cdnjs.cloudflare.com/ajax/libs/topojson/1.6.19/topojson"
         };
