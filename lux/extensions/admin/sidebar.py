@@ -151,7 +151,6 @@ def add_css(all):
                 list_style='none',
                 padding=px(0),
                 margin=px(0),
-                padding_left=px(5),
                 opacity=0,
                 height=px(0)),
             css(' li',
