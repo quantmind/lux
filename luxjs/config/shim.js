@@ -35,6 +35,9 @@
             "codemirror-javascript": {
                 deps: ["codemirror"]
             },
+            "codemirror-python": {
+                deps: ["codemirror"]
+            },
             "codemirror-css": {
                 deps: ["codemirror"]
             },
