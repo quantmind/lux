@@ -23,6 +23,8 @@
             mode: "markdown",
             theme: lux.context.CODEMIRROR_THEME || "monokai",
             reindentOnLoad: true,
+            indentUnit: 4,
+            indentWithTabs: true,
             htmlModes: ['javascript', 'xml', 'css', 'htmlmixed'],
         })
         //
