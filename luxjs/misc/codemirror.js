@@ -23,6 +23,8 @@
             mode: "markdown",
             theme: lux.context.CODEMIRROR_THEME || "monokai",
             reindentOnLoad: true,
+            indentUnit: 4,
+            indentWithTabs: true,
             htmlModes: ['javascript', 'xml', 'css', 'htmlmixed'],
         })
         //
@@ -91,6 +93,9 @@
                     case 'html':
                         options.mode = 'htmlmixed';
                         break;
+                    case 'python':
+                        options.mode = 'python';
+                        break;
                     default:
                         options.mode = luxCodemirrorDefaults.mode;
                         break;
@@ -100,10 +105,13 @@
             //
             // Returns suffix of the js module name to load depending on the editor mode
             function getJSModuleSuffix(modeName) {
-                if (luxCodemirrorDefaults.htmlModes.indexOf(modeName) >= 0)
+                if (luxCodemirrorDefaults.htmlModes.indexOf(modeName) >= 0) {
                     return 'htmlmixed';
-                else
+                } else if (modeName === 'python') {
+                    return 'python';
+                } else {
                     return 'markdown';
+                }
             }
             //
             return {
