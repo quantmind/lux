@@ -26,7 +26,7 @@ var lux = {context: {MINIFIED_MEDIA: true}};
         'angular-ui-grid': 'bower_components/angular-ui-grid/ui-grid'
       }
     });
-    require(['<%= [].concat(options.deps).join("', '") %>'], function() {
+    require(['<%= [].concat(scripts.src).concat(options.deps).join("', '") %>'], function() {
         require(['<%= [].concat(scripts.specs,scripts.reporters).join("','") %>'], function(){
             startTests();
         });
