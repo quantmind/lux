@@ -19,7 +19,7 @@ def add_css(all):
     sidebar.toggle.margin = px(15)
     sidebar.toggle.size = px(21)
     sidebar.toggle.size_small = px(19)
-    sidebar.toggle.padding = spacing(28, 22)
+    sidebar.toggle.padding = 0.5*(navbar.height-sidebar.toggle.size) - px(1)
     # Style
     sidebar.background = '#2D3C4B'
     sidebar.color = '#eee'
@@ -37,10 +37,12 @@ def add_css(all):
     collapse_width = px(cfg['NAVBAR_COLLAPSE_WIDTH'])
 
     media(min_width=collapse_width).css(
-        '.navbar',
-        css(' a.sidebar-toggle',
+        '.navbar .navbar-nav',
+        css('> li > a.sidebar-toggle',
             font_size=sidebar.toggle.size,
-            padding=sidebar.toggle.padding))
+            line_height=sidebar.toggle.size,
+            padding_top=sidebar.toggle.padding,
+            padding_bottom=sidebar.toggle.padding))
 
     css('.fullwidth',
         width=pc(100),
@@ -49,9 +51,9 @@ def add_css(all):
     css('.sidebar-body',
         position='relative')
 
-    css('.content-wrapper',
+    css('.sidebar-page',
         position='relative',
-        top=px(navbar.height),
+        top=0,
         bottom=0,
         left=0,
         right=0)
@@ -183,7 +185,6 @@ def add_css(all):
                 list_style='none',
                 padding=px(0),
                 margin=px(0),
-                padding_left=px(5),
                 opacity=0,
                 height=px(0)),
             css(' li',
@@ -233,5 +234,28 @@ def add_css(all):
                   height=navbar.height-px(20)),
               height=navbar.height)
 
-    large.css('.content-wrapper',
-              top=px(navbar.big_height))
+
+def small():
+    small = media(max_width=collapse_width)
+
+    small.css('.sidebar .nav-panel',
+              height=px(navbar.small_height))
+
+    small.css('.navbar-header > .navbar-nav',
+              float='left',
+              margin=px(0))
+
+    small.css('.sidebar-toggle',
+              font_size=sidebar.toggle.size_small,
+              padding_top='20px !important',
+              height=px(navbar.small_height))
+
+    small.css('.right-sidebar',
+              css(' .navbar-main',
+                  float='right',
+                  margin_right=px(1)))
+
+    small.css('.sidebar-left',
+              css(' .navbar-main',
+                  float='left',
+                  margin_left=px(1)))

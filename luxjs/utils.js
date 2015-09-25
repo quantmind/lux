@@ -138,7 +138,7 @@
     //
     loadCss = lux.loadCss = function (filename) {
         if (!loadedCss[filename]) {
-            loadedCss[filename] = true; 
+            loadedCss[filename] = true;
             var fileref = document.createElement("link");
             fileref.setAttribute("rel", "stylesheet");
             fileref.setAttribute("type", "text/css");
@@ -242,4 +242,9 @@
         return str.replace(/{(\w+)}/g, function (match, placeholder) {
             return values.hasOwnProperty(placeholder) ? values[placeholder] : '';
         });
+    },
+    //
+    //  Capitalize the first letter of string
+    capitalize = function(str) {
+        return str.charAt(0).toUpperCase() + str.slice(1);
     };

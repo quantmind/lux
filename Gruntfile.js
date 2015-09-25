@@ -1,7 +1,17 @@
 /*jshint node: true */
 /*global config:true, task:true, process:true*/
 module.exports = function (grunt) {
-  "use strict";
+    "use strict";
+    var test_src = ['lux/media/lux/lux.js'];
+    var test_dependencies = [
+        'angular-ui-select',
+        'angular-ui-grid',
+        'angular-mocks',
+        'angular-strap',
+        'codemirror',
+        'angular-touch',
+        'lodash'
+    ];
     // Project configuration.
     var docco_output = 'docs/lux/html/docco',
         // All libraries
@@ -11,18 +21,58 @@ module.exports = function (grunt) {
             pkg: grunt.file.readJSON('package.json'),
             concat: libs,
             jasmine: {
-                // need to set it even if we don't use it
-                src : [],
-                options : {
-                    specs : 'luxjs/tests/**/*.js',
-                    template: 'luxjs/tests/test.tpl.html',
-                    templateOptions: {
-                        deps: ['lux/media/lux/lux.min.js', 'angular-ui-select',
-                               'angular-ui-grid', 'angular-mocks',
-                               'angular-strap', 'codemirror', 'angular-touch',
-                               'lodash']
+                test: {
+                    src : test_src,
+                    options : {
+                        specs : 'luxjs/tests/**/*.js',
+                        template: 'luxjs/tests/test.tpl.html',
+                        templateOptions: {
+                            deps: test_dependencies
+                        }
+                    }
+                },
+                coverage: {
+                    src: test_src,
+                    options: {
+                        specs: 'luxjs/tests/**/*.js',
+                        template: require('grunt-template-jasmine-istanbul'),
+                        templateOptions: {
+                            coverage: 'coverage/coverage.json',
+                            report: [
+                                {
+                                    type: 'lcov',
+                                    options: {
+                                        dir: 'coverage'
+                                    }
+                                },
+                                {
+                                    type: 'html',
+                                    options: {
+                                        dir: 'coverage'
+                                    }
+                                },
+                                {
+                                    type: 'text-summary'
+                                }
+                            ],
+                            template: 'luxjs/tests/test.tpl.html',
+                            templateOptions: {
+                                deps: test_dependencies
+                            }
+                        }
                     }
                 }
+            },
+            watch: {
+                options: {
+                    atBegin: true,
+                    livereload: true
+                },
+                files: [
+                    '<%= concat.lux.src %>',
+                    'luxjs/**/*.tpl.html'
+                ],
+                tasks: ['html2js', 'concat', 'jshint', 'uglify', 'jasmine:test']
             }
         };
     //
@@ -128,13 +178,14 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-contrib-concat');
     grunt.loadNpmTasks('grunt-contrib-jasmine');
     //grunt.loadNpmTasks('grunt-contrib-nodeunit');
-    //grunt.loadNpmTasks('grunt-contrib-watch');
+    grunt.loadNpmTasks('grunt-contrib-watch');
     //grunt.loadNpmTasks('grunt-docco');
     //
     grunt.registerTask('gruntfile', 'jshint Gruntfile.js',
             ['jshint:gruntfile']);
     grunt.registerTask('build', 'Compile and lint all Lux libraries', buildTasks);
-    grunt.registerTask('all', 'Build and test', ['build', 'jasmine']);
+    grunt.registerTask('coverage', 'Test coverage using Jasmine and Istanbul', ['jasmine:coverage']);
+    grunt.registerTask('all', 'Build and test', ['build', 'jasmine:test']);
     grunt.registerTask('default', ['all']);
     //
     for_each(libs, function (name) {

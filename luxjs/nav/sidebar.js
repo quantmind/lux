@@ -100,7 +100,7 @@
                 // No navbar, add an object
                 if (!navbar)
                     navbar = {};
-                navbar.fixed = true;
+                navbar.fixed = false;
                 navbar.top = true;
                 //
                 // Add toggle to the navbar
