@@ -1,6 +1,6 @@
 //      Lux Library - v0.2.0
 
-//      Compiled 2015-09-21.
+//      Compiled 2015-09-26.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -61,6 +61,7 @@
             "codemirror": "//cdnjs.cloudflare.com/ajax/libs/codemirror/3.21.0/codemirror",
             "codemirror-markdown": "//cdnjs.cloudflare.com/ajax/libs/codemirror/3.21.0/mode/markdown/markdown",
             "codemirror-javascript": "//cdnjs.cloudflare.com/ajax/libs/codemirror/3.21.0/mode/javascript/javascript",
+            "codemirror-python": "//cdnjs.cloudflare.com/ajax/libs/codemirror/3.21.0/mode/python/python.js",
             "codemirror-xml": "//cdnjs.cloudflare.com/ajax/libs/codemirror/3.21.0/mode/xml/xml",
             "codemirror-css": "//cdnjs.cloudflare.com/ajax/libs/codemirror/3.21.0/mode/css/css",
             "codemirror-htmlmixed": "//cdnjs.cloudflare.com/ajax/libs/codemirror/3.21.0/mode/htmlmixed/htmlmixed",
@@ -75,7 +76,7 @@
             "lodash": "//cdnjs.cloudflare.com/ajax/libs/lodash.js/2.4.1/lodash",
             "marked": "//cdnjs.cloudflare.com/ajax/libs/marked/0.3.2/marked",
             "mathjax": "//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML",
-            "moment": "//cdnjs.cloudflare.com/ajax/libs/moment.js/2.10.3/moment",
+            "moment": "//cdnjs.cloudflare.com/ajax/libs/moment.js/2.10.6/moment",
             "restangular": "//cdnjs.cloudflare.com/ajax/libs/restangular/1.4.0/restangular",
             "sockjs": "//cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.0.3/sockjs",
             "stats": "//cdnjs.cloudflare.com/ajax/libs/stats.js/r11/Stats",
@@ -118,6 +119,9 @@
                 deps: ["codemirror"]
             },
             "codemirror-javascript": {
+                deps: ["codemirror"]
+            },
+            "codemirror-python": {
                 deps: ["codemirror"]
             },
             "codemirror-css": {
