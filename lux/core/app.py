@@ -16,7 +16,7 @@ from pulsar.utils.importer import module_attribute
 
 from .commands import ConsoleParser, CommandError
 from .extension import Extension, Parameter, EventMixin
-from .wrappers import wsgi_request, HeadMeta, error_handler
+from .wrappers import wsgi_request, HeadMeta, error_handler, as_async_wsgi
 from .engines import template_engine
 from .cms import CMS
 from .cache import create_cache
@@ -303,20 +303,26 @@ class Application(ConsoleParser, Extension, EventMixin):
             self._worker = pulsar.get_actor()
             if not self.cms:
                 self.cms = CMS(self)
-            self.handler = self._build_handler()
-            self.fire('on_loaded')
-            wsgi = None
-            if self.green_pool:
-                self.logger.info('Setup green Wsgi handler')
-                wsgi = WsgiGreen(self.handler, self.green_pool)
-            elif self.config['THREAD_POOL']:
-                wsgi = middleware_in_executor(self.handler)
 
-            if wsgi:
-                middleware = self.handler._async_middleware[:]
-                middleware.append(wait_for_body_middleware)
-                middleware.append(wsgi)
-                self.handler = WsgiHandler(middleware, async=True)
+            async_middleware, wsgi = self._build_handler()
+            self.handler = wsgi
+            self.fire('on_loaded')
+            #
+            # Using a green pool
+            if self.green_pool:
+                from lux.core.green import green_body, WsgiGreen
+                wsgi = WsgiGreen(wsgi, self.green_pool)
+                async_middleware.append(green_body)
+                async_middleware.append(wsgi)
+            else:
+                if self.config['THREAD_POOL']:
+                    wsgi = middleware_in_executor(wsgi)
+                else:
+                    wsgi = as_async_wsgi(wsgi)
+                async_middleware.append(wait_for_body_middleware)
+                async_middleware.append(wsgi)
+
+            self.handler = WsgiHandler(async_middleware, async=True)
         return self.handler
 
     def get_version(self):
@@ -698,8 +704,7 @@ class Application(ConsoleParser, Extension, EventMixin):
         # Response middleware executed in reversed order
         rmiddleware = list(reversed(rmiddleware))
         hnd = self._WsgiHandler(middleware, response_middleware=rmiddleware)
-        hnd._async_middleware = async_middleware
-        return hnd
+        return async_middleware, hnd
 
     def _setup_logger(self, config, module, opts):
         debug = opts.debug or self.params.get('debug', False)
@@ -712,23 +717,6 @@ class Application(ConsoleParser, Extension, EventMixin):
             self.logger = cfg.configured_logger('lux')
         else:
             super()._setup_logger(config, module, opts)
-
-
-class WsgiGreen:
-    '''Wraps a Wsgi application to be executed on a pool of greenlet
-    '''
-    def __init__(self, wsgi, pool):
-        from pulsar.apps.greenio import wait
-        self.wsgi = wsgi
-        self.pool = pool
-        self.wait = wait
-
-    def __call__(self, environ, start_response):
-        return self.pool.submit(self._green_handler, environ, start_response)
-
-    def _green_handler(self, environ, start_response):
-        # Running on a greenlet worker
-        return self.wait(self.wsgi(environ, start_response))
 
 
 def add_app(apps, name, pos=None):
