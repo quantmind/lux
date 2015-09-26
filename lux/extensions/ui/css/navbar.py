@@ -98,5 +98,11 @@ def add_css(all):
     large.css('.navbar-collapse.collapse',
               background='none')
 
-    large.css('.navbar-collapse.collapse .navbar-right',
-              padding_top=px(10))
+    large.css('.navbar-collapse.collapse',
+              css(' .navbar-right, .navbar-left',
+                  padding_top=px(10)))
+
+    small = media(max_width=collapse_width)
+    small.css('.navbar-collapse.collapse',
+              css(' .navbar-right, .navbar-left',
+                  float='none'))

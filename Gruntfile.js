@@ -1,7 +1,17 @@
 /*jshint node: true */
 /*global config:true, task:true, process:true*/
 module.exports = function (grunt) {
-  "use strict";
+    "use strict";
+    var test_src = ['lux/media/lux/lux.js'];
+    var test_dependencies = [
+        'angular-ui-select',
+        'angular-ui-grid',
+        'angular-mocks',
+        'angular-strap',
+        'codemirror',
+        'angular-touch',
+        'lodash'
+    ];
     // Project configuration.
     var docco_output = 'docs/lux/html/docco',
         // All libraries
@@ -33,7 +43,7 @@ module.exports = function (grunt) {
                     '<%= concat.lux.src %>',
                     'luxjs/**/*.tpl.html'
                 ],
-                tasks: ['html2js', 'concat', 'jshint', 'uglify', 'jasmine']
+                tasks: ['html2js', 'concat', 'jshint', 'uglify', 'jasmine:test']
             }
         };
     //
@@ -145,7 +155,8 @@ module.exports = function (grunt) {
     grunt.registerTask('gruntfile', 'jshint Gruntfile.js',
             ['jshint:gruntfile']);
     grunt.registerTask('build', 'Compile and lint all Lux libraries', buildTasks);
-    grunt.registerTask('all', 'Build and test', ['build', 'jasmine']);
+    grunt.registerTask('coverage', 'Test coverage using Jasmine and Istanbul', ['jasmine:coverage']);
+    grunt.registerTask('all', 'Build and test', ['build', 'jasmine:test']);
     grunt.registerTask('default', ['all']);
     //
     for_each(libs, function (name) {

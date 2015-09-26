@@ -102,7 +102,7 @@
 
                 // Font-awesome icon by default
                 boolean: function (column, col, uiGridConstants, gridDefaults) {
-                    column.cellTemplate = gridDefaults.wrapCell('<i ng-class="{{COL_FIELD === true}} ? \'fa fa-check-circle text-success\' : \'fa fa-times-circle text-danger\'"></i>');
+                    column.cellTemplate = gridDefaults.wrapCell('<i ng-class="grid.appScope.getBooleanFieldIcon(COL_FIELD)"></i>');
 
                     if (col.hasOwnProperty('filter')) {
                         column.filter = {
@@ -278,7 +278,7 @@
                     modalScope.activeClass = function(column) {
                         if (column.hasOwnProperty('visible')) {
                             if (column.visible) return 'btn-success';
-                            return 'btn-danger';
+                                return 'btn-danger';
                         } else
                             return 'btn-success';
                     };
@@ -394,6 +394,10 @@
 
                 scope.objectUrl = function(entity) {
                     return $lux.window.location + '/' + entity[scope.gridOptions.metaFields.id];
+                };
+
+                scope.getBooleanFieldIcon = function(COL_FIELD) {
+                    return ((COL_FIELD) ? 'fa fa-check-circle text-success' : 'fa fa-check-circle text-danger');
                 };
 
                 scope.clearData = function() {

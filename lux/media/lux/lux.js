@@ -1,6 +1,6 @@
 //      Lux Library - v0.2.0
 
-//      Compiled 2015-09-18.
+//      Compiled 2015-09-26.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -249,7 +249,7 @@ function(angular, root) {
     //
     loadCss = lux.loadCss = function (filename) {
         if (!loadedCss[filename]) {
-            loadedCss[filename] = true; 
+            loadedCss[filename] = true;
             var fileref = document.createElement("link");
             fileref.setAttribute("rel", "stylesheet");
             fileref.setAttribute("type", "text/css");
@@ -353,6 +353,11 @@ function(angular, root) {
         return str.replace(/{(\w+)}/g, function (match, placeholder) {
             return values.hasOwnProperty(placeholder) ? values[placeholder] : '';
         });
+    },
+    //
+    //  Capitalize the first letter of string
+    capitalize = function(str) {
+        return str.charAt(0).toUpperCase() + str.slice(1);
     };
 
     lux.messages.no_api = function (url) {
@@ -937,10 +942,8 @@ function(angular, root) {
                         api.login();
                     else if (!status)
                         $lux.log.error('Server down, could not complete request');
-                    else if (status === 404) {
-                        $lux.window.location.href = '/';
-                        $lux.window.reload();
-                    }
+                    else if (status === 404)
+                        $lux.log.info('Endpoint not found' + ((opts.path) ? ' @ ' + opts.path : ''));
                 });
                 return promise;
             };
@@ -1944,7 +1947,7 @@ angular.module('lux.cms.core', [])
                 path.split('/').forEach(function (name) {
                     if (name) {
                         last = {
-                            label: name,
+                            label: name.split('-').map(capitalize).join(' '),
                             href: joinUrl(last.href, name+'/')
                         };
                         if (last.href.length >= lux.context.url.length)
@@ -2258,8 +2261,10 @@ angular.module('lux.cms.core', [])
             //  If it uses the api for posting, register with it
             scope.$on('formReady', function (e, model, formScope) {
                 var attrs = formScope.formAttrs,
-                    action = attrs ? attrs.action : null;
-                if (isObject(action)) {
+                    action = attrs ? attrs.action : null,
+                    actionType = attrs ? attrs.actionType : null;
+
+                if (isObject(action) && actionType !== 'create') {
                     var api = $lux.api(action);
                     if (api) {
                         $lux.log.info('Form ' + formScope.formModelName + ' registered with "' +
@@ -3835,7 +3840,7 @@ function gridDataProviderWebsocketFactory ($scope) {
 
                 // Font-awesome icon by default
                 boolean: function (column, col, uiGridConstants, gridDefaults) {
-                    column.cellTemplate = gridDefaults.wrapCell('<i ng-class="{{COL_FIELD === true}} ? \'fa fa-check-circle text-success\' : \'fa fa-times-circle text-danger\'"></i>');
+                    column.cellTemplate = gridDefaults.wrapCell('<i ng-class="grid.appScope.getBooleanFieldIcon(COL_FIELD)"></i>');
 
                     if (col.hasOwnProperty('filter')) {
                         column.filter = {
@@ -4011,7 +4016,7 @@ function gridDataProviderWebsocketFactory ($scope) {
                     modalScope.activeClass = function(column) {
                         if (column.hasOwnProperty('visible')) {
                             if (column.visible) return 'btn-success';
-                            return 'btn-danger';
+                                return 'btn-danger';
                         } else
                             return 'btn-success';
                     };
@@ -4127,6 +4132,10 @@ function gridDataProviderWebsocketFactory ($scope) {
 
                 scope.objectUrl = function(entity) {
                     return $lux.window.location + '/' + entity[scope.gridOptions.metaFields.id];
+                };
+
+                scope.getBooleanFieldIcon = function(COL_FIELD) {
+                    return ((COL_FIELD) ? 'fa fa-check-circle text-success' : 'fa fa-check-circle text-danger');
                 };
 
                 scope.clearData = function() {
@@ -4873,6 +4882,8 @@ function gridDataProviderWebsocketFactory ($scope) {
         //
         //  Directive for the simple navbar
         //  This directive does not require the Navigation controller
+        //      - items         -> Top left navigation
+        //      - itemsRight    -> Top right navigation
         .directive('navbar', ['navService', function (navService) {
             //
             return {
@@ -5158,6 +5169,8 @@ function gridDataProviderWebsocketFactory ($scope) {
             mode: "markdown",
             theme: lux.context.CODEMIRROR_THEME || "monokai",
             reindentOnLoad: true,
+            indentUnit: 4,
+            indentWithTabs: true,
             htmlModes: ['javascript', 'xml', 'css', 'htmlmixed'],
         })
         //
@@ -5226,6 +5239,9 @@ function gridDataProviderWebsocketFactory ($scope) {
                     case 'html':
                         options.mode = 'htmlmixed';
                         break;
+                    case 'python':
+                        options.mode = 'python';
+                        break;
                     default:
                         options.mode = luxCodemirrorDefaults.mode;
                         break;
@@ -5235,10 +5251,13 @@ function gridDataProviderWebsocketFactory ($scope) {
             //
             // Returns suffix of the js module name to load depending on the editor mode
             function getJSModuleSuffix(modeName) {
-                if (luxCodemirrorDefaults.htmlModes.indexOf(modeName) >= 0)
+                if (luxCodemirrorDefaults.htmlModes.indexOf(modeName) >= 0) {
                     return 'htmlmixed';
-                else
+                } else if (modeName === 'python') {
+                    return 'python';
+                } else {
                     return 'markdown';
+                }
             }
             //
             return {
@@ -5498,13 +5517,39 @@ function gridDataProviderWebsocketFactory ($scope) {
                 // Create via element tag
                 // <d3-force data-width=300 data-height=200></d3-force>
                 restrict: 'AE',
-                //
-                link: function (scope, element, attrs) {
-                    if(!scope.googlemaps) {
-                        $lux.log.error('Google maps url not available. Cannot load google maps directive');
-                        return;
-                    }
-                    require([scope.googlemaps], function () {
+                scope: true,
+                controller: function() {
+                    var self = this;
+
+                    // Add a marker to the map
+                    self.addMarker = function(map, marker, location) {
+                        if (marker) {
+                            var gmarker = new google.maps.Marker(angular.extend({
+                                position: location,
+                                map: map,
+                            }, marker));
+                            return gmarker;
+                        }
+                    };
+
+                    // Add marker using lat and lng
+                    self.addMarkerByLatLng = function(map, marker, lat, lng) {
+                        var loc = new google.maps.LatLng(lat, lng);
+                        return self.addMarker(map, marker, loc);
+                    };
+
+                    // Returns an instance of location for specific lat and lng
+                    self.createLocation = function(lat, lng) {
+                        return new google.maps.LatLng(lat, lng);
+                    };
+
+                    // Returns an instance of InfoWindow for specific content
+                    self.createInfoWindow = function(content) {
+                        return new google.maps.InfoWindow({content: content});
+                    };
+
+                    // Initialize google maps
+                    self.initialize = function(scope, element, attrs) {
                         var config = lux.getObject(attrs, 'config', scope),
                             lat = +config.lat,
                             lng = +config.lng,
@@ -5516,20 +5561,32 @@ function gridDataProviderWebsocketFactory ($scope) {
                                 scrollwheel: config.scrollwheel ? true : false,
                             },
                             map = new google.maps.Map(element[0], opts),
-                            //
                             marker = config.marker;
+                        //
+                        self.addMarker(map, marker, loc);
 
-                        if (marker)
-                            var gmarker = new google.maps.Marker(angular.extend({
-                                position: loc,
-                                map: map,
-                            }, marker));
+                        // Allow different directives to use this map
+                        scope.map = map;
                         //
                         windowResize(function () {
                             google.maps.event.trigger(map, 'resize');
                             map.setCenter(loc);
                             map.setZoom(map.getZoom());
                         }, 500);
+                    };
+                },
+                //
+                link: function (scope, element, attrs, controller) {
+                    if(!scope.googlemaps) {
+                        $lux.log.error('Google maps url not available. Cannot load google maps directive');
+                        return;
+                    }
+                    require([scope.googlemaps], function () {
+                        controller.initialize(scope, element, attrs);
+
+                        // Setup map by another directive
+                        if (typeof scope.setup === 'function')
+                            scope.setup(scope.map);
                     });
                 }
             };
@@ -5846,6 +5903,9 @@ angular.module("nav/templates/navbar.tpl.html", []).run(["$templateCache", funct
     "            </a>\n" +
     "        </div>\n" +
     "        <nav class=\"navbar-collapse\" bs-collapse-target>\n" +
+    "            <ul ng-if=\"navbar.items\" class=\"nav navbar-nav navbar-left\">\n" +
+    "                <li ng-repeat=\"link in navbar.items\" ng-class=\"{active:activeLink(link)}\" navbar-link></li>\n" +
+    "            </ul>\n" +
     "            <ul ng-if=\"navbar.itemsRight\" class=\"nav navbar-nav navbar-right\">\n" +
     "                <li ng-repeat=\"link in navbar.itemsRight\" ng-class=\"{active:activeLink(link)}\" navbar-link>\n" +
     "                </li>\n" +
