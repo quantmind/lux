@@ -21,16 +21,45 @@ module.exports = function (grunt) {
             pkg: grunt.file.readJSON('package.json'),
             concat: libs,
             jasmine: {
-                // need to set it even if we don't use it
-                src : [],
-                options : {
-                    specs : 'luxjs/tests/**/*.js',
-                    template: 'luxjs/tests/test.tpl.html',
-                    templateOptions: {
-                        deps: ['lux/media/lux/lux.js', 'angular-ui-select',
-                               'angular-ui-grid', 'angular-mocks',
-                               'angular-strap', 'codemirror', 'angular-touch',
-                               'lodash']
+                test: {
+                    src : test_src,
+                    options : {
+                        specs : 'luxjs/tests/**/*.js',
+                        template: 'luxjs/tests/test.tpl.html',
+                        templateOptions: {
+                            deps: test_dependencies
+                        }
+                    }
+                },
+                coverage: {
+                    src: test_src,
+                    options: {
+                        specs: 'luxjs/tests/**/*.js',
+                        template: require('grunt-template-jasmine-istanbul'),
+                        templateOptions: {
+                            coverage: 'coverage/coverage.json',
+                            report: [
+                                {
+                                    type: 'lcov',
+                                    options: {
+                                        dir: 'coverage'
+                                    }
+                                },
+                                {
+                                    type: 'html',
+                                    options: {
+                                        dir: 'coverage'
+                                    }
+                                },
+                                {
+                                    type: 'text-summary'
+                                }
+                            ],
+                            template: 'luxjs/tests/test.tpl.html',
+                            templateOptions: {
+                                deps: test_dependencies
+                            }
+                        }
                     }
                 }
             },

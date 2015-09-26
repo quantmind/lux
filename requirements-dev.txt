@@ -1,4 +1,4 @@
 coverage
 flake8
 cython
--e git+https://github.com/jelmer/dulwich.git#egg=dulwich
+-e git+https://github.com/quantmind/pulsar.git@dev#egg=pulsar
