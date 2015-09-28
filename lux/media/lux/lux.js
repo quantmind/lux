@@ -1,6 +1,6 @@
 //      Lux Library - v0.2.0
 
-//      Compiled 2015-09-26.
+//      Compiled 2015-09-28.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -382,6 +382,8 @@ function(angular, root) {
             var name = $(document.querySelector("meta[name=csrf-param]")).attr('content'),
                 csrf_token = $(document.querySelector("meta[name=csrf-token]")).attr('content');
 
+            $lux.user_token = $(document.querySelector("meta[name=user-token]")).attr('content');
+
             if (name && csrf_token) {
                 $lux.csrf = {};
                 $lux.csrf[name] = csrf_token;
@@ -434,6 +436,7 @@ function(angular, root) {
                 }
             };
 
+            // Set/get the authentication handler for a given api
             this.authApi = function (api, auth) {
                 if (arguments.length === 1)
                     return AuthApis[api.baseUrl()];
@@ -755,8 +758,10 @@ function(angular, root) {
 
             // If the root scope has an API_URL register the luxrest client
             if ($scope.API_URL) {
-                var web = $lux.api('', luxweb);
                 //
+                // web api handler
+                var web = $lux.api('', luxweb);
+                // rest api handler
                 $lux.api($scope.API_URL, luxrest).scopeApi($scope, web);
             }
 
@@ -792,7 +797,9 @@ function(angular, root) {
                     request.options.method === 'post') {
 
                 request.on.success(function(data, status) {
-                    api.token(data.token);
+                    // reload the Page
+                    $lux.window.location.reload();
+                    //api.token(data.token);
                 });
 
             } else {
@@ -810,7 +817,6 @@ function(angular, root) {
 
         return api;
     };
-
 
 
     //
@@ -848,40 +854,24 @@ function(angular, root) {
                     return auth_name;
             };
 
-            // Set/Get the JWT token
+            // Set/Get the user token
             api.token = function (token) {
-                var key = 'luxtoken-' + api.baseUrl();
-
-                if (arguments.length) {
-                    if (token) {
-                        // Set the token
-                        var decoded = lux.decodeJWToken(token);
-                        if (decoded.storage === 'session')
-                            sessionStorage.setItem(key, token);
-                        else
-                            localStorage.setItem(key, token);
-                    } else {
-                        sessionStorage.removeItem(key);
-                        localStorage.removeItem(key);
-                    }
-                    return api;
-                } else {
-                    // Obtain the token
-                    token = localStorage.getItem(key);
-                    if (!token) token = sessionStorage.getItem(key);
-                    return token;
-                }
+                return $lux.user_token;
             };
 
             // Perform Logout
             api.logout = function (scope) {
+                var auth = $lux.authApi(api);
+                if (!auth) {
+                    $lux.messages.error('Error while logging out');
+                    return;
+                }
                 scope.$emit('pre-logout');
-                api.post({
-                    name: api.authName(),
-                    path: '/logout'
+                auth.post({
+                    name: auth.authName(),
+                    path: lux.context.LOGOUT_URL
                 }).then(function () {
                     scope.$emit('after-logout');
-                    api.token(undefined);
                     $lux.window.location.reload();
                 }, function (response) {
                     $lux.messages.error('Error while logging out');
@@ -889,31 +879,21 @@ function(angular, root) {
             };
 
             // Get the user from the JWT
-            api.user = function (callback) {
+            api.user = function () {
                 var token = api.token();
                 if (token) {
                     var u = lux.decodeJWToken(token);
                     u.token = token;
-
-                    if (!$lux.user_checked) {
-                        $lux.user_checked = true;
-                        api.head({name: api.authName()}).then(function () {
-
-                        }, function (response) {
-                            api.token(undefined);
-                            $lux.window.location.reload();
-                        });
-                    }
-
                     return u;
                 }
             };
 
             // Redirect to the LOGIN_URL
             api.login = function () {
-                var a = 1;
-                //$lux.window.location.href = lux.context.LOGIN_URL;
-                //$lux.window.reload();
+                if (lux.context.LOGIN_URL) {
+                    $lux.window.location.href = lux.context.LOGIN_URL;
+                    $lux.window.reload();
+                }
             };
 
             //
@@ -961,7 +941,7 @@ function(angular, root) {
             };
 
             //
-            // Initialise a scope with this api
+            // Initialise a scope with an auth api handler
             api.scopeApi = function (scope, auth) {
                 //  Get the api client
                 if (auth) {
@@ -985,9 +965,7 @@ function(angular, root) {
                         e.preventDefault();
                         e.stopPropagation();
                     }
-                    api.user(function (user) {
-                        if (user) api.logout(scope);
-                    });
+                    if (api.user()) api.logout(scope);
                 };
             };
 

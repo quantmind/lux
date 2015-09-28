@@ -225,5 +225,12 @@ class ApiSessionBackend(SessionBackendMixin,
             data['user'] = session.user.all()
         request.app.cache_server.set_json(self._key(session.id), data)
 
+    def on_html_document(self, app, request, doc):
+        BrowserBackend.on_html_document(self, app, request, doc)
+        if request.method == 'GET':
+            session = request.cache.session
+            if session.user:
+                doc.head.add_meta(name="user-token", content=session.encoded)
+
     def _key(self, id):
         return 'session:%s' % id
