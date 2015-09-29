@@ -8,10 +8,11 @@ from pulsar.utils.httpurl import CacheControl
 
 from .transports.websocket import WebSocket
 from .utils import IFRAME_TEXT
-from .ws import LuxWs
 
 
 class SocketIO(Router):
+    '''A Router for sockjs requests
+    '''
     info_cache = CacheControl(nostore=True)
     home_cache = CacheControl(maxage=60*60*24*30)
 

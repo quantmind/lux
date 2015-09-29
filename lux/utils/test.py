@@ -239,9 +239,10 @@ class AppTestCase(unittest.TestCase, TestMixin):
     def setUpClass(cls):
         # Create the application
         cls.dbs = {}
-        cls.app = cls.test_application()
+        cls.app = cls.create_test_application()
         cls.client = TestClient(cls.app)
         if hasattr(cls.app, 'odm'):
+            # Store the original odm for removing the new databases
             cls.odm = cls.app.odm
             return cls.setupdb()
 
@@ -251,7 +252,7 @@ class AppTestCase(unittest.TestCase, TestMixin):
             return cls.dropdb()
 
     @classmethod
-    def test_application(cls):
+    def create_test_application(cls):
         '''Return the lux application'''
         return test_app(cls)
 
@@ -265,14 +266,27 @@ class AppTestCase(unittest.TestCase, TestMixin):
     @green
     def setupdb(cls):
         cls.app.odm = cls.odm.database_create(database=cls.dbname)
-        logger.info('Create test tables')
-        cls.app.odm().table_create()
+        odm = cls.app.odm()
+        DATASTORE = cls.app.config['DATASTORE']
+        if not isinstance(DATASTORE, dict):
+            DATASTORE = {'default': DATASTORE}
+        # Replace datastores
+        datastore = {}
+        for original_engine, database in cls.dbs.items():
+            orig_url = str(original_engine.url)
+            for engine in odm.engines():
+                if engine.url.database == database:
+                    new_url = str(engine.url)
+                    for key, url in DATASTORE.items():
+                        if url == orig_url:
+                            datastore[key] = new_url
+        cls.app.config['DATASTORE'] = datastore
+        odm.table_create()
         cls.populatedb()
 
     @classmethod
     @green
     def dropdb(cls):
-        logger.info('Drop databases')
         cls.app.odm().close()
         cls.odm().database_drop(database=cls.dbname)
 

@@ -2,6 +2,7 @@ import time
 import json
 import hashlib
 import logging
+from inspect import isclass
 
 from pulsar.apps import ws, rpc
 
@@ -31,8 +32,6 @@ class WsClient:
             key = '%s - %s' % (self.address, self.started)
             session_id = hashlib.sha224(key.encode('utf-8')).hexdigest()
         self.session_id = session_id
-        transport.cache.wsclient = self
-        transport.on_open(self)
 
     @property
     def cache(self):
@@ -40,16 +39,35 @@ class WsClient:
         '''
         return self.transport.cache
 
+    @property
+    def rpc_methods(self):
+        '''A cache object to store session persistent data
+        '''
+        return self.transport.handler.rpc_methods
+
     def __str__(self):
         return '%s - %s' % (self.address, self.session_id)
 
-    def __call__(self, channel, message):
-        '''Invoked by the pubsub handler when a new message on a channel
-        is available.'''
-        message = message.decode('utf-8')
-        self.write(LUX_MESSAGE, channel, message)
+    def on_open(self):
+        self.transport.on_open(self)
+        self.app.fire('on_websocket_open', self)
+        self.write(LUX_CONNECTION,
+                   socket_id=self.session_id,
+                   time=self.started)
 
-    # Lux Implementation
+    def on_message(self, message):
+        try:
+            data = self._load(message)
+            self._response(data)
+        except Exception as exc:
+            self.logger.exception('While loading websocket message')
+            self.error_message(exc)
+            self.transport.close()
+
+    def on_close(self):
+        self.app.fire('on_websocket_close', self)
+        self.logger.info('closing socket %s', self)
+
     def write(self, event, channel=None, data=None, **kw):
         msg = {'event': event}
         if channel:
@@ -76,67 +94,100 @@ class WsClient:
         data['message'] = str(exc)
         self.write(LUX_ERROR, data=data)
 
+    def pubsub(self, key=None):
+        '''Get a pub-sub handler for a given key
+
+        A key is used to group together pub-subs so that bandwidths is reduced
+        If no key is provided the handler is not included in the pubsub cache.
+        '''
+        app = self.app
+        if app.pubsub_store:
+            if key:
+                pubsub = app.pubsubs.get(key)
+                if not pubsub:
+                    pubsub = app.pubsub_store.pubsub()
+                    app.pubsubs[key] = pubsub
+            else:
+                pubsub = app.pubsub_store.pubsub()
+            return pubsub
+
+    # INTERNALS
+    def _load(self, message):
+        # SockJS sends a string as a single element of an array.
+        # Therefore JSON is double-encoded!
+        msg = json.loads(message)
+        if not isinstance(msg, list):
+            raise ValueError('Malformed message; expected array')
+        data = json.loads(msg[0])
+        if not isinstance(data, dict):
+            raise ValueError('Expected data dictionary')
+        return data
+
+    def _response(self, msg):
+        if 'method' in msg:
+            method = msg['method']
+            handler = self.rpc_methods.get(method)
+            if not handler:
+                raise rpc.NoSuchFunction(method)
+            handler(self, msg.get('data'))
+        else:
+            raise rpc.InvalidRequest
+
+
+class RpcWsMethod:
+    ws = None
+
+    def __init__(self, name, ws):
+        self.method = name
+        self.ws = ws
+
+    def on_request(self, data):
+        pass
+
+    def pubsub(self, key=None):
+        '''Convenience method for a pubsub handler
+        '''
+        return self.ws.pubsub(key or self.method)
+
+
+class RpcWsCall:
+
+    def __init__(self, method, rpc):
+        self.method = method
+        self.rpc = rpc
+
+    def __repr__(self):
+        return self.method
+
+    def __call__(self, ws, data):
+        if not ws.cache[self.method]:
+            ws.cache[self.method] = self.Rpc(self.method, ws)
+        ws.cache[self.method].on_request(data)
+
 
 class LuxWs(ws.WS):
     '''Lux websocket
+
+    .. attribute: methods
+
+        Dictionary of RPC web-socket handlers. Each handler is accessed by
+        its name defined at extension level as ``ws_<method>``.
+
     '''
-    pubsub = None
-    '''Publish/subscribe handler'''
-
     def __init__(self, app):
-        self.methods = dict(self._ws_methods(app))
-
-    def __call__(self, ws, msg):
-        try:
-            if 'method' in msg:
-                method = msg['method']
-                if method in self.methods:
-                    self.methods[method](ws, msg.get('data'))
-                else:
-                    raise rpc.NoSuchFunction
-            else:
-                raise rpc.InvalidRequest
-
-        except rpc.InvalidRequest as exc:
-
-            ws.logger.warning(str(exc))
-            ws.error_message(exc)
-
-        except Exception as exc:
-
-            ws.logger.exception('Unhandlerd excption')
-            ws.error_message(exc)
+        self.rpc_methods = dict(self._ws_methods(app))
 
     def on_open(self, websocket):
-        ws = WsClient(websocket)
-        websocket.app.fire('on_websocket_open', ws)
-        #
-        # Send the LUX_CONNECTION event with socket id and start time
-        ws.write(LUX_CONNECTION, socket_id=ws.session_id, time=ws.started)
+        '''When the websocket opens, register a lux client
+        '''
+        websocket.cache.wsclient = WsClient(websocket)
+        websocket.cache.wsclient.on_open()
 
     def on_message(self, websocket, message):
-        '''When a new message arrives, decode it into json
-        and fire the ``on_websocket_message`` event.
-        '''
-        ws = websocket.cache.wsclient
-        try:
-            # SockJS sends a string as a single element of an array.
-            # Therefore JSON is double-encoded!
-            msg = json.loads(message)
-            if not isinstance(msg, list):
-                raise ValueError('Malformed message; expected array')
-            msg = json.loads(msg[0])
-        except Exception as exc:
-            ws.error_message(exc)
-        else:
-            self(ws, msg)
+        websocket.cache.wsclient.on_message(message)
 
     def on_close(self, websocket):
-        ws = websocket.cache.wsclient
-        if self.pubsub:
-            self.pubsub.remove_client(ws)
-        websocket.app.fire('on_websocket_close', ws)
-        ws.logger.info('closing socket %s', ws)
+        websocket.cache.wsclient.on_close()
 
     def _ws_methods(self, app):
         '''Search for web-socket rpc-handlers in all registered extensions.
@@ -147,6 +198,8 @@ class LuxWs(ws.WS):
             for name in dir(ext):
                 if name.startswith('ws_'):
                     handler = getattr(ext, name, None)
+                    name = '_'.join(name.split('_')[1:])
+                    if isclass(handler) and issubclass(handler, RpcWsMethod):
+                        handler = RpcWsCall(name, handler)
                     if hasattr(handler, '__call__'):
-                        name = '_'.join(name.split('_')[1:])
                         yield name, handler

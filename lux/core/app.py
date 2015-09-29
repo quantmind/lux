@@ -1,6 +1,7 @@
 import sys
 import os
 import json
+from copy import copy
 from inspect import isclass, getfile
 from collections import OrderedDict
 from importlib import import_module
@@ -107,6 +108,14 @@ class App(LazyWsgi):
 
     def commands(self):
         return Application(self, handler=False)
+
+    def clone(self, **kw):
+        params = self._params.copy()
+        params.update(kw)
+        app = copy(self)
+        app._params = params
+        app._argv = copy(app._argv)
+        return app
 
 
 class Application(ConsoleParser, Extension, EventMixin):
@@ -297,6 +306,9 @@ class Application(ConsoleParser, Extension, EventMixin):
             self.config['THREAD_POOL'] = False
             from pulsar.apps.greenio import GreenPool
             return GreenPool(self.config['GREEN_POOL'])
+
+    def clone_callable(self, **params):
+        return self.callable.clone(**params)
 
     def get_handler(self):
         if self.handler is None:

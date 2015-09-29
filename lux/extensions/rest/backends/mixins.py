@@ -1,6 +1,6 @@
 import time
 
-from pulsar import HttpException, ImproperlyConfigured
+from pulsar import ImproperlyConfigured
 from pulsar.utils.pep import to_string
 from pulsar.apps.wsgi import Json
 

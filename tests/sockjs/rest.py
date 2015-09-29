@@ -5,12 +5,9 @@ class TestSockJSRestApp(test.AppTestCase):
     config_file = 'tests.sockjs'
 
     def test_app(self):
-        from lux.extensions.sockjs import LuxWs
         app = self.app
         self.assertEqual(app.config['WS_URL'], '/testws')
-        handler = app.extensions['lux.extensions.sockjs'].websocket
-        self.assertEqual(handler.pubsub, None)
-        self.assertIsInstance(handler, LuxWs)
+        self.assertEqual(app.pubsub_store, None)
 
     def test_get(self):
         request = yield from self.client.get('/testws')

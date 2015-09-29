@@ -5,11 +5,11 @@ from pulsar import (HttpException, HttpRedirect, BadRequest,
 __all__ = ['HttpException',
            'HttpRedirect',
            'BadRequest',
-            'PermissionDenied',
-            'Http404',
-            'MethodNotAllowed',
-            'Http401',
-            'raise_http_error']
+           'PermissionDenied',
+           'Http404',
+           'MethodNotAllowed',
+           'Http401',
+           'raise_http_error']
 
 
 class Http401(HttpException):
