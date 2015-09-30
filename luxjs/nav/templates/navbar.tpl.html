@@ -21,6 +21,9 @@ ng-model="navbar.collapse" bs-collapse>
             </a>
         </div>
         <nav class="navbar-collapse" bs-collapse-target>
+            <ul ng-if="navbar.items" class="nav navbar-nav navbar-left">
+                <li ng-repeat="link in navbar.items" ng-class="{active:activeLink(link)}" navbar-link></li>
+            </ul>
             <ul ng-if="navbar.itemsRight" class="nav navbar-nav navbar-right">
                 <li ng-repeat="link in navbar.itemsRight" ng-class="{active:activeLink(link)}" navbar-link>
                 </li>

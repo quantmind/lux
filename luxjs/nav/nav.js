@@ -138,6 +138,8 @@
         //
         //  Directive for the simple navbar
         //  This directive does not require the Navigation controller
+        //      - items         -> Top left navigation
+        //      - itemsRight    -> Top right navigation
         .directive('navbar', ['navService', function (navService) {
             //
             return {

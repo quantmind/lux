@@ -16,6 +16,11 @@ class TestContentViews(test.AppTestCase):
         remove_repo()
         return super().tearDownClass()
 
+    def _github_signature(self, payload):
+        return hmac.new(b'test12345',
+                        msg=json.dumps(payload).encode('utf-8'),
+                        digestmod=hashlib.sha1)
+
     def test_404(self):
         request = yield from self.client.get('/blog/foo')
         response = request.response
@@ -89,8 +94,3 @@ class TestContentViews(test.AppTestCase):
                                               headers=headers)
         response = request.response
         self.assertEqual(response.status_code, 200)
-
-    def _github_signature(self, payload):
-        return hmac.new(b'test12345',
-                        msg=json.dumps(payload).encode('utf-8'),
-                        digestmod=hashlib.sha1)

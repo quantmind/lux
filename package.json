@@ -22,6 +22,7 @@
         "grunt-contrib-jshint": "",
         "grunt-contrib-concat": "",
         "grunt-contrib-jasmine": "",
+        "grunt-template-jasmine-istanbul": "",
         "grunt-docco": "",
         "benchmark": "",
         "grunt-html2js": "",

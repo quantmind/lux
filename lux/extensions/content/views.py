@@ -76,7 +76,7 @@ class TextCRUD(TextCRUDBase):
     @route('_links', response_content_types=('application/json',))
     def links(self, request):
         return self.collection_response(request,
-                                        sortby='order:desc',
+                                        sortby=['order:desc', 'title:asc'],
                                         **{'order:gt': 0})
 
     @route('<path:path>', method=('get', 'head', 'post'))
