@@ -1,6 +1,6 @@
 //      Lux Library - v0.2.0
 
-//      Compiled 2015-09-28.
+//      Compiled 2015-09-30.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -5034,8 +5034,11 @@ function gridDataProviderWebsocketFactory ($scope) {
                         item.removeClass('active');
                         submenu.removeClass('active');
                     } else {
-                        item.parent().parent().find('ul').removeClass('active');
-                        item.addClass('active');
+                        var itemRoot = item.parent().parent();
+                        itemRoot.find('ul').removeClass('active');
+                        itemRoot.find('li').removeClass('active');
+
+                        item.parent().addClass('active');
                         submenu.addClass('active');
                     }
                 };
