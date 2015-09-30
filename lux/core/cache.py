@@ -46,6 +46,10 @@ class Cache:
     def get(self, key):
         pass
 
+    def delete(self, key):
+        '''Delete a key from the cache'''
+        pass
+
     def hmset(self, key, iterable):
         pass
 
@@ -96,6 +100,9 @@ class RedisCache(Cache):
 
     def get(self, key):
         return self._wait(self.client.get(key))
+
+    def delete(self, key):
+        return self._wait(self.client.delete(key))
 
     def hmset(self, key, iterable, timeout=None):
         self._wait(self.client.hmset(key, iterable, timeout))

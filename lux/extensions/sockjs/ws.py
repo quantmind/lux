@@ -5,6 +5,7 @@ import logging
 from inspect import isclass
 
 from pulsar.apps import ws, rpc
+from pulsar import maybe_async
 
 LUX_CONNECTION = 'lux:connection_established'
 LUX_MESSAGE = 'lux:message'
@@ -140,6 +141,19 @@ class RpcWsMethod:
     def __init__(self, name, ws):
         self.method = name
         self.ws = ws
+        maybe_async(self.on_init())
+
+    @property
+    def app(self):
+        return self.ws.app
+
+    def on_init(self):
+        '''Called the first time this method is invoked within a given
+        websocket connection.
+
+        It can returns an asynchronous component
+        '''
+        pass
 
     def on_request(self, data):
         pass
@@ -151,7 +165,8 @@ class RpcWsMethod:
 
 
 class RpcWsCall:
-
+    '''A wrapper for a :class:`.RpcWsMethod`
+    '''
     def __init__(self, method, rpc):
         self.method = method
         self.rpc = rpc

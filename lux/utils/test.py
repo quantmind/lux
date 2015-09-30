@@ -10,6 +10,7 @@ from io import StringIO
 from pulsar import get_event_loop
 from pulsar.utils.httpurl import encode_multipart_formdata
 from pulsar.utils.string import random_string
+from pulsar.utils.websocket import SUPPORTED_VERSIONS, websocket_key
 from pulsar.apps.wsgi import WsgiResponse
 from pulsar.apps.test import test_timeout, sequential   # noqa
 
@@ -89,6 +90,7 @@ class TestClient:
                                headers=None, body=None, content_type=None,
                                token=None, cookie=None, **extra):
         extra['HTTP_ACCEPT'] = HTTP_ACCEPT or '*/*'
+        extra['pulsar.connection'] = mock.MagicMock()
         headers = headers or []
         if content_type:
             headers.append(('content-type', content_type))
@@ -133,6 +135,14 @@ class TestClient:
         extra['REQUEST_METHOD'] = 'HEAD'
         return self.request(path=path, **extra)
 
+    def wsget(self, path):
+        '''make a websocket request'''
+        headers = [('Connection', 'Upgrade'),
+                   ('Upgrade', 'websocket'),
+                   ('Sec-WebSocket-Version', str(max(SUPPORTED_VERSIONS))),
+                   ('Sec-WebSocket-Key', websocket_key())]
+        return self.get(path, headers=headers)
+
 
 class TestMixin:
     config_file = 'tests.config'
@@ -169,9 +179,11 @@ class TestMixin:
                          'text/html; charset=utf-8')
         return response.content[0].decode('utf-8')
 
-    def json(self, response):
+    def json(self, response, status_code=None):
         '''Get JSON object from response
         '''
+        if status_code:
+            self.assertEqual(response.status_code, status_code)
         self.assertEqual(response.content_type,
                          'application/json; charset=utf-8')
         return json.loads(response.content[0].decode('utf-8'))
@@ -209,14 +221,6 @@ class TestCase(unittest.TestCase, TestMixin):
             self.apps = []
         self.apps.append(app)
         return app
-
-    def request_start_response(self, app, path=None, HTTP_ACCEPT=None,
-                               headers=None, body=None, **extra):
-        extra['HTTP_ACCEPT'] = HTTP_ACCEPT or '*/*'
-        request = app.wsgi_request(path=path, headers=headers, body=body,
-                                   extra=extra)
-        start_response = mock.MagicMock()
-        return request, start_response
 
     def fetch_command(self, command, app=None):
         '''Fetch a command.'''
