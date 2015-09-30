@@ -9,7 +9,7 @@ import re
 import itertools
 
 
-__all__ = ['File', 'Filehandler']
+__all__ = ['Filehandler']
 
 
 def skipfile(name):
@@ -47,49 +47,6 @@ def get_valid_filename(s):
     """
     s = s.strip().replace(' ', '_')
     return re.sub(r'(?u)[^-\w.]', '', s)
-
-
-class File(object):
-    '''A file object
-    '''
-    DEFAULT_CHUNK_SIZE = 64 * 2**10
-
-    def __init__(self, file, name=None, content_type=None, size=None):
-        self.file = file
-        if name is None:
-            name = getattr(file, 'name', None)
-        self.name = name
-        self.mode = getattr(file, 'mode', None)
-        self.content_type = content_type
-        if size:
-            self._size = size
-
-    @property
-    def size(self):
-        if not hasattr(self, '_size'):
-            if hasattr(self.file, 'size'):
-                self._size = self.file.size
-            elif os.path.exists(self.file.name):
-                self._size = os.path.getsize(self.file.name)
-            else:
-                raise AttributeError("Unable to determine the file's size.")
-        return self._size
-
-    def chunks(self, chunk_size=None):
-        """
-        Read the file and yield chucks of ``chunk_size`` bytes (defaults to
-        ``UploadedFile.DEFAULT_CHUNK_SIZE``).
-        """
-        if not chunk_size:
-            chunk_size = self.DEFAULT_CHUNK_SIZE
-
-        self.file.seek(0)
-        while True:
-            chunk = self.file.read(chunk_size)
-            if not chunk:
-                raise StopIteration
-            else:
-                yield chunk
 
 
 class Filehandler(object):
