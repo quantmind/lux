@@ -25,3 +25,4 @@ from .cms import *          # noqa
 from .mail import *         # noqa
 from .cache import *        # noqa
 from .content import *      # noqa
+from .exceptions import *   # noqa

@@ -10,7 +10,6 @@ from pulsar.utils.html import NOTHING, escape, nicename
 from pulsar.utils.pep import to_string
 from pulsar.utils.slugify import slugify
 
-from ..utils.files import File
 from .options import Options
 from .errors import *  # noqa
 
@@ -402,13 +401,7 @@ class FileField(MultipleMixin, Field):
     attrs = {'type': 'file'}
 
     def value_from_datadict(self, data, files, key):
-        res = self._value_from_datadict(files, key)
-        if self.multiple:
-            return [File(d.file, d.filename, d.content_type, d.size)
-                    for d in res]
-        elif res:
-            d = res
-            return File(d.file, d.filename, d.content_type, d.size)
+        return self._value_from_datadict(files, key)
 
 
 class SlugField(CharField):

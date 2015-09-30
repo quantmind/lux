@@ -304,3 +304,12 @@ def error_handler(request, exc):
                            'message': msg})
     else:
         return '\n'.join(msg) if isinstance(msg, (list, tuple)) else msg
+
+
+def as_async_wsgi(wsgi):
+
+    def _(environ, start_response):
+        yield None
+        return wsgi(environ, start_response)
+
+    return _

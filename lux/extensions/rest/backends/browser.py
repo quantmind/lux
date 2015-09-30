@@ -5,7 +5,7 @@ import uuid
 from pulsar import ImproperlyConfigured
 from pulsar.utils.httpurl import is_absolute_uri
 
-from lux import Parameter
+from lux import Parameter, raise_http_error, Http401, HttpRedirect
 from lux.extensions.angular import add_ng_modules
 
 from .mixins import jwt, SessionBackendMixin
@@ -205,6 +205,17 @@ class ApiSessionBackend(SessionBackendMixin,
         if session:
             session = Session(session)
             if session.user:
+                # Check if the token is still a valid one
+                token = session.encoded
+                headers = [('Authorization', 'Bearer %s' % token)]
+                response = request.app.api.head('authorizations',
+                                                headers=headers)
+                try:
+                    raise_http_error(response)
+                except Http401:  # 401, redirect to login
+                    url = request.config['LOGIN_URL']
+                    request.cache.session = self.create_session(request)
+                    raise HttpRedirect(url)
                 session.user = User(session.user)
             return session
 
@@ -213,6 +224,13 @@ class ApiSessionBackend(SessionBackendMixin,
         if session.user:
             data['user'] = session.user.all()
         request.app.cache_server.set_json(self._key(session.id), data)
+
+    def on_html_document(self, app, request, doc):
+        BrowserBackend.on_html_document(self, app, request, doc)
+        if request.method == 'GET':
+            session = request.cache.session
+            if session.user:
+                doc.head.add_meta(name="user-token", content=session.encoded)
 
     def _key(self, id):
         return 'session:%s' % id

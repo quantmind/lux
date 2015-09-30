@@ -1,10 +1,10 @@
 import time
 
-from pulsar import HttpException, ImproperlyConfigured
+from pulsar import ImproperlyConfigured
 from pulsar.utils.pep import to_string
 from pulsar.apps.wsgi import Json
 
-from lux import Parameter, wsgi_request
+from lux import Parameter, wsgi_request, Http401
 
 from ..views import Authorization
 
@@ -12,13 +12,6 @@ try:
     import jwt
 except ImportError:     # pragma    nocover
     jwt = None
-
-
-class Http401(HttpException):
-
-    def __init__(self, auth, msg=''):
-        headers = [('WWW-Authenticate', auth)]
-        super().__init__(msg=msg, status=401, headers=headers)
 
 
 class TokenBackendMixin:

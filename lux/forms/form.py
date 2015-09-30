@@ -320,8 +320,8 @@ class Form(metaclass=FormType):
         for name, field in self.base_fields.items():
             bfield = BoundField(self, field)
             key = bfield.html_name
-            if is_bound and exclude_missing and key not in rawdata and \
-               key not in files:
+            if (is_bound and exclude_missing and key not in rawdata and
+                    key not in files):
                 continue
             fields.append(bfield)
             dfields[name] = bfield

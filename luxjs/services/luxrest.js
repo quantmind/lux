@@ -11,8 +11,10 @@
 
             // If the root scope has an API_URL register the luxrest client
             if ($scope.API_URL) {
-                var web = $lux.api('', luxweb);
                 //
+                // web api handler
+                var web = $lux.api('', luxweb);
+                // rest api handler
                 $lux.api($scope.API_URL, luxrest).scopeApi($scope, web);
             }
 
@@ -48,7 +50,9 @@
                     request.options.method === 'post') {
 
                 request.on.success(function(data, status) {
-                    api.token(data.token);
+                    // reload the Page
+                    $lux.window.location.reload();
+                    //api.token(data.token);
                 });
 
             } else {
@@ -66,4 +70,3 @@
 
         return api;
     };
-

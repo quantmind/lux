@@ -10,6 +10,7 @@ from io import StringIO
 from pulsar import get_event_loop
 from pulsar.utils.httpurl import encode_multipart_formdata
 from pulsar.utils.string import random_string
+from pulsar.utils.websocket import SUPPORTED_VERSIONS, websocket_key
 from pulsar.apps.wsgi import WsgiResponse
 from pulsar.apps.test import test_timeout, sequential   # noqa
 
@@ -89,6 +90,7 @@ class TestClient:
                                headers=None, body=None, content_type=None,
                                token=None, cookie=None, **extra):
         extra['HTTP_ACCEPT'] = HTTP_ACCEPT or '*/*'
+        extra['pulsar.connection'] = mock.MagicMock()
         headers = headers or []
         if content_type:
             headers.append(('content-type', content_type))
@@ -133,6 +135,14 @@ class TestClient:
         extra['REQUEST_METHOD'] = 'HEAD'
         return self.request(path=path, **extra)
 
+    def wsget(self, path):
+        '''make a websocket request'''
+        headers = [('Connection', 'Upgrade'),
+                   ('Upgrade', 'websocket'),
+                   ('Sec-WebSocket-Version', str(max(SUPPORTED_VERSIONS))),
+                   ('Sec-WebSocket-Key', websocket_key())]
+        return self.get(path, headers=headers)
+
 
 class TestMixin:
     config_file = 'tests.config'
@@ -169,9 +179,11 @@ class TestMixin:
                          'text/html; charset=utf-8')
         return response.content[0].decode('utf-8')
 
-    def json(self, response):
+    def json(self, response, status_code=None):
         '''Get JSON object from response
         '''
+        if status_code:
+            self.assertEqual(response.status_code, status_code)
         self.assertEqual(response.content_type,
                          'application/json; charset=utf-8')
         return json.loads(response.content[0].decode('utf-8'))
@@ -210,14 +222,6 @@ class TestCase(unittest.TestCase, TestMixin):
         self.apps.append(app)
         return app
 
-    def request_start_response(self, app, path=None, HTTP_ACCEPT=None,
-                               headers=None, body=None, **extra):
-        extra['HTTP_ACCEPT'] = HTTP_ACCEPT or '*/*'
-        request = app.wsgi_request(path=path, headers=headers, body=body,
-                                   extra=extra)
-        start_response = mock.MagicMock()
-        return request, start_response
-
     def fetch_command(self, command, app=None):
         '''Fetch a command.'''
         if not app:
@@ -232,15 +236,17 @@ class AppTestCase(unittest.TestCase, TestMixin):
     '''Test calss for testing applications
     '''
     odm = None
+    '''Original odm handler'''
     app = None
 
     @classmethod
     def setUpClass(cls):
         # Create the application
         cls.dbs = {}
-        cls.app = test_app(cls)
+        cls.app = cls.create_test_application()
         cls.client = TestClient(cls.app)
         if hasattr(cls.app, 'odm'):
+            # Store the original odm for removing the new databases
             cls.odm = cls.app.odm
             return cls.setupdb()
 
@@ -248,6 +254,11 @@ class AppTestCase(unittest.TestCase, TestMixin):
     def tearDownClass(cls):
         if cls.odm:
             return cls.dropdb()
+
+    @classmethod
+    def create_test_application(cls):
+        '''Return the lux application'''
+        return test_app(cls)
 
     @classmethod
     def dbname(cls, engine):
@@ -259,14 +270,27 @@ class AppTestCase(unittest.TestCase, TestMixin):
     @green
     def setupdb(cls):
         cls.app.odm = cls.odm.database_create(database=cls.dbname)
-        logger.info('Create test tables')
-        cls.app.odm().table_create()
+        odm = cls.app.odm()
+        DATASTORE = cls.app.config['DATASTORE']
+        if not isinstance(DATASTORE, dict):
+            DATASTORE = {'default': DATASTORE}
+        # Replace datastores
+        datastore = {}
+        for original_engine, database in cls.dbs.items():
+            orig_url = str(original_engine.url)
+            for engine in odm.engines():
+                if engine.url.database == database:
+                    new_url = str(engine.url)
+                    for key, url in DATASTORE.items():
+                        if url == orig_url:
+                            datastore[key] = new_url
+        cls.app.config['DATASTORE'] = datastore
+        odm.table_create()
         cls.populatedb()
 
     @classmethod
     @green
     def dropdb(cls):
-        logger.info('Drop databases')
         cls.app.odm().close()
         cls.odm().database_drop(database=cls.dbname)
 
