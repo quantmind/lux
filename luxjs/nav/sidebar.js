@@ -29,8 +29,8 @@
         //
         .value('navbarTemplate', "nav/templates/navbar.tpl.html")
         //
-        .service('sidebarService', ['$timeout', 'linkService', 'navService', 'sidebarDefaults',
-                function ($timeout, linkService, navService, sidebarDefaults) {
+        .service('sidebarService', ['linkService', 'navService', 'sidebarDefaults',
+                function (linkService, navService, sidebarDefaults) {
 
             function initSideBar (sidebars, element, sidebar, position) {
                 sidebar = angular.extend({}, sidebarDefaults, sidebar);

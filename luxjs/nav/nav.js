@@ -148,7 +148,7 @@
         //  This directive does not require the Navigation controller
         //      - items         -> Top left navigation
         //      - itemsRight    -> Top right navigation
-        .directive('navbar', ['navService', '$timeout', function (navService, $timeout) {
+        .directive('navbar', ['navService', function (navService) {
             //
             return {
                 templateUrl: "nav/templates/navbar.tpl.html",
