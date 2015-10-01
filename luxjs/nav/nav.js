@@ -68,7 +68,7 @@
             };
         }])
 
-        .service('navService', ['linkService', function (linkService) {
+        .service('navService', ['$timeout', 'linkService', function ($timeout, linkService) {
 
             this.initScope = function (scope, opts) {
 
@@ -86,6 +86,14 @@
                 scope.navbar = navbar;
 
                 return navbar;
+            };
+
+            this.hideCollapse = function(element) {
+                // We need to remove .in class, because bs-collapse
+                // directive adds it initially
+                $timeout(function() {
+                    element.find('nav').eq(1).removeClass('in');
+                });
             };
 
             this.maybeCollapse = function (navbar) {
@@ -140,7 +148,7 @@
         //  This directive does not require the Navigation controller
         //      - items         -> Top left navigation
         //      - itemsRight    -> Top right navigation
-        .directive('navbar', ['navService', function (navService) {
+        .directive('navbar', ['navService', '$timeout', function (navService, $timeout) {
             //
             return {
                 templateUrl: "nav/templates/navbar.tpl.html",
@@ -148,6 +156,8 @@
                 // Link function
                 link: function (scope, element, attrs) {
                     navService.initScope(scope, attrs);
+                    // Remove .in class which is added by bs-collapse
+                    navService.hideCollapse(element);
                     //
                     windowResize(function () {
                         if (navService.collapseForWide(scope.navbar, element))

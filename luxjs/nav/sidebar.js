@@ -29,8 +29,8 @@
         //
         .value('navbarTemplate', "nav/templates/navbar.tpl.html")
         //
-        .service('sidebarService', ['linkService', 'navService', 'sidebarDefaults',
-                function (linkService, navService, sidebarDefaults) {
+        .service('sidebarService', ['$timeout', 'linkService', 'navService', 'sidebarDefaults',
+                function ($timeout, linkService, navService, sidebarDefaults) {
 
             function initSideBar (sidebars, element, sidebar, position) {
                 sidebar = angular.extend({}, sidebarDefaults, sidebar);
@@ -59,6 +59,9 @@
 
                 // Add link service functionality
                 linkService.initScope(scope);
+
+                // Remove .in class which is added by bs-collapse
+                navService.hideCollapse(element);
 
                 // Close sidebars
                 scope.closeSideBar = function () {
