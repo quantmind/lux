@@ -17,7 +17,7 @@ class Command(lux.Command):
         Setting('branch', ('-b', '--branch'), default=None, nargs='?',
                 desc='Branch label for auto, revision and merge command',
                 meta='LABEL'),
-        Setting('list', ('-l', '--list'), default=None, action='store_true',
+        Setting('list', ('--commands',), default=None, action='store_true',
                 desc='List available Alembic commands'),
         Setting('msg', ('-m', '--message'), nargs='?', default=None,
                 desc='Message for auto, revision and merge command'),
@@ -27,12 +27,6 @@ class Command(lux.Command):
         '''
         Run obvious commands and validate more complex.
         '''
-        # alembic package is required to run any migration related command
-        try:
-            import alembic  # noqa
-        except ImportError:  # pragma nocover
-            raise CommandError('Alembic package is not installed')
-
         list_msg = 'Put [-l] for available commands'
 
         if opt.list:
