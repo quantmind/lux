@@ -175,8 +175,8 @@ class RpcWsCall:
         return self.method
 
     def __call__(self, ws, data):
-        if not ws.cache[self.method]:
-            ws.cache[self.method] = self.Rpc(self.method, ws)
+        if self.method not in ws.cache:
+            ws.cache[self.method] = self.rpc(self.method, ws)
         ws.cache[self.method].on_request(data)
 
 
