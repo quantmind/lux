@@ -63,7 +63,7 @@ class WsClient:
         except Exception as exc:
             self.logger.exception('While loading websocket message')
             self.error_message(exc)
-            self.transport.close()
+            self.transport.connection.close()
 
     def on_close(self):
         self.app.fire('on_websocket_close', self)
@@ -130,7 +130,7 @@ class WsClient:
             handler = self.rpc_methods.get(method)
             if not handler:
                 raise rpc.NoSuchFunction(method)
-            handler(self, msg.get('data'))
+            handler(self, msg.get('id'), msg.get('data'))
         else:
             raise rpc.InvalidRequest
 
@@ -155,8 +155,17 @@ class RpcWsMethod:
         '''
         pass
 
-    def on_request(self, data):
+    def on_request(self, request_id, data):
         pass
+
+    def send_response(self, request_id, data, rpc_complete=True):
+        response = {
+            'method': self.method,
+            'id': request_id,
+            'rpcComplete': rpc_complete,
+            'data': data
+        }
+        self.ws.write(LUX_MESSAGE, 'rpc', response)
 
     def pubsub(self, key=None):
         '''Convenience method for a pubsub handler
@@ -174,10 +183,10 @@ class RpcWsCall:
     def __repr__(self):
         return self.method
 
-    def __call__(self, ws, data):
+    def __call__(self, ws, id, data):
         if self.method not in ws.cache:
             ws.cache[self.method] = self.rpc(self.method, ws)
-        ws.cache[self.method].on_request(data)
+        ws.cache[self.method].on_request(id, data)
 
 
 class LuxWs(ws.WS):
