@@ -208,14 +208,15 @@ class LuxWs(ws.WS):
         return self._green(websocket.app, websocket.cache.wsclient.on_open)
 
     def on_message(self, websocket, message):
-        return self._green(websocket.app, websocket.cache.wsclient.on_message)
+        return self._green(websocket.app, websocket.cache.wsclient.on_message,
+                           message)
 
     def on_close(self, websocket):
         return self._green(websocket.app, websocket.cache.wsclient.on_close)
 
-    def _green(self, app, callable):
+    def _green(self, app, callable, *args, **kwargs):
         if app.green_pool:
-            return app.green_pool.submit(callable)
+            return app.green_pool.submit(callable, *args, **kwargs)
         else:
             return callable()
 
