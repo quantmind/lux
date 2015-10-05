@@ -205,13 +205,19 @@ class LuxWs(ws.WS):
         '''When the websocket opens, register a lux client
         '''
         websocket.cache.wsclient = WsClient(websocket)
-        websocket.cache.wsclient.on_open()
+        return self._green(websocket.app, websocket.cache.wsclient.on_open)
 
     def on_message(self, websocket, message):
-        websocket.cache.wsclient.on_message(message)
+        return self._green(websocket.app, websocket.cache.wsclient.on_message)
 
     def on_close(self, websocket):
-        websocket.cache.wsclient.on_close()
+        return self._green(websocket.app, websocket.cache.wsclient.on_close)
+
+    def _green(self, app, callable):
+        if app.green_pool:
+            return app.green_pool.submit(callable)
+        else:
+            return callable()
 
     def _ws_methods(self, app):
         '''Search for web-socket rpc-handlers in all registered extensions.
