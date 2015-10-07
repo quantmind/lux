@@ -28,7 +28,9 @@ class GithubHook(lux.Router):
                 if hasattr(exc, 'status'):
                     raise
                 else:
-                    raise BadRequest
+                    exc = str(exc)
+                    request.logger.exception(exc)
+                    raise BadRequest(exc)
 
         event = request.get('HTTP_X_GITHUB_EVENT')
         if self.handle_payload:
