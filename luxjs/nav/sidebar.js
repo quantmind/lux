@@ -60,9 +60,6 @@
                 // Add link service functionality
                 linkService.initScope(scope);
 
-                // Remove .in class which is added by bs-collapse
-                navService.hideCollapse(element);
-
                 // Close sidebars
                 scope.closeSideBar = function () {
                     element.removeClass('sidebar-open-left sidebar-open-right');
@@ -135,9 +132,9 @@
         }])
         //
         //  Directive for the sidebar
-        .directive('sidebar', ['$compile', 'sidebarService', 'sidebarTemplate',
+        .directive('sidebar', ['$compile', 'sidebarService', 'navService', 'sidebarTemplate',
                                'navbarTemplate', '$templateCache',
-                        function ($compile, sidebarService, sidebarTemplate, navbarTemplate,
+                        function ($compile, sidebarService, navService, sidebarTemplate, navbarTemplate,
                                   $templateCache, $sce) {
             //
             return {
@@ -169,6 +166,11 @@
                                 lux.querySelector(element, '.content-wrapper').append(inner);
                             else
                                 element.after(inner);
+
+                            windowResize(function () {
+                                if (navService.collapseForWide(scope.navbar, element))
+                                    scope.$apply();
+                            });
                         }
                     };
                 }

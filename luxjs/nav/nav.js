@@ -68,7 +68,7 @@
             };
         }])
 
-        .service('navService', ['$timeout', 'linkService', function ($timeout, linkService) {
+        .service('navService', ['linkService', function (linkService) {
 
             this.initScope = function (scope, opts) {
 
@@ -86,14 +86,6 @@
                 scope.navbar = navbar;
 
                 return navbar;
-            };
-
-            this.hideCollapse = function(element) {
-                // We need to remove .in class, because bs-collapse
-                // directive adds it initially
-                $timeout(function() {
-                    element.find('nav').eq(1).removeClass('in');
-                });
             };
 
             this.maybeCollapse = function (navbar) {
@@ -156,8 +148,6 @@
                 // Link function
                 link: function (scope, element, attrs) {
                     navService.initScope(scope, attrs);
-                    // Remove .in class which is added by bs-collapse
-                    navService.hideCollapse(element);
                     //
                     windowResize(function () {
                         if (navService.collapseForWide(scope.navbar, element))
