@@ -12,7 +12,8 @@ class EmailBackend(object):
         if not sender:
             sender = self.app.config['DEFAULT_FROM_EMAIL']
         if sender:
-            message = self.message(sender, to, subject, message, html_message)
+            message = self.message(sender, to, subject, message,
+                                   html_message)
             return self.send_mails([message])
         else:
             return 0
