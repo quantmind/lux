@@ -404,8 +404,9 @@ class BoundField(object):
                 value = getattr(self.form, func_name)(value)
             value = self.field.validate(value, self)
             self.value = value
-            if value not in NOTHING:
-                self.form._cleaned_data[self.name] = value
+            if value in NOTHING:
+                value = None
+            self.form._cleaned_data[self.name] = value
         except ValidationError as err:
             form._form_message(form._errors, self.name, err)
 
