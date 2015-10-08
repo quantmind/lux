@@ -327,8 +327,10 @@
                 scope.gridState = gridDefaults.gridState;
                 scope.gridFilters = gridDefaults.gridFilters;
 
+                var reprPath = options.reprPath || $lux.window.location;
+
                 scope.objectUrl = function(entity) {
-                    return $lux.window.location + '/' + entity[scope.gridOptions.metaFields.id];
+                    return reprPath + '/' + entity[scope.gridOptions.metaFields.id];
                 };
 
                 scope.getBooleanFieldIcon = function(COL_FIELD) {
@@ -456,6 +458,7 @@
 
                         var opts = attrs;
                         if (attrs.restGrid) opts = {options: attrs.restGrid};
+                        if (attrs.reprPath) opts.reprPath = attrs.reprPath;
 
                         opts = getOptions(opts);
 
