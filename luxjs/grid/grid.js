@@ -458,7 +458,6 @@
 
                         var opts = attrs;
                         if (attrs.restGrid) opts = {options: attrs.restGrid};
-                        if (attrs.reprPath) opts.reprPath = attrs.reprPath;
 
                         opts = getOptions(opts);
 
