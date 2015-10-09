@@ -1,6 +1,7 @@
 from pulsar import MethodNotAllowed
 
 from .form import Form
+from .serialise import Layout
 from ..core.wrappers import HtmlRouter
 
 
@@ -22,12 +23,18 @@ class WebFormRouter(HtmlRouter):
 
     @property
     def fclass(self):
-        return self.form or self.default_form
+        form = self.form or self.default_form
+        return form.form_class if isinstance(form, Layout) else form
+
+    @property
+    def flayout(self):
+        form = self.form or self.default_form
+        return form if isinstance(form, Layout) else Layout(form)
 
     def get_html(self, request):
         '''Handle the HTML page for login
         '''
-        form = self.fclass(request)
+        form = self.flayout(request)
         method = self.form_method or 'post'
         enctype = self.form_enctype or 'multipart/form-data'
         action = self.form_action or request.full_path()

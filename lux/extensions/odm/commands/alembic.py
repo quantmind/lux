@@ -30,9 +30,9 @@ class Command(lux.Command):
         list_msg = 'Put [-l] for available commands'
 
         if opt.list:
-            availabe = 'Available commands:\n%s' % ', '.join(self.commands)
-            self.write(availabe)
-            return availabe
+            available = 'Available commands:\n%s' % ', '.join(self.commands)
+            self.write(available)
+            return available
         if opt.command:
             cmd = opt.command[0]
             if cmd not in self.commands:
@@ -95,8 +95,9 @@ class Command(lux.Command):
             if not name:
                 name = 'default'
             databases.append(name)
-            alembic_cfg.set_section_option(name, 'sqlalchemy.url',
-                                           str(engine.url))
+            # url = str(engine.url).replace('+green', '')
+            url = str(engine.url)
+            alembic_cfg.set_section_option(name, 'sqlalchemy.url', url)
         # put databases in main options
         alembic_cfg.set_main_option("databases", ','.join(databases))
         # create empty logging section to avoid raising errors in env.py
