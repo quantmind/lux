@@ -1,6 +1,6 @@
 //      Lux Library - v0.2.0
 
-//      Compiled 2015-09-28.
+//      Compiled 2015-10-09.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -3739,8 +3739,10 @@ angular.module('lux.form.utils', ['lux.services'])
                 scope.gridState = gridDefaults.gridState;
                 scope.gridFilters = gridDefaults.gridFilters;
 
+                var reprPath = options.reprPath || $lux.window.location;
+
                 scope.objectUrl = function(entity) {
-                    return $lux.window.location + '/' + entity[scope.gridOptions.metaFields.id];
+                    return reprPath + '/' + entity[scope.gridOptions.metaFields.id];
                 };
 
                 scope.getBooleanFieldIcon = function(COL_FIELD) {
