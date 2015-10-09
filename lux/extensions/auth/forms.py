@@ -6,8 +6,13 @@ from lux.extensions.rest import AuthenticationError, RestColumn
 from lux.extensions.rest.forms import PasswordForm
 from lux.extensions.rest.policy import validate_policy
 
-__all__ = ['PermissionForm', 'GroupForm',
-           'UserForm', 'CreateUserForm',
+__all__ = ['PermissionModel',
+           'GroupModel',
+           'UserModel',
+           'PermissionForm',
+           'GroupForm',
+           'UserForm',
+           'CreateUserForm',
            'ChangePasswordForm']
 
 

@@ -13,7 +13,27 @@ from odm.utils import get_columns
 from lux.extensions import rest
 
 
-RestColumn = rest.RestColumn
+class RestColumn(rest.RestColumn):
+    pass
+
+
+class RelatedMixin:
+
+    def __init__(self, model):
+        assert model, 'no model defined'
+        self._model = model
+
+    @property
+    def model(self):
+        '''Allow model to be defined as a function for circular references
+        reasons
+        '''
+        if not isinstance(self._model, RestModel):
+            if hasattr(self._model, '__call__'):
+                self._model = self._model()
+            else:
+                self._model = RestModel(self._model)
+        return self._model
 
 
 class RestModel(rest.RestModel):

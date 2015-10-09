@@ -17,11 +17,11 @@ from pulsar.utils.log import LocalMixin
 from .exc import *     # noqa
 from .mapper import Mapper, model_base
 from .views import CRUD, RestRouter
-from .models import RestModel
+from .models import RestModel, RestColumn
 from .forms import RelationshipField, UniqueField
 
 
-__all__ = ['model_base', 'CRUD', 'RestRouter', 'RestModel',
+__all__ = ['model_base', 'CRUD', 'RestRouter', 'RestModel', 'RestColumn',
            'RelationshipField', 'UniqueField']
 
 

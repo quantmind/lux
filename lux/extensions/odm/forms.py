@@ -6,12 +6,12 @@ from sqlalchemy.inspection import inspect
 from lux import forms
 from lux.forms.fields import MultipleMixin
 
-from .models import RestModel
+from .models import RestModel, RelatedMixin
 
 logger = logging.getLogger('lux.extensions.odm')
 
 
-class RelationshipField(MultipleMixin, forms.Field):
+class RelationshipField(MultipleMixin, forms.Field, RelatedMixin):
     '''A :class:`.Field` for database relationships
 
     .. attribute:: model
@@ -25,10 +25,7 @@ class RelationshipField(MultipleMixin, forms.Field):
     def __init__(self, model=None, request_params=None, format_string=None,
                  **kwargs):
         super().__init__(**kwargs)
-        assert model, 'no model defined'
-        if not isinstance(model, RestModel):
-            model = RestModel(model)
-        self.model = model
+        RelatedMixin.__init__(self, model)
         self.request_params = request_params
         self.format_string = format_string
 

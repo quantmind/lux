@@ -76,6 +76,10 @@ class Group(Model):
     permissions = relationship("Permission", secondary=groups_permissions,
                                backref="groups")
 
+    def __repr__(self):
+        return self.name
+    __str__ = __repr__
+
 
 class Permission(Model):
     id = Column(Integer, primary_key=True)

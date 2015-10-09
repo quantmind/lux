@@ -54,7 +54,7 @@ class RestRouter(rest.RestRouter):
             instance = model()
             session.add(instance)
             for name, value in data.items():
-                setattr(instance, name, value)
+                self.set_model_attribute(instance, name, value)
         return instance
 
     def update_model(self, request, instance, data):
@@ -62,12 +62,15 @@ class RestRouter(rest.RestRouter):
         with odm.begin() as session:
             session.add(instance)
             for name, value in data.items():
-                setattr(instance, name, value)
+                self.set_model_attribute(instance, name, value)
         return instance
 
     def delete_model(self, request, instance):
         with request.app.odm().begin() as session:
             session.delete(instance)
+
+    def set_model_attribute(self, instance, name, value):
+        setattr(instance, name, value)
 
     def serialise_model(self, request, data, **kw):
         """
