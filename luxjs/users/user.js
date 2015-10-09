@@ -73,12 +73,6 @@
             return renderer.directive();
         }])
 
-        .directive('loginHelp', function () {
-            return {
-                templateUrl: "users/login-help.tpl.html"
-            };
-        })
-
         .controller('UserController', ['$scope', '$lux', function (scope, lux) {
             // Model for a user when updating
 
