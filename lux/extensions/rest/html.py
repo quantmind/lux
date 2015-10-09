@@ -165,6 +165,7 @@ class ForgotPassword(WebFormRouter):
 
 
 class ComingSoon(WebFormRouter):
+    release = 'release'
     template = 'comingsoon.html'
     default_form = Layout(EmailForm,
                           Fieldset(all=True),
@@ -185,9 +186,7 @@ class ComingSoon(WebFormRouter):
             data = form.cleaned_data
             auth_backend = request.cache.auth_backend
             try:
-                user = auth_backend.create_user(request, **data)
+                auth_backend.add_to_mail_list(request, self.release, **data)
             except AuthenticationError as e:
                 form.add_error_message(str(e))
-            else:
-                return self.maybe_redirect_to(request, form, user=user)
         return Json(form.tojson()).http_response(request)
