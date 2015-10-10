@@ -2,11 +2,7 @@ import os
 import glob
 import mimetypes
 
-from dulwich.porcelain import rm
-from dulwich.porcelain import add
-from dulwich.porcelain import init
-from dulwich.porcelain import commit
-from dulwich.porcelain import open_repo
+from dulwich.porcelain import rm, add, init, commit, open_repo
 from dulwich.file import GitFile
 from dulwich.errors import NotGitRepository
 

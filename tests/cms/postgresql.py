@@ -1,7 +1,5 @@
 import json
 
-from dateutil.parser import parse
-
 from lux.utils import test
 
 

@@ -70,7 +70,11 @@ class RestRouter(rest.RestRouter):
             session.delete(instance)
 
     def set_model_attribute(self, instance, name, value):
-        setattr(instance, name, value)
+        value = getattr(instance, name, None)
+        if isinstance(value, type):
+            pass
+        else:
+            setattr(instance, name, value)
 
     def serialise_model(self, request, data, **kw):
         """

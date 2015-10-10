@@ -1,5 +1,3 @@
-import os
-import io
 from unittest import mock
 import shutil
 from os import path
@@ -46,7 +44,7 @@ class CommandTests(test.TestCase):
         command = self.fetch_command('serve')
         command.write_err('errore!')
         data = command.app.stderr.getvalue()
-        self.assertTrue('errore!')
+        self.assertEqual(data, 'errore!')
 
     def test_command_properties(self):
         app = self.application()

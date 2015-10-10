@@ -141,7 +141,6 @@ class FormTests(test.TestCase):
     def test_date_field_error(self):
         form = SimpleForm(data=dict(name='luca', dt='xyz'))
         self.assertFalse(form.is_valid())
-        result = form.tojson()
         self.assertValidationError(form.tojson(), 'dt',
                                    '"xyz" is not a valid date')
 

@@ -2,26 +2,20 @@ from lux.extensions import rest
 from lux.extensions.odm import CRUD, RestModel
 from lux.forms import Layout, Fieldset, Submit
 
-from .forms import (PermissionModel, GroupModel, UserModel, CreateUserForm,
+from .forms import (permission_model, group_model, user_model, CreateUserForm,
                     ChangePasswordForm)
 
 
 class PermissionCRUD(CRUD):
-    model = PermissionModel
+    model = permission_model()
 
 
 class GroupCRUD(CRUD):
-    model = GroupModel
-
-    def set_instance_value(self, instance, name, value):
-        if name == 'permissions':
-            instance.permissions.extend(value)
-        else:
-            super().set_instance_value(instance, name, value)
+    model = group_model()
 
 
 class UserCRUD(CRUD):
-    model = UserModel
+    model = user_model()
 
     def create_model(self, request, data):
         '''Override create model so that it calls the backend method

@@ -6,7 +6,7 @@ from sqlalchemy.inspection import inspect
 from lux import forms
 from lux.forms.fields import MultipleMixin
 
-from .models import RestModel, RelatedMixin
+from .models import RelatedMixin
 
 logger = logging.getLogger('lux.extensions.odm')
 

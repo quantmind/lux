@@ -237,7 +237,6 @@ class TestPostgreSql(test.AppTestCase):
         request = yield from self.client.post('/tasks', body=data,
                                               token=token,
                                               content_type='application/json')
-        response = request.response
         self.assertValidationError(request.response, 'assigned_id',
                                    'Invalid person')
 

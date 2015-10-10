@@ -2,7 +2,6 @@ import os
 
 from pulsar.apps.wsgi import WsgiHandler
 
-from lux.utils import test
 from lux.extensions.static import HtmlContent
 
 from . import TestStaticSite, base

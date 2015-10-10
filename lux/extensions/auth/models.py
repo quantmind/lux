@@ -78,6 +78,7 @@ class Group(Model):
 
     def __repr__(self):
         return self.name
+
     __str__ = __repr__
 
 
@@ -114,5 +115,6 @@ class Registration(Model):
 
 class MailingList(Model):
     id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('user.id'))
     email = Column(String(120), unique=True)
     topic = Column(String(60))

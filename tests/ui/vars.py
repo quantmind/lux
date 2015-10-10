@@ -1,4 +1,4 @@
-from lux.extensions.ui import *
+from lux.extensions.ui import *     # noqa
 from lux.utils import test
 
 

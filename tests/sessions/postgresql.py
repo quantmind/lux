@@ -1,4 +1,3 @@
-import json
 from unittest import skipUnless
 
 from pulsar.apps.test import check_server
@@ -186,4 +185,3 @@ class TestPostgreSql(test.AppTestCase):
         cookie2 = self.cookie(response)
         self.assertTrue(cookie2)
         self.assertNotEqual(cookie, cookie2)
-
