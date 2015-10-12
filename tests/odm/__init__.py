@@ -38,7 +38,7 @@ class Extension(lux.Extension):
 class TaskForm(forms.Form):
     subject = forms.CharField(required=True)
     done = forms.BooleanField(default=False)
-    assigned_id = odm.RelationshipField(model='person',
+    assigned_id = odm.RelationshipField('person',
                                         label='assigned',
                                         required=False)
     enum_field = forms.EnumField(enum_class=TestEnum, default=TestEnum.opt1)

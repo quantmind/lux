@@ -13,34 +13,8 @@ from odm.utils import get_columns
 from lux.extensions import rest
 
 
-class RelatedMixin:
-
-    def __init__(self, model):
-        assert model, 'no model defined'
-        self._model = model
-
-    @property
-    def model(self):
-        '''Allow model to be defined as a function for circular references
-        reasons
-        '''
-        if not isinstance(self._model, RestModel):
-            if hasattr(self._model, '__call__'):
-                self._model = self._model()
-            else:
-                self._model = RestModel(self._model)
-        return self._model
-
-
 class RestColumn(rest.RestColumn):
     pass
-
-
-class ModelColumn(RestColumn, RelatedMixin):
-
-    def __init__(self, name, model=None, **kwargs):
-        super().__init__(name, **kwargs)
-        RelatedMixin.__init__(self, model)
 
 
 class RestModel(rest.RestModel):
@@ -92,7 +66,8 @@ class RestModel(rest.RestModel):
                 elif isinstance(data, Enum):
                     data = data.name
                 elif isinstance(restcol, ModelColumn):
-                    data = self._related_model(request, restcol.model, data)
+                    related = restcol.model(request.app)
+                    data = self._related_model(request, related, data)
                 else:   # Test Json
                     json.dumps(data)
             except TypeError:
@@ -148,6 +123,18 @@ class RestModel(rest.RestModel):
             return [self._related_model(request, model, d) for d in obj]
         else:
             return model.id_repr(request, obj)
+
+
+class ModelMixin(rest.ModelMixin):
+    RestModel = RestModel
+
+
+class ModelColumn(RestColumn, ModelMixin):
+    '''A Column based on another model
+    '''
+    def __init__(self, name, model, **kwargs):
+        super().__init__(name, **kwargs)
+        self.set_model(model)
 
 
 def column_info(name, col):

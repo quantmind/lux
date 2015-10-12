@@ -1,10 +1,49 @@
 from pulsar import PermissionDenied
 
+from .models import RestModel
 
-__all__ = ['ColumnPermissionsMixin']
+
+__all__ = ['ModelMixin', 'ColumnPermissionsMixin']
 
 
-class ColumnPermissionsMixin:
+class ModelMixin:
+    '''Mixin for accessing Rest models from the application object
+    '''
+    RestModel = RestModel
+    _model = None
+
+    def set_model(self, model):
+        '''Set the default model for this mixin
+        '''
+        assert model
+        if isinstance(model, str):
+            model = self.RestModel(model)
+        self._model = model
+
+    def model(self, app, model=None):
+        '''Return a :class:`.RestModel` model registered with ``app``.
+
+        If ``model`` is not available, uses the :attr:`._model`
+        attribute.
+        '''
+        rest_models = getattr(app, '_rest_models', None)
+        if rest_models is None:
+            rest_models = {}
+            app._rest_models = rest_models
+
+        if not model:
+            if hasattr(self._model, '__call__'):
+                self._model = self._model()
+            model = self._model
+
+        assert model, 'No model specified'
+
+        if model.url not in rest_models:
+            rest_models[model.url] = model.add_to_app(app)
+        return rest_models[model.url]
+
+
+class ColumnPermissionsMixin(ModelMixin):
     '''Mixin for managing model permissions at column (field) level
 
     This mixin can be used by any class.

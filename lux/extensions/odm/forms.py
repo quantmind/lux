@@ -6,26 +6,20 @@ from sqlalchemy.inspection import inspect
 from lux import forms
 from lux.forms.fields import MultipleMixin
 
-from .models import RelatedMixin
+from .models import ModelMixin
 
 logger = logging.getLogger('lux.extensions.odm')
 
 
-class RelationshipField(MultipleMixin, forms.Field, RelatedMixin):
+class RelationshipField(MultipleMixin, forms.Field, ModelMixin):
     '''A :class:`.Field` for database relationships
-
-    .. attribute:: model
-
-        The name of the model this relationship field refers to
     '''
     validation_error = 'Invalid {0}'
-
     attrs = {'type': 'select'}
 
-    def __init__(self, model=None, request_params=None, format_string=None,
-                 **kwargs):
-        super().__init__(**kwargs)
-        RelatedMixin.__init__(self, model)
+    def __init__(self, model, request_params=None, format_string=None, **kw):
+        super().__init__(**kw)
+        self.set_model(model)
         self.request_params = request_params
         self.format_string = format_string
 
@@ -35,7 +29,8 @@ class RelationshipField(MultipleMixin, forms.Field, RelatedMixin):
             logger.error('%s %s cannot get remote target. No form available',
                          self.__class__.__name__, self.name)
         else:
-            attrs.update(self.model.field_options(form.request))
+            model = self.model(form.app)
+            attrs.update(model.field_options(form.request))
             if self.format_string:
                 attrs['data-remote-options-value'] = json.dumps({
                     'type': 'formatString',
@@ -49,14 +44,15 @@ class RelationshipField(MultipleMixin, forms.Field, RelatedMixin):
         app = bfield.request.app
         # Get a reference to the object data mapper
         odm = app.odm()
-        model = odm[self.model.name]
+        model = self.model(app)
+        db_model = model.db_model()
         # TODO: this works but it is not general
-        pkname = model.__mapper__.primary_key[0].key
+        pkname = db_model.__mapper__.primary_key[0].key
         if not self.multiple:
             value = (value,)
-        idcolumn = getattr(model, self.model.id_field)
+        idcolumn = getattr(db_model, model.id_field)
         with odm.begin() as session:
-            all = session.query(model).filter(idcolumn.in_(value))
+            all = session.query(db_model).filter(idcolumn.in_(value))
             if self.multiple:
                 return list(all)
             else:
@@ -64,7 +60,7 @@ class RelationshipField(MultipleMixin, forms.Field, RelatedMixin):
                     return getattr(all.one(), pkname)
                 else:
                     raise forms.ValidationError(
-                        self.validation_error.format(self.model))
+                        self.validation_error.format(model))
 
 
 class UniqueField:

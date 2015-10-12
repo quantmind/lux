@@ -29,6 +29,13 @@ def action(f):
     return f
 
 
+class ModelMixin:
+
+    def __init__(self, *args, **kwargs):
+        if self._model is None and args:
+            self._model, args = args[0], args[1:]
+
+
 class RestRoot(lux.Router):
     '''Api Root
 
@@ -50,29 +57,16 @@ class RestRoot(lux.Router):
 
 
 class RestMixin(ColumnPermissionsMixin):
-    _model = None
-    '''Instance of a :class:`~lux.extensions.rest.RestModel`
-    '''
 
     def __init__(self, *args, **kwargs):
         if self._model is None and args:
-            self._model, args = args[0], args[1:]
+            model, args = args[0], args[1:]
+            self.set_model(model)
 
         if not isinstance(self._model, RestModel):
             raise NotImplementedError('REST model not available')
 
         super().__init__(self._model.url, *args, **kwargs)
-
-    def model(self, app):
-        '''The :class:`.RestModel` model for this Router
-        '''
-        rest_models = getattr(app, '_rest_models', None)
-        if rest_models is None:
-            rest_models = {}
-            app._rest_models = rest_models
-        if self._model.url not in rest_models:
-            rest_models[self._model.url] = self._model.add_to_app(app)
-        return rest_models[self._model.url]
 
     def limit(self, request, default=None):
         '''The maximum number of items to return when fetching list

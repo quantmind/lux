@@ -356,3 +356,12 @@ class TestPostgreSql(test.AppTestCase):
         self.assertTrue(result)
         for task in result:
             self.assertEqual(task['done'], False)
+
+    def test_multi_relationship_field(self):
+        from lux.extensions.odm import RelationshipField, RestModel
+        field = RelationshipField(RestModel('book'), name='test_book',
+                                  multiple=True)
+        self.assertEqual(field._model.name, 'book')
+        attrs = field.getattrs()
+        self.assertEqual(attrs.get('multiple'), True)
+        self.assertEqual(attrs.get('label'), 'Test book')

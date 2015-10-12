@@ -11,10 +11,14 @@ import odm
 from lux import route
 from lux.extensions import rest
 
+from .models import RestModel
+
 
 class RestRouter(rest.RestRouter):
     '''A REST Router based on database models
     '''
+    RestModel = RestModel
+
     def query(self, request, session):
         """
         Returns a query object for the model.
