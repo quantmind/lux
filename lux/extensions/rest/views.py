@@ -29,13 +29,6 @@ def action(f):
     return f
 
 
-class ModelMixin:
-
-    def __init__(self, *args, **kwargs):
-        if self._model is None and args:
-            self._model, args = args[0], args[1:]
-
-
 class RestRoot(lux.Router):
     '''Api Root
 
