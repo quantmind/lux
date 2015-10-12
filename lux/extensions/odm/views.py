@@ -35,7 +35,7 @@ class RestRouter(rest.RestRouter):
         return session.query(db_model).options(load_only(*db_columns))
 
     # RestView implementation
-    def get_model(self, request, **args):
+    def get_instance(self, request, **args):
         odm = request.app.odm()
         args = args or request.urlargs
         if not args:  # pragma    nocover
@@ -192,7 +192,7 @@ class CRUD(RestRouter):
     def read_update_delete(self, request):
         model = self.model(request.app)
         args = {model.id_field: request.urlargs['id']}
-        instance = self.get_model(request, **args)
+        instance = self.get_instance(request, **args)
 
         if request.method == 'OPTIONS':
             request.app.fire('on_preflight', request)
