@@ -219,6 +219,9 @@ class Authorization(RestRouter, ProcessLoginMixin):
     create_user_form = CreateUserForm
     change_password_form = ChangePasswordForm
 
+    def head(self, request):
+        return request.response
+
     @route('/<action>', method=('post', 'options'))
     def auth_action(self, request):
         '''Post actions

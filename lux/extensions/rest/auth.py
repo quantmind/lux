@@ -93,6 +93,11 @@ class AuthBackend(lux.Extension):
         '''
         pass
 
+    def add_to_mail_list(self, request, topic, **kwargs):
+        '''Add a user details to the mailing list
+        '''
+        pass
+
     def anonymous(self):
         '''Anonymous User
         '''

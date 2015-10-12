@@ -20,6 +20,9 @@ class ApiClient:
     def post(self, path, **kw):
         return self.request('POST', path, **kw)
 
+    def head(self, path, **kw):
+        return self.request('HEAD', path, **kw)
+
     def request(self, method, path=None, **kw):
         http = self.http()
         url = self.app.config['API_URL']

@@ -46,13 +46,14 @@ class SMTPLogger(logging.Handler):
         self.app = app
 
     def emit(self, record):
-        if getattr(record, 'mail', False):
-            return
         cfg = self.app.config
+        managers = cfg['SITE_MANAGERS']
+        if getattr(record, 'mail', False) or not managers:
+            return
         backend = self.app.email_backend
         msg = self.format(record)
         first = record.message.split('\n')[0]
         subject = '%s - %s - %s' % (cfg['APP_NAME'], record.levelname, first)
-        backend.send_mail(to=cfg['SITE_MANAGERS'],
+        backend.send_mail(to=managers,
                           subject=subject,
                           message=msg)

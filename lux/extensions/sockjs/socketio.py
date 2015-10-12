@@ -8,16 +8,17 @@ from pulsar.utils.httpurl import CacheControl
 
 from .transports.websocket import WebSocket
 from .utils import IFRAME_TEXT
-from .ws import LuxWs
 
 
 class SocketIO(Router):
+    '''A Router for sockjs requests
+    '''
     info_cache = CacheControl(nostore=True)
     home_cache = CacheControl(maxage=60*60*24*30)
 
-    def __init__(self, route, handler_class=LuxWs, **kwargs):
+    def __init__(self, route, handle, **kwargs):
         super().__init__(route, **kwargs)
-        self.handle = handler_class()
+        self.handle = handle
         self.add_child(WebSocket('/websocket', self.handle, **kwargs))
         self.add_child(WebSocket('<server_id>/<session_id>/websocket',
                                  self.handle, **kwargs))

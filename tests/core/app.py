@@ -6,6 +6,14 @@ from lux.utils import test
 class CommandTests(test.TestCase):
     config_file = 'tests.core'
 
+    def test_clone(self):
+        template = {'/': 'foo.html'}
+        app = self.application()
+        callable = app.clone_callable(HTML_TEMPLATES=template)
+        self.assertNotEqual(app.callable, callable)
+        app2 = callable.setup()
+        self.assertEqual(app2.config['HTML_TEMPLATES'], template)
+
     def test_require(self):
         app = self.application()
         self.assertRaises(ImproperlyConfigured,

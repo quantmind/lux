@@ -18,7 +18,9 @@ class OAuth1(object):
     def available(self):
         '''Check if this Oauth handler has the correct configuration parameters
         '''
-        return self.config.get('key') and self.config.get('secret')
+        return (self.config.get('key') and
+                self.config.get('secret') and
+                self.config.get('login'))
 
     def on_html_document(self, request, doc):
         pass

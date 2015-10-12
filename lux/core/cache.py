@@ -1,5 +1,6 @@
 import json
 import logging
+import threading
 from copy import copy
 from inspect import isfunction
 
@@ -45,6 +46,10 @@ class Cache:
     def get(self, key):
         pass
 
+    def delete(self, key):
+        '''Delete a key from the cache'''
+        pass
+
     def hmset(self, key, iterable):
         pass
 
@@ -64,11 +69,24 @@ class Cache:
                 self.app.logger.warning('Could not convert to JSON: %s',
                                         value)
 
+    def lock(self, name, timeout=None):
+        raise NotImplementedError
+
+
+class DummyCache(Cache):
+
+    def __init__(self, app, name, url):
+        super().__init__(app, name, url)
+        self._lock = threading.Lock()
+
+    def lock(self, name, timeout=None):
+        return self._lock
+
 
 class RedisCache(Cache):
 
-    def __init__(self, app, scheme, url):
-        super().__init__(app, scheme, url)
+    def __init__(self, app, name, url):
+        super().__init__(app, name, url)
         if app.green_pool:
             from pulsar.apps.greenio import wait
             self._wait = wait
@@ -83,11 +101,17 @@ class RedisCache(Cache):
     def get(self, key):
         return self._wait(self.client.get(key))
 
+    def delete(self, key):
+        return self._wait(self.client.delete(key))
+
     def hmset(self, key, iterable, timeout=None):
         self._wait(self.client.hmset(key, iterable, timeout))
 
     def hmget(self, key, *fields):
         return self._wait(self.client.hmset(key, *fields))
+
+    def lock(self, name, timeout=None):
+        return self._wait(self.client.lock(name, timeout=timeout))
 
     def _wait(self, value):
         return value
@@ -205,5 +229,5 @@ def register_cache(name, dotted_path):
     data_caches[name] = dotted_path
 
 
-register_cache('dummy', 'lux.core.cache.Cache')
+register_cache('dummy', 'lux.core.cache.DummyCache')
 register_cache('redis', 'lux.core.cache.RedisCache')
