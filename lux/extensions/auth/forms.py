@@ -30,13 +30,13 @@ def group_model():
 
 def user_model():
     return odm.RestModel('user',
-                         UserForm,
                          CreateUserForm,
+                         UserForm,
                          id_field='username',
                          repr_field='name',
-                         exclude=('password', 'first_name', 'last_name',
-                                  'groups'),
-                         columns=(full_name, 'groups'))
+                         exclude=('password',),
+                         columns=(full_name,
+                                  odm.ModelColumn('groups', group_model)))
 
 
 class PermissionForm(forms.Form):

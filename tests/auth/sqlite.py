@@ -19,34 +19,36 @@ class AuthUtils:
         self.assertTrue('created' in data)
         return data
 
+    def _new_credentials(self):
+        username = test.randomname()
+        password = test.randomname()
+
+        credentials = {
+            'username': username,
+            'password': password
+        }
+
+        email = '%s@%s.com' % (username, test.randomname())
+        user = yield from self.create_superuser(username,
+                                                email,
+                                                password)
+        self.assertEqual(user.username, username)
+        self.assertNotEqual(user.password, password)
+        return credentials
+
     def _token(self, credentials=None):
         '''Return a token for a new superuser
         '''
         if credentials is None:
-            username = test.randomname()
-            password = test.randomname()
-
-            credentials = {
-                'username': username,
-                'password': password
-            }
-
-            email = '%s@%s.com' % (username, test.randomname())
-            user = yield from self.create_superuser(username,
-                                                    email,
-                                                    password)
-            self.assertEqual(user.username, username)
-            self.assertNotEqual(user.password, password)
+            credentials = yield from self._new_credentials()
 
         # Get new token
         request = yield from self.client.post('/authorizations',
                                               content_type='application/json',
                                               body=credentials)
-        response = request.response
-        self.assertEqual(response.status_code, 201)
         user = request.cache.user
         self.assertFalse(user.is_authenticated())
-        data = self.json(response)
+        data = self.json(request.response, 201)
         self.assertTrue('token' in data)
         return data['token']
 
@@ -112,32 +114,6 @@ class TestSqlite(test.AppTestCase, AuthUtils):
                 })
             group.permissions.append(permission)
 
-    def test_group_validation(self):
-        token = yield from self._token()
-        payload = {'name': 'abc'}
-        request = yield from self.client.post('/groups',
-                                              body=payload,
-                                              content_type='application/json',
-                                              token=token)
-        data = self.json(request.response, 201)
-
-        yield from self.client.post('/groups/{}'.format(data['id']),
-                                    body=payload,
-                                    content_type='application/json',
-                                    token=token)
-
-        payload['name'] = 'ABC'
-
-        request = yield from self.client.post('/groups',
-                                              body=payload,
-                                              content_type='application/json',
-                                              token=token)
-
-        self.assertValidationError(request.response, 'name',
-                                   'abc not available')
-
-
-class d:
     def test_backend(self):
         backend = self.app.auth_backend
         self.assertTrue(backend)
@@ -226,6 +202,34 @@ class d:
         user = request.cache.user
         self.assertFalse(user.is_authenticated())
 
+    def test_group_validation(self):
+        token = yield from self._token()
+        payload = {'name': 'abc'}
+        request = yield from self.client.post('/groups',
+                                              body=payload,
+                                              content_type='application/json',
+                                              token=token)
+        data = self.json(request.response, 201)
+        gid = data['id']
+        payload['name'] = 'abcd'
+        request = yield from self.client.post('/groups/{}'.format(gid),
+                                              body=payload,
+                                              content_type='application/json',
+                                              token=token)
+
+        data = self.json(request.response, 200)
+        self.assertEqual(data['name'], 'abcd')
+        self.assertEqual(data['id'], gid)
+
+        payload['name'] = 'ABCd'
+        request = yield from self.client.post('/groups',
+                                              body=payload,
+                                              content_type='application/json',
+                                              token=token)
+
+        self.assertValidationError(request.response, 'name',
+                                   'abcd not available')
+
     def test_login_fail(self):
         data = {'username': 'jdshvsjhvcsd',
                 'password': 'dksjhvckjsahdvsf'}
@@ -289,35 +293,6 @@ class d:
 
     def test_signup(self):
         return self._signup()
-
-    def __test_user_crud(self):
-        user = yield from self._signup()
-        username = user['username']
-        self.assertNotEqual(username, user['id'])
-
-    def test_group_validation(self):
-        token = yield from self._token()
-        payload = {'name': 'abc'}
-        request = yield from self.client.post('/groups',
-                                              body=payload,
-                                              content_type='application/json',
-                                              token=token)
-        data = self.json(request.response, 201)
-
-        yield from self.client.post('/groups/{}'.format(data['id']),
-                                    body=payload,
-                                    content_type='application/json',
-                                    token=token)
-
-        payload['name'] = 'ABC'
-
-        request = yield from self.client.post('/groups',
-                                              body=payload,
-                                              content_type='application/json',
-                                              token=token)
-
-        self.assertValidationError(request.response, 'name',
-                                   'abc not available')
 
     def test_column_permissions_read(self):
         """Tests read requests against columns with permission level 0"""
@@ -467,3 +442,14 @@ class d:
         self.assertTrue('id' in data)
         self.assertTrue('subject' in data)
         self.assertEqual(data['subject'], "subject changed")
+
+    def test_add_user_to_group(self):
+        credentials = yield from self._new_credentials()
+        username = credentials['username']
+        token = yield from self._token(credentials)
+        request = yield from self.client.put('/users/%s' % username,
+                                             body={'groups[]': [1]},
+                                             content_type='application/json',
+                                             token=token)
+        data = self.json(request.response, 200)
+        self.assertTrue('groups' in data)

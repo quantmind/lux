@@ -40,6 +40,8 @@ class RestColumn:
 
     def _as_dict(self, defaults):
         for k, v in self.__dict__.items():
+            if k.startswith('_'):
+                continue
             if v is None and defaults:
                 if k == 'displayName':
                     v = nicename(self.name)
@@ -83,7 +85,7 @@ class RestModel:
     '''
     remote_options_str = 'item.id as item.name for item in {options}'
     remote_options_str_ui_select = 'item.id as item in {options}'
-    _loaded = False
+    _app = None
 
     def __init__(self, name, form=None, updateform=None, columns=None,
                  url=None, api_name=None, exclude=None,
@@ -124,9 +126,11 @@ class RestModel:
     def columns(self, request):
         '''Return a list fields describing the entries for a given model
         instance'''
-        if not self._loaded:
-            self._loaded = True
-            self._columns = self._load_columns(request.app)
+        if not self._app:
+            self._app = request.app
+            self._columns = self._load_columns()
+        else:
+            assert self._app == request.app
         return self._columns
 
     def columnsMapping(self, request):
@@ -164,7 +168,7 @@ class RestModel:
             yield 'data-ng-options-ui-select', \
                 self.remote_options_str_ui_select.format(options=self.api_name)
 
-    def _load_columns(self, app):
+    def _load_columns(self):
         '''List of column definitions
         '''
         input_columns = self._columns or []

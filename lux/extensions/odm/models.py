@@ -13,10 +13,6 @@ from odm.utils import get_columns
 from lux.extensions import rest
 
 
-class RestColumn(rest.RestColumn):
-    pass
-
-
 class RelatedMixin:
 
     def __init__(self, model):
@@ -36,13 +32,39 @@ class RelatedMixin:
         return self._model
 
 
+class RestColumn(rest.RestColumn):
+    pass
+
+
+class ModelColumn(RestColumn, RelatedMixin):
+
+    def __init__(self, name, model=None, **kwargs):
+        super().__init__(name, **kwargs)
+        RelatedMixin.__init__(self, model)
+
+
 class RestModel(rest.RestModel):
     '''A rest model based on SqlAlchemy ORM
     '''
+    _db_columns = None
+    _rest_columns = None
+
     def session(self, request):
         '''Obtain a session
         '''
         return request.app.odm().begin()
+
+    def db_model(self):
+        '''Database model
+        '''
+        assert self._app, 'ODM Rest Model not loaded'
+        return self._app.odm()[self.name]
+
+    def db_columns(self, columns):
+        '''Return a list of columns available in the database table
+        '''
+        assert self._db_columns, 'ODM Rest Model not loaded'
+        return [c for c in columns if c in self._db_columns]
 
     def tojson(self, request, obj, exclude=None):
         '''Override the method from the base class.
@@ -56,6 +78,7 @@ class RestModel(rest.RestModel):
         fields = {}
         for col in columns:
             name = col['name']
+            restcol = self._rest_columns[name]
             if name in exclude:
                 continue
             try:
@@ -68,6 +91,8 @@ class RestModel(rest.RestModel):
                     data = data.isoformat()
                 elif isinstance(data, Enum):
                     data = data.name
+                elif isinstance(restcol, ModelColumn):
+                    data = self._related_model(request, restcol.model, data)
                 else:   # Test Json
                     json.dumps(data)
             except TypeError:
@@ -77,18 +102,25 @@ class RestModel(rest.RestModel):
         # a json-encodable dict
         return fields
 
-    def _load_columns(self, app):
+    def id_repr(self, request, obj):
+        data = {self.id_field: getattr(obj, self.id_field)}
+        if self.repr_field != self.id_field:
+            data[self.repr_field] = getattr(obj, self.repr_field)
+        return data
+
+    def _load_columns(self):
         '''List of column definitions
         '''
+        model = self.db_model()
+        self._db_columns = get_columns(model)
+        self._rest_columns = {}
         input_columns = self._columns or []
-        model = app.odm()[self.name]
-        cols = get_columns(model)._data.copy()
+        cols = self._db_columns._data.copy()
         columns = []
-        all = set()
 
         for info in input_columns:
             col = RestColumn.make(info)
-            if col.name not in all:
+            if col.name not in self._rest_columns:
                 dbcol = cols.pop(col.name, None)
                 # If a database column
                 if isinstance(dbcol, Column):
@@ -96,20 +128,26 @@ class RestModel(rest.RestModel):
                     info.update(col.as_dict(defaults=False))
                 else:
                     info = col.as_dict()
-                self._append_col(all, columns, info)
+                self._append_col(col, columns, info)
 
         for name, col in cols.items():
-            if name not in all:
-                self._append_col(all, columns, column_info(name, col))
+            if name not in self._rest_columns:
+                self._append_col(col, columns, column_info(name, col))
 
         return columns
 
-    def _append_col(self, all, columns, info):
+    def _append_col(self, col, columns, info):
         name = info['name']
-        all.add(name)
+        self._rest_columns[name] = col
         if name in self._hidden:
             info['hidden'] = True
         columns.append(info)
+
+    def _related_model(self, request, model, obj):
+        if isinstance(obj, list):
+            return [self._related_model(request, model, d) for d in obj]
+        else:
+            return model.id_repr(request, obj)
 
 
 def column_info(name, col):

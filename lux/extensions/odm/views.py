@@ -29,10 +29,9 @@ class RestRouter(rest.RestRouter):
         entities = self.columns_with_permission(request, rest.READ)
         if not entities:
             raise PermissionDenied
-        entities = self.column_fields(entities)
-        odm = request.app.odm()
-        model = odm[self.model.name]
-        return session.query(model).options(load_only(*entities))
+        model = self.model.db_model()
+        db_columns = self.model.db_columns(self.column_fields(entities))
+        return session.query(model).options(load_only(*db_columns))
 
     # RestView implementation
     def get_model(self, request, **args):
@@ -70,9 +69,13 @@ class RestRouter(rest.RestRouter):
             session.delete(instance)
 
     def set_model_attribute(self, instance, name, value):
-        value = getattr(instance, name, None)
-        if isinstance(value, type):
-            pass
+        '''Set the the attribute ``name`` to ``value`` in a model ``instance``
+        '''
+        current_value = getattr(instance, name, None)
+        if isinstance(current_value, list):
+            if not isinstance(value, (list, tuple)):
+                raise TypeError('list or tuple required')
+            current_value[:] = value
         else:
             setattr(instance, name, value)
 
@@ -183,7 +186,7 @@ class CRUD(RestRouter):
             return Json(meta).http_response(request)
         raise PermissionDenied
 
-    @route('<id>', method=('get', 'post', 'delete', 'head', 'options'))
+    @route('<id>', method=('get', 'post', 'put', 'delete', 'head', 'options'))
     def read_update_delete(self, request):
         args = {self.model.id_field: request.urlargs['id']}
         instance = self.get_model(request, **args)
@@ -204,7 +207,7 @@ class CRUD(RestRouter):
             self.check_model_permission(request, rest.READ)
             return request.response
 
-        elif request.method == 'POST':
+        elif request.method in ('POST', 'PUT'):
             model = self.model
             form_class = model.updateform
 
