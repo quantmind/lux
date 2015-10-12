@@ -44,47 +44,49 @@ class FormTests(test.TestCase):
         self.assertFalse(hasattr(form, 'cleaned_data'))
         self.assertEqual(len(form.errors), 1)
 
-    def test_valid_simple_nomissing(self):
-        form = SimpleForm(data={'name': 'luca'})
-        self.assertTrue(form.is_valid())
-        self.assertTrue(form.changed)
-        self.assertEqual(len(form.cleaned_data), 6)
-        self.assertEqual(form.cleaned_data['name'], 'luca')
-        self.assertEqual(form.cleaned_data['email'], None)
-
     def test_valid_simple(self):
         form = SimpleForm(data={'name': 'luca'})
-        self.assertTrue(form.is_valid(exclude_missing=True))
+        self.assertTrue(form.is_valid())
         self.assertTrue(form.changed)
         self.assertEqual(len(form.cleaned_data), 1)
         self.assertEqual(form.cleaned_data['name'], 'luca')
         form = SimpleForm(data={'name': 'luca', 'email': 'luca@bla.com'})
-        self.assertTrue(form.is_valid(exclude_missing=True))
+        self.assertTrue(form.is_valid())
         self.assertEqual(len(form.cleaned_data), 2)
         self.assertTrue(form.changed)
 
+    def test_valid_simple_none(self):
+        form = SimpleForm(data={'name': 'luca', 'rank': None})
+        self.assertTrue(form.is_valid(exclude_missing=True))
+        self.assertTrue(form.changed)
+        self.assertEqual(len(form.cleaned_data), 2)
+        self.assertEqual(form.cleaned_data['name'], 'luca')
+        self.assertTrue('rank' in form.cleaned_data)
+        self.assertEqual(form.cleaned_data['rank'], None)
+
     def test_changed(self):
         form = SimpleForm(data={'name': 'luca', 'email': 'luca@bla.com'})
-        self.assertTrue(form.is_valid(exclude_missing=True))
+        self.assertTrue(form.is_valid())
         self.assertEqual(len(form.cleaned_data), 2)
         self.assertTrue(form.changed)
 
         form = SimpleForm(initial={'name': 'luca', 'email': 'luca@bla.com'},
                           data={'name': 'luca', 'email': ''})
-        self.assertTrue(form.is_valid(exclude_missing=True))
+        self.assertTrue(form.is_valid())
         self.assertTrue(form.changed)
         self.assertEqual(len(form.cleaned_data), 2)
         self.assertTrue('email' in form.cleaned_data)
+        self.assertTrue(form.cleaned_data['email'] is None)
 
     def test_not_changed(self):
         data = {'name': 'luca', 'email': 'luca@bla.com'}
         form = SimpleForm(data=data)
-        self.assertTrue(form.is_valid(exclude_missing=True))
+        self.assertTrue(form.is_valid())
         self.assertEqual(len(form.cleaned_data), 2)
         self.assertTrue(form.changed)
 
         form = SimpleForm(initial=data, data=data)
-        self.assertTrue(form.is_valid(exclude_missing=True))
+        self.assertTrue(form.is_valid())
         self.assertFalse(form.changed)
         self.assertEqual(form.cleaned_data, data)
 
@@ -98,7 +100,7 @@ class FormTests(test.TestCase):
         data = {'name': 'luca', 'email': 'luca@bla.com'}
         form = FailForm(data=data)
         self.assertRaises(forms.FormError, lambda: form.data)
-        self.assertFalse(form.is_valid(exclude_missing=True))
+        self.assertFalse(form.is_valid())
         self.assertValidationError(form.tojson(), '', 'wrong data')
         self.assertEqual(len(form.data), 2)
 
@@ -108,47 +110,47 @@ class FormTests(test.TestCase):
                 raise Exception
 
         form = SimpleForm(data=dict(name=failconvert()))
-        self.assertFalse(form.is_valid(exclude_missing=True))
+        self.assertFalse(form.is_valid())
         self.assertValidationError(form.tojson(), 'name',
                                    'Invalid value')
 
     def test_integer_field(self):
         form = SimpleForm(data=dict(name='luca', rank='1'))
-        self.assertTrue(form.is_valid(exclude_missing=True))
+        self.assertTrue(form.is_valid())
         self.assertEqual(len(form.cleaned_data), 2)
         self.assertEqual(form.cleaned_data['rank'], 1)
         #
         form = SimpleForm(data=dict(name='luca', rank=1.2))
-        self.assertTrue(form.is_valid(exclude_missing=True))
+        self.assertTrue(form.is_valid())
         self.assertEqual(len(form.cleaned_data), 2)
         self.assertEqual(form.cleaned_data['rank'], 1)
         #
         form = SimpleForm(data=dict(name='luca', rank='1,045'))
-        self.assertTrue(form.is_valid(exclude_missing=True))
+        self.assertTrue(form.is_valid())
         self.assertEqual(len(form.cleaned_data), 2)
         self.assertEqual(form.cleaned_data['rank'], 1045)
 
     def test_integer_field_error(self):
         form = SimpleForm(data=dict(name='luca', rank='foo'))
-        self.assertFalse(form.is_valid(exclude_missing=True))
+        self.assertFalse(form.is_valid())
         self.assertValidationError(form.tojson(), 'rank',
                                    'Not a valid number')
 
     def test_date_field(self):
         dt = date.today()
         form = SimpleForm(data=dict(name='luca', dt=dt.isoformat()))
-        self.assertTrue(form.is_valid(exclude_missing=True))
+        self.assertTrue(form.is_valid())
         self.assertEqual(len(form.cleaned_data), 2)
         self.assertEqual(form.cleaned_data['dt'], dt)
         #
         form = SimpleForm(data=dict(name='luca', dt=dt.strftime("%d %B %Y")))
-        self.assertTrue(form.is_valid(exclude_missing=True))
+        self.assertTrue(form.is_valid())
         self.assertEqual(len(form.cleaned_data), 2)
         self.assertEqual(form.cleaned_data['dt'], dt)
 
     def test_date_field_error(self):
         form = SimpleForm(data=dict(name='luca', dt='xyz'))
-        self.assertFalse(form.is_valid(exclude_missing=True))
+        self.assertFalse(form.is_valid())
         result = form.tojson()
         self.assertValidationError(form.tojson(), 'dt',
                                    '"xyz" is not a valid date')
@@ -156,25 +158,25 @@ class FormTests(test.TestCase):
     def test_datetime_field(self):
         dt = datetime.now()
         form = SimpleForm(data=dict(name='luca', timestamp=dt.isoformat()))
-        self.assertTrue(form.is_valid(exclude_missing=True))
+        self.assertTrue(form.is_valid())
         self.assertEqual(len(form.cleaned_data), 2)
         self.assertEqual(form.cleaned_data['timestamp'], pytz.utc.localize(dt))
 
     def test_datetime_field_error(self):
         form = SimpleForm(data=dict(name='luca', timestamp='xyz'))
-        self.assertFalse(form.is_valid(exclude_missing=True))
+        self.assertFalse(form.is_valid())
         self.assertValidationError(form.tojson(), 'timestamp',
                                    '"xyz" is not a valid date')
 
     def test_enum_field(self):
         form = SimpleForm(data=dict(name='luca', enum_field='opt1'))
-        self.assertTrue(form.is_valid(exclude_missing=True))
+        self.assertTrue(form.is_valid())
         self.assertEqual(len(form.cleaned_data), 2)
         self.assertEqual(form.cleaned_data['enum_field'], TestEnum.opt1)
 
     def test_enum_field_error(self):
         form = SimpleForm(data=dict(name='luca', enum_field='optfail'))
-        self.assertFalse(form.is_valid(exclude_missing=True))
+        self.assertFalse(form.is_valid())
         self.assertValidationError(form.tojson(), 'enum_field',
                                    'optfail is not a valid choice')
 
