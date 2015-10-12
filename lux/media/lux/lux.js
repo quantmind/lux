@@ -1,6 +1,6 @@
 //      Lux Library - v0.2.0
 
-//      Compiled 2015-09-30.
+//      Compiled 2015-10-09.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -4485,12 +4485,6 @@ function gridDataProviderWebsocketFactory ($scope) {
             return renderer.directive();
         }])
 
-        .directive('loginHelp', function () {
-            return {
-                templateUrl: "users/login-help.tpl.html"
-            };
-        })
-
         .controller('UserController', ['$scope', '$lux', function (scope, lux) {
             // Model for a user when updating
 
@@ -4505,6 +4499,7 @@ function gridDataProviderWebsocketFactory ($scope) {
                 });
             };
         }]);
+
     lux.loader = angular.module('lux.loader', [])
     	//
         .value('context', lux.context)
@@ -6006,13 +6001,7 @@ angular.module("page/breadcrumbs.tpl.html", []).run(["$templateCache", function(
     "</ol>");
 }]);
 
-angular.module('templates-users', ['users/login-help.tpl.html', 'users/messages.tpl.html']);
-
-angular.module("users/login-help.tpl.html", []).run(["$templateCache", function($templateCache) {
-  $templateCache.put("users/login-help.tpl.html",
-    "<p class=\"text-center\">Don't have an account? <a ng-href=\"{{REGISTER_URL}}\" target=\"_self\">Create one</a></p>\n" +
-    "<p class=\"text-center\">{{bla}}<a ng-href=\"{{RESET_PASSWORD_URL}}\" target=\"_self\">Forgot your username or password?</a></p>");
-}]);
+angular.module('templates-users', ['users/messages.tpl.html']);
 
 angular.module("users/messages.tpl.html", []).run(["$templateCache", function($templateCache) {
   $templateCache.put("users/messages.tpl.html",

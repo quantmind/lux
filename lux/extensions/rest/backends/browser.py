@@ -33,9 +33,6 @@ class BrowserBackend(AuthBackend):
 
     It can be used by web servers delegating authentication to a backend API
     or handling authentication on the same site.
-
-    This backend can be used even if the ``lux.extensions.cms`` is not used by
-    your application.
     '''
     _config = [
         Parameter('LOGIN_URL', '/login', 'Url to login page', True),
@@ -44,6 +41,12 @@ class BrowserBackend(AuthBackend):
                   'Url to register with site', True),
         Parameter('RESET_PASSWORD_URL', '/reset-password',
                   'If given, add the router to handle password resets',
+                  True),
+        Parameter('TOS_URL', '/tos',
+                  'Terms of Service url',
+                  True),
+        Parameter('PRIVACY_POLICY_URL', '/privacy-policy',
+                  'The url for the privacy policy, required for signups',
                   True)
     ]
     LoginRouter = Login
