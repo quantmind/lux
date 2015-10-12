@@ -1,5 +1,6 @@
 import json
 import logging
+from copy import copy
 
 from pulsar.utils.html import nicename
 
@@ -126,11 +127,6 @@ class RestModel:
     def columns(self, request):
         '''Return a list fields describing the entries for a given model
         instance'''
-        if not self._app:
-            self._app = request.app
-            self._columns = self._load_columns()
-        else:
-            assert self._app == request.app
         return self._columns
 
     def columnsMapping(self, request):
@@ -167,6 +163,12 @@ class RestModel:
                 options=self.api_name)
             yield 'data-ng-options-ui-select', \
                 self.remote_options_str_ui_select.format(options=self.api_name)
+
+    def add_to_app(self, app):
+        model = copy(self)
+        model._app = app
+        model._columns = model._load_columns()
+        return model
 
     def _load_columns(self):
         '''List of column definitions

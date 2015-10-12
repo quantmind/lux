@@ -27,8 +27,6 @@ class Command(lux.Command):
         '''
         Run obvious commands and validate more complex.
         '''
-        list_msg = 'Put [-l] for available commands'
-
         if opt.list:
             available = 'Available commands:\n%s' % ', '.join(self.commands)
             self.write(available)
@@ -36,13 +34,12 @@ class Command(lux.Command):
         if opt.command:
             cmd = opt.command[0]
             if cmd not in self.commands:
-                raise CommandError('Unrecognized command: %s\n'
-                                   % opt.command[0] + list_msg)
+                raise CommandError('Unrecognized command %s' % opt.command[0])
             if cmd in ('auto', 'revision', 'merge') and not opt.msg:
-                raise CommandError('Missing [-m] parameter for: %s' % cmd)
+                raise CommandError('Missing [-m] parameter for %s' % cmd)
             self.run_alembic_cmd(opt)
             return True
-        raise CommandError(list_msg)
+        raise CommandError('Pass [--commands] for available commands')
 
     def get_lux_template_directory(self):
         return os.path.join(os.path.dirname(os.path.realpath(__file__)),
@@ -142,7 +139,7 @@ class Command(lux.Command):
         # merge required two revision name
         elif cmd == 'merge':
             if len(opt.command) != 2:
-                raise CommandError('Command: %s required revisions id.' % cmd)
+                raise CommandError('Command %s required revisions id.' % cmd)
             alembic_cmd.merge(config, opt.command, message=opt.msg,
                               branch_label=opt.branch)
         elif cmd == 'revision':
@@ -156,7 +153,7 @@ class Command(lux.Command):
         # branch labels
         elif cmd in ('show', 'stamp', 'upgrade', 'downgrade'):
             if len(opt.command) != 1:
-                raise CommandError('Command: %s required revision id' % cmd)
+                raise CommandError('Command %s required revision id' % cmd)
             getattr(alembic_cmd, cmd)(config, *opt.command)
         else:
             # execute commands without any additional params

@@ -13,7 +13,7 @@ class ColumnPermissionsMixin:
         '''Returns the column list for this mixin.
         By default it returns the columns given by the model
         '''
-        return self.model.columns(request)
+        return self.model(request.app).columns(request)
 
     def column_fields(self, columns, field=None):
         '''Return a list column fields from the list of columns object
@@ -38,7 +38,8 @@ class ColumnPermissionsMixin:
         :return:            True iff user has permission
         """
         backend = request.cache.auth_backend
-        permission_name = "{}:{}".format(self.model.name, column['name'])
+        model = self.model(request.app)
+        permission_name = "{}:{}".format(model.name, column['name'])
         return backend.has_permission(request, permission_name, level)
 
     def column_permissions(self, request, level):
@@ -53,14 +54,15 @@ class ColumnPermissionsMixin:
         :return:            dict, with column names as keys,
                             Booleans as values
         """
+        model = self.model(request.app)
         ret = None
         cache = request.cache
         if 'model_permissions' not in request.cache:
             cache.model_permissions = {}
-        if self.model.name not in cache.model_permissions:
-            cache.model_permissions[self.model.name] = {}
-        elif level in cache.model_permissions[self.model.name]:
-            ret = cache.model_permissions[self.model.name][level]
+        if model.name not in cache.model_permissions:
+            cache.model_permissions[model.name] = {}
+        elif level in cache.model_permissions[model.name]:
+            ret = cache.model_permissions[model.name][level]
 
         if not ret:
             perm = self.has_permission_for_column
@@ -69,7 +71,7 @@ class ColumnPermissionsMixin:
                 col['name']: perm(request, col, level) for
                 col in columns
                 }
-            cache.model_permissions[self.model.name][level] = ret
+            cache.model_permissions[model.name][level] = ret
         return ret
 
     def columns_with_permission(self, request, level):
@@ -107,6 +109,7 @@ class ColumnPermissionsMixin:
         :param level:       access level
         :raise:             PermissionDenied
         """
+        model = self.model(request.app)
         backend = request.cache.auth_backend
-        if not backend.has_permission(request, self.model.name, level):
+        if not backend.has_permission(request, model.name, level):
             raise PermissionDenied

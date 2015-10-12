@@ -72,7 +72,8 @@ class TestContentModel(test.TestCase):
         data = {'name': 'all_file', 'body': 'nothing'}
         self.repo.write(self.user, data, new=True)
         models = dict(((v['url'], v) for v in self.repo.all(request)))
-        self.assertIn('http://0.0.0.0/Testss/all_file', models)
+        host = request.get_host()
+        self.assertIn('http://%s/Testss/all_file' % host, models)
 
     def test_read(self):
         app = self.application()

@@ -7,15 +7,15 @@ from .forms import (permission_model, group_model, user_model, CreateUserForm,
 
 
 class PermissionCRUD(CRUD):
-    model = permission_model()
+    _model = permission_model()
 
 
 class GroupCRUD(CRUD):
-    model = group_model()
+    _model = group_model()
 
 
 class UserCRUD(CRUD):
-    model = user_model()
+    _model = user_model()
 
     def create_model(self, request, data):
         '''Override create model so that it calls the backend method
@@ -24,7 +24,7 @@ class UserCRUD(CRUD):
 
 
 class RegistrationCRUD(CRUD):
-    model = RestModel('registration')
+    _model = RestModel('registration')
 
 
 class Authorization(rest.Authorization):

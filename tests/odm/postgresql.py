@@ -100,12 +100,14 @@ class TestPostgreSql(test.AppTestCase):
 
     def test_rest_model(self):
         from tests.odm import CRUDTask, CRUDPerson
-        model = CRUDTask.model
+        model = CRUDTask().model(self.app)
         self.assertEqual(model.name, 'task')
         columns = model.columns(self.app)
         self.assertTrue(columns)
 
-        model = CRUDPerson.model
+        model = CRUDPerson().model(self.app)
+        self.assertEqual(model, CRUDPerson().model(self.app))
+
         self.assertEqual(model.name, 'person')
         self.assertEqual(model.url, 'people')
         self.assertEqual(model.api_name, 'people_url')

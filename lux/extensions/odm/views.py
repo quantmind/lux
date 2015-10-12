@@ -29,9 +29,10 @@ class RestRouter(rest.RestRouter):
         entities = self.columns_with_permission(request, rest.READ)
         if not entities:
             raise PermissionDenied
-        model = self.model.db_model()
-        db_columns = self.model.db_columns(self.column_fields(entities))
-        return session.query(model).options(load_only(*db_columns))
+        model = self.model(request.app)
+        db_model = model.db_model()
+        db_columns = model.db_columns(self.column_fields(entities))
+        return session.query(db_model).options(load_only(*db_columns))
 
     # RestView implementation
     def get_model(self, request, **args):
@@ -48,7 +49,7 @@ class RestRouter(rest.RestRouter):
 
     def create_model(self, request, data):
         odm = request.app.odm()
-        model = odm[self.model.name]
+        model = self.model(request.app).db_model()
         with odm.begin() as session:
             instance = model()
             session.add(instance)
@@ -91,14 +92,14 @@ class RestRouter(rest.RestRouter):
         """
         exclude = self.columns_without_permission(request, rest.READ)
         exclude = self.column_fields(exclude, 'name')
-        return self.model.tojson(request, data, exclude=exclude)
+        model = self.model(request.app)
+        return model.tojson(request, data, exclude=exclude)
 
     def meta(self, request):
         meta = super().meta(request)
         odm = request.app.odm()
-        model = odm[self.model.name]
         with odm.begin() as session:
-            query = session.query(model)
+            query = self.query(request, session)
             meta['total'] = query.count()
         return meta
 
@@ -141,7 +142,7 @@ class CRUD(RestRouter):
     def post(self, request):
         '''Create a new model
         '''
-        model = self.model
+        model = self.model(request.app)
         assert model.form
 
         self.check_model_permission(request, rest.CREATE)
@@ -180,7 +181,8 @@ class CRUD(RestRouter):
             return request.response
 
         backend = request.cache.auth_backend
-        model = self.model
+        model = self.model(request.app)
+
         if backend.has_permission(request, model.name, rest.READ):
             meta = self.meta(request)
             return Json(meta).http_response(request)
@@ -188,7 +190,8 @@ class CRUD(RestRouter):
 
     @route('<id>', method=('get', 'post', 'put', 'delete', 'head', 'options'))
     def read_update_delete(self, request):
-        args = {self.model.id_field: request.urlargs['id']}
+        model = self.model(request.app)
+        args = {model.id_field: request.urlargs['id']}
         instance = self.get_model(request, **args)
 
         if request.method == 'OPTIONS':
@@ -208,7 +211,6 @@ class CRUD(RestRouter):
             return request.response
 
         elif request.method in ('POST', 'PUT'):
-            model = self.model
             form_class = model.updateform
 
             self.check_model_permission(request, rest.UPDATE)

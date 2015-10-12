@@ -46,4 +46,4 @@ class ObjectiveForm(forms.Form):
 
 
 class ObjectiveCRUD(odm.CRUD):
-    model = odm.RestModel('objective', ObjectiveForm)
+    _model = odm.RestModel('objective', ObjectiveForm)

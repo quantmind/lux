@@ -1,6 +1,7 @@
 from inspect import isclass
 
 from pulsar import Http404, PermissionDenied
+from pulsar.apps.wsgi.routers import RouterType
 from pulsar.utils.html import nicename
 
 import lux
@@ -25,13 +26,15 @@ class register:
     :param model: a string or a :class:`~lux.extensions.rest.RestModel`
     '''
     def __init__(self, model):
+        if isinstance(model, RouterType):
+            model = model._model
         if not isinstance(model, rest.RestModel):
             model = rest.RestModel(model)
         self.model = model
 
     def __call__(self, cls):
         assert is_admin(cls, False)
-        cls.model = self.model
+        cls._model = self.model
         adminMap[self.model.name] = cls
         return cls
 
@@ -110,7 +113,8 @@ class AdminModel(rest.RestMixin, AdminRouter):
     def info(self, request):
         '''Information for admin navigation
         '''
-        name = nicename(self.model.name)
+        model = self.model(request.app)
+        name = nicename(model.name)
         info = {'title': name,
                 'name': name,
                 'href': self.full_route.path,
@@ -118,8 +122,8 @@ class AdminModel(rest.RestMixin, AdminRouter):
         return self.section, info
 
     def get_html(self, request):
-        model = self.model
         app = request.app
+        model = self.model(app)
         options = dict(target=model.get_target(request))
         context = {'grid': grid(options)}
         return app.render_template('partials/admin-list.html', context)
@@ -152,8 +156,10 @@ class CRUDAdmin(AdminModel):
         perm_id, perm_name = ((rest.UPDATE, 'update') if id
                               else (rest.CREATE, 'create'))
         backend = request.cache.auth_backend
-        if backend.has_permission(request, self.model.name, perm_id):
-            target = self.model.get_target(request, path=id, get=True)
+        model = self.model(request.app)
+
+        if backend.has_permission(request, model.name, perm_id):
+            target = model.get_target(request, path=id, get=True)
             html = form(request).as_form(action=target, actionType=perm_name)
             context = {'html_form': html.render()}
             html = request.app.render_template(self.addtemplate, context)

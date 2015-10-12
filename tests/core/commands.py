@@ -44,7 +44,7 @@ class CommandTests(test.TestCase):
         command = self.fetch_command('serve')
         command.write_err('errore!')
         data = command.app.stderr.getvalue()
-        self.assertEqual(data, 'errore!')
+        self.assertEqual(data, 'errore!\n')
 
     def test_command_properties(self):
         app = self.application()
