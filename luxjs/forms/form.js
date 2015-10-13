@@ -410,10 +410,8 @@
                         });
                     }
 
-                    if (field.multiple) {
-                        console.log(scope);
+                    if (field.multiple)
                         select.attr('multiple', true);
-                    }
                 },
                 //
                 // UI-Select widget
@@ -457,8 +455,7 @@
                         else
                             match.html('{{$select.selected.name}}');
 
-                        //choices.attr('repeat', field['data-ng-options-ui-select'] + ' | filter: $select.search');
-                        choices.attr('repeat', 'item.id as item in groups_url');
+                        choices.attr('repeat', field['data-ng-options-ui-select'] + ' | filter: $select.search');
                         choices_inner.html('{{item.name}}');
                     } else {
                         // Local options

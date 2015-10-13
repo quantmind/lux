@@ -92,6 +92,7 @@
                             if (isArray(value)) {
                                 var fieldKey = key + '[]';
                                 model[fieldKey] = [];
+
                                 forEach(value, function(item) {
                                     model[fieldKey].push(item.id);
                                 });

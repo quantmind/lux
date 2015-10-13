@@ -29,6 +29,7 @@ angular.module('lux.form.utils', ['lux.services'])
                 if (attrs.multiple) {
                     options.splice(0, 1);
                 } else {
+                    scope[scope.formModelName][attrs.name] = '';
                     options[0].name = 'Please select...';
                 }
                 angular.forEach(data.data.result, function (val) {
