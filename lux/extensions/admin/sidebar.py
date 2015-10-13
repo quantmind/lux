@@ -44,7 +44,7 @@ def add_css(all):
             padding_top=sidebar.toggle.padding,
             padding_bottom=sidebar.toggle.padding))
 
-    css('.fullwidth',
+    css('html, .fullwidth',
         width=pc(100),
         overflow_x='hidden')
 
