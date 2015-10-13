@@ -17,11 +17,13 @@ class RelationshipField(MultipleMixin, forms.Field, ModelMixin):
     validation_error = 'Invalid {0}'
     attrs = {'type': 'select'}
 
-    def __init__(self, model, request_params=None, format_string=None, **kw):
+    def __init__(self, model, request_params=None, format_string=None,
+                 get_field=None, **kw):
         super().__init__(**kw)
         self.set_model(model)
         self.request_params = request_params
         self.format_string = format_string
+        self.get_field = get_field
 
     def getattrs(self, form=None):
         attrs = super().getattrs(form)
@@ -58,7 +60,11 @@ class RelationshipField(MultipleMixin, forms.Field, ModelMixin):
                 return list(all)
             else:
                 if all.count() == 1:
-                    return all.one()
+                    instance = all.one()
+                    if self.get_field:
+                        return getattr(instance, self.get_field)
+                    else:
+                        return instance
                 else:
                     raise forms.ValidationError(
                         self.validation_error.format(model))

@@ -112,7 +112,7 @@ class RestModel:
 
     __str__ = __repr__
 
-    def set_model_attribute(self, instance, name, value, session):
+    def set_model_attribute(self, instance, name, value):
         '''Set the the attribute ``name`` to ``value`` in a model ``instance``
         '''
         setattr(instance, name, value)

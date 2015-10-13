@@ -60,7 +60,7 @@ class RestRouter(rest.RestRouter):
             instance = db_model()
             session.add(instance)
             for name, value in data.items():
-                model.set_model_attribute(instance, name, value, session)
+                model.set_model_attribute(instance, name, value)
         with odm.begin() as session:
             session.add(instance)
             # we need to access the related fields in order to avoid
@@ -74,7 +74,7 @@ class RestRouter(rest.RestRouter):
         with odm.begin() as session:
             session.add(instance)
             for name, value in data.items():
-                model.set_model_attribute(instance, name, value, session)
+                model.set_model_attribute(instance, name, value)
         return instance
 
     def delete_model(self, request, instance):

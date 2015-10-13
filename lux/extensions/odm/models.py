@@ -63,7 +63,7 @@ class RestModel(rest.RestModel):
         cols.append(column)
         self._columns = cols
 
-    def set_model_attribute(self, instance, name, value, session):
+    def set_model_attribute(self, instance, name, value):
         '''Set the the attribute ``name`` to ``value`` in a model ``instance``
         '''
         current_value = getattr(instance, name, None)

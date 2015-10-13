@@ -452,4 +452,4 @@ class TestSqlite(test.AppTestCase, AuthUtils):
                                              content_type='application/json',
                                              token=token)
         data = self.json(request.response, 200)
-        self.assertTrue('groups' in data)
+        self.assertTrue('groups[]' in data)
