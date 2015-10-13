@@ -233,8 +233,6 @@ class Application(ConsoleParser, Extension, EventMixin):
                   'List of email for site managers'),
         Parameter('EMAIL_BACKEND', 'lux.core.mail.EmailBackend',
                   'Default locale'),
-        Parameter('ENQUIRY_EMAILS', [],
-                  'List of email messages to be sent on reception of enquiry'),
         Parameter('MD_EXTENSIONS', ['extra', 'meta', 'toc'],
                   'List/tuple of markdown extensions'),
         Parameter('GREEN_POOL', 0,
