@@ -29,8 +29,9 @@ class RelationshipField(MultipleMixin, forms.Field, ModelMixin):
             logger.error('%s %s cannot get remote target. No form available',
                          self.__class__.__name__, self.name)
         else:
-            model = self.model(form.app)
-            attrs.update(model.field_options(form.request))
+            request = form.request
+            model = self.model(request)
+            attrs.update(model.field_options(request))
             if self.format_string:
                 attrs['data-remote-options-value'] = json.dumps({
                     'type': 'formatString',

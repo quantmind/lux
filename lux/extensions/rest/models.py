@@ -87,6 +87,7 @@ class RestModel:
     remote_options_str = 'item.id as item.name for item in {options}'
     remote_options_str_ui_select = 'item.id as item in {options}'
     _app = None
+    _loaded = False
 
     def __init__(self, name, form=None, updateform=None, columns=None,
                  url=None, api_name=None, exclude=None,
@@ -127,6 +128,9 @@ class RestModel:
     def columns(self, request):
         '''Return a list fields describing the entries for a given model
         instance'''
+        if not self._loaded:
+            self._columns = self._load_columns()
+            self._loaded = True
         return self._columns
 
     def columnsMapping(self, request):
@@ -167,7 +171,6 @@ class RestModel:
     def add_to_app(self, app):
         model = copy(self)
         model._app = app
-        model._columns = model._load_columns()
         return model
 
     def _load_columns(self):

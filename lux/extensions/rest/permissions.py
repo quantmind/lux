@@ -26,6 +26,7 @@ class ModelMixin:
         If ``model`` is not available, uses the :attr:`._model`
         attribute.
         '''
+        app = app.app
         rest_models = getattr(app, '_rest_models', None)
         if rest_models is None:
             rest_models = {}

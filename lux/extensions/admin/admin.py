@@ -15,7 +15,7 @@ adminMap = {}
 
 def is_admin(cls, check_model=True):
     if isclass(cls) and issubclass(cls, AdminModel) and cls is not AdminModel:
-        return bool(cls.model) if check_model else True
+        return bool(cls._model) if check_model else True
     return False
 
 
@@ -113,7 +113,7 @@ class AdminModel(rest.RestMixin, AdminRouter):
     def info(self, request):
         '''Information for admin navigation
         '''
-        model = self.model(request.app)
+        model = self._model
         name = nicename(model.name)
         info = {'title': name,
                 'name': name,
@@ -123,7 +123,7 @@ class AdminModel(rest.RestMixin, AdminRouter):
 
     def get_html(self, request):
         app = request.app
-        model = self.model(app)
+        model = self._model
         options = dict(target=model.get_target(request))
         context = {'grid': grid(options)}
         return app.render_template('partials/admin-list.html', context)
@@ -156,7 +156,7 @@ class CRUDAdmin(AdminModel):
         perm_id, perm_name = ((rest.UPDATE, 'update') if id
                               else (rest.CREATE, 'create'))
         backend = request.cache.auth_backend
-        model = self.model(request.app)
+        model = self._model
 
         if backend.has_permission(request, model.name, perm_id):
             target = model.get_target(request, path=id, get=True)
