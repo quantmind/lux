@@ -410,8 +410,10 @@
                         });
                     }
 
-                    if (field.multiple)
+                    if (field.multiple) {
+                        console.log(scope);
                         select.attr('multiple', true);
+                    }
                 },
                 //
                 // UI-Select widget
@@ -451,11 +453,12 @@
                                 .attr('data-remote-options-value', field['data-remote-options-value']);
 
                         if (field.multiple)
-                            match.html('{{$item.name}}');
+                            match.html('{{$item.repr || $item.name}}');
                         else
                             match.html('{{$select.selected.name}}');
 
-                        choices.attr('repeat', field['data-ng-options-ui-select'] + ' | filter: $select.search');
+                        //choices.attr('repeat', field['data-ng-options-ui-select'] + ' | filter: $select.search');
+                        choices.attr('repeat', 'item.id as item in groups_url');
                         choices_inner.html('{{item.name}}');
                     } else {
                         // Local options
