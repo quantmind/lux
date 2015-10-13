@@ -1,36 +1,24 @@
 import unittest
 import lux.extensions.smtp.views as views
-# from unittest.mock import MagicMock
+from unittest.mock import MagicMock
 
-isCalled = False
 
-class MyClass:
-    def as_form(self, **kwargs):
-        global isCalled
-        isCalled = True
-        return 5
+class EmptyClass:
+    pass
+
 
 class ContactRouterTestCase(unittest.TestCase):
     def test_get_html(self):
-        global isCalled
-        myObj = MyClass()
+        mockForm = EmptyClass()
+        mockForm.as_form = MagicMock(return_value=5)
+        views.HtmlContactForm = MagicMock(return_value=mockForm)
 
-        def HtmlContactFormMock(arg):
-            return myObj
+        cr = views.ContactRouter('a_rule')
 
-        views.HtmlContactForm = HtmlContactFormMock
-
-        cr = views.ContactRouter('rule')
-        cr.get_html({})
-        self.assertEqual(True, isCalled)
+        self.assertEqual(5, cr.get_html({}), msg='get_html return value')
+        views.HtmlContactForm.assert_called_with({})
+        mockForm.as_form.assert_called_with(action='/a_rule')
 
 
 if __name__ == '__main__':
     unittest.main()
-
-
-
-
-
-
-
