@@ -104,13 +104,18 @@ class RestModel:
         self._api_url = api_url
         self._html_url = html_url
         self._columns = columns
-        self._exclude = frozenset(exclude or ())
-        self._hidden = frozenset(hidden or ())
+        self._exclude = set(exclude or ())
+        self._hidden = set(hidden or ())
 
     def __repr__(self):
         return self.name
 
     __str__ = __repr__
+
+    def set_model_attribute(self, instance, name, value, session):
+        '''Set the the attribute ``name`` to ``value`` in a model ``instance``
+        '''
+        setattr(instance, name, value)
 
     def tojson(self, request, object, exclude=None, decoder=None):
         '''Convert a model ``object`` into a JSON serializable
@@ -124,6 +129,11 @@ class RestModel:
         method.
         '''
         raise NotImplementedError
+
+    def query(self, query):
+        '''Manipulate a query if needed
+        '''
+        return query
 
     def columns(self, request):
         '''Return a list fields describing the entries for a given model

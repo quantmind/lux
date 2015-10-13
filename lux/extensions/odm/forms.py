@@ -48,7 +48,7 @@ class RelationshipField(MultipleMixin, forms.Field, ModelMixin):
         model = self.model(app)
         db_model = model.db_model()
         # TODO: this works but it is not general
-        pkname = db_model.__mapper__.primary_key[0].key
+        # pkname = db_model.__mapper__.primary_key[0].key
         if not self.multiple:
             value = (value,)
         idcolumn = getattr(db_model, model.id_field)
@@ -58,7 +58,7 @@ class RelationshipField(MultipleMixin, forms.Field, ModelMixin):
                 return list(all)
             else:
                 if all.count() == 1:
-                    return getattr(all.one(), pkname)
+                    return all.one()
                 else:
                     raise forms.ValidationError(
                         self.validation_error.format(model))

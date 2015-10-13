@@ -57,6 +57,7 @@ class User(Model, UserMixin):
     def is_superuser(self):
         return self.superuser
 
+    @property
     def full_name(self):
         name = ''
         if self.first_name:

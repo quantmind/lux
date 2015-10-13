@@ -97,7 +97,7 @@ class ColumnPermissionsMixin(ModelMixin):
         model = self.model(request.app)
         ret = None
         cache = request.cache
-        if 'model_permissions' not in request.cache:
+        if 'model_permissions' not in cache:
             cache.model_permissions = {}
         if model.name not in cache.model_permissions:
             cache.model_permissions[model.name] = {}

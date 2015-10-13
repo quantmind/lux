@@ -5,6 +5,7 @@ from enum import Enum
 import pytz
 
 from sqlalchemy import Column
+from sqlalchemy.orm import joinedload
 
 from pulsar.utils.html import nicename
 
@@ -28,6 +29,17 @@ class RestModel(rest.RestModel):
         '''
         return request.app.odm().begin()
 
+    def query(self, query):
+        for column in self._rest_columns.values():
+            if isinstance(column, ModelColumn):
+                query = query.options(joinedload(column.name))
+        return query
+
+    def load_related(self,  instance):
+        for column in self._rest_columns.values():
+            if isinstance(column, ModelColumn):
+                getattr(instance, column.name)
+
     def db_model(self):
         '''Database model
         '''
@@ -39,6 +51,28 @@ class RestModel(rest.RestModel):
         '''
         assert self._db_columns, 'ODM Rest Model not loaded'
         return [c for c in columns if c in self._db_columns]
+
+    def add_related_column(self, name, model, field=None, **kw):
+        '''Add a related column to the model
+        '''
+        assert not self._loaded, 'already loaded'
+        if field:
+            self._exclude.add(field)
+        column = ModelColumn(name, model, field=field, **kw)
+        cols = list(self._columns or ())
+        cols.append(column)
+        self._columns = cols
+
+    def set_model_attribute(self, instance, name, value, session):
+        '''Set the the attribute ``name`` to ``value`` in a model ``instance``
+        '''
+        current_value = getattr(instance, name, None)
+        if isinstance(current_value, list):
+            if not isinstance(value, (list, tuple)):
+                raise TypeError('list or tuple required')
+            current_value[:] = value
+        else:
+            setattr(instance, name, value)
 
     def tojson(self, request, obj, exclude=None):
         '''Override the method from the base class.
@@ -71,17 +105,21 @@ class RestModel(rest.RestModel):
                 else:   # Test Json
                     json.dumps(data)
             except TypeError:
-                continue
+                try:
+                    data = str(data)
+                except Exception:
+                    continue
             if data is not None:
                 fields[name] = data
         # a json-encodable dict
         return fields
 
     def id_repr(self, request, obj):
-        data = {'id': getattr(obj, self.id_field)}
-        if self.repr_field != self.id_field:
-            data['repr'] = getattr(obj, self.repr_field)
-        return data
+        if obj:
+            data = {'id': getattr(obj, self.id_field)}
+            if self.repr_field != self.id_field:
+                data['repr'] = getattr(obj, self.repr_field)
+            return data
 
     def _load_columns(self):
         '''List of column definitions
