@@ -110,6 +110,8 @@ class RestModel(rest.RestModel):
                 except Exception:
                     continue
             if data is not None:
+                if isinstance(data, list):
+                    name = '%s[]' % name
                 fields[name] = data
         # a json-encodable dict
         return fields
