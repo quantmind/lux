@@ -136,12 +136,28 @@ class WsClient:
 
 
 class RpcWsMethodResponder:
+    """Used to respond to RPC requests"""
     def __init__(self, method, request_id):
+        """
+        Initialises the responder
+
+        :param method:          RpcWsMethod object
+        :param request_id:      RPC request ID
+        """
         self.method = method
         self.request_id = request_id
 
     def send_response(self, data, rpc_complete=True,
                       message_type=LUX_MESSAGE):
+        """
+        Sends a response to the client
+
+        :param data:            data to send
+        :param rpc_complete:    True if this is the last message being sent
+                                in response to the message received
+        :param message_type:    LUX_MESSAGE or LUX_ERROR
+        :return:
+        """
         response = {
             'method': self.method.name,
             'id': self.request_id,
@@ -151,6 +167,7 @@ class RpcWsMethodResponder:
         self.method.ws.write(message_type, 'rpc', response)
 
     def send_error(self, data, rpc_complete=True):
+        """Calls send_response with message_type=LUX_ERROR"""
         self.send_response(data, rpc_complete, LUX_ERROR)
 
 
