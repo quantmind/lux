@@ -72,7 +72,7 @@ function sockJs (url, websockets, websocketChannels, log) {
                     if (msg.channel === 'rpc') {
                         if (typeof msg.data.id !== 'undefined') {
                             if (context.executed[msg.data.id]) {
-                                context.executed[msg.data.id](sock, msg.data.data);
+                                context.executed[msg.data.id](msg.data.data, sock);
                                 if (msg.data.rpcComplete) {
                                     delete context.executed[msg.data.id];
                                 }
