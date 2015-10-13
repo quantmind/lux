@@ -36,7 +36,8 @@ class RestRouter(rest.RestRouter):
         model = self.model(request.app)
         db_model = model.db_model()
         db_columns = model.db_columns(self.column_fields(entities))
-        return session.query(db_model).options(load_only(*db_columns))
+        query = session.query(db_model).options(load_only(*db_columns))
+        return model.query(query)
 
     # RestView implementation
     def get_instance(self, request, **args):
@@ -53,36 +54,32 @@ class RestRouter(rest.RestRouter):
 
     def create_model(self, request, data):
         odm = request.app.odm()
-        model = self.model(request.app).db_model()
+        model = self.model(request.app)
+        db_model = model.db_model()
         with odm.begin() as session:
-            instance = model()
+            instance = db_model()
             session.add(instance)
             for name, value in data.items():
-                self.set_model_attribute(instance, name, value)
+                model.set_model_attribute(instance, name, value, session)
+        with odm.begin() as session:
+            session.add(instance)
+            # we need to access the related fields in order to avoid
+            # session not bound
+            model.load_related(instance)
         return instance
 
     def update_model(self, request, instance, data):
+        model = self.model(request.app)
         odm = request.app.odm()
         with odm.begin() as session:
             session.add(instance)
             for name, value in data.items():
-                self.set_model_attribute(instance, name, value)
+                model.set_model_attribute(instance, name, value, session)
         return instance
 
     def delete_model(self, request, instance):
         with request.app.odm().begin() as session:
             session.delete(instance)
-
-    def set_model_attribute(self, instance, name, value):
-        '''Set the the attribute ``name`` to ``value`` in a model ``instance``
-        '''
-        current_value = getattr(instance, name, None)
-        if isinstance(current_value, list):
-            if not isinstance(value, (list, tuple)):
-                raise TypeError('list or tuple required')
-            current_value[:] = value
-        else:
-            setattr(instance, name, value)
 
     def serialise_model(self, request, data, **kw):
         """
@@ -151,7 +148,7 @@ class CRUD(RestRouter):
 
         self.check_model_permission(request, rest.CREATE)
         columns = self.columns_with_permission(request, rest.CREATE)
-        columns = self.column_fields(columns)
+        columns = self.column_fields(columns, 'name')
 
         data, files = request.data_and_files()
         form = model.form(request, data=data, files=files)
@@ -194,15 +191,15 @@ class CRUD(RestRouter):
 
     @route('<id>', method=('get', 'post', 'put', 'delete', 'head', 'options'))
     def read_update_delete(self, request):
-        model = self.model(request.app)
-        args = {model.id_field: request.urlargs['id']}
-        instance = self.get_instance(request, **args)
-
         if request.method == 'OPTIONS':
             request.app.fire('on_preflight', request)
             return request.response
 
-        elif request.method == 'GET':
+        model = self.model(request.app)
+        args = {model.id_field: request.urlargs['id']}
+        instance = self.get_instance(request, **args)
+
+        if request.method == 'GET':
             self.check_model_permission(request, rest.READ)
             # url = request.absolute_uri()
             # Columns the user doesn't have access to are dropped by

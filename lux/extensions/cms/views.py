@@ -30,7 +30,8 @@ class PageForm(forms.Form):
     path = forms.CharField(required=False)
     title = forms.CharField()
     description = forms.TextField(required=False)
-    template_id = odm.RelationshipField(template_model, label='template')
+    template = odm.RelationshipField(template_model,
+                                     label='template')
     published = forms.BooleanField(required=False)
     layout = forms.JsonField(text_edit=json.dumps({'mode': 'json'}))
 

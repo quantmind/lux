@@ -35,12 +35,44 @@ class Extension(lux.Extension):
                 PermissionCRUD(), GroupCRUD()]
 
 
+Model = odm.model_base('odmtest')
+
+
+# Models
+class Person(Model):
+    id = Column(Integer, primary_key=True)
+    username = Column(String(250), unique=True)
+    name = Column(String(250))
+    tasks = relationship('Task', backref='assigned')
+
+
+class Task(Model):
+    id = Column(Integer, primary_key=True)
+    subject = Column(String(250))
+    done = Column(Boolean, default=False)
+    created = Column(DateTime, default=datetime.utcnow)
+    assigned_id = Column(Integer, ForeignKey('person.id'))
+    enum_field = Column(ChoiceType(TestEnum), default=TestEnum.opt1)
+
+
+def person_model():
+    return odm.RestModel('person', PersonForm, url='people')
+
+
+def task_model():
+    '''Rest model for the task
+    '''
+    model = odm.RestModel('task', TaskForm)
+    model.add_related_column('assigned', person_model, 'assigned_id')
+    return model
+
+
 class TaskForm(forms.Form):
     subject = forms.CharField(required=True)
     done = forms.BooleanField(default=False)
-    assigned_id = odm.RelationshipField('person',
-                                        label='assigned',
-                                        required=False)
+    assigned = odm.RelationshipField('person',
+                                     label='assigned',
+                                     required=False)
     enum_field = forms.EnumField(enum_class=TestEnum, default=TestEnum.opt1)
 
 
@@ -60,11 +92,11 @@ class UserForm(forms.Form):
 
 
 class CRUDTask(odm.CRUD):
-    _model = odm.RestModel('task', TaskForm)
+    _model = task_model()
 
 
 class CRUDPerson(odm.CRUD):
-    _model = odm.RestModel('person', PersonForm, url='people')
+    _model = person_model()
 
 
 class UserCRUD(odm.CRUD):
@@ -77,23 +109,3 @@ class UserCRUD(odm.CRUD):
 
     def serialise_model(self, request, data, in_list=False):
         return self.model.tojson(request, data, exclude=('superuser',))
-
-
-Model = odm.model_base('odmtest')
-
-
-# Models
-class Person(Model):
-    id = Column(Integer, primary_key=True)
-    username = Column(String(250), unique=True)
-    name = Column(String(250))
-    tasks = relationship('Task', backref='assigned')
-
-
-class Task(Model):
-    id = Column(Integer, primary_key=True)
-    subject = Column(String(250))
-    done = Column(Boolean, default=False)
-    created = Column(DateTime, default=datetime.utcnow)
-    assigned_id = Column(Integer, ForeignKey('person.id'))
-    enum_field = Column(ChoiceType(TestEnum), default=TestEnum.opt1)

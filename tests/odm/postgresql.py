@@ -38,7 +38,7 @@ class TestPostgreSql(test.AppTestCase):
                      **data):
         data['subject'] = subject
         if person:
-            data['assigned_id'] = person['id']
+            data['assigned'] = person['id']
         request = yield from self.client.post(
             '/tasks', body=data, token=token,
             content_type='application/json')
@@ -230,16 +230,16 @@ class TestPostgreSql(test.AppTestCase):
         person = yield from self._create_person(token, 'spiderman')
         task = yield from self._create_task(token, 'climb a wall a day',
                                             person)
-        self.assertTrue('assigned_id' in task)
+        self.assertTrue('assigned' in task)
 
     def test_relationship_field_failed(self):
         token = yield from self._token()
         data = {'subject': 'climb a wall a day',
-                'assigned_id': 6868897}
+                'assigned': 6868897}
         request = yield from self.client.post('/tasks', body=data,
                                               token=token,
                                               content_type='application/json')
-        self.assertValidationError(request.response, 'assigned_id',
+        self.assertValidationError(request.response, 'assigned',
                                    'Invalid person')
 
     def test_unique_field(self):
