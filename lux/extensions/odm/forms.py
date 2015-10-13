@@ -54,20 +54,27 @@ class RelationshipField(MultipleMixin, forms.Field, ModelMixin):
         if not self.multiple:
             value = (value,)
         idcolumn = getattr(db_model, model.id_field)
-        with odm.begin() as session:
-            all = session.query(db_model).filter(idcolumn.in_(value))
-            if self.multiple:
-                return list(all)
-            else:
-                if all.count() == 1:
-                    instance = all.one()
-                    if self.get_field:
-                        return getattr(instance, self.get_field)
-                    else:
-                        return instance
+        try:
+            with odm.begin() as session:
+                all = session.query(db_model).filter(idcolumn.in_(value))
+                if self.multiple:
+                    return list(all)
                 else:
-                    raise forms.ValidationError(
-                        self.validation_error.format(model))
+                    if all.count() == 1:
+                        instance = all.one()
+                        if self.get_field:
+                            return getattr(instance, self.get_field)
+                        else:
+                            return instance
+                    else:
+                        raise forms.ValidationError(
+                            self.validation_error.format(model))
+        except forms.ValidationError:
+            raise
+        except Exception as exc:
+            app.logger.exception(str(exc))
+            raise forms.ValidationError(
+                self.validation_error.format(model))
 
 
 class UniqueField:
