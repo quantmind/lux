@@ -135,11 +135,28 @@ class WsClient:
             raise rpc.InvalidRequest
 
 
-class RpcWsMethod:
-    ws = None
+class RpcWsMethodResponder:
+    def __init__(self, method, request_id):
+        self.method = method
+        self.request_id = request_id
 
+    def send_response(self, data, rpc_complete=True,
+                      message_type=LUX_MESSAGE):
+        response = {
+            'method': self.method.name,
+            'id': self.request_id,
+            'rpcComplete': rpc_complete,
+            'data': data
+        }
+        self.method.ws.write(message_type, 'rpc', response)
+
+    def send_error(self, data, rpc_complete=True):
+        self.send_response(data, rpc_complete, LUX_ERROR)
+
+
+class RpcWsMethod:
     def __init__(self, name, ws):
-        self.method = name
+        self.name = name
         self.ws = ws
         maybe_async(self.on_init())
 
@@ -155,22 +172,22 @@ class RpcWsMethod:
         '''
         pass
 
-    def on_request(self, request_id, data):
-        pass
+    def handle_request(self, request_id, data):
+        self.on_request(RpcWsMethodResponder(self, request_id), data)
 
-    def send_response(self, request_id, data, rpc_complete=True):
-        response = {
-            'method': self.method,
-            'id': request_id,
-            'rpcComplete': rpc_complete,
-            'data': data
-        }
-        self.ws.write(LUX_MESSAGE, 'rpc', response)
+    def on_request(self, responder, data):
+        """
+        To be overridden by subclasses
+
+        :param responder:    RpcWsMethodResponder instance
+        :param data:         data send by client
+        """
+        pass
 
     def pubsub(self, key=None):
         '''Convenience method for a pubsub handler
         '''
-        return self.ws.pubsub(key or self.method)
+        return self.ws.pubsub(key or self.name)
 
 
 class RpcWsCall:
@@ -186,7 +203,7 @@ class RpcWsCall:
     def __call__(self, ws, id, data):
         if self.method not in ws.cache:
             ws.cache[self.method] = self.rpc(self.method, ws)
-        ws.cache[self.method].on_request(id, data)
+        ws.cache[self.method].handle_request(id, data)
 
 
 class LuxWs(ws.WS):
