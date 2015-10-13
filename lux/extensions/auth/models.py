@@ -106,3 +106,9 @@ class Registration(Model):
     user_id = Column(Integer, ForeignKey('user.id'))
     expiry = Column(DateTime, nullable=False)
     confirmed = Column(Boolean)
+
+
+class MailingList(Model):
+    id = Column(Integer, primary_key=True)
+    email = Column(String(120), unique=True)
+    topic = Column(String(60))

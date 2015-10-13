@@ -9,6 +9,8 @@ from lux.extensions.content import TextCRUD, Content, TextForm, GithubHook
 
 PWD = os.path.join(os.getcwd(), 'test_repo')
 
+GREEN_POOL = 100
+
 
 EXTENSIONS = ['lux.extensions.rest',
               'lux.extensions.content']
@@ -22,7 +24,5 @@ class Extension(lux.Extension):
 
     def middleware(self, app):
         content = Content('blog', PWD, form=TextForm, url='blog')
-        return [TextCRUD(content)]
-
-    def async_middleware(self, app):
-        return [GithubHook('refresh-content', secret='test12345')]
+        return [GithubHook('refresh-content', secret='test12345'),
+                TextCRUD(content)]

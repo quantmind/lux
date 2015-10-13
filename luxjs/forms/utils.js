@@ -27,11 +27,13 @@ angular.module('lux.form.utils', ['lux.services'])
 
             api.get(null, params).then(function (data) {
                 if (attrs.multiple) {
+                    scope[scope.formModelName][attrs.name] = [];
                     options.splice(0, 1);
                 } else {
+                    scope[scope.formModelName][attrs.name] = '';
                     options[0].name = 'Please select...';
                 }
-                scope[scope.formModelName][attrs.name] = '';
+
                 angular.forEach(data.data.result, function (val) {
                     var name;
                     if (nameFromFormat) {
@@ -44,12 +46,14 @@ angular.module('lux.form.utils', ['lux.services'])
                         name: name
                     });
 
+                    if (attrs.multiple)
+                        scope[scope.formModelName][attrs.name].push(val[id]);
+
                 });
             }, function (data) {
                 /** TODO: add error alert */
                 options[0] = '(error loading options)';
             });
-            scope[scope.formModelName][attrs.name] = '';
         }
 
         function link(scope, element, attrs) {

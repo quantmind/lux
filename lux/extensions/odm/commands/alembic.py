@@ -17,7 +17,7 @@ class Command(lux.Command):
         Setting('branch', ('-b', '--branch'), default=None, nargs='?',
                 desc='Branch label for auto, revision and merge command',
                 meta='LABEL'),
-        Setting('list', ('-l', '--list'), default=None, action='store_true',
+        Setting('list', ('--commands',), default=None, action='store_true',
                 desc='List available Alembic commands'),
         Setting('msg', ('-m', '--message'), nargs='?', default=None,
                 desc='Message for auto, revision and merge command'),
@@ -27,18 +27,12 @@ class Command(lux.Command):
         '''
         Run obvious commands and validate more complex.
         '''
-        # alembic package is required to run any migration related command
-        try:
-            import alembic  # noqa
-        except ImportError:  # pragma nocover
-            raise CommandError('Alembic package is not installed')
-
         list_msg = 'Put [-l] for available commands'
 
         if opt.list:
-            availabe = 'Available commands:\n%s' % ', '.join(self.commands)
-            self.write(availabe)
-            return availabe
+            available = 'Available commands:\n%s' % ', '.join(self.commands)
+            self.write(available)
+            return available
         if opt.command:
             cmd = opt.command[0]
             if cmd not in self.commands:
@@ -101,8 +95,9 @@ class Command(lux.Command):
             if not name:
                 name = 'default'
             databases.append(name)
-            alembic_cfg.set_section_option(name, 'sqlalchemy.url',
-                                           str(engine.url))
+            # url = str(engine.url).replace('+green', '')
+            url = str(engine.url)
+            alembic_cfg.set_section_option(name, 'sqlalchemy.url', url)
         # put databases in main options
         alembic_cfg.set_main_option("databases", ','.join(databases))
         # create empty logging section to avoid raising errors in env.py

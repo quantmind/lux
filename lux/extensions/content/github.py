@@ -5,7 +5,7 @@ from asyncio import create_subprocess_shell, subprocess
 
 from pulsar.apps.wsgi import Json
 from pulsar.utils.string import to_bytes
-from pulsar import task, HttpException, PermissionDenied, BadRequest
+from pulsar import HttpException, PermissionDenied, BadRequest
 
 import lux
 
@@ -17,7 +17,6 @@ class GithubHook(lux.Router):
     handle_payload = None
     secret = None
 
-    @task
     def post(self, request):
         data = request.body_data()
 
@@ -28,11 +27,13 @@ class GithubHook(lux.Router):
                 if hasattr(exc, 'status'):
                     raise
                 else:
-                    raise BadRequest
+                    exc = str(exc)
+                    request.logger.exception(exc)
+                    raise BadRequest(exc)
 
         event = request.get('HTTP_X_GITHUB_EVENT')
         if self.handle_payload:
-            data = yield from self.handle_payload(request, event, data)
+            data = self.handle_payload(request, event, data)
         else:
             data = dict(success=True, event=event)
         return Json(data).http_response(request)
@@ -44,9 +45,12 @@ class GithubHook(lux.Router):
         if not hub_signature:
             raise PermissionDenied('No signature')
 
-        sha_name, signature = hub_signature.split('=')
-        if sha_name != 'sha1':
-            raise PermissionDenied('Bad signature')
+        if '=' in hub_signature:
+            sha_name, signature = hub_signature.split('=')
+            if sha_name != 'sha1':
+                raise PermissionDenied('Bad signature')
+        else:
+            raise BadRequest('bad signature')
 
         payload = request.get('wsgi.input').read()
         sig = hmac.new(secret, msg=payload, digestmod=hashlib.sha1)
@@ -60,7 +64,17 @@ class EventHandler:
     def __call__(self, request, event, data):
         raise NotImplementedError
 
-    def execute(self, command):
+    def execute(self, request, command):
+        green_pool = request.app.green_pool
+        if green_pool:
+            return green_pool.wait(self._async_execute(command))
+        else:
+            return self._sync_execute(command)
+
+    def _sync_execute(self, command):
+        raise NotImplementedError
+
+    def _async_execute(self, command):
         p = yield from create_subprocess_shell(command,
                                                stdout=subprocess.PIPE,
                                                stderr=subprocess.PIPE)
@@ -78,12 +92,12 @@ class PullRepo(EventHandler):
         if event == 'push':
             if os.path.isdir(self.repo):
                 command = 'cd %s; git symbolic-ref --short HEAD' % self.repo
-                branch, e = yield from self.execute(command)
+                branch, e = self.execute(request, command)
                 if e:
                     raise HttpException(e, status=412)
                 branch = branch.split('\n')[0]
                 response['command'] = self.command(branch)
-                result, e = yield from self.execute(response['command'])
+                result, e = self.execute(request, response['command'])
                 response['result'] = result
                 response['error'] = e
             else:

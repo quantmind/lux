@@ -34,53 +34,31 @@
                     return auth_name;
             };
 
-            // Set/Get the JWT token
+            // Set/Get the user token
             api.token = function (token) {
-                var auth = $lux.authApi(api);
-                if (auth) return auth.token();
-
-                var key = 'luxtoken-' + api.baseUrl();
-
-                if (arguments.length) {
-                    if (token) {
-                        // Set the token
-                        var decoded = lux.decodeJWToken(token);
-                        if (decoded.storage === 'session')
-                            sessionStorage.setItem(key, token);
-                        else
-                            localStorage.setItem(key, token);
-                    } else {
-                        sessionStorage.removeItem(key);
-                        localStorage.removeItem(key);
-                    }
-                    return api;
-                } else {
-                    // Obtain the token
-                    token = localStorage.getItem(key);
-                    if (!token) token = sessionStorage.getItem(key);
-                    return token;
-                }
+                return $lux.user_token;
             };
 
             // Perform Logout
             api.logout = function (scope) {
                 var auth = $lux.authApi(api);
-                if (auth) return auth.logout(scope);
-
+                if (!auth) {
+                    $lux.messages.error('Error while logging out');
+                    return;
+                }
                 scope.$emit('pre-logout');
-                api.post({
-                    name: api.authName(),
-                    path: '/logout'
+                auth.post({
+                    name: auth.authName(),
+                    path: lux.context.LOGOUT_URL
                 }).then(function () {
                     scope.$emit('after-logout');
-                    api.token(undefined);
                     $lux.window.location.reload();
                 }, function (response) {
                     $lux.messages.error('Error while logging out');
                 });
             };
 
-            // Get the user fro the JWT
+            // Get the user from the JWT
             api.user = function () {
                 var token = api.token();
                 if (token) {
@@ -92,8 +70,10 @@
 
             // Redirect to the LOGIN_URL
             api.login = function () {
-                $lux.window.location.href = lux.context.LOGIN_URL;
-                $lux.window.reload();
+                if (lux.context.LOGIN_URL) {
+                    $lux.window.location.href = lux.context.LOGIN_URL;
+                    $lux.window.reload();
+                }
             };
 
             //
@@ -141,7 +121,7 @@
             };
 
             //
-            // Initialise a scope with this api
+            // Initialise a scope with an auth api handler
             api.scopeApi = function (scope, auth) {
                 //  Get the api client
                 if (auth) {
@@ -165,9 +145,7 @@
                         e.preventDefault();
                         e.stopPropagation();
                     }
-                    if (api.user()) {
-                        api.logout(scope);
-                    }
+                    if (api.user()) api.logout(scope);
                 };
             };
 

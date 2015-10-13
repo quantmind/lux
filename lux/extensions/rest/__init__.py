@@ -226,6 +226,9 @@ class Extension(AuthBackend):
         has = self._apply_all('has_permission', request, target, level)
         return True if has is None else has
 
+    def add_to_mail_list(self, request, topic, **kwargs):
+        return self._apply_all('add_to_mail_list', request, topic, **kwargs)
+
     def _apply_all(self, method, request, *args, **kwargs):
         for backend in self.backends:
             result = getattr(backend, method)(request, *args, **kwargs)

@@ -5,12 +5,9 @@ class TestSockJSRestApp(test.AppTestCase):
     config_file = 'tests.sockjs'
 
     def test_app(self):
-        from lux.extensions.sockjs import LuxWs
         app = self.app
         self.assertEqual(app.config['WS_URL'], '/testws')
-        handler = app.extensions['lux.extensions.sockjs'].websocket
-        self.assertEqual(handler.pubsub, None)
-        self.assertIsInstance(handler, LuxWs)
+        self.assertEqual(app.pubsub_store, None)
 
     def test_get(self):
         request = yield from self.client.get('/testws')
@@ -26,7 +23,19 @@ class TestSockJSRestApp(test.AppTestCase):
         self.assertEqual(response.content_type,
                          'application/json; charset=utf-8')
 
-    def test_websocket(self):
+    def test_websocket_400(self):
         request = yield from self.client.get('/testws/websocket')
         response = request.response
         self.assertEqual(response.status_code, 400)
+
+    def test_websocket(self):
+        from lux.extensions.sockjs import LuxWs
+        from lux.extensions.sockjs.ws import RpcWsCall
+        request = yield from self.client.wsget('/testws/websocket')
+        response = request.response
+        self.assertEqual(response.status_code, 101)
+        luxws = request.app_handler.handle
+        self.assertIsInstance(luxws, LuxWs)
+        self.assertEqual(len(luxws.rpc_methods), 2)
+        self.assertIsInstance(luxws.rpc_methods['add'], RpcWsCall)
+        self.assertEqual(luxws.rpc_methods['add'].method, 'add')

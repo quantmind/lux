@@ -44,14 +44,6 @@ class Extension(lux.Extension):
         app.odm = Odm(app, app.config['DATASTORE'])
         app.add_events(('on_before_commit', 'on_after_commit'))
 
-    def on_loaded(self, app):
-        '''When the application load, choose the
-        concurrency paradigm
-        '''
-        odm = app.odm()
-        if odm.is_green and not app.config['GREEN_POOL']:
-            app.config['GREEN_POOL'] = 50
-
 
 class Odm(LocalMixin):
     '''Lazy object data mapper container

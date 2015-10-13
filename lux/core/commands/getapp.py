@@ -5,8 +5,8 @@ class Command(lux.Command):
     help = "Simply return the application."
 
     def __call__(self, options, **params):
-        self.app.thread_pool = False
         self.app.config['GREEN_POOL'] = 0
+        self.app.config['THREAD_POOL'] = False
         datastores = self.app.config.get('DATASTORE')
         if datastores:
             for k, v in datastores.items():

@@ -5,7 +5,7 @@ import uuid
 from pulsar import ImproperlyConfigured
 from pulsar.utils.httpurl import is_absolute_uri
 
-from lux import Parameter
+from lux import Parameter, raise_http_error, Http401, HttpRedirect
 from lux.extensions.angular import add_ng_modules
 
 from .mixins import jwt, SessionBackendMixin
@@ -33,9 +33,6 @@ class BrowserBackend(AuthBackend):
 
     It can be used by web servers delegating authentication to a backend API
     or handling authentication on the same site.
-
-    This backend can be used even if the ``lux.extensions.cms`` is not used by
-    your application.
     '''
     _config = [
         Parameter('LOGIN_URL', '/login', 'Url to login page', True),
@@ -44,6 +41,12 @@ class BrowserBackend(AuthBackend):
                   'Url to register with site', True),
         Parameter('RESET_PASSWORD_URL', '/reset-password',
                   'If given, add the router to handle password resets',
+                  True),
+        Parameter('TOS_URL', '/tos',
+                  'Terms of Service url',
+                  True),
+        Parameter('PRIVACY_POLICY_URL', '/privacy-policy',
+                  'The url for the privacy policy, required for signups',
                   True)
     ]
     LoginRouter = Login
@@ -205,6 +208,17 @@ class ApiSessionBackend(SessionBackendMixin,
         if session:
             session = Session(session)
             if session.user:
+                # Check if the token is still a valid one
+                token = session.encoded
+                headers = [('Authorization', 'Bearer %s' % token)]
+                response = request.app.api.head('authorizations',
+                                                headers=headers)
+                try:
+                    raise_http_error(response)
+                except Http401:  # 401, redirect to login
+                    url = request.config['LOGIN_URL']
+                    request.cache.session = self.create_session(request)
+                    raise HttpRedirect(url)
                 session.user = User(session.user)
             return session
 
@@ -213,6 +227,13 @@ class ApiSessionBackend(SessionBackendMixin,
         if session.user:
             data['user'] = session.user.all()
         request.app.cache_server.set_json(self._key(session.id), data)
+
+    def on_html_document(self, app, request, doc):
+        BrowserBackend.on_html_document(self, app, request, doc)
+        if request.method == 'GET':
+            session = request.cache.session
+            if session.user:
+                doc.head.add_meta(name="user-token", content=session.encoded)
 
     def _key(self, id):
         return 'session:%s' % id

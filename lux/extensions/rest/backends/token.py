@@ -1,19 +1,12 @@
-from pulsar import HttpException, ImproperlyConfigured
+from pulsar import ImproperlyConfigured
 from pulsar.utils.pep import to_string
 from pulsar.apps.wsgi import Json
 
 from lux import Parameter
 
 from .. import AuthBackend
-from .mixins import jwt, TokenBackendMixin
+from .mixins import jwt, TokenBackendMixin, Http401
 from .registration import RegistrationMixin
-
-
-class Http401(HttpException):
-
-    def __init__(self, auth, msg=''):
-        headers = [('WWW-Authenticate', auth)]
-        super().__init__(msg=msg, status=401, headers=headers)
 
 
 class TokenBackend(TokenBackendMixin, RegistrationMixin, AuthBackend):
@@ -60,6 +53,8 @@ class TokenBackend(TokenBackendMixin, RegistrationMixin, AuthBackend):
             if auth_type == 'bearer':
                 try:
                     token = self.decode_token(request, key)
+                except Http401:
+                    raise
                 except Exception:
                     request.app.logger.exception('Could not load user')
                 else:

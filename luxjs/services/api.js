@@ -20,6 +20,8 @@
             var name = $(document.querySelector("meta[name=csrf-param]")).attr('content'),
                 csrf_token = $(document.querySelector("meta[name=csrf-token]")).attr('content');
 
+            $lux.user_token = $(document.querySelector("meta[name=user-token]")).attr('content');
+
             if (name && csrf_token) {
                 $lux.csrf = {};
                 $lux.csrf[name] = csrf_token;
@@ -72,6 +74,7 @@
                 }
             };
 
+            // Set/get the authentication handler for a given api
             this.authApi = function (api, auth) {
                 if (arguments.length === 1)
                     return AuthApis[api.baseUrl()];
@@ -186,6 +189,10 @@
         //
         api.put = function (opts, data) {
             return api.request('put', opts, data);
+        };
+        //
+        api.head = function (opts, data) {
+            return api.request('head', opts, data);
         };
         //
         api.delete = function (opts, data) {
