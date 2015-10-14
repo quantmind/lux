@@ -1,6 +1,6 @@
 import unittest
 import lux.extensions.smtp.views as views
-from unittest.mock import MagicMock, patch, PropertyMock
+from unittest.mock import MagicMock, patch
 
 
 class EmptyClass:
@@ -9,34 +9,33 @@ class EmptyClass:
 
 get_html_return_value = 'return val'
 http_response_return_value = 'another return val'
-dummyRule = '/a_rule'
-emptyRequest = {}
+dummy_rule = '/a_rule'
+empty_request = {}
 
 
 class ContactRouterTestCase(unittest.TestCase):
     def setUp(self):
-        self.cr = views.ContactRouter(dummyRule)
+        self.cr = views.ContactRouter(dummy_rule)
 
     def test_get_html(self):
-        mockForm = EmptyClass()
-        mockForm.as_form = MagicMock(return_value=get_html_return_value)
-        views.HtmlContactForm = MagicMock(return_value=mockForm)
+        mock_form = EmptyClass()
+        mock_form.as_form = MagicMock(return_value=get_html_return_value)
+        views.HtmlContactForm = MagicMock(return_value=mock_form)
 
-        actual_return_value = self.cr.get_html(emptyRequest)
+        actual_return_value = self.cr.get_html(empty_request)
 
         self.assertEqual(get_html_return_value,
                          actual_return_value,
                          msg='get_html return value')
-        views.HtmlContactForm.assert_called_once_with(emptyRequest)
-        mockForm.as_form.assert_called_once_with(action=dummyRule)
+        views.HtmlContactForm.assert_called_once_with(empty_request)
+        mock_form.as_form.assert_called_once_with(action=dummy_rule)
 
     def test_post_one_email_form_valid(self):
-        with patch('lux.core.wrappers.WsgiRequest') as WsgiRequestMock, patch(
-                'lux.extensions.smtp.views.Json') as JsonMock:
-            requestMock = WsgiRequestMock()
-            requestMock.data_and_files.return_value = ({}, '')
+        with patch('lux.extensions.smtp.views.Json') as JsonMock:
+            request_mock = MagicMock()
+            request_mock.data_and_files.return_value = ({}, '')
 
-            requestMock.app.config = dict(ENQUIRY_EMAILS=[
+            request_mock.app.config = dict(ENQUIRY_EMAILS=[
                 {
                     'sender': 'BMLL Technologies <noreply@bmlltech.com>',
                     'to': 'info@bmlltech.com',
@@ -47,23 +46,23 @@ class ContactRouterTestCase(unittest.TestCase):
                 },
             ])
 
-            formMock = MagicMock()
+            form_mock = MagicMock()
             FormMock = MagicMock()
-            formMock.is_valid.return_value = True
-            formMock.cleaned_data = dict(name='Jeremy Herr',
-                                         email='jeremyherr@bmlltech.com',
-                                         body='Here is my message to you')
-            FormMock.return_value = formMock
+            form_mock.is_valid.return_value = True
+            form_mock.cleaned_data = dict(name='Jeremy Herr',
+                                          email='jeremyherr@bmlltech.com',
+                                          body='Here is my message to you')
+            FormMock.return_value = form_mock
             views.ContactForm = FormMock
 
-            stringMock = EmptyClass()
-            stringMock.http_response = MagicMock(
+            string_mock = EmptyClass()
+            string_mock.http_response = MagicMock(
                 return_value=http_response_return_value)
-            JsonMock.return_value = stringMock
+            JsonMock.return_value = string_mock
 
-            self.cr.post(requestMock)
+            self.cr.post(request_mock)
 
-            requestMock.app.email_backend.send_mail.assert_called_once_with(
+            request_mock.app.email_backend.send_mail.assert_called_once_with(
                 sender='BMLL Technologies <noreply@bmlltech.com>',
                 to='info@bmlltech.com',
                 subject='website enquiry form',
@@ -74,7 +73,7 @@ class ContactRouterTestCase(unittest.TestCase):
 
             JsonMock.assert_called_once_with(
                 dict(success=True, message="Message sent"))
-            stringMock.http_response.assert_called_once_with(requestMock)
+            string_mock.http_response.assert_called_once_with(request_mock)
 
 
 if __name__ == '__main__':
