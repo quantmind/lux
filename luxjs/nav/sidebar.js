@@ -135,7 +135,7 @@
         .directive('sidebar', ['$compile', 'sidebarService', 'navService', 'sidebarTemplate',
                                'navbarTemplate', '$templateCache',
                         function ($compile, sidebarService, navService, sidebarTemplate, navbarTemplate,
-                                  $templateCache, $sce) {
+                                  $templateCache) {
             //
             return {
                 restrict: 'AE',
@@ -166,11 +166,6 @@
                                 lux.querySelector(element, '.content-wrapper').append(inner);
                             else
                                 element.after(inner);
-
-                            windowResize(function () {
-                                if (navService.collapseForWide(scope.navbar, element))
-                                    scope.$apply();
-                            });
                         }
                     };
                 }
