@@ -9,6 +9,7 @@ class EmptyClass:
 
 get_html_return_value = 'return val'
 http_response_return_value = 'another return val'
+tojson_return_value = 'tojson dummy data'
 dummy_rule = '/a_rule'
 empty_request = {}
 
@@ -17,7 +18,11 @@ class ContactRouterTestCase(unittest.TestCase):
     def setUp(self):
         self.cr = views.ContactRouter(dummy_rule)
 
-    def _create_mocks(self, JsonMock):
+    def _reset_mocks(self):
+        self.request_mock.reset_mock()
+        self.string_mock.http_response.reset_mock()
+
+    def _create_mocks(self, JsonMock, is_form_valid=True):
         self.request_mock = MagicMock()
         self.request_mock.data_and_files.return_value = ({}, '')
 
@@ -34,10 +39,11 @@ class ContactRouterTestCase(unittest.TestCase):
 
         form_mock = MagicMock()
         FormMock = MagicMock()
-        form_mock.is_valid.return_value = True
+        form_mock.is_valid.return_value = is_form_valid
         form_mock.cleaned_data = dict(name='Jeremy Herr',
                                       email='jeremyherr@bmlltech.com',
                                       body='Here is my message to you')
+        form_mock.tojson.return_value = tojson_return_value
         FormMock.return_value = form_mock
         views.ContactForm = FormMock
 
@@ -61,7 +67,7 @@ class ContactRouterTestCase(unittest.TestCase):
 
     def test_post_one_email_form_valid(self):
         with patch('lux.extensions.smtp.views.Json') as JsonMock:
-            self._create_mocks(JsonMock)
+            self._create_mocks(JsonMock, is_form_valid=True)
 
             self.cr.post(self.request_mock)
 
@@ -76,9 +82,22 @@ class ContactRouterTestCase(unittest.TestCase):
 
             JsonMock.assert_called_once_with(
                 dict(success=True, message="Message sent"))
-            self.string_mock.http_response.assert_called_once_with(self.request_mock)
+            self.string_mock.http_response.assert_called_once_with(
+                self.request_mock)
 
+            self._reset_mocks()
 
+    def test_post_one_email_form_invalid(self):
+        with patch('lux.extensions.smtp.views.Json') as JsonMock:
+            self._create_mocks(JsonMock, is_form_valid=False)
+
+            self.cr.post(self.request_mock)
+
+            JsonMock.assert_called_once_with(tojson_return_value)
+            self.string_mock.http_response.assert_called_once_with(
+                self.request_mock)
+
+            self._reset_mocks()
 
 if __name__ == '__main__':
     unittest.main()
