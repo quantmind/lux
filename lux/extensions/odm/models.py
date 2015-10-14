@@ -5,7 +5,6 @@ from enum import Enum
 import pytz
 
 from sqlalchemy import Column
-from sqlalchemy.orm import joinedload
 
 from pulsar.utils.html import nicename
 
@@ -28,12 +27,6 @@ class RestModel(rest.RestModel):
         '''Obtain a session
         '''
         return request.app.odm().begin()
-
-    def query(self, query):
-        for column in self._rest_columns.values():
-            if isinstance(column, ModelColumn):
-                query = query.options(joinedload(column.name))
-        return query
 
     def load_related(self,  instance):
         for column in self._rest_columns.values():
@@ -67,10 +60,25 @@ class RestModel(rest.RestModel):
         '''Set the the attribute ``name`` to ``value`` in a model ``instance``
         '''
         current_value = getattr(instance, name, None)
-        if isinstance(current_value, list):
-            if not isinstance(value, (list, tuple)):
+        if isinstance(current_value, (list, set)):
+            if not isinstance(value, (list, tuple, set)):
                 raise TypeError('list or tuple required')
-            current_value[:] = value
+            col = self._rest_columns.get(name)
+            if isinstance(col, ModelColumn):
+                relmodel = col.model(self._app)
+                idfield = relmodel.id_field
+                all = set((getattr(v, idfield) for v in value))
+                avail = set()
+                for item in tuple(current_value):
+                    pkey = getattr(item, idfield)
+                    if pkey not in all:
+                        current_value.remove(item)
+                    else:
+                        avail.add(pkey)
+                for item in value:
+                    pkey = getattr(item, idfield)
+                    if pkey not in avail:
+                        current_value.append(item)
         else:
             setattr(instance, name, value)
 

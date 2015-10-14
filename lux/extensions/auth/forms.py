@@ -25,7 +25,9 @@ def permission_model():
 
 
 def group_model():
-    return odm.RestModel('group', GroupForm, repr_field='name')
+    model = odm.RestModel('group', GroupForm, repr_field='name')
+    model.add_related_column('permissions', permission_model)
+    return model
 
 
 def user_model():

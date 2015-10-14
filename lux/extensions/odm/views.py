@@ -1,6 +1,6 @@
 from sqlalchemy.exc import DataError
 from sqlalchemy.orm.exc import NoResultFound
-from sqlalchemy.orm import load_only
+from sqlalchemy.orm import object_session, load_only
 from sqlalchemy import desc
 
 from pulsar import PermissionDenied, MethodNotAllowed, Http404
@@ -69,16 +69,24 @@ class RestRouter(rest.RestRouter):
         return instance
 
     def update_model(self, request, instance, data):
-        model = self.model(request.app)
-        odm = request.app.odm()
-        with odm.begin() as session:
-            session.add(instance)
+        model = self.model(request)
+        session = object_session(instance)
+        if session:
             for name, value in data.items():
                 model.set_model_attribute(instance, name, value)
+        else:
+            with request.app.odm().begin() as session:
+                session.add(instance)
+                for name, value in data.items():
+                    model.set_model_attribute(instance, name, value)
         return instance
 
     def delete_model(self, request, instance):
-        with request.app.odm().begin() as session:
+        session = object_session(instance)
+        if not session:
+            with request.app.odm().begin() as session:
+                session.delete(instance)
+        else:
             session.delete(instance)
 
     def serialise_model(self, request, data, **kw):
@@ -197,52 +205,56 @@ class CRUD(RestRouter):
 
         model = self.model(request.app)
         args = {model.id_field: request.urlargs['id']}
-        instance = self.get_instance(request, **args)
+        odm = request.app.odm()
+        with odm.begin() as session:
+            query = self.query(request, session)
+            try:
+                instance = query.filter_by(**args).one()
+            except (DataError, NoResultFound):
+                raise Http404
 
-        if request.method == 'GET':
-            self.check_model_permission(request, rest.READ)
-            # url = request.absolute_uri()
-            # Columns the user doesn't have access to are dropped by
-            # serialise_model
-            data = self.serialise(request, instance)
-            return Json(data).http_response(request)
+            if request.method == 'GET':
+                self.check_model_permission(request, rest.READ)
+                data = self.serialise(request, instance)
 
-        elif request.method == 'HEAD':
-            self.check_model_permission(request, rest.READ)
-            return request.response
+            elif request.method == 'HEAD':
+                self.check_model_permission(request, rest.READ)
+                return request.response
 
-        elif request.method in ('POST', 'PUT'):
-            form_class = model.updateform
+            elif request.method in ('POST', 'PUT'):
+                form_class = model.updateform
 
-            self.check_model_permission(request, rest.UPDATE)
-            columns = self.columns_with_permission(request, rest.UPDATE)
-            columns = self.column_fields(columns)
+                self.check_model_permission(request, rest.UPDATE)
+                columns = self.columns_with_permission(request, rest.UPDATE)
+                columns = self.column_fields(columns)
 
-            if not form_class:
+                if not form_class:
+                    raise MethodNotAllowed
+
+                data, files = request.data_and_files()
+                form = form_class(request, data=data, files=files,
+                                  previous_state=instance)
+                if form.is_valid(exclude_missing=True):
+                    # At the moment, we silently drop any data
+                    # for columns the user doesn't have update access to,
+                    # like they don't exist
+                    filtered_data = {k: v for k, v in form.cleaned_data.items()
+                                     if k in columns}
+
+                    instance = self.update_model(request, instance,
+                                                 filtered_data)
+                    data = self.serialise(request, instance)
+                else:
+                    data = form.tojson()
+
+            elif request.method == 'DELETE':
+
+                self.check_model_permission(request, rest.DELETE)
+                self.delete_model(request, instance)
+                request.response.status_code = 204
+                return request.response
+
+            else:
                 raise MethodNotAllowed
 
-            data, files = request.data_and_files()
-            form = form_class(request, data=data, files=files,
-                              previous_state=instance)
-            if form.is_valid(exclude_missing=True):
-                # At the moment, we silently drop any data
-                # for columns the user doesn't have update access to,
-                # like they don't exist
-                filtered_data = {k: v for k, v in form.cleaned_data.items()
-                                 if k in columns}
-
-                instance = self.update_model(request, instance,
-                                             filtered_data)
-                data = self.serialise(request, instance)
-            else:
-                data = form.tojson()
             return Json(data).http_response(request)
-
-        elif request.method == 'DELETE':
-
-            self.check_model_permission(request, rest.DELETE)
-            self.delete_model(request, instance)
-            request.response.status_code = 204
-            return request.response
-
-        raise MethodNotAllowed
