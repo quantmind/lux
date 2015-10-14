@@ -1,0 +1,1 @@
+EXTENSIONS = ['lux.extensions.smtp']
