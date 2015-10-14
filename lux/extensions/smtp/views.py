@@ -30,12 +30,12 @@ class ContactRouter(lux.HtmlRouter):
         if form.is_valid():
             email = request.app.email_backend
 
-            for emailSettings in request.app.config['ENQUIRY_EMAILS']:
-                emailFields = {
-                    tag: emailSettings[tag].format(**form.cleaned_data)
+            for email_settings in request.app.config['ENQUIRY_EMAILS']:
+                email_fields = {
+                    tag: email_settings[tag].format(**form.cleaned_data)
                           for tag in ['sender', 'to', 'subject', 'message']
                 }
-                email.send_mail(**emailFields)
+                email.send_mail(**email_fields)
 
             data = dict(success=True, message="Message sent")
 
