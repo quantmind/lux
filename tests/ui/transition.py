@@ -1,5 +1,5 @@
 from lux.utils import test
-from lux.extensions.ui.lib import *
+from lux.extensions.ui.lib import *     # noqa
 
 
 class TestMedia(test.TestCase):

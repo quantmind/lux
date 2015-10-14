@@ -36,4 +36,4 @@ class Extension(lux.Extension):
         if user.is_authenticated():
             token['username'] = user.username
             token['user_id'] = user.id
-            token['name'] = user.full_name()
+            token['name'] = user.full_name

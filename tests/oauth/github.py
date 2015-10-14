@@ -2,7 +2,6 @@
 from pulsar.apps.http.auth import HTTPBasicAuth
 
 from lux.utils import test
-from lux.extensions.services import api
 
 
 @test.skipUnless(test.get_params('GITHUB_USERNAME',
@@ -21,13 +20,11 @@ class TestGithub(test.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cfg = cls.cfg
-        cls.g = api('github', cfg)
-        cls.auth = yield cls.g.authorization(
+        cls.github = cls.api('github')
+        cls.auth = yield cls.github.authorization(
             note='Lux github test',
             pre_request=cls.basic(),
             scopes=['user', 'repo', 'gist'])
-        cls.github = g
 
     @classmethod
     def tearDownClass(cls):
@@ -51,6 +48,7 @@ class TestGithub(test.TestCase):
 
 
 class d:
+
     def test_authorization(self):
         auth = self.auth
         self.assertTrue('id' in auth)

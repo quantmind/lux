@@ -37,7 +37,7 @@ class TestMigrationsCommands(test.TestCase):
 
     def test_no_params(self):
         cmd = self.cmd()
-        msg = 'Put [-l] for available commands'
+        msg = 'Pass [--commands] for available commands'
 
         with self.assertRaises(CommandError) as e:
             yield from cmd([])
@@ -45,7 +45,7 @@ class TestMigrationsCommands(test.TestCase):
 
     def test_wrong_param(self):
         cmd = self.cmd()
-        msg = 'Unrecognized command: test\nPut [-l] for available commands'
+        msg = 'Unrecognized command test'
 
         with self.assertRaises(CommandError) as e:
             yield from cmd(['test'])
@@ -53,13 +53,13 @@ class TestMigrationsCommands(test.TestCase):
 
     def test_list_command(self):
         cmd = self.cmd()
-        result = yield from cmd(['-l'])
+        result = yield from cmd(['--commands'])
         cmd_msg = 'Available commands:\n%s' % ', '.join(cmd.commands)
         self.assertEqual(result, cmd_msg)
 
     def test_missing_m_param(self):
         cmd = self.cmd()
-        msg = 'Missing [-m] parameter for: auto'
+        msg = 'Missing [-m] parameter for auto'
 
         with self.assertRaises(CommandError) as e:
             yield from cmd(['auto'])
@@ -67,7 +67,7 @@ class TestMigrationsCommands(test.TestCase):
 
     def test_missing_revision_id(self):
         cmd = self.cmd()
-        msg = 'Command: show required revision id'
+        msg = 'Command show required revision id'
 
         with self.assertRaises(CommandError) as e:
             yield from cmd(['show'])
@@ -75,7 +75,7 @@ class TestMigrationsCommands(test.TestCase):
 
     def test_missing_two_revisions_in_merge(self):
         cmd = self.cmd()
-        msg = 'Command: merge required revisions id.'
+        msg = 'Command merge required revisions id.'
 
         with self.assertRaises(CommandError) as e:
             yield from cmd(['merge', 'rev_id1', '-m', 'test'])

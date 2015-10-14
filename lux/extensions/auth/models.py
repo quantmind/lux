@@ -57,6 +57,7 @@ class User(Model, UserMixin):
     def is_superuser(self):
         return self.superuser
 
+    @property
     def full_name(self):
         name = ''
         if self.first_name:
@@ -75,6 +76,11 @@ class Group(Model):
     name = Column(String(80), unique=True)
     permissions = relationship("Permission", secondary=groups_permissions,
                                backref="groups")
+
+    def __repr__(self):
+        return self.name
+
+    __str__ = __repr__
 
 
 class Permission(Model):
@@ -110,5 +116,6 @@ class Registration(Model):
 
 class MailingList(Model):
     id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('user.id'))
     email = Column(String(120), unique=True)
     topic = Column(String(60))

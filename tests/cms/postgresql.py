@@ -1,7 +1,5 @@
 import json
 
-from dateutil.parser import parse
-
 from lux.utils import test
 
 
@@ -24,7 +22,7 @@ class TestCMSpostgresql(test.AppTestCase):
             template = data['id']
         if not layout:
             layout = json.dumps({})
-        data = dict(path=path, title=title, template_id=template,
+        data = dict(path=path, title=title, template=template,
                     layout=layout)
         request = yield from self.client.post(
             '/api/html_pages', body=data, content_type='application/json')

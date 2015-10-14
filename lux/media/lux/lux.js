@@ -1,6 +1,6 @@
 //      Lux Library - v0.2.0
 
-//      Compiled 2015-10-09.
+//      Compiled 2015-10-13.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -2542,12 +2542,13 @@ angular.module('lux.cms.core', [])
                                 grp.append(opt);
                             });
                         });
-                    } else
+                    } else {
                         forEach(options, function (opt) {
                             opt = $($document[0].createElement('option'))
                                     .attr('value', opt.value).html(opt.repr || opt.value);
                             select.append(opt);
                         });
+                    }
 
                     if (field.multiple)
                         select.attr('multiple', true);
@@ -3222,11 +3223,13 @@ angular.module('lux.form.utils', ['lux.services'])
 
             api.get(null, params).then(function (data) {
                 if (attrs.multiple) {
+                    scope[scope.formModelName][attrs.name] = [];
                     options.splice(0, 1);
                 } else {
+                    scope[scope.formModelName][attrs.name] = '';
                     options[0].name = 'Please select...';
                 }
-                scope[scope.formModelName][attrs.name] = '';
+
                 angular.forEach(data.data.result, function (val) {
                     var name;
                     if (nameFromFormat) {
@@ -3239,12 +3242,14 @@ angular.module('lux.form.utils', ['lux.services'])
                         name: name
                     });
 
+                    if (attrs.multiple)
+                        scope[scope.formModelName][attrs.name].push(val[id]);
+
                 });
             }, function (data) {
                 /** TODO: add error alert */
                 options[0] = '(error loading options)';
             });
-            scope[scope.formModelName][attrs.name] = '';
         }
 
         function link(scope, element, attrs) {
@@ -4108,8 +4113,10 @@ function gridDataProviderWebsocketFactory ($scope) {
                 scope.gridState = gridDefaults.gridState;
                 scope.gridFilters = gridDefaults.gridFilters;
 
+                var reprPath = options.reprPath || $lux.window.location;
+
                 scope.objectUrl = function(entity) {
-                    return $lux.window.location + '/' + entity[scope.gridOptions.metaFields.id];
+                    return reprPath + '/' + entity[scope.gridOptions.metaFields.id];
                 };
 
                 scope.getBooleanFieldIcon = function(COL_FIELD) {

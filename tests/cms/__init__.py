@@ -1,7 +1,4 @@
-from datetime import datetime
-
 import lux
-from lux import forms
 from lux.extensions.cms import AnyPage
 
 from tests.config import *  # noqa

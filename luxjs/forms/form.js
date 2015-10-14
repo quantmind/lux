@@ -402,12 +402,13 @@
                                 grp.append(opt);
                             });
                         });
-                    } else
+                    } else {
                         forEach(options, function (opt) {
                             opt = $($document[0].createElement('option'))
                                     .attr('value', opt.value).html(opt.repr || opt.value);
                             select.append(opt);
                         });
+                    }
 
                     if (field.multiple)
                         select.attr('multiple', true);
@@ -450,7 +451,7 @@
                                 .attr('data-remote-options-value', field['data-remote-options-value']);
 
                         if (field.multiple)
-                            match.html('{{$item.name}}');
+                            match.html('{{$item.repr || $item.name}}');
                         else
                             match.html('{{$select.selected.name}}');
 

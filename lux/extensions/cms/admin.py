@@ -11,12 +11,12 @@ class CmsAdmin(admin.CRUDAdmin):
     section = 'cms'
 
 
-@admin.register(PageCRUD.model)
+@admin.register(PageCRUD)
 class PageAdmin(CmsAdmin):
     '''Admin views for html pages
     '''
     icon = 'fa fa-sitemap'
-    form = Layout(PageForm,
+    form = Layout(PageCRUD._model.form,
                   Fieldset(all=True),
                   Submit('Add new page'))
     updateform = Layout(PageForm,
@@ -24,10 +24,10 @@ class PageAdmin(CmsAdmin):
                         Submit('Update page'))
 
 
-@admin.register(TemplateCRUD.model)
+@admin.register(TemplateCRUD)
 class TemplateAdmin(CmsAdmin):
     icon = 'fa fa-file-code-o'
-    form = Layout(TemplateForm,
+    form = Layout(TemplateCRUD._model.form,
                   Fieldset(all=True),
                   Submit('Add new template'))
     updateform = Layout(TemplateForm,

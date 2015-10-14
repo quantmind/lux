@@ -112,16 +112,11 @@ class TestClient:
         extra['REQUEST_METHOD'] = 'GET'
         return self.request(path=path, **extra)
 
-    def post(self, path=None, body=None, content_type=None, **extra):
-        extra['REQUEST_METHOD'] = 'POST'
-        if body is not None and not isinstance(body, bytes):
-            if content_type is None:
-                body, content_type = encode_multipart_formdata(body)
-            elif content_type == 'application/json':
-                body = json.dumps(body).encode('utf-8')
+    def post(self, path=None, **extra):
+        return self._post_put('POST', path=path, **extra)
 
-        return self.request(path=path, content_type=content_type,
-                            body=body, **extra)
+    def put(self, path=None, **extra):
+        return self._post_put('PUT', path=path, **extra)
 
     def delete(self, path=None, **extra):
         extra['REQUEST_METHOD'] = 'DELETE'
@@ -142,6 +137,17 @@ class TestClient:
                    ('Sec-WebSocket-Version', str(max(SUPPORTED_VERSIONS))),
                    ('Sec-WebSocket-Key', websocket_key())]
         return self.get(path, headers=headers)
+
+    def _post_put(self, m, path=None, body=None, content_type=None, **extra):
+        extra['REQUEST_METHOD'] = m
+        if body is not None and not isinstance(body, bytes):
+            if content_type is None:
+                body, content_type = encode_multipart_formdata(body)
+            elif content_type == 'application/json':
+                body = json.dumps(body).encode('utf-8')
+
+        return self.request(path=path, content_type=content_type,
+                            body=body, **extra)
 
 
 class TestMixin:

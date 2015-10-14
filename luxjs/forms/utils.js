@@ -29,9 +29,9 @@ angular.module('lux.form.utils', ['lux.services'])
                 if (attrs.multiple) {
                     options.splice(0, 1);
                 } else {
+                    scope[scope.formModelName][attrs.name] = '';
                     options[0].name = 'Please select...';
                 }
-                scope[scope.formModelName][attrs.name] = '';
                 angular.forEach(data.data.result, function (val) {
                     var name;
                     if (nameFromFormat) {
@@ -43,7 +43,6 @@ angular.module('lux.form.utils', ['lux.services'])
                         id: val[id],
                         name: name
                     });
-
                 });
             }, function (data) {
                 /** TODO: add error alert */
