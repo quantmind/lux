@@ -451,7 +451,7 @@
                                 .attr('data-remote-options-value', field['data-remote-options-value']);
 
                         if (field.multiple)
-                            match.html('{{$item.name}}');
+                            match.html('{{$item.repr || $item.name}}');
                         else
                             match.html('{{$select.selected.name}}');
 
