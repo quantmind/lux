@@ -133,18 +133,18 @@ class AuthMixin(PasswordMixin):
         ip_address = request.get_client_address()
         user_id = user.id if user.is_authenticated() else None
 
-        with odm.begin() as session:
+        with odm.begin(close=False) as session:
             token = odm.token(id=uuid.uuid4(),
                               user_id=user_id,
                               ip_address=ip_address,
                               user_agent=self.user_agent(request, 80),
                               **kwargs)
             session.add(token)
-
         token.encoded = self.encode_token(request,
                                           token_id=token.id.hex,
-                                          user=user,
+                                          user=token.user,
                                           expiry=token.expiry)
+        session.close()
         return token
 
     def create_registration(self, request, user, expiry=None, **kw):
