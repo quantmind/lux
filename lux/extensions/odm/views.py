@@ -1,6 +1,6 @@
 from sqlalchemy.exc import DataError
 from sqlalchemy.orm.exc import NoResultFound
-from sqlalchemy.orm import object_session, load_only
+from sqlalchemy.orm import load_only
 from sqlalchemy import desc
 
 from pulsar import PermissionDenied, MethodNotAllowed, Http404
@@ -70,23 +70,18 @@ class RestRouter(rest.RestRouter):
 
     def update_model(self, request, instance, data):
         model = self.model(request)
-        session = object_session(instance)
-        if session:
+        odm = request.app.odm()
+        session = odm.session_from_object(instance)
+        with odm.begin(session=session) as session:
+            session.add(instance)
             for name, value in data.items():
                 model.set_model_attribute(instance, name, value)
-        else:
-            with request.app.odm().begin() as session:
-                session.add(instance)
-                for name, value in data.items():
-                    model.set_model_attribute(instance, name, value)
         return instance
 
     def delete_model(self, request, instance):
-        session = object_session(instance)
-        if not session:
-            with request.app.odm().begin() as session:
-                session.delete(instance)
-        else:
+        odm = request.app.odm()
+        session = odm.session_from_object(instance)
+        with odm.begin(session=session) as session:
             session.delete(instance)
 
     def serialise_model(self, request, data, **kw):
