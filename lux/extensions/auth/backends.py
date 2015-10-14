@@ -142,7 +142,7 @@ class AuthMixin(PasswordMixin):
             session.add(token)
         token.encoded = self.encode_token(request,
                                           token_id=token.id.hex,
-                                          user=token.user,
+                                          user=token.user or user,
                                           expiry=token.expiry)
         session.close()
         return token
