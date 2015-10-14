@@ -17,6 +17,35 @@ class ContactRouterTestCase(unittest.TestCase):
     def setUp(self):
         self.cr = views.ContactRouter(dummy_rule)
 
+    def _create_mocks(self, JsonMock):
+        self.request_mock = MagicMock()
+        self.request_mock.data_and_files.return_value = ({}, '')
+
+        self.request_mock.app.config = dict(ENQUIRY_EMAILS=[
+            {
+                'sender': 'BMLL Technologies <noreply@bmlltech.com>',
+                'to': 'info@bmlltech.com',
+                'subject': 'website enquiry form',
+                'message': 'Enquiry from: {name} <{email}>\n\n' \
+                           + 'Message:\n' \
+                           + '{body}\n'
+            },
+        ])
+
+        form_mock = MagicMock()
+        FormMock = MagicMock()
+        form_mock.is_valid.return_value = True
+        form_mock.cleaned_data = dict(name='Jeremy Herr',
+                                      email='jeremyherr@bmlltech.com',
+                                      body='Here is my message to you')
+        FormMock.return_value = form_mock
+        views.ContactForm = FormMock
+
+        self.string_mock = EmptyClass()
+        self.string_mock.http_response = MagicMock(
+            return_value=http_response_return_value)
+        JsonMock.return_value = self.string_mock
+
     def test_get_html(self):
         mock_form = EmptyClass()
         mock_form.as_form = MagicMock(return_value=get_html_return_value)
@@ -32,37 +61,11 @@ class ContactRouterTestCase(unittest.TestCase):
 
     def test_post_one_email_form_valid(self):
         with patch('lux.extensions.smtp.views.Json') as JsonMock:
-            request_mock = MagicMock()
-            request_mock.data_and_files.return_value = ({}, '')
+            self._create_mocks(JsonMock)
 
-            request_mock.app.config = dict(ENQUIRY_EMAILS=[
-                {
-                    'sender': 'BMLL Technologies <noreply@bmlltech.com>',
-                    'to': 'info@bmlltech.com',
-                    'subject': 'website enquiry form',
-                    'message': 'Enquiry from: {name} <{email}>\n\n' \
-                               + 'Message:\n' \
-                               + '{body}\n'
-                },
-            ])
+            self.cr.post(self.request_mock)
 
-            form_mock = MagicMock()
-            FormMock = MagicMock()
-            form_mock.is_valid.return_value = True
-            form_mock.cleaned_data = dict(name='Jeremy Herr',
-                                          email='jeremyherr@bmlltech.com',
-                                          body='Here is my message to you')
-            FormMock.return_value = form_mock
-            views.ContactForm = FormMock
-
-            string_mock = EmptyClass()
-            string_mock.http_response = MagicMock(
-                return_value=http_response_return_value)
-            JsonMock.return_value = string_mock
-
-            self.cr.post(request_mock)
-
-            request_mock.app.email_backend.send_mail.assert_called_once_with(
+            self.request_mock.app.email_backend.send_mail.assert_called_once_with(
                 sender='BMLL Technologies <noreply@bmlltech.com>',
                 to='info@bmlltech.com',
                 subject='website enquiry form',
@@ -73,7 +76,8 @@ class ContactRouterTestCase(unittest.TestCase):
 
             JsonMock.assert_called_once_with(
                 dict(success=True, message="Message sent"))
-            string_mock.http_response.assert_called_once_with(request_mock)
+            self.string_mock.http_response.assert_called_once_with(self.request_mock)
+
 
 
 if __name__ == '__main__':
