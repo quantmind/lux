@@ -5,12 +5,20 @@ from enum import Enum
 import pytz
 
 from sqlalchemy import Column
+from sqlalchemy.orm import class_mapper
 
 from pulsar.utils.html import nicename
 
 from odm.utils import get_columns
 
 from lux.extensions import rest
+
+
+def is_same_model(model1, model2):
+    if type(model1) == type(model2):
+        pkname = class_mapper(type(model1)).primary_key[0].name
+        return getattr(model1, pkname) == getattr(model2, pkname)
+    return False
 
 
 class RestColumn(rest.RestColumn):
@@ -60,11 +68,11 @@ class RestModel(rest.RestModel):
         '''Set the the attribute ``name`` to ``value`` in a model ``instance``
         '''
         current_value = getattr(instance, name, None)
-        if isinstance(current_value, (list, set)):
-            if not isinstance(value, (list, tuple, set)):
-                raise TypeError('list or tuple required')
-            col = self._rest_columns.get(name)
-            if isinstance(col, ModelColumn):
+        col = self._rest_columns.get(name)
+        if isinstance(col, ModelColumn):
+            if isinstance(current_value, (list, set)):
+                if not isinstance(value, (list, tuple, set)):
+                    raise TypeError('list or tuple required')
                 relmodel = col.model(self._app)
                 idfield = relmodel.id_field
                 all = set((getattr(v, idfield) for v in value))
@@ -79,6 +87,8 @@ class RestModel(rest.RestModel):
                     pkey = getattr(item, idfield)
                     if pkey not in avail:
                         current_value.append(item)
+            elif not is_same_model(current_value, value):
+                setattr(instance, name, value)
         else:
             setattr(instance, name, value)
 

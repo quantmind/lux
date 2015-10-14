@@ -226,7 +226,7 @@ class CRUD(RestRouter):
 
                 self.check_model_permission(request, rest.UPDATE)
                 columns = self.columns_with_permission(request, rest.UPDATE)
-                columns = self.column_fields(columns)
+                columns = self.column_fields(columns, 'name')
 
                 if not form_class:
                     raise MethodNotAllowed
