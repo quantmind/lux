@@ -90,11 +90,10 @@
                             if (isObject(value)) value = JSON.stringify(value, null, 4);
 
                             if (isArray(value)) {
-                                var fieldKey = key + '[]';
-                                model[fieldKey] = [];
+                                model[key] = [];
 
                                 forEach(value, function(item) {
-                                    model[fieldKey].push(item.id);
+                                    model[key].push(item.id);
                                 });
                             }
                             else
