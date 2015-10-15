@@ -138,7 +138,9 @@ class RestModel(rest.RestModel):
         if obj:
             data = {'id': getattr(obj, self.id_field)}
             if self.repr_field != self.id_field:
-                data['repr'] = getattr(obj, self.repr_field)
+                repr = getattr(obj, self.repr_field)
+                if repr != data['id']:
+                    data['repr'] = repr
             return data
 
     def _load_columns(self):

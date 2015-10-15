@@ -40,12 +40,12 @@ class RestRouter(rest.RestRouter):
         return model.query(query)
 
     # RestView implementation
-    def get_instance(self, request, **args):
+    def get_instance(self, request, session=None, **args):
         odm = request.app.odm()
         args = args or request.urlargs
         if not args:  # pragma    nocover
             raise Http404
-        with odm.begin() as session:
+        with odm.begin(session=session) as session:
             query = self.query(request, session)
             try:
                 return query.filter_by(**args).one()
@@ -202,11 +202,7 @@ class CRUD(RestRouter):
         args = {model.id_field: request.urlargs['id']}
         odm = request.app.odm()
         with odm.begin() as session:
-            query = self.query(request, session)
-            try:
-                instance = query.filter_by(**args).one()
-            except (DataError, NoResultFound):
-                raise Http404
+            instance = self.get_instance(request, session, **args)
 
             if request.method == 'GET':
                 self.check_model_permission(request, rest.READ)
