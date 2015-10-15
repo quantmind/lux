@@ -4,8 +4,15 @@ import odm
 
 from odm.types import JSONType
 
+from sqlalchemy.orm import relationship
 from sqlalchemy import (Column, Integer, String, Text, Boolean, ForeignKey,
                         DateTime)
+
+
+class Template(odm.Model):
+    id = Column(Integer, primary_key=True)
+    title = Column(String(256))
+    body = Column(Text)
 
 
 class Page(odm.Model):
@@ -21,8 +28,4 @@ class Page(odm.Model):
     root = Column(String(256))
     '''An identifier for a group of pages.'''
 
-
-class Template(odm.Model):
-    id = Column(Integer, primary_key=True)
-    title = Column(String(256))
-    body = Column(Text)
+    template = relationship(Template)

@@ -25,15 +25,16 @@ angular.module('lux.form.utils', ['lux.services'])
 
             options.push(initialValue);
 
+            // Set empty value if field was not filled
+            if (scope[scope.formModelName][attrs.name] === undefined)
+                scope[scope.formModelName][attrs.name] = '';
+
             api.get(null, params).then(function (data) {
                 if (attrs.multiple) {
-                    scope[scope.formModelName][attrs.name] = [];
                     options.splice(0, 1);
                 } else {
-                    scope[scope.formModelName][attrs.name] = '';
                     options[0].name = 'Please select...';
                 }
-
                 angular.forEach(data.data.result, function (val) {
                     var name;
                     if (nameFromFormat) {
@@ -45,10 +46,6 @@ angular.module('lux.form.utils', ['lux.services'])
                         id: val[id],
                         name: name
                     });
-
-                    if (attrs.multiple)
-                        scope[scope.formModelName][attrs.name].push(val[id]);
-
                 });
             }, function (data) {
                 /** TODO: add error alert */

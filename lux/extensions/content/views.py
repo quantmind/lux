@@ -46,11 +46,10 @@ class TextCRUD(TextCRUDBase):
     def post(self, request):
         '''Create a new model
         '''
-        form = self.model.form
-        if not form:
+        model = self.model(request.app)
+        if not model.form:
             raise Http404
         backend = request.cache.auth_backend
-        model = self.model
         if backend.has_permission(request, model.name, rest.CREATE):
             data, files = self.json_data_files(request)
             form = model.form(request, data=data, files=files)
@@ -82,6 +81,7 @@ class TextCRUD(TextCRUDBase):
     @route('<path:path>', method=('get', 'head', 'post'))
     def read_update(self, request):
         path = request.urlargs['path']
+        model = self.model(request.app)
         backend = request.cache.auth_backend
 
         if request.method == 'GET':
@@ -89,13 +89,13 @@ class TextCRUD(TextCRUDBase):
                 return self.render_file(request, path, True)
             except Http404:
                 if not path.endswith('/'):
-                    if self.model.exist(request, '%s/index' % path):
+                    if model.exist(request, '%s/index' % path):
                         raise HttpRedirect('%s/' % path)
                 raise
 
-        content = self.get_model(request, path)
+        content = self.get_content(request, path)
         if request.method == 'HEAD':
-            if backend.has_permission(request, self.model.name, rest.READ):
+            if backend.has_permission(request, model.name, rest.READ):
                 return request.response
 
         if request.method == 'POST':
@@ -106,18 +106,20 @@ class TextCRUD(TextCRUDBase):
     def query(self, request, session):
         return session
 
-    def get_model(self, request, path, sha=None):
+    def get_content(self, request, path, sha=None):
+        model = self.model(request.app)
         try:
-            return self.model.read(request, path)
+            return model.read(request, path)
         except DataError:
             raise Http404
 
     def create_model(self, request, data):
         '''Create a new document
         '''
+        model = self.model(request.app)
         name = data.get('name') or data['title']
         data['name'] = slugify(name, max_length=SLUG_LENGTH)
-        return self.model.write(request.cache.user, data, new=True)
+        return model.write(request.cache.user, data, new=True)
 
     def update_model(self, request, instance, data):
         pass
@@ -131,10 +133,11 @@ class TextCRUD(TextCRUDBase):
     def render_file(self, request, path='', as_response=False):
         if path.endswith('/'):
             path = '%sindex' % path
-        content = self.get_model(request, path)
+        model = self.model(request.app)
+        content = self.get_content(request, path)
         backend = request.cache.auth_backend
 
-        if backend.has_permission(request, self.model.name, rest.READ):
+        if backend.has_permission(request, model.name, rest.READ):
             response = request.response
             response.content_type = content.content_type
             if content.content_type == 'text/html':

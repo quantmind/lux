@@ -32,7 +32,7 @@ class TestWrappers(test.TestCase):
     def test_bad_url(self):
         app = self.application(CACHE_SERVER='cbjhb://')
         self.assertRaises(ImproperlyConfigured,
-                          lambda : app.cache_server)
+                          lambda: app.cache_server)
 
 
 @skipUnless(REDIS_OK, 'Requires a running Redis server')

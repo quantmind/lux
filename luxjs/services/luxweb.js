@@ -88,7 +88,16 @@
                             // TODO: do we need a callback for JSON fields?
                             // or shall we leave it here?
                             if (isObject(value)) value = JSON.stringify(value, null, 4);
-                            model[key] = value;
+
+                            if (isArray(value)) {
+                                model[key] = [];
+
+                                forEach(value, function(item) {
+                                    model[key].push(item.id);
+                                });
+                            }
+                            else
+                                model[key] = value;
                         });
                     });
                 }

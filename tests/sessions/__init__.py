@@ -1,7 +1,6 @@
 import lux
 
-from lux import forms, HtmlRouter
-from lux.extensions import odm
+from lux import HtmlRouter
 
 from tests.config import *  # noqa
 

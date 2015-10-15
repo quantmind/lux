@@ -10,23 +10,28 @@ from lux.extensions import odm
 from lux.core.cms import Page
 
 
+def template_model():
+    return odm.RestModel('template',
+                         TemplateForm,
+                         url='html_templates',
+                         repr_field='title')
+
+
+def page_model():
+    return odm.RestModel('page', PageForm, url='html_pages')
+
+
 class TemplateForm(forms.Form):
     title = forms.CharField()
     body = forms.TextField(text_edit=json.dumps({'mode': 'html'}))
-
-
-class TemplateCRUD(odm.CRUD):
-    model = odm.RestModel('template',
-                          TemplateForm,
-                          url='html_templates',
-                          repr_field='title')
 
 
 class PageForm(forms.Form):
     path = forms.CharField(required=False)
     title = forms.CharField()
     description = forms.TextField(required=False)
-    template_id = odm.RelationshipField(TemplateCRUD.model, label='template')
+    template = odm.RelationshipField(template_model,
+                                     label='template')
     published = forms.BooleanField(required=False)
     layout = forms.JsonField(text_edit=json.dumps({'mode': 'json'}))
 
@@ -48,7 +53,11 @@ class PageForm(forms.Form):
 
 
 class PageCRUD(odm.CRUD):
-    model = odm.RestModel('page', PageForm, url='html_pages')
+    _model = page_model()
+
+
+class TemplateCRUD(odm.CRUD):
+    _model = template_model()
 
 
 class AnyPage(HtmlRouter):

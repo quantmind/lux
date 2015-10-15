@@ -39,8 +39,10 @@ class RestRoot(lux.Router):
 
     def apis(self, request):
         routes = {}
+        app = request.app
         for router in self.routes:
-            routes[router.model.api_name] = request.absolute_uri(router.path())
+            model = router.model(app)
+            routes[model.api_name] = request.absolute_uri(router.path())
         return routes
 
     def get(self, request):
@@ -48,18 +50,16 @@ class RestRoot(lux.Router):
 
 
 class RestMixin(ColumnPermissionsMixin):
-    model = None
-    '''Instance of a :class:`~lux.extensions.rest.RestModel`
-    '''
 
     def __init__(self, *args, **kwargs):
-        if self.model is None and args:
-            self.model, args = args[0], args[1:]
+        if self._model is None and args:
+            model, args = args[0], args[1:]
+            self.set_model(model)
 
-        if not isinstance(self.model, RestModel):
+        if not isinstance(self._model, RestModel):
             raise NotImplementedError('REST model not available')
 
-        super().__init__(self.model.url, *args, **kwargs)
+        super().__init__(self._model.url, *args, **kwargs)
 
     def limit(self, request, default=None):
         '''The maximum number of items to return when fetching list
@@ -101,8 +101,8 @@ class RestMixin(ColumnPermissionsMixin):
                             text=None, sortby=None, **params):
         '''Handle a response for a list of models
         '''
-        model = self.model
         app = request.app
+        model = self.model(app)
         limit = self.limit(request, limit)
         offset = self.offset(request, offset)
         text = self.search_text(request, text)
@@ -124,7 +124,7 @@ class RestMixin(ColumnPermissionsMixin):
         raise NotImplementedError
 
     def filter(self, request, query, text, params, model=None):
-        model = model or self.model
+        model = model or self.model(request.app)
         columns = model.columnsMapping(request.app)
 
         for key, value in params.items():
@@ -155,22 +155,24 @@ class RestMixin(ColumnPermissionsMixin):
         served by this router
         '''
         app = request.app
+        model = self.model(app)
         columns = self.columns_with_permission(request, READ)
         #
         # Don't include columns which are excluded from meta
-        exclude = self.model._exclude
+        exclude = model._exclude
         if exclude:
             columns = [c for c in columns if c['name'] not in exclude]
 
-        return {'id': self.model.id_field,
-                'repr': self.model.repr_field,
+        return {'id': model.id_field,
+                'repr': model.repr_field,
                 'columns': columns,
                 'default-limit': app.config['API_LIMIT_DEFAULT']}
 
     def serialise_model(self, request, data, **kw):
         '''Serialise on model
         '''
-        return self.model.tojson(request, data)
+        model = self.model(request.app)
+        return model.tojson(request, data)
 
     def json_data_files(self, request):
         content_type, _ = request.content_type_options
@@ -215,7 +217,7 @@ class Authorization(RestRouter, ProcessLoginMixin):
 
     All views respond to POST requests
     '''
-    model = RestModel('authorization')
+    _model = RestModel('authorization')
     create_user_form = CreateUserForm
     change_password_form = ChangePasswordForm
 

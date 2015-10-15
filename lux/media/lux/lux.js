@@ -1,6 +1,6 @@
 //      Lux Library - v0.2.0
 
-//      Compiled 2015-10-12.
+//      Compiled 2015-10-14.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -908,7 +908,16 @@ function(angular, root) {
                             // TODO: do we need a callback for JSON fields?
                             // or shall we leave it here?
                             if (isObject(value)) value = JSON.stringify(value, null, 4);
-                            model[key] = value;
+
+                            if (isArray(value)) {
+                                model[key] = [];
+
+                                forEach(value, function(item) {
+                                    model[key].push(item.id);
+                                });
+                            }
+                            else
+                                model[key] = value;
                         });
                     });
                 }
@@ -2591,7 +2600,7 @@ angular.module('lux.cms.core', [])
                                 .attr('data-remote-options-value', field['data-remote-options-value']);
 
                         if (field.multiple)
-                            match.html('{{$item.name}}');
+                            match.html('{{$item.repr || $item.name}}');
                         else
                             match.html('{{$select.selected.name}}');
 
@@ -3223,13 +3232,11 @@ angular.module('lux.form.utils', ['lux.services'])
 
             api.get(null, params).then(function (data) {
                 if (attrs.multiple) {
-                    scope[scope.formModelName][attrs.name] = [];
                     options.splice(0, 1);
                 } else {
                     scope[scope.formModelName][attrs.name] = '';
                     options[0].name = 'Please select...';
                 }
-
                 angular.forEach(data.data.result, function (val) {
                     var name;
                     if (nameFromFormat) {
@@ -3241,15 +3248,12 @@ angular.module('lux.form.utils', ['lux.services'])
                         id: val[id],
                         name: name
                     });
-
-                    if (attrs.multiple)
-                        scope[scope.formModelName][attrs.name].push(val[id]);
-
                 });
             }, function (data) {
                 /** TODO: add error alert */
                 options[0] = '(error loading options)';
             });
+            scope[scope.formModelName][attrs.name] = '';
         }
 
         function link(scope, element, attrs) {

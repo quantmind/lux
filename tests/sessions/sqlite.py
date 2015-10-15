@@ -1,5 +1,3 @@
-from lux.utils import test
-
 from . import postgresql
 
 

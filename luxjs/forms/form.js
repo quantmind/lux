@@ -451,12 +451,12 @@
                                 .attr('data-remote-options-value', field['data-remote-options-value']);
 
                         if (field.multiple)
-                            match.html('{{$item.name}}');
+                            match.html('{{$item.repr || $item.name || $item.id}}');
                         else
-                            match.html('{{$select.selected.name}}');
+                            match.html('{{$select.selected.name || $select.selected.id}}');
 
                         choices.attr('repeat', field['data-ng-options-ui-select'] + ' | filter: $select.search');
-                        choices_inner.html('{{item.name}}');
+                        choices_inner.html('{{item.name || item.id}}');
                     } else {
                         // Local options
                         var optsId = field.name + '_opts',

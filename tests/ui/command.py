@@ -1,6 +1,5 @@
 import os
 
-import lux
 from lux.utils import test
 
 

@@ -30,14 +30,6 @@ class CommandTests(test.TestCase):
         app = self.application()
         page = app.cms.page('')
         self.assertTrue(page)
-        self.assertEqual(page['path'], '/')
-        self.assertEqual(page['template'], 'home.html')
-        self.assertIsInstance(app.cms._sitemap, list)
-
-    def test_cms_page(self):
-        app = self.application()
-        page = app.cms.page('')
-        self.assertTrue(page)
         self.assertEqual(page.path, '/')
         self.assertEqual(page.template, 'home.html')
         self.assertIsInstance(app.cms._sitemap, list)

@@ -38,7 +38,7 @@ class TestPostgreSql(test.AppTestCase):
                      **data):
         data['subject'] = subject
         if person:
-            data['assigned_id'] = person['id']
+            data['assigned'] = person['id']
         request = yield from self.client.post(
             '/tasks', body=data, token=token,
             content_type='application/json')
@@ -96,16 +96,18 @@ class TestPostgreSql(test.AppTestCase):
         tables = yield from self.app.odm.tables()
         self.assertTrue(tables)
         self.assertEqual(len(tables), 1)
-        self.assertEqual(len(tables[0][1]), 9)
+        self.assertEqual(len(tables[0][1]), 10)
 
     def test_rest_model(self):
         from tests.odm import CRUDTask, CRUDPerson
-        model = CRUDTask.model
+        model = CRUDTask().model(self.app)
         self.assertEqual(model.name, 'task')
         columns = model.columns(self.app)
         self.assertTrue(columns)
 
-        model = CRUDPerson.model
+        model = CRUDPerson().model(self.app)
+        self.assertEqual(model, CRUDPerson().model(self.app))
+
         self.assertEqual(model.name, 'person')
         self.assertEqual(model.url, 'people')
         self.assertEqual(model.api_name, 'people_url')
@@ -228,17 +230,16 @@ class TestPostgreSql(test.AppTestCase):
         person = yield from self._create_person(token, 'spiderman')
         task = yield from self._create_task(token, 'climb a wall a day',
                                             person)
-        self.assertTrue('assigned_id' in task)
+        self.assertTrue('assigned' in task)
 
     def test_relationship_field_failed(self):
         token = yield from self._token()
         data = {'subject': 'climb a wall a day',
-                'assigned_id': 6868897}
+                'assigned': 6868897}
         request = yield from self.client.post('/tasks', body=data,
                                               token=token,
                                               content_type='application/json')
-        response = request.response
-        self.assertValidationError(request.response, 'assigned_id',
+        self.assertValidationError(request.response, 'assigned',
                                    'Invalid person')
 
     def test_unique_field(self):
@@ -355,3 +356,12 @@ class TestPostgreSql(test.AppTestCase):
         self.assertTrue(result)
         for task in result:
             self.assertEqual(task['done'], False)
+
+    def test_multi_relationship_field(self):
+        from lux.extensions.odm import RelationshipField, RestModel
+        field = RelationshipField(RestModel('book'), name='test_book',
+                                  multiple=True)
+        self.assertEqual(field._model.name, 'book')
+        attrs = field.getattrs()
+        self.assertEqual(attrs.get('multiple'), True)
+        self.assertEqual(attrs.get('label'), 'Test book')

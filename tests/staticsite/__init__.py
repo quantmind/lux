@@ -4,7 +4,7 @@ import shutil
 import lux
 from lux import Parameter
 from lux.utils import test
-# from lux.extensions.static import HtmlContent, Blog, Sitemap, SphinxDocs
+from lux.extensions.content import Content
 
 __test__ = False
 SITE_URL = 'http://example.com'
@@ -34,17 +34,13 @@ class Extension(lux.Extension):
     _config = [Parameter('TEST_DOCS', False, '')]
 
     def middleware(self, app):
-        content = HtmlContent(
-            '/',
-            Sitemap('/sitemap.xml'),
-            Blog('blog',
-                 child_url='<int:year>/<month2>/<slug>',
-                 html_body_template='blog.html',
-                 dir=os.path.join(base, 'content', 'blog'),
-                 meta_child={'og:type', 'article'}),
-            dir=os.path.join(base, 'content', 'site'),
-            meta={'template': 'main.html'})
-        if app.config['TEST_DOCS']:
-            doc = SphinxDocs('docs', dir=os.path.join(base, 'content', 'docs'))
-            content.add_child(doc)
+        content = Content('blog',
+                          child_url='<int:year>/<month2>/<slug>',
+                          html_body_template='blog.html',
+                          dir=os.path.join(base, 'content', 'blog'),
+                          meta_child={'og:type', 'article'})
+        # if app.config['TEST_DOCS']:
+        #     doc = SphinxDocs('docs',
+        #                      dir=os.path.join(base, 'content', 'docs'))
+        #     content.add_child(doc)
         return [content]

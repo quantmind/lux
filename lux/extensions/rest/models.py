@@ -1,5 +1,6 @@
 import json
 import logging
+from copy import copy
 
 from pulsar.utils.html import nicename
 
@@ -40,6 +41,8 @@ class RestColumn:
 
     def _as_dict(self, defaults):
         for k, v in self.__dict__.items():
+            if k.startswith('_'):
+                continue
             if v is None and defaults:
                 if k == 'displayName':
                     v = nicename(self.name)
@@ -70,9 +73,20 @@ class RestModel:
     .. attribute:: updateform
 
         Form class for this REST model in editing mode
+
+    .. attribute:: exclude
+
+        Optional list of column names to exclude from the json
+        representation of a model instance
+
+    .. attribute:: hidden
+
+        Optional list of column names which will have the hidden attribute
+        set to True in the :class:`.RestColumn` metadata
     '''
     remote_options_str = 'item.id as item.name for item in {options}'
     remote_options_str_ui_select = 'item.id as item in {options}'
+    _app = None
     _loaded = False
 
     def __init__(self, name, form=None, updateform=None, columns=None,
@@ -90,13 +104,18 @@ class RestModel:
         self._api_url = api_url
         self._html_url = html_url
         self._columns = columns
-        self._exclude = frozenset(exclude or ())
-        self._hidden = frozenset(hidden or ())
+        self._exclude = set(exclude or ())
+        self._hidden = set(hidden or ())
 
     def __repr__(self):
         return self.name
 
     __str__ = __repr__
+
+    def set_model_attribute(self, instance, name, value):
+        '''Set the the attribute ``name`` to ``value`` in a model ``instance``
+        '''
+        setattr(instance, name, value)
 
     def tojson(self, request, object, exclude=None, decoder=None):
         '''Convert a model ``object`` into a JSON serializable
@@ -111,12 +130,17 @@ class RestModel:
         '''
         raise NotImplementedError
 
+    def query(self, query):
+        '''Manipulate a query if needed
+        '''
+        return query
+
     def columns(self, request):
         '''Return a list fields describing the entries for a given model
         instance'''
         if not self._loaded:
+            self._columns = self._load_columns()
             self._loaded = True
-            self._columns = self._load_columns(request.app)
         return self._columns
 
     def columnsMapping(self, request):
@@ -154,7 +178,12 @@ class RestModel:
             yield 'data-ng-options-ui-select', \
                 self.remote_options_str_ui_select.format(options=self.api_name)
 
-    def _load_columns(self, app):
+    def add_to_app(self, app):
+        model = copy(self)
+        model._app = app
+        return model
+
+    def _load_columns(self):
         '''List of column definitions
         '''
         input_columns = self._columns or []

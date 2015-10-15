@@ -6,31 +6,24 @@ from sqlalchemy.inspection import inspect
 from lux import forms
 from lux.forms.fields import MultipleMixin
 
-from .models import RestModel
+from .models import ModelMixin
 
 logger = logging.getLogger('lux.extensions.odm')
 
 
-class RelationshipField(MultipleMixin, forms.Field):
+class RelationshipField(MultipleMixin, forms.Field, ModelMixin):
     '''A :class:`.Field` for database relationships
-
-    .. attribute:: model
-
-        The name of the model this relationship field refers to
     '''
     validation_error = 'Invalid {0}'
-
     attrs = {'type': 'select'}
 
-    def __init__(self, model=None, request_params=None, format_string=None,
-                 **kwargs):
-        super().__init__(**kwargs)
-        assert model, 'no model defined'
-        if not isinstance(model, RestModel):
-            model = RestModel(model)
-        self.model = model
+    def __init__(self, model, request_params=None, format_string=None,
+                 get_field=None, **kw):
+        super().__init__(**kw)
+        self.set_model(model)
         self.request_params = request_params
         self.format_string = format_string
+        self.get_field = get_field
 
     def getattrs(self, form=None):
         attrs = super().getattrs(form)
@@ -38,7 +31,9 @@ class RelationshipField(MultipleMixin, forms.Field):
             logger.error('%s %s cannot get remote target. No form available',
                          self.__class__.__name__, self.name)
         else:
-            attrs.update(self.model.field_options(form.request))
+            request = form.request
+            model = self.model(request)
+            attrs.update(model.field_options(request))
             if self.format_string:
                 attrs['data-remote-options-value'] = json.dumps({
                     'type': 'formatString',
@@ -52,22 +47,34 @@ class RelationshipField(MultipleMixin, forms.Field):
         app = bfield.request.app
         # Get a reference to the object data mapper
         odm = app.odm()
-        model = odm[self.model.name]
+        model = self.model(app)
+        db_model = model.db_model()
         # TODO: this works but it is not general
-        pkname = model.__mapper__.primary_key[0].key
+        # pkname = db_model.__mapper__.primary_key[0].key
         if not self.multiple:
             value = (value,)
-        idcolumn = getattr(model, self.model.id_field)
-        with odm.begin() as session:
-            all = session.query(model).filter(idcolumn.in_(value))
-            if self.multiple:
-                return list(all)
-            else:
-                if all.count() == 1:
-                    return getattr(all.one(), pkname)
+        idcolumn = getattr(db_model, model.id_field)
+        try:
+            with odm.begin() as session:
+                all = session.query(db_model).filter(idcolumn.in_(value))
+                if self.multiple:
+                    return list(all)
                 else:
-                    raise forms.ValidationError(
-                        self.validation_error.format(self.model))
+                    if all.count() == 1:
+                        instance = all.one()
+                        if self.get_field:
+                            return getattr(instance, self.get_field)
+                        else:
+                            return instance
+                    else:
+                        raise forms.ValidationError(
+                            self.validation_error.format(model))
+        except forms.ValidationError:
+            raise
+        except Exception as exc:
+            app.logger.exception(str(exc))
+            raise forms.ValidationError(
+                self.validation_error.format(model))
 
 
 class UniqueField:

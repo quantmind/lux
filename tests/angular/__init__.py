@@ -37,8 +37,8 @@ class AngularTest(test.TestCase):
     def test_sitemap(self):
         app = self.application()
         request = self.request(app)
-        router = request.app_handler
-        response = request.response
+        # router = request.app_handler
+        # response = request.response
         jscontext = request.html_document.jscontext
         self.assertTrue('pages' in jscontext)
         pages = jscontext['pages']

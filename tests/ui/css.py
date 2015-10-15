@@ -1,8 +1,5 @@
-import sys
-import os
-
 from lux.utils import test
-from lux.extensions.ui.lib import *
+from lux.extensions.ui.lib import *     # noqa
 
 
 class TestCSS(test.TestCase):
@@ -172,16 +169,20 @@ class f:
                 gradient(('v', '#ffffff', '#f5f5f5')),
                 display='block')
         text = s.render()
-        r = '''
-    background-color: #f5f5f5;
-    background-image: -moz-linear-gradient(top, #ffffff, #f5f5f5);
-    background-image: -ms-linear-gradient(top, #ffffff, #f5f5f5);
-    background-image: -webkit-gradient(linear, 0 0, 0 100%, from(#ffffff), to(#f5f5f5));
-    background-image: -webkit-linear-gradient(top, #ffffff, #f5f5f5);
-    background-image: -o-linear-gradient(top, #ffffff, #f5f5f5);
-    background-image: linear-gradient(top, #ffffff, #f5f5f5);
-    background-repeat: repeat-x;
-    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ffffff', endColorstr='#f5f5f5', GradientType=0);'''
+        r = ["background-color: #f5f5f5;",
+             "background-image: -moz-linear-gradient(top, #ffffff, #f5f5f5);",
+             "background-image: -ms-linear-gradient(top, #ffffff, #f5f5f5);",
+             ("background-image: -webkit-gradient(linear, 0 0, 0 100%, "
+              "from(#ffffff),to(#f5f5f5));"),
+             ("background-image: -webkit-linear-gradient(top, #ffffff, "
+              "#f5f5f5);"),
+             "background-image: -o-linear-gradient(top, #ffffff, #f5f5f5);",
+             "background-image: linear-gradient(top, #ffffff, #f5f5f5);",
+             ("background-repeat: repeat-x;"
+              "filter: progid:DXImageTransform.Microsoft.gradient("
+              "startColorstr='#ffffff', endColorstr='#f5f5f5', "
+              "GradientType=0);")]
+        r = '\n    '.join(r)
         self.assertTrue(r in text)
 
     def testColor(self):

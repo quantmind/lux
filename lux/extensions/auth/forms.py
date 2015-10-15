@@ -6,9 +6,39 @@ from lux.extensions.rest import AuthenticationError, RestColumn
 from lux.extensions.rest.forms import PasswordForm
 from lux.extensions.rest.policy import validate_policy
 
-__all__ = ['PermissionForm', 'GroupForm',
-           'UserForm', 'CreateUserForm',
+__all__ = ['permission_model',
+           'group_model',
+           'user_model',
+           'PermissionForm',
+           'GroupForm',
+           'UserForm',
+           'CreateUserForm',
            'ChangePasswordForm']
+
+
+full_name = RestColumn('full_name', displayName='name',
+                       field=('first_name', 'last_name', 'username', 'email'))
+
+
+def permission_model():
+    return odm.RestModel('permission', PermissionForm, repr_field='name')
+
+
+def group_model():
+    model = odm.RestModel('group', GroupForm, repr_field='name')
+    model.add_related_column('permissions', permission_model)
+    return model
+
+
+def user_model():
+    return odm.RestModel('user',
+                         CreateUserForm,
+                         UserForm,
+                         id_field='username',
+                         repr_field='name',
+                         exclude=('password',),
+                         columns=(full_name,
+                                  odm.ModelColumn('groups', group_model)))
 
 
 class PermissionForm(forms.Form):
@@ -23,20 +53,13 @@ class PermissionForm(forms.Form):
         self.cleaned_data['policy'] = validate_policy(policy)
 
 
-PermissionModel = odm.RestModel('permission', PermissionForm,
-                                repr_field='name')
-
-
 class GroupForm(forms.Form):
     model = 'group'
     id = forms.HiddenField(required=False)
     name = forms.SlugField(validator=odm.UniqueField())
-    permissions = odm.RelationshipField(PermissionModel,
+    permissions = odm.RelationshipField(permission_model,
                                         multiple=True,
                                         required=False)
-
-
-GroupModel = odm.RestModel('group', GroupForm, repr_field='name')
 
 
 class UserForm(forms.Form):
@@ -48,7 +71,7 @@ class UserForm(forms.Form):
     superuser = forms.BooleanField()
     active = forms.BooleanField()
     joined = forms.DateTimeField(readonly=True, required=False)
-    groups = odm.RelationshipField(GroupModel,
+    groups = odm.RelationshipField(group_model,
                                    multiple=True,
                                    required=False)
 
@@ -69,19 +92,6 @@ class CreateUserForm(PasswordForm):
             return value
         else:
             raise forms.ValidationError('Username not available')
-
-
-full_name = RestColumn('full_name', displayName='name',
-                       field=('first_name', 'last_name', 'username', 'email'))
-
-
-UserModel = odm.RestModel('user',
-                          UserForm,
-                          CreateUserForm,
-                          id_field='username',
-                          repr_field='name',
-                          exclude=('password', 'first_name', 'last_name'),
-                          columns=(full_name,))
 
 
 class ChangePasswordForm(PasswordForm):
