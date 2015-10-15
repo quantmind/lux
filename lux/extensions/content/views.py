@@ -200,7 +200,8 @@ class RouterMap(Sitemap):
     content_router = None
 
     def items(self, request):
-        for item in self.content_router.model.all(request):
+        model = self.content_router.model(request)
+        for item in model.all(request):
             yield AttributeDictionary(loc=item['url'],
                                       lastmod=item['modified'],
                                       priority=item['priority'])
