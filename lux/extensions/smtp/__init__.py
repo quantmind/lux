@@ -24,7 +24,9 @@ class Extension(lux.Extension):
         Parameter('EMAIL_USE_TLS', False, 'use TLS when using SMTP email'),
         Parameter('EMAIL_TLS_KEYFILE', None, 'TLS Keyfile'),
         Parameter('EMAIL_TLS_CERTFILE', None, 'TLS cert file'),
-        Parameter('SMTP_LOG_LEVEL', None, 'Logging level for email messages')
+        Parameter('ENQUIRY_EMAILS', [],
+          'List of email messages to be sent on reception of enquiry'),
+        Parameter('SMTP_LOG_LEVEL', None, 'Logging level for email messages'),
     ]
 
     def on_start(self, app, server):
