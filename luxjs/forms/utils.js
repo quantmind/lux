@@ -25,6 +25,10 @@ angular.module('lux.form.utils', ['lux.services'])
 
             options.push(initialValue);
 
+            // Set empty value if field was not filled
+            if (scope[scope.formModelName][attrs.name] === undefined)
+                scope[scope.formModelName][attrs.name] = '';
+
             api.get(null, params).then(function (data) {
                 if (attrs.multiple) {
                     options.splice(0, 1);
