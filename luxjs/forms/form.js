@@ -573,13 +573,11 @@
                     });
 
                     // Add the invalid handler if not available
-                    var errors = p.children().length;
-                    if (errors === (field.required ? 1 : 0)) {
-                        var nameError = '$invalid';
-                        if (errors)
-                            nameError += ' && !' + [scope.formName, field.name, '$error.required'].join('.');
-                        p.append(this.fieldErrorElement(scope, nameError, self.errorMessage(scope, 'invalid')));
-                    }
+                    var errors = p.children().length,
+                        nameError = '$invalid';
+                    if (errors)
+                        nameError += ' && !' + [scope.formName, field.name, '$error.required'].join('.');
+                    p.append(this.fieldErrorElement(scope, nameError, self.errorMessage(scope, 'invalid')));
 
                     // Add the invalid handler for server side errors
                     var name = '$invalid';
