@@ -25,7 +25,7 @@ class Extension(lux.Extension):
         Parameter('EMAIL_TLS_KEYFILE', None, 'TLS Keyfile'),
         Parameter('EMAIL_TLS_CERTFILE', None, 'TLS cert file'),
         Parameter('ENQUIRY_EMAILS', [],
-          'List of email messages to be sent on reception of enquiry'),
+                  'List of email messages to be sent on reception of enquiry'),
         Parameter('SMTP_LOG_LEVEL', None, 'Logging level for email messages'),
     ]
 

@@ -28,20 +28,20 @@ class ContactRouterTestCase(unittest.TestCase):
 
         self.request_mock.app.config = dict(ENQUIRY_EMAILS=[
             {
-                'sender': 'BMLL Technologies <noreply@bmlltech.com>',
-                'to': 'info@bmlltech.com',
+                'sender': 'FOO Technologies <noreply@foo.com>',
+                'to': 'info@foo.com',
                 'subject': 'website enquiry form',
-                'message': 'Enquiry from: {name} <{email}>\n\n' \
-                           + 'Message:\n' \
-                           + '{body}\n'
+                'message': ('Enquiry from: {name} <{email}>\n\n'
+                            'Message:\n'
+                            '{body}\n')
             },
         ])
 
         form_mock = MagicMock()
         FormMock = MagicMock()
         form_mock.is_valid.return_value = is_form_valid
-        form_mock.cleaned_data = dict(name='Jeremy Herr',
-                                      email='jeremyherr@bmlltech.com',
+        form_mock.cleaned_data = dict(name='Mr Blog',
+                                      email='mr@blog.com',
                                       body='Here is my message to you')
         form_mock.tojson.return_value = tojson_return_value
         FormMock.return_value = form_mock
@@ -70,14 +70,14 @@ class ContactRouterTestCase(unittest.TestCase):
             self._create_mocks(JsonMock, is_form_valid=True)
 
             self.cr.post(self.request_mock)
-
-            self.request_mock.app.email_backend.send_mail.assert_called_once_with(
-                sender='BMLL Technologies <noreply@bmlltech.com>',
-                to='info@bmlltech.com',
+            mock = self.request_mock
+            mock.app.email_backend.send_mail.assert_called_once_with(
+                sender='FOO Technologies <noreply@foo.com>',
+                to='info@foo.com',
                 subject='website enquiry form',
-                message='Enquiry from: Jeremy Herr <jeremyherr@bmlltech.com>\n\n' \
-                        + 'Message:\n' \
-                        + 'Here is my message to you\n'
+                message=('Enquiry from: Mr Blog <mr@blog.com>\n\n'
+                         'Message:\n'
+                         'Here is my message to you\n')
             )
 
             JsonMock.assert_called_once_with(
@@ -98,6 +98,3 @@ class ContactRouterTestCase(unittest.TestCase):
                 self.request_mock)
 
             self._reset_mocks()
-
-if __name__ == '__main__':
-    unittest.main()

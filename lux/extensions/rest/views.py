@@ -97,7 +97,7 @@ class RestMixin(ColumnPermissionsMixin):
         else:
             return self.serialise_model(request, data)
 
-    def collection_response(self, request, limit=None, offset=None,
+    def collection_response(self, request, *filters, limit=None, offset=None,
                             text=None, sortby=None, **params):
         '''Handle a response for a list of models
         '''
@@ -109,7 +109,7 @@ class RestMixin(ColumnPermissionsMixin):
         sortby = request.url_data.get('sortby', sortby)
         params.update(request.url_data)
         with model.session(request) as session:
-            query = self.query(request, session)
+            query = self.query(request, session, *filters)
             query = self.filter(request, query, text, params)
             total = query.count()
             query = self.sortby(request, query, sortby)
@@ -118,7 +118,7 @@ class RestMixin(ColumnPermissionsMixin):
         data = app.pagination(request, data, total, limit, offset)
         return Json(data).http_response(request)
 
-    def query(self, request, session):
+    def query(self, request, session, *filters):
         '''Return a Query object
         '''
         raise NotImplementedError
