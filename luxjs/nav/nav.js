@@ -38,11 +38,20 @@
 
     angular.module('lux.nav', ['templates-nav', 'lux.bs'])
         //
-        .service('linkService', ['$location', function ($location) {
+        .service('linkService', ['$location', '$window', function ($location, $window) {
 
             this.initScope = function (scope, opts) {
 
                 scope.clickLink = function (e, link) {
+
+                    // This patches an Angular bug with touch,
+                    // whereby ng-click prevents href from working
+                    var href = angular.element(e.currentTarget).attr('href');
+                    if (e.type === 'touchend' && href) {
+                        $window.location.href = href;
+                    }
+
+
                     if (link.action) {
                         var func = scope[link.action];
                         if (func)
