@@ -35,7 +35,7 @@ script:
   - rm -rf lux
   - rm -rf build
   - python -m runtests --coverage
-  - python -m runtests --coveralls
+  - if [[ $TRAVIS_PYTHON_VERSION == '3.5' ]]; then python -m runtests --coveralls; fi
 
 # after_script:
 #   - killall rethinkdb

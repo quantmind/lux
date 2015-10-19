@@ -32,9 +32,7 @@ class Extension(lux.Extension):
         Parameter('SLACK_LOG_LEVEL', 'ERROR',
                   'Logging level for slack messages'),
         Parameter('SLACK_LOG_TOKEN', None,
-                  'Token for posting messages to slack channel'),
-        Parameter('SLACK_LOG_CHANNEL', None,
-                  'Channel where the log post messages')
+                  'Token for posting messages to slack channel')
     ]
 
     def on_start(self, app, server):
@@ -44,9 +42,8 @@ class Extension(lux.Extension):
             handlers.append(SMTPHandler(app, level))
         level = app.config['SLACK_LOG_LEVEL']
         token = app.config['SLACK_LOG_TOKEN']
-        channel = app.config['SLACK_LOG_CHANNEL']
-        if level and token and channel:
-            handlers.append(SlackHandler(app, level, token, channel))
+        if level and token:
+            handlers.append(SlackHandler(app, level, token))
         if handlers:
             root = logging.getLogger('')
             self._add_handlers(root, handlers)

@@ -1,4 +1,5 @@
 import logging
+import json
 from asyncio import async
 
 from pulsar.apps.http import HttpClient
@@ -30,11 +31,9 @@ class SlackHandler(logging.Handler):
     """
     webhook_url = 'https://hooks.slack.com/services'
 
-    def __init__(self, app, level, token, channel):
+    def __init__(self, app, level, token):
         super().__init__(logging._checkLevel(level))
         self.app = app
-        self.channel = channel
-        self.username = app.config['APP_NAME']
         self.webhook_url = '%s/%s' % (self.webhook_url, token)
 
     @lazymethod
@@ -45,13 +44,7 @@ class SlackHandler(logging.Handler):
         """Emit record to slack channel using pycurl to avoid recurrence
         event logging (log logged record)
         """
-        data = {
-            'channel': self.channel,
-            'username': self.username,
-            'text': self.format(record)
-        }
+        data = dict(text="```\n%s\n```" % self.format(record))
         http = self.http()
-        async(http.post(self.webhook_url,
-                        content_type='application/json',
-                        data=data),
+        async(http.post(self.webhook_url, data=json.dumps(data)),
               loop=http._loop)
