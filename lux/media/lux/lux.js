@@ -1,6 +1,6 @@
 //      Lux Library - v0.2.0
 
-//      Compiled 2015-10-14.
+//      Compiled 2015-10-19.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -2600,12 +2600,12 @@ angular.module('lux.cms.core', [])
                                 .attr('data-remote-options-value', field['data-remote-options-value']);
 
                         if (field.multiple)
-                            match.html('{{$item.repr || $item.name}}');
+                            match.html('{{$item.repr || $item.name || $item.id}}');
                         else
-                            match.html('{{$select.selected.name}}');
+                            match.html('{{$select.selected.name || $select.selected.id}}');
 
                         choices.attr('repeat', field['data-ng-options-ui-select'] + ' | filter: $select.search');
-                        choices_inner.html('{{item.name}}');
+                        choices_inner.html('{{item.name || item.id}}');
                     } else {
                         // Local options
                         var optsId = field.name + '_opts',
@@ -3230,11 +3230,14 @@ angular.module('lux.form.utils', ['lux.services'])
 
             options.push(initialValue);
 
+            // Set empty value if field was not filled
+            if (scope[scope.formModelName][attrs.name] === undefined)
+                scope[scope.formModelName][attrs.name] = '';
+
             api.get(null, params).then(function (data) {
                 if (attrs.multiple) {
                     options.splice(0, 1);
                 } else {
-                    scope[scope.formModelName][attrs.name] = '';
                     options[0].name = 'Please select...';
                 }
                 angular.forEach(data.data.result, function (val) {
@@ -3253,7 +3256,6 @@ angular.module('lux.form.utils', ['lux.services'])
                 /** TODO: add error alert */
                 options[0] = '(error loading options)';
             });
-            scope[scope.formModelName][attrs.name] = '';
         }
 
         function link(scope, element, attrs) {
@@ -4766,7 +4768,7 @@ function gridDataProviderWebsocketFactory ($scope) {
 
     angular.module('lux.nav', ['templates-nav', 'lux.bs'])
         //
-        .service('linkService', ['$location', function ($location) {
+        .service('linkService', ['$location', '$window', function ($location, $window) {
 
             this.initScope = function (scope, opts) {
 
@@ -4775,6 +4777,13 @@ function gridDataProviderWebsocketFactory ($scope) {
                         var func = scope[link.action];
                         if (func)
                             func(e, link.href, link);
+                    }
+
+                    // This patches an Angular bug with touch,
+                    // whereby ng-click prevents href from working
+                    var href = angular.element(e.currentTarget).attr('href');
+                    if (e.type === 'touchend' && href) {
+                        $window.location.href = href;
                     }
                 };
 
@@ -5851,18 +5860,13 @@ angular.module('templates-nav', ['nav/templates/link.tpl.html', 'nav/templates/n
 
 angular.module("nav/templates/link.tpl.html", []).run(["$templateCache", function($templateCache) {
   $templateCache.put("nav/templates/link.tpl.html",
-    "<a ng-if=\"link.title\" ng-href=\"{{link.href}}\" title=\"{{link.title}}\" ng-click=\"clickLink($event, link)\"\n" +
+    "<a ng-href=\"{{link.href}}\" title=\"{{link.title}}\" ng-click=\"clickLink($event, link)\"\n" +
     "ng-attr-target=\"{{link.target}}\" ng-class=\"link.klass\" bs-tooltip=\"tooltip\">\n" +
     "<span ng-if=\"link.left\" class=\"left-divider\"></span>\n" +
     "<i ng-if=\"link.icon\" class=\"{{link.icon}}\"></i>\n" +
     "<span>{{link.label || link.name}}</span>\n" +
     "<span ng-if=\"link.right\" class=\"right-divider\"></span></a>\n" +
-    "<a ng-if=\"!link.title\" ng-href=\"{{link.href}}\" title=\"{{link.title}}\" ng-click=\"clickLink($event, link)\"\n" +
-    "ng-attr-target=\"{{link.target}}\" ng-class=\"link.klass\" bs-tooltip=\"tooltip\">\n" +
-    "<span ng-if=\"link.left\" class=\"left-divider\"></span>\n" +
-    "<i ng-if=\"link.icon\" class=\"{{link.icon}}\"></i>\n" +
-    "<span>{{link.label || link.name}}</span>\n" +
-    "<span ng-if=\"link.right\" class=\"right-divider\"></span></a>");
+    "");
 }]);
 
 angular.module("nav/templates/navbar.tpl.html", []).run(["$templateCache", function($templateCache) {
