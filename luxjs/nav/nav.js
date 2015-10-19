@@ -53,7 +53,7 @@
                     // whereby ng-click prevents href from working
                     var href = angular.element(e.currentTarget).attr('href');
                     if (e.type === 'touchend' && href) {
-                        $window.location.href = href;
+                        $window.location.assign(href);
                     }
                 };
 
