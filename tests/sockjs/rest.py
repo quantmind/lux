@@ -7,7 +7,6 @@ class TestSockJSRestApp(test.AppTestCase):
     def test_app(self):
         app = self.app
         self.assertEqual(app.config['WS_URL'], '/testws')
-        self.assertEqual(app.pubsub_store, None)
 
     def test_get(self):
         request = yield from self.client.get('/testws')

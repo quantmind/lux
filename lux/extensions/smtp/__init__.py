@@ -32,7 +32,9 @@ class Extension(lux.Extension):
         Parameter('SLACK_LOG_LEVEL', 'ERROR',
                   'Logging level for slack messages'),
         Parameter('SLACK_LOG_TOKEN', None,
-                  'Token for posting messages to slack channel')
+                  'Token for posting messages to slack channel'),
+        Parameter('SLACK_LINK_NAMES', None,
+                  'Usernames to include as mention in the slack message')
     ]
 
     def on_start(self, app, server):

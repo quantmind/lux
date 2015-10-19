@@ -1,3 +1,5 @@
+from unittest import mock
+
 from pulsar import ImproperlyConfigured
 
 from lux.utils import test
@@ -49,3 +51,23 @@ class CommandTests(test.TestCase):
         self.assertEqual(page.path, '/bla/<path:path>')
         self.assertEqual(page.template, 'bla.html')
         self.assertIsInstance(app.cms._sitemap, list)
+
+    def test_pubsub_none(self):
+        app = self.application()
+        app.logger.warning = mock.MagicMock()
+        self.assertEqual(app.pubsub(), None)
+        app.logger.warning.assert_called_once_with(mock.ANY)
+        app.logger.warning.reset_mock()
+        self.assertEqual(app.pubsub('foo'), None)
+        app.logger.warning.assert_called_once_with(mock.ANY)
+
+    def test_pubsub(self):
+
+        app = self.application(
+            PUBSUB_STORE='redis://%s' % self.cfg.redis_server)
+        pubsub1 = app.pubsub()
+        self.assertTrue(pubsub1)
+        self.assertNotEqual(pubsub1, app.pubsub())
+        pubsub = app.pubsub('test')
+        self.assertNotEqual(pubsub1, pubsub)
+        self.assertEqual(pubsub, app.pubsub('test'))

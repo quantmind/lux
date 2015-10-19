@@ -44,7 +44,14 @@ class SlackHandler(logging.Handler):
         """Emit record to slack channel using pycurl to avoid recurrence
         event logging (log logged record)
         """
-        data = dict(text="```\n%s\n```" % self.format(record))
+        managers = self.app.config['SLACK_LINK_NAMES']
+        text = ''
+        data = {}
+        if managers:
+            text = ' '.join(('@%s' % m for m in managers))
+            text = '%s\n\n' % text
+            data['link_names'] = 1
+        data['text'] = "%s```\n%s\n```" % (text, self.format(record))
         http = self.http()
         async(http.post(self.webhook_url, data=json.dumps(data)),
               loop=http._loop)
