@@ -95,23 +95,6 @@ class WsClient:
         data['message'] = str(exc)
         self.write(LUX_ERROR, data=data)
 
-    def pubsub(self, key=None):
-        '''Get a pub-sub handler for a given key
-
-        A key is used to group together pub-subs so that bandwidths is reduced
-        If no key is provided the handler is not included in the pubsub cache.
-        '''
-        app = self.app
-        if app.pubsub_store:
-            if key:
-                pubsub = app.pubsubs.get(key)
-                if not pubsub:
-                    pubsub = app.pubsub_store.pubsub()
-                    app.pubsubs[key] = pubsub
-            else:
-                pubsub = app.pubsub_store.pubsub()
-            return pubsub
-
     # INTERNALS
     def _load(self, message):
         # SockJS sends a string as a single element of an array.
@@ -204,7 +187,7 @@ class RpcWsMethod:
     def pubsub(self, key=None):
         '''Convenience method for a pubsub handler
         '''
-        return self.ws.pubsub(key or self.name)
+        return self.app.pubsub(key or self.name)
 
 
 class RpcWsCall:
