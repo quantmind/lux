@@ -84,7 +84,6 @@
             formHandlers.redirectHome = function (response, scope) {
                 var href = scope.formAttrs.redirectTo || '/';
                 $lux.window.location.href = href;
-                $lux.window.location.reload();
             };
 
             formHandlers.login = function (response, scope) {

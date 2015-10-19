@@ -49,7 +49,7 @@ class Login(WebFormRouter):
 
     def get(self, request):
         if request.cache.user.is_authenticated():
-            raise HttpRedirect('/')
+            raise HttpRedirect(request.config['POST_LOGIN_REDIRECT_URL'])
         return super().get(request)
 
 

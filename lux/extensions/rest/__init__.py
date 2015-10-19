@@ -98,7 +98,9 @@ class Extension(AuthBackend):
                   'Authentication token for the api. This is used by '
                   'a lux application accessing a lux api'),
         Parameter('PAGINATION', 'lux.extensions.rest.Pagination',
-                  'Pagination class')]
+                  'Pagination class'),
+        Parameter('POST_LOGIN_REDIRECT_URL', '/',
+                  'URL users are redirected to after logging in')]
 
     def on_config(self, app):
         self.backends = []
