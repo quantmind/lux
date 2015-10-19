@@ -190,7 +190,9 @@ class CacheObject:
             timeout = self.timeout
             if timeout in app.config:
                 timeout = app.config[timeout]
-            if timeout is None:
+            try:
+                int(timeout)
+            except Exception:
                 timeout = app.config['DEFAULT_CACHE_TIMEOUT']
 
             try:

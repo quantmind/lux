@@ -5,6 +5,7 @@ from lux import Parameter
 
 from .backend import EmailBackend
 from .views import ContactRouter
+from .log import SMTPHandler, SlackHandler
 
 
 __all__ = ['EmailBackend', 'ContactRouter']
@@ -25,37 +26,32 @@ class Extension(lux.Extension):
         Parameter('EMAIL_TLS_KEYFILE', None, 'TLS Keyfile'),
         Parameter('EMAIL_TLS_CERTFILE', None, 'TLS cert file'),
         Parameter('ENQUIRY_EMAILS', [],
-          'List of email messages to be sent on reception of enquiry'),
-        Parameter('SMTP_LOG_LEVEL', None, 'Logging level for email messages'),
+                  'List of email messages to be sent on reception of enquiry'),
+        Parameter('SMTP_LOG_LEVEL', None,
+                  'Logging level for slack messages'),
+        Parameter('SLACK_LOG_LEVEL', 'ERROR',
+                  'Logging level for slack messages'),
+        Parameter('SLACK_LOG_TOKEN', None,
+                  'Token for posting messages to slack channel')
     ]
 
     def on_start(self, app, server):
+        handlers = []
         level = app.config['SMTP_LOG_LEVEL']
         if level:
-            smtp = SMTPLogger(app, level)
+            handlers.append(SMTPHandler(app, level))
+        level = app.config['SLACK_LOG_LEVEL']
+        token = app.config['SLACK_LOG_TOKEN']
+        if level and token:
+            handlers.append(SlackHandler(app, level, token))
+        if handlers:
             root = logging.getLogger('')
-            root.addHandler(smtp)
+            self._add_handlers(root, handlers)
             for logger in root.manager.loggerDict.values():
                 if (isinstance(logger, logging.Logger) and
                         not logger.propagate and logger.handlers):
-                    logger.addHandler(smtp)
+                    self._add_handlers(logger, handlers)
 
-
-class SMTPLogger(logging.Handler):
-
-    def __init__(self, app, level):
-        super().__init__(logging._checkLevel(level))
-        self.app = app
-
-    def emit(self, record):
-        cfg = self.app.config
-        managers = cfg['SITE_MANAGERS']
-        if getattr(record, 'mail', False) or not managers:
-            return
-        backend = self.app.email_backend
-        msg = self.format(record)
-        first = record.message.split('\n')[0]
-        subject = '%s - %s - %s' % (cfg['APP_NAME'], record.levelname, first)
-        backend.send_mail(to=managers,
-                          subject=subject,
-                          message=msg)
+    def _add_handlers(self, logger, handlers):
+        for hnd in handlers:
+            logger.addHandler(hnd)

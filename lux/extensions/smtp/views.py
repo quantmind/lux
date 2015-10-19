@@ -4,6 +4,7 @@ from lux.forms import Layout, Fieldset, Submit
 
 from pulsar.apps.wsgi import Json
 
+
 class ContactForm(forms.Form):
     """
     The base contact form class from which all contact form classes
@@ -33,7 +34,7 @@ class ContactRouter(lux.HtmlRouter):
             for email_settings in request.app.config['ENQUIRY_EMAILS']:
                 email_fields = {
                     tag: email_settings[tag].format(**form.cleaned_data)
-                          for tag in ['sender', 'to', 'subject', 'message']
+                    for tag in ['sender', 'to', 'subject', 'message']
                 }
                 email.send_mail(**email_fields)
 

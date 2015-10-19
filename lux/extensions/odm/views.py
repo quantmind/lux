@@ -19,7 +19,7 @@ class RestRouter(rest.RestRouter):
     '''
     RestModel = RestModel
 
-    def query(self, request, session):
+    def query(self, request, session, *filters):
         """
         Returns a query object for the model.
 
@@ -37,6 +37,8 @@ class RestRouter(rest.RestRouter):
         db_model = model.db_model()
         db_columns = model.db_columns(self.column_fields(entities))
         query = session.query(db_model).options(load_only(*db_columns))
+        if filters:
+            query = query.filter(*filters)
         return model.query(query)
 
     # RestView implementation
