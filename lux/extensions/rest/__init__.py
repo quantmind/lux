@@ -99,8 +99,9 @@ class Extension(AuthBackend):
                   'a lux application accessing a lux api'),
         Parameter('PAGINATION', 'lux.extensions.rest.Pagination',
                   'Pagination class'),
-        Parameter('POST_LOGIN_REDIRECT_URL', '/',
-                  'URL users are redirected to after logging in')]
+        Parameter('POST_LOGIN_URL', '',
+                  'URL users are redirected to after logging in',
+                  jscontext=True)]
 
     def on_config(self, app):
         self.backends = []

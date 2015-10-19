@@ -91,7 +91,7 @@
                     api = $lux.api(target);
                 if (api)
                     api.token(response.data.token);
-                $lux.window.location.reload();
+                $lux.window.location.href = lux.context.POST_LOGIN_URL || lux.context.LOGIN_URL;
             };
 
             //  Listen for a Lux form to be available
