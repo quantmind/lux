@@ -21,9 +21,9 @@ class Pagination:
             return self.link(request, next_offset, limit)
 
     def last_link(self, request, total, limit, offset):
-        last_offset = total - offset
-        if last_offset > 0:
-            return self.link(request, last_offset, limit)
+        n = (total - offset) // limit
+        if n > 0:
+            return self.link(request, offset + n*limit, limit)
 
     def link(self, request, offset, limit):
         params = request.url_data.copy()

@@ -18,12 +18,12 @@ class TestUtils(test.TestCase):
         query = query_dict(urlparse(pag['next']).query)
         self.assertEqual(query['offset'], '25')
         query = query_dict(urlparse(pag['last']).query)
-        self.assertEqual(query['offset'], '120')
+        self.assertEqual(query['offset'], '100')
         #
         pag = pagination(request, [], 120, 25, 75)
-        query = query_dict(urlparse(pag['next']).query)
+        query = query_dict(urlparse(pag['last']).query)
         self.assertEqual(query['offset'], '100')
-        self.assertFalse('last' in pag)
+        self.assertFalse('next' in pag)
         #
         pag = pagination(request, [], 120, 25, 50)
         query = query_dict(urlparse(pag['next']).query)
