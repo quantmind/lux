@@ -46,7 +46,7 @@ class RegistrationMixin:
     def password_recovery(self, request, email):
         '''Recovery password email
         '''
-        user = self.get_user(email=email)
+        user = self.get_user(request, email=email)
         if not self.get_or_create_registration(
                 request, user,
                 email_subject='registration/password_email_subject.txt',

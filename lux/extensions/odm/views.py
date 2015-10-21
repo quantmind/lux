@@ -149,7 +149,8 @@ class CRUD(RestRouter):
         '''Create a new model
         '''
         model = self.model(request.app)
-        assert model.form
+        if not model.form:
+            raise MethodNotAllowed
 
         self.check_model_permission(request, rest.CREATE)
         columns = self.columns_with_permission(request, rest.CREATE)
@@ -217,12 +218,12 @@ class CRUD(RestRouter):
             elif request.method in ('POST', 'PUT'):
                 form_class = model.updateform
 
+                if not form_class:
+                    raise MethodNotAllowed
+
                 self.check_model_permission(request, rest.UPDATE)
                 columns = self.columns_with_permission(request, rest.UPDATE)
                 columns = self.column_fields(columns, 'name')
-
-                if not form_class:
-                    raise MethodNotAllowed
 
                 data, files = request.data_and_files()
                 form = form_class(request, data=data, files=files,

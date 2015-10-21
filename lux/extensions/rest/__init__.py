@@ -222,6 +222,10 @@ class Extension(AuthBackend):
         '''Set a new password for user'''
         return self._apply_all('set_password', request, user, password)
 
+    def password_recovery(self, request, email):
+        '''Password recovery method'''
+        return self._apply_all('password_recovery', request, email)
+
     def has_permission(self, request, target, level):
         has = self._apply_all('has_permission', request, target, level)
         return True if has is None else has

@@ -9,6 +9,7 @@ from lux import Parameter, raise_http_error, Http401, HttpRedirect
 from lux.extensions.angular import add_ng_modules
 
 from .mixins import jwt, SessionBackendMixin
+from .registration import RegistrationMixin
 from .. import (AuthenticationError, AuthBackend, luxrest, Login, LoginPost,
                 Logout, SignUp, ForgotPassword, User, Session)
 from ..policy import has_permission
@@ -89,6 +90,7 @@ class BrowserBackend(AuthBackend):
 
 
 class ApiSessionBackend(SessionBackendMixin,
+                        RegistrationMixin,
                         BrowserBackend):
     '''An Mixin for authenticating against a RESTful HTTP API.
 
@@ -105,26 +107,25 @@ class ApiSessionBackend(SessionBackendMixin,
     * Save the session in cache and return the original encoded token
     '''
     users_url = {'id': 'users',
-                 'username': 'users/username',
-                 'email': 'users/email'}
+                 'username': 'users',
+                 'email': 'users'}
 
     LoginRouter = LoginPost
     LogoutRouter = Logout
 
     def get_user(self, request, **kw):
-        '''Get User data
+        '''Get User from username or id or email.
         '''
         api = request.app.api
-        for name in ('username', 'id', 'email'):
+        for name, url in self.users_url.items():
             value = kw.get(name)
             if not value:
                 continue
-            url = self.users_url.get(name)
-            if not url:
-                return
-            response = api.get('%s/%s' % url, value)
+            response = api.get(url, data={name: value})
             if response.status_code == 200:
-                return response.json()
+                data = response.json()
+                if data['total'] == 1:
+                    return User(data['result'][0])
 
     def authenticate(self, request, **data):
         if not jwt:
@@ -168,8 +169,7 @@ class ApiSessionBackend(SessionBackendMixin,
             # client = request.get_client_address()
             response = api.post('authorizations/signup', data=data)
             if response.status_code == 201:
-                user = User(response.json())
-                return user
+                return User(response.json())
             else:
                 response.raise_for_status()
 

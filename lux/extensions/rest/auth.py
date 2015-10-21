@@ -93,6 +93,11 @@ class AuthBackend(lux.Extension):
         '''
         pass
 
+    def password_recovery(self, request, email):
+        '''Password recovery method
+        '''
+        pass
+
     def add_to_mail_list(self, request, topic, **kwargs):
         '''Add a user details to the mailing list
         '''
