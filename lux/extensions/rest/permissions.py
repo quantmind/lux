@@ -140,7 +140,7 @@ class ColumnPermissionsMixin(ModelMixin):
         perms = self.column_permissions(request, level)
         return tuple((col for col in columns if not perms.get(col['name'])))
 
-    def check_model_permission(self, request, level):
+    def check_model_permission(self, request, level, model=None):
         """
         Checks whether the user has the requested level of access to
         the model, raising PermissionDenied if not
@@ -149,7 +149,7 @@ class ColumnPermissionsMixin(ModelMixin):
         :param level:       access level
         :raise:             PermissionDenied
         """
-        model = self.model(request.app)
+        model = model or self.model(request.app)
         backend = request.cache.auth_backend
         if not backend.has_permission(request, model.name, level):
             raise PermissionDenied

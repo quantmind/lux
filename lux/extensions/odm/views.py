@@ -19,6 +19,9 @@ class RestRouter(rest.RestRouter):
     '''
     RestModel = RestModel
 
+    def urlargs(self, request):
+        return request.urlargs
+
     def query(self, request, session, *filters):
         """
         Returns a query object for the model.
@@ -44,7 +47,7 @@ class RestRouter(rest.RestRouter):
     # RestView implementation
     def get_instance(self, request, session=None, **args):
         odm = request.app.odm()
-        args = args or request.urlargs
+        args = args or self.urlargs(request)
         if not args:  # pragma    nocover
             raise Http404
         with odm.begin(session=session) as session:
@@ -137,6 +140,10 @@ class CRUD(RestRouter):
 
     This class adds routes to the :class:`.RestRouter`
     '''
+    def urlargs(self, request):
+        model = self.model(request)
+        return {model.id_field: request.urlargs['id']}
+
     def get(self, request):
         '''Get a list of models
         '''
@@ -202,10 +209,9 @@ class CRUD(RestRouter):
             return request.response
 
         model = self.model(request.app)
-        args = {model.id_field: request.urlargs['id']}
         odm = request.app.odm()
         with odm.begin() as session:
-            instance = self.get_instance(request, session, **args)
+            instance = self.get_instance(request, session)
 
             if request.method == 'GET':
                 self.check_model_permission(request, rest.READ)

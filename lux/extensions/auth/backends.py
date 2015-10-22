@@ -147,15 +147,10 @@ class AuthMixin(PasswordMixin):
         session.close()
         return token
 
-    def create_registration(self, request, user, expiry=None, **kw):
+    def create_registration(self, request, user, expiry):
         '''Create a registration entry and return the registration id
         '''
-        if not expiry:
-            days = request.config['ACCOUNT_ACTIVATION_DAYS']
-            expiry = datetime.now() + timedelta(days=days)
-
         odm = request.app.odm()
-
         with odm.begin() as session:
             reg = odm.registration(id=digest(user.username),
                                    user_id=user.id,

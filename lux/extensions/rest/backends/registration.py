@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from urllib.parse import urljoin
 
 from pulsar.apps.wsgi import Json
@@ -32,6 +33,11 @@ class RegistrationMixin:
             data = dict(email=email, registration=reg_token)
             return Json(data).http_response(request)
 
+    def create_registration(self, request, user, expiry):
+        '''Create a registration and return a registration id
+        '''
+        raise NotImplementedError
+
     def confirm_registration(self, request, **params):
         '''Confirm registration'''
         raise NotImplementedError
@@ -47,12 +53,26 @@ class RegistrationMixin:
         '''Recovery password email
         '''
         user = self.get_user(request, email=email)
-        if not self.get_or_create_registration(
-                request, user,
-                email_subject='registration/password_email_subject.txt',
-                email_message='registration/password_email.txt',
-                message='registration/password_message.txt'):
+        reg_id = self.get_or_create_registration(request, user)
+        if not reg_id:
             raise AuthenticationError("Can't find that email, sorry")
+
+        return self.send_email_confirmation(
+            request, user, reg_id,
+            email_subject='registration/password_email_subject.txt',
+            email_message='registration/password_email.txt',
+            message='registration/password_message.txt')
+
+    def get_or_create_registration(self, request, user, reg_id=None,
+                                   expiry=None, **kw):
+        if not user or user.is_anonymous():
+            return
+        if not reg_id:
+            if not expiry:
+                days = request.config['ACCOUNT_ACTIVATION_DAYS']
+                expiry = datetime.now() + timedelta(days=days)
+            return self.create_registration(request, user, expiry=expiry,
+                                            **kw)
 
     def inactive_user_login_response(self, request, user):
         '''Handle a user not yet active'''

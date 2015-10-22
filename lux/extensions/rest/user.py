@@ -11,7 +11,7 @@ from lux.forms import Form, ValidationError
 __all__ = ['AuthenticationError', 'MessageMixin',
            'UserMixin', 'SessionMixin',
            'normalise_email', 'PasswordMixin',
-           'logout', 'User', 'Session',
+           'logout', 'User', 'Session', 'Registration',
            'check_username',
            'NONE', 'CREATE', 'READ', 'UPDATE', 'DELETE', 'PERMISSION_LEVELS']
 
@@ -224,6 +224,10 @@ class Session(AttributeDictionary, SessionMixin):
 
     Used by the :class:`.ApiSessionBackend`
     '''
+    pass
+
+
+class Registration(AttributeDictionary):
     pass
 
 
