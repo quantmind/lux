@@ -39,9 +39,17 @@ class ModelMixin:
 
         assert model, 'No model specified'
 
-        if model.url not in rest_models:
-            rest_models[model.url] = model.add_to_app(app)
-        return rest_models[model.url]
+        if isinstance(model, RestModel):
+            url = model.url
+            if url not in rest_models:
+                rest_models[url] = model.add_to_app(app)
+        else:
+            url = model
+
+        if url in rest_models:
+            return rest_models[url]
+        else:
+            raise RuntimeError('model url "%s" not available' % url)
 
 
 class ColumnPermissionsMixin(ModelMixin):

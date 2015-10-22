@@ -6,7 +6,8 @@ from pulsar.utils.httpurl import is_absolute_uri
 
 
 class ApiClient:
-    '''A python client for a Lux Api which can be used by lux
+    '''A python client for a Lux Api which can be used by other lux
+    applications
     '''
     _http = None
     _wait = None
@@ -29,26 +30,27 @@ class ApiClient:
         if path:
             url = '%s/%s' % (url, path)
         response = http.request(method, url, **kw)
-        return self._wait(response) if self._wait else response
+        if self.app.green_pool:
+            return self.app.green_pool.wait(response)
+        else:
+            return http._loop.run_until_complete(response)
 
     def http(self):
         '''Get the HTTP client
         '''
         if self._http is None:
-            if self.app.green_pool:
-                from pulsar.apps.greenio import wait
-                self._wait = wait
 
             api_url = self.app.config['API_URL']
             # Remote API
             if is_absolute_uri(api_url):
-                if self._wait:
-                    self._http = HttpClient()
+                headers = [('content-type', 'application/json')]
+                if self.app.green_pool:
+                    self._http = HttpClient(headers=headers)
                 else:
                     self._http = HttpClient(loop=new_event_loop())
             # Local API
             else:
-                self._http = LocalClient(self.app)
+                self._http = LocalClient(self.app, headers)
             token = self.app.config['API_AUTHENTICATION_TOKEN']
             if token:
                 self._http.headers['Athentication'] = 'Bearer %s' % token
@@ -58,9 +60,9 @@ class ApiClient:
 
 class LocalClient:
 
-    def __init__(self, app):
+    def __init__(self, app, headers=None):
         self.app = app
-        self.headers = {}
+        self.headers = headers or []
 
     def request(self, method, path, **params):
         extra = dict(REQUEST_METHOD=method)

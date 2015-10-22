@@ -1,4 +1,3 @@
-from datetime import datetime, timedelta
 from urllib.parse import urljoin
 
 from pulsar.apps.wsgi import Json
@@ -63,16 +62,11 @@ class RegistrationMixin:
             email_message='registration/password_email.txt',
             message='registration/password_message.txt')
 
-    def get_or_create_registration(self, request, user, reg_id=None,
-                                   expiry=None, **kw):
+    def get_or_create_registration(self, request, user, reg_id=None, **kw):
         if not user or user.is_anonymous():
             return
         if not reg_id:
-            if not expiry:
-                days = request.config['ACCOUNT_ACTIVATION_DAYS']
-                expiry = datetime.now() + timedelta(days=days)
-            return self.create_registration(request, user, expiry=expiry,
-                                            **kw)
+            return self.create_registration(request, user, **kw)
 
     def inactive_user_login_response(self, request, user):
         '''Handle a user not yet active'''

@@ -11,7 +11,8 @@ from lux.extensions.angular import add_ng_modules
 from .mixins import jwt, SessionBackendMixin
 from .registration import RegistrationMixin
 from .. import (AuthenticationError, AuthBackend, luxrest, Login, LoginPost,
-                Logout, SignUp, ForgotPassword, User, Session, Registration)
+                Logout, SignUp, ForgotPassword, User, Session, Registration,
+                ModelMixin)
 from ..policy import has_permission
 
 
@@ -91,6 +92,7 @@ class BrowserBackend(AuthBackend):
 
 class ApiSessionBackend(SessionBackendMixin,
                         RegistrationMixin,
+                        ModelMixin,
                         BrowserBackend):
     '''An Mixin for authenticating against a RESTful HTTP API.
 
@@ -228,20 +230,13 @@ class ApiSessionBackend(SessionBackendMixin,
             data['user'] = session.user.all()
         request.app.cache_server.set_json(self._key(session.id), data)
 
-    def get_or_create_registration(self, request, user, reg_id=None, **data):
-        api = request.app.api
-        url = 'users/%s/registrations'
-        if reg_id:
-            url = '%s/%s' % (url, reg_id)
-            response = api.get(url)
-            if response.status_code == 200:
-                return Registration(response.json())
-        else:
-            response = api.post(url, data=data)
-            if response.status_code == 201:
-                return Registration(response.json())
+    def create_registration(self, request, user, **kw):
+        model = self.model(request)
+        url = 'users/%s/registrations' % getattr(user, model.id_field)
+        response = request.app.api.post(url)
+        if response.status_code == 201:
+            return Registration(response.json())
         response.raise_for_status()
-
 
     def on_html_document(self, app, request, doc):
         BrowserBackend.on_html_document(self, app, request, doc)
