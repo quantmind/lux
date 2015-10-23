@@ -140,7 +140,7 @@ class Field:
             if self.required and value in NOTHING:
                 raise ValidationError(self.required_error.format(value))
             elif not self.required:
-                return value
+                return None
         return self._clean(value, bfield)
 
     def validate(self, value, bfield):
