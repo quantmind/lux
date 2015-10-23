@@ -132,10 +132,10 @@
         }])
         //
         //  Directive for the sidebar
-        .directive('sidebar', ['$compile', 'sidebarService', 'sidebarTemplate',
+        .directive('sidebar', ['$compile', 'sidebarService', 'navService', 'sidebarTemplate',
                                'navbarTemplate', '$templateCache',
-                        function ($compile, sidebarService, sidebarTemplate, navbarTemplate,
-                                  $templateCache, $sce) {
+                        function ($compile, sidebarService, navService, sidebarTemplate, navbarTemplate,
+                                  $templateCache) {
             //
             return {
                 restrict: 'AE',
