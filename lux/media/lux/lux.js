@@ -1,6 +1,6 @@
 //      Lux Library - v0.2.0
 
-//      Compiled 2015-10-19.
+//      Compiled 2015-11-02.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -907,7 +907,10 @@ function(angular, root) {
                         forEach(data, function (value, key) {
                             // TODO: do we need a callback for JSON fields?
                             // or shall we leave it here?
-                            if (isObject(value)) value = JSON.stringify(value, null, 4);
+
+                            if (formScope[formScope.formModelName + 'Type'][key] === 'textarea' && isObject(value)) {
+                                value = JSON.stringify(value, null, 4);
+                            }
 
                             if (isArray(value)) {
                                 model[key] = [];
@@ -917,7 +920,7 @@ function(angular, root) {
                                 });
                             }
                             else
-                                model[key] = value;
+                                model[key] = value.id || value;
                         });
                     });
                 }
@@ -2245,7 +2248,6 @@ angular.module('lux.cms.core', [])
             formHandlers.redirectHome = function (response, scope) {
                 var href = scope.formAttrs.redirectTo || '/';
                 $lux.window.location.href = href;
-                $lux.window.location.reload();
             };
 
             formHandlers.login = function (response, scope) {
@@ -2253,7 +2255,7 @@ angular.module('lux.cms.core', [])
                     api = $lux.api(target);
                 if (api)
                     api.token(response.data.token);
-                $lux.window.location.reload();
+                $lux.window.location.href = lux.context.POST_LOGIN_URL || lux.context.LOGIN_URL;
             };
 
             //  Listen for a Lux form to be available
@@ -2315,7 +2317,8 @@ angular.module('lux.cms.core', [])
                         thisField = scope.field,
                         tc = thisField.type.split('.'),
                         info = elements[tc.splice(0, 1)[0]],
-                        renderer;
+                        renderer,
+                        fieldType;
 
                     scope.extraClasses = tc.join(' ');
                     scope.info = info;
@@ -2323,12 +2326,18 @@ angular.module('lux.cms.core', [])
                     if (info) {
                         // Pick the renderer by checking `type`
                         if (info.hasOwnProperty('type'))
-                            renderer = this[info.type];
+                            fieldType = info.type;
 
                         // If no element type, use the `element`
                         if (!renderer)
-                            renderer = this[info.element];
+                            fieldType = info.element;
                     }
+
+                    renderer = this[fieldType];
+
+                    var typeConfig = scope.formModelName + 'Type';
+                    scope[typeConfig] = scope[typeConfig] || {};
+                    scope[typeConfig][thisField.name] = fieldType;
 
                     if (!renderer)
                         renderer = this.renderNotElements;
@@ -5113,10 +5122,10 @@ function gridDataProviderWebsocketFactory ($scope) {
         }])
         //
         //  Directive for the sidebar
-        .directive('sidebar', ['$compile', 'sidebarService', 'sidebarTemplate',
+        .directive('sidebar', ['$compile', 'sidebarService', 'navService', 'sidebarTemplate',
                                'navbarTemplate', '$templateCache',
-                        function ($compile, sidebarService, sidebarTemplate, navbarTemplate,
-                                  $templateCache, $sce) {
+                        function ($compile, sidebarService, navService, sidebarTemplate, navbarTemplate,
+                                  $templateCache) {
             //
             return {
                 restrict: 'AE',

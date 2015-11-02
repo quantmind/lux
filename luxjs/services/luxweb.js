@@ -87,7 +87,10 @@
                         forEach(data, function (value, key) {
                             // TODO: do we need a callback for JSON fields?
                             // or shall we leave it here?
-                            if (isObject(value)) value = JSON.stringify(value, null, 4);
+
+                            if (formScope[formScope.formModelName + 'Type'][key] === 'textarea' && isObject(value)) {
+                                value = JSON.stringify(value, null, 4);
+                            }
 
                             if (isArray(value)) {
                                 model[key] = [];
@@ -97,7 +100,7 @@
                                 });
                             }
                             else
-                                model[key] = value;
+                                model[key] = value.id || value;
                         });
                     });
                 }

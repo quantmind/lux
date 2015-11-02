@@ -321,7 +321,7 @@ class Form(metaclass=FormType):
             bfield = BoundField(self, field)
             key = bfield.html_name
             if (is_bound and exclude_missing and key not in rawdata and
-                    key not in files):
+               key not in files):
                 continue
             fields.append(bfield)
             dfields[name] = bfield
@@ -384,6 +384,7 @@ class BoundField(object):
 
         The :attr:`field` name to be used in HTML.
     '''
+
     def __init__(self, form, field):
         self.form = form
         self.field = field
@@ -404,7 +405,9 @@ class BoundField(object):
                 value = getattr(self.form, func_name)(value)
             value = self.field.validate(value, self)
             self.value = value
-            if value not in NOTHING:
+            if self.name in self.form.rawdata\
+                    or self.name in self.form._files\
+                    or value not in NOTHING:
                 self.form._cleaned_data[self.name] = value
         except ValidationError as err:
             form._form_message(form._errors, self.name, err)

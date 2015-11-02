@@ -96,6 +96,8 @@ def add_css(all):
               height=px(navbar.big_height) - px(navbar.offset))
 
     large.css('.navbar-collapse.collapse',
+              css('.in',
+                  border_top='none'),
               background='none')
 
     large.css('.navbar-collapse.collapse',

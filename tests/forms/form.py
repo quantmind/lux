@@ -55,6 +55,15 @@ class FormTests(test.TestCase):
         self.assertEqual(len(form.cleaned_data), 2)
         self.assertTrue(form.changed)
 
+    def test_valid_simple_none(self):
+        form = SimpleForm(data={'name': 'luca', 'rank': None})
+        self.assertTrue(form.is_valid(exclude_missing=True))
+        self.assertTrue(form.changed)
+        self.assertEqual(len(form.cleaned_data), 2)
+        self.assertEqual(form.cleaned_data['name'], 'luca')
+        self.assertTrue('rank' in form.cleaned_data)
+        self.assertEqual(form.cleaned_data['rank'], None)
+
     def test_changed(self):
         form = SimpleForm(data={'name': 'luca', 'email': 'luca@bla.com'})
         self.assertTrue(form.is_valid())
@@ -65,8 +74,9 @@ class FormTests(test.TestCase):
                           data={'name': 'luca', 'email': ''})
         self.assertTrue(form.is_valid())
         self.assertTrue(form.changed)
-        self.assertEqual(len(form.cleaned_data), 1)
-        self.assertFalse('email' in form.cleaned_data)
+        self.assertEqual(len(form.cleaned_data), 2)
+        self.assertTrue('email' in form.cleaned_data)
+        self.assertTrue(form.cleaned_data['email'] is None)
 
     def test_not_changed(self):
         data = {'name': 'luca', 'email': 'luca@bla.com'}
