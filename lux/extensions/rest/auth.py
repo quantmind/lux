@@ -74,7 +74,7 @@ class AuthBackend(lux.Extension):
         '''Create an athentication token for ``user``'''
         pass
 
-    def create_registration(self, request, user, expiry, **kw):
+    def create_registration(self, request, user, **kw):
         '''Create a registration token for ``user``'''
         pass
 

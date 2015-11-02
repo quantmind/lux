@@ -11,8 +11,7 @@ from lux.extensions.angular import add_ng_modules
 from .mixins import jwt, SessionBackendMixin
 from .registration import RegistrationMixin
 from .. import (AuthenticationError, AuthBackend, luxrest, Login, LoginPost,
-                Logout, SignUp, ForgotPassword, User, Session, Registration,
-                ModelMixin)
+                Logout, SignUp, ForgotPassword, User, Session, ModelMixin)
 from ..policy import has_permission
 
 
@@ -235,7 +234,8 @@ class ApiSessionBackend(SessionBackendMixin,
         url = 'users/%s/registrations' % getattr(user, model.id_field)
         response = request.app.api.post(url)
         if response.status_code == 201:
-            return Registration(response.json())
+            data = response.json()
+            return data['registration_key']
         response.raise_for_status()
 
     def on_html_document(self, app, request, doc):

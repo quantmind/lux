@@ -120,7 +120,7 @@ class UserMixin(MessageMixin):
 
     def email_user(self, app, subject, body, sender=None):
         backend = app.email_backend
-        backend.send_mail(app, sender, self.email, subject, body)
+        backend.send_mail(sender, self.email, subject, body)
 
     @classmethod
     def get_by_username(cls, username):

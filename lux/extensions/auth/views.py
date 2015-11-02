@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 from lux import route
 from lux.extensions import rest
-from lux.extensions.odm import CRUD, RestRouter, RestModel
+from lux.extensions.odm import CRUD, RestRouter
 from lux.forms import Layout, Fieldset, Submit
 
 from pulsar import MethodNotAllowed
@@ -21,19 +21,23 @@ class GroupCRUD(CRUD):
 
 
 class RegistrationCRUD(RestRouter):
+    get_user = None
+    '''Function to retrieve user from url
+    '''
     _model = registration_model()
 
     def get(self, request):
         odm = request.app.odm()
         with odm.begin() as session:
-            user = self.get_instance(request, session)
+            # user = self.get_instance(request, session)
             self.check_model_permission(request, rest.READ)
 
     def post(self, request):
+        '''Create a new registration object
+        '''
         model = self.model(request)
-        if not model.form:
+        if not model.form or not self.get_user:
             raise MethodNotAllowed
-        odm = request.app.odm()
         data, _ = request.data_and_files()
         form = model.form(request, data=data)
         if form.is_valid():
@@ -41,12 +45,13 @@ class RegistrationCRUD(RestRouter):
             if not expiry:
                 days = request.config['ACCOUNT_ACTIVATION_DAYS']
                 expiry = datetime.now() + timedelta(days=days)
-            with odm.begin() as session:
-                user = self.parent.parent.get_instance(request, session)
-                reg = odm.registration(user_id=user.id, expiry=expiry,
-                                       confirmed=False)
-                session.add(reg)
-            data = self.serialise(request, reg)
+            user = self.get_user(request)
+            # TODO, this is for multirouters
+            if isinstance(user, tuple):
+                user = user[0]
+            backend = request.cache.auth_backend
+            reg_id = backend.create_registration(request, user, expiry=expiry)
+            data = {'registration_key': reg_id}
             request.response.status_code = 201
         else:
             data = form.tojson()
@@ -61,12 +66,11 @@ class RegistrationCRUD(RestRouter):
 
 class UserCRUD(CRUD):
     _model = user_model()
-    _registration_model = RestModel('registration')
 
     def __init__(self, *args, **kw):
         super().__init__(*args, **kw)
         route = self.get_route('read_update_delete')
-        route.add_child(RegistrationCRUD())
+        route.add_child(RegistrationCRUD(get_user=self.get_instance))
 
     def create_model(self, request, data):
         '''Override create model so that it calls the backend method

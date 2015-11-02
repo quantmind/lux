@@ -2,7 +2,7 @@ import uuid
 
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.orm import joinedload
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from lux import cached
 from lux.utils.crypt import digest
@@ -147,7 +147,7 @@ class AuthMixin(PasswordMixin):
         session.close()
         return token
 
-    def create_registration(self, request, user, expiry):
+    def create_registration(self, request, user, expiry=None, **kw):
         '''Create a registration entry and return the registration id
         '''
         odm = request.app.odm()
