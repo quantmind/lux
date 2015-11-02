@@ -93,11 +93,15 @@
                             }
 
                             if (isArray(value)) {
-                                model[key] = [];
-
-                                forEach(value, function(item) {
-                                    model[key].push(item.id);
-                                });
+                                var keyNoArraySuffix = key.split('[]')[0];
+                                if (formScope[formScope.formModelName + 'Type'][keyNoArraySuffix] === 'textarea') {
+                                    model[keyNoArraySuffix] = JSON.stringify(value, null, 4);
+                                } else {
+                                    model[key] = [];
+                                    forEach(value, function(item) {
+                                        model[key].push(item.id || item);
+                                    });
+                                }
                             }
                             else
                                 model[key] = value.id || value;
