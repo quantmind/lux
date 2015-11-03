@@ -109,7 +109,8 @@ class ApiSessionBackend(SessionBackendMixin,
     '''
     users_url = {'id': 'users',
                  'username': 'users',
-                 'email': 'users'}
+                 'email': 'users',
+                 'auth_key': 'users'}
 
     LoginRouter = LoginPost
     LogoutRouter = Logout

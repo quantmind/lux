@@ -130,9 +130,12 @@ class RestRouter(rest.RestRouter):
         return query
 
     def _do_sortby(self, request, query, entry, direction):
-        if direction == 'desc':
-            entry = desc(entry)
-        return query.order_by(entry)
+        columns = self.model(request).db_columns()
+        if entry in columns:
+            if direction == 'desc':
+                entry = desc(entry)
+            return query.order_by(entry)
+        return query
 
 
 class CRUD(RestRouter):

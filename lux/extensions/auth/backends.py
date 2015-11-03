@@ -23,7 +23,7 @@ class AuthMixin(PasswordMixin):
         yield Authorization()
 
     def get_user(self, request, user_id=None, token_id=None, username=None,
-                 email=None, **kw):
+                 email=None, auth_key=None, **kw):
         '''Securely fetch a user by id, username or email
 
         Returns user or nothing

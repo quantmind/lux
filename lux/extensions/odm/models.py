@@ -47,11 +47,14 @@ class RestModel(rest.RestModel):
         assert self._app, 'ODM Rest Model not loaded'
         return self._app.odm()[self.name]
 
-    def db_columns(self, columns):
+    def db_columns(self, columns=None):
         '''Return a list of columns available in the database table
         '''
         assert self._db_columns, 'ODM Rest Model not loaded'
-        return [c for c in columns if c in self._db_columns]
+        if columns is None:
+            return tuple(self._db_columns.keys())
+        else:
+            return [c for c in columns if c in self._db_columns]
 
     def add_related_column(self, name, model, field=None, **kw):
         '''Add a related column to the model
