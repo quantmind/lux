@@ -23,7 +23,7 @@ from lux import Parameter
 from lux.core.wrappers import wsgi_request
 
 from .user import *             # noqa
-from .auth import AuthBackend
+from .auth import *             # noqa
 from .models import *           # noqa
 from .pagination import *       # noqa
 from .client import ApiClient
@@ -48,7 +48,7 @@ def website_url(request, location=None):
     return url
 
 
-class Extension(AuthBackend):
+class Extension(MultiAuthBackend):
 
     _config = [
         Parameter('AUTHENTICATION_BACKENDS', [],
@@ -199,45 +199,3 @@ class Extension(AuthBackend):
 
     def password_changed_response(self, request, user):
         return self._apply_all('password_changed_response', request, user)
-
-    # Backend methods
-    def authenticate(self, request, **kwargs):
-        return self._apply_all('authenticate', request, **kwargs)
-
-    def create_user(self, request, **kwargs):
-        '''Create a standard user.'''
-        return self._apply_all('create_user', request, **kwargs)
-
-    def create_superuser(self, request, **kwargs):
-        '''Create a user with *superuser* permissions.'''
-        return self._apply_all('create_superuser', request, **kwargs)
-
-    def get_user(self, request, **kwargs):
-        return self._apply_all('get_user', request, **kwargs)
-
-    def create_token(self, request, user, **kwargs):
-        return self._apply_all('create_token', request, user, **kwargs)
-
-    def create_registration(self, request, user, **kwargs):
-        return self._apply_all('create_registration', request, user, **kwargs)
-
-    def set_password(self, request, user, password):
-        '''Set a new password for user'''
-        return self._apply_all('set_password', request, user, password)
-
-    def password_recovery(self, request, email):
-        '''Password recovery method'''
-        return self._apply_all('password_recovery', request, email)
-
-    def has_permission(self, request, target, level):
-        has = self._apply_all('has_permission', request, target, level)
-        return True if has is None else has
-
-    def add_to_mail_list(self, request, topic, **kwargs):
-        return self._apply_all('add_to_mail_list', request, topic, **kwargs)
-
-    def _apply_all(self, method, request, *args, **kwargs):
-        for backend in self.backends:
-            result = getattr(backend, method)(request, *args, **kwargs)
-            if result is not None:
-                return result

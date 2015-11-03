@@ -5,7 +5,7 @@ from lux.extensions import rest
 from lux.extensions.odm import CRUD, RestRouter
 from lux.forms import Layout, Fieldset, Submit
 
-from pulsar import MethodNotAllowed
+from pulsar import MethodNotAllowed, Http404
 from pulsar.apps.wsgi import Json
 
 from .forms import (permission_model, group_model, user_model,
@@ -57,12 +57,6 @@ class RegistrationCRUD(RestRouter):
             data = form.tojson()
         return Json(data).http_response(request)
 
-    @route('<reg_id>', method=('get', 'post', 'put', 'options'))
-    def read_update_delete(self, request):
-        if request.method == 'OPTIONS':
-            request.app.fire('on_preflight', request)
-            return request.response
-
 
 class UserCRUD(CRUD):
     _model = user_model()
@@ -76,6 +70,21 @@ class UserCRUD(CRUD):
         '''Override create model so that it calls the backend method
         '''
         return request.cache.auth_backend.create_user(request, **data)
+
+    @route('authkey', position=-99, method=('get', 'options'))
+    def get_authkey(self, request):
+        if request.method == 'OPTIONS':
+            request.app.fire('on_preflight', request)
+            return request.response
+
+        if 'auth_key' in request.url_data:
+            auth_key = request.url_data['auth_key']
+            backend = request.cache.auth_backend
+            user = backend.get_user(request, auth_key=auth_key)
+            if user:
+                return self.collection_response(request, id=user.id)
+
+        raise Http404
 
 
 class Authorization(rest.Authorization):

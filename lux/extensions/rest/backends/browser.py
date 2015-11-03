@@ -110,13 +110,13 @@ class ApiSessionBackend(SessionBackendMixin,
     users_url = {'id': 'users',
                  'username': 'users',
                  'email': 'users',
-                 'auth_key': 'users'}
+                 'auth_key': 'users/authkey'}
 
     LoginRouter = LoginPost
     LogoutRouter = Logout
 
     def get_user(self, request, **kw):
-        '''Get User from username or id or email.
+        '''Get User from username, id or email or authentication key.
         '''
         api = request.app.api
         for name, url in self.users_url.items():
@@ -238,6 +238,11 @@ class ApiSessionBackend(SessionBackendMixin,
             data = response.json()
             return data['registration_key']
         response.raise_for_status()
+
+    def set_password(self, request, user, password):
+        model = self.model(request)
+        url = 'users/%s/setpassword' % getattr(user, model.id_field)
+
 
     def on_html_document(self, app, request, doc):
         BrowserBackend.on_html_document(self, app, request, doc)

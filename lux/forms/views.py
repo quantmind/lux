@@ -26,6 +26,9 @@ class WebFormRouter(HtmlRouter):
         form = self.form or self.default_form
         return form.form_class if isinstance(form, Layout) else form
 
+    def get_fclass(self, form):
+        return form.form_class if isinstance(form, Layout) else form
+
     @property
     def flayout(self):
         form = self.form or self.default_form

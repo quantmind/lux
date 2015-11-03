@@ -96,6 +96,10 @@ class ForgotPassword(WebFormRouter):
                           Fieldset(all=True),
                           Submit('Submit'),
                           showLabels=False)
+    reset_form = Layout(PasswordForm,
+                        Fieldset(all=True),
+                        Submit('Change Password'),
+                        showLabels=False)
 
     template = 'forgot.html'
     reset_template = 'reset_password.html'
@@ -129,14 +133,11 @@ class ForgotPassword(WebFormRouter):
             return request.redirect('/')
         if not user:
             raise Http404
-        form = PasswordForm(request).layout
+        form = self.reset_form(request)
         html = form.as_form(action=request.full_path('reset'),
                             enctype='multipart/form-data',
                             method='post')
-        context = {'form': html.render(request),
-                   'site_name': request.config['APP_NAME']}
-        return request.app.render_template(self.reset_template, context,
-                                           request=request)
+        return self.html_response(request, html, self.reset_template)
 
     @route('<key>/reset', method='post',
            response_content_types=lux.JSON_CONTENT_TYPES)
@@ -152,11 +153,12 @@ class ForgotPassword(WebFormRouter):
             if not user:
                 session.error('Could not find the user')
             else:
-                form = PasswordForm(request, data=request.body_data())
+                fclass = self.get_fclass(self.reset_form)
+                form = fclass(request, data=request.body_data())
                 if form.is_valid():
                     auth = request.cache.auth_backend
                     password = form.cleaned_data['password']
-                    auth.set_password(user, password)
+                    auth.set_password(request, user, password)
                     session.info('Password successfully changed')
                     auth.auth_key_used(key)
                 else:

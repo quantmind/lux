@@ -32,15 +32,6 @@ class RegistrationMixin:
             data = dict(email=email, registration=reg_token)
             return Json(data).http_response(request)
 
-    def create_registration(self, request, user, expiry):
-        '''Create a registration and return a registration id
-        '''
-        raise NotImplementedError
-
-    def confirm_registration(self, request, **params):
-        '''Confirm registration'''
-        raise NotImplementedError
-
     def auth_key_used(self, key):
         '''The authentication ``key`` has been used and this method is
         for setting/updating the backend model accordingly.

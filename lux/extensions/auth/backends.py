@@ -39,6 +39,15 @@ class AuthMixin(PasswordMixin):
                 if not query.count():
                     return
 
+        if auth_key:
+            with odm.begin() as session:
+                query = session.query(odm.registration)
+                reg = query.get(auth_key)
+                if reg and not reg.confirmed and reg.expiry > datetime.now():
+                    user_id = reg.user_id
+                else:
+                    return
+
         with odm.begin() as session:
             query = session.query(odm.user)
             try:
