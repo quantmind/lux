@@ -156,7 +156,7 @@ class AuthMixin(PasswordMixin):
         session.close()
         return token
 
-    def create_registration(self, request, user, expiry=None, **kw):
+    def create_auth_key(self, request, user, expiry=None, **kw):
         '''Create a registration entry and return the registration id
         '''
         odm = request.app.odm()

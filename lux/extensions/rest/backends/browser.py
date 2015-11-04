@@ -10,26 +10,30 @@ from lux.extensions.angular import add_ng_modules
 
 from .mixins import jwt, SessionBackendMixin
 from .registration import RegistrationMixin
-from .. import (AuthenticationError, AuthBackend, luxrest, Login, LoginPost,
-                Logout, SignUp, ForgotPassword, User, Session, ModelMixin)
+from .. import (AuthenticationError, AuthBackend, luxrest,
+                User, Session, ModelMixin)
 from ..policy import has_permission
+from ..htmlviews import ForgotPassword, Login, Logout, SignUp
 
 
 def auth_router(api, url, Router, path=None):
-    if hasattr(Router, 'post'):
-        # The Router handles post data, create an action for a web api
+    params = {'form_enctype': 'application/json'}
+    if is_absolute_uri(api) and hasattr(Router, 'post'):
         action = luxrest('', path=url)
     else:
-        # The Router does not handle post data, create an action for a rest api
+        params['post'] = None
         action = luxrest(api, name='authorizations_url')
-        if path is None:
-            path = url
-        if path:
-            action['path'] = path
-    return Router(url, form_enctype='application/json', form_action=action)
+
+    params['form_action'] = action
+    if path is None:
+        path = url
+    if path:
+        action['path'] = path
+    return Router(url, **params)
 
 
-class BrowserBackend(AuthBackend):
+class BrowserBackend(RegistrationMixin,
+                     AuthBackend):
     '''Authentication backend for rendering Forms in the Browser
 
     It can be used by web servers delegating authentication to a backend API
@@ -40,9 +44,6 @@ class BrowserBackend(AuthBackend):
         Parameter('LOGOUT_URL', '/logout', 'Url to logout', True),
         Parameter('REGISTER_URL', '/signup',
                   'Url to register with site', True),
-        Parameter('RESET_PASSWORD_URL', '/reset-password',
-                  'If given, add the router to handle password resets',
-                  True),
         Parameter('TOS_URL', '/tos',
                   'Terms of Service url',
                   True),
@@ -51,7 +52,7 @@ class BrowserBackend(AuthBackend):
                   True)
     ]
     LoginRouter = Login
-    LogoutRouter = None
+    LogoutRouter = Logout
     SignUpRouter = SignUp
     ForgotPasswordRouter = ForgotPassword
 
@@ -90,7 +91,6 @@ class BrowserBackend(AuthBackend):
 
 
 class ApiSessionBackend(SessionBackendMixin,
-                        RegistrationMixin,
                         ModelMixin,
                         BrowserBackend):
     '''An Mixin for authenticating against a RESTful HTTP API.
@@ -111,9 +111,6 @@ class ApiSessionBackend(SessionBackendMixin,
                  'username': 'users',
                  'email': 'users',
                  'auth_key': 'users/authkey'}
-
-    LoginRouter = LoginPost
-    LogoutRouter = Logout
 
     def get_user(self, request, **kw):
         '''Get User from username, id or email or authentication key.

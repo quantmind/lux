@@ -29,6 +29,7 @@ from .pagination import *       # noqa
 from .client import ApiClient
 from .permissions import *      # noqa
 from .views import *            # noqa
+from .authviews import *        # noqa
 
 
 def luxrest(url, **rest):

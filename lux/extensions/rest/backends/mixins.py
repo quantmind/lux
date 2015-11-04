@@ -7,7 +7,7 @@ from pulsar.apps.wsgi import Json
 
 from lux import Parameter, wsgi_request, Http401
 
-from ..views import Authorization
+from ..authviews import Authorization
 
 try:
     import jwt

@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 
 from lux import route
 from lux.extensions import rest
+from lux.extensions.rest.htmlviews import SignUp as SignUpView
 from lux.extensions.odm import CRUD, RestRouter
 from lux.forms import Layout, Fieldset, Submit
 
@@ -33,7 +34,7 @@ class RegistrationCRUD(RestRouter):
             self.check_model_permission(request, rest.READ)
 
     def post(self, request):
-        '''Create a new registration object
+        '''Create a new authentication key
         '''
         model = self.model(request)
         if not model.form or not self.get_user:
@@ -50,8 +51,8 @@ class RegistrationCRUD(RestRouter):
             if isinstance(user, tuple):
                 user = user[0]
             backend = request.cache.auth_backend
-            reg_id = backend.create_registration(request, user, expiry=expiry)
-            data = {'registration_key': reg_id}
+            auth_key = backend.create_auth_key(request, user, expiry=expiry)
+            data = {'registration_key': auth_key}
             request.response.status_code = 201
         else:
             data = form.tojson()
@@ -94,7 +95,7 @@ class Authorization(rest.Authorization):
     change_password_form = ChangePasswordForm
 
 
-class SignUp(rest.SignUp):
+class SignUp(SignUpView):
     '''Handle sign up on Html pages
     '''
     default_form = Layout(CreateUserForm,

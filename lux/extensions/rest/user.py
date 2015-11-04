@@ -231,6 +231,30 @@ class Registration(AttributeDictionary):
     pass
 
 
+def login(request, login_form):
+    '''Authenticate the user
+    '''
+    # user = request.cache.user
+    # if user.is_authenticated():
+    #     raise MethodNotAllowed
+
+    form = login_form(request, data=request.body_data())
+
+    if form.is_valid():
+        auth_backend = request.cache.auth_backend
+        try:
+            user = auth_backend.authenticate(request, **form.cleaned_data)
+            if user.is_active():
+                return auth_backend.login_response(request, user)
+            else:
+                return auth_backend.inactive_user_login_response(request,
+                                                                 user)
+        except AuthenticationError as e:
+            form.add_error_message(str(e))
+
+    return Json(form.tojson()).http_response(request)
+
+
 def logout(request):
     '''Logout a user
     '''

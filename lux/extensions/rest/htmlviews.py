@@ -6,35 +6,8 @@ from pulsar.apps.wsgi import Json, route
 import lux
 from lux.forms import WebFormRouter, Layout, Fieldset, Submit
 
-from .user import AuthenticationError, logout
+from .user import AuthenticationError, login, logout
 from .forms import LoginForm, PasswordForm, EmailForm
-
-
-class ProcessLoginMixin:
-    login_form = LoginForm
-
-    def post(self, request):
-        '''Authenticate the user
-        '''
-        # user = request.cache.user
-        # if user.is_authenticated():
-        #     raise MethodNotAllowed
-
-        form = self.login_form(request, data=request.body_data())
-
-        if form.is_valid():
-            auth_backend = request.cache.auth_backend
-            try:
-                user = auth_backend.authenticate(request, **form.cleaned_data)
-                if user.is_active():
-                    return auth_backend.login_response(request, user)
-                else:
-                    return auth_backend.inactive_user_login_response(request,
-                                                                     user)
-            except AuthenticationError as e:
-                form.add_error_message(str(e))
-
-        return Json(form.tojson()).http_response(request)
 
 
 class Login(WebFormRouter):
@@ -52,10 +25,8 @@ class Login(WebFormRouter):
             raise HttpRedirect('/')
         return super().get(request)
 
-
-class LoginPost(Login, ProcessLoginMixin):
-    '''Login Router for both get and post methods
-    '''
+    def post(self, request):
+        return login(request, self.default_form.form_class)
 
 
 class Logout(lux.Router):
@@ -90,12 +61,13 @@ class SignUp(WebFormRouter):
 
 
 class ForgotPassword(WebFormRouter):
-    '''Adds login get ("text/html") and post handlers
+    '''Manage forget passwords routes
     '''
     default_form = Layout(EmailForm,
                           Fieldset(all=True),
                           Submit('Submit'),
                           showLabels=False)
+
     reset_form = Layout(PasswordForm,
                         Fieldset(all=True),
                         Submit('Change Password'),
@@ -103,24 +75,6 @@ class ForgotPassword(WebFormRouter):
 
     template = 'forgot.html'
     reset_template = 'reset_password.html'
-
-    def post(self, request):
-        '''Handle request for resetting password
-        '''
-        user = request.cache.user
-        if user.is_authenticated():
-            raise MethodNotAllowed
-        form = self.fclass(request, data=request.body_data())
-        if form.is_valid():
-            auth = request.cache.auth_backend
-            email = form.cleaned_data['email']
-            try:
-                auth.password_recovery(request, email)
-            except AuthenticationError as e:
-                form.add_error_message(str(e))
-            else:
-                return self.maybe_redirect_to(request, form, user=user)
-        return Json(form.tojson()).http_response(request)
 
     @route('<key>')
     def get_reset_form(self, request):
@@ -139,32 +93,6 @@ class ForgotPassword(WebFormRouter):
                             method='post')
         return self.html_response(request, html, self.reset_template)
 
-    @route('<key>/reset', method='post',
-           response_content_types=lux.JSON_CONTENT_TYPES)
-    def reset(self, request):
-        key = request.urlargs['key']
-        session = request.cache.session
-        result = {}
-        try:
-            user = request.cache.auth_backend.get_user(request, auth_key=key)
-        except AuthenticationError as e:
-            session.error('The link is no longer valid, %s' % e)
-        else:
-            if not user:
-                session.error('Could not find the user')
-            else:
-                fclass = self.get_fclass(self.reset_form)
-                form = fclass(request, data=request.body_data())
-                if form.is_valid():
-                    auth = request.cache.auth_backend
-                    password = form.cleaned_data['password']
-                    auth.set_password(request, user, password)
-                    session.info('Password successfully changed')
-                    auth.auth_key_used(key)
-                else:
-                    result = form.tojson()
-        return Json(result).http_response(request)
-
 
 class ComingSoon(WebFormRouter):
     release = 'release'
@@ -174,7 +102,6 @@ class ComingSoon(WebFormRouter):
                           Submit('Submit'),
                           showLabels=False,
                           resultHandler='reload')
-    redirect_to = '/'
 
     def post(self, request):
         '''Handle login post data

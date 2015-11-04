@@ -25,11 +25,11 @@ class RegistrationMixin:
         '''handle the response to a signup request
         '''
         auth_backend = request.cache.auth_backend
-        reg_token = auth_backend.create_registration(request, user)
-        if reg_token:
-            email = self.send_email_confirmation(request, user, reg_token)
+        auth_key = auth_backend.create_auth_key(request, user)
+        if auth_key:
+            email = self.send_email_confirmation(request, user, auth_key)
             request.response.status_code = 201
-            data = dict(email=email, registration=reg_token)
+            data = dict(email=email, registration=auth_key)
             return Json(data).http_response(request)
 
     def password_recovery(self, request, email):
