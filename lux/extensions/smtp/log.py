@@ -4,6 +4,45 @@ from asyncio import async
 
 from pulsar.apps.http import HttpClient
 from pulsar.utils.log import lazymethod
+from mako.template import Template
+context_tmpl_text = """
+<%
+key_len = max([len(key) for key in ctx])
+%>
+% for key, val in ctx.items():
+    ${key}: ${' ' * (key_len - len(key))} ${val}
+%endfor
+"""
+context_tmpl_html = """
+<table>
+% for key, val in ctx.items():
+    <tr>
+        <td>${key}:</td><td>${val}</td>
+    </tr>
+%endfor
+</table>
+"""
+
+
+class TestHandler(logging.Handler):
+
+    def __init__(self, app, level):
+        super().__init__(logging._checkLevel(level))
+        self.app = app
+
+    def emit(self, record):
+        cfg = self.app.config
+
+        msg = self.format(record)
+        first = record.message.split('\n')[0]
+        subject = '%s - %s - %s' % (cfg['APP_NAME'], record.levelname, first)
+
+        context_factory = cfg['LOG_CONTEXT_FACTORY']
+        ctx = context_factory(self)
+        context = Template(context_tmpl_html).render(ctx=ctx)
+        print(subject)
+        print(context)
+        print(msg)
 
 
 class SMTPHandler(logging.Handler):
