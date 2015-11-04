@@ -52,7 +52,6 @@
                     path: lux.context.LOGOUT_URL
                 }).then(function () {
                     scope.$emit('after-logout');
-                    $lux.window.location.reload();
                 }, function (response) {
                     $lux.messages.error('Error while logging out');
                 });
