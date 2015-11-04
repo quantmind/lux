@@ -65,8 +65,6 @@ class Extension(MultiAuthBackend):
                   'A string or bytes used for encrypting data. Must be unique '
                   'to the application and long and random enough'),
         Parameter('SESSION_MESSAGES', True, 'Handle messages'),
-        Parameter('SESSION_EXPIRY', 7*24*60*60,
-                  'Expiry for a session/token in seconds.'),
         Parameter('CHECK_USERNAME', check_username,
                   'Check if the username is valid'),
         Parameter('PERMISSION_LEVELS', {'read': 10,
@@ -178,24 +176,3 @@ class Extension(MultiAuthBackend):
 
     def __call__(self, environ, start_response):
         return self.request(wsgi_request(environ))
-
-    # AuthBackend Implementation
-    def request(self, request):
-        # Inject self as the authentication backend
-        cache = request.cache
-        cache.user = self.anonymous()
-        cache.auth_backend = self
-        return self._apply_all('request', request)
-
-    # HTTP Responses
-    def login_response(self, request, user):
-        return self._apply_all('login_response', request, user)
-
-    def logout_response(self, request, user):
-        return self._apply_all('logout_response', request, user)
-
-    def signup_response(self, request, user):
-        return self._apply_all('signup_response', request, user)
-
-    def password_changed_response(self, request, user):
-        return self._apply_all('password_changed_response', request, user)

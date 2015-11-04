@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from functools import partial
 
 from pulsar.apps.wsgi import Json
 
@@ -35,18 +35,47 @@ class Anonymous(UserMixin):
         return 0
 
 
-class MultiAuthBackend(lux.Extension):
+class AuthBase(lux.Extension):
+
+    def request(self, request):  # pragma    nocover
+        '''Request middleware. Most backends implement this method
+        '''
+        pass
+
+    def anonymous(self):
+        '''Anonymous User
+        '''
+        return Anonymous()
+
+    def user_agent(self, request, max_len=80):
+        agent = request.get('HTTP_USER_AGENT')
+        return agent[:max_len] if agent else ''
+
+
+class MultiAuthBackend(AuthBase):
+    '''Aggregate several Authentication backends
+    '''
     backends = None
+
+    def request(self, request):
+        # Inject self as the authentication backend
+        cache = request.cache
+        cache.user = self.anonymous()
+        cache.auth_backend = self
+        return self._execute_backend_method('request', request)
 
     def __getattr__(self, method):
         if method in auth_backend_methods:
-            for backend in self.backends or ():
-                result = getattr(backend, method)(request, *args, **kwargs)
-                if result is not None:
-                    return result
+            return partial(self._execute_backend_method, method)
         else:
             raise AttributeError("'%s' object has no attribute '%s'" %
-                                 (type(self).__name__, name))
+                                 (type(self).__name__, method))
+
+    def _execute_backend_method(self, method, request, *args, **kwargs):
+        for backend in self.backends or ():
+            result = getattr(backend, method)(request, *args, **kwargs)
+            if result is not None:
+                return result
 
 
 class AuthenticationResponses:
@@ -84,6 +113,30 @@ class AuthenticationResponses:
         raise AuthenticationError('Cannot login - not active user')
 
 
+class AuthUserMixin:
+
+    # Internal Methods
+    @auth_backend
+    def authenticate(self, request, **params):  # pragma    nocover
+        '''Authenticate user'''
+        pass
+
+    @auth_backend
+    def create_user(self, request, **kwargs):  # pragma    nocover
+        '''Create a standard user.'''
+        pass
+
+    @auth_backend
+    def create_superuser(self, request, **kwargs):  # pragma    nocover
+        '''Create a user with *superuser* permissions.'''
+        pass
+
+    @auth_backend
+    def get_user(self, request, **kwargs):  # pragma    nocover
+        '''Retrieve a user.'''
+        pass
+
+
 class AuthenticationKeyMixin:
 
     @auth_backend
@@ -97,32 +150,12 @@ class AuthenticationKeyMixin:
         pass
 
 
-class AuthBackend(lux.Extension,
+class AuthBackend(AuthBase,
+                  AuthUserMixin,
                   AuthenticationResponses,
                   AuthenticationKeyMixin):
     '''Interface for extension supporting restful methods
     '''
-
-    # Internal Methods
-    @auth_backend
-    def authenticate(self, request, **params):  # pragma    nocover
-        '''Authenticate user'''
-        pass
-    
-    @auth_backend
-    def create_user(self, request, **kwargs):  # pragma    nocover
-        '''Create a standard user.'''
-        pass
-    
-    @auth_backend
-    def create_superuser(self, request, **kwargs):  # pragma    nocover
-        '''Create a user with *superuser* permissions.'''
-        pass
-
-    def get_user(self, request, **kwargs):  # pragma    nocover
-        '''Retrieve a user.'''
-        pass
-    
     @auth_backend
     def create_token(self, request, user, **kwargs):  # pragma    nocover
         '''Create an athentication token for ``user``'''
@@ -134,42 +167,20 @@ class AuthBackend(lux.Extension,
         pass
 
     @auth_backend
-    def request(self, request):  # pragma    nocover
-        '''Request middleware. Most backends implement this method
-        '''
-        pass
-    
-    @auth_backend
     def has_permission(self, request, target, level):  # pragma    nocover
         '''Check if the given request has permission over ``target``
         element with permission ``level``
         '''
         pass
-    
+
     @auth_backend
     def password_recovery(self, request, email):
         '''Password recovery method
         '''
         pass
-    
+
     @auth_backend
     def add_to_mail_list(self, request, topic, **kwargs):
         '''Add a user details to the mailing list
         '''
         pass
-
-    def anonymous(self):
-        '''Anonymous User
-        '''
-        return Anonymous()
-
-    def session_expiry(self, request):
-        '''Expiry for a session or a token
-        '''
-        session_expiry = request.config['SESSION_EXPIRY']
-        if session_expiry:
-            return datetime.now() + timedelta(seconds=session_expiry)
-
-    def user_agent(self, request, max_len=80):
-        agent = request.get('HTTP_USER_AGENT')
-        return agent[:max_len] if agent else ''

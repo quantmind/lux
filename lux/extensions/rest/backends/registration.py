@@ -32,32 +32,22 @@ class RegistrationMixin:
             data = dict(email=email, registration=reg_token)
             return Json(data).http_response(request)
 
-    def auth_key_used(self, key):
-        '''The authentication ``key`` has been used and this method is
-        for setting/updating the backend model accordingly.
-        Used during password retrieval and user registration
-        '''
-        raise NotImplementedError
-
     def password_recovery(self, request, email):
         '''Recovery password email
         '''
         user = self.get_user(request, email=email)
-        reg_id = self.get_or_create_registration(request, user)
-        if not reg_id:
+        if not user or user.is_anonymous():
             raise AuthenticationError("Can't find that email, sorry")
 
+        auth_key = self.create_auth_key(request, user)
+        if not auth_key:
+            raise AuthenticationError("Cannot create authentication key")
+
         return self.send_email_confirmation(
-            request, user, reg_id,
+            request, user, auth_key,
             email_subject='registration/password_email_subject.txt',
             email_message='registration/password_email.txt',
             message='registration/password_message.txt')
-
-    def get_or_create_registration(self, request, user, reg_id=None, **kw):
-        if not user or user.is_anonymous():
-            return
-        if not reg_id:
-            return self.create_registration(request, user, **kw)
 
     def inactive_user_login_response(self, request, user):
         '''Handle a user not yet active'''
