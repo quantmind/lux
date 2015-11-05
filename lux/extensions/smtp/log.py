@@ -4,24 +4,15 @@ from asyncio import async
 
 from pulsar.apps.http import HttpClient
 from pulsar.utils.log import lazymethod
-from mako.template import Template
-context_tmpl_text = """
-<%
-key_len = max([len(key) for key in ctx])
-%>
-% for key, val in ctx.items():
-    ${key}: ${' ' * (key_len - len(key))} ${val}
-%endfor
-"""
-context_tmpl_html = """
-<table>
-% for key, val in ctx.items():
-    <tr>
-        <td>${key}:</td><td>${val}</td>
-    </tr>
-%endfor
-</table>
-"""
+
+
+def context_text_formatter(context):
+    res = ""
+    maxlen = max([len(key) for key in context])
+    for key, val in context.items():
+        space = " " * (maxlen - len(key))
+        res += "%s:%s%s\n" % (key, space, val)
+    return res
 
 
 class SMTPHandler(logging.Handler):
@@ -42,7 +33,7 @@ class SMTPHandler(logging.Handler):
         context_factory = cfg['LOG_CONTEXT_FACTORY']
         if context_factory:
             ctx = context_factory(self)
-            msg = Template(context_tmpl_text).render(ctx=ctx) + '\n' + msg
+            msg = context_text_formatter(ctx) + '\n' + msg
             subject = ctx['host'] + ': ' + subject
         backend.send_mail(to=managers,
                           subject=subject,
@@ -79,7 +70,7 @@ class SlackHandler(logging.Handler):
         data['text'] = text
         if context_factory:
             ctx = context_factory(self)
-            data['text'] += "\n" + Template(context_tmpl_text).render(ctx=ctx)
+            data['text'] += "\n" + context_text_formatter(ctx)
         data['text'] += "```\n%s\n```" % self.format(record)
         http = self.http()
         async(http.post(self.webhook_url, data=json.dumps(data)),
