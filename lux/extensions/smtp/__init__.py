@@ -29,7 +29,7 @@ class Extension(lux.Extension):
                   'List of email messages to be sent on reception of enquiry'),
         Parameter('SMTP_LOG_LEVEL', None,
                   'Logging level for email messages'),
-        Parameter('SLACK_LOG_LEVEL', 'INFO',
+        Parameter('SLACK_LOG_LEVEL', 'ERROR',
                   'Logging level for slack messages'),
         Parameter('SLACK_LOG_TOKEN', None,
                   'Token for posting messages to slack channel'),
