@@ -24,27 +24,6 @@ context_tmpl_html = """
 """
 
 
-class TestHandler(logging.Handler):
-
-    def __init__(self, app, level):
-        super().__init__(logging._checkLevel(level))
-        self.app = app
-
-    def emit(self, record):
-        cfg = self.app.config
-
-        msg = self.format(record)
-        first = record.message.split('\n')[0]
-        subject = '%s - %s - %s' % (cfg['APP_NAME'], record.levelname, first)
-
-        context_factory = cfg['LOG_CONTEXT_FACTORY']
-        ctx = context_factory(self)
-        context = Template(context_tmpl_html).render(ctx=ctx)
-        print(subject)
-        print(context)
-        print(msg)
-
-
 class SMTPHandler(logging.Handler):
 
     def __init__(self, app, level):
@@ -60,6 +39,11 @@ class SMTPHandler(logging.Handler):
         msg = self.format(record)
         first = record.message.split('\n')[0]
         subject = '%s - %s - %s' % (cfg['APP_NAME'], record.levelname, first)
+        context_factory = cfg['LOG_CONTEXT_FACTORY']
+        if context_factory:
+            ctx = context_factory(self)
+            msg = Template(context_tmpl_text).render(ctx=ctx) + '\n' + msg
+            subject = ctx['host'] + ': ' + subject
         backend.send_mail(to=managers,
                           subject=subject,
                           message=msg)
@@ -83,14 +67,20 @@ class SlackHandler(logging.Handler):
         """Emit record to slack channel using pycurl to avoid recurrence
         event logging (log logged record)
         """
-        managers = self.app.config['SLACK_LINK_NAMES']
+        cfg = self.app.config
+        managers = cfg['SLACK_LINK_NAMES']
         text = ''
         data = {}
         if managers:
             text = ' '.join(('@%s' % m for m in managers))
             text = '%s\n\n' % text
             data['link_names'] = 1
-        data['text'] = "%s```\n%s\n```" % (text, self.format(record))
+        context_factory = cfg['LOG_CONTEXT_FACTORY']
+        data['text'] = text
+        if context_factory:
+            ctx = context_factory(self)
+            data['text'] += "\n" + Template(context_tmpl_text).render(ctx=ctx)
+        data['text'] += "```\n%s\n```" % self.format(record)
         http = self.http()
         async(http.post(self.webhook_url, data=json.dumps(data)),
               loop=http._loop)

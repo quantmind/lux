@@ -5,7 +5,7 @@ from lux import Parameter
 
 from .backend import EmailBackend
 from .views import ContactRouter
-from .log import SMTPHandler, SlackHandler, TestHandler
+from .log import SMTPHandler, SlackHandler
 
 
 __all__ = ['EmailBackend', 'ContactRouter']
@@ -28,8 +28,8 @@ class Extension(lux.Extension):
         Parameter('ENQUIRY_EMAILS', [],
                   'List of email messages to be sent on reception of enquiry'),
         Parameter('SMTP_LOG_LEVEL', None,
-                  'Logging level for slack messages'),
-        Parameter('SLACK_LOG_LEVEL', 'ERROR',
+                  'Logging level for email messages'),
+        Parameter('SLACK_LOG_LEVEL', 'INFO',
                   'Logging level for slack messages'),
         Parameter('SLACK_LOG_TOKEN', None,
                   'Token for posting messages to slack channel'),
@@ -37,15 +37,11 @@ class Extension(lux.Extension):
                   'Usernames to include as mention in the slack message'),
         Parameter('LOG_CONTEXT_FACTORY', None,
                   'Callable returning dict with system context for logging'),
-        # dev param
-        Parameter('TEST_LOG_LEVEL', 'INFO',
-                  'Logging level for slack messages'),
     ]
 
 
     def on_start(self, app, server):
         handlers = []
-        handlers.append(TestHandler(app, app.config['TEST_LOG_LEVEL']))
         level = app.config['SMTP_LOG_LEVEL']
         if level:
             handlers.append(SMTPHandler(app, level))
