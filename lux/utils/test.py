@@ -66,7 +66,6 @@ def test_app(test, config_file=None, argv=None, **params):
         argv.append('--log-level')
         levels = test.cfg.loglevel if hasattr(test, 'cfg') else ['none']
         argv.extend(levels)
-
     app = lux.App(config_file, argv=argv, **kwargs).setup()
     #
     # Data mapper
