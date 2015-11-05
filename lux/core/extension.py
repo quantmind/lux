@@ -278,9 +278,9 @@ class EventMixin:
             if hasattr(extension, name):
                 handlers.append(EventHandler(extension, name))
 
-    def fire(self, event, *args):
+    def fire(self, event, *args, **kwargs):
         '''Fire an ``event``.'''
         handlers = self.events.get(event) if self.events else None
         if handlers:
             for handler in handlers:
-                handler(self, *args)
+                handler(self, *args, **kwargs)

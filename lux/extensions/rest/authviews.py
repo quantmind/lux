@@ -45,15 +45,18 @@ class ResetPasswordMixin:
             auth = request.cache.auth_backend
             email = form.cleaned_data['email']
             try:
-                auth.password_recovery(request, email)
+                result = {'email': auth.password_recovery(request, email)}
             except AuthenticationError as e:
                 form.add_error_message(str(e))
-            else:
-                return self.maybe_redirect_to(request, form, user=user)
-        return Json(form.tojson()).http_response(request)
+                result = form.tojson()
+        return Json(result).http_response(request)
 
     @route('reset-password/<key>', method=('post', 'options'))
     def reset(self, request):
+        if request.method == 'OPTIONS':
+            request.app.fire('on_preflight', request, methods=['POST'])
+            return request.response
+
         key = request.urlargs['key']
         session = request.cache.session
         result = {}

@@ -77,8 +77,6 @@ class Extension(MultiAuthBackend):
                   'Defaukt permission level'),
         Parameter('DEFAULT_PERMISSION_LEVELS', {'site:admin': NONE},
                   'Dictionary of default permission levels'),
-        Parameter('ACCOUNT_ACTIVATION_DAYS', 2,
-                  'Number of days the activation code is valid'),
         Parameter('API_URL', None, 'URL FOR THE REST API', True),
         Parameter('API_SEARCH_KEY', 'q',
                   'The query key for full text search'),

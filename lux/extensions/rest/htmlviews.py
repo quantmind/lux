@@ -88,7 +88,12 @@ class ForgotPassword(WebFormRouter):
         if not user:
             raise Http404
         form = self.reset_form(request)
-        html = form.as_form(action=request.full_path('reset'),
+        if self.form_action:
+            action = self.form_action.copy()
+            action['path'] = '%s/%s' % (action['path'], key)
+        else:
+            action = request.full_path()
+        html = form.as_form(action=action,
                             enctype='multipart/form-data',
                             method='post')
         return self.html_response(request, html, self.reset_template)
