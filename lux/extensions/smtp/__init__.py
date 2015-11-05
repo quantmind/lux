@@ -39,7 +39,6 @@ class Extension(lux.Extension):
                   'Callable returning dict with system context for logging'),
     ]
 
-
     def on_start(self, app, server):
         handlers = []
         level = app.config['SMTP_LOG_LEVEL']
