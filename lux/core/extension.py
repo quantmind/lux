@@ -249,8 +249,8 @@ class EventHandler:
         return '%s.%s' % (self.extension, self.name)
     __str__ = __repr__
 
-    def __call__(self, *args):
-        return getattr(self.extension, self.name)(*args)
+    def __call__(self, *args, **kwargs):
+        return getattr(self.extension, self.name)(*args, **kwargs)
 
 
 class EventMixin:

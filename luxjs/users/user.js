@@ -1,6 +1,6 @@
 
     // Controller for User.
-    // This controller can be used by eny element, including forms
+    // This controller can be used by any element, including forms
     angular.module('lux.users', ['lux.form', 'templates-users'])
         //
         // Directive for displaying page messages

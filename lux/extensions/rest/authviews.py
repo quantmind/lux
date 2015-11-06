@@ -32,6 +32,7 @@ def action(f):
 
 class ResetPasswordMixin:
     request_reset_password_form = EmailForm
+    reset_form = ChangePasswordForm
 
     @action
     def reset_password(self, request):
@@ -68,8 +69,7 @@ class ResetPasswordMixin:
             if not user:
                 session.error('Could not find the user')
             else:
-                fclass = self.get_fclass(self.reset_form)
-                form = fclass(request, data=request.body_data())
+                form = self.reset_form(request, data=request.body_data())
                 if form.is_valid():
                     auth = request.cache.auth_backend
                     password = form.cleaned_data['password']

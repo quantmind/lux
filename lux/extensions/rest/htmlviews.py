@@ -66,7 +66,8 @@ class ForgotPassword(WebFormRouter):
     default_form = Layout(EmailForm,
                           Fieldset(all=True),
                           Submit('Submit'),
-                          showLabels=False)
+                          showLabels=False,
+                          resultHandler='passwordRecovery')
 
     reset_form = Layout(PasswordForm,
                         Fieldset(all=True),
