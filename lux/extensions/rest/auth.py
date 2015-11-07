@@ -149,6 +149,18 @@ class AuthenticationKeyMixin:
         '''Confirm an authentication key'''
         pass
 
+    @auth_backend
+    def password_recovery(self, request, email):
+        '''Password recovery method via email
+        '''
+        pass
+
+    @auth_backend
+    def auth_key_expiry(self, request):
+        '''Expiry for a session or a token
+        '''
+        pass
+
 
 class AuthBackend(AuthBase,
                   AuthUserMixin,
@@ -170,12 +182,6 @@ class AuthBackend(AuthBase,
     def has_permission(self, request, target, level):  # pragma    nocover
         '''Check if the given request has permission over ``target``
         element with permission ``level``
-        '''
-        pass
-
-    @auth_backend
-    def password_recovery(self, request, email):
-        '''Password recovery method
         '''
         pass
 

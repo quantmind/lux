@@ -159,6 +159,8 @@ class AuthMixin(PasswordMixin):
     def create_auth_key(self, request, user, expiry=None, **kw):
         '''Create a registration entry and return the registration id
         '''
+        if not expiry:
+            expiry = request.cache.auth_backend.auth_key_expiry(request)
         odm = request.app.odm()
         with odm.begin() as session:
             reg = odm.registration(id=digest(user.username),

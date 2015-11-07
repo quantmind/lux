@@ -1,4 +1,5 @@
 from urllib.parse import urljoin
+from datetime import datetime, timedelta
 
 from pulsar.apps.wsgi import Json
 
@@ -18,8 +19,14 @@ class RegistrationMixin:
                   'Url to register with site', True),
         Parameter('RESET_PASSWORD_URL', '/reset-password',
                   'If given, add the router to handle password resets',
-                  True)
+                  True),
+        Parameter('ACCOUNT_ACTIVATION_DAYS', 2,
+                  'Number of days the activation code is valid')
     ]
+
+    def auth_key_expiry(self, request):
+        days = request.config['ACCOUNT_ACTIVATION_DAYS']
+        return datetime.now() + timedelta(days=days)
 
     def signup_response(self, request, user):
         '''handle the response to a signup request

@@ -1,6 +1,6 @@
 //      Lux Library - v0.2.0
 
-//      Compiled 2015-11-03.
+//      Compiled 2015-11-06.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -2181,7 +2181,7 @@ angular.module('lux.cms.core', [])
     //      formFieldChange: triggered when a form field changes:
     //          arguments: formmodel, field (changed)
     //
-    angular.module('lux.form', ['lux.form.utils'])
+    angular.module('lux.form', ['lux.form.utils', 'lux.form.handlers'])
         //
         .constant('formDefaults', {
             // Default layout
@@ -2238,26 +2238,7 @@ angular.module('lux.cms.core', [])
         }])
         //
         .run(['$rootScope', '$lux', function (scope, $lux) {
-            var formHandlers = {};
-            $lux.formHandlers = formHandlers;
-
-            formHandlers.reload = function () {
-                $lux.window.location.reload();
-            };
-
-            formHandlers.redirectHome = function (response, scope) {
-                var href = scope.formAttrs.redirectTo || '/';
-                $lux.window.location.href = href;
-            };
-
-            formHandlers.login = function (response, scope) {
-                var target = scope.formAttrs.action,
-                    api = $lux.api(target);
-                if (api)
-                    api.token(response.data.token);
-                $lux.window.location.href = lux.context.POST_LOGIN_URL || lux.context.LOGIN_URL;
-            };
-
+            //
             //  Listen for a Lux form to be available
             //  If it uses the api for posting, register with it
             scope.$on('formReady', function (e, model, formScope) {
@@ -2619,7 +2600,7 @@ angular.module('lux.cms.core', [])
                         selectUI.attr('data-remote-options', field['data-remote-options'])
                                 .attr('data-remote-options-id', field['data-remote-options-id'])
                                 .attr('data-remote-options-value', field['data-remote-options-value'])
-                                .attr('data-remote-options-params', field['data-remote-options-params']); 
+                                .attr('data-remote-options-params', field['data-remote-options-params']);
 
                         if (field.multiple)
                             match.html('{{$item.repr || $item.name || $item.id}}');
@@ -3112,6 +3093,44 @@ angular.module('lux.cms.core', [])
                 }
             };
         });
+
+
+
+angular.module('lux.form.handlers', ['lux.services'])
+
+    .run(['$lux', function ($lux) {
+        var formHandlers = {};
+        $lux.formHandlers = formHandlers;
+
+        formHandlers.reload = function () {
+            $lux.window.location.reload();
+        };
+
+        formHandlers.redirectHome = function (response, scope) {
+            var href = scope.formAttrs.redirectTo || '/';
+            $lux.window.location.href = href;
+        };
+
+        // response handler for login form
+        formHandlers.login = function (response, scope) {
+            var target = scope.formAttrs.action,
+                api = $lux.api(target);
+            if (api)
+                api.token(response.data.token);
+            $lux.window.location.href = lux.context.POST_LOGIN_URL || lux.context.LOGIN_URL;
+        };
+
+        //
+        formHandlers.passwordRecovery = function (response, scope) {
+            var email = response.data.email;
+            if (email) {
+                var text = "We have sent an email to <strong>" + email + "</strong>. Please follow the instructions to change your password.";
+                $lux.messages.success(text);
+            }
+            else
+                $lux.messages.error("Could not find that email");
+        };
+    }]);
 
     //
     function joinField (model, name, extra) {
@@ -4447,7 +4466,7 @@ function gridDataProviderWebsocketFactory ($scope) {
 
 
     // Controller for User.
-    // This controller can be used by eny element, including forms
+    // This controller can be used by any element, including forms
     angular.module('lux.users', ['lux.form', 'templates-users'])
         //
         // Directive for displaying page messages
@@ -5872,7 +5891,7 @@ angular.module("message/message.tpl.html", []).run(["$templateCache", function($
     "    <div class=\"alert alert-{{ message.type }}\" role=\"alert\" ng-repeat=\"message in messages\">\n" +
     "        <a href=\"#\" class=\"close\" ng-click=\"removeMessage(message)\">&times;</a>\n" +
     "        <i ng-if=\"message.icon\" ng-class=\"message.icon\"></i>\n" +
-    "        <span>{{ message.text }}</span>\n" +
+    "        <span ng-bind-html=\"message.text\"></span>\n" +
     "    </div>\n" +
     "</div>\n" +
     "");

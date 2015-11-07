@@ -249,8 +249,8 @@ class EventHandler:
         return '%s.%s' % (self.extension, self.name)
     __str__ = __repr__
 
-    def __call__(self, *args):
-        return getattr(self.extension, self.name)(*args)
+    def __call__(self, *args, **kwargs):
+        return getattr(self.extension, self.name)(*args, **kwargs)
 
 
 class EventMixin:
@@ -278,9 +278,9 @@ class EventMixin:
             if hasattr(extension, name):
                 handlers.append(EventHandler(extension, name))
 
-    def fire(self, event, *args):
+    def fire(self, event, *args, **kwargs):
         '''Fire an ``event``.'''
         handlers = self.events.get(event) if self.events else None
         if handlers:
             for handler in handlers:
-                handler(self, *args)
+                handler(self, *args, **kwargs)
