@@ -102,6 +102,7 @@ class Token(Model, SessionMixin):
     last_access = Column(DateTime, default=datetime.utcnow)
     # when true, this is a session token, otherwise it is a personal token
     session = Column(Boolean, default=True)
+    description = Column(String(256))
 
     def get_key(self):
         return self.id.hex

@@ -2,10 +2,10 @@ from pulsar import ImproperlyConfigured
 from pulsar.utils.pep import to_string
 from pulsar.apps.wsgi import Json
 
-from lux import Parameter
+from lux import Parameter, Http401
 
 from .. import AuthBackend
-from .mixins import jwt, TokenBackendMixin, Http401
+from .mixins import jwt, TokenBackendMixin
 from .registration import RegistrationMixin
 
 
