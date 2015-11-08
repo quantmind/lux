@@ -236,11 +236,6 @@ class ApiSessionBackend(SessionBackendMixin,
             return data['registration_key']
         response.raise_for_status()
 
-    def set_password(self, request, user, password):
-        model = self.model(request)
-        url = 'users/%s/setpassword' % getattr(user, model.id_field)
-
-
     def on_html_document(self, app, request, doc):
         BrowserBackend.on_html_document(self, app, request, doc)
         if request.method == 'GET':
