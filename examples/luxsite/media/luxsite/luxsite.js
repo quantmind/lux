@@ -46,11 +46,11 @@
 
     function defaultPaths () {
         return {
-            "angular": "//ajax.googleapis.com/ajax/libs/angularjs/1.4.4/angular",
-            "angular-animate": "//ajax.googleapis.com/ajax/libs/angularjs/1.4.4/angular-animate",
-            "angular-mocks": "//ajax.googleapis.com/ajax/libs/angularjs/1.4.4/angular-mocks.js",
-            "angular-sanitize": "//ajax.googleapis.com/ajax/libs/angularjs/1.4.4/angular-sanitize",
-            "angular-touch": "//cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.4/angular-touch",
+            "angular": "//ajax.googleapis.com/ajax/libs/angularjs/1.4.7/angular",
+            "angular-animate": "//ajax.googleapis.com/ajax/libs/angularjs/1.4.7/angular-animate",
+            "angular-mocks": "//ajax.googleapis.com/ajax/libs/angularjs/1.4.7/angular-mocks.js",
+            "angular-sanitize": "//ajax.googleapis.com/ajax/libs/angularjs/1.4.7/angular-sanitize",
+            "angular-touch": "//cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.7/angular-touch",
             "angular-strap": "//cdnjs.cloudflare.com/ajax/libs/angular-strap/2.2.1/angular-strap",
             "angular-strap-tpl": "//cdnjs.cloudflare.com/ajax/libs/angular-strap/2.2.4/angular-strap.tpl",
             "angular-ui-router": "//cdnjs.cloudflare.com/ajax/libs/angular-ui-router/0.2.14/angular-ui-router",
