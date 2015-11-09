@@ -51,8 +51,12 @@
                     name: auth.authName(),
                     path: lux.context.LOGOUT_URL
                 }).then(function () {
-                    $lux.window.location.reload();
                     scope.$emit('after-logout');
+                    if (lux.context.POST_LOGOUT_URL) {
+                        $lux.window.location.href = lux.context.POST_LOGOUT_URL;
+                    } else {
+                        $lux.window.location.reload();
+                    }
                 }, function (response) {
                     $lux.messages.error('Error while logging out');
                 });
