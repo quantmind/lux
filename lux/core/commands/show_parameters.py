@@ -17,7 +17,8 @@ class Command(lux.Command):
         display = options.extensions
         config = self.app.config
         extensions = self.app.extensions
-        for ext in chain([self.app], extensions.values()):
+        auths = self.app.auth_backend or ()
+        for ext in chain([self.app], extensions.values(), auths):
             if display and ext.meta.name not in display:
                 continue
             if ext.meta.config:

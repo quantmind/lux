@@ -36,6 +36,7 @@ class Anonymous(UserMixin):
 
 
 class AuthBase(lux.Extension):
+    abstract = True
 
     def request(self, request):  # pragma    nocover
         '''Request middleware. Most backends implement this method
@@ -55,6 +56,7 @@ class AuthBase(lux.Extension):
 class MultiAuthBackend(AuthBase):
     '''Aggregate several Authentication backends
     '''
+    abstract = True
     backends = None
 
     def request(self, request):
@@ -63,6 +65,9 @@ class MultiAuthBackend(AuthBase):
         cache.user = self.anonymous()
         cache.auth_backend = self
         return self._execute_backend_method('request', request)
+
+    def __iter__(self):
+        return iter(self.backends or ())
 
     def __getattr__(self, method):
         if method in auth_backend_methods:
