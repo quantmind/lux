@@ -1,7 +1,7 @@
 '''Base HTML views for authenticating users
 '''
-from pulsar import Http404, HttpRedirect, MethodNotAllowed
-from pulsar.apps.wsgi import Json, route
+from pulsar import Http404, HttpRedirect
+from pulsar.apps.wsgi import route
 
 import lux
 from lux.forms import WebFormRouter, Layout, Fieldset, Submit
@@ -106,23 +106,5 @@ class ComingSoon(WebFormRouter):
     template = 'comingsoon.html'
     default_form = Layout(EmailForm,
                           Fieldset(all=True),
-                          Submit('Submit'),
-                          showLabels=False,
-                          resultHandler='reload')
-
-    def post(self, request):
-        '''Handle login post data
-        '''
-        user = request.cache.user
-        if user.is_authenticated():
-            raise MethodNotAllowed
-        data = request.body_data()
-        form = self.fclass(request, data=data)
-        if form.is_valid():
-            data = form.cleaned_data
-            auth_backend = request.cache.auth_backend
-            try:
-                auth_backend.add_to_mail_list(request, self.release, **data)
-            except AuthenticationError as e:
-                form.add_error_message(str(e))
-        return Json(form.tojson()).http_response(request)
+                          Submit('Get notified'),
+                          showLabels=False)

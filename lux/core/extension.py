@@ -227,6 +227,10 @@ class Extension(metaclass=ExtensionType):
     def check(self, request, data):
         pass
 
+    def sorted_config(self):
+        for key in sorted(self.meta.config):
+            yield key, self.meta.config[key]
+
     def __repr__(self):
         return self.meta.__repr__()
 

@@ -4,7 +4,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.orm import joinedload
 from datetime import datetime
 
-from lux import cached
+from lux import cached, Parameter
 from lux.utils.crypt import digest
 from lux.extensions.rest import (PasswordMixin, backends, normalise_email,
                                  AuthenticationError)
@@ -17,6 +17,9 @@ class AuthMixin(PasswordMixin):
     '''Mixin to implement authentication backend based on
     SQLAlchemy models
     '''
+    _config = [Parameter('GENERAL_MAILING_LIST_TOPIC', 'general',
+                         "topic for general mailing list")]
+
     def api_sections(self, app):
         '''At the authorization router to the api
         '''

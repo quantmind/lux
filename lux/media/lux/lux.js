@@ -3229,11 +3229,14 @@ angular.module('lux.form.handlers', ['lux.services'])
                     scope.addMessages(data.messages);
                 } else if (api) {
                     // Created
-                    if (response.status === 201) {
-                        scope.formMessages[FORMKEY] = [{message: 'Successfully created'}];
-                    } else {
-                        scope.formMessages[FORMKEY] = [{message: 'Successfully updated'}];
+                    var message = data.message;
+                    if (!message) {
+                        if (response.status === 201)
+                            message = 'Successfully created';
+                        else
+                            message = 'Successfully updated';
                     }
+                    $lux.messages.info(message);
                 }
             },
             function (response) {

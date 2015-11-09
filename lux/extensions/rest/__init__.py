@@ -125,6 +125,13 @@ class Extension(MultiAuthBackend):
 
         app.auth_backend = self
 
+    def sorted_config(self):
+        cfg = self.meta.config.copy()
+        for backend in self.backends:
+            cfg.update(backend.meta.config)
+        for key in sorted(cfg):
+            yield key, cfg[key]
+
     def middleware(self, app):
         middleware = [self]
         for backend in self.backends:

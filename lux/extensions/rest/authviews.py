@@ -111,7 +111,7 @@ class Authorization(RestRouter, ResetPasswordMixin):
             raise Http404
 
         if request.method == 'OPTIONS':
-            request.app.fire('on_preflight', request)
+            request.app.fire('on_preflight', request, methods=['POST'])
             return request.response
 
         return method(request)

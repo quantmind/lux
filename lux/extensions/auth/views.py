@@ -2,9 +2,12 @@ from datetime import datetime, timedelta
 
 from lux import route
 from lux.extensions import rest
-from lux.extensions.rest.htmlviews import SignUp as SignUpView
+from lux.extensions.rest.htmlviews import (SignUp as SignUpView,
+                                           ComingSoon as ComingSoonView)
 from lux.extensions.odm import CRUD, RestRouter
 from lux.forms import Layout, Fieldset, Submit
+from lux.extensions.rest.forms import EmailForm
+from lux.extensions.rest.authviews import action
 
 from pulsar import MethodNotAllowed, Http404
 from pulsar.apps.wsgi import Json
@@ -88,6 +91,35 @@ class Authorization(rest.Authorization):
     create_user_form = CreateUserForm
     change_password_form = ChangePasswordForm
 
+    @action
+    def mailing_list(self, request):
+        '''Add a given email to a mailing list
+        '''
+        user = request.cache.user
+        data = request.body_data()
+        if user.is_authenticated():
+            raise MethodNotAllowed
+        form = EmailForm(request, data=data)
+        if form.is_valid():
+            email = form.cleaned_data['email']
+            odm = request.app.odm()
+            topic = request.config['GENERAL_MAILING_LIST_TOPIC']
+            with odm.begin() as session:
+                q = session.query(odm.mailinglist).filter_by(email=email,
+                                                             topic=topic)
+                if not q.count():
+                    entry = odm.mailinglist(email=email, topic=topic)
+                    session.add(entry)
+                    request.response.status_code = 201
+                    result = {'message': ('Email %s added to mailing list'
+                                          % email)}
+                else:
+                    result = {'message': ('Email %s already in mailing list'
+                                          % email)}
+        else:
+            result = form.tojson()
+        return Json(result).http_response(request)
+
 
 class SignUp(SignUpView):
     '''Handle sign up on Html pages
@@ -99,3 +131,13 @@ class SignUp(SignUpView):
                                  disabled="form.$invalid"),
                           showLabels=False,
                           directive='user-form')
+
+
+class ComingSoon(ComingSoonView):
+    form_enctype = 'application/json'
+
+    def form_action(self, request):
+        api = request.config['API_URL']
+        return rest.luxrest(api,
+                            name='authorizations_url',
+                            path='mailing_list')
