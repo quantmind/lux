@@ -1,6 +1,6 @@
 //      Lux Library - v0.2.0
 
-//      Compiled 2015-11-08.
+//      Compiled 2015-11-09.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -3130,6 +3130,15 @@ angular.module('lux.form.handlers', ['lux.services'])
             else
                 $lux.messages.error("Could not find that email");
         };
+
+        //
+        formHandlers.passwordChanged = function (response, scope) {
+            if (response.data.success) {
+                var text = 'Password succesfully changed. You can now <a title="login" href="' + lux.context.LOGIN_URL + '">login</a> again.';
+                $lux.messages.success(text);
+            } else
+                $lux.messages.error('Could not change password');
+        };
     }]);
 
     //
@@ -3388,7 +3397,7 @@ angular.module('lux.form.utils', ['lux.services'])
     //                luxMessage.info('info message');
     //
     //            }])
-    angular.module('lux.message', ['lux.services', 'templates-message'])
+    angular.module('lux.message', ['lux.services', 'templates-message', 'ngSanitize'])
         //
         //  Service for messages
         //

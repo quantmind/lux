@@ -27,12 +27,6 @@ class RegistrationCRUD(RestRouter):
     '''
     _model = registration_model()
 
-    def get(self, request):
-        odm = request.app.odm()
-        with odm.begin() as session:
-            # user = self.get_instance(request, session)
-            self.check_model_permission(request, rest.READ)
-
     def post(self, request):
         '''Create a new authentication key
         '''

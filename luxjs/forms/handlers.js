@@ -34,4 +34,13 @@ angular.module('lux.form.handlers', ['lux.services'])
             else
                 $lux.messages.error("Could not find that email");
         };
+
+        //
+        formHandlers.passwordChanged = function (response, scope) {
+            if (response.data.success) {
+                var text = 'Password succesfully changed. You can now <a title="login" href="' + lux.context.LOGIN_URL + '">login</a> again.';
+                $lux.messages.success(text);
+            } else
+                $lux.messages.error('Could not change password');
+        };
     }]);

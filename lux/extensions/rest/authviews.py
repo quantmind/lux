@@ -18,7 +18,7 @@ from lux.forms import Form
 
 from .models import RestModel
 from .views import RestRouter
-from .user import AuthenticationError
+from .user import AuthenticationError, login, logout
 from .forms import LoginForm, EmailForm, CreateUserForm, ChangePasswordForm
 
 
@@ -59,75 +59,47 @@ class ResetPasswordMixin:
             return request.response
 
         key = request.urlargs['key']
-        session = request.cache.session
-        result = {}
         try:
             user = request.cache.auth_backend.get_user(request, auth_key=key)
-        except AuthenticationError as e:
-            session.error('The link is no longer valid, %s' % e)
-        else:
-            if not user:
-                session.error('Could not find the user')
-            else:
-                form = self.reset_form(request, data=request.body_data())
-                if form.is_valid():
-                    auth = request.cache.auth_backend
-                    password = form.cleaned_data['password']
-                    auth.set_password(request, user, password)
-                    session.info('Password successfully changed')
-                    auth.auth_key_used(key)
+        except AuthenticationError:
+            user = None
+        form = self.reset_form(request, data=request.body_data())
+        valid = form.is_valid()
+        if not user:
+            form.add_error_message('The link is no longer valid')
+            result = form.tojson()
+        elif valid:
+                auth = request.cache.auth_backend
+                password = form.cleaned_data['password']
+                if auth.set_password(request, user, password):
+                    result = dict(message='Password successfully changed',
+                                  success=True)
                 else:
-                    result = form.tojson()
+                    result = dict(error='Could not change password')
+                auth.confirm_auth_key(request, key)
+        else:
+            result = form.tojson()
         return Json(result).http_response(request)
 
 
-class LoginLogoutMixin:
-    login_form = LoginForm
-
-    @action
-    def login(self, request):
-        # make sure csrf is called
-        form = self.login_form(request, data=request.body_data())
-
-        if form.is_valid():
-            auth_backend = request.cache.auth_backend
-            try:
-                user = auth_backend.authenticate(request, **form.cleaned_data)
-                if user.is_active():
-                    return auth_backend.login_response(request, user)
-                else:
-                    return auth_backend.inactive_user_login_response(request,
-                                                                     user)
-            except AuthenticationError as e:
-                form.add_error_message(str(e))
-
-        return Json(form.tojson()).http_response(request)
-
-    @action
-    def logout(self, request):
-        # make sure csrf is called
-        form = Form(request, data=request.body_data() or {})
-
-        if form.is_valid():
-            user = request.cache.user
-            auth_backend = request.cache.auth_backend
-            return auth_backend.logout_response(request, user)
-        else:
-            return Json(form.tojson()).http_response(request)
-
-
-class Authorization(RestRouter,
-                    LoginLogoutMixin,
-                    ResetPasswordMixin):
+class Authorization(RestRouter, ResetPasswordMixin):
     '''Authentication views.
     '''
     _model = RestModel('authorization')
+    login_form = LoginForm
     create_user_form = CreateUserForm
     change_password_form = ChangePasswordForm
     request_reset_password_form = EmailForm
 
     def head(self, request):
         return request.response
+
+    def post(self, request):
+        return login(request, self.login_form)
+
+    @action
+    def logout(self, request):
+        return logout(request)
 
     @route('/<action>', method=('post', 'options'))
     def auth_action(self, request):

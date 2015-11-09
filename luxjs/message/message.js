@@ -20,7 +20,7 @@
     //                luxMessage.info('info message');
     //
     //            }])
-    angular.module('lux.message', ['lux.services', 'templates-message'])
+    angular.module('lux.message', ['lux.services', 'templates-message', 'ngSanitize'])
         //
         //  Service for messages
         //

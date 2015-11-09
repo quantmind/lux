@@ -114,10 +114,6 @@ class TestSqlite(test.AppTestCase, AuthUtils):
                 })
             group.permissions.append(permission)
 
-    def test_signup(self):
-        return self._signup()
-
-class d:
     def test_backend(self):
         backend = self.app.auth_backend
         self.assertTrue(backend)

@@ -179,6 +179,14 @@ class AuthMixin(PasswordMixin):
             session.add(user)
         return user
 
+    def confirm_auth_key(self, request, key):
+        odm = request.app.odm()
+        with odm.begin() as session:
+            reg = session.query(odm.registration).get(key)
+            if reg:
+                session.delete(reg)
+                return True
+
     @cached(user=True)
     def get_permissions(self, request):
         odm = request.app.odm()

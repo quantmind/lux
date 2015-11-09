@@ -1,4 +1,3 @@
-import asyncio
 import smtplib
 import ssl
 

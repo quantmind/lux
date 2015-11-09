@@ -52,9 +52,12 @@ class RestMixin(ColumnPermissionsMixin):
         of data'''
         cfg = request.config
         user = request.cache.user
-        default = default or cfg['API_LIMIT_DEFAULT']
-        MAXLIMIT = (cfg['API_LIMIT_AUTH'] if user.is_authenticated() else
-                    cfg['API_LIMIT_NOAUTH'])
+        if not default:
+            default = cfg['API_LIMIT_DEFAULT']
+            MAXLIMIT = (cfg['API_LIMIT_AUTH'] if user.is_authenticated() else
+                        cfg['API_LIMIT_NOAUTH'])
+        else:
+            MAXLIMIT = default
         try:
             limit = int(request.url_data.get(cfg['API_LIMIT_KEY'], default))
         except ValueError:

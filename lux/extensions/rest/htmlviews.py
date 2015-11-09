@@ -72,7 +72,8 @@ class ForgotPassword(WebFormRouter):
     reset_form = Layout(PasswordForm,
                         Fieldset(all=True),
                         Submit('Change Password'),
-                        showLabels=False)
+                        showLabels=False,
+                        resultHandler='passwordChanged')
 
     template = 'forgot.html'
     reset_template = 'reset_password.html'

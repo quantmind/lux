@@ -33,7 +33,7 @@ class ApiClient:
         if self.app.green_pool:
             return self.app.green_pool.wait(response)
         else:
-            return http._loop.run_until_complete(response)
+            return response
 
     def http(self):
         '''Get the HTTP client
