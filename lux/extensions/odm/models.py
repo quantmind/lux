@@ -16,8 +16,11 @@ from lux.extensions import rest
 
 def is_same_model(model1, model2):
     if type(model1) == type(model2):
-        pkname = class_mapper(type(model1)).primary_key[0].name
-        return getattr(model1, pkname) == getattr(model2, pkname)
+        if model1 is not None:
+            pkname = class_mapper(type(model1)).primary_key[0].name
+            return getattr(model1, pkname) == getattr(model2, pkname)
+        else:
+            return True
     return False
 
 
