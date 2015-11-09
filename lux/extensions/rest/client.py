@@ -39,11 +39,10 @@ class ApiClient:
         '''Get the HTTP client
         '''
         if self._http is None:
-
             api_url = self.app.config['API_URL']
+            headers = [('content-type', 'application/json')]
             # Remote API
             if is_absolute_uri(api_url):
-                headers = [('content-type', 'application/json')]
                 if self.app.green_pool:
                     self._http = HttpClient(headers=headers)
                 else:
