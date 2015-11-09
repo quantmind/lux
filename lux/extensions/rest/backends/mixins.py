@@ -18,11 +18,6 @@ except ImportError:     # pragma    nocover
 class TokenBackendMixin:
     """Mixin for token and session based authentication back-ends
     """
-    _config = [
-        Parameter('SESSION_EXPIRY', 7*24*60*60,
-                  'Expiry for a session/token in seconds.')
-    ]
-
     def session_expiry(self, request):
         '''Expiry for a session or a token
         '''

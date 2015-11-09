@@ -8,13 +8,10 @@
 This user actions are served under the "authorizations" url unless
 the model is overwritten.
 '''
-import json
-
 from pulsar import MethodNotAllowed, Http404
 from pulsar.apps.wsgi import Json
 
 from lux import route
-from lux.forms import Form
 
 from .models import RestModel
 from .views import RestRouter
@@ -165,16 +162,3 @@ class Authorization(RestRouter, ResetPasswordMixin):
             auth_backend.set_password(request, user, password)
             return auth_backend.password_changed_response(request, user)
         return Json(form.tojson()).http_response(request)
-
-    @action
-    def dismiss_message(self, request):
-        app = request.app
-        if not app.config['SESSION_MESSAGES']:
-            raise Http404
-        session = request.cache.session
-        form = Form(request, data=request.body_data())
-        data = form.rawdata['message']
-        body = {'success': session.remove_message(data)}
-        response = request.response
-        response.content = json.dumps(body)
-        return response

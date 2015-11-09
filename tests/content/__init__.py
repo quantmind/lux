@@ -4,7 +4,6 @@ import shutil
 from tests.config import *  # noqa
 
 import lux
-from lux.extensions.rest import RestModel
 from lux.extensions.content import TextCRUD, Content, TextForm, GithubHook
 
 

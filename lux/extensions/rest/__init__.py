@@ -65,7 +65,8 @@ class Extension(MultiAuthBackend):
                   'secret-key',
                   'A string or bytes used for encrypting data. Must be unique '
                   'to the application and long and random enough'),
-        Parameter('SESSION_MESSAGES', True, 'Handle messages'),
+        Parameter('SESSION_EXPIRY', 7*24*60*60,
+                  'Expiry for a session/token in seconds.'),
         Parameter('CHECK_USERNAME', check_username,
                   'Check if the username is valid'),
         Parameter('PERMISSION_LEVELS', {'read': 10,
