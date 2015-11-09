@@ -99,6 +99,9 @@ class Extension(MultiAuthBackend):
                   'Pagination class'),
         Parameter('POST_LOGIN_URL', '',
                   'URL users are redirected to after logging in',
+                  jscontext=True),
+        Parameter('POST_LOGOUT_URL', None,
+                  'URL users are redirected to after logged out',
                   jscontext=True)]
 
     def on_config(self, app):
