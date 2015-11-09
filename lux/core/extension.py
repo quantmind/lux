@@ -182,9 +182,6 @@ class Extension(metaclass=ExtensionType):
         middleware'''
         pass
 
-    def has_permission(self, request, target, level):
-        return True
-
     def setup(self, config, module, params, opts=None):
         '''Internal method which prepare the extension for usage.
         '''

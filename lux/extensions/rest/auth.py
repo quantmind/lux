@@ -66,6 +66,11 @@ class MultiAuthBackend(AuthBase):
         cache.auth_backend = self
         return self._execute_backend_method('request', request)
 
+    def has_permission(self, request, target, level):
+        has = self._execute_backend_method('has_permission',
+                                           request, target, level)
+        return True if has is None else has
+
     def __iter__(self):
         return iter(self.backends or ())
 

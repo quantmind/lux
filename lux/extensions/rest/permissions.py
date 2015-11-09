@@ -157,7 +157,7 @@ class ColumnPermissionsMixin(ModelMixin):
         :param level:       access level
         :raise:             PermissionDenied
         """
-        model = model or self.model(request.app)
+        model = model or self.model(request)
         backend = request.cache.auth_backend
         if not backend.has_permission(request, model.name, level):
             raise PermissionDenied
