@@ -2,10 +2,10 @@ from pulsar import ImproperlyConfigured
 from pulsar.utils.pep import to_string
 from pulsar.apps.wsgi import Json
 
-from lux import Parameter
+from lux import Parameter, Http401
 
 from .. import AuthBackend
-from .mixins import jwt, TokenBackendMixin, Http401
+from .mixins import jwt, TokenBackendMixin
 from .registration import RegistrationMixin
 
 
@@ -73,11 +73,11 @@ class TokenBackend(TokenBackendMixin, RegistrationMixin, AuthBackend):
     def response_middleware(self, app):
         return [self.response]
 
-    def on_preflight(self, app, request):
+    def on_preflight(self, app, request, methods=None):
         '''Preflight handler
         '''
         headers = request.get('HTTP_ACCESS_CONTROL_REQUEST_HEADERS')
-        methods = app.config['CORS_ALLOWED_METHODS']
+        methods = methods or app.config['CORS_ALLOWED_METHODS']
         response = request.response
         origin = request.get('HTTP_ORIGIN', '*')
 

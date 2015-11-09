@@ -1,4 +1,3 @@
-import asyncio
 import smtplib
 import ssl
 
@@ -24,7 +23,7 @@ class EmailBackend(lux.EmailBackend):
         :param messages: list of messages to send
         :return: a Future object
         '''
-        return asyncio.get_event_loop().run_in_executor(
+        return self.app._loop.run_in_executor(
             None, self._send_mails, messages)
 
     # INTERNALS

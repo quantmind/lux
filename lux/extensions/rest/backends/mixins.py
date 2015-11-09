@@ -1,4 +1,5 @@
 import time
+from datetime import datetime, timedelta
 
 from pulsar import ImproperlyConfigured
 from pulsar.utils.pep import to_string
@@ -6,7 +7,7 @@ from pulsar.apps.wsgi import Json
 
 from lux import Parameter, wsgi_request, Http401
 
-from ..views import Authorization
+from ..authviews import Authorization
 
 try:
     import jwt
@@ -15,6 +16,14 @@ except ImportError:     # pragma    nocover
 
 
 class TokenBackendMixin:
+    """Mixin for token and session based authentication back-ends
+    """
+    def session_expiry(self, request):
+        '''Expiry for a session or a token
+        '''
+        session_expiry = request.config['SESSION_EXPIRY']
+        if session_expiry:
+            return datetime.now() + timedelta(seconds=session_expiry)
 
     def api_sections(self, app):
         '''At the authorization router to the api

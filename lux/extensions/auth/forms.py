@@ -41,6 +41,12 @@ def user_model():
                                   odm.ModelColumn('groups', group_model)))
 
 
+def registration_model():
+    return odm.RestModel('registration',
+                         RegistrationForm,
+                         exclude=('user_id',))
+
+
 class PermissionForm(forms.Form):
     model = 'permission'
     id = forms.HiddenField(required=False)
@@ -109,3 +115,7 @@ class ChangePasswordForm(PasswordForm):
         except AuthenticationError as exc:
             raise forms.ValidationError(str(exc))
         return value
+
+
+class RegistrationForm(forms.Form):
+    expiry = forms.DateTimeField(required=False)

@@ -110,7 +110,7 @@ class HtmlRouter(Router):
         html = self.get_html(request)
         return self.html_response(request, html)
 
-    def html_response(self, request, html):
+    def html_response(self, request, html, inner_template=None):
         '''Render `html` as a full Html document or a partial.
         '''
         app = request.app
@@ -123,7 +123,7 @@ class HtmlRouter(Router):
 
         context = self.context(request) or {}
         context['html_main'] = html
-        template = self.get_inner_template(request)
+        template = self.get_inner_template(request, inner_template)
 
         if template:
             html = app.render_template(template, context, request)
@@ -141,8 +141,8 @@ class HtmlRouter(Router):
 
         return app.html_response(request, page, context=context)
 
-    def get_inner_template(self, request):
-        return self.template
+    def get_inner_template(self, request, inner_template=None):
+        return inner_template or self.template
 
     def get_html(self, request):
         '''Must be implemented by subclasses.

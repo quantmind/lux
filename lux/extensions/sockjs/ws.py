@@ -155,6 +155,7 @@ class RpcWsMethodResponder:
 
 
 class RpcWsMethod:
+
     def __init__(self, name, ws):
         self.name = name
         self.ws = ws

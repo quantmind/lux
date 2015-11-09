@@ -17,7 +17,7 @@
     //      formFieldChange: triggered when a form field changes:
     //          arguments: formmodel, field (changed)
     //
-    angular.module('lux.form', ['lux.form.utils'])
+    angular.module('lux.form', ['lux.form.utils', 'lux.form.handlers'])
         //
         .constant('formDefaults', {
             // Default layout
@@ -74,26 +74,7 @@
         }])
         //
         .run(['$rootScope', '$lux', function (scope, $lux) {
-            var formHandlers = {};
-            $lux.formHandlers = formHandlers;
-
-            formHandlers.reload = function () {
-                $lux.window.location.reload();
-            };
-
-            formHandlers.redirectHome = function (response, scope) {
-                var href = scope.formAttrs.redirectTo || '/';
-                $lux.window.location.href = href;
-            };
-
-            formHandlers.login = function (response, scope) {
-                var target = scope.formAttrs.action,
-                    api = $lux.api(target);
-                if (api)
-                    api.token(response.data.token);
-                $lux.window.location.href = lux.context.POST_LOGIN_URL || lux.context.LOGIN_URL;
-            };
-
+            //
             //  Listen for a Lux form to be available
             //  If it uses the api for posting, register with it
             scope.$on('formReady', function (e, model, formScope) {
@@ -455,7 +436,7 @@
                         selectUI.attr('data-remote-options', field['data-remote-options'])
                                 .attr('data-remote-options-id', field['data-remote-options-id'])
                                 .attr('data-remote-options-value', field['data-remote-options-value'])
-                                .attr('data-remote-options-params', field['data-remote-options-params']); 
+                                .attr('data-remote-options-params', field['data-remote-options-params']);
 
                         if (field.multiple)
                             match.html('{{$item.repr || $item.name || $item.id}}');
