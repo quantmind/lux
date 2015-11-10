@@ -5,7 +5,7 @@ from pulsar import ImproperlyConfigured
 from pulsar.apps.wsgi import (route, wsgi_request, cached_property,
                               html_factory)
 from pulsar.apps import wsgi
-from pulsar.apps.wsgi import RouterParam, Router, render_error_debug
+from pulsar.apps.wsgi import RouterParam, Router, Route, render_error_debug
 from pulsar.apps.wsgi.utils import error_messages
 from pulsar.utils.httpurl import JSON_CONTENT_TYPES
 from pulsar.utils.structures import mapping_iterator
@@ -84,10 +84,11 @@ wsgi.set_wsgi_request_class(WsgiRequest)
 class RedirectRouter(Router):
 
     def __init__(self, routefrom, routeto):
-        super(RedirectRouter, self).__init__(routefrom, routeto=routeto)
+        super().__init__(routefrom, routeto=Route(routeto))
 
     def get(self, request):
-        return request.redirect(self.routeto)
+        url = self.routeto.url(**request.urlargs)
+        return request.redirect(url)
 
 
 class JsonRouter(Router):
