@@ -23,12 +23,13 @@ from lux import Parameter
 from lux.core.wrappers import wsgi_request
 
 from .user import *             # noqa
-from .auth import AuthBackend
+from .auth import *             # noqa
 from .models import *           # noqa
 from .pagination import *       # noqa
 from .client import ApiClient
 from .permissions import *      # noqa
 from .views import *            # noqa
+from .authviews import *        # noqa
 
 
 def luxrest(url, **rest):
@@ -48,7 +49,7 @@ def website_url(request, location=None):
     return url
 
 
-class Extension(AuthBackend):
+class Extension(MultiAuthBackend):
 
     _config = [
         Parameter('AUTHENTICATION_BACKENDS', [],
@@ -64,7 +65,6 @@ class Extension(AuthBackend):
                   'secret-key',
                   'A string or bytes used for encrypting data. Must be unique '
                   'to the application and long and random enough'),
-        Parameter('SESSION_MESSAGES', True, 'Handle messages'),
         Parameter('SESSION_EXPIRY', 7*24*60*60,
                   'Expiry for a session/token in seconds.'),
         Parameter('CHECK_USERNAME', check_username,
@@ -78,8 +78,6 @@ class Extension(AuthBackend):
                   'Defaukt permission level'),
         Parameter('DEFAULT_PERMISSION_LEVELS', {'site:admin': NONE},
                   'Dictionary of default permission levels'),
-        Parameter('ACCOUNT_ACTIVATION_DAYS', 2,
-                  'Number of days the activation code is valid'),
         Parameter('API_URL', None, 'URL FOR THE REST API', True),
         Parameter('API_SEARCH_KEY', 'q',
                   'The query key for full text search'),
@@ -101,6 +99,9 @@ class Extension(AuthBackend):
                   'Pagination class'),
         Parameter('POST_LOGIN_URL', '',
                   'URL users are redirected to after logging in',
+                  jscontext=True),
+        Parameter('POST_LOGOUT_URL', None,
+                  'URL users are redirected to after logged out',
                   jscontext=True)]
 
     def on_config(self, app):
@@ -127,6 +128,13 @@ class Extension(AuthBackend):
                 backend.on_config(app)
 
         app.auth_backend = self
+
+    def sorted_config(self):
+        cfg = self.meta.config.copy()
+        for backend in self.backends:
+            cfg.update(backend.meta.config)
+        for key in sorted(cfg):
+            yield key, cfg[key]
 
     def middleware(self, app):
         middleware = [self]
@@ -178,66 +186,3 @@ class Extension(AuthBackend):
 
     def __call__(self, environ, start_response):
         return self.request(wsgi_request(environ))
-
-    # AuthBackend Implementation
-    def request(self, request):
-        # Inject self as the authentication backend
-        cache = request.cache
-        cache.user = self.anonymous()
-        cache.auth_backend = self
-        return self._apply_all('request', request)
-
-    # HTTP Responses
-    def login_response(self, request, user):
-        return self._apply_all('login_response', request, user)
-
-    def logout_response(self, request, user):
-        return self._apply_all('logout_response', request, user)
-
-    def signup_response(self, request, user):
-        return self._apply_all('signup_response', request, user)
-
-    def password_changed_response(self, request, user):
-        return self._apply_all('password_changed_response', request, user)
-
-    # Backend methods
-    def authenticate(self, request, **kwargs):
-        return self._apply_all('authenticate', request, **kwargs)
-
-    def create_user(self, request, **kwargs):
-        '''Create a standard user.'''
-        return self._apply_all('create_user', request, **kwargs)
-
-    def create_superuser(self, request, **kwargs):
-        '''Create a user with *superuser* permissions.'''
-        return self._apply_all('create_superuser', request, **kwargs)
-
-    def get_user(self, request, **kwargs):
-        return self._apply_all('get_user', request, **kwargs)
-
-    def create_token(self, request, user, **kwargs):
-        return self._apply_all('create_token', request, user, **kwargs)
-
-    def create_registration(self, request, user, **kwargs):
-        return self._apply_all('create_registration', request, user, **kwargs)
-
-    def set_password(self, request, user, password):
-        '''Set a new password for user'''
-        return self._apply_all('set_password', request, user, password)
-
-    def password_recovery(self, request, email):
-        '''Password recovery method'''
-        return self._apply_all('password_recovery', request, email)
-
-    def has_permission(self, request, target, level):
-        has = self._apply_all('has_permission', request, target, level)
-        return True if has is None else has
-
-    def add_to_mail_list(self, request, topic, **kwargs):
-        return self._apply_all('add_to_mail_list', request, topic, **kwargs)
-
-    def _apply_all(self, method, request, *args, **kwargs):
-        for backend in self.backends:
-            result = getattr(backend, method)(request, *args, **kwargs)
-            if result is not None:
-                return result

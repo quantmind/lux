@@ -119,7 +119,7 @@ class TextCRUD(TextCRUDBase):
         model = self.model(request.app)
         name = data.get('name') or data['title']
         data['name'] = slugify(name, max_length=SLUG_LENGTH)
-        return model.write(request.cache.user, data, new=True)
+        return model.write(request, request.cache.user, data, new=True)
 
     def update_model(self, request, instance, data):
         pass

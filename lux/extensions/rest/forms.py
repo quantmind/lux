@@ -37,4 +37,4 @@ class ChangePasswordForm(PasswordForm):
 
 
 class EmailForm(forms.Form):
-    email = forms.EmailField(label='Enter your email address')
+    email = forms.EmailField(label='Your email address')

@@ -7,6 +7,7 @@ from dulwich.file import GitFile
 from dulwich.errors import NotGitRepository
 
 from pulsar.utils.httpurl import remove_double_slash
+from pulsar.apps.wsgi import Route
 
 from lux import cached, get_reader
 from lux.extensions import rest
@@ -62,6 +63,7 @@ class Content(rest.RestModel):
             path = name
         if path:
             self.path = os.path.join(self.path, path)
+        self.path = Route(self.path)
         columns = columns or COLUMNS[:]
         super().__init__(name, columns=columns, **kwargs)
 
@@ -78,14 +80,15 @@ class Content(rest.RestModel):
         target.update(**extra_data)
         return target
 
-    def write(self, user, data, new=False, message=None):
+    def write(self, request, user, data, new=False, message=None):
         '''Write a file into the repository
 
         When ``new`` the file must not exist, when not
         ``new``, the file must exist.
         '''
         name = data['name']
-        filepath = os.path.join(self.path, self._format_filename(name))
+        path = self.path.url(**request.urlargs)
+        filepath = os.path.join(path, self._format_filename(name))
         if new:
             if not message:
                 message = "Created %s" % name
@@ -118,7 +121,7 @@ class Content(rest.RestModel):
                     filename=filename,
                     name=name)
 
-    def delete(self, user, data, message=None):
+    def delete(self, request, user, data, message=None):
         '''Delete file(s) from repository
         '''
         files_to_del = data.get('files')
@@ -129,9 +132,10 @@ class Content(rest.RestModel):
             files_to_del = [files_to_del]
 
         filenames = []
+        path = self.path.url(**request.urlargs)
 
         for file in files_to_del:
-            filepath = os.path.join(self.path, self._format_filename(file))
+            filepath = os.path.join(path, self._format_filename(file))
             # remove only files that really exist and not dirs
             if os.path.exists(filepath) and os.path.isfile(filepath):
                 # remove from disk
@@ -162,7 +166,7 @@ class Content(rest.RestModel):
         try:
             src, name, content = self._content(request, name)
             reader = get_reader(request.app, src)
-            path = self._path(name)
+            path = self._path(request, name)
             return reader.process(content, path, src=src,
                                   meta=self.content_meta)
         except IOError:
@@ -171,16 +175,18 @@ class Content(rest.RestModel):
     def all(self, request):
         '''Return list of all files stored in repo
         '''
-        files = glob.glob(os.path.join(self.path, '*.%s' % self.ext))
+        path = self.path.url(**request.urlargs)
+        files = glob.glob(os.path.join(path, '*.%s' % self.ext))
         for file in files:
-            filename = get_rel_dir(file, self.path)
+            filename = get_rel_dir(file, path)
             yield self.read(request, filename).json(request)
 
     def _content(self, request, name):
         '''Read content from file in the repository
         '''
         name = self._format_filename(name)
-        src = os.path.join(self.path, name)
+        path = self.path.url(**request.urlargs)
+        src = os.path.join(path, name)
         # use dulwich GitFile to obeys the git file locking protocol
         with GitFile(src, 'rb') as f:
             content = f.read()
@@ -201,10 +207,11 @@ class Content(rest.RestModel):
                 filename = '%s%s' % (filename, ext)
         return filename
 
-    def _path(self, path):
+    def _path(self, request, path):
         '''Append extension to file name
         '''
-        return remove_double_slash('/%s/%s' % (self.url, path))
+        url = Route(self.url).url(**request.urlargs)
+        return remove_double_slash('/%s/%s' % (url, path))
 
     def content(self, data):
         body = data['body']

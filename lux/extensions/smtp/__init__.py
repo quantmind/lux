@@ -28,13 +28,15 @@ class Extension(lux.Extension):
         Parameter('ENQUIRY_EMAILS', [],
                   'List of email messages to be sent on reception of enquiry'),
         Parameter('SMTP_LOG_LEVEL', None,
-                  'Logging level for slack messages'),
+                  'Logging level for email messages'),
         Parameter('SLACK_LOG_LEVEL', 'ERROR',
                   'Logging level for slack messages'),
         Parameter('SLACK_LOG_TOKEN', None,
                   'Token for posting messages to slack channel'),
         Parameter('SLACK_LINK_NAMES', None,
-                  'Usernames to include as mention in the slack message')
+                  'Usernames to include as mention in the slack message'),
+        Parameter('LOG_CONTEXT_FACTORY', None,
+                  'Callable returning dict with system context for logging'),
     ]
 
     def on_start(self, app, server):
