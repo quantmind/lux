@@ -93,10 +93,7 @@ class BrowserBackend(RegistrationMixin,
 class ApiSessionBackend(SessionBackendMixin,
                         ModelMixin,
                         BrowserBackend):
-    '''An Mixin for authenticating against a RESTful HTTP API.
-
-    This mixin should be used when the API_URL is remote and therefore
-    the API middleware is installed in the current application.
+    '''Authenticating against a RESTful HTTP API.
 
     The workflow for authentication is the following:
 
@@ -226,15 +223,6 @@ class ApiSessionBackend(SessionBackendMixin,
         if session.user:
             data['user'] = session.user.all()
         request.app.cache_server.set_json(self._key(session.id), data)
-
-    def create_registration(self, request, user, **kw):
-        model = self.model(request)
-        url = 'users/%s/registrations' % getattr(user, model.id_field)
-        response = request.app.api.post(url)
-        if response.status_code == 201:
-            data = response.json()
-            return data['registration_key']
-        response.raise_for_status()
 
     def on_html_document(self, app, request, doc):
         BrowserBackend.on_html_document(self, app, request, doc)
