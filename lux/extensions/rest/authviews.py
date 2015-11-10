@@ -160,5 +160,8 @@ class Authorization(RestRouter, ResetPasswordMixin):
             auth_backend = request.cache.auth_backend
             password = form.cleaned_data['password']
             auth_backend.set_password(request, user, password)
-            return auth_backend.password_changed_response(request, user)
-        return Json(form.tojson()).http_response(request)
+            result = {'success': True,
+                      'message': 'password changed'}
+        else:
+            result = form.tojson()
+        return Json(result).http_response(request)

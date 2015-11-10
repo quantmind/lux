@@ -1,7 +1,5 @@
 from functools import partial
 
-from pulsar.apps.wsgi import Json
-
 import lux
 
 from .user import UserMixin, AuthenticationError
@@ -107,13 +105,6 @@ class AuthenticationResponses:
         '''After a new ``user`` has signed up, return the response.
         '''
         pass
-
-    @auth_backend
-    def password_changed_response(self, request, user):
-        '''JSON response after a password change
-        '''
-        return Json({'success': True,
-                     'message': 'password changed'}).http_response(request)
 
     @auth_backend
     def inactive_user_login_response(self, request, user):
