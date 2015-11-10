@@ -4,9 +4,10 @@ from enum import Enum
 
 import pytz
 
-from sqlalchemy import Column
-from sqlalchemy.orm import class_mapper
+from sqlalchemy import Column, desc
+from sqlalchemy.orm import class_mapper, load_only
 
+from pulsar import PermissionDenied
 from pulsar.utils.html import nicename
 
 from odm.utils import get_columns
@@ -38,6 +39,49 @@ class RestModel(rest.RestModel):
         '''Obtain a session
         '''
         return request.app.odm().begin()
+
+    def query(self, request, session, *filters):
+        """
+        Returns a query object for the model.
+
+        The loading of columns the user does not have read
+        access to is deferred. This is only a performance enhancement.
+
+        :param request:     request object
+        :param session:     SQLAlchemy session
+        :return:            query object
+        """
+        entities = self.columns_with_permission(request, rest.READ)
+        if not entities:
+            raise PermissionDenied
+        db_model = self.db_model()
+        db_columns = self.db_columns(self.column_fields(entities))
+        query = session.query(db_model).options(load_only(*db_columns))
+        if filters:
+            query = query.filter(*filters)
+        return query
+
+    def serialise_model(self, request, data, **kw):
+        """
+        Makes a model instance JSON-friendly. Removes fields that the
+        user does not have read access to.
+
+        :param request:     request object
+        :param data:        data
+        :param kw:          not used
+        :return:            dict
+        """
+        exclude = self.columns_without_permission(request, rest.READ)
+        exclude = self.column_fields(exclude, 'name')
+        return self.tojson(request, data, exclude=exclude)
+
+    def meta(self, request, *filters):
+        meta = super().meta(request)
+        odm = request.app.odm()
+        with odm.begin() as session:
+            query = self.query(request, session, *filters)
+            meta['total'] = query.count()
+        return meta
 
     def load_related(self,  instance):
         for column in self._rest_columns.values():
@@ -189,6 +233,31 @@ class RestModel(rest.RestModel):
             return [self._related_model(request, model, d) for d in obj]
         else:
             return model.id_repr(request, obj)
+
+    def _do_filter(self, request, model, query, field, op, value):
+        if value == '':
+            value = None
+        odm = request.app.odm()
+        field = getattr(odm[model.name], field)
+        if op == 'eq':
+            query = query.filter(field == value)
+        elif op == 'gt':
+            query = query.filter(field > value)
+        elif op == 'ge':
+            query = query.filter(field >= value)
+        elif op == 'lt':
+            query = query.filter(field < value)
+        elif op == 'le':
+            query = query.filter(field <= value)
+        return query
+
+    def _do_sortby(self, request, query, entry, direction):
+        columns = self.db_columns()
+        if entry in columns:
+            if direction == 'desc':
+                entry = desc(entry)
+            return query.order_by(entry)
+        return query
 
 
 class ModelMixin(rest.ModelMixin):

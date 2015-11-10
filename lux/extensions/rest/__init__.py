@@ -27,7 +27,6 @@ from .auth import *             # noqa
 from .models import *           # noqa
 from .pagination import *       # noqa
 from .client import ApiClient
-from .permissions import *      # noqa
 from .views import *            # noqa
 from .authviews import *        # noqa
 

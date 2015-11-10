@@ -61,7 +61,7 @@ class TextCRUD(TextCRUDBase):
                     form.add_error_message(str(exc))
                     data = form.tojson()
                 else:
-                    data = self.serialise(request, instance)
+                    data = model.serialise(request, instance)
                     request.response.status_code = 201
             else:
                 data = form.tojson()
@@ -123,12 +123,6 @@ class TextCRUD(TextCRUDBase):
 
     def update_model(self, request, instance, data):
         pass
-
-    def serialise_model(self, request, data, in_list=False, **kw):
-        if in_list:
-            data.pop('html', None)
-            data.pop('site', None)
-        return data
 
     def render_file(self, request, path='', as_response=False):
         if path.endswith('/'):

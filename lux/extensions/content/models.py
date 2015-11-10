@@ -181,6 +181,12 @@ class Content(rest.RestModel):
             filename = get_rel_dir(file, path)
             yield self.read(request, filename).json(request)
 
+    def serialise_model(self, request, data, in_list=False, **kw):
+        if in_list:
+            data.pop('html', None)
+            data.pop('site', None)
+        return data
+
     def _content(self, request, name):
         '''Read content from file in the repository
         '''

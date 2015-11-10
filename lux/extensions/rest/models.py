@@ -2,11 +2,15 @@ import json
 import logging
 from copy import copy
 
+from pulsar import PermissionDenied
 from pulsar.utils.html import nicename
+from pulsar.apps.wsgi import Json
+
+from .user import READ
 
 logger = logging.getLogger('lux.extensions.rest')
 
-__all__ = ['RestModel', 'RestColumn']
+__all__ = ['RestModel', 'RestColumn', 'ModelMixin']
 
 
 class RestColumn:
@@ -54,7 +58,96 @@ class RestColumn:
                 yield k, v
 
 
-class RestModel:
+class ColumnPermissionsMixin:
+    '''Mixin for managing model permissions at column (field) level
+
+    This mixin can be used by any class.
+    '''
+    def column_fields(self, columns, field=None):
+        '''Return a list column fields from the list of columns object
+        '''
+        field = field or 'field'
+        fields = set()
+        for c in columns:
+            value = c[field]
+            if isinstance(value, (tuple, list)):
+                fields.update(value)
+            else:
+                fields.add(value)
+        return tuple(fields)
+
+    def has_permission_for_column(self, request, column, level):
+        """
+        Checks permission for a column in the model
+
+        :param request:     request object
+        :param column:      column name
+        :param level:       requested access level
+        :return:            True iff user has permission
+        """
+        backend = request.cache.auth_backend
+        permission_name = "{}:{}".format(self.name, column['name'])
+        return backend.has_permission(request, permission_name, level)
+
+    def column_permissions(self, request, level):
+        """
+        Gets whether the user has the quested access level on
+        each column in the model.
+
+        Results are cached for future function calls
+
+        :param request:     request object
+        :param level:       access level
+        :return:            dict, with column names as keys,
+                            Booleans as values
+        """
+        ret = None
+        cache = request.cache
+        if 'model_permissions' not in cache:
+            cache.model_permissions = {}
+        if self.name not in cache.model_permissions:
+            cache.model_permissions[self.name] = {}
+        elif level in cache.model_permissions[self.name]:
+            ret = cache.model_permissions[self.name][level]
+
+        if not ret:
+            perm = self.has_permission_for_column
+            columns = self.columns(request)
+            ret = {
+                col['name']: perm(request, col, level) for
+                col in columns
+                }
+            cache.model_permissions[self.name][level] = ret
+        return ret
+
+    def columns_with_permission(self, request, level):
+        """
+        Returns a frozenset with the columns the user has the requested
+        level of access to
+
+        :param request:     request object
+        :param level:       access level
+        :return:            frozenset of column names
+        """
+        columns = self.columns(request)
+        perms = self.column_permissions(request, level)
+        return tuple((col for col in columns if perms.get(col['name'])))
+
+    def columns_without_permission(self, request, level):
+        """
+        Returns a frozenset with the columns the user does not have
+        the requested level of access to
+
+        :param request:     request object
+        :param level:       access level
+        :return:            frozenset of column names
+        """
+        columns = self.columns(request)
+        perms = self.column_permissions(request, level)
+        return tuple((col for col in columns if not perms.get(col['name'])))
+
+
+class RestModel(ColumnPermissionsMixin):
     '''Hold information about a model used for REST views
 
     .. attribute:: name
@@ -130,10 +223,10 @@ class RestModel:
         '''
         raise NotImplementedError
 
-    def query(self, query):
+    def query(self, request, session, *filters):
         '''Manipulate a query if needed
         '''
-        return query
+        raise NotImplementedError
 
     def columns(self, request):
         '''Return a list fields describing the entries for a given model
@@ -178,7 +271,122 @@ class RestModel:
             yield 'data-ng-options-ui-select', \
                 self.remote_options_str_ui_select.format(options=self.api_name)
 
-    def add_to_app(self, app):
+    def limit(self, request, default=None):
+        '''The maximum number of items to return when fetching list
+        of data'''
+        cfg = request.config
+        user = request.cache.user
+        if not default:
+            default = cfg['API_LIMIT_DEFAULT']
+            MAXLIMIT = (cfg['API_LIMIT_AUTH'] if user.is_authenticated() else
+                        cfg['API_LIMIT_NOAUTH'])
+        else:
+            MAXLIMIT = default
+        try:
+            limit = int(request.url_data.get(cfg['API_LIMIT_KEY'], default))
+        except ValueError:
+            limit = MAXLIMIT
+        return min(limit, MAXLIMIT)
+
+    def offset(self, request, default=None):
+        '''Retrieve the offset value from the url when fetching list of data
+        '''
+        cfg = request.config
+        default = default or 0
+        try:
+            return int(request.url_data.get(cfg['API_OFFSET_KEY'], default))
+        except ValueError:
+            return 0
+
+    def search_text(self, request, default=None):
+        cfg = request.config
+        default = default or ''
+        return request.url_data.get(cfg['API_SEARCH_KEY'], default)
+
+    def serialise(self, request, data, **kw):
+        if isinstance(data, list):
+            kw['in_list'] = True
+            return [self.serialise_model(request, o, **kw) for o in data]
+        else:
+            return self.serialise_model(request, data)
+
+    def collection_response(self, request, *filters, **params):
+        '''Handle a response for a list of models
+        '''
+        params.update(request.url_data)
+        with self.session(request) as session:
+            query = self.query(request, session, *filters)
+            return self.query_response(request, query, **params)
+
+    def query_response(self, request, query, limit=None, offset=None,
+                       text=None, sortby=None, **params):
+        limit = self.limit(request, limit)
+        offset = self.offset(request, offset)
+        text = self.search_text(request, text)
+        sortby = request.url_data.get('sortby', sortby)
+        query = self.filter(request, query, text, params)
+        total = query.count()
+        query = self.sortby(request, query, sortby)
+        data = query.limit(limit).offset(offset).all()
+        data = self.serialise(request, data, **params)
+        data = request.app.pagination(request, data, total, limit, offset)
+        return Json(data).http_response(request)
+
+    def filter(self, request, query, text, params, model=None):
+        model = model or self
+        columns = model.columnsMapping(request.app)
+
+        for key, value in params.items():
+            bits = key.split(':')
+            field = bits[0]
+            if field in columns:
+                col = columns[field]
+                op = bits[1] if len(bits) == 2 else 'eq'
+                field = col.get('field')
+                if field:
+                    query = self._do_filter(request, model, query,
+                                            field, op, value)
+        return query
+
+    def sortby(self, request, query, sortby=None):
+        if sortby:
+            if not isinstance(sortby, list):
+                sortby = (sortby,)
+            for entry in sortby:
+                direction = None
+                if ':' in entry:
+                    entry, direction = entry.split(':')
+                query = self._do_sortby(request, query, entry, direction)
+        return query
+
+    def meta(self, request):
+        '''Return an object representing the metadata for the model
+        served by this router
+        '''
+        columns = self.columns_with_permission(request, READ)
+        #
+        # Don't include columns which are excluded from meta
+        exclude = self._exclude
+        if exclude:
+            columns = [c for c in columns if c['name'] not in exclude]
+
+        return {'id': self.id_field,
+                'repr': self.repr_field,
+                'columns': columns,
+                'default-limit': request.config['API_LIMIT_DEFAULT']}
+
+    def serialise_model(self, request, data, **kw):
+        '''Serialise on model
+        '''
+        return self.tojson(request, data)
+
+    def _do_sortby(self, request, query, entry, direction):
+        raise NotImplementedError
+
+    def _do_filter(self, request, model, query, field, op, value):
+        raise NotImplementedError
+
+    def _add_to_app(self, app):
         model = copy(self)
         model._app = app
         return model
@@ -196,3 +404,63 @@ class RestModel:
             columns.append(col.as_dict())
 
         return columns
+
+
+class ModelMixin:
+    '''Mixin for accessing Rest models from the application object
+    '''
+    RestModel = RestModel
+    _model = None
+
+    def set_model(self, model):
+        '''Set the default model for this mixin
+        '''
+        assert model
+        if isinstance(model, str):
+            model = self.RestModel(model)
+        self._model = model
+
+    def model(self, app, model=None):
+        '''Return a :class:`.RestModel` model registered with ``app``.
+
+        If ``model`` is not available, uses the :attr:`._model`
+        attribute.
+        '''
+        app = app.app
+        rest_models = getattr(app, '_rest_models', None)
+        if rest_models is None:
+            rest_models = {}
+            app._rest_models = rest_models
+
+        if not model:
+            if hasattr(self._model, '__call__'):
+                self._model = self._model()
+            model = self._model
+
+        assert model, 'No model specified'
+
+        if isinstance(model, RestModel):
+            url = model.url
+            if url not in rest_models:
+                rest_models[url] = model._add_to_app(app)
+        else:
+            url = model
+
+        if url in rest_models:
+            return rest_models[url]
+        else:
+            raise RuntimeError('model url "%s" not available' % url)
+
+    def check_model_permission(self, request, level, model=None):
+        """
+        Checks whether the user has the requested level of access to
+        the model, raising PermissionDenied if not
+
+        :param request:     request object
+        :param level:       access level
+        :raise:             PermissionDenied
+        """
+        model = self.model(request, model)
+        backend = request.cache.auth_backend
+        if not backend.has_permission(request, model.name, level):
+            raise PermissionDenied
