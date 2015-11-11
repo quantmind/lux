@@ -71,15 +71,17 @@ class CRUD(RestRouter):
             # like they don't exist
             filtered_data = {k: v for k, v in form.cleaned_data.items() if
                              k in columns}
-            try:
-                instance = model.create_model(request, filtered_data)
-            except DataError as exc:
-                odm.logger.exception('Could not create model')
-                form.add_error_message(str(exc))
-                data = form.tojson()
-            else:
-                data = model.serialise(request, instance)
-                request.response.status_code = 201
+            with model.session(request) as session:
+                try:
+                    instance = model.create_model(request, filtered_data,
+                                                  session=session)
+                except DataError as exc:
+                    odm.logger.exception('Could not create model')
+                    form.add_error_message(str(exc))
+                    data = form.tojson()
+                else:
+                    data = model.serialise(request, instance)
+                    request.response.status_code = 201
         else:
             data = form.tojson()
         return Json(data).http_response(request)
