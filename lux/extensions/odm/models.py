@@ -75,8 +75,8 @@ class RestModel(rest.RestModel):
         exclude = self.column_fields(exclude, 'name')
         return self.tojson(request, data, exclude=exclude)
 
-    def meta(self, request, *filters):
-        meta = super().meta(request)
+    def meta(self, request, *filters, exclude=None):
+        meta = super().meta(request, exclude=exclude)
         odm = request.app.odm()
         with odm.begin() as session:
             query = self.query(request, session, *filters)

@@ -357,14 +357,15 @@ class RestModel(ColumnPermissionsMixin):
                 query = self._do_sortby(request, query, entry, direction)
         return query
 
-    def meta(self, request):
+    def meta(self, request, exclude=None):
         '''Return an object representing the metadata for the model
         served by this router
         '''
         columns = self.columns_with_permission(request, READ)
         #
         # Don't include columns which are excluded from meta
-        exclude = self._exclude
+        exclude = set(exclude or ())
+        exclude.update(self._exclude)
         if exclude:
             columns = [c for c in columns if c['name'] not in exclude]
 
