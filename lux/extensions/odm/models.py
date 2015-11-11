@@ -234,11 +234,11 @@ class RestModel(rest.RestModel):
         else:
             return model.id_repr(request, obj)
 
-    def _do_filter(self, request, model, query, field, op, value):
+    def _do_filter(self, request, query, field, op, value):
         if value == '':
             value = None
         odm = request.app.odm()
-        field = getattr(odm[model.name], field)
+        field = getattr(odm[self.name], field)
         if op == 'eq':
             query = query.filter(field == value)
         elif op == 'gt':

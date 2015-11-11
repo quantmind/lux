@@ -332,9 +332,8 @@ class RestModel(ColumnPermissionsMixin):
         data = request.app.pagination(request, data, total, limit, offset)
         return Json(data).http_response(request)
 
-    def filter(self, request, query, text, params, model=None):
-        model = model or self
-        columns = model.columnsMapping(request.app)
+    def filter(self, request, query, text, params):
+        columns = self.columnsMapping(request.app)
 
         for key, value in params.items():
             bits = key.split(':')
@@ -344,8 +343,7 @@ class RestModel(ColumnPermissionsMixin):
                 op = bits[1] if len(bits) == 2 else 'eq'
                 field = col.get('field')
                 if field:
-                    query = self._do_filter(request, model, query,
-                                            field, op, value)
+                    query = self._do_filter(request, query, field, op, value)
         return query
 
     def sortby(self, request, query, sortby=None):
@@ -383,7 +381,7 @@ class RestModel(ColumnPermissionsMixin):
     def _do_sortby(self, request, query, entry, direction):
         raise NotImplementedError
 
-    def _do_filter(self, request, model, query, field, op, value):
+    def _do_filter(self, request, query, field, op, value):
         raise NotImplementedError
 
     def _add_to_app(self, app):
