@@ -232,7 +232,7 @@ class RestModel(ColumnPermissionsMixin):
         '''Return a list fields describing the entries for a given model
         instance'''
         if not self._loaded:
-            self._columns = self._load_columns()
+            self._columns = self._load_columns(request.app)
             self._loaded = True
         return self._columns
 
@@ -389,7 +389,7 @@ class RestModel(ColumnPermissionsMixin):
         model._app = app
         return model
 
-    def _load_columns(self):
+    def _load_columns(self, app):
         '''List of column definitions
         '''
         input_columns = self._columns or []

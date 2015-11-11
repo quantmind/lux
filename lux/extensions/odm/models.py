@@ -223,7 +223,7 @@ class RestModel(rest.RestModel):
         with odm.begin(session=session) as session:
             session.delete(instance)
 
-    def _load_columns(self):
+    def _load_columns(self, app):
         '''List of column definitions
         '''
         model = self.db_model()
