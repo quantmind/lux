@@ -193,6 +193,36 @@ class RestModel(rest.RestModel):
                     data['repr'] = repr
             return data
 
+    def create_model(self, request, data):
+        odm = request.app.odm()
+        db_model = self.db_model()
+        with odm.begin() as session:
+            instance = db_model()
+            session.add(instance)
+            for name, value in data.items():
+                self.set_model_attribute(instance, name, value)
+        with odm.begin() as session:
+            session.add(instance)
+            # we need to access the related fields in order to avoid
+            # session not bound
+            self.load_related(instance)
+        return instance
+
+    def update_model(self, request, instance, data):
+        odm = request.app.odm()
+        session = odm.session_from_object(instance)
+        with odm.begin(session=session) as session:
+            session.add(instance)
+            for name, value in data.items():
+                self.set_model_attribute(instance, name, value)
+        return instance
+
+    def delete_model(self, request, instance):
+        odm = request.app.odm()
+        session = odm.session_from_object(instance)
+        with odm.begin(session=session) as session:
+            session.delete(instance)
+
     def _load_columns(self):
         '''List of column definitions
         '''

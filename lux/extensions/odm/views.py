@@ -34,38 +34,6 @@ class RestRouter(rest.RestRouter):
             except (DataError, NoResultFound):
                 raise Http404
 
-    def create_model(self, request, data):
-        odm = request.app.odm()
-        model = self.model(request.app)
-        db_model = model.db_model()
-        with odm.begin() as session:
-            instance = db_model()
-            session.add(instance)
-            for name, value in data.items():
-                model.set_model_attribute(instance, name, value)
-        with odm.begin() as session:
-            session.add(instance)
-            # we need to access the related fields in order to avoid
-            # session not bound
-            model.load_related(instance)
-        return instance
-
-    def update_model(self, request, instance, data):
-        model = self.model(request)
-        odm = request.app.odm()
-        session = odm.session_from_object(instance)
-        with odm.begin(session=session) as session:
-            session.add(instance)
-            for name, value in data.items():
-                model.set_model_attribute(instance, name, value)
-        return instance
-
-    def delete_model(self, request, instance):
-        odm = request.app.odm()
-        session = odm.session_from_object(instance)
-        with odm.begin(session=session) as session:
-            session.delete(instance)
-
 
 class CRUD(RestRouter):
     '''A Router for handling CRUD JSON requests for a database model
@@ -104,7 +72,7 @@ class CRUD(RestRouter):
             filtered_data = {k: v for k, v in form.cleaned_data.items() if
                              k in columns}
             try:
-                instance = self.create_model(request, filtered_data)
+                instance = model.create_model(request, filtered_data)
             except DataError as exc:
                 odm.logger.exception('Could not create model')
                 form.add_error_message(str(exc))
@@ -173,8 +141,8 @@ class CRUD(RestRouter):
                     filtered_data = {k: v for k, v in form.cleaned_data.items()
                                      if k in columns}
 
-                    instance = self.update_model(request, instance,
-                                                 filtered_data)
+                    instance = model.update_model(request, instance,
+                                                  filtered_data)
                     data = model.serialise(request, instance)
                 else:
                     data = form.tojson()
@@ -182,7 +150,7 @@ class CRUD(RestRouter):
             elif request.method == 'DELETE':
 
                 self.check_model_permission(request, rest.DELETE)
-                self.delete_model(request, instance)
+                model.delete_model(request, instance)
                 request.response.status_code = 204
                 return request.response
 
