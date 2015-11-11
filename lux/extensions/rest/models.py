@@ -271,22 +271,22 @@ class RestModel(ColumnPermissionsMixin):
             yield 'data-ng-options-ui-select', \
                 self.remote_options_str_ui_select.format(options=self.api_name)
 
-    def limit(self, request, default=None):
+    def limit(self, request, default=None, max_limit=None):
         '''The maximum number of items to return when fetching list
         of data'''
         cfg = request.config
         user = request.cache.user
+        if not max_limit:
+            max_limit = (cfg['API_LIMIT_AUTH'] if user.is_authenticated() else
+                         cfg['API_LIMIT_NOAUTH'])
+        max_limit = int(max_limit)
         if not default:
             default = cfg['API_LIMIT_DEFAULT']
-            MAXLIMIT = (cfg['API_LIMIT_AUTH'] if user.is_authenticated() else
-                        cfg['API_LIMIT_NOAUTH'])
-        else:
-            MAXLIMIT = default
         try:
             limit = int(request.url_data.get(cfg['API_LIMIT_KEY'], default))
         except ValueError:
-            limit = MAXLIMIT
-        return min(limit, MAXLIMIT)
+            limit = max_limit
+        return min(limit, max_limit)
 
     def offset(self, request, default=None):
         '''Retrieve the offset value from the url when fetching list of data
@@ -319,8 +319,8 @@ class RestModel(ColumnPermissionsMixin):
             return self.query_response(request, query, **params)
 
     def query_response(self, request, query, limit=None, offset=None,
-                       text=None, sortby=None, **params):
-        limit = self.limit(request, limit)
+                       text=None, sortby=None, max_limit=None, **params):
+        limit = self.limit(request, limit, max_limit)
         offset = self.offset(request, offset)
         text = self.search_text(request, text)
         sortby = request.url_data.get('sortby', sortby)

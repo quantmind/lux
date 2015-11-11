@@ -193,18 +193,15 @@ class RestModel(rest.RestModel):
                     data['repr'] = repr
             return data
 
-    def create_model(self, request, data):
+    def create_model(self, request, data, session=None):
         odm = request.app.odm()
         db_model = self.db_model()
-        with odm.begin() as session:
+        with odm.begin(session=session) as session:
             instance = db_model()
             session.add(instance)
             for name, value in data.items():
                 self.set_model_attribute(instance, name, value)
-        with odm.begin() as session:
-            session.add(instance)
-            # we need to access the related fields in order to avoid
-            # session not bound
+            session.flush()
             self.load_related(instance)
         return instance
 

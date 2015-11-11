@@ -111,7 +111,7 @@ class CRUD(RestRouter):
         model = self.model(request.app)
         odm = request.app.odm()
         with odm.begin() as session:
-            instance = self.get_instance(request, session)
+            instance = self.get_instance(request, session=session)
 
             if request.method == 'GET':
                 self.check_model_permission(request, rest.READ)
