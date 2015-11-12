@@ -69,6 +69,9 @@ class Content(rest.RestModel):
     def session(self, request):
         return Query(request, self)
 
+    def query(self, request, session, *filters):
+        return session
+
     def get_target(self, request, **extra_data):
         '''Get a target for a form
 
@@ -220,6 +223,12 @@ class Content(rest.RestModel):
     def content(self, data):
         body = data['body']
         return body
+
+    def _do_sortby(self, request, query, field, direction):
+        return query.sortby(field, direction)
+
+    def _do_filter(self, request, query, field, op, value):
+        return query.filter(field, op, value)
 
 
 class Query:

@@ -70,13 +70,15 @@ class TextCRUD(TextCRUDBase):
 
     @route('_all', response_content_types=('application/json',))
     def all(self, request):
-        return self.collection_response(request, sortby='date:desc')
+        model = self.model(request)
+        return model.collection_response(request, sortby='date:desc')
 
     @route('_links', response_content_types=('application/json',))
     def links(self, request):
-        return self.collection_response(request,
-                                        sortby=['order:desc', 'title:asc'],
-                                        **{'order:gt': 0})
+        model = self.model(request)
+        return model.collection_response(request,
+                                         sortby=['order:desc', 'title:asc'],
+                                         **{'order:gt': 0})
 
     @route('<path:path>', method=('get', 'head', 'post'))
     def read_update(self, request):
