@@ -131,7 +131,7 @@ class RpcWsMethodResponder:
         self.request_id = request_id
 
     def send_response(self, data, rpc_complete=True,
-                      message_type=LUX_MESSAGE):
+                      message_type=LUX_MESSAGE, json_encoder=None):
         """
         Sends a response to the client
 
@@ -147,6 +147,8 @@ class RpcWsMethodResponder:
             'rpcComplete': rpc_complete,
             'data': data
         }
+        if json_encoder:
+            response = json_encoder(response)
         self.method.ws.write(message_type, 'rpc', response)
 
     def send_error(self, data, rpc_complete=True):
