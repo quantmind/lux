@@ -7,7 +7,6 @@ from dulwich.file import GitFile
 from dulwich.errors import NotGitRepository
 
 from pulsar.utils.httpurl import remove_double_slash
-from pulsar.apps.wsgi import Route
 
 from lux import cached, get_reader
 from lux.extensions import rest
@@ -63,7 +62,7 @@ class Content(rest.RestModel):
             path = name
         if path:
             self.path = os.path.join(self.path, path)
-        self.path = Route(self.path)
+        self.path = self.path
         columns = columns or COLUMNS[:]
         super().__init__(name, columns=columns, **kwargs)
 
@@ -87,7 +86,7 @@ class Content(rest.RestModel):
         ``new``, the file must exist.
         '''
         name = data['name']
-        path = self.path.url(**request.urlargs)
+        path = self.path
         filepath = os.path.join(path, self._format_filename(name))
         if new:
             if not message:
@@ -132,7 +131,7 @@ class Content(rest.RestModel):
             files_to_del = [files_to_del]
 
         filenames = []
-        path = self.path.url(**request.urlargs)
+        path = self.path
 
         for file in files_to_del:
             filepath = os.path.join(path, self._format_filename(file))
@@ -175,7 +174,7 @@ class Content(rest.RestModel):
     def all(self, request):
         '''Return list of all files stored in repo
         '''
-        path = self.path.url(**request.urlargs)
+        path = self.path
         files = glob.glob(os.path.join(path, '*.%s' % self.ext))
         for file in files:
             filename = get_rel_dir(file, path)
@@ -191,7 +190,7 @@ class Content(rest.RestModel):
         '''Read content from file in the repository
         '''
         name = self._format_filename(name)
-        path = self.path.url(**request.urlargs)
+        path = self.path
         src = os.path.join(path, name)
         # use dulwich GitFile to obeys the git file locking protocol
         with GitFile(src, 'rb') as f:
@@ -216,8 +215,7 @@ class Content(rest.RestModel):
     def _path(self, request, path):
         '''Append extension to file name
         '''
-        url = Route(self.url).url(**request.urlargs)
-        return remove_double_slash('/%s/%s' % (url, path))
+        return remove_double_slash('/%s/%s' % (self.url, path))
 
     def content(self, data):
         body = data['body']
