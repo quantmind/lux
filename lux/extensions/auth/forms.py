@@ -34,20 +34,28 @@ def group_model():
 
 
 def user_model():
-    return odm.RestModel('user',
-                         CreateUserForm,
-                         UserForm,
-                         id_field='username',
-                         repr_field='name',
-                         exclude=('password',),
-                         columns=(full_name,
-                                  odm.ModelColumn('groups', group_model)))
+    return UserModel('user',
+                     CreateUserForm,
+                     UserForm,
+                     id_field='username',
+                     repr_field='name',
+                     exclude=('password',),
+                     columns=(full_name,
+                              odm.ModelColumn('groups', group_model)))
 
 
 def registration_model():
     return odm.RestModel('registration',
                          RegistrationForm,
                          exclude=('user_id',))
+
+
+class UserModel(odm.RestModel):
+
+    def create_model(self, request, data, session=None):
+        '''Override create model so that it calls the backend method
+        '''
+        return request.cache.auth_backend.create_user(request, **data)
 
 
 class TokenModel(odm.RestModel):
