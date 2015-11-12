@@ -232,7 +232,7 @@ class RestModel(ColumnPermissionsMixin):
         '''Return a list fields describing the entries for a given model
         instance'''
         if not self._loaded:
-            self._columns = self._load_columns()
+            self._columns = self._load_columns(request.app)
             self._loaded = True
         return self._columns
 
@@ -271,22 +271,22 @@ class RestModel(ColumnPermissionsMixin):
             yield 'data-ng-options-ui-select', \
                 self.remote_options_str_ui_select.format(options=self.api_name)
 
-    def limit(self, request, default=None):
+    def limit(self, request, default=None, max_limit=None):
         '''The maximum number of items to return when fetching list
         of data'''
         cfg = request.config
         user = request.cache.user
+        if not max_limit:
+            max_limit = (cfg['API_LIMIT_AUTH'] if user.is_authenticated() else
+                         cfg['API_LIMIT_NOAUTH'])
+        max_limit = int(max_limit)
         if not default:
             default = cfg['API_LIMIT_DEFAULT']
-            MAXLIMIT = (cfg['API_LIMIT_AUTH'] if user.is_authenticated() else
-                        cfg['API_LIMIT_NOAUTH'])
-        else:
-            MAXLIMIT = default
         try:
             limit = int(request.url_data.get(cfg['API_LIMIT_KEY'], default))
         except ValueError:
-            limit = MAXLIMIT
-        return min(limit, MAXLIMIT)
+            limit = max_limit
+        return min(limit, max_limit)
 
     def offset(self, request, default=None):
         '''Retrieve the offset value from the url when fetching list of data
@@ -319,8 +319,8 @@ class RestModel(ColumnPermissionsMixin):
             return self.query_response(request, query, **params)
 
     def query_response(self, request, query, limit=None, offset=None,
-                       text=None, sortby=None, **params):
-        limit = self.limit(request, limit)
+                       text=None, sortby=None, max_limit=None, **params):
+        limit = self.limit(request, limit, max_limit)
         offset = self.offset(request, offset)
         text = self.search_text(request, text)
         sortby = request.url_data.get('sortby', sortby)
@@ -332,9 +332,8 @@ class RestModel(ColumnPermissionsMixin):
         data = request.app.pagination(request, data, total, limit, offset)
         return Json(data).http_response(request)
 
-    def filter(self, request, query, text, params, model=None):
-        model = model or self
-        columns = model.columnsMapping(request.app)
+    def filter(self, request, query, text, params):
+        columns = self.columnsMapping(request.app)
 
         for key, value in params.items():
             bits = key.split(':')
@@ -344,8 +343,7 @@ class RestModel(ColumnPermissionsMixin):
                 op = bits[1] if len(bits) == 2 else 'eq'
                 field = col.get('field')
                 if field:
-                    query = self._do_filter(request, model, query,
-                                            field, op, value)
+                    query = self._do_filter(request, query, field, op, value)
         return query
 
     def sortby(self, request, query, sortby=None):
@@ -359,14 +357,15 @@ class RestModel(ColumnPermissionsMixin):
                 query = self._do_sortby(request, query, entry, direction)
         return query
 
-    def meta(self, request):
+    def meta(self, request, exclude=None):
         '''Return an object representing the metadata for the model
         served by this router
         '''
         columns = self.columns_with_permission(request, READ)
         #
         # Don't include columns which are excluded from meta
-        exclude = self._exclude
+        exclude = set(exclude or ())
+        exclude.update(self._exclude)
         if exclude:
             columns = [c for c in columns if c['name'] not in exclude]
 
@@ -383,7 +382,7 @@ class RestModel(ColumnPermissionsMixin):
     def _do_sortby(self, request, query, entry, direction):
         raise NotImplementedError
 
-    def _do_filter(self, request, model, query, field, op, value):
+    def _do_filter(self, request, query, field, op, value):
         raise NotImplementedError
 
     def _add_to_app(self, app):
@@ -391,7 +390,7 @@ class RestModel(ColumnPermissionsMixin):
         model._app = app
         return model
 
-    def _load_columns(self):
+    def _load_columns(self, app):
         '''List of column definitions
         '''
         input_columns = self._columns or []

@@ -75,8 +75,8 @@ class RestModel(rest.RestModel):
         exclude = self.column_fields(exclude, 'name')
         return self.tojson(request, data, exclude=exclude)
 
-    def meta(self, request, *filters):
-        meta = super().meta(request)
+    def meta(self, request, *filters, exclude=None):
+        meta = super().meta(request, exclude=exclude)
         odm = request.app.odm()
         with odm.begin() as session:
             query = self.query(request, session, *filters)
@@ -193,7 +193,34 @@ class RestModel(rest.RestModel):
                     data['repr'] = repr
             return data
 
-    def _load_columns(self):
+    def create_model(self, request, data, session=None):
+        odm = request.app.odm()
+        db_model = self.db_model()
+        with odm.begin(session=session) as session:
+            instance = db_model()
+            session.add(instance)
+            for name, value in data.items():
+                self.set_model_attribute(instance, name, value)
+            session.flush()
+            self.load_related(instance)
+        return instance
+
+    def update_model(self, request, instance, data):
+        odm = request.app.odm()
+        session = odm.session_from_object(instance)
+        with odm.begin(session=session) as session:
+            session.add(instance)
+            for name, value in data.items():
+                self.set_model_attribute(instance, name, value)
+        return instance
+
+    def delete_model(self, request, instance):
+        odm = request.app.odm()
+        session = odm.session_from_object(instance)
+        with odm.begin(session=session) as session:
+            session.delete(instance)
+
+    def _load_columns(self, app):
         '''List of column definitions
         '''
         model = self.db_model()
@@ -234,11 +261,11 @@ class RestModel(rest.RestModel):
         else:
             return model.id_repr(request, obj)
 
-    def _do_filter(self, request, model, query, field, op, value):
+    def _do_filter(self, request, query, field, op, value):
         if value == '':
             value = None
         odm = request.app.odm()
-        field = getattr(odm[model.name], field)
+        field = getattr(odm[self.name], field)
         if op == 'eq':
             query = query.filter(field == value)
         elif op == 'gt':
