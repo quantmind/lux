@@ -105,9 +105,6 @@ class TextCRUD(TextCRUDBase):
 
         raise PermissionDenied
 
-    def query(self, request, session):
-        return session
-
     def get_content(self, request, path, sha=None):
         model = self.model(request.app)
         try:
@@ -161,12 +158,6 @@ class TextCRUD(TextCRUDBase):
                 return content.raw(request)
 
         raise PermissionDenied
-
-    def _do_sortby(self, request, query, field, direction):
-        return query.sortby(field, direction)
-
-    def _do_filter(self, request, model, query, field, op, value):
-        return query.filter(field, op, value)
 
 
 class TextCMS(TextCRUD):
