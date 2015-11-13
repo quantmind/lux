@@ -21,9 +21,9 @@ logger = logging.getLogger('lux.test')
 
 
 def randomname(prefix=None, len=8):
-    '''Generate a random name with a prefix (default to ``luxtest_``)
+    '''Generate a random name with a prefix (default to ``luxtest-``)
     '''
-    prefix = prefix if prefix is not None else 'luxtest_'
+    prefix = prefix if prefix is not None else 'luxtest-'
     name = random_string(min_len=len, max_len=len,
                          characters=string.ascii_letters)
     return ('%s%s' % (prefix, name)).lower()
