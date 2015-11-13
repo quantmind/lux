@@ -55,11 +55,13 @@
             gridMenu: {
                 'create': {
                     title: 'Add',
-                    icon: 'fa fa-plus'
+                    icon: 'fa fa-plus',
+                    permission: 'CREATE',
                 },
                 'delete': {
                     title: 'Delete',
-                    icon: 'fa fa-trash'
+                    icon: 'fa fa-trash',
+                    permission: 'DELETE',
                 },
                 'columnsVisibility': {
                     title: 'Columns visibility',
@@ -124,7 +126,7 @@
 
             var gridDataProvider;
 
-            function parseColumns(columns, metaFields) {
+            function parseColumns(columns, metaFields, gridConfig) {
                 var columnDefs = [],
                     column;
 
@@ -157,7 +159,9 @@
                     }
 
                     if (typeof column.field !== 'undefined' && column.field === metaFields.repr) {
-                        column.cellTemplate = gridDefaults.wrapCell('<a ng-href="{{grid.appScope.objectUrl(row.entity)}}">{{COL_FIELD}}</a>');
+                        if (gridConfig.modelPermissions.UPDATE) {
+                            column.cellTemplate = gridDefaults.wrapCell('<a ng-href="{{grid.appScope.objectUrl(row.entity)}}">{{COL_FIELD}}</a>');
+                        }
                         // Set repr column as the first column
                         columnDefs.splice(0, 0, column);
                     }
@@ -189,7 +193,7 @@
             }
 
             // Add menu actions to grid
-            function addGridMenu(scope, gridOptions) {
+            function addGridMenu(scope, gridOptions, gridConfig) {
                 var menu = [],
                     stateName = window.location.href.split('/').pop(-1),
                     model = stateName.slice(0, -1),
@@ -290,14 +294,23 @@
                 forEach(gridDefaults.gridMenu, function(item, key) {
                     title = item.title;
 
-                    if (key === 'create')
+                    if (key === 'create') {
                         title += ' ' + model;
+                    }
 
-                    menu.push({
+                    var menuItem = {
                         title: title,
                         icon: item.icon,
                         action: scope[key]
-                    });
+                    };
+
+                    if (item.hasOwnProperty('permission')) {
+                        if (gridConfig.modelPermissions[item.permission]) {
+                            menu.push(menuItem);
+                        }
+                    } else {
+                        menu.push(menuItem);
+                    }
                 });
 
                 extend(gridOptions, {
@@ -330,7 +343,7 @@
                         repr: metadata.repr
                     };
 
-                    scope.gridOptions.columnDefs = parseColumns(gridConfig.columns || metadata.columns, scope.gridOptions.metaFields);
+                    scope.gridOptions.columnDefs = parseColumns(gridConfig.columns || metadata.columns, scope.gridOptions.metaFields, gridConfig);
                 }
 
                 function onDataReceived(data) {
@@ -504,7 +517,7 @@
                     };
 
                 if (gridDefaults.showMenu)
-                    addGridMenu(scope, gridOptions);
+                    addGridMenu(scope, gridOptions, scope.options);
 
                 return gridOptions;
             };
