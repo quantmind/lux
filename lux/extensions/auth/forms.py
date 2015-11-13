@@ -92,7 +92,7 @@ class GroupForm(forms.Form):
 
 class UserForm(forms.Form):
     id = forms.HiddenField(required=False)
-    username = forms.CharField()
+    username = forms.SlugField()
     email = forms.EmailField(required=False)
     first_name = forms.CharField(required=False)
     last_name = forms.CharField(required=False)
@@ -108,7 +108,7 @@ class CreateUserForm(PasswordForm):
     '''Form for creating a new user form username, email and password
     '''
     model = 'user'
-    username = forms.CharField(required=True,
+    username = forms.SlugField(required=True,
                                validator=odm.UniqueField(),
                                maxlength=30)
     email = forms.EmailField(required=True,

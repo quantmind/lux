@@ -99,7 +99,8 @@
                                   function (log, $http, $document, $templateCache, formDefaults, formElements) {
             //
             var baseAttributes = ['id', 'name', 'title', 'style'],
-                inputAttributes = extendArray([], baseAttributes, ['disabled', 'readonly', 'type', 'value', 'placeholder']),
+                inputAttributes = extendArray([], baseAttributes, ['disabled', 'readonly', 'type', 'value', 'placeholder',
+                                                                  'autocapitalize', 'autocorrect']),
                 textareaAttributes = extendArray([], baseAttributes, ['disabled', 'readonly', 'placeholder', 'rows', 'cols']),
                 buttonAttributes = extendArray([], baseAttributes, ['disabled']),
                 // Don't include action in the form attributes
