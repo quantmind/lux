@@ -405,6 +405,17 @@ class FileField(MultipleMixin, Field):
 
 
 class SlugField(CharField):
+    validation_error = ('Only lower case, alphanumeric characters and '
+                        'hyphens are allowed')
+
+    def getattrs(self, form=None):
+        attrs = super().getattrs(form)
+        attrs['autocorrect'] = 'off'
+        attrs['autocapitalize'] = 'none'
+        return attrs
+
     def _clean(self, value, field):
         value = super()._clean(value, field)
-        return slugify(value)
+        if slugify(value) != value:
+            raise ValidationError(self.validation_error)
+        return value
