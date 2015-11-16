@@ -39,22 +39,23 @@ class Extension(lux.Extension):
                   'Callable returning dict with system context for logging'),
     ]
 
-    def on_start(self, app, server):
-        handlers = []
-        level = app.config['SMTP_LOG_LEVEL']
-        if level:
-            handlers.append(SMTPHandler(app, level))
-        level = app.config['SLACK_LOG_LEVEL']
-        token = app.config['SLACK_LOG_TOKEN']
-        if level and token:
-            handlers.append(SlackHandler(app, level, token))
-        if handlers:
-            root = logging.getLogger('')
-            self._add_handlers(root, handlers)
-            for logger in root.manager.loggerDict.values():
-                if (isinstance(logger, logging.Logger) and
-                        not logger.propagate and logger.handlers):
-                    self._add_handlers(logger, handlers)
+    def on_loaded(self, app):
+        if app.callable.command == 'serve':
+            handlers = []
+            level = app.config['SMTP_LOG_LEVEL']
+            if level:
+                handlers.append(SMTPHandler(app, level))
+            level = app.config['SLACK_LOG_LEVEL']
+            token = app.config['SLACK_LOG_TOKEN']
+            if level and token:
+                handlers.append(SlackHandler(app, level, token))
+            if handlers:
+                root = logging.getLogger('')
+                self._add_handlers(root, handlers)
+                for logger in root.manager.loggerDict.values():
+                    if (isinstance(logger, logging.Logger) and
+                            not logger.propagate and logger.handlers):
+                        self._add_handlers(logger, handlers)
 
     def _add_handlers(self, logger, handlers):
         for hnd in handlers:

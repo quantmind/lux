@@ -64,15 +64,10 @@ class UserCRUD(CRUD):
         route = self.get_route('read_update_delete')
         route.add_child(RegistrationCRUD(get_user=self.get_instance))
 
-    def create_model(self, request, data):
-        '''Override create model so that it calls the backend method
-        '''
-        return request.cache.auth_backend.create_user(request, **data)
-
     @route('authkey', position=-99, method=('get', 'options'))
     def get_authkey(self, request):
         if request.method == 'OPTIONS':
-            request.app.fire('on_preflight', request)
+            request.app.fire('on_preflight', request, methods=['GET'])
             return request.response
 
         if 'auth_key' in request.url_data:
@@ -80,7 +75,8 @@ class UserCRUD(CRUD):
             backend = request.cache.auth_backend
             user = backend.get_user(request, auth_key=auth_key)
             if user:
-                return self.collection_response(request, id=user.id)
+                model = self.model(request)
+                return model.collection_response(request, id=user.id)
 
         raise Http404
 

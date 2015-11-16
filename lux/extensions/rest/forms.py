@@ -10,7 +10,7 @@ __all__ = ['LoginForm',
 class LoginForm(forms.Form):
     '''The Standard login form'''
     error_message = 'Incorrect username or password'
-    username = forms.CharField(required=True, maxlength=30)
+    username = forms.SlugField(required=True, maxlength=30)
     password = forms.PasswordField(required=True, maxlength=128)
 
 
@@ -28,7 +28,7 @@ class PasswordForm(forms.Form):
 
 
 class CreateUserForm(PasswordForm):
-    username = forms.CharField(required=True, maxlength=30)
+    username = forms.SlugField(required=True, maxlength=30)
     email = forms.EmailField(required=True)
 
 

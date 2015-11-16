@@ -1,8 +1,10 @@
-Developement
-=====================
+Ver. 0.3.0 - 2015-Nov-13
+===========================
+* Angular grid
+* Websocket extension
 * Forms set status code to 422 when validation fails
 * More extensions and fixes
-* 207 unit tests, 75% coverage
+* 293 unit tests, 75% coverage
 
 Ver. 0.2.0 - 2015-May-22
 =======================================

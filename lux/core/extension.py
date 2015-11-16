@@ -236,7 +236,7 @@ class Extension(metaclass=ExtensionType):
 
     def _setup_logger(self, config, module, opts):
         '''Called by :meth:`setup` method to setup the :attr:`logger`.'''
-        self.logger = logging.getLogger('lux.%s' % self.meta.name)
+        self.logger = logging.getLogger(self.meta.name)
 
 
 class EventHandler:
