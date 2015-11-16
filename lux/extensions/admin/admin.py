@@ -126,9 +126,6 @@ class AdminModel(rest.RestMixin, AdminRouter):
         model = self._model
         options = dict(target=model.get_target(request),
                        modelPermissions=model.get_model_permissions(request))
-        options['modelPermissions']['UPDATE'] = False
-        options['modelPermissions']['CREATE'] = True
-        options['modelPermissions']['DELETE'] = False
         context = {'grid': grid(options)}
         return app.render_template('partials/admin-list.html', context)
 
