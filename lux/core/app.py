@@ -330,9 +330,8 @@ class Application(ConsoleParser, Extension, EventMixin):
             #
             # Using a green pool
             if self.green_pool:
-                from lux.core.green import green_body, WsgiGreen
-                wsgi = WsgiGreen(wsgi, self.green_pool)
-                async_middleware.append(green_body)
+                from pulsar.apps.greenio.wsgi import GreenWSGI
+                wsgi = GreenWSGI(wsgi, self.green_pool)
                 async_middleware.append(wsgi)
             else:
                 if self.config['THREAD_POOL']:
