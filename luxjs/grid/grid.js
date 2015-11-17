@@ -56,17 +56,23 @@
                 'create': {
                     title: 'Add',
                     icon: 'fa fa-plus',
-                    permission: 'CREATE',
+                    permissionType: 'CREATE'
                 },
                 'delete': {
                     title: 'Delete',
                     icon: 'fa fa-trash',
-                    permission: 'DELETE',
+                    permissionType: 'DELETE'
                 },
                 'columnsVisibility': {
                     title: 'Columns visibility',
                     icon: 'fa fa-eye'
                 }
+            },
+            // Order of apply the permissions according to sources: metadata, python settings, grid defaults
+            permissions: {
+                CREATE: false,
+                UPDATE: false,
+                DELETE: false
             },
             modal: {
                 delete: {
@@ -126,7 +132,7 @@
 
             var gridDataProvider;
 
-            function parseColumns(columns, metaFields, gridConfig) {
+            function parseColumns(columns, metaFields, permissions) {
                 var columnDefs = [],
                     column;
 
@@ -159,7 +165,7 @@
                     }
 
                     if (typeof column.field !== 'undefined' && column.field === metaFields.repr) {
-                        if (gridConfig.modelPermissions.UPDATE) {
+                        if (permissions.UPDATE) {
                             column.cellTemplate = gridDefaults.wrapCell('<a ng-href="{{grid.appScope.objectUrl(row.entity)}}">{{COL_FIELD}}</a>');
                         }
                         // Set repr column as the first column
@@ -192,13 +198,57 @@
                 }
             }
 
+            function getStateName() {
+                return window.location.href.split('/').pop(-1);
+            }
+
+            function getModelName() {
+                var stateName = getStateName();
+                return stateName.slice(0, -1);
+            }
+
+            // Return permissions used in grid
+            function getPermissions(gridConfig) {
+                return angular.extend({}, gridDefaults.permissions, gridConfig.permissions);
+            }
+
+            // Updates grid menu according to permissions
+            function updateGridMenu(scope, gridMenu, gridOptions, permissions) {
+                var menu = [],
+                    title, menuItem;
+
+                forEach(gridMenu, function(item, key) {
+                    title = item.title;
+
+                    if (key === 'create') {
+                        title += ' ' + getModelName();
+                    }
+
+                    menuItem = {
+                        title: title,
+                        icon: item.icon,
+                        action: scope[key],
+                        permissionType: item.permissionType || ''
+                    };
+
+                    if (item.hasOwnProperty('permissionType')) {
+                        if (permissions.hasOwnProperty(item.permissionType) && permissions[item.permissionType]) {
+                            menu.push(menuItem);
+                        }
+                    } else {
+                        menu.push(menuItem);
+                    }
+                });
+
+                gridOptions.gridMenuCustomItems = menu;
+            }
+
             // Add menu actions to grid
             function addGridMenu(scope, gridOptions, gridConfig) {
-                var menu = [],
-                    stateName = window.location.href.split('/').pop(-1),
-                    model = stateName.slice(0, -1),
-                    modalScope = scope.$new(true),
-                    modal, title, template;
+                var modalScope = scope.$new(true),
+                    modal, template,
+                    stateName = getStateName(),
+                    permissions = getPermissions(gridConfig);
 
                 scope.create = function($event) {
                     // if location path is available then we use ui-router
@@ -291,32 +341,12 @@
                     modal = $modal({scope: modalScope, template: template, show: true});
                 };
 
-                forEach(gridDefaults.gridMenu, function(item, key) {
-                    title = item.title;
-
-                    if (key === 'create') {
-                        title += ' ' + model;
-                    }
-
-                    var menuItem = {
-                        title: title,
-                        icon: item.icon,
-                        action: scope[key]
-                    };
-
-                    if (item.hasOwnProperty('permission')) {
-                        if (gridConfig.modelPermissions[item.permission]) {
-                            menu.push(menuItem);
-                        }
-                    } else {
-                        menu.push(menuItem);
-                    }
-                });
+                updateGridMenu(scope, gridDefaults.gridMenu, gridOptions, permissions);
 
                 extend(gridOptions, {
                     enableGridMenu: true,
                     gridMenuShowHideColumns: false,
-                    gridMenuCustomItems: menu
+                    permissions: permissions,
                 });
             }
 
@@ -342,8 +372,11 @@
                         id: metadata.id,
                         repr: metadata.repr
                     };
+                    // Append permissions from metadata
+                    angular.extend(scope.gridOptions.permissions, metadata.permissions);
 
-                    scope.gridOptions.columnDefs = parseColumns(gridConfig.columns || metadata.columns, scope.gridOptions.metaFields, gridConfig);
+                    updateGridMenu(scope, gridDefaults.gridMenu, scope.gridOptions, scope.gridOptions.permissions);
+                    scope.gridOptions.columnDefs = parseColumns(gridConfig.columns || metadata.columns, scope.gridOptions.metaFields, scope.gridOptions.permissions);
                 }
 
                 function onDataReceived(data) {
@@ -395,7 +428,6 @@
                 );
 
                 gridDataProvider.connect();
-
             };
 
             // Builds grid options

@@ -105,6 +105,9 @@ class AdminModel(rest.RestMixin, AdminRouter):
     a given rest model
     '''
     section = None
+    permissions = None
+    '''An permissions used in grid
+    '''
     icon = None
     '''An icon for this Admin section
     '''
@@ -124,8 +127,9 @@ class AdminModel(rest.RestMixin, AdminRouter):
     def get_html(self, request):
         app = request.app
         model = self._model
-        options = dict(target=model.get_target(request),
-                       modelPermissions=model.get_model_permissions(request))
+        options = dict(target=model.get_target(request))
+        if self.permissions is not None:
+            options['permissions'] = self.permissions
         context = {'grid': grid(options)}
         return app.render_template('partials/admin-list.html', context)
 

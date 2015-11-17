@@ -6,7 +6,7 @@ from pulsar import PermissionDenied
 from pulsar.utils.html import nicename
 from pulsar.apps.wsgi import Json
 
-from .user import READ, PERMISSION_LEVELS
+from .user import READ
 
 logger = logging.getLogger('lux.extensions.rest')
 
@@ -253,16 +253,6 @@ class RestModel(ColumnPermissionsMixin):
         target = {'url': url, 'name': self.api_name}
         target.update(**extra_data)
         return target
-
-    def get_model_permissions(self, request):
-        '''Get a action permission for a grid
-        '''
-        backend = request.cache.auth_backend
-        permissions = {}
-        for name, perm in PERMISSION_LEVELS.items():
-            permissions[name] = backend.has_permission(request, self.name,
-                                                       perm)
-        return permissions
 
     def field_options(self, request):
         '''Return a generator of options for a html serializer
