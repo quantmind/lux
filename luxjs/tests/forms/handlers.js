@@ -35,27 +35,23 @@ define(function(require) {
         });
 
         it('Creates $lux.formHandlers.reload method', function() {
-            expect(typeof $lux.formHandlers.enquiry).toBe('function');
+            expect(typeof $lux.formHandlers.reload).toBe('function');
         });
 
         it('Creates $lux.formHandlers.redirectHome method', function() {
-            expect(typeof $lux.formHandlers.enquiry).toBe('function');
+            expect(typeof $lux.formHandlers.redirectHome).toBe('function');
         });
 
         it('Creates $lux.formHandlers.login method', function() {
-            expect(typeof $lux.formHandlers.enquiry).toBe('function');
+            expect(typeof $lux.formHandlers.login).toBe('function');
         });
 
         it('Creates $lux.formHandlers.passwordRecovery method', function() {
-            expect(typeof $lux.formHandlers.enquiry).toBe('function');
+            expect(typeof $lux.formHandlers.passwordRecovery).toBe('function');
         });
 
         it('Creates $lux.formHandlers.passwordChanged method', function() {
-            expect(typeof $lux.formHandlers.enquiry).toBe('function');
-        });
-
-        it('Creates $lux.formHandlers.enquiry method', function() {
-            expect(typeof $lux.formHandlers.enquiry).toBe('function');
+            expect(typeof $lux.formHandlers.passwordChanged).toBe('function');
         });
 
         it('Creates $lux.formHandlers.enquiry method', function() {
