@@ -346,7 +346,7 @@
                 extend(gridOptions, {
                     enableGridMenu: true,
                     gridMenuShowHideColumns: false,
-                    permissions: permissions,
+                    permissions: permissions
                 });
             }
 
