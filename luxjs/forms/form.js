@@ -17,7 +17,7 @@
     //      formFieldChange: triggered when a form field changes:
     //          arguments: formmodel, field (changed)
     //
-    angular.module('lux.form', ['lux.form.utils', 'lux.form.handlers'])
+    angular.module('lux.form', ['lux.form.utils', 'lux.form.handlers', 'ngFileUpload'])
         //
         .constant('formDefaults', {
             // Default layout
@@ -209,8 +209,12 @@
                 //
                 addDirectives: function(scope, element) {
                     // lux-codemirror directive
-                    if (scope.field.hasOwnProperty('text_edit'))
+                    if (scope.field.hasOwnProperty('text_edit')) {
                         element.attr('lux-codemirror', scope.field.text_edit);
+                    } else if (scope.field.useNgf) {
+                        element.attr('ngf-select', '');
+                        scope.formProcessor = 'ngf';
+                    }
                     return element;
                 },
                 //
