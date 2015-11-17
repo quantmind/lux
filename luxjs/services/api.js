@@ -261,6 +261,25 @@
             return request.on;
         };
 
+        /**
+         * Populates $lux.apiUrls for an API URL.
+         *
+         * @param [url]  URL to use instead of this.baseUrl
+         * @returns      promise
+         */
+        api.populateApiUrls = function(url) {
+            var promise = $lux.q.defer();
+            url = url || this.baseUrl();
+            $lux.log.info('Fetching api info');
+            return $lux.http.get(url).then(function (resp) {
+                $lux.apiUrls[url] = resp.data;
+                promise.resolve.apply(promise, arguments);
+            }, function() {
+                promise.reject.apply(promise, arguments);
+            });
+            return promise;
+        };
+
         //
         //  Execute an API call for a given request
         //  This method is hardly used directly,
@@ -282,9 +301,7 @@
                     //
                 } else {
                     // Fetch the api urls
-                    $lux.log.info('Fetching api info');
-                    return $lux.http.get(api.baseUrl()).then(function (resp) {
-                        $lux.apiUrls[url] = resp.data;
+                    api.populateApiUrls(url).then(function() {
                         api.call(request);
                     }, request.error);
                     //

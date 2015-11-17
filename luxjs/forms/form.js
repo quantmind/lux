@@ -17,7 +17,7 @@
     //      formFieldChange: triggered when a form field changes:
     //          arguments: formmodel, field (changed)
     //
-    angular.module('lux.form', ['lux.form.utils', 'lux.form.handlers', 'ngFileUpload'])
+    angular.module('lux.form', ['lux.form.utils', 'lux.form.handlers', 'ngFileUpload', 'lux.form.process'])
         //
         .constant('formDefaults', {
             // Default layout
