@@ -30,7 +30,6 @@ def runtests():
               modules=['tests'],
               test_timeout=30,
               thread_workers=2,
-              debug=True,
               plugins=(bench.BenchMark(),
                        profile.Profile())).start()
 
