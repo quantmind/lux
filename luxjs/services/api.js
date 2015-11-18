@@ -312,7 +312,7 @@
                     //
                 } else {
                     // Fetch the api urls
-                    api.populateApiUrls(url).then(function() {
+                    return api.populateApiUrls(url).then(function() {
                         api.call(request);
                     }, request.error);
                     //
