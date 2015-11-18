@@ -1,6 +1,6 @@
-//      Lux Library - v0.2.0
+//      Lux Library - v0.3.0
 
-//      Compiled 2015-11-09.
+//      Compiled 2015-11-17.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -872,7 +872,11 @@ function(angular, root) {
                     path: lux.context.LOGOUT_URL
                 }).then(function () {
                     scope.$emit('after-logout');
-                    $lux.window.location.reload();
+                    if (lux.context.POST_LOGOUT_URL) {
+                        $lux.window.location.href = lux.context.POST_LOGOUT_URL;
+                    } else {
+                        $lux.window.location.reload();
+                    }
                 }, function (response) {
                     $lux.messages.error('Error while logging out');
                 });
@@ -2263,7 +2267,8 @@ angular.module('lux.cms.core', [])
                                   function (log, $http, $document, $templateCache, formDefaults, formElements) {
             //
             var baseAttributes = ['id', 'name', 'title', 'style'],
-                inputAttributes = extendArray([], baseAttributes, ['disabled', 'readonly', 'type', 'value', 'placeholder']),
+                inputAttributes = extendArray([], baseAttributes, ['disabled', 'readonly', 'type', 'value', 'placeholder',
+                                                                  'autocapitalize', 'autocorrect']),
                 textareaAttributes = extendArray([], baseAttributes, ['disabled', 'readonly', 'placeholder', 'rows', 'cols']),
                 buttonAttributes = extendArray([], baseAttributes, ['disabled']),
                 // Don't include action in the form attributes
@@ -3139,6 +3144,15 @@ angular.module('lux.form.handlers', ['lux.services'])
             } else
                 $lux.messages.error('Could not change password');
         };
+
+        formHandlers.enquiry = function (response, scope) {
+            if (response.data.success) {
+                var text = 'Thank you for your feedback!';
+                $lux.messages.success(text);
+            } else
+                $lux.messages.error('Feedback form error');
+        };
+
     }]);
 
     //
@@ -3796,7 +3810,7 @@ function gridDataProviderWebsocketFactory ($scope) {
         };
     }
 
-    angular.module('lux.grid', ['lux.services', 'lux.grid.dataProviderFactory', 'templates-grid', 'ngTouch', 'ui.grid',
+    angular.module('lux.grid', ['lux.services', 'lux.grid.dataProviderFactory', 'templates-grid', 'ui.grid',
                                 'ui.grid.pagination', 'ui.grid.selection', 'ui.grid.autoResize', 'ui.grid.resizeColumns'])
         //
         .constant('gridDefaults', {
@@ -4867,7 +4881,7 @@ function gridDataProviderWebsocketFactory ($scope) {
                     navbar.url = '/';
                 if (!navbar.themeTop)
                     navbar.themeTop = navbar.theme;
-                navbar.container = navbar.fluid ? 'container-fluid' : 'container';
+                navbar.container = navbar.fluid ? '' : 'container';
 
                 this.maybeCollapse(navbar);
 

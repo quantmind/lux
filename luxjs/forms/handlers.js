@@ -43,4 +43,13 @@ angular.module('lux.form.handlers', ['lux.services'])
             } else
                 $lux.messages.error('Could not change password');
         };
+
+        formHandlers.enquiry = function (response, scope) {
+            if (response.data.success) {
+                var text = 'Thank you for your feedback!';
+                $lux.messages.success(text);
+            } else
+                $lux.messages.error('Feedback form error');
+        };
+
     }]);
