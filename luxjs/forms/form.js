@@ -565,16 +565,20 @@
                     var errors = p.children().length,
                         nameError = '$invalid';
                     if (errors)
-                        nameError += ' && !' + [scope.formName, field.name, '$error.required'].join('.');
+                        nameError += ' && !' + joinField(scope.formName, field.name, '$error.required');
+                        // Show only if server side errors don't exist
+                        nameError += ' && !formErrors.' + field.name;
                     p.append(this.fieldErrorElement(scope, nameError, self.errorMessage(scope, 'invalid')));
 
                     // Add the invalid handler for server side errors
                     var name = '$invalid';
                         name += ' && !' + joinField(scope.formName, field.name, '$error.required');
-                        p.append(
-                            this.fieldErrorElement(scope, name, self.errorMessage(scope, 'invalid'))
-                            .html('{{formErrors["' + field.name + '"]}}')
-                        );
+                        // Show only if server side errors exists
+                        name += ' && formErrors.' + field.name;
+                    p.append(
+                        this.fieldErrorElement(scope, name, self.errorMessage(scope, 'invalid'))
+                        .html('{{formErrors["' + field.name + '"]}}')
+                    );
 
                     return element.append(p);
                 },
@@ -786,6 +790,10 @@
                     };
 
                     scope.fireFieldChange = function (field) {
+                        // Delete previous field error from server side
+                        if (scope.formErrors[field] !== undefined) {
+                            delete scope.formErrors[field];
+                        }
                         // Triggered every time a form field changes
                         scope.$broadcast('fieldChange', formmodel, field);
                         scope.$emit('formFieldChange', formmodel, field);
