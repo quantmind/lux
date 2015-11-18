@@ -43,7 +43,7 @@
             var client = scope.api(),
                 apiNames = {};
             $httpBackend.expectGET(context.API_URL).respond(mock_data);
-            client.getApiUrls().then(function(_apiNames_) {
+            client.getApiNames().then(function(_apiNames_) {
                 apiNames = _apiNames_;
             });
             $httpBackend.flush();
