@@ -57,12 +57,9 @@ angular.module('lux.form.process', ['ngFileUpload'])
             //
             if (scope.formProcessor === 'ngFileUpload') {
                 if (api) {
-                    promise = api.getApiUrls().then(function(apiUrls) {
-                        uploadUrl = apiUrls[target.name];
-                        if (target.path) {
-                            uploadUrl = joinUrl(uploadUrl, target.path);
-                        }
-                        uploadHeaders.Authorization = 'bearer ' + api.token();
+                    promise = api.getUrlForTarget(target).then(function(url) {
+                        uploadUrl = url;
+                        uploadHeaders['Authorization'] = 'bearer ' + api.token();
                     });
                 } else {
                     deferred = $lux.q.defer();

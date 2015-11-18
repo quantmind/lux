@@ -291,6 +291,22 @@
             return promise;
         };
 
+        /**
+         * Gets the URL for an API target
+         *
+         * @param target
+         * @returns     promise, resolved when the URL is available
+         */
+        api.getUrlForTarget = function(target) {
+            return this.getApiUrls().then(function(apiUrls) {
+                var url = apiUrls[target.name];
+                if (target.path) {
+                    url = joinUrl(url, target.path);
+                }
+                return url;
+            });
+        };
+
         //
         //  Execute an API call for a given request
         //  This method is hardly used directly,
