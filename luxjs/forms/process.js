@@ -55,7 +55,7 @@ angular.module('lux.form.process', ['ngFileUpload'])
 
             this.formMessages = {};
             //
-            if (scope.formProcessor === 'ngf') {
+            if (scope.formProcessor === 'ngFileUpload') {
                 if (api) {
                     promise = api.getApiUrls().then(function(apiUrls) {
                         uploadUrl = apiUrls[target.name];

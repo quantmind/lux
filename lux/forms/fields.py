@@ -400,11 +400,6 @@ class UrlField(CharField):
 class FileField(MultipleMixin, Field):
     attrs = {'type': 'file'}
 
-    def getattrs(self, form=None):
-        attrs = super().getattrs(form)
-        attrs['useNgf'] = 'true'
-        return attrs
-
     def value_from_datadict(self, data, files, key):
         return self._value_from_datadict(files, key)
 
