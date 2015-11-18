@@ -40,9 +40,7 @@ angular.module('lux.form.process', ['ngFileUpload'])
                 uploadHeaders = {},
                 promise,
                 api,
-                uploadUrl,
-                apiUrls,
-                apiUrlsPromise;
+                uploadUrl;
             //
             // Flag the form as submitted
             form.submitted = true;
@@ -58,30 +56,24 @@ angular.module('lux.form.process', ['ngFileUpload'])
             //
             if (scope.formProcessor === 'ngf') {
                 if (api) {
-                    apiUrlsPromise = $lux.q.defer();
-                    apiUrlsPromise.then(function() {
-
+                    promise = api.getApiUrls().then(function(apiUrls) {
+                        uploadUrl = apiUrls[target.name];
+                        if (target.path) {
+                            uploadUrl = joinUrl(uploadUrl, target.path);
+                        }
+                        uploadHeaders.Authorization = 'bearer ' + api.token();
                     });
-                    apiUrls = $lux.apiUrls[target.url];
-                    if (!angular.isObject(apiUrls)) {
-                        api.populateApiUrls().then(apiUrlsPromise.resolve.bind(this), apiUrlsPromise.reject.bind(this));
-                        //scope.addMessages([{message: 'Could not submit data: API client not initialised'}], 'error');
-                        //return;
-                    } else {
-                        apiUrlsPromise.resolve();
-                    }
-                    uploadUrl = apiUrls[target.name];
-                    if (target.path) {
-                        uploadUrl = joinUrl(uploadUrl, target.path);
-                    }
-                    uploadHeaders.Authorization = 'bearer ' + api.token();
                 } else {
+                    promise = $lux.q.defer();
                     uploadUrl = target;
+                    promise.resolve();
                 }
-                promise = Upload.upload({
-                    url: uploadUrl,
-                    headers: uploadHeaders,
-                    data: model
+                promise = promise.then(function() {
+                    return Upload.upload({
+                        url: uploadUrl,
+                        headers: uploadHeaders,
+                        data: model
+                    });
                 });
             } else if (api) {
                 promise = api.request(method, target, model);

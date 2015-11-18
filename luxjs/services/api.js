@@ -264,22 +264,26 @@
         /**
          * Populates $lux.apiUrls for an API URL.
          *
-         * @param [url]  URL to use instead of this.baseUrl
          * @returns      promise
          */
-        api.populateApiUrls = function(url) {
-            var promise = $lux.q.defer();
-            url = url || this.baseUrl();
+        api.populateApiUrls = function() {
             $lux.log.info('Fetching api info');
             return $lux.http.get(url).then(function (resp) {
                 $lux.apiUrls[url] = resp.data;
-                promise.resolve.apply(promise, arguments);
-            }, function() {
-                promise.reject.apply(promise, arguments);
+                return resp.data;
             });
-            return promise;
         };
 
+        api.getApiUrls = function() {
+            var promise;
+            if (!angular.isObject($lux.apiUrls[url])) {
+                promise = this.populateApiUrls();
+            } else {
+                promise = $lux.q.defer();
+                promise.resolve($lux.apiUrls[url]);
+            }
+            return promise;
+        };
         //
         //  Execute an API call for a given request
         //  This method is hardly used directly,
