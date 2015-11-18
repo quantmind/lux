@@ -4,9 +4,10 @@ from enum import Enum
 
 import pytz
 
-from sqlalchemy import Column
-from sqlalchemy.orm import class_mapper
+from sqlalchemy import Column, desc
+from sqlalchemy.orm import class_mapper, load_only
 
+from pulsar import PermissionDenied
 from pulsar.utils.html import nicename
 
 from odm.utils import get_columns
@@ -16,8 +17,11 @@ from lux.extensions import rest
 
 def is_same_model(model1, model2):
     if type(model1) == type(model2):
-        pkname = class_mapper(type(model1)).primary_key[0].name
-        return getattr(model1, pkname) == getattr(model2, pkname)
+        if model1 is not None:
+            pkname = class_mapper(type(model1)).primary_key[0].name
+            return getattr(model1, pkname) == getattr(model2, pkname)
+        else:
+            return True
     return False
 
 
@@ -36,6 +40,49 @@ class RestModel(rest.RestModel):
         '''
         return request.app.odm().begin()
 
+    def query(self, request, session, *filters):
+        """
+        Returns a query object for the model.
+
+        The loading of columns the user does not have read
+        access to is deferred. This is only a performance enhancement.
+
+        :param request:     request object
+        :param session:     SQLAlchemy session
+        :return:            query object
+        """
+        entities = self.columns_with_permission(request, rest.READ)
+        if not entities:
+            raise PermissionDenied
+        db_model = self.db_model()
+        db_columns = self.db_columns(self.column_fields(entities))
+        query = session.query(db_model).options(load_only(*db_columns))
+        if filters:
+            query = query.filter(*filters)
+        return query
+
+    def serialise_model(self, request, data, **kw):
+        """
+        Makes a model instance JSON-friendly. Removes fields that the
+        user does not have read access to.
+
+        :param request:     request object
+        :param data:        data
+        :param kw:          not used
+        :return:            dict
+        """
+        exclude = self.columns_without_permission(request, rest.READ)
+        exclude = self.column_fields(exclude, 'name')
+        return self.tojson(request, data, exclude=exclude)
+
+    def meta(self, request, *filters, exclude=None):
+        meta = super().meta(request, exclude=exclude)
+        odm = request.app.odm()
+        with odm.begin() as session:
+            query = self.query(request, session, *filters)
+            meta['total'] = query.count()
+        return meta
+
     def load_related(self,  instance):
         for column in self._rest_columns.values():
             if isinstance(column, ModelColumn):
@@ -47,11 +94,14 @@ class RestModel(rest.RestModel):
         assert self._app, 'ODM Rest Model not loaded'
         return self._app.odm()[self.name]
 
-    def db_columns(self, columns):
+    def db_columns(self, columns=None):
         '''Return a list of columns available in the database table
         '''
         assert self._db_columns, 'ODM Rest Model not loaded'
-        return [c for c in columns if c in self._db_columns]
+        if columns is None:
+            return tuple(self._db_columns.keys())
+        else:
+            return [c for c in columns if c in self._db_columns]
 
     def add_related_column(self, name, model, field=None, **kw):
         '''Add a related column to the model
@@ -143,7 +193,34 @@ class RestModel(rest.RestModel):
                     data['repr'] = repr
             return data
 
-    def _load_columns(self):
+    def create_model(self, request, data, session=None):
+        odm = request.app.odm()
+        db_model = self.db_model()
+        with odm.begin(session=session) as session:
+            instance = db_model()
+            session.add(instance)
+            for name, value in data.items():
+                self.set_model_attribute(instance, name, value)
+            session.flush()
+            self.load_related(instance)
+        return instance
+
+    def update_model(self, request, instance, data):
+        odm = request.app.odm()
+        session = odm.session_from_object(instance)
+        with odm.begin(session=session) as session:
+            session.add(instance)
+            for name, value in data.items():
+                self.set_model_attribute(instance, name, value)
+        return instance
+
+    def delete_model(self, request, instance):
+        odm = request.app.odm()
+        session = odm.session_from_object(instance)
+        with odm.begin(session=session) as session:
+            session.delete(instance)
+
+    def _load_columns(self, app):
         '''List of column definitions
         '''
         model = self.db_model()
@@ -183,6 +260,31 @@ class RestModel(rest.RestModel):
             return [self._related_model(request, model, d) for d in obj]
         else:
             return model.id_repr(request, obj)
+
+    def _do_filter(self, request, query, field, op, value):
+        if value == '':
+            value = None
+        odm = request.app.odm()
+        field = getattr(odm[self.name], field)
+        if op == 'eq':
+            query = query.filter(field == value)
+        elif op == 'gt':
+            query = query.filter(field > value)
+        elif op == 'ge':
+            query = query.filter(field >= value)
+        elif op == 'lt':
+            query = query.filter(field < value)
+        elif op == 'le':
+            query = query.filter(field <= value)
+        return query
+
+    def _do_sortby(self, request, query, entry, direction):
+        columns = self.db_columns()
+        if entry in columns:
+            if direction == 'desc':
+                entry = desc(entry)
+            return query.order_by(entry)
+        return query
 
 
 class ModelMixin(rest.ModelMixin):

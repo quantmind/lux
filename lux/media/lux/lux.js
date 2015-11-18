@@ -1,6 +1,6 @@
-//      Lux Library - v0.2.0
+//      Lux Library - v0.3.0
 
-//      Compiled 2015-10-14.
+//      Compiled 2015-11-17.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -872,7 +872,11 @@ function(angular, root) {
                     path: lux.context.LOGOUT_URL
                 }).then(function () {
                     scope.$emit('after-logout');
-                    $lux.window.location.reload();
+                    if (lux.context.POST_LOGOUT_URL) {
+                        $lux.window.location.href = lux.context.POST_LOGOUT_URL;
+                    } else {
+                        $lux.window.location.reload();
+                    }
                 }, function (response) {
                     $lux.messages.error('Error while logging out');
                 });
@@ -907,7 +911,10 @@ function(angular, root) {
                         forEach(data, function (value, key) {
                             // TODO: do we need a callback for JSON fields?
                             // or shall we leave it here?
-                            if (isObject(value)) value = JSON.stringify(value, null, 4);
+
+                            if (formScope[formScope.formModelName + 'Type'][key] === 'textarea' && isObject(value)) {
+                                value = JSON.stringify(value, null, 4);
+                            }
 
                             if (isArray(value)) {
                                 model[key] = [];
@@ -917,7 +924,7 @@ function(angular, root) {
                                 });
                             }
                             else
-                                model[key] = value;
+                                model[key] = value.id || value;
                         });
                     });
                 }
@@ -1332,8 +1339,9 @@ function sockJs (url, websockets, websocketChannels, log) {
             data: data
         };
         var msg = JSON.stringify(data);
-        data.callback = callback;
-        context.executed[data.id] = data;
+        if (callback) {
+            context.executed[data.id] = callback;
+        }
         return handler.sendMessage(msg);
     };
 
@@ -1371,9 +1379,20 @@ function sockJs (url, websockets, websocketChannels, log) {
                         listeners = websocketChannels[msg.channel];
                     if (msg.data)
                         msg.data = angular.fromJson(msg.data);
-                    angular.forEach(listeners, function (listener) {
-                        listener(sock, msg);
-                    });
+                    if (msg.channel === 'rpc') {
+                        if (typeof msg.data.id !== 'undefined') {
+                            if (context.executed[msg.data.id]) {
+                                context.executed[msg.data.id](msg.data.data, sock);
+                                if (msg.data.rpcComplete) {
+                                    delete context.executed[msg.data.id];
+                                }
+                            }
+                        }
+                    } else {
+                        angular.forEach(listeners, function (listener) {
+                            listener(sock, msg);
+                        });
+                    }
 
                 };
 
@@ -2166,7 +2185,7 @@ angular.module('lux.cms.core', [])
     //      formFieldChange: triggered when a form field changes:
     //          arguments: formmodel, field (changed)
     //
-    angular.module('lux.form', ['lux.form.utils'])
+    angular.module('lux.form', ['lux.form.utils', 'lux.form.handlers'])
         //
         .constant('formDefaults', {
             // Default layout
@@ -2223,27 +2242,7 @@ angular.module('lux.cms.core', [])
         }])
         //
         .run(['$rootScope', '$lux', function (scope, $lux) {
-            var formHandlers = {};
-            $lux.formHandlers = formHandlers;
-
-            formHandlers.reload = function () {
-                $lux.window.location.reload();
-            };
-
-            formHandlers.redirectHome = function (response, scope) {
-                var href = scope.formAttrs.redirectTo || '/';
-                $lux.window.location.href = href;
-                $lux.window.location.reload();
-            };
-
-            formHandlers.login = function (response, scope) {
-                var target = scope.formAttrs.action,
-                    api = $lux.api(target);
-                if (api)
-                    api.token(response.data.token);
-                $lux.window.location.reload();
-            };
-
+            //
             //  Listen for a Lux form to be available
             //  If it uses the api for posting, register with it
             scope.$on('formReady', function (e, model, formScope) {
@@ -2268,7 +2267,8 @@ angular.module('lux.cms.core', [])
                                   function (log, $http, $document, $templateCache, formDefaults, formElements) {
             //
             var baseAttributes = ['id', 'name', 'title', 'style'],
-                inputAttributes = extendArray([], baseAttributes, ['disabled', 'readonly', 'type', 'value', 'placeholder']),
+                inputAttributes = extendArray([], baseAttributes, ['disabled', 'readonly', 'type', 'value', 'placeholder',
+                                                                  'autocapitalize', 'autocorrect']),
                 textareaAttributes = extendArray([], baseAttributes, ['disabled', 'readonly', 'placeholder', 'rows', 'cols']),
                 buttonAttributes = extendArray([], baseAttributes, ['disabled']),
                 // Don't include action in the form attributes
@@ -2303,7 +2303,8 @@ angular.module('lux.cms.core', [])
                         thisField = scope.field,
                         tc = thisField.type.split('.'),
                         info = elements[tc.splice(0, 1)[0]],
-                        renderer;
+                        renderer,
+                        fieldType;
 
                     scope.extraClasses = tc.join(' ');
                     scope.info = info;
@@ -2311,12 +2312,18 @@ angular.module('lux.cms.core', [])
                     if (info) {
                         // Pick the renderer by checking `type`
                         if (info.hasOwnProperty('type'))
-                            renderer = this[info.type];
+                            fieldType = info.type;
 
                         // If no element type, use the `element`
                         if (!renderer)
-                            renderer = this[info.element];
+                            fieldType = info.element;
                     }
+
+                    renderer = this[fieldType];
+
+                    var typeConfig = scope.formModelName + 'Type';
+                    scope[typeConfig] = scope[typeConfig] || {};
+                    scope[typeConfig][thisField.name] = fieldType;
 
                     if (!renderer)
                         renderer = this.renderNotElements;
@@ -2597,15 +2604,16 @@ angular.module('lux.cms.core', [])
                         // Remote options
                         selectUI.attr('data-remote-options', field['data-remote-options'])
                                 .attr('data-remote-options-id', field['data-remote-options-id'])
-                                .attr('data-remote-options-value', field['data-remote-options-value']);
+                                .attr('data-remote-options-value', field['data-remote-options-value'])
+                                .attr('data-remote-options-params', field['data-remote-options-params']);
 
                         if (field.multiple)
-                            match.html('{{$item.repr || $item.name}}');
+                            match.html('{{$item.repr || $item.name || $item.id}}');
                         else
-                            match.html('{{$select.selected.name}}');
+                            match.html('{{$select.selected.name || $select.selected.id}}');
 
                         choices.attr('repeat', field['data-ng-options-ui-select'] + ' | filter: $select.search');
-                        choices_inner.html('{{item.name}}');
+                        choices_inner.html('{{item.name || item.id}}');
                     } else {
                         // Local options
                         var optsId = field.name + '_opts',
@@ -3091,6 +3099,62 @@ angular.module('lux.cms.core', [])
             };
         });
 
+
+
+angular.module('lux.form.handlers', ['lux.services'])
+
+    .run(['$lux', function ($lux) {
+        var formHandlers = {};
+        $lux.formHandlers = formHandlers;
+
+        formHandlers.reload = function () {
+            $lux.window.location.reload();
+        };
+
+        formHandlers.redirectHome = function (response, scope) {
+            var href = scope.formAttrs.redirectTo || '/';
+            $lux.window.location.href = href;
+        };
+
+        // response handler for login form
+        formHandlers.login = function (response, scope) {
+            var target = scope.formAttrs.action,
+                api = $lux.api(target);
+            if (api)
+                api.token(response.data.token);
+            $lux.window.location.href = lux.context.POST_LOGIN_URL || lux.context.LOGIN_URL;
+        };
+
+        //
+        formHandlers.passwordRecovery = function (response, scope) {
+            var email = response.data.email;
+            if (email) {
+                var text = "We have sent an email to <strong>" + email + "</strong>. Please follow the instructions to change your password.";
+                $lux.messages.success(text);
+            }
+            else
+                $lux.messages.error("Could not find that email");
+        };
+
+        //
+        formHandlers.passwordChanged = function (response, scope) {
+            if (response.data.success) {
+                var text = 'Password succesfully changed. You can now <a title="login" href="' + lux.context.LOGIN_URL + '">login</a> again.';
+                $lux.messages.success(text);
+            } else
+                $lux.messages.error('Could not change password');
+        };
+
+        formHandlers.enquiry = function (response, scope) {
+            if (response.data.success) {
+                var text = 'Thank you for your feedback!';
+                $lux.messages.success(text);
+            } else
+                $lux.messages.error('Feedback form error');
+        };
+
+    }]);
+
     //
     function joinField (model, name, extra) {
         return model + '["' + name + '"].' + extra;
@@ -3179,11 +3243,14 @@ angular.module('lux.cms.core', [])
                     scope.addMessages(data.messages);
                 } else if (api) {
                     // Created
-                    if (response.status === 201) {
-                        scope.formMessages[FORMKEY] = [{message: 'Successfully created'}];
-                    } else {
-                        scope.formMessages[FORMKEY] = [{message: 'Successfully updated'}];
+                    var message = data.message;
+                    if (!message) {
+                        if (response.status === 201)
+                            message = 'Successfully created';
+                        else
+                            message = 'Successfully updated';
                     }
+                    $lux.messages.info(message);
                 }
             },
             function (response) {
@@ -3230,11 +3297,14 @@ angular.module('lux.form.utils', ['lux.services'])
 
             options.push(initialValue);
 
+            // Set empty value if field was not filled
+            if (scope[scope.formModelName][attrs.name] === undefined)
+                scope[scope.formModelName][attrs.name] = '';
+
             api.get(null, params).then(function (data) {
                 if (attrs.multiple) {
                     options.splice(0, 1);
                 } else {
-                    scope[scope.formModelName][attrs.name] = '';
                     options[0].name = 'Please select...';
                 }
                 angular.forEach(data.data.result, function (val) {
@@ -3253,7 +3323,6 @@ angular.module('lux.form.utils', ['lux.services'])
                 /** TODO: add error alert */
                 options[0] = '(error loading options)';
             });
-            scope[scope.formModelName][attrs.name] = '';
         }
 
         function link(scope, element, attrs) {
@@ -3345,7 +3414,7 @@ angular.module('lux.form.utils', ['lux.services'])
     //                luxMessage.info('info message');
     //
     //            }])
-    angular.module('lux.message', ['lux.services', 'templates-message'])
+    angular.module('lux.message', ['lux.services', 'templates-message', 'ngSanitize'])
         //
         //  Service for messages
         //
@@ -3741,7 +3810,7 @@ function gridDataProviderWebsocketFactory ($scope) {
         };
     }
 
-    angular.module('lux.grid', ['lux.services', 'lux.grid.dataProviderFactory', 'templates-grid', 'ngTouch', 'ui.grid',
+    angular.module('lux.grid', ['lux.services', 'lux.grid.dataProviderFactory', 'templates-grid', 'ui.grid',
                                 'ui.grid.pagination', 'ui.grid.selection', 'ui.grid.autoResize', 'ui.grid.resizeColumns'])
         //
         .constant('gridDefaults', {
@@ -4423,7 +4492,7 @@ function gridDataProviderWebsocketFactory ($scope) {
 
 
     // Controller for User.
-    // This controller can be used by eny element, including forms
+    // This controller can be used by any element, including forms
     angular.module('lux.users', ['lux.form', 'templates-users'])
         //
         // Directive for displaying page messages
@@ -4766,7 +4835,7 @@ function gridDataProviderWebsocketFactory ($scope) {
 
     angular.module('lux.nav', ['templates-nav', 'lux.bs'])
         //
-        .service('linkService', ['$location', function ($location) {
+        .service('linkService', ['$location', '$window', function ($location, $window) {
 
             this.initScope = function (scope, opts) {
 
@@ -4775,6 +4844,13 @@ function gridDataProviderWebsocketFactory ($scope) {
                         var func = scope[link.action];
                         if (func)
                             func(e, link.href, link);
+                    }
+
+                    // This patches an Angular bug with touch,
+                    // whereby ng-click prevents href from working
+                    var href = angular.element(e.currentTarget).attr('href');
+                    if (e.type === 'touchend' && href) {
+                        $window.location.assign(href);
                     }
                 };
 
@@ -4805,7 +4881,7 @@ function gridDataProviderWebsocketFactory ($scope) {
                     navbar.url = '/';
                 if (!navbar.themeTop)
                     navbar.themeTop = navbar.theme;
-                navbar.container = navbar.fluid ? 'container-fluid' : 'container';
+                navbar.container = navbar.fluid ? '' : 'container';
 
                 this.maybeCollapse(navbar);
 
@@ -5091,10 +5167,10 @@ function gridDataProviderWebsocketFactory ($scope) {
         }])
         //
         //  Directive for the sidebar
-        .directive('sidebar', ['$compile', 'sidebarService', 'sidebarTemplate',
+        .directive('sidebar', ['$compile', 'sidebarService', 'navService', 'sidebarTemplate',
                                'navbarTemplate', '$templateCache',
-                        function ($compile, sidebarService, sidebarTemplate, navbarTemplate,
-                                  $templateCache, $sce) {
+                        function ($compile, sidebarService, navService, sidebarTemplate, navbarTemplate,
+                                  $templateCache) {
             //
             return {
                 restrict: 'AE',
@@ -5841,7 +5917,7 @@ angular.module("message/message.tpl.html", []).run(["$templateCache", function($
     "    <div class=\"alert alert-{{ message.type }}\" role=\"alert\" ng-repeat=\"message in messages\">\n" +
     "        <a href=\"#\" class=\"close\" ng-click=\"removeMessage(message)\">&times;</a>\n" +
     "        <i ng-if=\"message.icon\" ng-class=\"message.icon\"></i>\n" +
-    "        <span>{{ message.text }}</span>\n" +
+    "        <span ng-bind-html=\"message.text\"></span>\n" +
     "    </div>\n" +
     "</div>\n" +
     "");
@@ -5851,18 +5927,13 @@ angular.module('templates-nav', ['nav/templates/link.tpl.html', 'nav/templates/n
 
 angular.module("nav/templates/link.tpl.html", []).run(["$templateCache", function($templateCache) {
   $templateCache.put("nav/templates/link.tpl.html",
-    "<a ng-if=\"link.title\" ng-href=\"{{link.href}}\" title=\"{{link.title}}\" ng-click=\"clickLink($event, link)\"\n" +
+    "<a ng-href=\"{{link.href}}\" title=\"{{link.title}}\" ng-click=\"clickLink($event, link)\"\n" +
     "ng-attr-target=\"{{link.target}}\" ng-class=\"link.klass\" bs-tooltip=\"tooltip\">\n" +
     "<span ng-if=\"link.left\" class=\"left-divider\"></span>\n" +
     "<i ng-if=\"link.icon\" class=\"{{link.icon}}\"></i>\n" +
     "<span>{{link.label || link.name}}</span>\n" +
     "<span ng-if=\"link.right\" class=\"right-divider\"></span></a>\n" +
-    "<a ng-if=\"!link.title\" ng-href=\"{{link.href}}\" title=\"{{link.title}}\" ng-click=\"clickLink($event, link)\"\n" +
-    "ng-attr-target=\"{{link.target}}\" ng-class=\"link.klass\" bs-tooltip=\"tooltip\">\n" +
-    "<span ng-if=\"link.left\" class=\"left-divider\"></span>\n" +
-    "<i ng-if=\"link.icon\" class=\"{{link.icon}}\"></i>\n" +
-    "<span>{{link.label || link.name}}</span>\n" +
-    "<span ng-if=\"link.right\" class=\"right-divider\"></span></a>");
+    "");
 }]);
 
 angular.module("nav/templates/navbar.tpl.html", []).run(["$templateCache", function($templateCache) {

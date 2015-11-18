@@ -38,7 +38,7 @@
 
     angular.module('lux.nav', ['templates-nav', 'lux.bs'])
         //
-        .service('linkService', ['$location', function ($location) {
+        .service('linkService', ['$location', '$window', function ($location, $window) {
 
             this.initScope = function (scope, opts) {
 
@@ -47,6 +47,13 @@
                         var func = scope[link.action];
                         if (func)
                             func(e, link.href, link);
+                    }
+
+                    // This patches an Angular bug with touch,
+                    // whereby ng-click prevents href from working
+                    var href = angular.element(e.currentTarget).attr('href');
+                    if (e.type === 'touchend' && href) {
+                        $window.location.assign(href);
                     }
                 };
 
@@ -77,7 +84,7 @@
                     navbar.url = '/';
                 if (!navbar.themeTop)
                     navbar.themeTop = navbar.theme;
-                navbar.container = navbar.fluid ? 'container-fluid' : 'container';
+                navbar.container = navbar.fluid ? '' : 'container';
 
                 this.maybeCollapse(navbar);
 

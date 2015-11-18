@@ -1,0 +1,2 @@
+
+EXTENSIONS = ['lux.extensions.rest']

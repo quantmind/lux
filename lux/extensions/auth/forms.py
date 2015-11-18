@@ -1,5 +1,7 @@
 import json
 
+from sqlalchemy.exc import DataError
+
 from lux import forms
 from lux.extensions import odm
 from lux.extensions.rest import AuthenticationError, RestColumn
@@ -9,6 +11,7 @@ from lux.extensions.rest.policy import validate_policy
 __all__ = ['permission_model',
            'group_model',
            'user_model',
+           'TokenModel',
            'PermissionForm',
            'GroupForm',
            'UserForm',
@@ -31,14 +34,39 @@ def group_model():
 
 
 def user_model():
-    return odm.RestModel('user',
-                         CreateUserForm,
-                         UserForm,
-                         id_field='username',
-                         repr_field='name',
-                         exclude=('password',),
-                         columns=(full_name,
-                                  odm.ModelColumn('groups', group_model)))
+    return UserModel('user',
+                     CreateUserForm,
+                     UserForm,
+                     id_field='username',
+                     repr_field='name',
+                     exclude=('password',),
+                     columns=(full_name,
+                              odm.ModelColumn('groups', group_model)))
+
+
+def registration_model():
+    return odm.RestModel('registration',
+                         RegistrationForm,
+                         exclude=('user_id',))
+
+
+class UserModel(odm.RestModel):
+
+    def create_model(self, request, data, session=None):
+        '''Override create model so that it calls the backend method
+        '''
+        return request.cache.auth_backend.create_user(request, **data)
+
+
+class TokenModel(odm.RestModel):
+
+    def create_model(self, request, data, session=None):
+        auth = request.cache.auth_backend
+        user = data.pop('user', None)
+        if user:
+            return auth.create_token(request, user, **data)
+        else:
+            raise DataError('Missing user')
 
 
 class PermissionForm(forms.Form):
@@ -64,7 +92,7 @@ class GroupForm(forms.Form):
 
 class UserForm(forms.Form):
     id = forms.HiddenField(required=False)
-    username = forms.CharField()
+    username = forms.SlugField()
     email = forms.EmailField(required=False)
     first_name = forms.CharField(required=False)
     last_name = forms.CharField(required=False)
@@ -80,7 +108,7 @@ class CreateUserForm(PasswordForm):
     '''Form for creating a new user form username, email and password
     '''
     model = 'user'
-    username = forms.CharField(required=True,
+    username = forms.SlugField(required=True,
                                validator=odm.UniqueField(),
                                maxlength=30)
     email = forms.EmailField(required=True,
@@ -109,3 +137,7 @@ class ChangePasswordForm(PasswordForm):
         except AuthenticationError as exc:
             raise forms.ValidationError(str(exc))
         return value
+
+
+class RegistrationForm(forms.Form):
+    expiry = forms.DateTimeField(required=False)

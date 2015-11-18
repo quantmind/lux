@@ -671,7 +671,7 @@ class Css(CssBase):
     def extend(self, elem):
         '''Extend by adding *elem* attributes and children.'''
         self._attributes.extend(elem._attributes)
-        for child_list in elem._children.values():
+        for child_list in tuple(elem._children.values()):
             for child in child_list:
                 child.set_parent(self)
 

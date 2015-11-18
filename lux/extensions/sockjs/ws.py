@@ -63,7 +63,7 @@ class WsClient:
         except Exception as exc:
             self.logger.exception('While loading websocket message')
             self.error_message(exc)
-            self.transport.close()
+            self.transport.connection.close()
 
     def on_close(self):
         self.app.fire('on_websocket_close', self)
@@ -95,23 +95,6 @@ class WsClient:
         data['message'] = str(exc)
         self.write(LUX_ERROR, data=data)
 
-    def pubsub(self, key=None):
-        '''Get a pub-sub handler for a given key
-
-        A key is used to group together pub-subs so that bandwidths is reduced
-        If no key is provided the handler is not included in the pubsub cache.
-        '''
-        app = self.app
-        if app.pubsub_store:
-            if key:
-                pubsub = app.pubsubs.get(key)
-                if not pubsub:
-                    pubsub = app.pubsub_store.pubsub()
-                    app.pubsubs[key] = pubsub
-            else:
-                pubsub = app.pubsub_store.pubsub()
-            return pubsub
-
     # INTERNALS
     def _load(self, message):
         # SockJS sends a string as a single element of an array.
@@ -130,16 +113,53 @@ class WsClient:
             handler = self.rpc_methods.get(method)
             if not handler:
                 raise rpc.NoSuchFunction(method)
-            handler(self, msg.get('data'))
+            handler(self, msg.get('id'), msg.get('data'))
         else:
             raise rpc.InvalidRequest
 
 
+class RpcWsMethodResponder:
+    """Used to respond to RPC requests"""
+    def __init__(self, method, request_id):
+        """
+        Initialises the responder
+
+        :param method:          RpcWsMethod object
+        :param request_id:      RPC request ID
+        """
+        self.method = method
+        self.request_id = request_id
+
+    def send_response(self, data, rpc_complete=True,
+                      message_type=LUX_MESSAGE, json_encoder=None):
+        """
+        Sends a response to the client
+
+        :param data:            data to send
+        :param rpc_complete:    True if this is the last message being sent
+                                in response to the message received
+        :param message_type:    LUX_MESSAGE or LUX_ERROR
+        :return:
+        """
+        response = {
+            'method': self.method.name,
+            'id': self.request_id,
+            'rpcComplete': rpc_complete,
+            'data': data
+        }
+        if json_encoder:
+            response = json_encoder(response)
+        self.method.ws.write(message_type, 'rpc', response)
+
+    def send_error(self, data, rpc_complete=True):
+        """Calls send_response with message_type=LUX_ERROR"""
+        self.send_response(data, rpc_complete, LUX_ERROR)
+
+
 class RpcWsMethod:
-    ws = None
 
     def __init__(self, name, ws):
-        self.method = name
+        self.name = name
         self.ws = ws
         maybe_async(self.on_init())
 
@@ -155,13 +175,22 @@ class RpcWsMethod:
         '''
         pass
 
-    def on_request(self, data):
+    def handle_request(self, request_id, data):
+        self.on_request(RpcWsMethodResponder(self, request_id), data)
+
+    def on_request(self, responder, data):
+        """
+        To be overridden by subclasses
+
+        :param responder:    RpcWsMethodResponder instance
+        :param data:         data send by client
+        """
         pass
 
     def pubsub(self, key=None):
         '''Convenience method for a pubsub handler
         '''
-        return self.ws.pubsub(key or self.method)
+        return self.app.pubsub(key or self.name)
 
 
 class RpcWsCall:
@@ -174,10 +203,10 @@ class RpcWsCall:
     def __repr__(self):
         return self.method
 
-    def __call__(self, ws, data):
-        if not ws.cache[self.method]:
-            ws.cache[self.method] = self.Rpc(self.method, ws)
-        ws.cache[self.method].on_request(data)
+    def __call__(self, ws, id, data):
+        if self.method not in ws.cache:
+            ws.cache[self.method] = self.rpc(self.method, ws)
+        ws.cache[self.method].handle_request(id, data)
 
 
 class LuxWs(ws.WS):
@@ -199,14 +228,15 @@ class LuxWs(ws.WS):
         return self._green(websocket.app, websocket.cache.wsclient.on_open)
 
     def on_message(self, websocket, message):
-        return self._green(websocket.app, websocket.cache.wsclient.on_message)
+        return self._green(websocket.app, websocket.cache.wsclient.on_message,
+                           message)
 
     def on_close(self, websocket):
         return self._green(websocket.app, websocket.cache.wsclient.on_close)
 
-    def _green(self, app, callable):
+    def _green(self, app, callable, *args, **kwargs):
         if app.green_pool:
-            return app.green_pool.submit(callable)
+            return app.green_pool.submit(callable, *args, **kwargs)
         else:
             return callable()
 

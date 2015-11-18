@@ -17,7 +17,7 @@
     //      formFieldChange: triggered when a form field changes:
     //          arguments: formmodel, field (changed)
     //
-    angular.module('lux.form', ['lux.form.utils'])
+    angular.module('lux.form', ['lux.form.utils', 'lux.form.handlers'])
         //
         .constant('formDefaults', {
             // Default layout
@@ -74,27 +74,7 @@
         }])
         //
         .run(['$rootScope', '$lux', function (scope, $lux) {
-            var formHandlers = {};
-            $lux.formHandlers = formHandlers;
-
-            formHandlers.reload = function () {
-                $lux.window.location.reload();
-            };
-
-            formHandlers.redirectHome = function (response, scope) {
-                var href = scope.formAttrs.redirectTo || '/';
-                $lux.window.location.href = href;
-                $lux.window.location.reload();
-            };
-
-            formHandlers.login = function (response, scope) {
-                var target = scope.formAttrs.action,
-                    api = $lux.api(target);
-                if (api)
-                    api.token(response.data.token);
-                $lux.window.location.reload();
-            };
-
+            //
             //  Listen for a Lux form to be available
             //  If it uses the api for posting, register with it
             scope.$on('formReady', function (e, model, formScope) {
@@ -119,7 +99,8 @@
                                   function (log, $http, $document, $templateCache, formDefaults, formElements) {
             //
             var baseAttributes = ['id', 'name', 'title', 'style'],
-                inputAttributes = extendArray([], baseAttributes, ['disabled', 'readonly', 'type', 'value', 'placeholder']),
+                inputAttributes = extendArray([], baseAttributes, ['disabled', 'readonly', 'type', 'value', 'placeholder',
+                                                                  'autocapitalize', 'autocorrect']),
                 textareaAttributes = extendArray([], baseAttributes, ['disabled', 'readonly', 'placeholder', 'rows', 'cols']),
                 buttonAttributes = extendArray([], baseAttributes, ['disabled']),
                 // Don't include action in the form attributes
@@ -154,7 +135,8 @@
                         thisField = scope.field,
                         tc = thisField.type.split('.'),
                         info = elements[tc.splice(0, 1)[0]],
-                        renderer;
+                        renderer,
+                        fieldType;
 
                     scope.extraClasses = tc.join(' ');
                     scope.info = info;
@@ -162,12 +144,18 @@
                     if (info) {
                         // Pick the renderer by checking `type`
                         if (info.hasOwnProperty('type'))
-                            renderer = this[info.type];
+                            fieldType = info.type;
 
                         // If no element type, use the `element`
                         if (!renderer)
-                            renderer = this[info.element];
+                            fieldType = info.element;
                     }
+
+                    renderer = this[fieldType];
+
+                    var typeConfig = scope.formModelName + 'Type';
+                    scope[typeConfig] = scope[typeConfig] || {};
+                    scope[typeConfig][thisField.name] = fieldType;
 
                     if (!renderer)
                         renderer = this.renderNotElements;
@@ -448,7 +436,8 @@
                         // Remote options
                         selectUI.attr('data-remote-options', field['data-remote-options'])
                                 .attr('data-remote-options-id', field['data-remote-options-id'])
-                                .attr('data-remote-options-value', field['data-remote-options-value']);
+                                .attr('data-remote-options-value', field['data-remote-options-value'])
+                                .attr('data-remote-options-params', field['data-remote-options-params']);
 
                         if (field.multiple)
                             match.html('{{$item.repr || $item.name || $item.id}}');

@@ -29,8 +29,9 @@ function sockJs (url, websockets, websocketChannels, log) {
             data: data
         };
         var msg = JSON.stringify(data);
-        data.callback = callback;
-        context.executed[data.id] = data;
+        if (callback) {
+            context.executed[data.id] = callback;
+        }
         return handler.sendMessage(msg);
     };
 
@@ -68,9 +69,20 @@ function sockJs (url, websockets, websocketChannels, log) {
                         listeners = websocketChannels[msg.channel];
                     if (msg.data)
                         msg.data = angular.fromJson(msg.data);
-                    angular.forEach(listeners, function (listener) {
-                        listener(sock, msg);
-                    });
+                    if (msg.channel === 'rpc') {
+                        if (typeof msg.data.id !== 'undefined') {
+                            if (context.executed[msg.data.id]) {
+                                context.executed[msg.data.id](msg.data.data, sock);
+                                if (msg.data.rpcComplete) {
+                                    delete context.executed[msg.data.id];
+                                }
+                            }
+                        }
+                    } else {
+                        angular.forEach(listeners, function (listener) {
+                            listener(sock, msg);
+                        });
+                    }
 
                 };
 

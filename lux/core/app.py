@@ -14,6 +14,7 @@ from pulsar.apps.wsgi import (WsgiHandler, HtmlDocument, test_wsgi_environ,
                               middleware_in_executor)
 from pulsar.utils.log import lazyproperty
 from pulsar.utils.importer import module_attribute
+from pulsar.apps.data import create_store
 
 from .commands import ConsoleParser, CommandError
 from .extension import Extension, Parameter, EventMixin
@@ -103,6 +104,10 @@ class App(LazyWsgi):
         self._script = script
         self._argv = argv
 
+    @property
+    def command(self):
+        return self._argv[0] if self._argv else None
+
     def setup(self, environ=None):
         return Application(self)
 
@@ -160,6 +165,7 @@ class Application(ConsoleParser, Extension, EventMixin):
     cms = None
     _worker = None
     _WsgiHandler = WsgiHandler
+    _pubsub_store = None
     _config = [
         Parameter('EXTENSIONS', [],
                   'List of extension names to use in your application. '
@@ -244,6 +250,8 @@ class Application(ConsoleParser, Extension, EventMixin):
                   'signifies a request is secure.'),
         Parameter('CMS_PARTIALS_PATH', None,
                   'Path to CMS Partials snippets'),
+        Parameter('PUBSUB_STORE', None,
+                  'Connection string for a Publish/Subscribe data-store')
         ]
 
     def __init__(self, callable, handler=True):
@@ -322,9 +330,8 @@ class Application(ConsoleParser, Extension, EventMixin):
             #
             # Using a green pool
             if self.green_pool:
-                from lux.core.green import green_body, WsgiGreen
-                wsgi = WsgiGreen(wsgi, self.green_pool)
-                async_middleware.append(green_body)
+                from pulsar.apps.greenio.wsgi import GreenWSGI
+                wsgi = GreenWSGI(wsgi, self.green_pool)
                 async_middleware.append(wsgi)
             else:
                 if self.config['THREAD_POOL']:
@@ -650,6 +657,29 @@ class Application(ConsoleParser, Extension, EventMixin):
                     yield from module_types(mod, filter, cache)
                 else:
                     yield mod
+
+    def pubsub(self, key=None):
+        '''Get a pub-sub handler for a given key
+
+        A key is used to group together pub-subs so that bandwidths is reduced
+        If no key is provided the handler is not included in the pubsub cache.
+        '''
+        if not self._pubsub_store:
+            if self.config['PUBSUB_STORE']:
+                self._pubsub_store = create_store(self.config['PUBSUB_STORE'])
+                self._pubsubs = {}
+            else:
+                self.logger.warning('No pubsub store configured. '
+                                    'Cannot access pubsub handler')
+                return
+        if key:
+            pubsub = self._pubsubs.get(key)
+            if not pubsub:
+                pubsub = self._pubsub_store.pubsub()
+                self._pubsubs[key] = pubsub
+        else:
+            pubsub = self._pubsub_store.pubsub()
+        return pubsub
 
     # INTERNALS
     def _build_config(self, module_name):

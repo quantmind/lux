@@ -9,26 +9,31 @@ from lux import Parameter, raise_http_error, Http401, HttpRedirect
 from lux.extensions.angular import add_ng_modules
 
 from .mixins import jwt, SessionBackendMixin
-from .. import (AuthenticationError, AuthBackend, luxrest, Login, LoginPost,
-                Logout, SignUp, ForgotPassword, User, Session)
+from .registration import RegistrationMixin
+from .. import (AuthenticationError, AuthBackend, luxrest,
+                User, Session, ModelMixin)
 from ..policy import has_permission
+from ..htmlviews import ForgotPassword, Login, Logout, SignUp
 
 
 def auth_router(api, url, Router, path=None):
-    if hasattr(Router, 'post'):
-        # The Router handles post data, create an action for a web api
+    params = {'form_enctype': 'application/json'}
+    if is_absolute_uri(api) and hasattr(Router, 'post'):
         action = luxrest('', path=url)
     else:
-        # The Router does not handle post data, create an action for a rest api
+        params['post'] = None
         action = luxrest(api, name='authorizations_url')
-        if path is None:
-            path = url
-        if path:
-            action['path'] = path
-    return Router(url, form_enctype='application/json', form_action=action)
+
+    params['form_action'] = action
+    if path is None:
+        path = url
+    if path:
+        action['path'] = path
+    return Router(url, **params)
 
 
-class BrowserBackend(AuthBackend):
+class BrowserBackend(RegistrationMixin,
+                     AuthBackend):
     '''Authentication backend for rendering Forms in the Browser
 
     It can be used by web servers delegating authentication to a backend API
@@ -39,9 +44,6 @@ class BrowserBackend(AuthBackend):
         Parameter('LOGOUT_URL', '/logout', 'Url to logout', True),
         Parameter('REGISTER_URL', '/signup',
                   'Url to register with site', True),
-        Parameter('RESET_PASSWORD_URL', '/reset-password',
-                  'If given, add the router to handle password resets',
-                  True),
         Parameter('TOS_URL', '/tos',
                   'Terms of Service url',
                   True),
@@ -50,7 +52,7 @@ class BrowserBackend(AuthBackend):
                   True)
     ]
     LoginRouter = Login
-    LogoutRouter = None
+    LogoutRouter = Logout
     SignUpRouter = SignUp
     ForgotPasswordRouter = ForgotPassword
 
@@ -89,11 +91,9 @@ class BrowserBackend(AuthBackend):
 
 
 class ApiSessionBackend(SessionBackendMixin,
+                        ModelMixin,
                         BrowserBackend):
-    '''An Mixin for authenticating against a RESTful HTTP API.
-
-    This mixin should be used when the API_URL is remote and therefore
-    the API middleware is installed in the current application.
+    '''Authenticating against a RESTful HTTP API.
 
     The workflow for authentication is the following:
 
@@ -105,26 +105,23 @@ class ApiSessionBackend(SessionBackendMixin,
     * Save the session in cache and return the original encoded token
     '''
     users_url = {'id': 'users',
-                 'username': 'users/username',
-                 'email': 'users/email'}
-
-    LoginRouter = LoginPost
-    LogoutRouter = Logout
+                 'username': 'users',
+                 'email': 'users',
+                 'auth_key': 'users/authkey'}
 
     def get_user(self, request, **kw):
-        '''Get User data
+        '''Get User from username, id or email or authentication key.
         '''
         api = request.app.api
-        for name in ('username', 'id', 'email'):
+        for name, url in self.users_url.items():
             value = kw.get(name)
             if not value:
                 continue
-            url = self.users_url.get(name)
-            if not url:
-                return
-            response = api.get('%s/%s' % url, value)
+            response = api.get(url, data={name: value})
             if response.status_code == 200:
-                return response.json()
+                data = response.json()
+                if data['total'] == 1:
+                    return User(data['result'][0])
 
     def authenticate(self, request, **data):
         if not jwt:
@@ -168,8 +165,7 @@ class ApiSessionBackend(SessionBackendMixin,
             # client = request.get_client_address()
             response = api.post('authorizations/signup', data=data)
             if response.status_code == 201:
-                user = User(response.json())
-                return user
+                return User(response.json())
             else:
                 response.raise_for_status()
 

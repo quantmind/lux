@@ -16,7 +16,7 @@
         };
     }
 
-    angular.module('lux.grid', ['lux.services', 'lux.grid.dataProviderFactory', 'templates-grid', 'ngTouch', 'ui.grid',
+    angular.module('lux.grid', ['lux.services', 'lux.grid.dataProviderFactory', 'templates-grid', 'ui.grid',
                                 'ui.grid.pagination', 'ui.grid.selection', 'ui.grid.autoResize', 'ui.grid.resizeColumns'])
         //
         .constant('gridDefaults', {

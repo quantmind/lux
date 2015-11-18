@@ -52,7 +52,11 @@
                     path: lux.context.LOGOUT_URL
                 }).then(function () {
                     scope.$emit('after-logout');
-                    $lux.window.location.reload();
+                    if (lux.context.POST_LOGOUT_URL) {
+                        $lux.window.location.href = lux.context.POST_LOGOUT_URL;
+                    } else {
+                        $lux.window.location.reload();
+                    }
                 }, function (response) {
                     $lux.messages.error('Error while logging out');
                 });
@@ -87,7 +91,10 @@
                         forEach(data, function (value, key) {
                             // TODO: do we need a callback for JSON fields?
                             // or shall we leave it here?
-                            if (isObject(value)) value = JSON.stringify(value, null, 4);
+
+                            if (formScope[formScope.formModelName + 'Type'][key] === 'textarea' && isObject(value)) {
+                                value = JSON.stringify(value, null, 4);
+                            }
 
                             if (isArray(value)) {
                                 model[key] = [];
@@ -97,7 +104,7 @@
                                 });
                             }
                             else
-                                model[key] = value;
+                                model[key] = value.id || value;
                         });
                     });
                 }

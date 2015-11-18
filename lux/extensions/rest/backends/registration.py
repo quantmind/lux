@@ -1,4 +1,5 @@
 from urllib.parse import urljoin
+from datetime import datetime, timedelta
 
 from pulsar.apps.wsgi import Json
 
@@ -18,41 +19,42 @@ class RegistrationMixin:
                   'Url to register with site', True),
         Parameter('RESET_PASSWORD_URL', '/reset-password',
                   'If given, add the router to handle password resets',
-                  True)
+                  True),
+        Parameter('ACCOUNT_ACTIVATION_DAYS', 2,
+                  'Number of days the activation code is valid')
     ]
+
+    def auth_key_expiry(self, request):
+        days = request.config['ACCOUNT_ACTIVATION_DAYS']
+        return datetime.now() + timedelta(days=days)
 
     def signup_response(self, request, user):
         '''handle the response to a signup request
         '''
         auth_backend = request.cache.auth_backend
-        reg_token = auth_backend.create_registration(request, user)
-        if reg_token:
-            email = self.send_email_confirmation(request, user, reg_token)
+        auth_key = auth_backend.create_auth_key(request, user)
+        if auth_key:
+            email = self.send_email_confirmation(request, user, auth_key)
             request.response.status_code = 201
-            data = dict(email=email, registration=reg_token)
+            data = dict(email=email, registration=auth_key)
             return Json(data).http_response(request)
-
-    def confirm_registration(self, request, **params):
-        '''Confirm registration'''
-        raise NotImplementedError
-
-    def auth_key_used(self, key):
-        '''The authentication ``key`` has been used and this method is
-        for setting/updating the backend model accordingly.
-        Used during password retrieval and user registration
-        '''
-        raise NotImplementedError
 
     def password_recovery(self, request, email):
         '''Recovery password email
         '''
-        user = self.get_user(email=email)
-        if not self.get_or_create_registration(
-                request, user,
-                email_subject='registration/password_email_subject.txt',
-                email_message='registration/password_email.txt',
-                message='registration/password_message.txt'):
+        user = self.get_user(request, email=email)
+        if not user or user.is_anonymous():
             raise AuthenticationError("Can't find that email, sorry")
+
+        auth_key = self.create_auth_key(request, user)
+        if not auth_key:
+            raise AuthenticationError("Cannot create authentication key")
+
+        return self.send_email_confirmation(
+            request, user, auth_key,
+            email_subject='registration/password_email_subject.txt',
+            email_message='registration/password_email.txt',
+            message='registration/password_message.txt')
 
     def inactive_user_login_response(self, request, user):
         '''Handle a user not yet active'''
