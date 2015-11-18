@@ -274,6 +274,11 @@
             });
         };
 
+        /**
+         * Gets API URLs
+         *
+         * @returns     promise, resolved when API URLs available
+         */
         api.getApiUrls = function() {
             var promise, deferred;
             if (!angular.isObject($lux.apiUrls[url])) {
@@ -285,6 +290,7 @@
             }
             return promise;
         };
+
         //
         //  Execute an API call for a given request
         //  This method is hardly used directly,
