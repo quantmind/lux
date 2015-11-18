@@ -275,14 +275,14 @@
         };
 
         /**
-         * Gets API URLs
+         * Gets API endpoint URLs from root URL
          *
          * @returns     promise, resolved when API URLs available
          */
-        api.getApiUrls = function() {
+        api.getApiNames = function() {
             var promise, deferred;
             if (!angular.isObject($lux.apiUrls[url])) {
-                promise = this.populateApiUrls();
+                promise = api.populateApiUrls();
             } else {
                 deferred = $lux.q.defer();
                 promise = deferred.promise;
@@ -298,7 +298,7 @@
          * @returns     promise, resolved when the URL is available
          */
         api.getUrlForTarget = function(target) {
-            return this.getApiUrls().then(function(apiUrls) {
+            return api.getApiNames().then(function(apiUrls) {
                 var url = apiUrls[target.name];
                 if (target.path) {
                     url = joinUrl(url, target.path);
