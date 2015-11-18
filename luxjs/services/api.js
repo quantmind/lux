@@ -275,12 +275,13 @@
         };
 
         api.getApiUrls = function() {
-            var promise;
+            var promise, deferred;
             if (!angular.isObject($lux.apiUrls[url])) {
                 promise = this.populateApiUrls();
             } else {
-                promise = $lux.q.defer();
-                promise.resolve($lux.apiUrls[url]);
+                deferred = $lux.q.defer();
+                promise = deferred.promise;
+                deferred.resolve($lux.apiUrls[url]);
             }
             return promise;
         };

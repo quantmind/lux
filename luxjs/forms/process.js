@@ -40,7 +40,8 @@ angular.module('lux.form.process', ['ngFileUpload'])
                 uploadHeaders = {},
                 promise,
                 api,
-                uploadUrl;
+                uploadUrl,
+                deferred;
             //
             // Flag the form as submitted
             form.submitted = true;
@@ -64,9 +65,10 @@ angular.module('lux.form.process', ['ngFileUpload'])
                         uploadHeaders.Authorization = 'bearer ' + api.token();
                     });
                 } else {
-                    promise = $lux.q.defer();
+                    deferred = $lux.q.defer();
                     uploadUrl = target;
-                    promise.resolve();
+                    deferred.resolve();
+                    promise = deferred.promise;
                 }
                 promise = promise.then(function() {
                     return Upload.upload({
