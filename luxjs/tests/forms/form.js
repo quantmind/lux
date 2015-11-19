@@ -109,7 +109,7 @@ define(function(require) {
             expect(scope.form.login.$invalid).toBe(true);
         }));
 
-        it('check email validators', inject(function($compile, $rootScope) {
+        it('submit empty email field', inject(function($compile, $rootScope) {
             lux.formTests.simple = testFormUtils.createForm({
                 type: 'email',
                 name: 'login',
@@ -120,9 +120,8 @@ define(function(require) {
                 '<div><lux-form data-options="lux.formTests.simple"></lux-form></div>');
 
             var _form = angular.element(element).find('form');
-            scope = _form.scope();
-
             var validators = _form.find('span');
+            scope = _form.scope();
 
             // Submit empty field
             scope.form.login.$setViewValue('');
@@ -131,6 +130,21 @@ define(function(require) {
             expect(validators.eq(0).hasClass('ng-hide')).toBe(false);
             expect(validators.eq(1).hasClass('ng-hide')).toBe(true);
             expect(validators.eq(2).hasClass('ng-hide')).toBe(true);
+        }));
+
+        it('submit invalid email field', inject(function($compile, $rootScope) {
+            lux.formTests.simple = testFormUtils.createForm({
+                type: 'email',
+                name: 'login',
+                required: true
+            });
+
+            var element = testFormUtils.digest($compile, $rootScope,
+                '<div><lux-form data-options="lux.formTests.simple"></lux-form></div>');
+
+            var _form = angular.element(element).find('form');
+            var validators = _form.find('span');
+            scope = _form.scope();
 
             // Submit invalid email (angular validation)
             scope.form.login.$setViewValue('example.com');
