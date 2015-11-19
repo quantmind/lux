@@ -18,7 +18,7 @@
                 exports: "hljs"
             },
             lux: {
-                deps: ["angular", "lodash"]
+                deps: ["angular", "lodash", "angular-file-upload"]
             },
             "ui-bootstrap": {
                 deps: ["angular"]
