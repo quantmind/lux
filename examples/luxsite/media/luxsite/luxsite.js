@@ -1,6 +1,6 @@
 //      Lux Library - v0.3.0
 
-//      Compiled 2015-11-17.
+//      Compiled 2015-11-19.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -110,7 +110,7 @@
                 exports: "hljs"
             },
             lux: {
-                deps: ["angular", "lodash"]
+                deps: ["angular", "lodash", "angular-file-upload"]
             },
             "ui-bootstrap": {
                 deps: ["angular"]
