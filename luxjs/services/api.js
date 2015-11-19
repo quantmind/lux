@@ -261,6 +261,52 @@
             return request.on;
         };
 
+        /**
+         * Populates $lux.apiUrls for an API URL.
+         *
+         * @returns      promise
+         */
+        api.populateApiUrls = function() {
+            $lux.log.info('Fetching api info');
+            return $lux.http.get(url).then(function (resp) {
+                $lux.apiUrls[url] = resp.data;
+                return resp.data;
+            });
+        };
+
+        /**
+         * Gets API endpoint URLs from root URL
+         *
+         * @returns     promise, resolved when API URLs available
+         */
+        api.getApiNames = function() {
+            var promise, deferred;
+            if (!angular.isObject($lux.apiUrls[url])) {
+                promise = api.populateApiUrls();
+            } else {
+                deferred = $lux.q.defer();
+                promise = deferred.promise;
+                deferred.resolve($lux.apiUrls[url]);
+            }
+            return promise;
+        };
+
+        /**
+         * Gets the URL for an API target
+         *
+         * @param target
+         * @returns     promise, resolved when the URL is available
+         */
+        api.getUrlForTarget = function(target) {
+            return api.getApiNames().then(function(apiUrls) {
+                var url = apiUrls[target.name];
+                if (target.path) {
+                    url = joinUrl(url, target.path);
+                }
+                return url;
+            });
+        };
+
         //
         //  Execute an API call for a given request
         //  This method is hardly used directly,
@@ -282,9 +328,7 @@
                     //
                 } else {
                     // Fetch the api urls
-                    $lux.log.info('Fetching api info');
-                    return $lux.http.get(api.baseUrl()).then(function (resp) {
-                        $lux.apiUrls[url] = resp.data;
+                    return api.populateApiUrls(url).then(function() {
                         api.call(request);
                     }, request.error);
                     //

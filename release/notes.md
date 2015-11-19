@@ -16,3 +16,4 @@
 # Front end
 
 * Added enquiry to formHandlers and set it as resultHandler in ContactForm
+* Use ng-file-upload to submit forms containing file fields. This behaviour can be disabled by passing useNgFileUpload=False as a form attribute.
