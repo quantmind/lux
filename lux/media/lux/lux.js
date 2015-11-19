@@ -1,6 +1,6 @@
 //      Lux Library - v0.3.0
 
-//      Compiled 2015-11-17.
+//      Compiled 2015-11-19.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -623,6 +623,52 @@ function(angular, root) {
             return request.on;
         };
 
+        /**
+         * Populates $lux.apiUrls for an API URL.
+         *
+         * @returns      promise
+         */
+        api.populateApiUrls = function() {
+            $lux.log.info('Fetching api info');
+            return $lux.http.get(url).then(function (resp) {
+                $lux.apiUrls[url] = resp.data;
+                return resp.data;
+            });
+        };
+
+        /**
+         * Gets API endpoint URLs from root URL
+         *
+         * @returns     promise, resolved when API URLs available
+         */
+        api.getApiNames = function() {
+            var promise, deferred;
+            if (!angular.isObject($lux.apiUrls[url])) {
+                promise = api.populateApiUrls();
+            } else {
+                deferred = $lux.q.defer();
+                promise = deferred.promise;
+                deferred.resolve($lux.apiUrls[url]);
+            }
+            return promise;
+        };
+
+        /**
+         * Gets the URL for an API target
+         *
+         * @param target
+         * @returns     promise, resolved when the URL is available
+         */
+        api.getUrlForTarget = function(target) {
+            return api.getApiNames().then(function(apiUrls) {
+                var url = apiUrls[target.name];
+                if (target.path) {
+                    url = joinUrl(url, target.path);
+                }
+                return url;
+            });
+        };
+
         //
         //  Execute an API call for a given request
         //  This method is hardly used directly,
@@ -644,9 +690,7 @@ function(angular, root) {
                     //
                 } else {
                     // Fetch the api urls
-                    $lux.log.info('Fetching api info');
-                    return $lux.http.get(api.baseUrl()).then(function (resp) {
-                        $lux.apiUrls[url] = resp.data;
+                    return api.populateApiUrls(url).then(function() {
                         api.call(request);
                     }, request.error);
                     //
@@ -2185,7 +2229,7 @@ angular.module('lux.cms.core', [])
     //      formFieldChange: triggered when a form field changes:
     //          arguments: formmodel, field (changed)
     //
-    angular.module('lux.form', ['lux.form.utils', 'lux.form.handlers'])
+    angular.module('lux.form', ['lux.form.utils', 'lux.form.handlers', 'ngFileUpload', 'lux.form.process'])
         //
         .constant('formDefaults', {
             // Default layout
@@ -2196,7 +2240,8 @@ angular.module('lux.cms.core', [])
             novalidate: true,
             //
             formErrorClass: 'form-error',
-            FORMKEY: 'm__form'
+            FORMKEY: 'm__form',
+            useNgFileUpload: true
         })
         //
         .constant('defaultFormElements', function () {
@@ -2377,8 +2422,12 @@ angular.module('lux.cms.core', [])
                 //
                 addDirectives: function(scope, element) {
                     // lux-codemirror directive
-                    if (scope.field.hasOwnProperty('text_edit'))
+                    if (scope.field.hasOwnProperty('text_edit')) {
                         element.attr('lux-codemirror', scope.field.text_edit);
+                    } else if (scope.formAttrs.useNgFileUpload && scope.field.type === 'file') {
+                        element.attr('ngf-select', '');
+                        scope.formProcessor = 'ngFileUpload';
+                    }
                     return element;
                 },
                 //
@@ -3155,121 +3204,146 @@ angular.module('lux.form.handlers', ['lux.services'])
 
     }]);
 
-    //
-    function joinField (model, name, extra) {
-        return model + '["' + name + '"].' + extra;
-    }
+//
+function joinField(model, name, extra) {
+    return model + '["' + name + '"].' + extra;
+}
 
-    //
-    //	Form processor
-    //	=========================
-    //
-    //	Default Form processing function
-    // 	If a submit element (input.submit or button) does not specify
-    // 	a ``click`` entry, this function is used
-    //
-    //  Post Result
-    //  -------------------
-    //
-    //  When a form is processed succesfully, this method will check if the
-    //  ``formAttrs`` object contains a ``resultHandler`` parameter which should be
-    //  a string.
-    //
-    //  In the event the ``resultHandler`` exists,
-    //  the ``$lux.formHandlers`` object is checked if it contains a function
-    //  at the ``resultHandler`` value. If it does, the function is called.
-    lux.processForm = function (e) {
+angular.module('lux.form.process', ['ngFileUpload'])
+    .run(['$lux', 'Upload', function ($lux, Upload) {
 
-        e.preventDefault();
-        e.stopPropagation();
-
-        var scope = this,
-            $lux = scope.$lux,
-            form = this[this.formName],
-            model = this[this.formModelName],
-            attrs = this.formAttrs,
-            target = attrs.action,
-            FORMKEY = scope.formAttrs.FORMKEY,
-            method = attrs.method || 'post',
-            promise,
-            api;
         //
-        // Flag the form as submitted
-        form.submitted = true;
-        if (form.$invalid) return;
-
-        // Get the api information if target is an object
-        //	target
-        //		- name:	api name
-        //		- target: api target
-        if (isObject(target)) api = $lux.api(target);
-
-        this.formMessages = {};
+        //	Form processor
+        //	=========================
         //
-        if (api) {
-            promise = api.request(method, target, model);
-        } else if (target) {
-            var enctype = attrs.enctype || 'application/json',
-                ct = enctype.split(';')[0],
-                options = {
-                    url: target,
-                    method: attrs.method || 'POST',
-                    data: model,
-                    transformRequest: $lux.formData(ct),
-                };
-            // Let the browser choose the content type
-            if (ct === 'application/x-www-form-urlencoded' || ct === 'multipart/form-data') {
-                options.headers = {
-                    'content-type': undefined
-                };
+        //	Default Form processing function
+        // 	If a submit element (input.submit or button) does not specify
+        // 	a ``click`` entry, this function is used
+        //
+        //  Post Result
+        //  -------------------
+        //
+        //  When a form is processed succesfully, this method will check if the
+        //  ``formAttrs`` object contains a ``resultHandler`` parameter which should be
+        //  a string.
+        //
+        //  In the event the ``resultHandler`` exists,
+        //  the ``$lux.formHandlers`` object is checked if it contains a function
+        //  at the ``resultHandler`` value. If it does, the function is called.
+        lux.processForm = function (e) {
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            var scope = this,
+                $lux = scope.$lux,
+                form = this[this.formName],
+                model = this[this.formModelName],
+                attrs = this.formAttrs,
+                target = attrs.action,
+                FORMKEY = scope.formAttrs.FORMKEY,
+                method = attrs.method || 'post',
+                uploadHeaders = {},
+                promise,
+                api,
+                uploadUrl,
+                deferred;
+            //
+            // Flag the form as submitted
+            form.submitted = true;
+            if (form.$invalid) return;
+
+            // Get the api information if target is an object
+            //	target
+            //		- name:	api name
+            //		- target: api target
+            if (isObject(target)) api = $lux.api(target);
+
+            this.formMessages = {};
+            //
+            if (scope.formProcessor === 'ngFileUpload') {
+                if (api) {
+                    promise = api.getUrlForTarget(target).then(function(url) {
+                        uploadUrl = url;
+                        uploadHeaders.Authorization = 'bearer ' + api.token();
+                    });
+                } else {
+                    deferred = $lux.q.defer();
+                    uploadUrl = target;
+                    deferred.resolve();
+                    promise = deferred.promise;
+                }
+                promise = promise.then(function() {
+                    return Upload.upload({
+                        url: uploadUrl,
+                        headers: uploadHeaders,
+                        data: model
+                    });
+                });
+            } else if (api) {
+                promise = api.request(method, target, model);
+            } else if (target) {
+                var enctype = attrs.enctype || 'application/json',
+                    ct = enctype.split(';')[0],
+                    options = {
+                        url: target,
+                        method: attrs.method || 'POST',
+                        data: model,
+                        transformRequest: $lux.formData(ct)
+                    };
+                // Let the browser choose the content type
+                if (ct === 'application/x-www-form-urlencoded' || ct === 'multipart/form-data') {
+                    options.headers = {
+                        'content-type': undefined
+                    };
+                } else {
+                    options.headers = {
+                        'content-type': ct
+                    };
+                }
+                promise = $lux.http(options);
             } else {
-                options.headers = {
-                    'content-type': ct
-                };
+                $lux.log.error('Could not process form. No target or api');
+                return;
             }
-            promise = $lux.http(options);
-        } else {
-            $lux.log.error('Could not process form. No target or api');
-            return;
-        }
-        //
-        promise.then(function (response) {
-                var data = response.data;
-                var hookName = scope.formAttrs.resultHandler;
-                var hook = hookName && $lux.formHandlers[hookName];
-                if (hook) {
-                    hook(response, scope);
-                } else if (data.messages) {
-                    scope.addMessages(data.messages);
-                } else if (api) {
-                    // Created
-                    var message = data.message;
-                    if (!message) {
-                        if (response.status === 201)
-                            message = 'Successfully created';
-                        else
-                            message = 'Successfully updated';
+            //
+            promise.then(function (response) {
+                    var data = response.data;
+                    var hookName = scope.formAttrs.resultHandler;
+                    var hook = hookName && $lux.formHandlers[hookName];
+                    if (hook) {
+                        hook(response, scope);
+                    } else if (data.messages) {
+                        scope.addMessages(data.messages);
+                    } else if (api) {
+                        // Created
+                        var message = data.message;
+                        if (!message) {
+                            if (response.status === 201)
+                                message = 'Successfully created';
+                            else
+                                message = 'Successfully updated';
+                        }
+                        $lux.messages.info(message);
                     }
-                    $lux.messages.info(message);
-                }
-            },
-            function (response) {
-                var data = response.data || {},
-                    status = response.status,
-                    messages = data.errors,
-                    msg;
-                if (!messages) {
-                    msg = data.message;
-                    if (!msg) {
-                        status = status || data.status || 501;
-                        msg = 'Response error (' + data.status + ')';
+                },
+                function (response) {
+                    var data = response.data || {},
+                        status = response.status,
+                        messages = data.errors,
+                        msg;
+                    if (!messages) {
+                        msg = data.message;
+                        if (!msg) {
+                            status = status || data.status || 501;
+                            msg = 'Response error (' + data.status + ')';
+                        }
+                        messages = [{message: msg}];
                     }
-                    messages = [{message: msg}];
-                }
-                scope.addMessages(messages, 'error');
-            });
-    };
-
+                    scope.addMessages(messages, 'error');
+                });
+        };
+    }]);
 /**
  * Created by Reupen on 02/06/2015.
  */
