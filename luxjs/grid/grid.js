@@ -68,7 +68,11 @@
                     icon: 'fa fa-eye'
                 }
             },
-            // Order of apply the permissions according to sources: metadata, python settings, grid defaults
+            // Permissions are used to enable/disable grid actions like (CREATE, UPDATE, DELETE)
+            // Order of apply the permissions according to priorities:
+            // * `metadata`
+            // * `python views` dict with permissions
+            // * `grid defaults`
             permissions: {
                 CREATE: false,
                 UPDATE: false,
