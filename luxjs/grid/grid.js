@@ -223,15 +223,11 @@
                 return stateName.slice(0, -1);
             }
 
-            // Return permissions used in grid
-            function getPermissions(gridConfig) {
-                return angular.extend({}, gridDefaults.permissions, gridConfig.permissions);
-            }
-
             // Updates grid menu
-            function updateGridMenu(scope, gridMenu, gridOptions, permissions) {
+            function updateGridMenu(scope, gridMenu, gridOptions) {
                 var menu = [],
-                    title, menuItem;
+                    title, menuItem,
+                    permissions = gridOptions.permissions;
 
                 forEach(gridMenu, function(item, key) {
                     title = item.title;
@@ -261,11 +257,10 @@
             }
 
             // Add menu actions to grid
-            function addGridMenu(scope, gridOptions, gridConfig) {
+            function addGridMenu(scope, gridOptions) {
                 var modalScope = scope.$new(true),
                     modal, template,
-                    stateName = getStateName(),
-                    permissions = getPermissions(gridConfig);
+                    stateName = getStateName();
 
                 scope.create = function($event) {
                     // if location path is available then we use ui-router
@@ -358,12 +353,11 @@
                     modal = $modal({scope: modalScope, template: template, show: true});
                 };
 
-                updateGridMenu(scope, gridDefaults.gridMenu, gridOptions, permissions);
+                updateGridMenu(scope, gridDefaults.gridMenu, gridOptions);
 
                 extend(gridOptions, {
                     enableGridMenu: true,
                     gridMenuShowHideColumns: false,
-                    permissions: permissions
                 });
             }
 
@@ -392,7 +386,7 @@
                     // Overwrite current permissions with permissions from metadata
                     angular.extend(scope.gridOptions.permissions, metadata.permissions);
 
-                    updateGridMenu(scope, gridDefaults.gridMenu, scope.gridOptions, scope.gridOptions.permissions);
+                    updateGridMenu(scope, gridDefaults.gridMenu, scope.gridOptions);
                     scope.gridOptions.columnDefs = parseColumns(gridConfig.columns || metadata.columns, scope.gridOptions.metaFields, scope.gridOptions.permissions);
                 }
 
@@ -502,6 +496,7 @@
                         enableHorizontalScrollbar: gridDefaults.enableHorizontalScrollbar,
                         enableVerticalScrollbar: gridDefaults.enableVerticalScrollbar,
                         rowHeight: gridDefaults.rowHeight,
+                        permissions: angular.extend(gridDefaults.permissions, options.permissions),
                         onRegisterApi: function(gridApi) {
                             require(['lodash'], function(_) {
 
@@ -566,7 +561,7 @@
                     };
 
                 if (gridDefaults.showMenu)
-                    addGridMenu(scope, gridOptions, scope.options);
+                    addGridMenu(scope, gridOptions);
 
                 return gridOptions;
             };
