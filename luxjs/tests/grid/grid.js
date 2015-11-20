@@ -7,6 +7,15 @@ define(function(require) {
         var modal = jasmine.createSpyObj('modal', ['show']);
         var apiMock;
 
+        function digest(template) {
+            var scope = $rootScope.$new(),
+                element = $compile(template)(scope);
+            scope.$digest();
+            return element;
+        };
+
+        lux.gridTests = {};
+
         beforeEach(function () {
             apiMock = createLuxApiMock();
             var $luxMock = createLuxMock(apiMock);
@@ -26,42 +35,35 @@ define(function(require) {
         });
 
         it('default permissions of actions', function() {
-            var scope = $rootScope.$new();
-            var template = '<div rest-grid="luxgrids.pGrid1">' +
-                                '<script>if (!this.luxgrids) {this.luxgrids = {};}' +
-                                    'this.luxgrids.pGrid1 = {"target": {"name": "dummy", "url": "dummy://url"}};' +
-                                '</script>' +
-                            '</div>';
-            var element = $compile(template)(scope);
-            scope.$digest();
+            lux.gridTests.pGrid1 = {
+                "target": {"name": "dummy", "url": "dummy://url"},
+            };
+            var element = digest('<div rest-grid="lux.gridTests.pGrid1"></div>');
+            scope = element.scope();
 
             expect(scope.gridOptions.permissions.UPDATE).toBe(false);
             expect(scope.gridOptions.permissions.CREATE).toBe(false);
             expect(scope.gridOptions.permissions.DELETE).toBe(false);
         });
 
-        it('has defaults only one item of the menu - column visibility', function() {
-            var scope = $rootScope.$new();
-            var template = '<div rest-grid="luxgrids.pGrid2">' +
-                                '<script>if (!this.luxgrids) {this.luxgrids = {};}' +
-                                    'this.luxgrids.pGrid2 = {"target": {"name": "dummy", "url": "dummy://url"}};' +
-                                '</script>' +
-                            '</div>';
-            var element = $compile(template)(scope);
-            scope.$digest();
+        it('initially has only one item of the menu - column visibility', function() {
+            lux.gridTests.pGrid2 = {
+                "target": {"name": "dummy", "url": "dummy://url"},
+            };
+            var element = digest('<div rest-grid="lux.gridTests.pGrid2"></div>');
+            scope = element.scope();
 
             expect(scope.gridOptions.gridMenuCustomItems.length).toBe(1);
             expect(scope.gridOptions.gridMenuCustomItems[0].title).toEqual('Columns visibility');
         });
 
         it('adds CREATE and DELETE permissions', function() {
-            var scope = $rootScope.$new();
-            var template =  '<div rest-grid="luxgrids.pGrid3">' +
-                                '<script>if (!this.luxgrids) {this.luxgrids = {};}' +
-                                    'this.luxgrids.pGrid3 = {"target": {"name": "dummy", "url": "dummy://url"}, "permissions": {"CREATE": true, "DELETE": true}};</script>' +
-                            '</div>';
-            var element = $compile(template)(scope);
-            scope.$digest();
+            lux.gridTests.pGrid3 = {
+                "target": {"name": "dummy", "url": "dummy://url"},
+                "permissions": {"CREATE": true, "DELETE": true}
+            };
+            var element = digest('<div rest-grid="lux.gridTests.pGrid3"></div>');
+            scope = element.scope();
 
             expect(scope.gridOptions.permissions.CREATE).toBe(true);
             expect(scope.gridOptions.permissions.DELETE).toBe(true);
