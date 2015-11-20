@@ -7,10 +7,8 @@ define(function(require) {
         var modal = jasmine.createSpyObj('modal', ['show']);
         var apiMock;
 
-        function digest(template) {
-            var scope = $rootScope.$new(),
-                element = $compile(template)(scope);
-            scope.$digest();
+        function digest(scope, template) {
+            var element = $compile(template)(scope);
             return element;
         };
 
@@ -38,8 +36,9 @@ define(function(require) {
             lux.gridTests.pGrid1 = {
                 "target": {"name": "dummy", "url": "dummy://url"},
             };
-            var element = digest('<div rest-grid="lux.gridTests.pGrid1"></div>');
-            scope = element.scope();
+            var scope = $rootScope.$new();
+            var element = digest(scope, '<div rest-grid="lux.gridTests.pGrid1"></div>');
+            scope.$digest();
 
             expect(scope.gridOptions.permissions.UPDATE).toBe(false);
             expect(scope.gridOptions.permissions.CREATE).toBe(false);
@@ -50,8 +49,9 @@ define(function(require) {
             lux.gridTests.pGrid2 = {
                 "target": {"name": "dummy", "url": "dummy://url"},
             };
-            var element = digest('<div rest-grid="lux.gridTests.pGrid2"></div>');
-            scope = element.scope();
+            var scope = $rootScope.$new();
+            var element = digest(scope, '<div rest-grid="lux.gridTests.pGrid2"></div>');
+            scope.$digest();
 
             expect(scope.gridOptions.gridMenuCustomItems.length).toBe(1);
             expect(scope.gridOptions.gridMenuCustomItems[0].title).toEqual('Columns visibility');
@@ -62,8 +62,9 @@ define(function(require) {
                 "target": {"name": "dummy", "url": "dummy://url"},
                 "permissions": {"CREATE": true, "DELETE": true}
             };
-            var element = digest('<div rest-grid="lux.gridTests.pGrid3"></div>');
-            scope = element.scope();
+            var scope = $rootScope.$new();
+            var element = digest(scope, '<div rest-grid="lux.gridTests.pGrid3"></div>');
+            scope.$digest();
 
             expect(scope.gridOptions.permissions.CREATE).toBe(true);
             expect(scope.gridOptions.permissions.DELETE).toBe(true);
