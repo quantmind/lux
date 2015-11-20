@@ -50,7 +50,7 @@
             "angular-cookies": "//cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.4/angular-cookies",
             "angular-ui-grid": "//cdnjs.cloudflare.com/ajax/libs/angular-ui-grid/3.0.7/ui-grid",
             "angular-scroll": "//cdnjs.cloudflare.com/ajax/libs/angular-scroll/0.7.2/angular-scroll",
-            "angular-file-upload": "//cdnjs.cloudflare.com/ajax/libs/danialfarid-angular-file-upload/5.2.0/ng-file-upload",
+            "angular-file-upload": "//cdnjs.cloudflare.com/ajax/libs/danialfarid-angular-file-upload/10.0.2/ng-file-upload",
             "angular-moment": "//cdnjs.cloudflare.com/ajax/libs/angular-moment/0.10.1/angular-moment",
             "angular-pusher": "//cdn.jsdelivr.net/angular.pusher/latest/pusher-angular.min.js",
             "videojs": "//vjs.zencdn.net/4.12/video.js",
@@ -102,7 +102,7 @@
                 exports: "hljs"
             },
             lux: {
-                deps: ["angular", "lodash"]
+                deps: ["angular", "lodash", "angular-file-upload"]
             },
             "ui-bootstrap": {
                 deps: ["angular"]

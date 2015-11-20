@@ -47,7 +47,12 @@ class TokenBackendMixin:
         try:
             return jwt.decode(token, request.config['SECRET_KEY'])
         except jwt.ExpiredSignature:
-            request.app.logger.info('JWT token has expired')
+            request.app.logger.warning('JWT token has expired')
+            # In this case we want the client to perform
+            # a new authentication. Raise 401
+            raise Http401('Token')
+        except Exception as exc:
+            request.app.logger.warning(str(exc))
             # In this case we want the client to perform
             # a new authentication. Raise 401
             raise Http401('Token')
