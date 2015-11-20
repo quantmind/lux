@@ -56,6 +56,7 @@
                 'create': {
                     title: 'Add',
                     icon: 'fa fa-plus',
+                    // Handle specified permission type
                     permissionType: 'CREATE'
                 },
                 'delete': {
@@ -68,11 +69,19 @@
                     icon: 'fa fa-eye'
                 }
             },
-            // Permissions are used to enable/disable grid actions like (CREATE, UPDATE, DELETE)
-            // Order of apply the permissions according to priorities:
-            // * `metadata`
-            // * `python views` dict with permissions
-            // * `grid defaults`
+            // Permissions are used to enable/disable grid actions like (CREATE, UPDATE, DELETE).
+            //
+            // Firstly we need to specify `permissionType` on required item in `gridDefaults.gridMenu` to handle specified permission,
+            // e.g. set up `permissionType: 'CREATE'` on 'create' item shows 'Add' button on the grid.
+            // If the `permissionType` is not specified on item at `gridDefaults.gridMenu` then this
+            // doesn't handle permissions (is always visible) e.g. like `gridDefaults.gridMenu.columnsVisibility`.
+            //
+            // We always expect the permissions object i.e. `permissions: {'CREATE': true, 'DELETE': false, 'UPDATE': true}`.
+            // If some of value is not specified then default is `False` (according to value from `gridDefaults.permissions`)
+            //
+            // We allow configuration permissions from:
+            // * `metadata API` override the grid options
+            // * `grid options`
             permissions: {
                 CREATE: false,
                 UPDATE: false,
@@ -170,6 +179,7 @@
 
                     if (typeof column.field !== 'undefined' && column.field === metaFields.repr) {
                         if (permissions.UPDATE) {
+                            // If is granted update permission then display link to edit item
                             column.cellTemplate = gridDefaults.wrapCell('<a ng-href="{{grid.appScope.objectUrl(row.entity)}}">{{COL_FIELD}}</a>');
                         }
                         // Set repr column as the first column
@@ -202,10 +212,12 @@
                 }
             }
 
+            // Return state name (last part of the URL)
             function getStateName() {
                 return window.location.href.split('/').pop(-1);
             }
 
+            // Return model name
             function getModelName() {
                 var stateName = getStateName();
                 return stateName.slice(0, -1);
@@ -216,7 +228,7 @@
                 return angular.extend({}, gridDefaults.permissions, gridConfig.permissions);
             }
 
-            // Updates grid menu according to permissions
+            // Updates grid menu
             function updateGridMenu(scope, gridMenu, gridOptions, permissions) {
                 var menu = [],
                     title, menuItem;
@@ -235,6 +247,7 @@
                         permissionType: item.permissionType || ''
                     };
 
+                    // If are given permission to menu element then add it to list
                     if (item.hasOwnProperty('permissionType')) {
                         if (permissions.hasOwnProperty(item.permissionType) && permissions[item.permissionType]) {
                             menu.push(menuItem);
@@ -376,7 +389,7 @@
                         id: metadata.id,
                         repr: metadata.repr
                     };
-                    // Append permissions from metadata
+                    // Overwrite current permissions with permissions from metadata
                     angular.extend(scope.gridOptions.permissions, metadata.permissions);
 
                     updateGridMenu(scope, gridDefaults.gridMenu, scope.gridOptions, scope.gridOptions.permissions);
