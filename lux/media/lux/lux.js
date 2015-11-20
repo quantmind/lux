@@ -1,6 +1,6 @@
 //      Lux Library - v0.3.0
 
-//      Compiled 2015-11-19.
+//      Compiled 2015-11-20.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -2239,6 +2239,9 @@ angular.module('lux.cms.core', [])
             showLabels: true,
             novalidate: true,
             //
+            dateTypes: ['date', 'datetime', 'datetime-local'],
+            defaultDatePlaceholder: 'YYYY-MM-DD',
+            //
             formErrorClass: 'form-error',
             FORMKEY: 'm__form',
             useNgFileUpload: true
@@ -2424,6 +2427,9 @@ angular.module('lux.cms.core', [])
                     // lux-codemirror directive
                     if (scope.field.hasOwnProperty('text_edit')) {
                         element.attr('lux-codemirror', scope.field.text_edit);
+                    } else if (formDefaults.dateTypes.indexOf(scope.field.type) > -1) {
+                        // Convert date string to date object
+                        element.attr('format-date', '');
                     } else if (scope.formAttrs.useNgFileUpload && scope.field.type === 'file') {
                         element.attr('ngf-select', '');
                         scope.formProcessor = 'ngFileUpload';
@@ -2513,6 +2519,11 @@ angular.module('lux.cms.core', [])
 
                     // Add model attribute
                     input.attr('ng-model', scope.formModelName + '["' + field.name + '"]');
+
+                    // Add default placeholder to date field if not exist
+                    if (field.type === 'date' && field.placeholder === undefined) {
+                        field.placeholder = formDefaults.defaultDatePlaceholder;
+                    }
 
                     if (!field.showLabels || field.type === 'hidden') {
                         label.addClass('sr-only');
@@ -2779,21 +2790,23 @@ angular.module('lux.cms.core', [])
                     });
 
                     // Add the invalid handler if not available
-                    var errors = p.children().length;
-                    if (errors === (field.required ? 1 : 0)) {
-                        var nameError = '$invalid';
-                        if (errors)
-                            nameError += ' && !' + [scope.formName, field.name, '$error.required'].join('.');
-                        p.append(this.fieldErrorElement(scope, nameError, self.errorMessage(scope, 'invalid')));
-                    }
+                    var errors = p.children().length,
+                        nameError = '$invalid';
+                    if (errors)
+                        nameError += ' && !' + joinField(scope.formName, field.name, '$error.required');
+                        // Show only if server side errors don't exist
+                        nameError += ' && !formErrors.' + field.name;
+                    p.append(this.fieldErrorElement(scope, nameError, self.errorMessage(scope, 'invalid')));
 
                     // Add the invalid handler for server side errors
                     var name = '$invalid';
                         name += ' && !' + joinField(scope.formName, field.name, '$error.required');
-                        p.append(
-                            this.fieldErrorElement(scope, name, self.errorMessage(scope, 'invalid'))
-                            .html('{{formErrors["' + field.name + '"]}}')
-                        );
+                        // Show only if server side errors exists
+                        name += ' && formErrors.' + field.name;
+                    p.append(
+                        this.fieldErrorElement(scope, name, self.errorMessage(scope, 'invalid'))
+                        .html('{{formErrors["' + field.name + '"]}}')
+                    );
 
                     return element.append(p);
                 },
@@ -3005,6 +3018,10 @@ angular.module('lux.cms.core', [])
                     };
 
                     scope.fireFieldChange = function (field) {
+                        // Delete previous field error from server side
+                        if (scope.formErrors[field] !== undefined) {
+                            delete scope.formErrors[field];
+                        }
                         // Triggered every time a form field changes
                         scope.$broadcast('fieldChange', formmodel, field);
                         scope.$emit('formFieldChange', formmodel, field);
@@ -3143,6 +3160,22 @@ angular.module('lux.cms.core', [])
                         scope.$apply(function () {
                             scope.onchange();
                         });
+                    });
+                }
+            };
+        })
+        //
+        // Format string date to date object
+        .directive('formatDate', function () {
+            return {
+                require: '?ngModel',
+                link: function (scope, elem, attrs, ngModel) {
+                    // All date-related inputs like <input type="date">
+                    // require the model to be a Date object in Angular 1.3+.
+                    ngModel.$formatters.push(function(modelValue){
+                        if (typeof modelValue === 'string' || typeof modelValue === 'number')
+                            return new Date(modelValue);
+                        return modelValue;
                     });
                 }
             };
