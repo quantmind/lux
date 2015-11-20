@@ -128,7 +128,7 @@
         }));
     });
 
-    describe("Test form with file field", function() {
+    describe("Test lux.form with file field", function() {
         lux.formTests = {};
 
         beforeEach(function () {
@@ -164,6 +164,32 @@
             expect(tags[1].tagName).toBe('INPUT');
             expect(tags[1].getAttribute('type')).toBe('file');
             expect(tags[1].hasAttribute('ngf-select')).toBeFalsy();
+            //
+        }));
+    });
+
+    describe("Test lux.form with date field", function() {
+        lux.formTests = {};
+
+        beforeEach(function () {
+            module('lux.form');
+        });
+
+        it("convert model from date string into date object", inject(function($compile, $rootScope) {
+            lux.formTests.date = testFormUtils.createForm([{type: 'date', name: 'date'}]);
+            var element = testFormUtils.digest($compile, $rootScope,
+                '<div><lux-form data-options="lux.formTests.date"></lux-form></div>');
+            //
+            var form = angular.element(element).find('form');
+            var field = form.find('input').eq(0);
+
+            scope = form.scope();
+            scope.form.date.$setViewValue('2011-04-02');
+            scope.$digest();
+
+            expect(field.attr('name')).toEqual('date');
+            expect(field.attr('type')).toEqual('date');
+            expect(scope.form.date.$modelValue instanceof Date).toBeTruthy();
             //
         }));
     });

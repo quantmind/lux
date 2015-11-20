@@ -27,6 +27,9 @@
             showLabels: true,
             novalidate: true,
             //
+            dateTypes: ['date', 'datetime', 'datetime-local'],
+            defaultDatePlaceholder: 'YYYY-MM-DD',
+            //
             formErrorClass: 'form-error',
             FORMKEY: 'm__form',
             useNgFileUpload: true
@@ -212,6 +215,9 @@
                     // lux-codemirror directive
                     if (scope.field.hasOwnProperty('text_edit')) {
                         element.attr('lux-codemirror', scope.field.text_edit);
+                    } else if (formDefaults.dateTypes.indexOf(scope.field.type) > -1) {
+                        // Convert date string to date object
+                        element.attr('format-date', '');
                     } else if (scope.formAttrs.useNgFileUpload && scope.field.type === 'file') {
                         element.attr('ngf-select', '');
                         scope.formProcessor = 'ngFileUpload';
@@ -301,6 +307,11 @@
 
                     // Add model attribute
                     input.attr('ng-model', scope.formModelName + '["' + field.name + '"]');
+
+                    // Add default placeholder to date field if not exist
+                    if (field.type === 'date' && field.placeholder === undefined) {
+                        field.placeholder = formDefaults.defaultDatePlaceholder;
+                    }
 
                     if (!field.showLabels || field.type === 'hidden') {
                         label.addClass('sr-only');
@@ -937,6 +948,22 @@
                         scope.$apply(function () {
                             scope.onchange();
                         });
+                    });
+                }
+            };
+        })
+        //
+        // Format string date to date object
+        .directive('formatDate', function () {
+            return {
+                require: '?ngModel',
+                link: function (scope, elem, attrs, ngModel) {
+                    // All date-related inputs like <input type="date">
+                    // require the model to be a Date object in Angular 1.3+.
+                    ngModel.$formatters.push(function(modelValue){
+                        if (typeof modelValue === 'string' || typeof modelValue === 'number')
+                            return new Date(modelValue);
+                        return modelValue;
                     });
                 }
             };
