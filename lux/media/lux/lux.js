@@ -3956,16 +3956,37 @@ function gridDataProviderWebsocketFactory ($scope) {
             gridMenu: {
                 'create': {
                     title: 'Add',
-                    icon: 'fa fa-plus'
+                    icon: 'fa fa-plus',
+                    // Handle CREATE permission type
+                    permissionType: 'CREATE'
                 },
                 'delete': {
                     title: 'Delete',
-                    icon: 'fa fa-trash'
+                    icon: 'fa fa-trash',
+                    permissionType: 'DELETE'
                 },
                 'columnsVisibility': {
                     title: 'Columns visibility',
                     icon: 'fa fa-eye'
                 }
+            },
+            // Permissions are used to enable/disable grid actions like (CREATE, UPDATE, DELETE).
+            //
+            // To enable permission of given type on menu item we need to specify `permissionType`
+            // e.g. `permissionType: 'CREATE'` on 'create' item will show 'Add' button on the grid.
+            // If the `permissionType` is not specified on item at `gridDefaults.gridMenu` then
+            // this item doesn't handle permissions (is always visible).
+            //
+            // We always expect the permissions object i.e. `permissions: {'CREATE': true, 'DELETE': false, 'UPDATE': true}`.
+            // If some of value is not specified then default is `False` (according to values from `gridDefaults.permissions`)
+            //
+            // We allow to configure permissions from:
+            // * `metadata API` override the grid options
+            // * `grid options`
+            permissions: {
+                CREATE: false,
+                UPDATE: false,
+                DELETE: false
             },
             modal: {
                 delete: {
@@ -4025,7 +4046,7 @@ function gridDataProviderWebsocketFactory ($scope) {
 
             var gridDataProvider;
 
-            function parseColumns(columns, metaFields) {
+            function parseColumns(columns, metaFields, permissions) {
                 var columnDefs = [],
                     column;
 
@@ -4058,7 +4079,10 @@ function gridDataProviderWebsocketFactory ($scope) {
                     }
 
                     if (typeof column.field !== 'undefined' && column.field === metaFields.repr) {
-                        column.cellTemplate = gridDefaults.wrapCell('<a ng-href="{{grid.appScope.objectUrl(row.entity)}}">{{COL_FIELD}}</a>');
+                        if (permissions.UPDATE) {
+                            // If there is an update permission then display link
+                            column.cellTemplate = gridDefaults.wrapCell('<a ng-href="{{grid.appScope.objectUrl(row.entity)}}">{{COL_FIELD}}</a>');
+                        }
                         // Set repr column as the first column
                         columnDefs.splice(0, 0, column);
                     }
@@ -4089,13 +4113,55 @@ function gridDataProviderWebsocketFactory ($scope) {
                 }
             }
 
+            // Return state name (last part of the URL)
+            function getStateName() {
+                return window.location.href.split('/').pop(-1);
+            }
+
+            // Return model name
+            function getModelName() {
+                var stateName = getStateName();
+                return stateName.slice(0, -1);
+            }
+
+            // Updates grid menu
+            function updateGridMenu(scope, gridMenu, gridOptions) {
+                var menu = [],
+                    title, menuItem,
+                    permissions = gridOptions.permissions;
+
+                forEach(gridMenu, function(item, key) {
+                    title = item.title;
+
+                    if (key === 'create') {
+                        title += ' ' + getModelName();
+                    }
+
+                    menuItem = {
+                        title: title,
+                        icon: item.icon,
+                        action: scope[key],
+                        permissionType: item.permissionType || ''
+                    };
+
+                    // If there is an permission to element then shows this item in menu
+                    if (item.hasOwnProperty('permissionType')) {
+                        if (permissions.hasOwnProperty(item.permissionType) && permissions[item.permissionType]) {
+                            menu.push(menuItem);
+                        }
+                    } else {
+                        menu.push(menuItem);
+                    }
+                });
+
+                gridOptions.gridMenuCustomItems = menu;
+            }
+
             // Add menu actions to grid
             function addGridMenu(scope, gridOptions) {
-                var menu = [],
-                    stateName = window.location.href.split('/').pop(-1),
-                    model = stateName.slice(0, -1),
-                    modalScope = scope.$new(true),
-                    modal, title, template;
+                var modalScope = scope.$new(true),
+                    modal, template,
+                    stateName = getStateName();
 
                 scope.create = function($event) {
                     // if location path is available then we use ui-router
@@ -4188,23 +4254,11 @@ function gridDataProviderWebsocketFactory ($scope) {
                     modal = $modal({scope: modalScope, template: template, show: true});
                 };
 
-                forEach(gridDefaults.gridMenu, function(item, key) {
-                    title = item.title;
-
-                    if (key === 'create')
-                        title += ' ' + model;
-
-                    menu.push({
-                        title: title,
-                        icon: item.icon,
-                        action: scope[key]
-                    });
-                });
+                updateGridMenu(scope, gridDefaults.gridMenu, gridOptions);
 
                 extend(gridOptions, {
                     enableGridMenu: true,
                     gridMenuShowHideColumns: false,
-                    gridMenuCustomItems: menu
                 });
             }
 
@@ -4230,8 +4284,11 @@ function gridDataProviderWebsocketFactory ($scope) {
                         id: metadata.id,
                         repr: metadata.repr
                     };
+                    // Overwrite current permissions with permissions from metadata
+                    angular.extend(scope.gridOptions.permissions, metadata.permissions);
 
-                    scope.gridOptions.columnDefs = parseColumns(gridConfig.columns || metadata.columns, scope.gridOptions.metaFields);
+                    updateGridMenu(scope, gridDefaults.gridMenu, scope.gridOptions);
+                    scope.gridOptions.columnDefs = parseColumns(gridConfig.columns || metadata.columns, scope.gridOptions.metaFields, scope.gridOptions.permissions);
                 }
 
                 function onDataReceived(data) {
@@ -4283,7 +4340,6 @@ function gridDataProviderWebsocketFactory ($scope) {
                 );
 
                 gridDataProvider.connect();
-
             };
 
             // Builds grid options
@@ -4341,6 +4397,7 @@ function gridDataProviderWebsocketFactory ($scope) {
                         enableHorizontalScrollbar: gridDefaults.enableHorizontalScrollbar,
                         enableVerticalScrollbar: gridDefaults.enableVerticalScrollbar,
                         rowHeight: gridDefaults.rowHeight,
+                        permissions: angular.extend(gridDefaults.permissions, options.permissions),
                         onRegisterApi: function(gridApi) {
                             require(['lodash'], function(_) {
 

@@ -175,7 +175,7 @@ define(function(require) {
             scope.$digest();
             expect(validators.eq(0).hasClass('ng-hide')).toBe(true);
             expect(validators.eq(1).hasClass('ng-hide')).toBe(false);
-            expect(validators.eq(2).hasClass('ng-hide')).toBe(false);
+            expect(validators.eq(2).hasClass('ng-hide')).toBe(true);
         }));
 
         function createLuxMock(apiMock) {
