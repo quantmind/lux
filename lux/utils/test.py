@@ -177,9 +177,11 @@ class TestMixin:
         from bs4 import BeautifulSoup
         return BeautifulSoup(self.html(response))
 
-    def html(self, response):
+    def html(self, response, status_code=None):
         '''Get html/text content from response
         '''
+        if status_code:
+            self.assertEqual(response.status_code, status_code)
         self.assertEqual(response.content_type,
                          'text/html; charset=utf-8')
         return response.content[0].decode('utf-8')
