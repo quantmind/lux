@@ -1,6 +1,6 @@
 //      Lux Library - v0.3.0
 
-//      Compiled 2015-11-22.
+//      Compiled 2015-11-23.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -961,11 +961,15 @@ function(angular, root) {
                             }
 
                             if (isArray(value)) {
-                                model[key] = [];
-
-                                forEach(value, function(item) {
-                                    model[key].push(item.id);
-                                });
+                                var keyNoArraySuffix = key.split('[]')[0];
+                                if (formScope[formScope.formModelName + 'Type'][keyNoArraySuffix] === 'textarea') {
+                                    model[keyNoArraySuffix] = JSON.stringify(value, null, 4);
+                                } else {
+                                    model[key] = [];
+                                    forEach(value, function(item) {
+                                        model[key].push(item.id || item);
+                                    });
+                                }
                             }
                             else
                                 model[key] = value.id || value;
