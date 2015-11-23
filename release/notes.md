@@ -8,6 +8,7 @@
 
 * Don't prepend ``lux`` to extension loggers
 * Token authentication backend catches all decoding exceptions and raise Http401
+* Store ``exclude_missing`` in form after validation
 
 
 ## Front end

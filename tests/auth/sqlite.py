@@ -454,3 +454,8 @@ class TestSqlite(test.AppTestCase, AuthUtils):
                                              token=token)
         data = self.json(request.response, 200)
         self.assertTrue('groups[]' in data)
+
+    def test_corrupted_token(self):
+        '''Test the response when using a corrupted token
+        '''
+        token = yield from self._token()
