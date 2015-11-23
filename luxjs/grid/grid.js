@@ -133,7 +133,7 @@
                     }
                 },
 
-                // If value is JSON format then return repr or id attribute
+                // If value is in JSON format then return repr or id attribute
                 string: function (column, col, uiGridConstants, gridDefaults) {
                     column.cellTemplate = gridDefaults.wrapCell('{{grid.appScope.getStringOrJSON(COL_FIELD)}}');
                 }
