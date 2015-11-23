@@ -9,4 +9,4 @@ beautifulsoup4
 rethinkdb
 redis
 dulwich
--e git+https://github.com/quantmind/pulsar-odm.git@master#egg=pulsar-odm
+pulsar-odm

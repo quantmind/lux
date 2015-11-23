@@ -17,7 +17,8 @@ class ContactForm(forms.Form):
 
 HtmlContactForm = Layout(ContactForm,
                          Fieldset(all=True, showLabels=False),
-                         Submit('Send'))
+                         Submit('Send'),
+                         resultHandler='enquiry')
 
 
 class ContactRouter(lux.HtmlRouter):

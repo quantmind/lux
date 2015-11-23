@@ -61,7 +61,7 @@ class TextCRUD(TextCRUDBase):
                     form.add_error_message(str(exc))
                     data = form.tojson()
                 else:
-                    data = self.serialise(request, instance)
+                    data = model.serialise(request, instance)
                     request.response.status_code = 201
             else:
                 data = form.tojson()
@@ -70,13 +70,15 @@ class TextCRUD(TextCRUDBase):
 
     @route('_all', response_content_types=('application/json',))
     def all(self, request):
-        return self.collection_response(request, sortby='date:desc')
+        model = self.model(request)
+        return model.collection_response(request, sortby='date:desc')
 
     @route('_links', response_content_types=('application/json',))
     def links(self, request):
-        return self.collection_response(request,
-                                        sortby=['order:desc', 'title:asc'],
-                                        **{'order:gt': 0})
+        model = self.model(request)
+        return model.collection_response(request,
+                                         sortby=['order:desc', 'title:asc'],
+                                         **{'order:gt': 0})
 
     @route('<path:path>', method=('get', 'head', 'post'))
     def read_update(self, request):
@@ -103,9 +105,6 @@ class TextCRUD(TextCRUDBase):
 
         raise PermissionDenied
 
-    def query(self, request, session):
-        return session
-
     def get_content(self, request, path, sha=None):
         model = self.model(request.app)
         try:
@@ -119,16 +118,10 @@ class TextCRUD(TextCRUDBase):
         model = self.model(request.app)
         name = data.get('name') or data['title']
         data['name'] = slugify(name, max_length=SLUG_LENGTH)
-        return model.write(request.cache.user, data, new=True)
+        return model.write(request, request.cache.user, data, new=True)
 
     def update_model(self, request, instance, data):
         pass
-
-    def serialise_model(self, request, data, in_list=False, **kw):
-        if in_list:
-            data.pop('html', None)
-            data.pop('site', None)
-        return data
 
     def render_file(self, request, path='', as_response=False):
         if path.endswith('/'):
@@ -165,12 +158,6 @@ class TextCRUD(TextCRUDBase):
                 return content.raw(request)
 
         raise PermissionDenied
-
-    def _do_sortby(self, request, query, field, direction):
-        return query.sortby(field, direction)
-
-    def _do_filter(self, request, model, query, field, op, value):
-        return query.filter(field, op, value)
 
 
 class TextCMS(TextCRUD):

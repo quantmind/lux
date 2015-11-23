@@ -1,4 +1,5 @@
 import time
+from datetime import datetime, timedelta
 
 from pulsar import ImproperlyConfigured
 from pulsar.utils.pep import to_string
@@ -6,7 +7,7 @@ from pulsar.apps.wsgi import Json
 
 from lux import Parameter, wsgi_request, Http401
 
-from ..views import Authorization
+from ..authviews import Authorization
 
 try:
     import jwt
@@ -15,6 +16,14 @@ except ImportError:     # pragma    nocover
 
 
 class TokenBackendMixin:
+    """Mixin for token and session based authentication back-ends
+    """
+    def session_expiry(self, request):
+        '''Expiry for a session or a token
+        '''
+        session_expiry = request.config['SESSION_EXPIRY']
+        if session_expiry:
+            return datetime.now() + timedelta(seconds=session_expiry)
 
     def api_sections(self, app):
         '''At the authorization router to the api
@@ -38,7 +47,12 @@ class TokenBackendMixin:
         try:
             return jwt.decode(token, request.config['SECRET_KEY'])
         except jwt.ExpiredSignature:
-            request.app.logger.info('JWT token has expired')
+            request.app.logger.warning('JWT token has expired')
+            # In this case we want the client to perform
+            # a new authentication. Raise 401
+            raise Http401('Token')
+        except Exception as exc:
+            request.app.logger.warning(str(exc))
             # In this case we want the client to perform
             # a new authentication. Raise 401
             raise Http401('Token')

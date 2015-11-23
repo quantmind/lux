@@ -2,9 +2,9 @@ import uuid
 
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.orm import joinedload
-from datetime import datetime, timedelta
+from datetime import datetime
 
-from lux import cached
+from lux import cached, Parameter
 from lux.utils.crypt import digest
 from lux.extensions.rest import (PasswordMixin, backends, normalise_email,
                                  AuthenticationError)
@@ -17,13 +17,16 @@ class AuthMixin(PasswordMixin):
     '''Mixin to implement authentication backend based on
     SQLAlchemy models
     '''
+    _config = [Parameter('GENERAL_MAILING_LIST_TOPIC', 'general',
+                         "topic for general mailing list")]
+
     def api_sections(self, app):
         '''At the authorization router to the api
         '''
         yield Authorization()
 
     def get_user(self, request, user_id=None, token_id=None, username=None,
-                 email=None, **kw):
+                 email=None, auth_key=None, **kw):
         '''Securely fetch a user by id, username or email
 
         Returns user or nothing
@@ -37,6 +40,15 @@ class AuthMixin(PasswordMixin):
                 query.update({'last_access': datetime.utcnow()},
                              synchronize_session=False)
                 if not query.count():
+                    return
+
+        if auth_key:
+            with odm.begin() as session:
+                query = session.query(odm.registration)
+                reg = query.get(auth_key)
+                if reg and not reg.confirmed and reg.expiry > datetime.now():
+                    user_id = reg.user_id
+                else:
                     return
 
         with odm.begin() as session:
@@ -147,15 +159,12 @@ class AuthMixin(PasswordMixin):
         session.close()
         return token
 
-    def create_registration(self, request, user, expiry=None, **kw):
+    def create_auth_key(self, request, user, expiry=None, **kw):
         '''Create a registration entry and return the registration id
         '''
         if not expiry:
-            days = request.config['ACCOUNT_ACTIVATION_DAYS']
-            expiry = datetime.now() + timedelta(days=days)
-
+            expiry = request.cache.auth_backend.auth_key_expiry(request)
         odm = request.app.odm()
-
         with odm.begin() as session:
             reg = odm.registration(id=digest(user.username),
                                    user_id=user.id,
@@ -172,6 +181,14 @@ class AuthMixin(PasswordMixin):
             user.password = self.password(password)
             session.add(user)
         return user
+
+    def confirm_auth_key(self, request, key):
+        odm = request.app.odm()
+        with odm.begin() as session:
+            reg = session.query(odm.registration).get(key)
+            if reg:
+                session.delete(reg)
+                return True
 
     @cached(user=True)
     def get_permissions(self, request):

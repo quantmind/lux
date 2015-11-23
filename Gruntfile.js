@@ -8,6 +8,7 @@ module.exports = function (grunt) {
         'angular-ui-grid',
         'angular-mocks',
         'angular-strap',
+        'angular-file-upload',
         'codemirror',
         'angular-touch',
         'lodash'

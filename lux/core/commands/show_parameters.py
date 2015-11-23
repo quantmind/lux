@@ -23,5 +23,5 @@ class Command(lux.Command):
             if ext.meta.config:
                 self.write('\n%s' % ext.meta.name)
                 self.write('#=====================================')
-            for key in sorted(ext.meta.config):
+            for key, value in ext.sorted_config():
                 self.write('%s: %s' % (key, config[key]))
