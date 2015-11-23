@@ -1,6 +1,6 @@
 //      Lux Library - v0.3.0
 
-//      Compiled 2015-11-22.
+//      Compiled 2015-11-23.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -4032,6 +4032,11 @@ function gridDataProviderWebsocketFactory ($scope) {
                             selectOptions: [{ value: 'true', label: 'True' }, { value: 'false', label: 'False'}]
                         };
                     }
+                },
+
+                // If value is JSON format then return repr or id attribute
+                string: function (column, col, uiGridConstants, gridDefaults) {
+                    column.cellTemplate = gridDefaults.wrapCell('{{grid.appScope.getStringOrJSON(COL_FIELD)}}');
                 }
             },
             //
@@ -4357,6 +4362,13 @@ function gridDataProviderWebsocketFactory ($scope) {
 
                 scope.getBooleanFieldIcon = function(COL_FIELD) {
                     return ((COL_FIELD) ? 'fa fa-check-circle text-success' : 'fa fa-check-circle text-danger');
+                };
+
+                scope.getStringOrJSON = function(COL_FIELD) {
+                    if (isObject(COL_FIELD)) {
+                        return COL_FIELD.repr || COL_FIELD.id;
+                    }
+                    return COL_FIELD;
                 };
 
                 scope.clearData = function() {
