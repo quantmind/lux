@@ -17,7 +17,7 @@
     //      formFieldChange: triggered when a form field changes:
     //          arguments: formmodel, field (changed)
     //
-    angular.module('lux.form', ['lux.form.utils'])
+    angular.module('lux.form', ['lux.form.utils', 'lux.form.handlers', 'ngFileUpload', 'lux.form.process'])
         //
         .constant('formDefaults', {
             // Default layout
@@ -27,8 +27,12 @@
             showLabels: true,
             novalidate: true,
             //
+            dateTypes: ['date', 'datetime', 'datetime-local'],
+            defaultDatePlaceholder: 'YYYY-MM-DD',
+            //
             formErrorClass: 'form-error',
-            FORMKEY: 'm__form'
+            FORMKEY: 'm__form',
+            useNgFileUpload: true
         })
         //
         .constant('defaultFormElements', function () {
@@ -74,26 +78,7 @@
         }])
         //
         .run(['$rootScope', '$lux', function (scope, $lux) {
-            var formHandlers = {};
-            $lux.formHandlers = formHandlers;
-
-            formHandlers.reload = function () {
-                $lux.window.location.reload();
-            };
-
-            formHandlers.redirectHome = function (response, scope) {
-                var href = scope.formAttrs.redirectTo || '/';
-                $lux.window.location.href = href;
-            };
-
-            formHandlers.login = function (response, scope) {
-                var target = scope.formAttrs.action,
-                    api = $lux.api(target);
-                if (api)
-                    api.token(response.data.token);
-                $lux.window.location.href = lux.context.POST_LOGIN_URL || lux.context.LOGIN_URL;
-            };
-
+            //
             //  Listen for a Lux form to be available
             //  If it uses the api for posting, register with it
             scope.$on('formReady', function (e, model, formScope) {
@@ -118,7 +103,8 @@
                                   function (log, $http, $document, $templateCache, formDefaults, formElements) {
             //
             var baseAttributes = ['id', 'name', 'title', 'style'],
-                inputAttributes = extendArray([], baseAttributes, ['disabled', 'readonly', 'type', 'value', 'placeholder']),
+                inputAttributes = extendArray([], baseAttributes, ['disabled', 'readonly', 'type', 'value', 'placeholder',
+                                                                  'autocapitalize', 'autocorrect']),
                 textareaAttributes = extendArray([], baseAttributes, ['disabled', 'readonly', 'placeholder', 'rows', 'cols']),
                 buttonAttributes = extendArray([], baseAttributes, ['disabled']),
                 // Don't include action in the form attributes
@@ -227,8 +213,15 @@
                 //
                 addDirectives: function(scope, element) {
                     // lux-codemirror directive
-                    if (scope.field.hasOwnProperty('text_edit'))
+                    if (scope.field.hasOwnProperty('text_edit')) {
                         element.attr('lux-codemirror', scope.field.text_edit);
+                    } else if (formDefaults.dateTypes.indexOf(scope.field.type) > -1) {
+                        // Convert date string to date object
+                        element.attr('format-date', '');
+                    } else if (scope.formAttrs.useNgFileUpload && scope.field.type === 'file') {
+                        element.attr('ngf-select', '');
+                        scope.formProcessor = 'ngFileUpload';
+                    }
                     return element;
                 },
                 //
@@ -314,6 +307,11 @@
 
                     // Add model attribute
                     input.attr('ng-model', scope.formModelName + '["' + field.name + '"]');
+
+                    // Add default placeholder to date field if not exist
+                    if (field.type === 'date' && field.placeholder === undefined) {
+                        field.placeholder = formDefaults.defaultDatePlaceholder;
+                    }
 
                     if (!field.showLabels || field.type === 'hidden') {
                         label.addClass('sr-only');
@@ -455,7 +453,7 @@
                         selectUI.attr('data-remote-options', field['data-remote-options'])
                                 .attr('data-remote-options-id', field['data-remote-options-id'])
                                 .attr('data-remote-options-value', field['data-remote-options-value'])
-                                .attr('data-remote-options-params', field['data-remote-options-params']); 
+                                .attr('data-remote-options-params', field['data-remote-options-params']);
 
                         if (field.multiple)
                             match.html('{{$item.repr || $item.name || $item.id}}');
@@ -580,21 +578,23 @@
                     });
 
                     // Add the invalid handler if not available
-                    var errors = p.children().length;
-                    if (errors === (field.required ? 1 : 0)) {
-                        var nameError = '$invalid';
-                        if (errors)
-                            nameError += ' && !' + [scope.formName, field.name, '$error.required'].join('.');
-                        p.append(this.fieldErrorElement(scope, nameError, self.errorMessage(scope, 'invalid')));
-                    }
+                    var errors = p.children().length,
+                        nameError = '$invalid';
+                    if (errors)
+                        nameError += ' && !' + joinField(scope.formName, field.name, '$error.required');
+                        // Show only if server side errors don't exist
+                        nameError += ' && !formErrors.' + field.name;
+                    p.append(this.fieldErrorElement(scope, nameError, self.errorMessage(scope, 'invalid')));
 
                     // Add the invalid handler for server side errors
                     var name = '$invalid';
                         name += ' && !' + joinField(scope.formName, field.name, '$error.required');
-                        p.append(
-                            this.fieldErrorElement(scope, name, self.errorMessage(scope, 'invalid'))
-                            .html('{{formErrors["' + field.name + '"]}}')
-                        );
+                        // Show only if server side errors exists
+                        name += ' && formErrors.' + field.name;
+                    p.append(
+                        this.fieldErrorElement(scope, name, self.errorMessage(scope, 'invalid'))
+                        .html('{{formErrors["' + field.name + '"]}}')
+                    );
 
                     return element.append(p);
                 },
@@ -806,6 +806,10 @@
                     };
 
                     scope.fireFieldChange = function (field) {
+                        // Delete previous field error from server side
+                        if (scope.formErrors[field] !== undefined) {
+                            delete scope.formErrors[field];
+                        }
                         // Triggered every time a form field changes
                         scope.$broadcast('fieldChange', formmodel, field);
                         scope.$emit('formFieldChange', formmodel, field);
@@ -944,6 +948,22 @@
                         scope.$apply(function () {
                             scope.onchange();
                         });
+                    });
+                }
+            };
+        })
+        //
+        // Format string date to date object
+        .directive('formatDate', function () {
+            return {
+                require: '?ngModel',
+                link: function (scope, elem, attrs, ngModel) {
+                    // All date-related inputs like <input type="date">
+                    // require the model to be a Date object in Angular 1.3+.
+                    ngModel.$formatters.push(function(modelValue){
+                        if (typeof modelValue === 'string' || typeof modelValue === 'number')
+                            return new Date(modelValue);
+                        return modelValue;
                     });
                 }
             };

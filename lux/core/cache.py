@@ -110,8 +110,8 @@ class RedisCache(Cache):
     def hmget(self, key, *fields):
         return self._wait(self.client.hmset(key, *fields))
 
-    def lock(self, name, timeout=None):
-        return self._wait(self.client.lock(name, timeout=timeout))
+    def lock(self, name, **kwargs):
+        return self.client.lock(name, **kwargs)
 
     def _wait(self, value):
         return value

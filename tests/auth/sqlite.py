@@ -228,7 +228,8 @@ class TestSqlite(test.AppTestCase, AuthUtils):
                                               token=token)
 
         self.assertValidationError(request.response, 'name',
-                                   'abcd not available')
+                                   'Only lower case, alphanumeric characters '
+                                   'and hyphens are allowed')
 
     def test_login_fail(self):
         data = {'username': 'jdshvsjhvcsd',

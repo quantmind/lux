@@ -21,9 +21,9 @@ logger = logging.getLogger('lux.test')
 
 
 def randomname(prefix=None, len=8):
-    '''Generate a random name with a prefix (default to ``luxtest_``)
+    '''Generate a random name with a prefix (default to ``luxtest-``)
     '''
-    prefix = prefix if prefix is not None else 'luxtest_'
+    prefix = prefix if prefix is not None else 'luxtest-'
     name = random_string(min_len=len, max_len=len,
                          characters=string.ascii_letters)
     return ('%s%s' % (prefix, name)).lower()
@@ -66,7 +66,6 @@ def test_app(test, config_file=None, argv=None, **params):
         argv.append('--log-level')
         levels = test.cfg.loglevel if hasattr(test, 'cfg') else ['none']
         argv.extend(levels)
-
     app = lux.App(config_file, argv=argv, **kwargs).setup()
     #
     # Data mapper
@@ -178,9 +177,11 @@ class TestMixin:
         from bs4 import BeautifulSoup
         return BeautifulSoup(self.html(response))
 
-    def html(self, response):
+    def html(self, response, status_code=None):
         '''Get html/text content from response
         '''
+        if status_code:
+            self.assertEqual(response.status_code, status_code)
         self.assertEqual(response.content_type,
                          'text/html; charset=utf-8')
         return response.content[0].decode('utf-8')

@@ -182,9 +182,6 @@ class Extension(metaclass=ExtensionType):
         middleware'''
         pass
 
-    def has_permission(self, request, target, level):
-        return True
-
     def setup(self, config, module, params, opts=None):
         '''Internal method which prepare the extension for usage.
         '''
@@ -227,6 +224,10 @@ class Extension(metaclass=ExtensionType):
     def check(self, request, data):
         pass
 
+    def sorted_config(self):
+        for key in sorted(self.meta.config):
+            yield key, self.meta.config[key]
+
     def __repr__(self):
         return self.meta.__repr__()
 
@@ -235,7 +236,7 @@ class Extension(metaclass=ExtensionType):
 
     def _setup_logger(self, config, module, opts):
         '''Called by :meth:`setup` method to setup the :attr:`logger`.'''
-        self.logger = logging.getLogger('lux.%s' % self.meta.name)
+        self.logger = logging.getLogger(self.meta.name)
 
 
 class EventHandler:
@@ -249,8 +250,8 @@ class EventHandler:
         return '%s.%s' % (self.extension, self.name)
     __str__ = __repr__
 
-    def __call__(self, *args):
-        return getattr(self.extension, self.name)(*args)
+    def __call__(self, *args, **kwargs):
+        return getattr(self.extension, self.name)(*args, **kwargs)
 
 
 class EventMixin:
@@ -278,9 +279,9 @@ class EventMixin:
             if hasattr(extension, name):
                 handlers.append(EventHandler(extension, name))
 
-    def fire(self, event, *args):
+    def fire(self, event, *args, **kwargs):
         '''Fire an ``event``.'''
         handlers = self.events.get(event) if self.events else None
         if handlers:
             for handler in handlers:
-                handler(self, *args)
+                handler(self, *args, **kwargs)

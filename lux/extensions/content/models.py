@@ -62,11 +62,15 @@ class Content(rest.RestModel):
             path = name
         if path:
             self.path = os.path.join(self.path, path)
+        self.path = self.path
         columns = columns or COLUMNS[:]
         super().__init__(name, columns=columns, **kwargs)
 
     def session(self, request):
         return Query(request, self)
+
+    def query(self, request, session, *filters):
+        return session
 
     def get_target(self, request, **extra_data):
         '''Get a target for a form
@@ -78,14 +82,15 @@ class Content(rest.RestModel):
         target.update(**extra_data)
         return target
 
-    def write(self, user, data, new=False, message=None):
+    def write(self, request, user, data, new=False, message=None):
         '''Write a file into the repository
 
         When ``new`` the file must not exist, when not
         ``new``, the file must exist.
         '''
         name = data['name']
-        filepath = os.path.join(self.path, self._format_filename(name))
+        path = self.path
+        filepath = os.path.join(path, self._format_filename(name))
         if new:
             if not message:
                 message = "Created %s" % name
@@ -118,7 +123,7 @@ class Content(rest.RestModel):
                     filename=filename,
                     name=name)
 
-    def delete(self, user, data, message=None):
+    def delete(self, request, user, data, message=None):
         '''Delete file(s) from repository
         '''
         files_to_del = data.get('files')
@@ -129,9 +134,10 @@ class Content(rest.RestModel):
             files_to_del = [files_to_del]
 
         filenames = []
+        path = self.path
 
         for file in files_to_del:
-            filepath = os.path.join(self.path, self._format_filename(file))
+            filepath = os.path.join(path, self._format_filename(file))
             # remove only files that really exist and not dirs
             if os.path.exists(filepath) and os.path.isfile(filepath):
                 # remove from disk
@@ -162,7 +168,7 @@ class Content(rest.RestModel):
         try:
             src, name, content = self._content(request, name)
             reader = get_reader(request.app, src)
-            path = self._path(name)
+            path = self._path(request, name)
             return reader.process(content, path, src=src,
                                   meta=self.content_meta)
         except IOError:
@@ -171,16 +177,24 @@ class Content(rest.RestModel):
     def all(self, request):
         '''Return list of all files stored in repo
         '''
-        files = glob.glob(os.path.join(self.path, '*.%s' % self.ext))
+        path = self.path
+        files = glob.glob(os.path.join(path, '*.%s' % self.ext))
         for file in files:
-            filename = get_rel_dir(file, self.path)
+            filename = get_rel_dir(file, path)
             yield self.read(request, filename).json(request)
+
+    def serialise_model(self, request, data, in_list=False, **kw):
+        if in_list:
+            data.pop('html', None)
+            data.pop('site', None)
+        return data
 
     def _content(self, request, name):
         '''Read content from file in the repository
         '''
         name = self._format_filename(name)
-        src = os.path.join(self.path, name)
+        path = self.path
+        src = os.path.join(path, name)
         # use dulwich GitFile to obeys the git file locking protocol
         with GitFile(src, 'rb') as f:
             content = f.read()
@@ -201,7 +215,7 @@ class Content(rest.RestModel):
                 filename = '%s%s' % (filename, ext)
         return filename
 
-    def _path(self, path):
+    def _path(self, request, path):
         '''Append extension to file name
         '''
         return remove_double_slash('/%s/%s' % (self.url, path))
@@ -209,6 +223,12 @@ class Content(rest.RestModel):
     def content(self, data):
         body = data['body']
         return body
+
+    def _do_sortby(self, request, query, field, direction):
+        return query.sortby(field, direction)
+
+    def _do_filter(self, request, query, field, op, value):
+        return query.filter(field, op, value)
 
 
 class Query:

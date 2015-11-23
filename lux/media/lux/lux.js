@@ -1,6 +1,6 @@
-//      Lux Library - v0.2.0
+//      Lux Library - v0.3.0
 
-//      Compiled 2015-10-19.
+//      Compiled 2015-11-22.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -623,6 +623,52 @@ function(angular, root) {
             return request.on;
         };
 
+        /**
+         * Populates $lux.apiUrls for an API URL.
+         *
+         * @returns      promise
+         */
+        api.populateApiUrls = function() {
+            $lux.log.info('Fetching api info');
+            return $lux.http.get(url).then(function (resp) {
+                $lux.apiUrls[url] = resp.data;
+                return resp.data;
+            });
+        };
+
+        /**
+         * Gets API endpoint URLs from root URL
+         *
+         * @returns     promise, resolved when API URLs available
+         */
+        api.getApiNames = function() {
+            var promise, deferred;
+            if (!angular.isObject($lux.apiUrls[url])) {
+                promise = api.populateApiUrls();
+            } else {
+                deferred = $lux.q.defer();
+                promise = deferred.promise;
+                deferred.resolve($lux.apiUrls[url]);
+            }
+            return promise;
+        };
+
+        /**
+         * Gets the URL for an API target
+         *
+         * @param target
+         * @returns     promise, resolved when the URL is available
+         */
+        api.getUrlForTarget = function(target) {
+            return api.getApiNames().then(function(apiUrls) {
+                var url = apiUrls[target.name];
+                if (target.path) {
+                    url = joinUrl(url, target.path);
+                }
+                return url;
+            });
+        };
+
         //
         //  Execute an API call for a given request
         //  This method is hardly used directly,
@@ -644,9 +690,7 @@ function(angular, root) {
                     //
                 } else {
                     // Fetch the api urls
-                    $lux.log.info('Fetching api info');
-                    return $lux.http.get(api.baseUrl()).then(function (resp) {
-                        $lux.apiUrls[url] = resp.data;
+                    return api.populateApiUrls(url).then(function() {
                         api.call(request);
                     }, request.error);
                     //
@@ -872,7 +916,11 @@ function(angular, root) {
                     path: lux.context.LOGOUT_URL
                 }).then(function () {
                     scope.$emit('after-logout');
-                    $lux.window.location.reload();
+                    if (lux.context.POST_LOGOUT_URL) {
+                        $lux.window.location.href = lux.context.POST_LOGOUT_URL;
+                    } else {
+                        $lux.window.location.reload();
+                    }
                 }, function (response) {
                     $lux.messages.error('Error while logging out');
                 });
@@ -907,7 +955,10 @@ function(angular, root) {
                         forEach(data, function (value, key) {
                             // TODO: do we need a callback for JSON fields?
                             // or shall we leave it here?
-                            if (isObject(value)) value = JSON.stringify(value, null, 4);
+
+                            if (formScope[formScope.formModelName + 'Type'][key] === 'textarea' && isObject(value)) {
+                                value = JSON.stringify(value, null, 4);
+                            }
 
                             if (isArray(value)) {
                                 model[key] = [];
@@ -917,7 +968,7 @@ function(angular, root) {
                                 });
                             }
                             else
-                                model[key] = value;
+                                model[key] = value.id || value;
                         });
                     });
                 }
@@ -2178,7 +2229,7 @@ angular.module('lux.cms.core', [])
     //      formFieldChange: triggered when a form field changes:
     //          arguments: formmodel, field (changed)
     //
-    angular.module('lux.form', ['lux.form.utils'])
+    angular.module('lux.form', ['lux.form.utils', 'lux.form.handlers', 'ngFileUpload', 'lux.form.process'])
         //
         .constant('formDefaults', {
             // Default layout
@@ -2188,8 +2239,12 @@ angular.module('lux.cms.core', [])
             showLabels: true,
             novalidate: true,
             //
+            dateTypes: ['date', 'datetime', 'datetime-local'],
+            defaultDatePlaceholder: 'YYYY-MM-DD',
+            //
             formErrorClass: 'form-error',
-            FORMKEY: 'm__form'
+            FORMKEY: 'm__form',
+            useNgFileUpload: true
         })
         //
         .constant('defaultFormElements', function () {
@@ -2235,27 +2290,7 @@ angular.module('lux.cms.core', [])
         }])
         //
         .run(['$rootScope', '$lux', function (scope, $lux) {
-            var formHandlers = {};
-            $lux.formHandlers = formHandlers;
-
-            formHandlers.reload = function () {
-                $lux.window.location.reload();
-            };
-
-            formHandlers.redirectHome = function (response, scope) {
-                var href = scope.formAttrs.redirectTo || '/';
-                $lux.window.location.href = href;
-                $lux.window.location.reload();
-            };
-
-            formHandlers.login = function (response, scope) {
-                var target = scope.formAttrs.action,
-                    api = $lux.api(target);
-                if (api)
-                    api.token(response.data.token);
-                $lux.window.location.reload();
-            };
-
+            //
             //  Listen for a Lux form to be available
             //  If it uses the api for posting, register with it
             scope.$on('formReady', function (e, model, formScope) {
@@ -2280,7 +2315,8 @@ angular.module('lux.cms.core', [])
                                   function (log, $http, $document, $templateCache, formDefaults, formElements) {
             //
             var baseAttributes = ['id', 'name', 'title', 'style'],
-                inputAttributes = extendArray([], baseAttributes, ['disabled', 'readonly', 'type', 'value', 'placeholder']),
+                inputAttributes = extendArray([], baseAttributes, ['disabled', 'readonly', 'type', 'value', 'placeholder',
+                                                                  'autocapitalize', 'autocorrect']),
                 textareaAttributes = extendArray([], baseAttributes, ['disabled', 'readonly', 'placeholder', 'rows', 'cols']),
                 buttonAttributes = extendArray([], baseAttributes, ['disabled']),
                 // Don't include action in the form attributes
@@ -2315,7 +2351,8 @@ angular.module('lux.cms.core', [])
                         thisField = scope.field,
                         tc = thisField.type.split('.'),
                         info = elements[tc.splice(0, 1)[0]],
-                        renderer;
+                        renderer,
+                        fieldType;
 
                     scope.extraClasses = tc.join(' ');
                     scope.info = info;
@@ -2323,12 +2360,18 @@ angular.module('lux.cms.core', [])
                     if (info) {
                         // Pick the renderer by checking `type`
                         if (info.hasOwnProperty('type'))
-                            renderer = this[info.type];
+                            fieldType = info.type;
 
                         // If no element type, use the `element`
                         if (!renderer)
-                            renderer = this[info.element];
+                            fieldType = info.element;
                     }
+
+                    renderer = this[fieldType];
+
+                    var typeConfig = scope.formModelName + 'Type';
+                    scope[typeConfig] = scope[typeConfig] || {};
+                    scope[typeConfig][thisField.name] = fieldType;
 
                     if (!renderer)
                         renderer = this.renderNotElements;
@@ -2382,8 +2425,15 @@ angular.module('lux.cms.core', [])
                 //
                 addDirectives: function(scope, element) {
                     // lux-codemirror directive
-                    if (scope.field.hasOwnProperty('text_edit'))
+                    if (scope.field.hasOwnProperty('text_edit')) {
                         element.attr('lux-codemirror', scope.field.text_edit);
+                    } else if (formDefaults.dateTypes.indexOf(scope.field.type) > -1) {
+                        // Convert date string to date object
+                        element.attr('format-date', '');
+                    } else if (scope.formAttrs.useNgFileUpload && scope.field.type === 'file') {
+                        element.attr('ngf-select', '');
+                        scope.formProcessor = 'ngFileUpload';
+                    }
                     return element;
                 },
                 //
@@ -2469,6 +2519,11 @@ angular.module('lux.cms.core', [])
 
                     // Add model attribute
                     input.attr('ng-model', scope.formModelName + '["' + field.name + '"]');
+
+                    // Add default placeholder to date field if not exist
+                    if (field.type === 'date' && field.placeholder === undefined) {
+                        field.placeholder = formDefaults.defaultDatePlaceholder;
+                    }
 
                     if (!field.showLabels || field.type === 'hidden') {
                         label.addClass('sr-only');
@@ -2610,7 +2665,7 @@ angular.module('lux.cms.core', [])
                         selectUI.attr('data-remote-options', field['data-remote-options'])
                                 .attr('data-remote-options-id', field['data-remote-options-id'])
                                 .attr('data-remote-options-value', field['data-remote-options-value'])
-                                .attr('data-remote-options-params', field['data-remote-options-params']); 
+                                .attr('data-remote-options-params', field['data-remote-options-params']);
 
                         if (field.multiple)
                             match.html('{{$item.repr || $item.name || $item.id}}');
@@ -2735,21 +2790,23 @@ angular.module('lux.cms.core', [])
                     });
 
                     // Add the invalid handler if not available
-                    var errors = p.children().length;
-                    if (errors === (field.required ? 1 : 0)) {
-                        var nameError = '$invalid';
-                        if (errors)
-                            nameError += ' && !' + [scope.formName, field.name, '$error.required'].join('.');
-                        p.append(this.fieldErrorElement(scope, nameError, self.errorMessage(scope, 'invalid')));
-                    }
+                    var errors = p.children().length,
+                        nameError = '$invalid';
+                    if (errors)
+                        nameError += ' && !' + joinField(scope.formName, field.name, '$error.required');
+                        // Show only if server side errors don't exist
+                        nameError += ' && !formErrors.' + field.name;
+                    p.append(this.fieldErrorElement(scope, nameError, self.errorMessage(scope, 'invalid')));
 
                     // Add the invalid handler for server side errors
                     var name = '$invalid';
                         name += ' && !' + joinField(scope.formName, field.name, '$error.required');
-                        p.append(
-                            this.fieldErrorElement(scope, name, self.errorMessage(scope, 'invalid'))
-                            .html('{{formErrors["' + field.name + '"]}}')
-                        );
+                        // Show only if server side errors exists
+                        name += ' && formErrors.' + field.name;
+                    p.append(
+                        this.fieldErrorElement(scope, name, self.errorMessage(scope, 'invalid'))
+                        .html('{{formErrors["' + field.name + '"]}}')
+                    );
 
                     return element.append(p);
                 },
@@ -2961,6 +3018,10 @@ angular.module('lux.cms.core', [])
                     };
 
                     scope.fireFieldChange = function (field) {
+                        // Delete previous field error from server side
+                        if (scope.formErrors[field] !== undefined) {
+                            delete scope.formErrors[field];
+                        }
                         // Triggered every time a form field changes
                         scope.$broadcast('fieldChange', formmodel, field);
                         scope.$emit('formFieldChange', formmodel, field);
@@ -3102,120 +3163,220 @@ angular.module('lux.cms.core', [])
                     });
                 }
             };
+        })
+        //
+        // Format string date to date object
+        .directive('formatDate', function () {
+            return {
+                require: '?ngModel',
+                link: function (scope, elem, attrs, ngModel) {
+                    // All date-related inputs like <input type="date">
+                    // require the model to be a Date object in Angular 1.3+.
+                    ngModel.$formatters.push(function(modelValue){
+                        if (typeof modelValue === 'string' || typeof modelValue === 'number')
+                            return new Date(modelValue);
+                        return modelValue;
+                    });
+                }
+            };
         });
 
-    //
-    function joinField (model, name, extra) {
-        return model + '["' + name + '"].' + extra;
-    }
 
-    //
-    //	Form processor
-    //	=========================
-    //
-    //	Default Form processing function
-    // 	If a submit element (input.submit or button) does not specify
-    // 	a ``click`` entry, this function is used
-    //
-    //  Post Result
-    //  -------------------
-    //
-    //  When a form is processed succesfully, this method will check if the
-    //  ``formAttrs`` object contains a ``resultHandler`` parameter which should be
-    //  a string.
-    //
-    //  In the event the ``resultHandler`` exists,
-    //  the ``$lux.formHandlers`` object is checked if it contains a function
-    //  at the ``resultHandler`` value. If it does, the function is called.
-    lux.processForm = function (e) {
 
-        e.preventDefault();
-        e.stopPropagation();
+angular.module('lux.form.handlers', ['lux.services'])
 
-        var scope = this,
-            $lux = scope.$lux,
-            form = this[this.formName],
-            model = this[this.formModelName],
-            attrs = this.formAttrs,
-            target = attrs.action,
-            FORMKEY = scope.formAttrs.FORMKEY,
-            method = attrs.method || 'post',
-            promise,
-            api;
+    .run(['$lux', function ($lux) {
+        var formHandlers = {};
+        $lux.formHandlers = formHandlers;
+
+        formHandlers.reload = function () {
+            $lux.window.location.reload();
+        };
+
+        formHandlers.redirectHome = function (response, scope) {
+            var href = scope.formAttrs.redirectTo || '/';
+            $lux.window.location.href = href;
+        };
+
+        // response handler for login form
+        formHandlers.login = function (response, scope) {
+            var target = scope.formAttrs.action,
+                api = $lux.api(target);
+            if (api)
+                api.token(response.data.token);
+            $lux.window.location.href = lux.context.POST_LOGIN_URL || lux.context.LOGIN_URL;
+        };
+
         //
-        // Flag the form as submitted
-        form.submitted = true;
-        if (form.$invalid) return;
-
-        // Get the api information if target is an object
-        //	target
-        //		- name:	api name
-        //		- target: api target
-        if (isObject(target)) api = $lux.api(target);
-
-        this.formMessages = {};
-        //
-        if (api) {
-            promise = api.request(method, target, model);
-        } else if (target) {
-            var enctype = attrs.enctype || 'application/json',
-                ct = enctype.split(';')[0],
-                options = {
-                    url: target,
-                    method: attrs.method || 'POST',
-                    data: model,
-                    transformRequest: $lux.formData(ct),
-                };
-            // Let the browser choose the content type
-            if (ct === 'application/x-www-form-urlencoded' || ct === 'multipart/form-data') {
-                options.headers = {
-                    'content-type': undefined
-                };
-            } else {
-                options.headers = {
-                    'content-type': ct
-                };
+        formHandlers.passwordRecovery = function (response, scope) {
+            var email = response.data.email;
+            if (email) {
+                var text = "We have sent an email to <strong>" + email + "</strong>. Please follow the instructions to change your password.";
+                $lux.messages.success(text);
             }
-            promise = $lux.http(options);
-        } else {
-            $lux.log.error('Could not process form. No target or api');
-            return;
-        }
-        //
-        promise.then(function (response) {
-                var data = response.data;
-                var hookName = scope.formAttrs.resultHandler;
-                var hook = hookName && $lux.formHandlers[hookName];
-                if (hook) {
-                    hook(response, scope);
-                } else if (data.messages) {
-                    scope.addMessages(data.messages);
-                } else if (api) {
-                    // Created
-                    if (response.status === 201) {
-                        scope.formMessages[FORMKEY] = [{message: 'Successfully created'}];
-                    } else {
-                        scope.formMessages[FORMKEY] = [{message: 'Successfully updated'}];
-                    }
-                }
-            },
-            function (response) {
-                var data = response.data || {},
-                    status = response.status,
-                    messages = data.errors,
-                    msg;
-                if (!messages) {
-                    msg = data.message;
-                    if (!msg) {
-                        status = status || data.status || 501;
-                        msg = 'Response error (' + data.status + ')';
-                    }
-                    messages = [{message: msg}];
-                }
-                scope.addMessages(messages, 'error');
-            });
-    };
+            else
+                $lux.messages.error("Could not find that email");
+        };
 
+        //
+        formHandlers.passwordChanged = function (response, scope) {
+            if (response.data.success) {
+                var text = 'Password succesfully changed. You can now <a title="login" href="' + lux.context.LOGIN_URL + '">login</a> again.';
+                $lux.messages.success(text);
+            } else
+                $lux.messages.error('Could not change password');
+        };
+
+        formHandlers.enquiry = function (response, scope) {
+            if (response.data.success) {
+                var text = 'Thank you for your feedback!';
+                $lux.messages.success(text);
+            } else
+                $lux.messages.error('Feedback form error');
+        };
+
+    }]);
+
+//
+function joinField(model, name, extra) {
+    return model + '["' + name + '"].' + extra;
+}
+
+angular.module('lux.form.process', ['ngFileUpload'])
+    .run(['$lux', 'Upload', function ($lux, Upload) {
+
+        //
+        //	Form processor
+        //	=========================
+        //
+        //	Default Form processing function
+        // 	If a submit element (input.submit or button) does not specify
+        // 	a ``click`` entry, this function is used
+        //
+        //  Post Result
+        //  -------------------
+        //
+        //  When a form is processed succesfully, this method will check if the
+        //  ``formAttrs`` object contains a ``resultHandler`` parameter which should be
+        //  a string.
+        //
+        //  In the event the ``resultHandler`` exists,
+        //  the ``$lux.formHandlers`` object is checked if it contains a function
+        //  at the ``resultHandler`` value. If it does, the function is called.
+        lux.processForm = function (e) {
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            var scope = this,
+                $lux = scope.$lux,
+                form = this[this.formName],
+                model = this[this.formModelName],
+                attrs = this.formAttrs,
+                target = attrs.action,
+                FORMKEY = scope.formAttrs.FORMKEY,
+                method = attrs.method || 'post',
+                uploadHeaders = {},
+                promise,
+                api,
+                uploadUrl,
+                deferred;
+            //
+            // Flag the form as submitted
+            form.submitted = true;
+            if (form.$invalid) return;
+
+            // Get the api information if target is an object
+            //	target
+            //		- name:	api name
+            //		- target: api target
+            if (isObject(target)) api = $lux.api(target);
+
+            this.formMessages = {};
+            //
+            if (scope.formProcessor === 'ngFileUpload') {
+                if (api) {
+                    promise = api.getUrlForTarget(target).then(function(url) {
+                        uploadUrl = url;
+                        uploadHeaders.Authorization = 'bearer ' + api.token();
+                    });
+                } else {
+                    deferred = $lux.q.defer();
+                    uploadUrl = target;
+                    deferred.resolve();
+                    promise = deferred.promise;
+                }
+                promise = promise.then(function() {
+                    return Upload.upload({
+                        url: uploadUrl,
+                        headers: uploadHeaders,
+                        data: model
+                    });
+                });
+            } else if (api) {
+                promise = api.request(method, target, model);
+            } else if (target) {
+                var enctype = attrs.enctype || 'application/json',
+                    ct = enctype.split(';')[0],
+                    options = {
+                        url: target,
+                        method: attrs.method || 'POST',
+                        data: model,
+                        transformRequest: $lux.formData(ct)
+                    };
+                // Let the browser choose the content type
+                if (ct === 'application/x-www-form-urlencoded' || ct === 'multipart/form-data') {
+                    options.headers = {
+                        'content-type': undefined
+                    };
+                } else {
+                    options.headers = {
+                        'content-type': ct
+                    };
+                }
+                promise = $lux.http(options);
+            } else {
+                $lux.log.error('Could not process form. No target or api');
+                return;
+            }
+            //
+            promise.then(function (response) {
+                    var data = response.data;
+                    var hookName = scope.formAttrs.resultHandler;
+                    var hook = hookName && $lux.formHandlers[hookName];
+                    if (hook) {
+                        hook(response, scope);
+                    } else if (data.messages) {
+                        scope.addMessages(data.messages);
+                    } else if (api) {
+                        // Created
+                        var message = data.message;
+                        if (!message) {
+                            if (response.status === 201)
+                                message = 'Successfully created';
+                            else
+                                message = 'Successfully updated';
+                        }
+                        $lux.messages.info(message);
+                    }
+                },
+                function (response) {
+                    var data = response.data || {},
+                        status = response.status,
+                        messages = data.errors,
+                        msg;
+                    if (!messages) {
+                        msg = data.message;
+                        if (!msg) {
+                            status = status || data.status || 501;
+                            msg = 'Response error (' + data.status + ')';
+                        }
+                        messages = [{message: msg}];
+                    }
+                    scope.addMessages(messages, 'error');
+                });
+        };
+    }]);
 /**
  * Created by Reupen on 02/06/2015.
  */
@@ -3360,7 +3521,7 @@ angular.module('lux.form.utils', ['lux.services'])
     //                luxMessage.info('info message');
     //
     //            }])
-    angular.module('lux.message', ['lux.services', 'templates-message'])
+    angular.module('lux.message', ['lux.services', 'templates-message', 'ngSanitize'])
         //
         //  Service for messages
         //
@@ -3756,7 +3917,7 @@ function gridDataProviderWebsocketFactory ($scope) {
         };
     }
 
-    angular.module('lux.grid', ['lux.services', 'lux.grid.dataProviderFactory', 'templates-grid', 'ngTouch', 'ui.grid',
+    angular.module('lux.grid', ['lux.services', 'lux.grid.dataProviderFactory', 'templates-grid', 'ui.grid',
                                 'ui.grid.pagination', 'ui.grid.selection', 'ui.grid.autoResize', 'ui.grid.resizeColumns'])
         //
         .constant('gridDefaults', {
@@ -3795,16 +3956,37 @@ function gridDataProviderWebsocketFactory ($scope) {
             gridMenu: {
                 'create': {
                     title: 'Add',
-                    icon: 'fa fa-plus'
+                    icon: 'fa fa-plus',
+                    // Handle CREATE permission type
+                    permissionType: 'CREATE'
                 },
                 'delete': {
                     title: 'Delete',
-                    icon: 'fa fa-trash'
+                    icon: 'fa fa-trash',
+                    permissionType: 'DELETE'
                 },
                 'columnsVisibility': {
                     title: 'Columns visibility',
                     icon: 'fa fa-eye'
                 }
+            },
+            // Permissions are used to enable/disable grid actions like (CREATE, UPDATE, DELETE).
+            //
+            // To enable permission of given type on menu item we need to specify `permissionType`
+            // e.g. `permissionType: 'CREATE'` on 'create' item will show 'Add' button on the grid.
+            // If the `permissionType` is not specified on item at `gridDefaults.gridMenu` then
+            // this item doesn't handle permissions (is always visible).
+            //
+            // We always expect the permissions object i.e. `permissions: {'CREATE': true, 'DELETE': false, 'UPDATE': true}`.
+            // If some of value is not specified then default is `False` (according to values from `gridDefaults.permissions`)
+            //
+            // We allow to configure permissions from:
+            // * `metadata API` override the grid options
+            // * `grid options`
+            permissions: {
+                CREATE: false,
+                UPDATE: false,
+                DELETE: false
             },
             modal: {
                 delete: {
@@ -3864,7 +4046,7 @@ function gridDataProviderWebsocketFactory ($scope) {
 
             var gridDataProvider;
 
-            function parseColumns(columns, metaFields) {
+            function parseColumns(columns, metaFields, permissions) {
                 var columnDefs = [],
                     column;
 
@@ -3897,7 +4079,10 @@ function gridDataProviderWebsocketFactory ($scope) {
                     }
 
                     if (typeof column.field !== 'undefined' && column.field === metaFields.repr) {
-                        column.cellTemplate = gridDefaults.wrapCell('<a ng-href="{{grid.appScope.objectUrl(row.entity)}}">{{COL_FIELD}}</a>');
+                        if (permissions.UPDATE) {
+                            // If there is an update permission then display link
+                            column.cellTemplate = gridDefaults.wrapCell('<a ng-href="{{grid.appScope.objectUrl(row.entity)}}">{{COL_FIELD}}</a>');
+                        }
                         // Set repr column as the first column
                         columnDefs.splice(0, 0, column);
                     }
@@ -3928,13 +4113,55 @@ function gridDataProviderWebsocketFactory ($scope) {
                 }
             }
 
+            // Return state name (last part of the URL)
+            function getStateName() {
+                return window.location.href.split('/').pop(-1);
+            }
+
+            // Return model name
+            function getModelName() {
+                var stateName = getStateName();
+                return stateName.slice(0, -1);
+            }
+
+            // Updates grid menu
+            function updateGridMenu(scope, gridMenu, gridOptions) {
+                var menu = [],
+                    title, menuItem,
+                    permissions = gridOptions.permissions;
+
+                forEach(gridMenu, function(item, key) {
+                    title = item.title;
+
+                    if (key === 'create') {
+                        title += ' ' + getModelName();
+                    }
+
+                    menuItem = {
+                        title: title,
+                        icon: item.icon,
+                        action: scope[key],
+                        permissionType: item.permissionType || ''
+                    };
+
+                    // If there is an permission to element then shows this item in menu
+                    if (item.hasOwnProperty('permissionType')) {
+                        if (permissions.hasOwnProperty(item.permissionType) && permissions[item.permissionType]) {
+                            menu.push(menuItem);
+                        }
+                    } else {
+                        menu.push(menuItem);
+                    }
+                });
+
+                gridOptions.gridMenuCustomItems = menu;
+            }
+
             // Add menu actions to grid
             function addGridMenu(scope, gridOptions) {
-                var menu = [],
-                    stateName = window.location.href.split('/').pop(-1),
-                    model = stateName.slice(0, -1),
-                    modalScope = scope.$new(true),
-                    modal, title, template;
+                var modalScope = scope.$new(true),
+                    modal, template,
+                    stateName = getStateName();
 
                 scope.create = function($event) {
                     // if location path is available then we use ui-router
@@ -4027,23 +4254,11 @@ function gridDataProviderWebsocketFactory ($scope) {
                     modal = $modal({scope: modalScope, template: template, show: true});
                 };
 
-                forEach(gridDefaults.gridMenu, function(item, key) {
-                    title = item.title;
-
-                    if (key === 'create')
-                        title += ' ' + model;
-
-                    menu.push({
-                        title: title,
-                        icon: item.icon,
-                        action: scope[key]
-                    });
-                });
+                updateGridMenu(scope, gridDefaults.gridMenu, gridOptions);
 
                 extend(gridOptions, {
                     enableGridMenu: true,
                     gridMenuShowHideColumns: false,
-                    gridMenuCustomItems: menu
                 });
             }
 
@@ -4069,8 +4284,11 @@ function gridDataProviderWebsocketFactory ($scope) {
                         id: metadata.id,
                         repr: metadata.repr
                     };
+                    // Overwrite current permissions with permissions from metadata
+                    angular.extend(scope.gridOptions.permissions, metadata.permissions);
 
-                    scope.gridOptions.columnDefs = parseColumns(gridConfig.columns || metadata.columns, scope.gridOptions.metaFields);
+                    updateGridMenu(scope, gridDefaults.gridMenu, scope.gridOptions);
+                    scope.gridOptions.columnDefs = parseColumns(gridConfig.columns || metadata.columns, scope.gridOptions.metaFields, scope.gridOptions.permissions);
                 }
 
                 function onDataReceived(data) {
@@ -4122,7 +4340,6 @@ function gridDataProviderWebsocketFactory ($scope) {
                 );
 
                 gridDataProvider.connect();
-
             };
 
             // Builds grid options
@@ -4180,6 +4397,7 @@ function gridDataProviderWebsocketFactory ($scope) {
                         enableHorizontalScrollbar: gridDefaults.enableHorizontalScrollbar,
                         enableVerticalScrollbar: gridDefaults.enableVerticalScrollbar,
                         rowHeight: gridDefaults.rowHeight,
+                        permissions: angular.extend(gridDefaults.permissions, options.permissions),
                         onRegisterApi: function(gridApi) {
                             require(['lodash'], function(_) {
 
@@ -4438,7 +4656,7 @@ function gridDataProviderWebsocketFactory ($scope) {
 
 
     // Controller for User.
-    // This controller can be used by eny element, including forms
+    // This controller can be used by any element, including forms
     angular.module('lux.users', ['lux.form', 'templates-users'])
         //
         // Directive for displaying page messages
@@ -4827,7 +5045,7 @@ function gridDataProviderWebsocketFactory ($scope) {
                     navbar.url = '/';
                 if (!navbar.themeTop)
                     navbar.themeTop = navbar.theme;
-                navbar.container = navbar.fluid ? 'container-fluid' : 'container';
+                navbar.container = navbar.fluid ? '' : 'container';
 
                 this.maybeCollapse(navbar);
 
@@ -5113,10 +5331,10 @@ function gridDataProviderWebsocketFactory ($scope) {
         }])
         //
         //  Directive for the sidebar
-        .directive('sidebar', ['$compile', 'sidebarService', 'sidebarTemplate',
+        .directive('sidebar', ['$compile', 'sidebarService', 'navService', 'sidebarTemplate',
                                'navbarTemplate', '$templateCache',
-                        function ($compile, sidebarService, sidebarTemplate, navbarTemplate,
-                                  $templateCache, $sce) {
+                        function ($compile, sidebarService, navService, sidebarTemplate, navbarTemplate,
+                                  $templateCache) {
             //
             return {
                 restrict: 'AE',
@@ -5863,7 +6081,7 @@ angular.module("message/message.tpl.html", []).run(["$templateCache", function($
     "    <div class=\"alert alert-{{ message.type }}\" role=\"alert\" ng-repeat=\"message in messages\">\n" +
     "        <a href=\"#\" class=\"close\" ng-click=\"removeMessage(message)\">&times;</a>\n" +
     "        <i ng-if=\"message.icon\" ng-class=\"message.icon\"></i>\n" +
-    "        <span>{{ message.text }}</span>\n" +
+    "        <span ng-bind-html=\"message.text\"></span>\n" +
     "    </div>\n" +
     "</div>\n" +
     "");

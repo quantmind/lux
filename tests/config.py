@@ -1,7 +1,8 @@
 '''Default config file for testing'''
 __test__ = False
 
-EXTENSIONS = ['lux.extensions.base']
+EXTENSIONS = ['lux.extensions.base',
+              'tests']
 
 MEDIA_URL = 'static'
 # Force greenlet (sqlite threads are slow)

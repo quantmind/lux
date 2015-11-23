@@ -5,7 +5,8 @@ from pulsar import ImproperlyConfigured
 from pulsar.apps.wsgi import (route, wsgi_request, cached_property,
                               html_factory)
 from pulsar.apps import wsgi
-from pulsar.apps.wsgi import RouterParam, Router, render_error_debug
+from pulsar.apps.wsgi import (Json, RouterParam, Router, Route,
+                              render_error_debug)
 from pulsar.apps.wsgi.utils import error_messages
 from pulsar.utils.httpurl import JSON_CONTENT_TYPES
 from pulsar.utils.structures import mapping_iterator
@@ -84,14 +85,20 @@ wsgi.set_wsgi_request_class(WsgiRequest)
 class RedirectRouter(Router):
 
     def __init__(self, routefrom, routeto):
-        super(RedirectRouter, self).__init__(routefrom, routeto=routeto)
+        super().__init__(routefrom, routeto=Route(routeto))
 
     def get(self, request):
-        return request.redirect(self.routeto)
+        url = self.routeto.url(**request.urlargs)
+        return request.redirect(url)
 
 
 class JsonRouter(Router):
     response_content_types = ['application/json']
+
+    def json(self, request, data):
+        '''Return a response as application/json
+        '''
+        return Json(data).http_response(request)
 
 
 class HtmlRouter(Router):
@@ -110,7 +117,7 @@ class HtmlRouter(Router):
         html = self.get_html(request)
         return self.html_response(request, html)
 
-    def html_response(self, request, html):
+    def html_response(self, request, html, inner_template=None):
         '''Render `html` as a full Html document or a partial.
         '''
         app = request.app
@@ -123,7 +130,7 @@ class HtmlRouter(Router):
 
         context = self.context(request) or {}
         context['html_main'] = html
-        template = self.get_inner_template(request)
+        template = self.get_inner_template(request, inner_template)
 
         if template:
             html = app.render_template(template, context, request)
@@ -141,8 +148,8 @@ class HtmlRouter(Router):
 
         return app.html_response(request, page, context=context)
 
-    def get_inner_template(self, request):
-        return self.template
+    def get_inner_template(self, request, inner_template=None):
+        return inner_template or self.template
 
     def get_html(self, request):
         '''Must be implemented by subclasses.

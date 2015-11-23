@@ -104,6 +104,10 @@ class App(LazyWsgi):
         self._script = script
         self._argv = argv
 
+    @property
+    def command(self):
+        return self._argv[0] if self._argv else None
+
     def setup(self, environ=None):
         return Application(self)
 
@@ -326,9 +330,8 @@ class Application(ConsoleParser, Extension, EventMixin):
             #
             # Using a green pool
             if self.green_pool:
-                from lux.core.green import green_body, WsgiGreen
-                wsgi = WsgiGreen(wsgi, self.green_pool)
-                async_middleware.append(green_body)
+                from pulsar.apps.greenio.wsgi import GreenWSGI
+                wsgi = GreenWSGI(wsgi, self.green_pool)
                 async_middleware.append(wsgi)
             else:
                 if self.config['THREAD_POOL']:

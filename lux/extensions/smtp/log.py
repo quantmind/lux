@@ -6,6 +6,15 @@ from pulsar.apps.http import HttpClient
 from pulsar.utils.log import lazymethod
 
 
+def context_text_formatter(context):
+    res = ""
+    maxlen = max([len(key) for key in context])
+    for key, val in context.items():
+        space = " " * (maxlen - len(key))
+        res += "%s:%s%s\n" % (key, space, val)
+    return res
+
+
 class SMTPHandler(logging.Handler):
 
     def __init__(self, app, level):
@@ -21,6 +30,11 @@ class SMTPHandler(logging.Handler):
         msg = self.format(record)
         first = record.message.split('\n')[0]
         subject = '%s - %s - %s' % (cfg['APP_NAME'], record.levelname, first)
+        context_factory = cfg['LOG_CONTEXT_FACTORY']
+        if context_factory:
+            ctx = context_factory(self)
+            msg = context_text_formatter(ctx) + '\n' + msg
+            subject = ctx['host'] + ': ' + subject
         backend.send_mail(to=managers,
                           subject=subject,
                           message=msg)
@@ -44,14 +58,20 @@ class SlackHandler(logging.Handler):
         """Emit record to slack channel using pycurl to avoid recurrence
         event logging (log logged record)
         """
-        managers = self.app.config['SLACK_LINK_NAMES']
+        cfg = self.app.config
+        managers = cfg['SLACK_LINK_NAMES']
         text = ''
         data = {}
         if managers:
             text = ' '.join(('@%s' % m for m in managers))
             text = '%s\n\n' % text
             data['link_names'] = 1
-        data['text'] = "%s```\n%s\n```" % (text, self.format(record))
+        context_factory = cfg['LOG_CONTEXT_FACTORY']
+        data['text'] = text
+        if context_factory:
+            ctx = context_factory(self)
+            data['text'] += "\n" + context_text_formatter(ctx)
+        data['text'] += "```\n%s\n```" % self.format(record)
         http = self.http()
         async(http.post(self.webhook_url, data=json.dumps(data)),
               loop=http._loop)
