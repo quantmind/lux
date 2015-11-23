@@ -74,6 +74,27 @@ define(function(require) {
             expect(scope.gridOptions.gridMenuCustomItems[1].title).toContain('Delete');
         });
 
+        it('check getStringOrJSON method', function() {
+            lux.gridTests.pGrid4 = {
+                "target": {"name": "dummy", "url": "dummy://url"},
+            };
+            var scope = $rootScope.$new();
+            var element = digest(scope, '<div rest-grid="lux.gridTests.pGrid4"></div>');
+            scope.$digest();
+
+            var result = scope.getStringOrJSON({'repr': 'Field'});
+            expect(result).toBe('Field');
+
+            result = scope.getStringOrJSON({'repr': 'Field', 'id': 'Field ID'});
+            expect(result).toBe('Field');
+
+            result = scope.getStringOrJSON({'id': 'Field ID'});
+            expect(result).toBe('Field ID');
+
+            result = scope.getStringOrJSON('test string');
+            expect(result).toBe('test string');
+        });
+
         function createLuxMock(apiMock) {
             var $luxMock = {
                 api: function() {

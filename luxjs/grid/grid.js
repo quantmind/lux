@@ -131,6 +131,11 @@
                             selectOptions: [{ value: 'true', label: 'True' }, { value: 'false', label: 'False'}]
                         };
                     }
+                },
+
+                // If value is in JSON format then return repr or id attribute
+                string: function (column, col, uiGridConstants, gridDefaults) {
+                    column.cellTemplate = gridDefaults.wrapCell('{{grid.appScope.getStringOrJSON(COL_FIELD)}}');
                 }
             },
             //
@@ -456,6 +461,13 @@
 
                 scope.getBooleanFieldIcon = function(COL_FIELD) {
                     return ((COL_FIELD) ? 'fa fa-check-circle text-success' : 'fa fa-check-circle text-danger');
+                };
+
+                scope.getStringOrJSON = function(COL_FIELD) {
+                    if (isObject(COL_FIELD)) {
+                        return COL_FIELD.repr || COL_FIELD.id;
+                    }
+                    return COL_FIELD;
                 };
 
                 scope.clearData = function() {
