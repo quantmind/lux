@@ -5,7 +5,7 @@ from pulsar import ImproperlyConfigured
 from pulsar.utils.pep import to_string
 from pulsar.apps.wsgi import Json
 
-from lux import Parameter, wsgi_request, Http401
+from lux import Parameter, wsgi_request, Http401, BadRequest
 
 from ..authviews import Authorization
 
@@ -55,7 +55,7 @@ class TokenBackendMixin:
             request.app.logger.warning(str(exc))
             # In this case we want the client to perform
             # a new authentication. Raise 401
-            raise Http401('Token')
+            raise BadRequest
 
     def create_token(self, request, user, **kwargs):  # pragma    nocover
         '''Create a new token and store it

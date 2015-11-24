@@ -173,6 +173,7 @@ class Form(metaclass=FormType):
             self._files = None
         self._cleaned_data = None
         self._errors = None
+        self._exclude_missing = False
         if initial:
             self.initial = dict(initial.items())
         else:
@@ -191,7 +192,7 @@ class Form(metaclass=FormType):
             request.app.fire('on_form', self)
 
     def is_valid(self, exclude_missing=False):
-        '''Asynchronous check if this :class:`Form` is valid.
+        '''Check if this :class:`Form` is valid.
 
         Includes any subforms. It returns a coroutine.'''
         if not self._check_unwind(False):
@@ -232,6 +233,10 @@ class Form(metaclass=FormType):
         '''Dictionary of :class:`BoundField` instances after validation.'''
         self._check_unwind()
         return self._fields_dict
+
+    @property
+    def exclude_missing(self):
+        return self._exclude_missing
 
     def clean(self):
         '''The form clean method.
@@ -292,12 +297,13 @@ class Form(metaclass=FormType):
         return True
 
     def _unwind(self, exclude_missing=False):
+        self._exclude_missing = exclude_missing
         is_bound = self.is_bound
         if is_bound:
             self._cleaned_data = {}
             self._errors = {}
         rawdata = self.rawdata
-        self._clean_fields(rawdata, exclude_missing)
+        self._clean_fields(rawdata)
         if is_bound:
             if not self._errors:
                 # Invoke the form clean method.
@@ -309,13 +315,14 @@ class Form(metaclass=FormType):
             if self._errors:
                 del self._cleaned_data
 
-    def _clean_fields(self, rawdata, exclude_missing):
+    def _clean_fields(self, rawdata):
         files = self._files
         self._data = data = {}
         self._fields = fields = []
         self._fields_dict = dfields = {}
         initial = self.initial
         is_bound = self.is_bound
+        exclude_missing = self._exclude_missing
         # Loop over form fields
         for name, field in self.base_fields.items():
             bfield = BoundField(self, field)

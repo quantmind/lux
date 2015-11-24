@@ -74,7 +74,7 @@ class Extension(MultiAuthBackend):
                                         'delete': 40},
                   'When a model'),
         Parameter('DEFAULT_PERMISSION_LEVEL', READ,
-                  'Defaukt permission level'),
+                  'Defaut permission level'),
         Parameter('DEFAULT_PERMISSION_LEVELS', {'site:admin': NONE},
                   'Dictionary of default permission levels'),
         Parameter('API_URL', None, 'URL FOR THE REST API', True),

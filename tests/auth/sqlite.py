@@ -72,15 +72,7 @@ class AuthUtils:
 
 class TestSqlite(test.AppTestCase, AuthUtils):
     config_file = 'tests.auth'
-    config_params = {
-        'DATASTORE': 'sqlite://',
-        'DEFAULT_PERMISSION_LEVELS': {
-            'objective': 40,
-            'objective:subject': 0,
-            'objective:deadline': 20,
-            'objective:outcome': 10
-        }
-    }
+    config_params = {'DATASTORE': 'sqlite://'}
 
     su_credentials = {'username': 'bigpippo',
                       'password': 'pluto'}
@@ -454,3 +446,16 @@ class TestSqlite(test.AppTestCase, AuthUtils):
                                              token=token)
         data = self.json(request.response, 200)
         self.assertTrue('groups[]' in data)
+
+    def test_corrupted_token(self):
+        '''Test the response when using a corrupted token
+        '''
+        token = yield from self._token()
+        request = yield from self.client.get('/secrets')
+        self.assertEqual(request.response.status_code, 403)
+        request = yield from self.client.get('/secrets', token=token)
+        self.assertEqual(request.response.status_code, 200)
+        badtoken = token[:-1]
+        self.assertNotEqual(token, badtoken)
+        request = yield from self.client.get('/secrets', token=badtoken)
+        self.assertEqual(request.response.status_code, 403)
