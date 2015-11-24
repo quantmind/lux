@@ -7,7 +7,7 @@
 ## Internals
 
 * Don't prepend ``lux`` to extension loggers
-* Token authentication backend catches all decoding exceptions and raise Http401
+* Token authentication backend raise ``BadRequest`` (400) when token cannot be decoded
 * Store ``exclude_missing`` in form after validation
 
 

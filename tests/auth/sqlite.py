@@ -455,3 +455,7 @@ class TestSqlite(test.AppTestCase, AuthUtils):
         self.assertEqual(request.response.status_code, 403)
         request = yield from self.client.get('/secrets', token=token)
         self.assertEqual(request.response.status_code, 200)
+        badtoken = token[:-1]
+        self.assertNotEqual(token, badtoken)
+        request = yield from self.client.get('/secrets', token=badtoken)
+        self.assertEqual(request.response.status_code, 403)
