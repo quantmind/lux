@@ -6,7 +6,9 @@ from pulsar import PermissionDenied
 from pulsar.utils.html import nicename
 from pulsar.apps.wsgi import Json
 
-from .user import READ
+from .user import READ, PERMISSION_LEVELS
+
+PERMISSIONS = ['UPDATE', 'CREATE', 'DELETE']
 
 logger = logging.getLogger('lux.extensions.rest')
 
@@ -369,15 +371,29 @@ class RestModel(ColumnPermissionsMixin):
         if exclude:
             columns = [c for c in columns if c['name'] not in exclude]
 
-        return {'id': self.id_field,
+        permissions = self.get_permissions(request)
+
+        meta = {'id': self.id_field,
                 'repr': self.repr_field,
                 'columns': columns,
                 'default-limit': request.config['API_LIMIT_DEFAULT']}
+        if permissions:
+            meta['permissions'] = permissions
+        return meta
 
     def serialise_model(self, request, data, **kw):
         '''Serialise on model
         '''
         return self.tojson(request, data)
+
+    def get_permissions(self, request):
+        perms = {}
+        backend = request.cache.auth_backend
+        for name in PERMISSIONS:
+            code = PERMISSION_LEVELS[name]
+            if backend.has_permission(request, self.name, code):
+                perms[name] = True
+        return perms
 
     def _do_sortby(self, request, query, entry, direction):
         raise NotImplementedError
