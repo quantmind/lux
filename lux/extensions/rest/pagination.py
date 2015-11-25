@@ -7,13 +7,17 @@ __all__ = ['Pagination', 'GithubPagination']
 class Pagination:
 
     def first_link(self, request, total, limit, offset):
-        if offset:
-            return self.link(request, 0, limit)
+        n = self._count_part(offset, limit, 0)
+        if n:
+            offset -= n*limit
+        if offset > 0:
+            return self.link(request, 0, min(limit, offset))
 
     def prev_link(self, request, total, limit, offset):
         if offset:
-            prev_offset = max(0, offset - limit)
-            return self.link(request, prev_offset, limit)
+            olimit = min(limit, offset)
+            prev_offset = offset - olimit
+            return self.link(request, prev_offset, olimit)
 
     def next_link(self, request, total, limit, offset):
         next_offset = offset + limit
@@ -21,7 +25,7 @@ class Pagination:
             return self.link(request, next_offset, limit)
 
     def last_link(self, request, total, limit, offset):
-        n = (total - offset) // limit
+        n = self._count_part(total, limit, offset)
         if n > 0:
             return self.link(request, offset + n*limit, limit)
 
@@ -52,6 +56,13 @@ class Pagination:
                 data['next'] = next
             data['last'] = last
         return data
+
+    def _count_part(self, total, limit, offset):
+        n = (total - offset) // limit
+        # make sure we account for perfect matching
+        if n*limit + offset == total:
+            n -= 1
+        return n
 
 
 class GithubPagination(Pagination):
