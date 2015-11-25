@@ -1,6 +1,6 @@
 //      Lux Library - v0.3.0
 
-//      Compiled 2015-11-23.
+//      Compiled 2015-11-25.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -4034,7 +4034,7 @@ function gridDataProviderWebsocketFactory ($scope) {
                     }
                 },
 
-                // If value is JSON format then return repr or id attribute
+                // If value is in JSON format then return repr or id attribute
                 string: function (column, col, uiGridConstants, gridDefaults) {
                     column.cellTemplate = gridDefaults.wrapCell('{{grid.appScope.getStringOrJSON(COL_FIELD)}}');
                 }
