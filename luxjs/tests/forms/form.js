@@ -178,6 +178,22 @@ define(function(require) {
             expect(validators.eq(2).hasClass('ng-hide')).toBe(true);
         }));
 
+        it('should set correct renderer function for the checkbox field', inject(function($compile, $rootScope) {
+            lux.formTests.vForm7 = testFormUtils.createForm({
+                type: 'checkbox',
+                element: 'input',
+                name: 'is_active',
+            });
+
+            var element = testFormUtils.digest($compile, $rootScope,
+                '<div><lux-form data-options="lux.formTests.vForm7"></lux-form></div>');
+
+            // Check if input is inside of label tag.
+            var label = angular.element(element).find('label').eq(0);
+            expect(label.find('input')[0].tagName).toBe('INPUT');
+            expect(label.find('input').eq(0).attr('type')).toBe('checkbox');
+        }));
+
         function createLuxMock(apiMock) {
             var $luxMock = {
                 api: function() {

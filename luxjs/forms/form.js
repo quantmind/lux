@@ -146,12 +146,11 @@
                     scope.info = info;
 
                     if (info) {
-                        // Pick the renderer by checking `type`
-                        if (info.hasOwnProperty('type'))
+                        if (info.hasOwnProperty('type') && typeof this[info.type] === 'function')
+                            // Pick the renderer by checking `type`
                             fieldType = info.type;
-
-                        // If no element type, use the `element`
-                        if (!renderer)
+                        else
+                            // If no element type, use the `element`
                             fieldType = info.element;
                     }
 
