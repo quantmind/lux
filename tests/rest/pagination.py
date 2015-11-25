@@ -14,6 +14,12 @@ class TestUtils(test.TestCase):
         request = app.wsgi_request()
         pagination = Pagination()
         #
+        pag = pagination(request, [], 0, 25, 0)
+        self.assertFalse('first' in pag)
+        self.assertFalse('prev' in pag)
+        self.assertFalse('next' in pag)
+        self.assertFalse('last' in pag)
+        #
         pag = pagination(request, [], 120, 25, 0)
         query = query_dict(urlparse(pag['next']).query)
         self.assertEqual(query['offset'], '25')

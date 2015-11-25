@@ -345,9 +345,7 @@ class TestPostgreSql(test.AppTestCase):
         yield from self._create_task(token, 'A done task', done=True)
         yield from self._create_task(token, 'a not done task')
         request = yield from self.client.get('/tasks?done=1')
-        response = request.response
-        self.assertEqual(response.status_code, 200)
-        data = self.json(response)
+        data = self.json(request.response, 200)
         result = data['result']
         self.assertIsInstance(result, list)
         self.assertTrue(result)
@@ -372,3 +370,23 @@ class TestPostgreSql(test.AppTestCase):
         attrs = field.getattrs()
         self.assertEqual(attrs.get('multiple'), True)
         self.assertEqual(attrs.get('label'), 'Test book')
+
+    def test_limit(self):
+        token = yield from self._token()
+        yield from self._create_task(token, 'whatever')
+        yield from self._create_task(token, 'do everything')
+        request = yield from self.client.get('/tasks?limit=-1')
+        data = self.json(request.response, 200)
+        result = data['result']
+        self.assertIsInstance(result, list)
+        self.assertTrue(len(result) >= 2)
+        request = yield from self.client.get('/tasks?limit=-1&offset=-89')
+        data = self.json(request.response, 200)
+        result = data['result']
+        self.assertIsInstance(result, list)
+        self.assertTrue(len(result) >= 2)
+        request = yield from self.client.get('/tasks?limit=sdc&offset=hhh')
+        data = self.json(request.response, 200)
+        result = data['result']
+        self.assertIsInstance(result, list)
+        self.assertTrue(len(result) >= 2)

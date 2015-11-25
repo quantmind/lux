@@ -62,7 +62,7 @@ class Pagination:
         # make sure we account for perfect matching
         if n*limit + offset == total:
             n -= 1
-        return n
+        return max(0, n)
 
 
 class GithubPagination(Pagination):
