@@ -405,7 +405,7 @@ class Application(ConsoleParser, Extension, EventMixin):
         for entry in cfg['HTML_META'] or ():
             head.add_meta(**entry)
 
-        self.fire('on_html_document', request, doc)
+        self.fire('on_html_document', request, doc, safe=True)
         #
         # Add links last
         links = head.links

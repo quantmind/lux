@@ -279,9 +279,16 @@ class EventMixin:
             if hasattr(extension, name):
                 handlers.append(EventHandler(extension, name))
 
-    def fire(self, event, *args, **kwargs):
+    def fire(self, event, *args, safe=False, **kwargs):
         '''Fire an ``event``.'''
         handlers = self.events.get(event) if self.events else None
         if handlers:
             for handler in handlers:
-                handler(self, *args, **kwargs)
+                try:
+                    handler(self, *args, **kwargs)
+                except Exception as exc:
+                    if safe:
+                        self.logger.exception('Exception during "%s" event: '
+                                              '%s', event, exc)
+                    else:
+                        raise
