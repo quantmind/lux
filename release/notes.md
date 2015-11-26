@@ -22,3 +22,4 @@
 * Form date input fix [[#194](https://github.com/quantmind/lux/pull/194)]
 * Display relationship fields properly in grids [[#194](https://github.com/quantmind/lux/pull/196)]
 * Bug fix: correct checkbox rendering in lux forms [[#199](https://github.com/quantmind/lux/pull/199)]
+* Added url type handler to lux grids [[#200](https://github.com/quantmind/lux/pull/200)]
