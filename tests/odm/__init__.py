@@ -56,13 +56,13 @@ class Task(Model):
 
 
 def person_model():
-    return odm.RestModel('person', PersonForm, url='people')
+    return odm.RestModel('person', PersonForm, PersonForm, url='people')
 
 
 def task_model():
     '''Rest model for the task
     '''
-    model = odm.RestModel('task', TaskForm)
+    model = odm.RestModel('task', TaskForm, TaskForm)
     model.add_related_column('assigned', person_model, 'assigned_id')
     return model
 
@@ -103,6 +103,7 @@ class UserCRUD(odm.CRUD):
     '''Test custom CRUD view and RestModel
     '''
     _model = odm.RestModel('user',
+                           UserForm,
                            UserForm,
                            columns=('username', 'active', 'superuser'),
                            exclude=('password', 'permissions'))

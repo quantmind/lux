@@ -3,6 +3,8 @@
 * Added ``command`` to the Application callable which returns the command which
   created the application
 * Switched ``smtp`` extension hook from ``on_start`` to ``on_loaded``
+* Rest metadata endpoint include a permissions object for the user
+* RestModel requires both ``updateform`` for updates, it does not use the ``form`` if the update form is not provided
 
 ## Internals
 
