@@ -13,12 +13,13 @@ from lux.core.cms import Page
 def template_model():
     return odm.RestModel('template',
                          TemplateForm,
+                         TemplateForm,
                          url='html_templates',
                          repr_field='title')
 
 
 def page_model():
-    return odm.RestModel('page', PageForm, url='html_pages')
+    return odm.RestModel('page', PageForm, PageForm, url='html_pages')
 
 
 class TemplateForm(forms.Form):

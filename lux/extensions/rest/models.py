@@ -167,7 +167,8 @@ class RestModel(ColumnPermissionsMixin):
 
     .. attribute:: updateform
 
-        Form class for this REST model in editing mode
+        Form class for this REST model in editing mode. If not provided
+        no editing is allowed.
 
     .. attribute:: exclude
 
@@ -191,7 +192,7 @@ class RestModel(ColumnPermissionsMixin):
         assert name, 'model name not available'
         self.name = name
         self.form = form
-        self.updateform = updateform or form
+        self.updateform = updateform
         self.url = url if url is not None else '%ss' % name
         self.api_name = '%s_url' % (self.url or self.name)
         self.id_field = id_field or 'id'
@@ -392,11 +393,9 @@ class RestModel(ColumnPermissionsMixin):
 
     def get_permissions(self, request):
         perms = {}
-        backend = request.cache.auth_backend
-        for name in PERMISSIONS:
-            code = PERMISSION_LEVELS[name]
-            if backend.has_permission(request, self.name, code):
-                perms[name] = True
+        self._add_permission(request, perms, 'UPDATE', self.updateform)
+        self._add_permission(request, perms, 'CREATE', self.form)
+        self._add_permission(request, perms, 'DELETE', True)
         return perms
 
     def _do_sortby(self, request, query, entry, direction):
@@ -423,6 +422,13 @@ class RestModel(ColumnPermissionsMixin):
             columns.append(col.as_dict())
 
         return columns
+
+    def _add_permission(self, request, perms, name, avail):
+        if avail:
+            backend = request.cache.auth_backend
+            code = PERMISSION_LEVELS[name]
+            if backend.has_permission(request, self.name, code):
+                perms[name] = True
 
 
 class ModelMixin:
