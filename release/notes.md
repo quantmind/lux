@@ -9,7 +9,7 @@
 * Don't prepend ``lux`` to extension loggers
 * Token authentication backend raise ``BadRequest`` (400) when token cannot be decoded
 * Store ``exclude_missing`` in form after validation
-
+* ``on_html_document`` event catches errors via the ``safe`` keywords [[9ba5d17](https://github.com/quantmind/lux/commit/af9193d20475588eacbdaf5f629751f6799a76c1)]
 
 ## Front end
 
@@ -19,3 +19,4 @@
 * Form validation fixes [[#155](https://github.com/quantmind/lux/pull/155)]
 * Form date input fix [[#194](https://github.com/quantmind/lux/pull/194)]
 * Display relationship fields properly in grids [[#194](https://github.com/quantmind/lux/pull/196)]
+* Bug fix: correct checkbox rendering in lux forms [[#199](https://github.com/quantmind/lux/pull/199)]
