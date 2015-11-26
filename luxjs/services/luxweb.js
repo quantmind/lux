@@ -92,20 +92,29 @@
                             // TODO: do we need a callback for JSON fields?
                             // or shall we leave it here?
 
+                            // Get rid of brackets if exists
+                            key = key.split('[]')[0];
+
+                            /*var field = formScope[formScope.formModelName + 'Type'][key];
+                            if (isObject(field) ) {
+                                if (field.type === 'textarea' && field.textMode === 'json') {
+                                    value = JSON.stringify(value, null, 4);
+                                }
+                            } else if (isObject(value)) {
+                                value = JSON.stringify(value, null, 4);
+                            }*/
+
                             if (formScope[formScope.formModelName + 'Type'][key] === 'textarea' && isObject(value)) {
                                 value = JSON.stringify(value, null, 4);
                             }
 
+                            console.log(key, value);
+
                             if (isArray(value)) {
-                                var keyNoArraySuffix = key.split('[]')[0];
-                                if (formScope[formScope.formModelName + 'Type'][keyNoArraySuffix] === 'textarea') {
-                                    model[keyNoArraySuffix] = JSON.stringify(value, null, 4);
-                                } else {
-                                    model[key] = [];
-                                    forEach(value, function(item) {
-                                        model[key].push(item.id || item);
-                                    });
-                                }
+                                model[key] = [];
+                                forEach(value, function(item) {
+                                    model[key].push(item.id || item);
+                                });
                             }
                             else
                                 model[key] = value.id || value;

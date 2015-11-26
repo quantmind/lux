@@ -245,6 +245,20 @@
     },
     //
     //  Capitalize the first letter of string
-    capitalize = function(str) {
+    capitalize = function (str) {
         return str.charAt(0).toUpperCase() + str.slice(1);
+    },
+
+    /**
+     * Obtain an json object from string (if available) otherwise null
+     *
+     * @param {string}
+     * @returns {object} - json object
+     */
+    getJsonOrNone = function (str) {
+        try {
+            return JSON.parse(str);
+        } catch(error) {
+            return null;
+        }
     };
