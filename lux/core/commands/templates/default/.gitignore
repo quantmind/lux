@@ -1,0 +1,36 @@
+#Python
+*.pyc
+*.so
+build
+*.egg-info
+
+#Files
+*.log
+
+# build directories
+node_modules
+coverage
+bower_components
+junit
+
+# generated files
+*.js.map
+js/{$project_name}test.*
+js/deps
+scss/deps/*
+{$project_name}/media/{$project_name}/{$project_name}.css
+{$project_name}/media/{$project_name}/{$project_name}.js
+{$project_name}/media/{$project_name}/{$project_name}.min.css
+{$project_name}/media/{$project_name}/{$project_name}.min.js
+templates.js
+
+# empty directories
+!.gitignore
+
+#other
+.project
+.pydevproject
+.DS_Store
+/src
+/.idea
+.DS_Store
