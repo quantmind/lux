@@ -1,9 +1,9 @@
 {
     "html2js": {},
     "$project_name": {
-        "src": ["js/open.js",
-                "js/main.js",
-                "js/close.js"],
+        "src": ["js/deps/cfg.js",
+                "js/require.config.js",
+                "js/build/bundle.js"],
         "dest": "${project_name}/media/${project_name}/${project_name}.js",
         "options": {
             "stripBanners": true,

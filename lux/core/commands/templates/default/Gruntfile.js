@@ -5,7 +5,10 @@ module.exports = function(grunt) {
     // $project_name configuration.
     var lux_branch = "master",
         path = require('path'),
-        buildTasks = ['gruntfile', 'html2js', 'requirejs', 'http', 'copy', 'concat', 'jshint', 'uglify', 'css'],
+        _ = require('lodash'),
+        buildTasks = ['gruntfile', 'requirejs', 'http', 'copy', 'concat', 'jshint', 'uglify', 'css'],
+        watchTasks = ['requirejs', 'copy', 'concat', 'uglify', 'jshint'],
+        requireDeps = [],
         libs = grunt.file.readJSON('js/libs.json'),
         concats = {
             options: {
@@ -112,7 +115,7 @@ module.exports = function(grunt) {
                             '!js/build/**/*.js',
                             '!js/tests/**/*.js',
                             'js/**/*.tpl.html'],
-                    tasks: ['html2js', 'requirejs', 'copy', 'concat', 'uglify', 'jshint']
+                    tasks: watchTasks
                 },
                 css: {
                     files: ['scss/*.scss',
@@ -131,13 +134,15 @@ module.exports = function(grunt) {
     }
     //
     // html2js is special, add html2js task if available
-    if (libs.html2js) {
+    if (_.size(libs.html2js)) {
         cfg.html2js = libs.html2js;
-        delete libs.html2js;
         grunt.log.debug('Adding html2js task');
         grunt.loadNpmTasks('grunt-html2js');
         buildTasks.splice(0, 0, 'html2js');
+        watchTasks.splice(0, 0, 'html2js');
+        requireDeps.push('html2js');
     }
+    delete libs.html2js;
     //
     // Preprocess libs
     for_each(libs, function (name) {
@@ -253,7 +258,7 @@ module.exports = function(grunt) {
     grunt.initConfig(cfg);
     //
     // These plugins provide necessary tasks.
-    grunt.loadNpmTasks('grunt-contrib-requirejs', ['html2js']);
+    grunt.loadNpmTasks('grunt-contrib-requirejs', requireDeps);
     grunt.loadNpmTasks('grunt-contrib-uglify');
     grunt.loadNpmTasks('grunt-contrib-jshint');
     grunt.loadNpmTasks('grunt-contrib-concat');
@@ -268,7 +273,7 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-contrib-clean');
     //
 
-    grunt.registerTask('test', ['html2js', 'karma:dev']);
+    grunt.registerTask('test', ['karma:dev']);
     grunt.registerTask('gruntfile', 'jshint Gruntfile.js',
         ['jshint:gruntfile']);
     grunt.registerTask('build', 'Compile and lint all libraries', buildTasks);

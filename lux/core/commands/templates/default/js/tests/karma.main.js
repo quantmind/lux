@@ -18,8 +18,8 @@ require.config({
     // we have to kickoff jasmine, as it is asynchronous
     callback: function () {
         require(['angular', 'lux'], function (angular) {
-            angular.module('bmll', ['lux.loader', 'lux.restapi']);
-            angular.bootstrap(document, ['bmll']);
+            angular.module('$project_name', ['lux.loader', 'lux.restapi']);
+            angular.bootstrap(document, ['$project_name']);
             window.__karma__.start();
         });
     }
