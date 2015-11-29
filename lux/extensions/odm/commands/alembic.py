@@ -27,19 +27,23 @@ class Command(lux.Command):
         '''
         Run obvious commands and validate more complex.
         '''
-        if opt.list:
-            available = 'Available commands:\n%s' % ', '.join(self.commands)
-            self.write(available)
-            return available
-        if opt.command:
-            cmd = opt.command[0]
-            if cmd not in self.commands:
-                raise CommandError('Unrecognized command %s' % opt.command[0])
-            if cmd in ('auto', 'revision', 'merge') and not opt.msg:
-                raise CommandError('Missing [-m] parameter for %s' % cmd)
-            self.run_alembic_cmd(opt)
-            return True
-        raise CommandError('Pass [--commands] for available commands')
+        from alembic import util
+        try:
+            if opt.list:
+                available = 'Alembic commands:\n%s' % ', '.join(self.commands)
+                self.write(available)
+                return available
+            if opt.command:
+                cmd = opt.command[0]
+                if cmd not in self.commands:
+                    raise CommandError('Unrecognized command %s' % opt.command[0])
+                if cmd in ('auto', 'revision', 'merge') and not opt.msg:
+                    raise CommandError('Missing [-m] parameter for %s' % cmd)
+                self.run_alembic_cmd(opt)
+                return True
+            raise CommandError('Pass [--commands] for available commands')
+        except util.CommandError as exc:
+            raise CommandError(str(exc))
 
     def get_lux_template_directory(self):
         return os.path.join(os.path.dirname(os.path.realpath(__file__)),

@@ -44,6 +44,9 @@ class Command(lux.Command):
         data = self.render(self.theme, options.variables)
         if dump:
             if target:
+                path = os.path.dirname(target)
+                if path and not os.path.exists(path):
+                    os.makedirs(path)
                 targets = ['%s.css' % target]
                 if options.minify:
                     targets.append('%s.min.css' % target)

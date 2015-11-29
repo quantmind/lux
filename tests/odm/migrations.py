@@ -54,7 +54,7 @@ class TestMigrationsCommands(test.TestCase):
     def test_list_command(self):
         cmd = self.cmd()
         result = yield from cmd(['--commands'])
-        cmd_msg = 'Available commands:\n%s' % ', '.join(cmd.commands)
+        cmd_msg = 'Alembic commands:\n%s' % ', '.join(cmd.commands)
         self.assertEqual(result, cmd_msg)
 
     def test_missing_m_param(self):

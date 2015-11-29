@@ -109,6 +109,11 @@ class ApiSessionBackend(SessionBackendMixin,
                  'email': 'users',
                  'auth_key': 'users/authkey'}
 
+    def api_sections(self, app):
+        '''Does not provide any view to the api
+        '''
+        return ()
+
     def get_user(self, request, **kw):
         '''Get User from username, id or email or authentication key.
         '''

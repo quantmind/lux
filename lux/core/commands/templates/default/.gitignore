@@ -15,13 +15,14 @@ junit
 
 # generated files
 *.js.map
-js/{$project_name}test.*
+*.css.map
+js/${project_name}test.*
 js/deps
 scss/deps/*
-{$project_name}/media/{$project_name}/{$project_name}.css
-{$project_name}/media/{$project_name}/{$project_name}.js
-{$project_name}/media/{$project_name}/{$project_name}.min.css
-{$project_name}/media/{$project_name}/{$project_name}.min.js
+${project_name}/media/${project_name}/${project_name}.css
+${project_name}/media/${project_name}/${project_name}.js
+${project_name}/media/${project_name}/${project_name}.min.css
+${project_name}/media/${project_name}/${project_name}.min.js
 templates.js
 
 # empty directories

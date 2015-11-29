@@ -6,8 +6,8 @@ module.exports = function(grunt) {
     var lux_branch = "master",
         path = require('path'),
         _ = require('lodash'),
-        buildTasks = ['gruntfile', 'requirejs', 'http', 'copy', 'concat', 'jshint', 'uglify', 'css'],
-        watchTasks = ['requirejs', 'copy', 'concat', 'uglify', 'jshint'],
+        buildTasks = ['gruntfile', 'requirejs', 'http', 'concat', 'jshint', 'uglify', 'css'],
+        watchTasks = ['requirejs', 'concat', 'uglify', 'jshint'],
         requireDeps = [],
         libs = grunt.file.readJSON('js/libs.json'),
         concats = {
@@ -133,12 +133,15 @@ module.exports = function(grunt) {
         }
     }
     //
-    // html2js is special, add html2js task if available
+    // html2js and copy if available
+    if (_.size(cfg.copy)) {
+        buildTasks.splice(1, 0, 'copy');
+    }
     if (_.size(libs.html2js)) {
         cfg.html2js = libs.html2js;
         grunt.log.debug('Adding html2js task');
         grunt.loadNpmTasks('grunt-html2js');
-        buildTasks.splice(0, 0, 'html2js');
+        buildTasks.splice(1, 0, 'html2js');
         watchTasks.splice(0, 0, 'html2js');
         requireDeps.push('html2js');
     }
@@ -282,7 +285,7 @@ module.exports = function(grunt) {
     grunt.registerTask('all', 'Compile lint and test all libraries',
         ['build', 'test']);
     grunt.registerTask('css', 'Compile python and sass styles',
-        ['clean:build', 'shell:buildPythonCSS', 'sass:$project_name', 'cssmin:$project_name']);
+        ['shell:buildPythonCSS', 'sass:$project_name', 'cssmin:$project_name']);
     grunt.registerTask('default', ['build', 'karma:phantomjs']);
     //
     for_each(libs, function (name) {
