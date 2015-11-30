@@ -79,10 +79,15 @@ class AsyncLock:
     _locks = {}
 
     def __init__(self, name, loop=None, timeout=None, blocking=0, sleep=0.2):
+        loop = loop or asyncio.get_event_loop()
+
         self._lock = self._get_lock(name, loop)
         self._timeout = timeout
         self._blocking = blocking
+        self._loop = loop
+
         self._acquired = False
+        self._timeout_handler = None
         # Sleep is ignored, this parameter is not needed, but might be passed
         # in as RedisLock needs it
 
@@ -110,25 +115,23 @@ class AsyncLock:
 
     @classmethod
     def _get_lock(cls, name, loop=None):
-        if not name in cls._locks:
+        if name not in cls._locks:
             cls._locks[name] = asyncio.Lock(loop=loop)
         return cls._locks[name]
 
     def _schedule_timeout(self):
         if self._timeout is None:
             return
-        self._timeout_future = asyncio.async(self._release_after_timeout())
+        self._timeout_future = self._loop.call_later(
+            self._timeout, self._release_after_timeout
+        )
 
     def _cancel_timeout(self):
-        if self._timeout is None or self._timeout_future is None:
-            return
-        if not self._timeout_future.done():
-            self._timeout_future.cancel()
-        self._timeout_future = None
+        if self._timeout_handler:
+            self._timeout_handler.cancel()
+            self._timeout_handler = None
 
-    @asyncio.coroutine
     def _release_after_timeout(self):
-        yield from asyncio.sleep(self._timeout)
         if self._acquired:
             self.release()
 
