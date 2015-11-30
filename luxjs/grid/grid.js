@@ -123,7 +123,7 @@
 
                 // Font-awesome icon by default
                 boolean: function (column, col, uiGridConstants, gridDefaults) {
-                    column.cellTemplate = gridDefaults.wrapCell('<i ng-class="grid.appScope.getBooleanFieldIcon(COL_FIELD)"></i>');
+                    column.cellTemplate = gridDefaults.wrapCell('<i ng-class="grid.appScope.getBooleanIconField(COL_FIELD)"></i>');
 
                     if (col.hasOwnProperty('filter')) {
                         column.filter = {
@@ -135,7 +135,12 @@
 
                 // If value is in JSON format then return repr or id attribute
                 string: function (column, col, uiGridConstants, gridDefaults) {
-                    column.cellTemplate = gridDefaults.wrapCell('{{grid.appScope.getStringOrJSON(COL_FIELD)}}');
+                    column.cellTemplate = gridDefaults.wrapCell('{{grid.appScope.getStringOrJsonField(COL_FIELD)}}');
+                },
+
+                // Renders a link for the fields of url type
+                url: function (column, col, uiGridConstants, gridDefaults) {
+                    column.cellTemplate = gridDefaults.wrapCell('<a ng-href="{{COL_FIELD.url || COL_FIELD}}">{{COL_FIELD.repr || COL_FIELD}}</a>');
                 }
             },
             //
@@ -185,7 +190,7 @@
                     if (typeof column.field !== 'undefined' && column.field === metaFields.repr) {
                         if (permissions.UPDATE) {
                             // If there is an update permission then display link
-                            column.cellTemplate = gridDefaults.wrapCell('<a ng-href="{{grid.appScope.objectUrl(row.entity)}}">{{COL_FIELD}}</a>');
+                            column.cellTemplate = gridDefaults.wrapCell('<a ng-href="{{grid.appScope.getObjectIdField(row.entity)}}">{{COL_FIELD}}</a>');
                         }
                         // Set repr column as the first column
                         columnDefs.splice(0, 0, column);
@@ -455,15 +460,15 @@
 
                 var reprPath = options.reprPath || $lux.window.location;
 
-                scope.objectUrl = function(entity) {
+                scope.getObjectIdField = function(entity) {
                     return reprPath + '/' + entity[scope.gridOptions.metaFields.id];
                 };
 
-                scope.getBooleanFieldIcon = function(COL_FIELD) {
+                scope.getBooleanIconField = function(COL_FIELD) {
                     return ((COL_FIELD) ? 'fa fa-check-circle text-success' : 'fa fa-check-circle text-danger');
                 };
 
-                scope.getStringOrJSON = function(COL_FIELD) {
+                scope.getStringOrJsonField = function(COL_FIELD) {
                     if (isObject(COL_FIELD)) {
                         return COL_FIELD.repr || COL_FIELD.id;
                     }

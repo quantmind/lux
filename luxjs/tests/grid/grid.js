@@ -74,7 +74,7 @@ define(function(require) {
             expect(scope.gridOptions.gridMenuCustomItems[1].title).toContain('Delete');
         });
 
-        it('check getStringOrJSON method', function() {
+        it('check getStringOrJsonField method', function() {
             lux.gridTests.pGrid4 = {
                 "target": {"name": "dummy", "url": "dummy://url"},
             };
@@ -82,16 +82,16 @@ define(function(require) {
             var element = digest(scope, '<div rest-grid="lux.gridTests.pGrid4"></div>');
             scope.$digest();
 
-            var result = scope.getStringOrJSON({'repr': 'Field'});
+            var result = scope.getStringOrJsonField({'repr': 'Field'});
             expect(result).toBe('Field');
 
-            result = scope.getStringOrJSON({'repr': 'Field', 'id': 'Field ID'});
+            result = scope.getStringOrJsonField({'repr': 'Field', 'id': 'Field ID'});
             expect(result).toBe('Field');
 
-            result = scope.getStringOrJSON({'id': 'Field ID'});
+            result = scope.getStringOrJsonField({'id': 'Field ID'});
             expect(result).toBe('Field ID');
 
-            result = scope.getStringOrJSON('test string');
+            result = scope.getStringOrJsonField('test string');
             expect(result).toBe('test string');
         });
 

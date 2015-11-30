@@ -1,6 +1,6 @@
-//      Lux Library - v0.3.0
+//      Lux Library - v0.3.1
 
-//      Compiled 2015-11-24.
+//      Compiled 2015-11-30.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -356,8 +356,22 @@ function(angular, root) {
     },
     //
     //  Capitalize the first letter of string
-    capitalize = function(str) {
+    capitalize = function (str) {
         return str.charAt(0).toUpperCase() + str.slice(1);
+    },
+
+    /**
+     * Obtain an json object from string (if available) otherwise null
+     *
+     * @param {string}
+     * @returns {object} - json object
+     */
+    getJsonOrNone = lux.getJsonOrNone = function (str) {
+        try {
+            return JSON.parse(str);
+        } catch(error) {
+            return null;
+        }
     };
 
     lux.messages.no_api = function (url) {
@@ -956,23 +970,28 @@ function(angular, root) {
                             // TODO: do we need a callback for JSON fields?
                             // or shall we leave it here?
 
-                            if (formScope[formScope.formModelName + 'Type'][key] === 'textarea' && isObject(value)) {
+                            var modelType = formScope[formScope.formModelName + 'Type'];
+                            var jsonArrayKey = key.split('[]')[0];
+
+                            // Stringify json only if has json mode enabled
+                            if (modelType[jsonArrayKey] === 'json' && (isObject(value) || isArray(value))) {
+
+                                // Get rid of the brackets from the json array field
+                                if (isArray(value)) {
+                                    key = jsonArrayKey;
+                                }
+
                                 value = JSON.stringify(value, null, 4);
                             }
 
                             if (isArray(value)) {
-                                var keyNoArraySuffix = key.split('[]')[0];
-                                if (formScope[formScope.formModelName + 'Type'][keyNoArraySuffix] === 'textarea') {
-                                    model[keyNoArraySuffix] = JSON.stringify(value, null, 4);
-                                } else {
-                                    model[key] = [];
-                                    forEach(value, function(item) {
-                                        model[key].push(item.id || item);
-                                    });
-                                }
-                            }
-                            else
+                                model[key] = [];
+                                forEach(value, function(item) {
+                                    model[key].push(item.id || item);
+                                });
+                            } else {
                                 model[key] = value.id || value;
+                            }
                         });
                     });
                 }
@@ -2351,6 +2370,26 @@ angular.module('lux.cms.core', [])
                 //
                 // Create a form element
                 createElement: function (driver, scope) {
+
+                    /**
+                     * Builds infomation about type and text mode used in the field.
+                     * These informations are used in `api.formReady` method.
+
+                     * @param formModelName {string} - name of the model
+                     * @param field {object}
+                     * @param fieldType {string} - type of the field
+                     */
+                    function buildFieldInfo (formModelName, field, fieldType) {
+                        var typeConfig = formModelName + 'Type';
+                        var textMode = getJsonOrNone(field.text_edit);
+                        scope[typeConfig] = scope[typeConfig] || {};
+
+                        if (textMode !== null)
+                            scope[typeConfig][field.name] = textMode.mode || '';
+                        else
+                            scope[typeConfig][field.name] = fieldType;
+                    }
+
                     var self = this,
                         thisField = scope.field,
                         tc = thisField.type.split('.'),
@@ -2362,20 +2401,17 @@ angular.module('lux.cms.core', [])
                     scope.info = info;
 
                     if (info) {
-                        // Pick the renderer by checking `type`
-                        if (info.hasOwnProperty('type'))
+                        if (info.hasOwnProperty('type') && typeof this[info.type] === 'function')
+                            // Pick the renderer by checking `type`
                             fieldType = info.type;
-
-                        // If no element type, use the `element`
-                        if (!renderer)
+                        else
+                            // If no element type, use the `element`
                             fieldType = info.element;
                     }
 
                     renderer = this[fieldType];
 
-                    var typeConfig = scope.formModelName + 'Type';
-                    scope[typeConfig] = scope[typeConfig] || {};
-                    scope[typeConfig][thisField.name] = fieldType;
+                    buildFieldInfo(scope.formModelName, thisField, fieldType);
 
                     if (!renderer)
                         renderer = this.renderNotElements;
@@ -4028,7 +4064,7 @@ function gridDataProviderWebsocketFactory ($scope) {
 
                 // Font-awesome icon by default
                 boolean: function (column, col, uiGridConstants, gridDefaults) {
-                    column.cellTemplate = gridDefaults.wrapCell('<i ng-class="grid.appScope.getBooleanFieldIcon(COL_FIELD)"></i>');
+                    column.cellTemplate = gridDefaults.wrapCell('<i ng-class="grid.appScope.getBooleanIconField(COL_FIELD)"></i>');
 
                     if (col.hasOwnProperty('filter')) {
                         column.filter = {
@@ -4040,7 +4076,12 @@ function gridDataProviderWebsocketFactory ($scope) {
 
                 // If value is in JSON format then return repr or id attribute
                 string: function (column, col, uiGridConstants, gridDefaults) {
-                    column.cellTemplate = gridDefaults.wrapCell('{{grid.appScope.getStringOrJSON(COL_FIELD)}}');
+                    column.cellTemplate = gridDefaults.wrapCell('{{grid.appScope.getStringOrJsonField(COL_FIELD)}}');
+                },
+
+                // Renders a link for the fields of url type
+                url: function (column, col, uiGridConstants, gridDefaults) {
+                    column.cellTemplate = gridDefaults.wrapCell('<a ng-href="{{COL_FIELD.url || COL_FIELD}}">{{COL_FIELD.repr || COL_FIELD}}</a>');
                 }
             },
             //
@@ -4090,7 +4131,7 @@ function gridDataProviderWebsocketFactory ($scope) {
                     if (typeof column.field !== 'undefined' && column.field === metaFields.repr) {
                         if (permissions.UPDATE) {
                             // If there is an update permission then display link
-                            column.cellTemplate = gridDefaults.wrapCell('<a ng-href="{{grid.appScope.objectUrl(row.entity)}}">{{COL_FIELD}}</a>');
+                            column.cellTemplate = gridDefaults.wrapCell('<a ng-href="{{grid.appScope.getObjectIdField(row.entity)}}">{{COL_FIELD}}</a>');
                         }
                         // Set repr column as the first column
                         columnDefs.splice(0, 0, column);
@@ -4360,15 +4401,15 @@ function gridDataProviderWebsocketFactory ($scope) {
 
                 var reprPath = options.reprPath || $lux.window.location;
 
-                scope.objectUrl = function(entity) {
+                scope.getObjectIdField = function(entity) {
                     return reprPath + '/' + entity[scope.gridOptions.metaFields.id];
                 };
 
-                scope.getBooleanFieldIcon = function(COL_FIELD) {
+                scope.getBooleanIconField = function(COL_FIELD) {
                     return ((COL_FIELD) ? 'fa fa-check-circle text-success' : 'fa fa-check-circle text-danger');
                 };
 
-                scope.getStringOrJSON = function(COL_FIELD) {
+                scope.getStringOrJsonField = function(COL_FIELD) {
                     if (isObject(COL_FIELD)) {
                         return COL_FIELD.repr || COL_FIELD.id;
                     }

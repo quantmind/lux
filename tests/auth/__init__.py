@@ -68,8 +68,8 @@ class SecretForm(forms.Form):
 
 
 class ObjectiveCRUD(odm.CRUD):
-    _model = odm.RestModel('objective', ObjectiveForm)
+    _model = odm.RestModel('objective', ObjectiveForm, ObjectiveForm)
 
 
 class SecretCRUD(odm.CRUD):
-    _model = odm.RestModel('secret', SecretForm)
+    _model = odm.RestModel('secret', SecretForm, SecretForm)

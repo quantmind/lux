@@ -6,7 +6,9 @@ from pulsar import PermissionDenied
 from pulsar.utils.html import nicename
 from pulsar.apps.wsgi import Json
 
-from .user import READ
+from .user import READ, PERMISSION_LEVELS
+
+PERMISSIONS = ['UPDATE', 'CREATE', 'DELETE']
 
 logger = logging.getLogger('lux.extensions.rest')
 
@@ -165,7 +167,8 @@ class RestModel(ColumnPermissionsMixin):
 
     .. attribute:: updateform
 
-        Form class for this REST model in editing mode
+        Form class for this REST model in editing mode. If not provided
+        no editing is allowed.
 
     .. attribute:: exclude
 
@@ -189,7 +192,7 @@ class RestModel(ColumnPermissionsMixin):
         assert name, 'model name not available'
         self.name = name
         self.form = form
-        self.updateform = updateform or form
+        self.updateform = updateform
         self.url = url if url is not None else '%ss' % name
         self.api_name = '%s_url' % (self.url or self.name)
         self.id_field = id_field or 'id'
@@ -271,7 +274,7 @@ class RestModel(ColumnPermissionsMixin):
             yield 'data-ng-options-ui-select', \
                 self.remote_options_str_ui_select.format(options=self.api_name)
 
-    def limit(self, request, default=None, max_limit=None):
+    def limit(self, request, limit=None, max_limit=None):
         '''The maximum number of items to return when fetching list
         of data'''
         cfg = request.config
@@ -280,23 +283,23 @@ class RestModel(ColumnPermissionsMixin):
             max_limit = (cfg['API_LIMIT_AUTH'] if user.is_authenticated() else
                          cfg['API_LIMIT_NOAUTH'])
         max_limit = int(max_limit)
-        if not default:
-            default = cfg['API_LIMIT_DEFAULT']
+        default = cfg['API_LIMIT_DEFAULT']
         try:
-            limit = int(request.url_data.get(cfg['API_LIMIT_KEY'], default))
-        except ValueError:
-            limit = max_limit
+            limit = int(limit)
+            if limit <= 0:
+                limit = default
+        except Exception:
+            limit = default
         return min(limit, max_limit)
 
-    def offset(self, request, default=None):
+    def offset(self, request, offset=None):
         '''Retrieve the offset value from the url when fetching list of data
         '''
-        cfg = request.config
-        default = default or 0
         try:
-            return int(request.url_data.get(cfg['API_OFFSET_KEY'], default))
-        except ValueError:
-            return 0
+            offset = int(offset)
+        except Exception:
+            offset = 0
+        return max(0, offset)
 
     def search_text(self, request, default=None):
         cfg = request.config
@@ -313,10 +316,14 @@ class RestModel(ColumnPermissionsMixin):
     def collection_response(self, request, *filters, **params):
         '''Handle a response for a list of models
         '''
+        cfg = request.config
         params.update(request.url_data)
+        limit = params.pop(cfg['API_LIMIT_KEY'], None)
+        offset = params.pop(cfg['API_OFFSET_KEY'], None)
         with self.session(request) as session:
             query = self.query(request, session, *filters)
-            return self.query_response(request, query, **params)
+            return self.query_response(request, query, limit=limit,
+                                       offset=offset, **params)
 
     def query_response(self, request, query, limit=None, offset=None,
                        text=None, sortby=None, max_limit=None, **params):
@@ -369,15 +376,27 @@ class RestModel(ColumnPermissionsMixin):
         if exclude:
             columns = [c for c in columns if c['name'] not in exclude]
 
-        return {'id': self.id_field,
+        permissions = self.get_permissions(request)
+
+        meta = {'id': self.id_field,
                 'repr': self.repr_field,
                 'columns': columns,
                 'default-limit': request.config['API_LIMIT_DEFAULT']}
+        if permissions:
+            meta['permissions'] = permissions
+        return meta
 
     def serialise_model(self, request, data, **kw):
         '''Serialise on model
         '''
         return self.tojson(request, data)
+
+    def get_permissions(self, request):
+        perms = {}
+        self._add_permission(request, perms, 'UPDATE', self.updateform)
+        self._add_permission(request, perms, 'CREATE', self.form)
+        self._add_permission(request, perms, 'DELETE', True)
+        return perms
 
     def _do_sortby(self, request, query, entry, direction):
         raise NotImplementedError
@@ -403,6 +422,13 @@ class RestModel(ColumnPermissionsMixin):
             columns.append(col.as_dict())
 
         return columns
+
+    def _add_permission(self, request, perms, name, avail):
+        if avail:
+            backend = request.cache.auth_backend
+            code = PERMISSION_LEVELS[name]
+            if backend.has_permission(request, self.name, code):
+                perms[name] = True
 
 
 class ModelMixin:

@@ -184,7 +184,16 @@ class TestMixin:
             self.assertEqual(response.status_code, status_code)
         self.assertEqual(response.content_type,
                          'text/html; charset=utf-8')
-        return response.content[0].decode('utf-8')
+        return self._content(response).decode('utf-8')
+
+    def text(self, response, status_code=None):
+        '''Get JSON object from response
+        '''
+        if status_code:
+            self.assertEqual(response.status_code, status_code)
+        self.assertEqual(response.content_type,
+                         'text/plain; charset=utf-8')
+        return self._content(response).decode('utf-8')
 
     def json(self, response, status_code=None):
         '''Get JSON object from response
@@ -193,7 +202,7 @@ class TestMixin:
             self.assertEqual(response.status_code, status_code)
         self.assertEqual(response.content_type,
                          'application/json; charset=utf-8')
-        return json.loads(response.content[0].decode('utf-8'))
+        return json.loads(self._content(response).decode('utf-8'))
 
     def assertValidationError(self, response, field=None, text=None):
         '''Assert a Form validation error
@@ -211,6 +220,9 @@ class TestMixin:
             self.assertTrue(field in data)
             if text:
                 self.assertEqual(data[field], text)
+
+    def _content(self, response):
+        return b''.join(response.content)
 
 
 class TestCase(unittest.TestCase, TestMixin):

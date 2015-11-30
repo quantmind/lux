@@ -24,11 +24,13 @@ full_name = RestColumn('full_name', displayName='name',
 
 
 def permission_model():
-    return odm.RestModel('permission', PermissionForm, repr_field='name')
+    return odm.RestModel('permission', PermissionForm, PermissionForm,
+                         repr_field='name')
 
 
 def group_model():
-    model = odm.RestModel('group', GroupForm, repr_field='name')
+    model = odm.RestModel('group', GroupForm, GroupForm,
+                          repr_field='name')
     model.add_related_column('permissions', permission_model)
     return model
 
@@ -46,6 +48,7 @@ def user_model():
 
 def registration_model():
     return odm.RestModel('registration',
+                         RegistrationForm,
                          RegistrationForm,
                          exclude=('user_id',))
 
