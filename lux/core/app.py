@@ -193,7 +193,7 @@ class Application(ConsoleParser, Extension, EventMixin):
         Parameter('COPYRIGHT', 'Lux',
                   'Site Copyright', True),
         Parameter('REQUIREJS_URL',
-                  "//cdnjs.cloudflare.com/ajax/libs/require.js/2.1.18/require",
+                  "//cdnjs.cloudflare.com/ajax/libs/require.js/2.1.22/require",
                   'Default url for requirejs. Set to None if no requirejs '
                   'is needed by your application'),
         Parameter('REQUIREJS', (),
