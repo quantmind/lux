@@ -92,32 +92,28 @@
                             // TODO: do we need a callback for JSON fields?
                             // or shall we leave it here?
 
-                            // Get rid of brackets if exists
-                            key = key.split('[]')[0];
+                            var modelType = formScope[formScope.formModelName + 'Type'];
+                            var jsonArrayKey = key.split('[]')[0];
 
-                            /*var field = formScope[formScope.formModelName + 'Type'][key];
-                            if (isObject(field) ) {
-                                if (field.type === 'textarea' && field.textMode === 'json') {
-                                    value = JSON.stringify(value, null, 4);
+                            // Stringify json only if has json mode enabled
+                            if (modelType[jsonArrayKey] === 'json' && (isObject(value) || isArray(value))) {
+
+                                // Get rid of the brackets from the json array field
+                                if (isArray(value)) {
+                                    key = jsonArrayKey;
                                 }
-                            } else if (isObject(value)) {
-                                value = JSON.stringify(value, null, 4);
-                            }*/
 
-                            if (formScope[formScope.formModelName + 'Type'][key] === 'textarea' && isObject(value)) {
                                 value = JSON.stringify(value, null, 4);
                             }
-
-                            console.log(key, value);
 
                             if (isArray(value)) {
                                 model[key] = [];
                                 forEach(value, function(item) {
                                     model[key].push(item.id || item);
                                 });
-                            }
-                            else
+                            } else {
                                 model[key] = value.id || value;
+                            }
                         });
                     });
                 }

@@ -147,20 +147,12 @@
                     function buildFieldInfo (formModelName, field, fieldType) {
                         var typeConfig = formModelName + 'Type';
                         var textMode = getJsonOrNone(field.text_edit);
-
                         scope[typeConfig] = scope[typeConfig] || {};
-                        scope[typeConfig][field.name] = fieldType;
 
-                        /*scope[typeConfig][field.name] = {
-                            type: fieldType
-                        };
-
-                        if (textMode !== null) {
-                            scope[typeConfig][field.name].textMode = textMode.mode || '';
-                        }*/
-
-
-                        console.log(scope[typeConfig][field.name]);
+                        if (textMode !== null)
+                            scope[typeConfig][field.name] = textMode.mode || '';
+                        else
+                            scope[typeConfig][field.name] = fieldType;
                     }
 
                     var self = this,
@@ -185,7 +177,6 @@
 
                     renderer = this[fieldType];
 
-                    //console.log(thisField.name, fieldType);
                     buildFieldInfo(scope.formModelName, thisField, fieldType);
 
                     if (!renderer)

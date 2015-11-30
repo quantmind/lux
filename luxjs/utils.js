@@ -255,7 +255,7 @@
      * @param {string}
      * @returns {object} - json object
      */
-    getJsonOrNone = function (str) {
+    getJsonOrNone = lux.getJsonOrNone = function (str) {
         try {
             return JSON.parse(str);
         } catch(error) {
