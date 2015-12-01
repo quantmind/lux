@@ -270,6 +270,12 @@ class RestModel(rest.RestModel):
             query = query.filter(field.in_(value))
         elif op == 'eq':
             query = query.filter(field == value)
+        elif op == 'match':
+            # TODO: check field type, check dialect and check escaping
+            tokens = value.replace('&', '\&').split()
+            if tokens:
+                match_string = ' & '.join(tokens)
+                query = query.filter(field.match(match_string))
         elif op == 'gt':
             query = query.filter(field > value)
         elif op == 'ge':
