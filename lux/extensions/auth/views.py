@@ -24,7 +24,7 @@ class GroupCRUD(CRUD):
     _model = group_model()
 
 
-class RegistrationCRUD(CRUD):
+class RegistrationCRUD(RestRouter):
     get_user = None
     '''Function to retrieve user from url
     '''
