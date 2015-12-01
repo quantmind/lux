@@ -1,6 +1,6 @@
-//      Lux Library - v0.3.0
+//      Lux Library - v0.3.1
 
-//      Compiled 2015-11-26.
+//      Compiled 2015-12-01.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -2859,7 +2859,8 @@ angular.module('lux.cms.core', [])
                 },
                 //
                 requiredErrorMessage: function (scope) {
-                    return scope.field.label + " is required";
+                    var msg = scope.field.required_error;
+                    return msg || scope.field.label + " is required";
                 },
                 //
                 // Return the function to handle form processing
@@ -3215,6 +3216,17 @@ angular.module('lux.form.handlers', ['lux.services'])
             }
             else
                 $lux.messages.error("Could not find that email");
+        };
+
+        //
+        formHandlers.signUp = function (response, scope) {
+            var email = response.data.email;
+            if (email) {
+                var text = "We have sent an email to <strong>" + email + "</strong>. Please follow the instructions to conform your email.";
+                $lux.messages.success(text);
+            }
+            else
+                $lux.messages.error("Something wrong, please contact the administrator");
         };
 
         //

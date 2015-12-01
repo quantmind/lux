@@ -285,7 +285,8 @@ class TestSqlite(test.AppTestCase, AuthUtils):
                                    '"action" must be defined')
 
     def test_signup(self):
-        return self._signup()
+        data = self._signup()
+        self.assertTrue('email' in data)
 
     def test_column_permissions_read(self):
         """Tests read requests against columns with permission level 0"""

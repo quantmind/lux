@@ -1,8 +1,6 @@
 from urllib.parse import urljoin
 from datetime import datetime, timedelta
 
-from pulsar.apps.wsgi import Json
-
 from lux import Parameter
 from lux.extensions.rest import AuthenticationError, website_url
 
@@ -29,15 +27,17 @@ class RegistrationMixin:
         return datetime.now() + timedelta(days=days)
 
     def signup_response(self, request, user):
-        '''handle the response to a signup request
+        '''handle the response to a signup request.
+        Return the user email if successful
         '''
         auth_backend = request.cache.auth_backend
         auth_key = auth_backend.create_auth_key(request, user)
-        if auth_key:
-            email = self.send_email_confirmation(request, user, auth_key)
-            request.response.status_code = 201
-            data = dict(email=email, registration=auth_key)
-            return Json(data).http_response(request)
+        if not auth_key:
+            raise AuthenticationError("Cannot create authentication key")
+        if not user.email:
+            raise AuthenticationError("Cannot create authentication key, "
+                                      "no email")
+        return self.send_email_confirmation(request, user, auth_key)
 
     def password_recovery(self, request, email):
         '''Recovery password email

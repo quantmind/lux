@@ -136,10 +136,13 @@ class Authorization(RestRouter, ResetPasswordMixin):
             auth_backend = request.cache.auth_backend
             try:
                 user = auth_backend.create_user(request, **data)
-                return auth_backend.signup_response(request, user)
+                email = auth_backend.signup_response(request, user)
+                request.response.status_code = 201
+                data = dict(email=email)
             except AuthenticationError as e:
                 form.add_error_message(str(e))
-        return Json(form.tojson()).http_response(request)
+                data = form.tojson()
+        return self.json(request, data)
 
     @action
     def change_password(self, request):

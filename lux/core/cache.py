@@ -1,10 +1,11 @@
 import json
 import logging
-import threading
+import asyncio
+
 from copy import copy
 from inspect import isfunction
 
-from pulsar.apps.data import parse_store_url, create_store
+from pulsar.apps.data import parse_store_url, create_store, LockError
 from pulsar.utils.importer import module_attribute
 from pulsar.utils.string import to_string
 from pulsar import ImproperlyConfigured
@@ -73,14 +74,105 @@ class Cache:
         raise NotImplementedError
 
 
+class AsyncLock:
+
+    def __init__(self, name, loop=None, timeout=None, blocking=0, sleep=0.2):
+        self._timeout = timeout
+        self._blocking = blocking
+        self._loop = loop or asyncio.get_event_loop()
+        self._lock = self._get_lock(name)
+
+        self._acquired = False
+        self._timeout_handler = None
+        # Sleep is ignored, this parameter is not needed, but might be passed
+        # in as RedisLock needs it
+
+    @property
+    def _locks(self):
+        if not hasattr(self._loop, '_locks'):
+            self._loop._locks = {}
+        return self._loop._locks
+
+    @asyncio.coroutine
+    def acquire(self):
+        try:
+            yield from asyncio.wait_for(self._lock.acquire(),
+                                        timeout=self._blocking)
+            self._acquired = True
+            self._schedule_timeout()
+            return True
+        except asyncio.TimeoutError:
+            return False
+
+    def release(self):
+        if not self._acquired:
+            raise LockError('Trying to release an unacquired lock')
+        try:
+            self._lock.release()
+            self._cancel_timeout()
+        except RuntimeError as exc:
+            raise LockError(str(exc)) from exc
+        finally:
+            self._acquired = False
+
+    def _get_lock(self, name):
+        if name not in self._locks:
+            self._locks[name] = asyncio.Lock(loop=self._loop)
+        return self._locks[name]
+
+    def _schedule_timeout(self):
+        if self._timeout is None:
+            return
+        self._timeout_future = self._loop.call_later(
+            self._timeout, self._release_after_timeout
+        )
+
+    def _cancel_timeout(self):
+        if self._timeout_handler:
+            self._timeout_handler.cancel()
+            self._timeout_handler = None
+
+    def _release_after_timeout(self):
+        if self._acquired:
+            self.release()
+
+
 class DummyCache(Cache):
 
     def __init__(self, app, name, url):
         super().__init__(app, name, url)
-        self._lock = threading.Lock()
+        if app.green_pool:
+            from pulsar.apps.greenio import wait
+            self._wait = wait
+        else:
+            self._loop = asyncio.get_event_loop()
 
-    def lock(self, name, timeout=None):
-        return self._lock
+    def lock(self, name, **kwargs):
+        return GreenLock(AsyncLock(name, **kwargs), self._wait)
+
+    def _wait(self, coro):
+        return self._loop.run_until_complete(coro)
+
+
+class GreenLock:
+
+    def __init__(self, lock, wait):
+        self._lock = lock
+        self._wait = wait
+
+    def __enter__(self):
+        if not self.acquire():
+            raise TimeoutError()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.release()
+
+    def acquire(self):
+        return self._wait(self._lock.acquire())
+
+    def release(self):
+        return self._wait(self._lock.release())
 
 
 class RedisCache(Cache):
@@ -111,7 +203,7 @@ class RedisCache(Cache):
         return self._wait(self.client.hmset(key, *fields))
 
     def lock(self, name, **kwargs):
-        return self.client.lock(name, **kwargs)
+        return GreenLock(self.client.lock(name, **kwargs), self._wait)
 
     def _wait(self, value):
         return value
