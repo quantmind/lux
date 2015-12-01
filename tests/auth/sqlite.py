@@ -106,18 +106,6 @@ class TestSqlite(test.AppTestCase, AuthUtils):
                 })
             group.permissions.append(permission)
 
-    def test_signup(self):
-        data = {'username': 'fooooooo',
-                'email': 'foo@dummy.com',
-                'password': 'dksjhvckjsahdvsf',
-                'password_repeat': 'dksjhvckjsahdvsf'}
-        request = yield from self.client.post('/authorizations/signup',
-                                              content_type='application/json',
-                                              body=data)
-        data = self.json(request.response, 201)
-        self.assertEqual(data['email'], 'foo@dummy.com')
-
-class f:
     def test_backend(self):
         backend = self.app.auth_backend
         self.assertTrue(backend)
@@ -297,7 +285,8 @@ class f:
                                    '"action" must be defined')
 
     def test_signup(self):
-        return self._signup()
+        data = self._signup()
+        self.assertTrue('email' in data)
 
     def test_column_permissions_read(self):
         """Tests read requests against columns with permission level 0"""

@@ -9,7 +9,7 @@ from lux.forms import Layout, Fieldset, Submit
 from lux.extensions.rest.forms import EmailForm
 from lux.extensions.rest.authviews import action
 
-from pulsar import MethodNotAllowed, Http404
+from pulsar import MethodNotAllowed, Http404, PermissionDenied
 from pulsar.apps.wsgi import Json
 
 from .forms import (permission_model, group_model, user_model,
@@ -24,11 +24,19 @@ class GroupCRUD(CRUD):
     _model = group_model()
 
 
-class RegistrationCRUD(RestRouter):
+class RegistrationCRUD(CRUD):
     get_user = None
     '''Function to retrieve user from url
     '''
     _model = registration_model()
+
+    def get(self, request):
+        '''Get a list of models
+        '''
+        self.check_model_permission(request, rest.READ)
+        # Columns the user doesn't have access to are dropped by
+        # serialise_model
+        return self.model(request).collection_response(request)
 
     def post(self, request):
         '''Create a new authentication key
@@ -54,6 +62,22 @@ class RegistrationCRUD(RestRouter):
         else:
             data = form.tojson()
         return Json(data).http_response(request)
+
+    @route(method=('get', 'options'))
+    def metadata(self, request):
+        '''Model metadata
+        '''
+        if request.method == 'OPTIONS':
+            request.app.fire('on_preflight', request)
+            return request.response
+
+        backend = request.cache.auth_backend
+        model = self.model(request)
+
+        if backend.has_permission(request, model.name, rest.READ):
+            meta = model.meta(request)
+            return Json(meta).http_response(request)
+        raise PermissionDenied
 
 
 class UserCRUD(CRUD):

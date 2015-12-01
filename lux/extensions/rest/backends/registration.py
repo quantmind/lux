@@ -1,8 +1,6 @@
 from urllib.parse import urljoin
 from datetime import datetime, timedelta
 
-from pulsar.apps.wsgi import Json
-
 from lux import Parameter
 from lux.extensions.rest import AuthenticationError, website_url
 
