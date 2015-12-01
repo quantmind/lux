@@ -136,6 +136,16 @@ class TestPostgreSql(test.AppTestCase):
         result = data['result']
         self.assertIsInstance(result, list)
 
+    def test_get_tasks_multi(self):
+        url = '/tasks?id=1&id=2&id=3'
+        request = yield from self.client.get(url)
+        response = request.response
+        self.assertEqual(response.status_code, 200)
+        data = self.json(response)
+        self.assertIsInstance(data, dict)
+        result = data['result']
+        self.assertIsInstance(result, list)
+
     def test_metadata(self):
         request = yield from self.client.get('/tasks/metadata')
         response = request.response
