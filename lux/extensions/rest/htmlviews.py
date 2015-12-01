@@ -39,25 +39,26 @@ class SignUp(WebFormRouter):
     '''Display a signup form
     '''
     template = 'signup.html'
+    confirmation_template = 'registration/confirmation.html'
 
     def get(self, request):
         if request.cache.user.is_authenticated():
             raise HttpRedirect('/')
         return super().get(request)
 
-    @route('confirmation/<username>')
-    def new_confirmation(self, request):
-        username = request.urlargs['username']
-        backend = request.cache.auth_backend
-        backend.confirm_registration(request, username=username)
-        raise HttpRedirect(self.redirect_url(request))
-
     @route('<key>')
     def confirmation(self, request):
         key = request.urlargs['key']
         backend = request.cache.auth_backend
-        backend.confirm_registration(request, key)
-        raise HttpRedirect(self.redirect_url(request))
+        try:
+            user = backend.get_user(request, auth_key=key, confirm=1)
+        except AuthenticationError as e:
+            session = request.cache.session
+            session.error('The link is no longer valid, %s' % e)
+            return request.redirect('/')
+        if not user:
+            raise Http404
+        return self.html_response(request, '', self.confirmation_template)
 
 
 class ForgotPassword(WebFormRouter):

@@ -114,9 +114,14 @@ class Registration(Model):
     expiry = Column(DateTime, nullable=False)
     confirmed = Column(Boolean)
 
+    user = relationship(
+        User,
+        backref=backref("registrations", cascade="all, delete-orphan")
+    )
+
 
 class MailingList(Model):
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey('user.id'))
+    user_id = Column(Integer, ForeignKey('user.id', ondelete="CASCADE"))
     email = Column(String(120), unique=True)
     topic = Column(String(60))

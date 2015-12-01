@@ -117,7 +117,7 @@ class ApiSessionBackend(SessionBackendMixin,
             value = kw.get(name)
             if not value:
                 continue
-            response = api.get(url, data={name: value})
+            response = api.get(url, data=kw)
             if response.status_code == 200:
                 data = response.json()
                 if data['total'] == 1:

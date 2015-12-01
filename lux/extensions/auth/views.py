@@ -126,7 +126,8 @@ class SignUp(SignUpView):
                           Submit('Sign up',
                                  disabled="form.$invalid"),
                           showLabels=False,
-                          directive='user-form')
+                          directive='user-form',
+                          resultHandler='signUp')
 
 
 class ComingSoon(ComingSoonView):

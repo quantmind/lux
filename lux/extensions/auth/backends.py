@@ -26,8 +26,8 @@ class AuthMixin(PasswordMixin):
         yield Authorization()
 
     def get_user(self, request, user_id=None, token_id=None, username=None,
-                 email=None, auth_key=None, **kw):
-        '''Securely fetch a user by id, username or email
+                 email=None, auth_key=None, confirm=None, **kw):
+        '''Securely fetch a user by id, username, email or auth key
 
         Returns user or nothing
         '''
@@ -42,6 +42,7 @@ class AuthMixin(PasswordMixin):
                 if not query.count():
                     return
 
+        reg = None
         if auth_key:
             with odm.begin() as session:
                 query = session.query(odm.registration)
@@ -64,6 +65,14 @@ class AuthMixin(PasswordMixin):
                     return
             except NoResultFound:
                 return
+
+        if reg and confirm:
+            with odm.begin() as session:
+                user.active = True
+                reg.expiry = datetime.utcnow()
+                reg.confirmed = True
+                session.add(user)
+                session.add(reg)
 
         return user
 
