@@ -4,9 +4,9 @@ from enum import Enum
 
 import pytz
 
-from sqlalchemy import Column, desc
+from sqlalchemy import Column, desc, String
 from sqlalchemy.orm import class_mapper, load_only
-from sqlalchemy.sql.expression import func
+from sqlalchemy.sql.expression import func, cast
 
 from pulsar import PermissionDenied
 from pulsar.utils.html import nicename
@@ -272,10 +272,20 @@ class RestModel(rest.RestModel):
         elif op == 'eq':
             query = query.filter(field == value)
         elif op == 'search':
+            # For some reason, SQLAlchemy uses to_tsquery rather than
+            # plainto_tsquery for the match operator
+            #
+            # to_tsquery uses operators (&, |, ! etc.) while
+            # plainto_tsquery tokenises the input string and uses AND between
+            # tokens, hence plainto_tsquery is what we want here
+            #
+            # For other database back ends, the behaviour of the match
+            # operator is completely different - see:
+            # http://docs.sqlalchemy.org/en/rel_1_0/core/sqlelement.html
             dialect_name = odm.binds[odm[self.name].__table__].name
             if dialect_name == 'postgresql':
-                query = query.filter(func.to_tsvector(field).op('@@')(
-                    func.plainto_tsquery(value)))
+                query = query.filter(func.to_tsvector(cast(field, String)).op(
+                    '@@')(func.plainto_tsquery(value)))
             else:
                 query = query.filter(field.match(value))
         elif op == 'gt':
@@ -286,6 +296,13 @@ class RestModel(rest.RestModel):
             query = query.filter(field < value)
         elif op == 'le':
             query = query.filter(field <= value)
+        elif op == 'ne':
+            # Behaviour of ne operator
+            # Example data: [None, 'john', 'roger']
+            #
+            # ne:john would return only roger (i.e. nulls excluded)
+            # ne:     would return john and roger
+            query = query.filter(field != value)
         return query
 
     def _do_sortby(self, request, query, entry, direction):
