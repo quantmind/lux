@@ -58,7 +58,6 @@ class AuthUtils:
         username = test.randomname(prefix='u-')
         password = test.randomname()
         email = '%s@%s.com' % (username, test.randomname())
-
         data = {'username': username,
                 'password': password,
                 'password_repeat': password,
@@ -66,8 +65,14 @@ class AuthUtils:
         request = yield from self.client.post('/authorizations/signup',
                                               body=data,
                                               content_type='application/json')
-        self.assertEqual(request.response.status_code, 201)
-        return self.json(request.response)
+        return self.json(request.response, 201)
+
+    def _get_registration(self, email):
+        odm = self.app.odm()
+        with odm.begin() as session:
+            query = session.query(odm.registration).filter(
+                odm.user.email == email)
+            return query.one()
 
 
 class TestSqlite(test.AppTestCase, AuthUtils):
@@ -285,7 +290,7 @@ class TestSqlite(test.AppTestCase, AuthUtils):
                                    '"action" must be defined')
 
     def test_signup(self):
-        data = self._signup()
+        data = yield from self._signup()
         self.assertTrue('email' in data)
 
     def test_column_permissions_read(self):
@@ -296,9 +301,7 @@ class TestSqlite(test.AppTestCase, AuthUtils):
 
         request = yield from self.client.get(
             '/objectives/{}'.format(objective['id']))
-        response = request.response
-        self.assertEqual(response.status_code, 200)
-        data = self.json(response)
+        data = self.json(request.response, 200)
         self.assertTrue('id' in data)
         self.assertFalse('subject' in data)
 
@@ -460,3 +463,16 @@ class TestSqlite(test.AppTestCase, AuthUtils):
         self.assertNotEqual(token, badtoken)
         request = yield from self.client.get('/secrets', token=badtoken)
         self.assertEqual(request.response.status_code, 403)
+
+    def test_confirm_signup(self):
+        data = yield from self._signup()
+        reg = yield from self.app.green_pool.submit(self._get_registration,
+                                                    data['email'])
+        url = '/authorizations/signup/%s' % reg.id
+        request = yield from self.client.options(url)
+        self.assertEqual(request.response.status_code, 200)
+        request = yield from self.client.post(url)
+        data = self.json(request.response, 200)
+        self.assertTrue(data['success'])
+        request = yield from self.client.post(url)
+        self.json(request.response, 410)

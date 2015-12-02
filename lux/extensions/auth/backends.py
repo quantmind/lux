@@ -26,18 +26,19 @@ class AuthMixin(PasswordMixin):
         yield Authorization()
 
     def get_user(self, request, user_id=None, token_id=None, username=None,
-                 email=None, auth_key=None, confirm=None, **kw):
+                 email=None, auth_key=None, **kw):
         '''Securely fetch a user by id, username, email or auth key
 
         Returns user or nothing
         '''
         odm = request.app.odm()
+        now = datetime.utcnow()
 
         if token_id and user_id:
             with odm.begin() as session:
                 query = session.query(odm.token)
                 query = query.filter_by(user_id=user_id, id=token_id)
-                query.update({'last_access': datetime.utcnow()},
+                query.update({'last_access': now},
                              synchronize_session=False)
                 if not query.count():
                     return
@@ -47,7 +48,7 @@ class AuthMixin(PasswordMixin):
             with odm.begin() as session:
                 query = session.query(odm.registration)
                 reg = query.get(auth_key)
-                if reg and not reg.confirmed and reg.expiry > datetime.now():
+                if reg and not reg.confirmed and reg.expiry > now:
                     user_id = reg.user_id
                 else:
                     return
@@ -65,14 +66,6 @@ class AuthMixin(PasswordMixin):
                     return
             except NoResultFound:
                 return
-
-        if reg and confirm:
-            with odm.begin() as session:
-                user.active = True
-                reg.expiry = datetime.utcnow()
-                reg.confirmed = True
-                session.add(user)
-                session.add(reg)
 
         return user
 
@@ -191,13 +184,26 @@ class AuthMixin(PasswordMixin):
             session.add(user)
         return user
 
-    def confirm_auth_key(self, request, key):
+    def confirm_auth_key(self, request, key, confirm=False):
         odm = request.app.odm()
         with odm.begin() as session:
             reg = session.query(odm.registration).get(key)
+            now = datetime.utcnow()
             if reg:
-                session.delete(reg)
-                return True
+                if not reg.confirmed and reg.expiry > now:
+                    user = reg.user
+                    user.active = True
+                    session.add(user)
+                    if confirm:
+                        reg.confirmed = True
+                        reg.expiry = now
+                        session.add(reg)
+                    else:
+                        session.delete(reg)
+                    return True
+                else:
+                    return False
+        raise AuthenticationError('Could not confirm key')
 
     @cached(user=True)
     def get_permissions(self, request):
