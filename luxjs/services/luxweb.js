@@ -96,7 +96,7 @@
                             var jsonArrayKey = key.split('[]')[0];
 
                             // Stringify json only if has json mode enabled
-                            if (modelType[jsonArrayKey] === 'json' && (isObject(value) || isArray(value))) {
+                            if (modelType[jsonArrayKey] === 'json' && isJsonStringify(value)) {
 
                                 // Get rid of the brackets from the json array field
                                 if (isArray(value)) {

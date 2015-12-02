@@ -253,7 +253,7 @@
      * Obtain a JSON object from a string (if available) otherwise null
      *
      * @param {string}
-     * @returns {object} - json object
+     * @returns {object} json object
      */
     getJsonOrNone = lux.getJsonOrNone = function (str) {
         try {
@@ -261,4 +261,16 @@
         } catch(error) {
             return null;
         }
+    },
+
+    /**
+     * Checks if a JSON value can be stringify
+     *
+     * @param {value} json value
+     * @returns {boolean}
+     */
+    isJsonStringify = lux.isJsonStringify = function (value) {
+        if (isObject(value) || isArray(value) || isString(value))
+            return true;
+        return false;
     };

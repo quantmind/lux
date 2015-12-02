@@ -364,7 +364,7 @@ function(angular, root) {
      * Obtain a JSON object from a string (if available) otherwise null
      *
      * @param {string}
-     * @returns {object} - json object
+     * @returns {object} json object
      */
     getJsonOrNone = lux.getJsonOrNone = function (str) {
         try {
@@ -372,6 +372,18 @@ function(angular, root) {
         } catch(error) {
             return null;
         }
+    },
+
+    /**
+     * Checks if a JSON value can be stringify
+     *
+     * @param {value} json value
+     * @returns {boolean}
+     */
+    isJsonStringify = lux.isJsonStringify = function (value) {
+        if (isObject(value) || isArray(value) || isString(value))
+            return true;
+        return false;
     };
 
     lux.messages.no_api = function (url) {
@@ -974,7 +986,7 @@ function(angular, root) {
                             var jsonArrayKey = key.split('[]')[0];
 
                             // Stringify json only if has json mode enabled
-                            if (modelType[jsonArrayKey] === 'json' && (isObject(value) || isArray(value))) {
+                            if (modelType[jsonArrayKey] === 'json' && isJsonStringify(value)) {
 
                                 // Get rid of the brackets from the json array field
                                 if (isArray(value)) {

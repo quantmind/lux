@@ -94,4 +94,14 @@
             res = lux.getJsonOrNone("{id: 1}");
             expect(res).toBe(null);
         });
+
+        it("Check isJsonStringify", function() {
+            var res;
+            res = lux.isJsonStringify("[123, 234]");
+            expect(res).toBe(true);
+            res = lux.isJsonStringify("{id: 1}");
+            expect(res).toBe(true);
+            res = lux.isJsonStringify("value");
+            expect(res).toBe(true);
+        });
     });
