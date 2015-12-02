@@ -400,3 +400,27 @@ class TestPostgreSql(test.AppTestCase):
         result = data['result']
         self.assertIsInstance(result, list)
         self.assertTrue(len(result) >= 2)
+
+    def test_search(self):
+        token = yield from self._token()
+        pippo = yield from self._create_task(token, 'pippo to the rescue')
+        pluto = yield from self._create_task(token, 'pluto to the rescue')
+        request = yield from self.client.get('/tasks?name:search=rescue to '
+                                             'the')
+        data = self.json(request.response, 200)
+        result = data['result']
+        self.assertIsInstance(result, list)
+        self.assertTrue(len(result) == 2)
+
+        request = yield from self.client.get('/tasks?name:search=pippo')
+        data = self.json(request.response, 200)
+        result = data['result']
+        self.assertIsInstance(result, list)
+        self.assertTrue(len(result) == 1)
+        self.assertTrue(result[0].id == pippo.id)
+
+        request = yield from self.client.get('/tasks?name:search=thebe')
+        data = self.json(request.response, 200)
+        result = data['result']
+        self.assertIsInstance(result, list)
+        self.assertTrue(len(result) == 0)
