@@ -5,6 +5,7 @@ from copy import copy
 from inspect import isclass, getfile
 from collections import OrderedDict
 from importlib import import_module
+from base64 import b64encode
 
 import pulsar
 from pulsar import ImproperlyConfigured
@@ -595,14 +596,15 @@ class Application(ConsoleParser, Extension, EventMixin):
                 doc.jscontext.update(jscontext)
             head = doc.head
             if title:
-                head.title = title % head.title
+                head.title = title
             if status_code:
                 request.response.status_code = status_code
             context = self.context(request, context)
             if doc.jscontext:
                 jscontext = json.dumps(doc.jscontext)
+                encoded = b64encode(jscontext.encode('utf-8')).decode('utf-8')
                 doc.head.embedded_js.insert(
-                    0, 'var lux = {context: %s};\n' % jscontext)
+                    0, 'var lux = "%s";\n' % encoded)
             body = self.cms.render(page, context)
             doc.body.append(body)
             return doc.http_response(request)

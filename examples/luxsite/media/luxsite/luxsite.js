@@ -1,6 +1,6 @@
 //      Lux Library - v0.3.1
 
-//      Compiled 2015-12-01.
+//      Compiled 2015-12-02.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -16,12 +16,15 @@
     // If a file assign http as protocol (https does not work with PhantomJS)
     var protocol = root.location ? (root.location.protocol === 'file:' ? 'http:' : '') : '',
         end = '.js',
-        ostring = Object.prototype.toString,
-        lux = root.lux;
+        ostring = Object.prototype.toString;
 
 
-    function isArray(it) {
-        return ostring.call(it) === '[object Array]';
+    function isString (value) {
+        return ostring.call(value) === '[object String]';
+    }
+
+    function isArray (value) {
+        return ostring.call(value) === '[object Array]';
     }
 
     function minify () {
@@ -43,6 +46,10 @@
         }
         return o1;
     }
+
+    if (isString(root.lux))
+        root.lux = {context: urlBase64Decode(root.lux)};
+
 
     function defaultPaths () {
         return {

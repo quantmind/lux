@@ -1,6 +1,6 @@
 //      Lux Library - v0.3.1
 
-//      Compiled 2015-12-01.
+//      Compiled 2015-12-02.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -29,7 +29,6 @@ function(angular, root) {
     "use strict";
 
     var lux = root.lux || {};
-    lux.version = '0.1.0';
 
     var forEach = angular.forEach,
         extend = angular.extend,
@@ -45,7 +44,12 @@ function(angular, root) {
             hashPrefix: '',
             ngModules: []
         };
+
+    if (isString(lux))
+        lux = {context: urlBase64Decode(lux)};
+    root.lux = lux;
     //
+    lux.version = '0.1.0';
     lux.$ = $;
     lux.angular = angular;
     lux.forEach = angular.forEach;

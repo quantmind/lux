@@ -32,6 +32,8 @@ def action(f):
 
 
 class SignUpMixin:
+    """Add endpoints for signup and signup confirmation
+    """
     create_user_form = CreateUserForm
 
     @action

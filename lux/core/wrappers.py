@@ -294,19 +294,17 @@ def error_handler(request, exc):
         msg = render_error_debug(request, exc, is_html)
     else:
         msg = error_messages.get(response.status_code) or str(exc)
-        if is_html:
-            msg = app.render_template(['%s.html' % response.status_code,
-                                       'error.html'],
-                                      {'status_code': response.status_code,
-                                       'status_message': msg},
-                                      request=request)
-    #
+
     if is_html:
-        doc = request.html_document
-        doc.head.title = response.status
-        doc.body.append(msg)
-        return doc.render(request)
-    elif content_type in JSON_CONTENT_TYPES:
+        context = {'status_code': response.status_code,
+                   'status_message': msg}
+        return app.html_response(request,
+                                 ['%s.html' % response.status_code,
+                                  'error.html'],
+                                 context,
+                                 title=response.status)
+    #
+    if content_type in JSON_CONTENT_TYPES:
         return json.dumps({'status': response.status_code,
                            'message': msg})
     else:

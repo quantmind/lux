@@ -76,9 +76,11 @@ class RegistrationMixin:
         app = request.app
         cfg = app.config
         site = website_url(request)
+        reg_url = urljoin(site, cfg['REGISTER_URL'], auth_key)
+        psw_url = urljoin(site, cfg['RESET_PASSWORD_URL'], auth_key)
         ctx = {'auth_key': auth_key,
-               'register_url': urljoin(site, cfg['REGISTER_URL'], auth_key),
-               'reset_password_url': cfg['RESET_PASSWORD_URL'],
+               'register_url': reg_url,
+               'reset_password_url': psw_url,
                'expiration_days': cfg['ACCOUNT_ACTIVATION_DAYS'],
                'email': user.email,
                'site_uri': site}

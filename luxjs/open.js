@@ -21,7 +21,6 @@ function(angular, root) {
     "use strict";
 
     var lux = root.lux || {};
-    lux.version = '0.1.0';
 
     var forEach = angular.forEach,
         extend = angular.extend,
@@ -37,7 +36,12 @@ function(angular, root) {
             hashPrefix: '',
             ngModules: []
         };
+
+    if (isString(lux))
+        lux = {context: urlBase64Decode(lux)};
+    root.lux = lux;
     //
+    lux.version = '0.1.0';
     lux.$ = $;
     lux.angular = angular;
     lux.forEach = angular.forEach;

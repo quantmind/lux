@@ -1,8 +1,24 @@
 import json
 
-from pulsar import new_event_loop
-from pulsar.apps.http import HttpClient
-from pulsar.utils.httpurl import is_absolute_uri
+from pulsar import new_event_loop, HttpException
+from pulsar.apps.http import HttpClient, JSON_CONTENT_TYPES
+from pulsar.utils.httpurl import is_absolute_uri, is_succesful
+
+from lux.core.content.contents import Content
+
+
+def raise_from_status(response):
+    '''Raise an HttpException error from an Http response
+    '''
+    if not is_succesful(response.status_code):
+        content = response.decode_content()
+        if isinstance(content, dict):
+            content = tuple(content.values())
+        if isinstance(content, (list, tuple)):
+            message = ', '.join((str(v) for v in content))
+        else:
+            message = content
+        raise HttpException(message, response.status_code)
 
 
 class ApiClient:
@@ -84,5 +100,24 @@ class Response:
     def __getattr__(self, name):
         return getattr(self.response, name)
 
+    def get_content(self):
+        '''Retrieve the body without flushing'''
+        return b''.join(self.response.content)
+
+    def content_string(self, charset=None, errors=None):
+        charset = charset or self.response.encoding or 'utf-8'
+        return self.get_content().decode(charset, error or 'strict')
+
     def json(self):
-        return json.loads(self.response.content[0].decode('utf-8'))
+        return json.loads(self.content_string())
+
+    def decode_content(self):
+        '''Return the best possible representation of the response body.
+        '''
+        ct = self.response.content_type
+        if ct:
+            if ct in JSON_CONTENT_TYPES:
+                return self.json()
+            elif ct.startswith('text/'):
+                return self.content_string()
+        return self.get_content()

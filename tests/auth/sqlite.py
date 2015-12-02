@@ -70,7 +70,7 @@ class AuthUtils:
     def _get_registration(self, email):
         odm = self.app.odm()
         with odm.begin() as session:
-            query = session.query(odm.registration).filter(
+            query = session.query(odm.registration).join(odm.user).filter(
                 odm.user.email == email)
             return query.one()
 

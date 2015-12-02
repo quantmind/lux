@@ -51,11 +51,8 @@ class TokenBackendMixin:
             # In this case we want the client to perform
             # a new authentication. Raise 401
             raise Http401('Token')
-        except Exception as exc:
-            request.app.logger.warning(str(exc))
-            # In this case we want the client to perform
-            # a new authentication. Raise 401
-            raise BadRequest
+        except jwt.DecodeError as exc:
+            raise BadRequest(str(exc))
 
     def create_token(self, request, user, **kwargs):  # pragma    nocover
         '''Create a new token and store it
