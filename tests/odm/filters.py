@@ -3,6 +3,7 @@ from .postgresql import TestPostgreSqlBase
 from .sqlite import TestSqliteMixin
 
 
+@test.sequential
 class TestFiltersPsql(TestPostgreSqlBase):
 
     def setUp(self):
@@ -27,8 +28,13 @@ class TestFiltersPsql(TestPostgreSqlBase):
         request = yield from self.client.get('/tasks?desc:ne=abu')
         data = self.json(request.response, 200)
         result = data['result']
-        self.assertIsInstance(result, list)
-        self.assertTrue(len(result) == 1)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]['desc'], 'genie')
+
+        request = yield from self.client.get('/tasks?desc:ne=')
+        data = self.json(request.response, 200)
+        result = data['result']
+        self.assertEqual(len(result), 2)
 
     def test_search(self):
         request = yield from self.client.get('/tasks?subject:search=rescue to '
@@ -36,20 +42,20 @@ class TestFiltersPsql(TestPostgreSqlBase):
         data = self.json(request.response, 200)
         result = data['result']
         self.assertIsInstance(result, list)
-        self.assertTrue(len(result) == 2)
+        self.assertEqual(len(result), 2)
 
         request = yield from self.client.get('/tasks?subject:search=pippo')
         data = self.json(request.response, 200)
         result = data['result']
         self.assertIsInstance(result, list)
         self.assertTrue(len(result) == 1)
-        self.assertTrue(result[0]['id'] == self.pippo['id'])
+        self.assertEqual(result[0]['id'], self.pippo['id'])
 
         request = yield from self.client.get('/tasks?subject:search=thebe')
         data = self.json(request.response, 200)
         result = data['result']
         self.assertIsInstance(result, list)
-        self.assertTrue(len(result) == 0)
+        self.assertEqual(len(result), 0)
 
 
 @test.sequential
