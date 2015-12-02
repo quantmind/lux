@@ -168,6 +168,8 @@ class Field:
         '''
         attrs = self.attrs.copy()
         attrs['label'] = self.label or nicename(self.name)
+        if self.required_error != standard_required_error:
+            attrs['required_error'] = self.required_error
         return attrs
 
 

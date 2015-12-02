@@ -1,6 +1,6 @@
 //      Lux Library - v0.3.1
 
-//      Compiled 2015-11-30.
+//      Compiled 2015-12-02.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -2900,7 +2900,8 @@ angular.module('lux.cms.core', [])
                 },
                 //
                 requiredErrorMessage: function (scope) {
-                    return scope.field.label + " is required";
+                    var msg = scope.field.required_error;
+                    return msg || scope.field.label + " is required";
                 },
                 //
                 // Return the function to handle form processing

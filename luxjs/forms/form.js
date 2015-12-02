@@ -665,7 +665,8 @@
                 },
                 //
                 requiredErrorMessage: function (scope) {
-                    return scope.field.label + " is required";
+                    var msg = scope.field.required_error;
+                    return msg || scope.field.label + " is required";
                 },
                 //
                 // Return the function to handle form processing
