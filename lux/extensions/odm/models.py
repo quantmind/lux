@@ -271,10 +271,13 @@ class RestModel(rest.RestModel):
             query = query.filter(field.in_(value))
         elif op == 'eq':
             query = query.filter(field == value)
-        elif op == 'match':
-            # TODO: check field type, check dialect and check escaping
-            query = query.filter(func.to_tsvector(field).op('@@')(
-                func.plainto_tsquery(value)))
+        elif op == 'search':
+            dialect_name = odm.binds[odm[self.name].__table__].name
+            if dialect_name == 'postgresql':
+                query = query.filter(func.to_tsvector(field).op('@@')(
+                    func.plainto_tsquery(value)))
+            else:
+                query = query.filter(field.match(value))
         elif op == 'gt':
             query = query.filter(field > value)
         elif op == 'ge':
