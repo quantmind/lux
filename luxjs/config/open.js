@@ -55,11 +55,10 @@
     }
 
     function urlBase64DecodeToJSON (str) {
-        var decoded = lux.urlBase64Decode(str);
+        var decoded = urlBase64Decode(str);
         if (!decoded) {
             throw new Error('Cannot decode the token');
         }
-
         return JSON.parse(decoded);
     }
 
