@@ -4,8 +4,6 @@ from pulsar import new_event_loop, HttpException
 from pulsar.apps.http import HttpClient, JSON_CONTENT_TYPES
 from pulsar.utils.httpurl import is_absolute_uri, is_succesful
 
-from lux.core.content.contents import Content
-
 
 def raise_from_status(response):
     '''Raise an HttpException error from an Http response
@@ -106,7 +104,7 @@ class Response:
 
     def content_string(self, charset=None, errors=None):
         charset = charset or self.response.encoding or 'utf-8'
-        return self.get_content().decode(charset, error or 'strict')
+        return self.get_content().decode(charset, errors or 'strict')
 
     def json(self):
         return json.loads(self.content_string())
