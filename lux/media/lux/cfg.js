@@ -65,7 +65,7 @@
 
 
     if (isString(root.lux))
-        root.lux = {context: urlBase64Decode(root.lux)};
+        root.lux = {context: urlBase64DecodeToJSON(root.lux)};
 
     root.lux.urlBase64Decode = urlBase64Decode;
     root.lux.urlBase64DecodeToJSON = urlBase64DecodeToJSON;
