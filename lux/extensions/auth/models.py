@@ -91,7 +91,7 @@ class Permission(Model):
 
 
 class Token(Model, SessionMixin):
-    '''A model for an Authentification Token
+    '''A model for an Authentication Token
     '''
     id = Column(UUIDType(binary=False), primary_key=True)
     user_id = Column(Integer, ForeignKey('user.id'))

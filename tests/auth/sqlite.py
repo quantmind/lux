@@ -234,8 +234,9 @@ class TestSqlite(test.AppTestCase, AuthUtils):
         request = yield from self.client.post('/authorizations',
                                               content_type='application/json',
                                               body=data)
-        self.assertValidationError(request.response, '',
-                                   'Invalid username or password')
+        data = self.json(request.response, 422)
+        self.assertEqual(data['message'], 'Invalid username or password')
+        self.assertEqual(data['status'], 422)
 
     def test_create_superuser_command_and_token(self):
         return self._token()
@@ -476,3 +477,7 @@ class TestSqlite(test.AppTestCase, AuthUtils):
         self.assertTrue(data['success'])
         request = yield from self.client.post(url)
         self.json(request.response, 410)
+
+    def test_html_signup(self):
+        request = yield from self.client.get('signup')
+        self.assertEqual(request.response.status_code, 200)

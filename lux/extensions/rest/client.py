@@ -1,22 +1,8 @@
 import json
 
-from pulsar import new_event_loop, HttpException
+from pulsar import new_event_loop
 from pulsar.apps.http import HttpClient, JSON_CONTENT_TYPES
-from pulsar.utils.httpurl import is_absolute_uri, is_succesful
-
-
-def raise_from_status(response):
-    '''Raise an HttpException error from an Http response
-    '''
-    if not is_succesful(response.status_code):
-        content = response.decode_content()
-        if isinstance(content, dict):
-            content = tuple(content.values())
-        if isinstance(content, (list, tuple)):
-            message = ', '.join((str(v) for v in content))
-        else:
-            message = content
-        raise HttpException(message, response.status_code)
+from pulsar.utils.httpurl import is_absolute_uri
 
 
 class ApiClient:

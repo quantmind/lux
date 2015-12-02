@@ -4,17 +4,19 @@ from pulsar import Http404, HttpRedirect
 from pulsar.apps.wsgi import route
 
 import lux
+from lux import raise_http_error
 from lux.forms import WebFormRouter, Layout, Fieldset, Submit
 
 from .user import AuthenticationError, login, logout
 from .forms import LoginForm, PasswordForm, EmailForm
-from .client import raise_from_status
 
 
 class Login(WebFormRouter):
     '''Adds login get ("text/html") and post handlers
     '''
     template = 'login.html'
+    response_content_types = ['text/html',
+                              'application/json']
     default_form = Layout(LoginForm,
                           Fieldset(all=True),
                           Submit('Login', disabled="form.$invalid"),
@@ -53,7 +55,16 @@ class SignUp(WebFormRouter):
         url = 'authorizations/signup/%s' % key
         api = request.app.api
         response = api.post(url)
-        raise_from_status(response)
+        raise_http_error(response)
+        return self.html_response(request, '', self.confirmation_template)
+
+    @route('confirmation/<username>')
+    def new_confirmation(self, request):
+        username = request.urlargs['username']
+        backend = request.cache.auth_backend
+        api = request.app.api
+        response = api.post('authorizations/%s' % username)
+        raise_http_error(response)
         return self.html_response(request, '', self.confirmation_template)
 
 

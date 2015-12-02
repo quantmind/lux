@@ -101,7 +101,8 @@ angular.module('lux.form.process', ['ngFileUpload'])
                 return;
             }
             //
-            promise.then(function (response) {
+            promise.then(
+                function (response) {
                     var data = response.data;
                     var hookName = scope.formAttrs.resultHandler;
                     var hook = hookName && $lux.formHandlers[hookName];
@@ -122,19 +123,18 @@ angular.module('lux.form.process', ['ngFileUpload'])
                     }
                 },
                 function (response) {
-                    var data = response.data || {},
-                        status = response.status,
-                        messages = data.errors,
-                        msg;
-                    if (!messages) {
-                        msg = data.message;
-                        if (!msg) {
-                            status = status || data.status || 501;
-                            msg = 'Response error (' + data.status + ')';
+                    var data = response.data || {};
+
+                    if (data.errors) {
+                        scope.addMessages(data.errors, 'error');
+                    } else {
+                        var message = data.message;
+                        if (!message) {
+                            var status = status || data.status || 501;
+                            message = 'Response error (' + status + ')';
                         }
-                        messages = [{message: msg}];
+                        $lux.messages.error(message);
                     }
-                    scope.addMessages(messages, 'error');
                 });
         };
     }]);
