@@ -6,6 +6,7 @@ import pytz
 
 from sqlalchemy import Column, desc
 from sqlalchemy.orm import class_mapper, load_only
+from sqlalchemy.sql.expression import func
 
 from pulsar import PermissionDenied
 from pulsar.utils.html import nicename
@@ -272,10 +273,8 @@ class RestModel(rest.RestModel):
             query = query.filter(field == value)
         elif op == 'match':
             # TODO: check field type, check dialect and check escaping
-            tokens = value.replace('&', '\&').split()
-            if tokens:
-                match_string = ' & '.join(tokens)
-                query = query.filter(field.match(match_string))
+            query = query.filter(func.to_tsvector(field).op('@@')(
+                func.plainto_tsquery(value)))
         elif op == 'gt':
             query = query.filter(field > value)
         elif op == 'ge':
