@@ -90,7 +90,7 @@
         it("Check getJsonOrNone", function() {
             var res;
             res = lux.getJsonOrNone("{\"id\": 1}");
-            expect(res.id).toBeDefined();
+            expect(res.id).toBe(1);
             res = lux.getJsonOrNone("{id: 1}");
             expect(res).toBe(null);
         });

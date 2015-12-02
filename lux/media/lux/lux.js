@@ -361,7 +361,7 @@ function(angular, root) {
     },
 
     /**
-     * Obtain an json object from string (if available) otherwise null
+     * Obtain a JSON object from a string (if available) otherwise null
      *
      * @param {string}
      * @returns {object} - json object
