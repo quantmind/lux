@@ -268,8 +268,7 @@ class Form(metaclass=FormType):
                 if not status or status < 300:
                     self.request.response.status_code = 422
             messages = []
-            data = {'message': 'validation error',
-                    'errors': messages}
+            data = {'errors': messages}
             for name, msg in self.errors.items():
                 msg = {'message': '\n'.join(msg)}
                 field = self.dfields.get(name)

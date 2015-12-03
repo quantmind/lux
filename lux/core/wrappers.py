@@ -15,7 +15,7 @@ from lux.utils import unique_tuple
 
 
 __all__ = ['Html', 'WsgiRequest', 'Router', 'HtmlRouter',
-           'JsonRouter', 'route', 'wsgi_request', 'error_object',
+           'JsonRouter', 'route', 'wsgi_request', 'json_message',
            'cached_property', 'html_factory', 'RedirectRouter',
            'RouterParam', 'JSON_CONTENT_TYPES',
            'DEFAULT_CONTENT_TYPES']
@@ -276,8 +276,9 @@ class HeadMeta(object):
                 yield c
 
 
-def error_object(error):
-    return dict(error=True, message=error)
+def json_message(message, **obj):
+    obj['message'] = message
+    return obj
 
 
 def error_handler(request, exc):
@@ -309,9 +310,8 @@ def error_handler(request, exc):
                                  title=response.status)
     #
     if content_type in JSON_CONTENT_TYPES:
-        return json.dumps({'status': response.status_code,
-                           'error': True,
-                           'message': msg})
+        return json.dumps(json_message(msg, status=response.status_code,
+                                       error=True))
     else:
         return '\n'.join(msg) if isinstance(msg, (list, tuple)) else msg
 
