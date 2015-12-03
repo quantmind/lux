@@ -164,7 +164,7 @@ class TestPostgreSql(TestPostgreSqlBase):
         self.assertIsInstance(data, dict)
         columns = data['columns']
         self.assertIsInstance(columns, list)
-        self.assertEqual(len(columns), 6)
+        self.assertEqual(len(columns), 7)
 
     def test_create_task(self):
         token = yield from self._token()
