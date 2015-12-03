@@ -282,7 +282,7 @@ class RestModel(rest.RestModel):
             # For other database back ends, the behaviour of the match
             # operator is completely different - see:
             # http://docs.sqlalchemy.org/en/rel_1_0/core/sqlelement.html
-            dialect_name = odm.binds[odm[self.name].__table__].name
+            dialect_name = odm.binds[odm[self.name].__table__].dialect.name
             if dialect_name == 'postgresql':
                 query = query.filter(func.to_tsvector(cast(field, String)).op(
                     '@@')(func.plainto_tsquery(value)))
