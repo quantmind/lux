@@ -1,6 +1,6 @@
 //      Lux Library - v0.3.1
 
-//      Compiled 2015-12-01.
+//      Compiled 2015-12-03.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -356,8 +356,34 @@ function(angular, root) {
     },
     //
     //  Capitalize the first letter of string
-    capitalize = function(str) {
+    capitalize = function (str) {
         return str.charAt(0).toUpperCase() + str.slice(1);
+    },
+
+    /**
+     * Obtain a JSON object from a string (if available) otherwise null
+     *
+     * @param {string}
+     * @returns {object} json object
+     */
+    getJsonOrNone = lux.getJsonOrNone = function (str) {
+        try {
+            return JSON.parse(str);
+        } catch(error) {
+            return null;
+        }
+    },
+
+    /**
+     * Checks if a JSON value can be stringify
+     *
+     * @param {value} json value
+     * @returns {boolean}
+     */
+    isJsonStringify = lux.isJsonStringify = function (value) {
+        if (isObject(value) || isArray(value) || isString(value))
+            return true;
+        return false;
     };
 
     lux.messages.no_api = function (url) {
@@ -956,19 +982,28 @@ function(angular, root) {
                             // TODO: do we need a callback for JSON fields?
                             // or shall we leave it here?
 
-                            if (formScope[formScope.formModelName + 'Type'][key] === 'textarea' && isObject(value)) {
+                            var modelType = formScope[formScope.formModelName + 'Type'];
+                            var jsonArrayKey = key.split('[]')[0];
+
+                            // Stringify json only if has json mode enabled
+                            if (modelType[jsonArrayKey] === 'json' && isJsonStringify(value)) {
+
+                                // Get rid of the brackets from the json array field
+                                if (isArray(value)) {
+                                    key = jsonArrayKey;
+                                }
+
                                 value = JSON.stringify(value, null, 4);
                             }
 
                             if (isArray(value)) {
                                 model[key] = [];
-
                                 forEach(value, function(item) {
-                                    model[key].push(item.id);
+                                    model[key].push(item.id || item);
                                 });
-                            }
-                            else
+                            } else {
                                 model[key] = value.id || value;
+                            }
                         });
                     });
                 }
@@ -2347,6 +2382,26 @@ angular.module('lux.cms.core', [])
                 //
                 // Create a form element
                 createElement: function (driver, scope) {
+
+                    /**
+                     * Builds infomation about type and text mode used in the field.
+                     * These informations are used in `api.formReady` method.
+
+                     * @param formModelName {string} - name of the model
+                     * @param field {object}
+                     * @param fieldType {string} - type of the field
+                     */
+                    function buildFieldInfo (formModelName, field, fieldType) {
+                        var typeConfig = formModelName + 'Type';
+                        var textMode = getJsonOrNone(field.text_edit);
+                        scope[typeConfig] = scope[typeConfig] || {};
+
+                        if (textMode !== null)
+                            scope[typeConfig][field.name] = textMode.mode || '';
+                        else
+                            scope[typeConfig][field.name] = fieldType;
+                    }
+
                     var self = this,
                         thisField = scope.field,
                         tc = thisField.type.split('.'),
@@ -2368,9 +2423,7 @@ angular.module('lux.cms.core', [])
 
                     renderer = this[fieldType];
 
-                    var typeConfig = scope.formModelName + 'Type';
-                    scope[typeConfig] = scope[typeConfig] || {};
-                    scope[typeConfig][thisField.name] = fieldType;
+                    buildFieldInfo(scope.formModelName, thisField, fieldType);
 
                     if (!renderer)
                         renderer = this.renderNotElements;
@@ -2859,7 +2912,8 @@ angular.module('lux.cms.core', [])
                 },
                 //
                 requiredErrorMessage: function (scope) {
-                    return scope.field.label + " is required";
+                    var msg = scope.field.required_error;
+                    return msg || scope.field.label + " is required";
                 },
                 //
                 // Return the function to handle form processing

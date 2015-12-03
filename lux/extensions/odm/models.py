@@ -266,7 +266,9 @@ class RestModel(rest.RestModel):
             value = None
         odm = request.app.odm()
         field = getattr(odm[self.name], field)
-        if op == 'eq':
+        if op == 'eq' and isinstance(value, (list, tuple)):
+            query = query.filter(field.in_(value))
+        elif op == 'eq':
             query = query.filter(field == value)
         elif op == 'gt':
             query = query.filter(field > value)

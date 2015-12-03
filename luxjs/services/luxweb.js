@@ -92,19 +92,28 @@
                             // TODO: do we need a callback for JSON fields?
                             // or shall we leave it here?
 
-                            if (formScope[formScope.formModelName + 'Type'][key] === 'textarea' && isObject(value)) {
+                            var modelType = formScope[formScope.formModelName + 'Type'];
+                            var jsonArrayKey = key.split('[]')[0];
+
+                            // Stringify json only if has json mode enabled
+                            if (modelType[jsonArrayKey] === 'json' && isJsonStringify(value)) {
+
+                                // Get rid of the brackets from the json array field
+                                if (isArray(value)) {
+                                    key = jsonArrayKey;
+                                }
+
                                 value = JSON.stringify(value, null, 4);
                             }
 
                             if (isArray(value)) {
                                 model[key] = [];
-
                                 forEach(value, function(item) {
-                                    model[key].push(item.id);
+                                    model[key].push(item.id || item);
                                 });
-                            }
-                            else
+                            } else {
                                 model[key] = value.id || value;
+                            }
                         });
                     });
                 }
