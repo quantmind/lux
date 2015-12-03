@@ -48,8 +48,11 @@ class Extension(lux.Extension):
         middleware = []
         if app.config['CLEAN_URL']:
             middleware.append(wsgi.clean_path_middleware)
+        app.config['MEDIA_URL'] = remove_double_slash(app.config['MEDIA_URL'])
         if app.config['SERVE_STATIC_FILES']:
             path = app.config['MEDIA_URL']
+            if path.endswith('/'):
+                path = path[:-1]
             middleware.append(MediaRouter(path, app.meta.media_dir,
                                           show_indexes=app.debug))
         if app.config['REDIRECTS']:

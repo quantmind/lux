@@ -52,6 +52,12 @@ def registration_model():
                          exclude=('user_id',))
 
 
+def mailing_list_model():
+    model = odm.RestModel('mailinglist', url='mailinglist')
+    model.add_related_column('user', user_model, 'user_id')
+    return model
+
+
 class UserModel(odm.RestModel):
 
     def create_model(self, request, data, session=None):

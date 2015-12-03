@@ -1,5 +1,6 @@
 from pulsar import (HttpException, HttpRedirect, BadRequest,
                     PermissionDenied, Http404, MethodNotAllowed)
+from pulsar.utils.httpurl import is_succesful
 
 
 __all__ = ['HttpException',
@@ -29,10 +30,12 @@ errors = {HttpRedirect.status: HttpRedirect,
 
 
 def raise_http_error(response):
-    if response.status_code >= 300:
-        text = response.content_string()
+    if not is_succesful(response.status_code):
+        content = response.decode_content()
+        if isinstance(content, dict):
+            content = content.get('message', '')
         ErrorClass = errors.get(response.status_code)
         if ErrorClass:
-            raise ErrorClass(text)
+            raise ErrorClass(content)
         else:
-            raise HttpException(text, status=response.status_code)
+            raise HttpException(content, status=response.status_code)

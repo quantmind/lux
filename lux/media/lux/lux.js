@@ -1,6 +1,6 @@
 //      Lux Library - v0.3.1
 
-//      Compiled 2015-12-01.
+//      Compiled 2015-12-02.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -29,7 +29,6 @@ function(angular, root) {
     "use strict";
 
     var lux = root.lux || {};
-    lux.version = '0.1.0';
 
     var forEach = angular.forEach,
         extend = angular.extend,
@@ -45,7 +44,12 @@ function(angular, root) {
             hashPrefix: '',
             ngModules: []
         };
+
+    if (isString(lux))
+        lux = {context: urlBase64Decode(lux)};
+    root.lux = lux;
     //
+    lux.version = '0.1.0';
     lux.$ = $;
     lux.angular = angular;
     lux.forEach = angular.forEach;
@@ -1328,29 +1332,8 @@ function(angular, root) {
             throw new Error('JWT must have 3 parts');
         }
 
-        var decoded = urlBase64Decode(parts[1]);
-        if (!decoded) {
-            throw new Error('Cannot decode the token');
-        }
-
-        return JSON.parse(decoded);
+        return lux.urlBase64DecodeToJSON(parts[1]);
     };
-
-
-    function urlBase64Decode (str) {
-        var output = str.replace('-', '+').replace('_', '/');
-        switch (output.length % 4) {
-
-            case 0: { break; }
-        case 2: { output += '=='; break; }
-        case 3: { output += '='; break; }
-        default: {
-                throw 'Illegal base64url string!';
-            }
-        }
-        //polifyll https://github.com/davidchambers/Base64.js
-        return decodeURIComponent(escape(window.atob(output)));
-    }
 
  //
  // Websocket handler for RPC and pub/sub messages
@@ -3222,7 +3205,7 @@ angular.module('lux.form.handlers', ['lux.services'])
         formHandlers.signUp = function (response, scope) {
             var email = response.data.email;
             if (email) {
-                var text = "We have sent an email to <strong>" + email + "</strong>. Please follow the instructions to conform your email.";
+                var text = "We have sent an email to <strong>" + email + "</strong>. Please follow the instructions to confirm your email.";
                 $lux.messages.success(text);
             }
             else
@@ -3351,7 +3334,8 @@ angular.module('lux.form.process', ['ngFileUpload'])
                 return;
             }
             //
-            promise.then(function (response) {
+            promise.then(
+                function (response) {
                     var data = response.data;
                     var hookName = scope.formAttrs.resultHandler;
                     var hook = hookName && $lux.formHandlers[hookName];
@@ -3372,22 +3356,22 @@ angular.module('lux.form.process', ['ngFileUpload'])
                     }
                 },
                 function (response) {
-                    var data = response.data || {},
-                        status = response.status,
-                        messages = data.errors,
-                        msg;
-                    if (!messages) {
-                        msg = data.message;
-                        if (!msg) {
-                            status = status || data.status || 501;
-                            msg = 'Response error (' + data.status + ')';
+                    var data = response.data || {};
+
+                    if (data.errors) {
+                        scope.addMessages(data.errors, 'error');
+                    } else {
+                        var message = data.message;
+                        if (!message) {
+                            var status = status || data.status || 501;
+                            message = 'Response error (' + status + ')';
                         }
-                        messages = [{message: msg}];
+                        $lux.messages.error(message);
                     }
-                    scope.addMessages(messages, 'error');
                 });
         };
     }]);
+
 /**
  * Created by Reupen on 02/06/2015.
  */

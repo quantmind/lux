@@ -1,7 +1,8 @@
 import json
+from urllib.parse import urljoin
 
 from pulsar import new_event_loop
-from pulsar.apps.http import HttpClient
+from pulsar.apps.http import HttpClient, JSON_CONTENT_TYPES
 from pulsar.utils.httpurl import is_absolute_uri
 
 
@@ -26,9 +27,7 @@ class ApiClient:
 
     def request(self, method, path=None, **kw):
         http = self.http()
-        url = self.app.config['API_URL']
-        if path:
-            url = '%s/%s' % (url, path)
+        url = urljoin(self.app.config['API_URL'], path or '')
         response = http.request(method, url, **kw)
         if self.app.green_pool:
             return self.app.green_pool.wait(response)
@@ -84,5 +83,24 @@ class Response:
     def __getattr__(self, name):
         return getattr(self.response, name)
 
+    def get_content(self):
+        '''Retrieve the body without flushing'''
+        return b''.join(self.response.content)
+
+    def content_string(self, charset=None, errors=None):
+        charset = charset or self.response.encoding or 'utf-8'
+        return self.get_content().decode(charset, errors or 'strict')
+
     def json(self):
-        return json.loads(self.response.content[0].decode('utf-8'))
+        return json.loads(self.content_string())
+
+    def decode_content(self):
+        '''Return the best possible representation of the response body.
+        '''
+        ct = self.response.content_type
+        if ct:
+            if ct in JSON_CONTENT_TYPES:
+                return self.json()
+            elif ct.startswith('text/'):
+                return self.content_string()
+        return self.get_content()

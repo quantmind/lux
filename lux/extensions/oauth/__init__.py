@@ -24,6 +24,8 @@ is not ``None`` (it is set to ``website`` by default).
 '''
 from importlib import import_module
 
+from pulsar.utils.httpurl import is_succesful
+
 import lux
 from lux import Parameter
 
@@ -56,6 +58,8 @@ class Extension(lux.Extension):
                          'Can be a function or False')]
 
     def on_html_document(self, app, request, doc):
+        if not is_succesful(request.response.status_code):
+            return
         canonical = app.config['CANONICAL_URL']
         if hasattr(canonical, '__call__'):
             canonical = canonical(request, doc)
