@@ -13,7 +13,8 @@ from pulsar import MethodNotAllowed, Http404, PermissionDenied
 from pulsar.apps.wsgi import Json
 
 from .forms import (permission_model, group_model, user_model,
-                    registration_model, CreateUserForm, ChangePasswordForm)
+                    registration_model, mailing_list_model,
+                    CreateUserForm, ChangePasswordForm)
 
 
 class PermissionCRUD(CRUD):
@@ -22,6 +23,10 @@ class PermissionCRUD(CRUD):
 
 class GroupCRUD(CRUD):
     _model = group_model()
+
+
+class MailingListCRUD(CRUD):
+    _model = mailing_list_model()
 
 
 class RegistrationCRUD(RestRouter):

@@ -6,7 +6,8 @@ import lux
 
 from lux import forms
 from lux.extensions import odm, rest
-from lux.extensions.auth.views import UserCRUD, GroupCRUD, PermissionCRUD
+from lux.extensions.auth.views import (UserCRUD, GroupCRUD, PermissionCRUD,
+                                       RegistrationCRUD)
 
 from tests.config import *  # noqa
 
@@ -20,6 +21,7 @@ API_URL = ''
 AUTHENTICATION_BACKENDS = ['lux.extensions.auth.TokenBackend',
                            'lux.extensions.auth.BrowserBackend']
 DEFAULT_PERMISSION_LEVELS = {
+    'registration': rest.NONE,
     'secret': rest.NONE,
     'objective': 40,
     'objective:subject': 0,
@@ -37,6 +39,7 @@ class Extension(lux.Extension):
         return [UserCRUD(),
                 GroupCRUD(),
                 PermissionCRUD(),
+                RegistrationCRUD(),
                 ObjectiveCRUD(),
                 SecretCRUD()]
 

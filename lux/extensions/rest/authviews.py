@@ -65,6 +65,8 @@ class SignUpMixin:
             except AuthenticationError as e:
                 form.add_error_message(str(e))
                 data = form.tojson()
+        else:
+            data = form.tojson()
         return self.json(request, data)
 
     @route('/signup/<key>', method=('post', 'options'))
@@ -110,7 +112,7 @@ class ResetPasswordMixin:
             except AuthenticationError as e:
                 form.add_error_message(str(e))
                 result = form.tojson()
-        return Json(result).http_response(request)
+        return self.json(request, result)
 
     @route('reset-password/<key>', method=('post', 'options'))
     def reset(self, request):

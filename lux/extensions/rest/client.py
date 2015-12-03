@@ -1,4 +1,5 @@
 import json
+from urllib.parse import urljoin
 
 from pulsar import new_event_loop
 from pulsar.apps.http import HttpClient, JSON_CONTENT_TYPES
@@ -26,9 +27,7 @@ class ApiClient:
 
     def request(self, method, path=None, **kw):
         http = self.http()
-        url = self.app.config['API_URL']
-        if path:
-            url = '%s/%s' % (url, path)
+        url = urljoin(self.app.config['API_URL'], path or '')
         response = http.request(method, url, **kw)
         if self.app.green_pool:
             return self.app.green_pool.wait(response)

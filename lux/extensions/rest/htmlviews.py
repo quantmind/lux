@@ -1,4 +1,4 @@
-'''Base HTML views for authenticating users
+'''HTML views for authenticating users
 '''
 from pulsar import Http404, HttpRedirect
 from pulsar.apps.wsgi import route
@@ -61,7 +61,6 @@ class SignUp(WebFormRouter):
     @route('confirmation/<username>')
     def new_confirmation(self, request):
         username = request.urlargs['username']
-        backend = request.cache.auth_backend
         api = request.app.api
         response = api.post('authorizations/%s' % username)
         raise_http_error(response)

@@ -5,3 +5,4 @@
 
 ## Bug Fixes
 * Make sure ``MEDIA_URL`` does not end with a forward slash when adding the media router
+* Several fixes in the ``lux.extensions.rest.client``

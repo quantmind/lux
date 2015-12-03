@@ -586,7 +586,8 @@ class Application(ConsoleParser, Extension, EventMixin):
         '''Html response via a template.
 
         :param request: the :class:`.WsgiRequest`
-        :param page: A :class:`Page` or a template file name
+        :param page: A :class:`Page`, template file name or a list of
+            template filenames
         :param context: optional context dictionary
         '''
         if 'text/html' in request.content_types:

@@ -1,5 +1,7 @@
 from lux.utils import test
 
+from .signup import SignupMixin
+
 
 class AuthUtils:
 
@@ -54,7 +56,7 @@ class AuthUtils:
 
     def _signup(self):
         request = yield from self.client.get('/signup')
-        self.assertEqual(request.response.status_code, 200)
+        self.html(request.response, 200)
         username = test.randomname(prefix='u-')
         password = test.randomname()
         email = '%s@%s.com' % (username, test.randomname())
@@ -75,7 +77,7 @@ class AuthUtils:
             return query.one()
 
 
-class TestSqlite(test.AppTestCase, AuthUtils):
+class TestSqlite(test.AppTestCase, AuthUtils, SignupMixin):
     config_file = 'tests.auth'
     config_params = {'DATASTORE': 'sqlite://'}
 
@@ -199,6 +201,7 @@ class TestSqlite(test.AppTestCase, AuthUtils):
         user = request.cache.user
         self.assertFalse(user.is_authenticated())
 
+    # REST - GROUPS
     def test_group_validation(self):
         token = yield from self._token()
         payload = {'name': 'abc'}
@@ -289,10 +292,6 @@ class TestSqlite(test.AppTestCase, AuthUtils):
                                               token=token)
         self.assertValidationError(request.response, '',
                                    '"action" must be defined')
-
-    def test_signup(self):
-        data = yield from self._signup()
-        self.assertTrue('email' in data)
 
     def test_column_permissions_read(self):
         """Tests read requests against columns with permission level 0"""
@@ -464,20 +463,3 @@ class TestSqlite(test.AppTestCase, AuthUtils):
         self.assertNotEqual(token, badtoken)
         request = yield from self.client.get('/secrets', token=badtoken)
         self.assertEqual(request.response.status_code, 403)
-
-    def test_confirm_signup(self):
-        data = yield from self._signup()
-        reg = yield from self.app.green_pool.submit(self._get_registration,
-                                                    data['email'])
-        url = '/authorizations/signup/%s' % reg.id
-        request = yield from self.client.options(url)
-        self.assertEqual(request.response.status_code, 200)
-        request = yield from self.client.post(url)
-        data = self.json(request.response, 200)
-        self.assertTrue(data['success'])
-        request = yield from self.client.post(url)
-        self.json(request.response, 410)
-
-    def test_html_signup(self):
-        request = yield from self.client.get('signup')
-        self.assertEqual(request.response.status_code, 200)
