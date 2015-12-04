@@ -49,7 +49,6 @@ def user_model():
 def registration_model():
     return odm.RestModel('registration',
                          RegistrationForm,
-                         RegistrationForm,
                          exclude=('user_id',))
 
 

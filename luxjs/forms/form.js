@@ -135,6 +135,26 @@
                 //
                 // Create a form element
                 createElement: function (driver, scope) {
+
+                    /**
+                     * Builds infomation about type and text mode used in the field.
+                     * These informations are used in `api.formReady` method.
+
+                     * @param formModelName {string} - name of the model
+                     * @param field {object}
+                     * @param fieldType {string} - type of the field
+                     */
+                    function buildFieldInfo (formModelName, field, fieldType) {
+                        var typeConfig = formModelName + 'Type';
+                        var textMode = getJsonOrNone(field.text_edit);
+                        scope[typeConfig] = scope[typeConfig] || {};
+
+                        if (textMode !== null)
+                            scope[typeConfig][field.name] = textMode.mode || '';
+                        else
+                            scope[typeConfig][field.name] = fieldType;
+                    }
+
                     var self = this,
                         thisField = scope.field,
                         tc = thisField.type.split('.'),
@@ -156,9 +176,7 @@
 
                     renderer = this[fieldType];
 
-                    var typeConfig = scope.formModelName + 'Type';
-                    scope[typeConfig] = scope[typeConfig] || {};
-                    scope[typeConfig][thisField.name] = fieldType;
+                    buildFieldInfo(scope.formModelName, thisField, fieldType);
 
                     if (!renderer)
                         renderer = this.renderNotElements;

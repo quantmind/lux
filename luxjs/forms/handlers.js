@@ -36,6 +36,17 @@ angular.module('lux.form.handlers', ['lux.services'])
         };
 
         //
+        formHandlers.signUp = function (response, scope) {
+            var email = response.data.email;
+            if (email) {
+                var text = "We have sent an email to <strong>" + email + "</strong>. Please follow the instructions to conform your email.";
+                $lux.messages.success(text);
+            }
+            else
+                $lux.messages.error("Something wrong, please contact the administrator");
+        };
+
+        //
         formHandlers.passwordChanged = function (response, scope) {
             if (response.data.success) {
                 var text = 'Password succesfully changed. You can now <a title="login" href="' + lux.context.LOGIN_URL + '">login</a> again.';
