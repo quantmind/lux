@@ -245,6 +245,32 @@
     },
     //
     //  Capitalize the first letter of string
-    capitalize = function(str) {
+    capitalize = function (str) {
         return str.charAt(0).toUpperCase() + str.slice(1);
+    },
+
+    /**
+     * Obtain a JSON object from a string (if available) otherwise null
+     *
+     * @param {string}
+     * @returns {object} json object
+     */
+    getJsonOrNone = lux.getJsonOrNone = function (str) {
+        try {
+            return JSON.parse(str);
+        } catch(error) {
+            return null;
+        }
+    },
+
+    /**
+     * Checks if a JSON value can be stringify
+     *
+     * @param {value} json value
+     * @returns {boolean}
+     */
+    isJsonStringify = lux.isJsonStringify = function (value) {
+        if (isObject(value) || isArray(value) || isString(value))
+            return true;
+        return false;
     };
