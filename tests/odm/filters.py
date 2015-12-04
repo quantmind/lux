@@ -5,7 +5,6 @@ from .sqlite import TestSqliteMixin
 
 @test.sequential
 class TestFiltersPsql(TestPostgreSqlBase):
-
     def setUp(self):
         self.token = yield from self._token()
         self.pippo = yield from self._create_task(self.token,
@@ -36,6 +35,20 @@ class TestFiltersPsql(TestPostgreSqlBase):
         result = data['result']
         self.assertEqual(len(result), 2)
 
+        request = yield from self.client.get(
+            '/tasks?desc:ne=abu&desc:ne=genie')
+        data = self.json(request.response, 200)
+        result = data['result']
+        self.assertEqual(len(result), 0)
+
+        # multiple values with one empty value should not do odd things
+        request = yield from self.client.get(
+            '/tasks?desc:ne=abu&desc:ne=')
+        data = self.json(request.response, 200)
+        result = data['result']
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]['desc'], 'genie')
+
     def test_search(self):
         request = yield from self.client.get('/tasks?subject:search=rescue to '
                                              'the')
@@ -56,6 +69,15 @@ class TestFiltersPsql(TestPostgreSqlBase):
         result = data['result']
         self.assertIsInstance(result, list)
         self.assertEqual(len(result), 0)
+
+        # if multiple values are provided, only the first one should be used
+        request = yield from self.client.get(
+            '/tasks?subject:search=pippo&subject:search=thebe')
+        data = self.json(request.response, 200)
+        result = data['result']
+        self.assertIsInstance(result, list)
+        self.assertTrue(len(result) == 1)
+        self.assertEqual(result[0]['id'], self.pippo['id'])
 
 
 @test.sequential

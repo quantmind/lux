@@ -263,46 +263,75 @@ class RestModel(rest.RestModel):
             return model.id_repr(request, obj)
 
     def _do_filter(self, request, query, field, op, value):
-        if value == '':
-            value = None
+        """
+        Applies filter conditions to a query.
+
+        Notes on 'ne' op:
+
+        Example data: [None, 'john', 'roger']
+        ne:john would return only roger (i.e. nulls excluded)
+        ne:     would return john and roger
+
+
+        Notes on  'search' op:
+
+        For some reason, SQLAlchemy uses to_tsquery rather than
+        plainto_tsquery for the match operator
+
+        to_tsquery uses operators (&, |, ! etc.) while
+        plainto_tsquery tokenises the input string and uses AND between
+        tokens, hence plainto_tsquery is what we want here
+
+        For other database back ends, the behaviour of the match
+        operator is completely different - see:
+        http://docs.sqlalchemy.org/en/rel_1_0/core/sqlelement.html
+
+
+        :param request:     request object
+        :param query:       query object
+        :param field:       field name
+        :param op:          'eq', 'ne', 'gt', 'lt', 'ge', 'le' or 'search'
+        :param value:       comparison value, string or list/tuple
+        :return:
+        """
         odm = request.app.odm()
         field = getattr(odm[self.name], field)
-        if op == 'eq' and isinstance(value, (list, tuple)):
-            query = query.filter(field.in_(value))
-        elif op == 'eq':
-            query = query.filter(field == value)
-        elif op == 'search':
-            # For some reason, SQLAlchemy uses to_tsquery rather than
-            # plainto_tsquery for the match operator
-            #
-            # to_tsquery uses operators (&, |, ! etc.) while
-            # plainto_tsquery tokenises the input string and uses AND between
-            # tokens, hence plainto_tsquery is what we want here
-            #
-            # For other database back ends, the behaviour of the match
-            # operator is completely different - see:
-            # http://docs.sqlalchemy.org/en/rel_1_0/core/sqlelement.html
-            dialect_name = odm.binds[odm[self.name].__table__].dialect.name
-            if dialect_name == 'postgresql':
-                query = query.filter(func.to_tsvector(cast(field, String)).op(
-                    '@@')(func.plainto_tsquery(value)))
-            else:
-                query = query.filter(field.match(value))
-        elif op == 'gt':
-            query = query.filter(field > value)
-        elif op == 'ge':
-            query = query.filter(field >= value)
-        elif op == 'lt':
-            query = query.filter(field < value)
-        elif op == 'le':
-            query = query.filter(field <= value)
-        elif op == 'ne':
-            # Behaviour of ne operator
-            # Example data: [None, 'john', 'roger']
-            #
-            # ne:john would return only roger (i.e. nulls excluded)
-            # ne:     would return john and roger
-            query = query.filter(field != value)
+        multiple = isinstance(value, (list, tuple))
+
+        if value == '':
+            value = None
+
+        if multiple and op in ('eq', 'ne'):
+            if op == 'eq':
+                query = query.filter(field.in_(value))
+            elif op == 'ne':
+                query = query.filter(~field.in_(value))
+        else:
+            if multiple:
+                assert len(value) > 0
+                value = value[0]
+
+            if op == 'eq':
+                query = query.filter(field == value)
+            elif op == 'ne':
+                query = query.filter(field != value)
+            elif op == 'search':
+                dialect_name = odm.binds[odm[self.name].__table__].dialect.name
+                if dialect_name == 'postgresql':
+                    query = query.filter(
+                        func.to_tsvector(cast(field, String)).op('@@')(
+                            func.plainto_tsquery(value))
+                    )
+                else:
+                    query = query.filter(field.match(value))
+            elif op == 'gt':
+                query = query.filter(field > value)
+            elif op == 'ge':
+                query = query.filter(field >= value)
+            elif op == 'lt':
+                query = query.filter(field < value)
+            elif op == 'le':
+                query = query.filter(field <= value)
         return query
 
     def _do_sortby(self, request, query, entry, direction):
