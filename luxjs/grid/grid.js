@@ -161,6 +161,7 @@
 
                 angular.forEach(columns, function(col) {
                     column = {
+                        luxRemoteType: col.remoteType,
                         field: col.name,
                         displayName: col.displayName,
                         type: getColumnType(col.type),
@@ -566,7 +567,7 @@
                                             scope.clearData();
 
                                         if (value.filters[0].term) {
-                                            if (value.colDef.type === 'string') {
+                                            if (value.colDef.luxRemoteType === 'str') {
                                                 operator = 'search';
                                             } else {
                                                 operator = 'eq';

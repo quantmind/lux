@@ -359,9 +359,12 @@ def column_info(name, col):
     sortable = True
     filter = True
     try:
-        type = _types.get(col.type.python_type, 'string')
+        python_type = col.type.python_type
+        type = _types.get(python_type, 'string')
+        remote_type = python_type.__name__.lower()
     except NotImplementedError:
         type = col.type.__class__.__name__.lower()
+        remote_type = type
         sortable = False
         filter = False
 
@@ -370,7 +373,8 @@ def column_info(name, col):
             'displayName': col.doc or nicename(name),
             'sortable': sortable,
             'filter': filter,
-            'type': type}
+            'type': type,
+            'remoteType': remote_type}
 
     return info
 
