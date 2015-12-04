@@ -1,27 +1,29 @@
-from lux.utils import test
 from .postgresql import TestPostgreSqlBase
 from .sqlite import TestSqliteMixin
 
 
-@test.sequential
 class TestFiltersPsql(TestPostgreSqlBase):
-    def setUp(self):
-        self.token = yield from self._token()
-        self.pippo = yield from self._create_task(self.token,
-                                                  'pippo to the rescue',
-                                                  desc='abu')
-        self.pluto = yield from self._create_task(self.token,
-                                                  'pluto to the rescue',
-                                                  desc='genie')
-        self.earth = yield from self._create_task(self.token,
-                                                  'earth is the centre of '
-                                                  'the universe',
-                                                  desc=None)
+    @classmethod
+    def populatedb(cls):
+        super(TestPostgreSqlBase, cls).populatedb()
+        odm = cls.app.odm()
 
-    def tearDown(self):
-        yield from self._delete_task(self.token, self.pippo['id'])
-        yield from self._delete_task(self.token, self.pluto['id'])
-        yield from self._delete_task(self.token, self.earth['id'])
+        with odm.begin() as session:
+            cls.pippo = odm.task(
+                subject='pippo to the rescue',
+                desc='abu'
+            )
+            cls.pluto = odm.task(
+                subject='pluto to the rescue',
+                desc='genie'
+            )
+            cls.earth = odm.task(
+                subject='earth is the centre of the universe',
+                desc=None
+            )
+            session.add(cls.pippo)
+            session.add(cls.pluto)
+            session.add(cls.earth)
 
     def test_notequals(self):
         request = yield from self.client.get('/tasks?desc:ne=abu')
@@ -62,7 +64,7 @@ class TestFiltersPsql(TestPostgreSqlBase):
         result = data['result']
         self.assertIsInstance(result, list)
         self.assertTrue(len(result) == 1)
-        self.assertEqual(result[0]['id'], self.pippo['id'])
+        self.assertEqual(result[0]['id'], self.pippo.id)
 
         request = yield from self.client.get('/tasks?subject:search=thebe')
         data = self.json(request.response, 200)
@@ -77,10 +79,9 @@ class TestFiltersPsql(TestPostgreSqlBase):
         result = data['result']
         self.assertIsInstance(result, list)
         self.assertTrue(len(result) == 1)
-        self.assertEqual(result[0]['id'], self.pippo['id'])
+        self.assertEqual(result[0]['id'], self.pippo.id)
 
 
-@test.sequential
 class TestFiltersSqlite(TestSqliteMixin, TestFiltersPsql):
     def test_search(self):
         # MATCH is not implemented in SQLite
