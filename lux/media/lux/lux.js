@@ -6298,7 +6298,7 @@ angular.module("nav/templates/sidebar.tpl.html", []).run(["$templateCache", func
     "        ng-class=\"{active:activeLink(link)}\" ng-include=\"'subnav'\"></li>\n" +
     "    </ul>\n" +
     "</aside>\n" +
-    "<div class=\"sidebar-page\" ng-click=\"closeSideBar()\" full-page>\n" +
+    "<div class=\"sidebar-page clearfix\" ng-click=\"closeSideBar()\" full-page>\n" +
     "    <div class=\"content-wrapper\"></div>\n" +
     "    <div class=\"overlay\"></div>\n" +
     "</div>\n" +
@@ -6313,7 +6313,8 @@ angular.module("nav/templates/sidebar.tpl.html", []).run(["$templateCache", func
     "        <li ng-repeat=\"link in link.subitems\" ng-class=\"{active:activeLink(link)}\" ng-include=\"'subnav'\">\n" +
     "        </li>\n" +
     "    </ul>\n" +
-    "</script>");
+    "</script>\n" +
+    "");
 }]);
 
 angular.module('templates-page', ['page/breadcrumbs.tpl.html']);
