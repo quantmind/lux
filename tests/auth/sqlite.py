@@ -2,6 +2,8 @@ from lux.utils import test
 
 from .signup import SignupMixin
 from .password import PasswordMixin
+from .odm import OdmMixin
+from .permissions import PermissionsMixin
 
 
 class AuthUtils:
@@ -78,7 +80,12 @@ class AuthUtils:
             return query.one()
 
 
-class TestSqlite(test.AppTestCase, AuthUtils, SignupMixin, PasswordMixin):
+class TestSqlite(test.AppTestCase,
+                 OdmMixin,
+                 SignupMixin,
+                 PasswordMixin,
+                 PermissionsMixin,
+                 AuthUtils):
     config_file = 'tests.auth'
     config_params = {'DATASTORE': 'sqlite://'}
 
