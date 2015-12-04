@@ -263,6 +263,45 @@ def add_css(all):
                   height=navbar.height-px(20)),
               height=navbar.height)
 
+    # Add scrollbar styles
+    scrollbar(all)
+
+
+def scrollbar(all):
+    css = all.css
+    vars = all.variables
+
+    # Scrollbar variables container
+    sidebar = vars.sidebar
+    sidebar.scroll.width = px(8)
+    sidebar.scroll.height = px(8)
+    sidebar.scroll.thumb_bg = '#adadad'
+    sidebar.scroll.thumb_hover = '#a0a0a0'
+    sidebar.scroll.track_bg = '#444'
+
+    css('.sidebar::-webkit-scrollbar',
+        width=sidebar.scroll.width,
+        height=sidebar.scroll.height)
+
+    css('.sidebar::-webkit-scrollbar-button',
+        width=px(0),
+        height=px(0))
+
+    css('.sidebar::-webkit-scrollbar-thumb',
+        background=sidebar.scroll.thumb_bg,
+        border='0px none #ffffff',
+        border_radius=px(50))
+
+    css('.sidebar::-webkit-scrollbar-thumb:hover',
+        background=sidebar.scroll.thumb_hover)
+
+    css('.sidebar::-webkit-scrollbar-track',
+        background=sidebar.scroll.track_bg,
+        border_radius=px(50))
+
+    css('.sidebar::-webkit-scrollbar-corner',
+        background='transparent')
+
 
 def small():
     small = media(max_width=collapse_width)
