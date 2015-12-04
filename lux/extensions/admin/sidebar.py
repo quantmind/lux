@@ -90,7 +90,10 @@ def add_css(all):
         position='fixed',
         top=px(0),
         min_height='100%',
+        max_height='100%',
         width=sidebar.width,
+        overflow_y='auto',
+        overflow_x='hidden',
         z_index=810)
 
     # LEFT SIDEBAR OPEN
@@ -178,7 +181,6 @@ def add_css(all):
                     css(' > a',
                         css(':hover',
                             color=sidebar.link.color),
-                        display='block',
                         text_overflow='ellipsis',
                         white_space='nowrap',
                         overflow='hidden',
@@ -237,8 +239,7 @@ def add_css(all):
             list_style='none',
             margin=px(0),
             padding=px(0)),
-        margin_top=px(0),
-        padding_bottom=px(10))
+        margin_top=px(0))
 
     css('.treeview .active ~ .treeview-menu',
         Transition('max-height', trans.duration, 'ease-out'),
@@ -248,6 +249,12 @@ def add_css(all):
             max_height=px(sidebar.menu.max_height)),
         overflow='hidden',
         max_height=px(0))
+
+    css('.sidebar .sidebar-menu .treeview-menu',
+        css('.active > li > a',
+            display='block!important'),
+        css(' > li > a',
+            display='none!important'))
 
     large = media(min_width=collapse_width)
 
