@@ -4,7 +4,7 @@ from importlib import import_module
 
 from pulsar.apps.release import ReleaseManager
 version_file = os.path.join(os.path.dirname(__file__),
-							'$project_name', '__init__.py')
+                            '$project_name', '__init__.py')
 
 
 def before_commit(manager, release):

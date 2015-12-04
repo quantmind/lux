@@ -36,7 +36,8 @@ class Command(lux.Command):
             if opt.command:
                 cmd = opt.command[0]
                 if cmd not in self.commands:
-                    raise CommandError('Unrecognized command %s' % opt.command[0])
+                    raise CommandError('Unrecognized command %s' %
+                                       opt.command[0])
                 if cmd in ('auto', 'revision', 'merge') and not opt.msg:
                     raise CommandError('Missing [-m] parameter for %s' % cmd)
                 self.run_alembic_cmd(opt)
