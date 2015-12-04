@@ -15,6 +15,7 @@ __all__ = ['permission_model',
            'PermissionForm',
            'GroupForm',
            'UserForm',
+           'UserModel',
            'CreateUserForm',
            'ChangePasswordForm']
 
