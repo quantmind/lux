@@ -91,7 +91,7 @@ class Permission(Model):
 
 
 class Token(Model, SessionMixin):
-    '''A model for an Authentification Token
+    '''A model for an Authentication Token
     '''
     id = Column(UUIDType(binary=False), primary_key=True)
     user_id = Column(Integer, ForeignKey('user.id'))
@@ -115,13 +115,18 @@ class Registration(Model):
     confirmed = Column(Boolean)
 
     user = relationship(
-        User,
+        'User',
         backref=backref("registrations", cascade="all, delete-orphan")
     )
 
 
 class MailingList(Model):
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey('user.id', ondelete="CASCADE"))
+    user_id = Column(Integer, ForeignKey('user.id'))
     email = Column(String(120), unique=True)
     topic = Column(String(60))
+
+    user = relationship(
+        'User',
+        backref=backref("mailinglists", cascade="all, delete-orphan")
+    )

@@ -5,6 +5,7 @@ from pulsar.utils.pep import to_bytes
 from pulsar.apps.wsgi import Json
 from pulsar.utils.slugify import slugify
 
+from lux import HttpException
 from lux.forms import Form, ValidationError
 
 
@@ -245,8 +246,8 @@ def login(request, login_form):
             else:
                 return auth_backend.inactive_user_login_response(request,
                                                                  user)
-        except AuthenticationError as e:
-            form.add_error_message(str(e))
+        except AuthenticationError as exc:
+            raise HttpException(str(exc), 422) from exc
 
     return Json(form.tojson()).http_response(request)
 
@@ -269,8 +270,9 @@ def normalise_email(email):
     Normalise the address by lowercasing the domain part of the email
     address.
     """
-    email_name, domain_part = email.strip().rsplit('@', 1)
-    email = '@'.join([email_name, domain_part.lower()])
+    if email:
+        email_name, domain_part = email.strip().rsplit('@', 1)
+        email = '@'.join([email_name, domain_part.lower()])
     return email
 
 

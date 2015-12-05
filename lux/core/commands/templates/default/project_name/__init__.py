@@ -1,15 +1,16 @@
+from pulsar.utils.version import get_version
+
 import lux
-from lux import Html
+
+VERSION = (0, 1, 1, 'alpha', 0)
+
+__version__ = get_version(VERSION)
 
 
 class Extension(lux.Extension):
-    '''${project_name} extension
-    '''
+    """${project_name}
+    """
+    version = __version__
+
     def middleware(self, app):
-        return [Router('/')]
-
-
-class Router(lux.Router):
-
-    def get_html(self, request):
-        return Html('div', '<p>Well done, $project_name is created!</p>')
+        return []

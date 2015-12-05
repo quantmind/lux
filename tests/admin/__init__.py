@@ -11,7 +11,6 @@ EXTENSIONS = ['lux.extensions.base',
               'lux.extensions.rest',
               'lux.extensions.auth',
               'lux.extensions.odm',
-              'lux.extensions.cms',
               'lux.extensions.angular',
               'lux.extensions.admin']
 

@@ -104,8 +104,8 @@ class TestPostgreSql(test.AppTestCase):
                                               content_type='application/json',
                                               body=data,
                                               cookie=cookie)
-        self.assertValidationError(request.response, '',
-                                   'Invalid username or password')
+        self.assertValidationError(request.response,
+                                   text='Invalid username or password')
         user = request.cache.user
         self.assertFalse(user.is_authenticated())
 

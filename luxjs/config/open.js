@@ -8,12 +8,15 @@
     // If a file assign http as protocol (https does not work with PhantomJS)
     var protocol = root.location ? (root.location.protocol === 'file:' ? 'http:' : '') : '',
         end = '.js',
-        ostring = Object.prototype.toString,
-        lux = root.lux;
+        ostring = Object.prototype.toString;
 
 
-    function isArray(it) {
-        return ostring.call(it) === '[object Array]';
+    function isString (value) {
+        return ostring.call(value) === '[object String]';
+    }
+
+    function isArray (value) {
+        return ostring.call(value) === '[object Array]';
     }
 
     function minify () {
@@ -35,3 +38,33 @@
         }
         return o1;
     }
+
+    function urlBase64Decode (str) {
+        var output = str.replace('-', '+').replace('_', '/');
+        switch (output.length % 4) {
+
+            case 0: { break; }
+        case 2: { output += '=='; break; }
+        case 3: { output += '='; break; }
+        default: {
+                throw 'Illegal base64url string!';
+            }
+        }
+        //polifyll https://github.com/davidchambers/Base64.js
+        return decodeURIComponent(escape(window.atob(output)));
+    }
+
+    function urlBase64DecodeToJSON (str) {
+        var decoded = urlBase64Decode(str);
+        if (!decoded) {
+            throw new Error('Cannot decode the token');
+        }
+        return JSON.parse(decoded);
+    }
+
+
+    if (isString(root.lux))
+        root.lux = {context: urlBase64DecodeToJSON(root.lux)};
+
+    root.lux.urlBase64Decode = urlBase64Decode;
+    root.lux.urlBase64DecodeToJSON = urlBase64DecodeToJSON;

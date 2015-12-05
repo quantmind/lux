@@ -1,6 +1,4 @@
 '''Test Github API'''
-from pulsar.apps.http.auth import HTTPBasicAuth
-
 from lux.utils import test
 
 
@@ -15,15 +13,14 @@ class TestGithub(test.TestCase):
     @classmethod
     def basic(cls):
         cfg = cls.cfg
-        return HTTPBasicAuth(cfg.get('GITHUB_USERNAME'),
-                             cfg.get('GITHUB_PASSWORD'))
+        return (cfg.get('GITHUB_USERNAME'), cfg.get('GITHUB_PASSWORD'))
 
     @classmethod
     def setUpClass(cls):
         cls.github = cls.api('github')
         cls.auth = yield cls.github.authorization(
             note='Lux github test',
-            pre_request=cls.basic(),
+            auth=cls.basic(),
             scopes=['user', 'repo', 'gist'])
 
     @classmethod

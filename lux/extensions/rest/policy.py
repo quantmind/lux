@@ -3,8 +3,12 @@ from lux.forms import ValidationError
 from .user import PERMISSION_LEVELS
 
 POLICY = dict(effect=(str, frozenset(('allow', 'deny'))),
+              # An action is a string or a list of PERMISSION_LEVELS
               action=((str, list), None),
+              # A resource can be a string or a list of resources.
+              # A resource is object/model we are checking permission
               resource=((str, list), None),
+              # Additional condition (not yet used)
               condition=(dict, None))
 
 EFFECTS = {'allow': True,

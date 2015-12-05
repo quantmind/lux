@@ -13,12 +13,17 @@ Use grunt to compile the javascript.
 
 * Install npm_
 * Install grunt-cli::
-
-    npm install -g grunt-cli
-
+```
+npm install -g grunt-cli
+```
 * To install $project_name dependencies::
-
-    npm install
+```
+npm install
+```
+* To build JavaScript
+```
+grunt
+```
 
 
 .. _npm: https://npmjs.org/

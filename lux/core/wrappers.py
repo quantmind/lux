@@ -15,7 +15,7 @@ from lux.utils import unique_tuple
 
 
 __all__ = ['Html', 'WsgiRequest', 'Router', 'HtmlRouter',
-           'JsonRouter', 'route', 'wsgi_request',
+           'JsonRouter', 'route', 'wsgi_request', 'json_message',
            'cached_property', 'html_factory', 'RedirectRouter',
            'RouterParam', 'JSON_CONTENT_TYPES',
            'DEFAULT_CONTENT_TYPES']
@@ -276,6 +276,11 @@ class HeadMeta(object):
                 yield c
 
 
+def json_message(message, **obj):
+    obj['message'] = message
+    return obj
+
+
 def error_handler(request, exc):
     '''Default renderer for errors.'''
     app = request.app
@@ -290,25 +295,23 @@ def error_handler(request, exc):
         content_type = response.content_type.split(';')[0]
     is_html = content_type == 'text/html'
 
-    if app.debug:
+    if app.debug and response.status_code >= 500:
         msg = render_error_debug(request, exc, is_html)
     else:
-        msg = error_messages.get(response.status_code) or str(exc)
-        if is_html:
-            msg = app.render_template(['%s.html' % response.status_code,
-                                       'error.html'],
-                                      {'status_code': response.status_code,
-                                       'status_message': msg},
-                                      request=request)
-    #
+        msg = str(exc) or error_messages.get(response.status_code)
+
     if is_html:
-        doc = request.html_document
-        doc.head.title = response.status
-        doc.body.append(msg)
-        return doc.render(request)
-    elif content_type in JSON_CONTENT_TYPES:
-        return json.dumps({'status': response.status_code,
-                           'message': msg})
+        context = {'status_code': response.status_code,
+                   'status_message': msg}
+        return app.html_response(request,
+                                 ['%s.html' % response.status_code,
+                                  'error.html'],
+                                 context,
+                                 title=response.status)
+    #
+    if content_type in JSON_CONTENT_TYPES:
+        return json.dumps(json_message(msg, status=response.status_code,
+                                       error=True))
     else:
         return '\n'.join(msg) if isinstance(msg, (list, tuple)) else msg
 

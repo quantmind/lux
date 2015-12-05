@@ -1,9 +1,10 @@
-'''Base HTML views for authenticating users
+'''HTML views for authenticating users
 '''
 from pulsar import Http404, HttpRedirect
 from pulsar.apps.wsgi import route
 
 import lux
+from lux import raise_http_error
 from lux.forms import WebFormRouter, Layout, Fieldset, Submit
 
 from .user import AuthenticationError, login, logout
@@ -14,6 +15,8 @@ class Login(WebFormRouter):
     '''Adds login get ("text/html") and post handlers
     '''
     template = 'login.html'
+    response_content_types = ['text/html',
+                              'application/json']
     default_form = Layout(LoginForm,
                           Fieldset(all=True),
                           Submit('Login', disabled="form.$invalid"),
@@ -49,15 +52,18 @@ class SignUp(WebFormRouter):
     @route('<key>')
     def confirmation(self, request):
         key = request.urlargs['key']
-        backend = request.cache.auth_backend
-        try:
-            user = backend.get_user(request, auth_key=key, confirm=1)
-        except AuthenticationError as e:
-            session = request.cache.session
-            session.error('The link is no longer valid, %s' % e)
-            return request.redirect('/')
-        if not user:
-            raise Http404
+        url = 'authorizations/signup/%s' % key
+        api = request.app.api
+        response = api.post(url)
+        raise_http_error(response)
+        return self.html_response(request, '', self.confirmation_template)
+
+    @route('confirmation/<username>')
+    def new_confirmation(self, request):
+        username = request.urlargs['username']
+        api = request.app.api
+        response = api.post('authorizations/%s' % username)
+        raise_http_error(response)
         return self.html_response(request, '', self.confirmation_template)
 
 

@@ -1,5 +1,6 @@
 '''Utilities for testing Lux applications
 '''
+import os
 import unittest
 import string
 import logging
@@ -72,6 +73,17 @@ def test_app(test, config_file=None, argv=None, **params):
     app.stdout = StringIO()
     app.stderr = StringIO()
     return app
+
+
+def get_params(*names):
+    cfg = {}
+    for name in names:
+        value = os.environ.get(name)
+        if value:
+            cfg[name] = value
+        else:
+            return
+    return cfg
 
 
 class TestClient:
@@ -171,11 +183,12 @@ class TestMixin:
         headers = response.get_headers()
         return dict(headers).get('Set-Cookie')
 
-    def bs(self, response, mode=None):
+    def bs(self, response, status_code=None, mode=None):
         '''Return a BeautifulSoup object from the ``response``
         '''
         from bs4 import BeautifulSoup
-        return BeautifulSoup(self.html(response))
+        return BeautifulSoup(self.html(response, status_code),
+                             'html.parser')
 
     def html(self, response, status_code=None):
         '''Get html/text content from response
@@ -212,14 +225,16 @@ class TestMixin:
             data = self.json(response)
         else:
             data = response
-        self.assertEqual(data['message'], 'validation error')
-        errors = data['errors']
-        self.assertTrue(errors)
         if field is not None:
+            errors = data['errors']
+            self.assertTrue(errors)
             data = dict(((d.get('field', ''), d['message']) for d in errors))
             self.assertTrue(field in data)
             if text:
                 self.assertEqual(data[field], text)
+        elif text:
+            self.assertEqual(data['message'], text)
+            self.assertTrue(data['error'])
 
     def _content(self, response):
         return b''.join(response.content)

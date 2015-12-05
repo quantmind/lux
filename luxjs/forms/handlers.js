@@ -39,7 +39,7 @@ angular.module('lux.form.handlers', ['lux.services'])
         formHandlers.signUp = function (response, scope) {
             var email = response.data.email;
             if (email) {
-                var text = "We have sent an email to <strong>" + email + "</strong>. Please follow the instructions to conform your email.";
+                var text = "We have sent an email to <strong>" + email + "</strong>. Please follow the instructions to confirm your email.";
                 $lux.messages.success(text);
             }
             else

@@ -1,7 +1,25 @@
+* Development Status set to ``3 - Alpha``
+
 ## API
-### RestModel
-* get request correctly handles multiple args [[209](https://github.com/quantmind/lux/pull/209)]
-* Add support for ne (not equals) and search operators  [[#212](https://github.com/quantmind/lux/pull/212)]
+* Better template directory for ``start_project`` command
+* ``style`` command create intermediary directories for the target css file
+* Removed the ``lux.extensions.cms`` module. Not longer used
+* Added Registration views and backend models
+* RestModel: get request correctly handles multiple args [[209](https://github.com/quantmind/lux/pull/209)]
+* Don't add OG metadata on response errors
+* Obfuscate javascript context dictionary using base64 encoding
+* RestModel
+  * get request correctly handles multiple args [[209](https://github.com/quantmind/lux/pull/209)]
+  * Add support for ``ne`` (not equals) and ``search`` operators  [[#212](https://github.com/quantmind/lux/pull/212)]
+  * ``search`` operator is the default operator for string columns in the javascript ``lux.grid`` component
+
+## Javascript
+* Added scrollbar to sidebar [[214](https://github.com/quantmind/lux/pull/214)]
+* Clearfix in sidebar [[215](https://github.com/quantmind/lux/pull/215)]
 
 ## Bug Fixes
+* Make sure ``MEDIA_URL`` does not end with a forward slash when adding the media router
+* Several fixes in the ``lux.extensions.rest.client``
 * Allows to display arrays in codemirror editor when in JSON mode [[#171](https://github.com/quantmind/lux/pull/171)]
+
+**313 unit tests**

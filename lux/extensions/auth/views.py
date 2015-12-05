@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from lux import route
+from lux import route, json_message
 from lux.extensions import rest
 from lux.extensions.rest.htmlviews import (SignUp as SignUpView,
                                            ComingSoon as ComingSoonView)
@@ -13,7 +13,8 @@ from pulsar import MethodNotAllowed, Http404, PermissionDenied
 from pulsar.apps.wsgi import Json
 
 from .forms import (permission_model, group_model, user_model,
-                    registration_model, CreateUserForm, ChangePasswordForm)
+                    registration_model, mailing_list_model,
+                    CreateUserForm, ChangePasswordForm)
 
 
 class PermissionCRUD(CRUD):
@@ -24,7 +25,11 @@ class GroupCRUD(CRUD):
     _model = group_model()
 
 
-class RegistrationCRUD(CRUD):
+class MailingListCRUD(CRUD):
+    _model = mailing_list_model()
+
+
+class RegistrationCRUD(RestRouter):
     get_user = None
     '''Function to retrieve user from url
     '''
@@ -131,11 +136,11 @@ class Authorization(rest.Authorization):
                     entry = odm.mailinglist(email=email, topic=topic)
                     session.add(entry)
                     request.response.status_code = 201
-                    result = {'message': ('Email %s added to mailing list'
-                                          % email)}
+                    result = json_message('Email %s added to mailing list'
+                                          % email)
                 else:
-                    result = {'message': ('Email %s already in mailing list'
-                                          % email)}
+                    result = json_message('Email %s already in mailing list'
+                                          % email, level='warning')
         else:
             result = form.tojson()
         return Json(result).http_response(request)

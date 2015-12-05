@@ -45,16 +45,15 @@ def run():
           install_requires=install_requires,
           dependency_links=dependency_links,
           scripts=['bin/luxmake.py'],
-          classifiers=['Development Status :: 2 - Pre-Alpha',
+          classifiers=['Development Status :: 3 - Alpha',
                        'Environment :: Web Environment',
                        'Intended Audience :: Developers',
                        'License :: OSI Approved :: BSD License',
                        'Operating System :: OS Independent',
                        'Programming Language :: JavaScript',
                        'Programming Language :: Python',
-                       'Programming Language :: Python :: 2.7',
-                       'Programming Language :: Python :: 3.3',
                        'Programming Language :: Python :: 3.4',
+                       'Programming Language :: Python :: 3.5',
                        'Topic :: Utilities'])
 
 

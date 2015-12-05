@@ -15,6 +15,7 @@ __all__ = ['permission_model',
            'PermissionForm',
            'GroupForm',
            'UserForm',
+           'UserModel',
            'CreateUserForm',
            'ChangePasswordForm']
 
@@ -50,6 +51,12 @@ def registration_model():
     return odm.RestModel('registration',
                          RegistrationForm,
                          exclude=('user_id',))
+
+
+def mailing_list_model():
+    model = odm.RestModel('mailinglist', url='mailinglist')
+    model.add_related_column('user', user_model, 'user_id')
+    return model
 
 
 class UserModel(odm.RestModel):

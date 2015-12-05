@@ -2,7 +2,7 @@
 '''
 import uuid
 
-from pulsar import ImproperlyConfigured
+from pulsar import ImproperlyConfigured, HttpException
 from pulsar.utils.httpurl import is_absolute_uri
 
 from lux import Parameter, raise_http_error, Http401, HttpRedirect
@@ -109,6 +109,11 @@ class ApiSessionBackend(SessionBackendMixin,
                  'email': 'users',
                  'auth_key': 'users/authkey'}
 
+    def api_sections(self, app):
+        '''Does not provide any view to the api
+        '''
+        return ()
+
     def get_user(self, request, **kw):
         '''Get User from username, id or email or authentication key.
         '''
@@ -131,22 +136,14 @@ class ApiSessionBackend(SessionBackendMixin,
             # TODO: add address from request
             # client = request.get_client_address()
             response = api.post('authorizations', data=data)
-            if response.status_code == 201:
-                token = response.json().get('token')
-                payload = jwt.decode(token, verify=False)
-                user = User(payload)
-                user.encoded = token
-                return user
-            else:
-                request.response.status_code = response.status_code
-                messages = response.json()
-                msg = None
-                for error in messages.get('errors', ()):
-                    if 'field' not in error:
-                        msg = error.get('message')
-                raise AuthenticationError(msg or 'Could not login')
+            raise_http_error(response)
+            token = response.json().get('token')
+            payload = jwt.decode(token, verify=False)
+            user = User(payload)
+            user.encoded = token
+            return user
 
-        except AuthenticationError:
+        except (AuthenticationError, HttpException):
             raise
         except Exception:
             if data.get('username'):
