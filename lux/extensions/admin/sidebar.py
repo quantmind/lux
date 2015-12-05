@@ -90,7 +90,10 @@ def add_css(all):
         position='fixed',
         top=px(0),
         min_height='100%',
+        max_height='100%',
         width=sidebar.width,
+        overflow_y='auto',
+        overflow_x='hidden',
         z_index=810)
 
     # LEFT SIDEBAR OPEN
@@ -178,7 +181,6 @@ def add_css(all):
                     css(' > a',
                         css(':hover',
                             color=sidebar.link.color),
-                        display='block',
                         text_overflow='ellipsis',
                         white_space='nowrap',
                         overflow='hidden',
@@ -237,8 +239,7 @@ def add_css(all):
             list_style='none',
             margin=px(0),
             padding=px(0)),
-        margin_top=px(0),
-        padding_bottom=px(10))
+        margin_top=px(0))
 
     css('.treeview .active ~ .treeview-menu',
         Transition('max-height', trans.duration, 'ease-out'),
@@ -249,12 +250,57 @@ def add_css(all):
         overflow='hidden',
         max_height=px(0))
 
+    css('.sidebar .sidebar-menu .treeview-menu',
+        css('.active > li > a',
+            display='block!important'),
+        css(' > li > a',
+            display='none!important'))
+
     large = media(min_width=collapse_width)
 
     large.css('.sidebar .nav-panel',
               css(' .image > img',
                   height=navbar.height-px(20)),
               height=navbar.height)
+
+    # Add scrollbar styles
+    scrollbar(all)
+
+
+def scrollbar(all):
+    css = all.css
+    vars = all.variables
+
+    # Scrollbar variables container
+    sidebar = vars.sidebar
+    sidebar.scroll.width = px(8)
+    sidebar.scroll.height = px(8)
+    sidebar.scroll.thumb_bg = '#adadad'
+    sidebar.scroll.thumb_hover = '#a0a0a0'
+    sidebar.scroll.track_bg = '#444'
+
+    css('.sidebar::-webkit-scrollbar',
+        width=sidebar.scroll.width,
+        height=sidebar.scroll.height)
+
+    css('.sidebar::-webkit-scrollbar-button',
+        width=px(0),
+        height=px(0))
+
+    css('.sidebar::-webkit-scrollbar-thumb',
+        background=sidebar.scroll.thumb_bg,
+        border='0px none #ffffff',
+        border_radius=px(50))
+
+    css('.sidebar::-webkit-scrollbar-thumb:hover',
+        background=sidebar.scroll.thumb_hover)
+
+    css('.sidebar::-webkit-scrollbar-track',
+        background=sidebar.scroll.track_bg,
+        border_radius=px(50))
+
+    css('.sidebar::-webkit-scrollbar-corner',
+        background='transparent')
 
 
 def small():
