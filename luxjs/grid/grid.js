@@ -161,6 +161,7 @@
 
                 angular.forEach(columns, function(col) {
                     column = {
+                        luxRemoteType: col.remoteType,
                         field: col.name,
                         displayName: col.displayName,
                         type: getColumnType(col.type),
@@ -556,7 +557,7 @@
                                 //
                                 // Filtering
                                 scope.gridApi.core.on.filterChanged(scope, _.debounce(function () {
-                                    var grid = this.grid;
+                                    var grid = this.grid, operator;
                                     scope.gridFilters = {};
 
                                     // Add filters
@@ -565,8 +566,14 @@
                                         if (value.filter.type === 'select')
                                             scope.clearData();
 
-                                        if (value.filters[0].term)
-                                            scope.gridFilters[value.colDef.name] = value.filters[0].term;
+                                        if (value.filters[0].term) {
+                                            if (value.colDef.luxRemoteType === 'str') {
+                                                operator = 'search';
+                                            } else {
+                                                operator = 'eq';
+                                            }
+                                            scope.gridFilters[value.colDef.name + ':' + operator] = value.filters[0].term;
+                                        }
                                     });
 
                                     // Get results

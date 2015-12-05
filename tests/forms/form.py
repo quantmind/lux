@@ -6,7 +6,6 @@ import pytz
 
 from lux.utils import test
 from lux import forms
-from lux.extensions.cms.views import PageForm
 
 
 class TestEnum(Enum):
@@ -21,6 +20,31 @@ class SimpleForm(forms.Form):
     dt = forms.DateField(required=False)
     timestamp = forms.DateTimeField(required=False)
     enum_field = forms.EnumField(required=False, enum_class=TestEnum)
+
+
+class PageForm(forms.Form):
+    """From an legacy extension"""
+    path = forms.CharField(required=False)
+    title = forms.CharField()
+    description = forms.TextField(required=False)
+    published = forms.BooleanField(required=False)
+    layout = forms.JsonField(text_edit=json.dumps({'mode': 'json'}))
+
+    def clean_layout(self, value):
+        if not isinstance(value, dict):
+            raise forms.ValidationError('Layout must be a dictionary')
+        layout = {}
+        if 'components' in value:
+            components = value['components']
+            if not isinstance(components, list):
+                raise forms.ValidationError('componets must be a list')
+            layout['components'] = components
+        if 'rows' in value:
+            rows = value['rows']
+            if not isinstance(rows, list):
+                raise forms.ValidationError('rows must be a list')
+            layout['rows'] = rows
+        return layout
 
 
 class FailForm(SimpleForm):
