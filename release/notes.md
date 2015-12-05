@@ -10,3 +10,4 @@
 ## Bug Fixes
 * Make sure ``MEDIA_URL`` does not end with a forward slash when adding the media router
 * Several fixes in the ``lux.extensions.rest.client``
+* Allows to display arrays in codemirror editor when in JSON mode [[#171](https://github.com/quantmind/lux/pull/171)]
