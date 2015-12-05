@@ -53,6 +53,7 @@ class Task(Model):
     created = Column(DateTime, default=datetime.utcnow)
     assigned_id = Column(Integer, ForeignKey('person.id'))
     enum_field = Column(ChoiceType(TestEnum), default=TestEnum.opt1)
+    desc = Column(String(250))
 
 
 def person_model():
@@ -74,6 +75,7 @@ class TaskForm(forms.Form):
                                      label='assigned',
                                      required=False)
     enum_field = forms.EnumField(enum_class=TestEnum, default=TestEnum.opt1)
+    desc = forms.CharField(required=False)
 
 
 class PersonForm(forms.Form):

@@ -3,7 +3,7 @@ from dateutil.parser import parse
 from lux.utils import test
 
 
-class TestPostgreSql(test.AppTestCase):
+class TestPostgreSqlBase(test.AppTestCase):
     config_file = 'tests.odm'
     config_params = {
         'DATASTORE': 'postgresql+green://lux:luxtest@127.0.0.1:5432/luxtests'}
@@ -62,6 +62,13 @@ class TestPostgreSql(test.AppTestCase):
         self.assertTrue('id' in data)
         return data
 
+    def _delete_task(self, token, id):
+        request = yield from self.client.delete(
+            '/tasks/{}'.format(id),
+            token=token)
+        response = request.response
+        self.assertEqual(response.status_code, 204)
+
     def _create_person(self, token, username, name=None):
         name = name or username
         request = yield from self.client.post(
@@ -91,6 +98,9 @@ class TestPostgreSql(test.AppTestCase):
         if name:
             self.assertEqual(data['name'], name)
         return data
+
+
+class TestPostgreSql(TestPostgreSqlBase):
 
     def test_odm(self):
         tables = yield from self.app.odm.tables()
@@ -154,7 +164,7 @@ class TestPostgreSql(test.AppTestCase):
         self.assertIsInstance(data, dict)
         columns = data['columns']
         self.assertIsInstance(columns, list)
-        self.assertEqual(len(columns), 6)
+        self.assertEqual(len(columns), 7)
 
     def test_create_task(self):
         token = yield from self._token()
