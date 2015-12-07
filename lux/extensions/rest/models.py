@@ -184,6 +184,7 @@ class RestModel(ColumnPermissionsMixin):
     remote_options_str_ui_select = 'item.id as item in {options}'
     _app = None
     _loaded = False
+    _col_mapping = None
 
     def __init__(self, name, form=None, updateform=None, columns=None,
                  url=None, api_name=None, exclude=None,
@@ -242,7 +243,10 @@ class RestModel(ColumnPermissionsMixin):
     def columnsMapping(self, request):
         '''Returns a dictionary of names/columns objects
         '''
-        return dict(((c['name'], c) for c in self.columns(request)))
+        if self._col_mapping is None:
+            self._col_mapping = dict(((c['name'], c) for c in
+                                      self.columns(request)))
+        return self._col_mapping
 
     def get_target(self, request, **extra_data):
         '''Get a target for a form
