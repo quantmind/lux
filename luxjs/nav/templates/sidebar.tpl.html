@@ -8,7 +8,7 @@ ng-class="{'sidebar-fixed':sidebar.fixed}" bs-collapse>
             </div>
             <div class="pull-left info">
                 <p>{{ sidebar.infoText }}</p>
-                <a href="#">{{sidebar.user.name}}</a>
+                <a ng-attr-href="{{sidebar.user.username ? '/' + sidebar.user.username : '#'}}">{{sidebar.user.name}}</a>
             </div>
         </div>
     </div>

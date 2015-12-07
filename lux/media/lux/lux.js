@@ -1,6 +1,6 @@
 //      Lux Library - v0.3.1
 
-//      Compiled 2015-12-05.
+//      Compiled 2015-12-07.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -4110,6 +4110,7 @@ function gridDataProviderWebsocketFactory ($scope) {
 
                 angular.forEach(columns, function(col) {
                     column = {
+                        luxRemoteType: col.remoteType,
                         field: col.name,
                         displayName: col.displayName,
                         type: getColumnType(col.type),
@@ -4505,7 +4506,7 @@ function gridDataProviderWebsocketFactory ($scope) {
                                 //
                                 // Filtering
                                 scope.gridApi.core.on.filterChanged(scope, _.debounce(function () {
-                                    var grid = this.grid;
+                                    var grid = this.grid, operator;
                                     scope.gridFilters = {};
 
                                     // Add filters
@@ -4514,8 +4515,14 @@ function gridDataProviderWebsocketFactory ($scope) {
                                         if (value.filter.type === 'select')
                                             scope.clearData();
 
-                                        if (value.filters[0].term)
-                                            scope.gridFilters[value.colDef.name] = value.filters[0].term;
+                                        if (value.filters[0].term) {
+                                            if (value.colDef.luxRemoteType === 'str') {
+                                                operator = 'search';
+                                            } else {
+                                                operator = 'eq';
+                                            }
+                                            scope.gridFilters[value.colDef.name + ':' + operator] = value.filters[0].term;
+                                        }
                                     });
 
                                     // Get results
@@ -6270,7 +6277,7 @@ angular.module("nav/templates/sidebar.tpl.html", []).run(["$templateCache", func
     "            </div>\n" +
     "            <div class=\"pull-left info\">\n" +
     "                <p>{{ sidebar.infoText }}</p>\n" +
-    "                <a href=\"#\">{{sidebar.user.name}}</a>\n" +
+    "                <a ng-attr-href=\"{{sidebar.user.username ? '/' + sidebar.user.username : '#'}}\">{{sidebar.user.name}}</a>\n" +
     "            </div>\n" +
     "        </div>\n" +
     "    </div>\n" +
