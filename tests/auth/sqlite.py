@@ -4,6 +4,7 @@ from .signup import SignupMixin
 from .password import PasswordMixin
 from .odm import OdmMixin
 from .permissions import PermissionsMixin
+from .html import HtmlMixin
 
 
 class AuthUtils:
@@ -85,6 +86,7 @@ class TestSqlite(test.AppTestCase,
                  SignupMixin,
                  PasswordMixin,
                  PermissionsMixin,
+                 HtmlMixin,
                  AuthUtils):
     config_file = 'tests.auth'
     config_params = {'DATASTORE': 'sqlite://'}
@@ -110,8 +112,10 @@ class TestSqlite(test.AppTestCase,
 
         with odm.begin() as session:
             group = odm.group(name='permission_test')
+            secret_group = odm.group(name='secret-readers')
             group.users.append(user)
             session.add(group)
+            session.add(secret_group)
             permission = odm.permission(
                 name='objective subject',
                 description='Can use objective:subject',
@@ -120,3 +124,13 @@ class TestSqlite(test.AppTestCase,
                     'effect': 'allow'
                 })
             group.permissions.append(permission)
+            #
+            # Create the read permission for secret resource
+            spermission = odm.permission(
+                name='secret-read',
+                description='Can read secret resources',
+                policy={
+                    'resource': 'secret',
+                    'effect': 'allow'
+                })
+            secret_group.permissions.append(spermission)

@@ -80,6 +80,9 @@ class Response:
     def __init__(self, response):
         self.response = response
 
+    def _repr__(self):
+        return repr(self.response)
+
     def __getattr__(self, name):
         return getattr(self.response, name)
 

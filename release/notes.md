@@ -22,4 +22,4 @@
 * Several fixes in the ``lux.extensions.rest.client``
 * Allows to display arrays in codemirror editor when in JSON mode [[#171](https://github.com/quantmind/lux/pull/171)]
 
-**313 unit tests**
+**319 unit tests**

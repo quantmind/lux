@@ -109,7 +109,7 @@ class AuthMixin(PasswordMixin):
 
     def create_user(self, request, username=None, password=None, email=None,
                     first_name=None, last_name=None, active=False,
-                    superuser=False, **kwargs):
+                    superuser=False, odm_session=None, **kwargs):
         '''Create a new user.
 
         Either ``username`` or ``email`` must be provided.
@@ -119,7 +119,7 @@ class AuthMixin(PasswordMixin):
         email = normalise_email(email)
         assert username or email
 
-        with odm.begin() as session:
+        with odm.begin(session=odm_session) as session:
             if not username:
                 username = email
 

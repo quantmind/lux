@@ -94,8 +94,7 @@ class TestPostgreSql(test.AppTestCase):
         #
         request = yield from self.client.get('/login')
         response = request.response
-        self.assertEqual(response.status_code, 200)
-        token = self.authenticity_token(self.bs(response))
+        token = self.authenticity_token(self.bs(response, 200))
         self.assertTrue(token)
         data.update(token)
         cookie = self.cookie(response)
@@ -121,8 +120,7 @@ class TestPostgreSql(test.AppTestCase):
 
         request = yield from self.client.get('/login')
         response = request.response
-        self.assertEqual(response.status_code, 200)
-        token = self.authenticity_token(self.bs(response))
+        token = self.authenticity_token(self.bs(response, 200))
         self.assertTrue(token)
         data.update(token)
         cookie = self.cookie(response)

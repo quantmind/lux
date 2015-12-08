@@ -86,6 +86,8 @@ class RegistrationCRUD(RestRouter):
 
 
 class UserCRUD(CRUD):
+    """CRUD views for users
+    """
     _model = user_model()
 
     def __init__(self, *args, **kw):

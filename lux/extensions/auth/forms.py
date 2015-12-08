@@ -30,21 +30,24 @@ def permission_model():
 
 
 def group_model():
-    model = odm.RestModel('group', GroupForm, GroupForm,
+    model = odm.RestModel('group',
+                          GroupForm,
+                          GroupForm,
                           repr_field='name')
     model.add_related_column('permissions', permission_model)
     return model
 
 
 def user_model():
-    return UserModel('user',
-                     CreateUserForm,
-                     UserForm,
-                     id_field='username',
-                     repr_field='name',
-                     exclude=('password',),
-                     columns=(full_name,
-                              odm.ModelColumn('groups', group_model)))
+    model = UserModel('user',
+                      CreateUserForm,
+                      UserForm,
+                      id_field='username',
+                      repr_field='name',
+                      exclude=('password',),
+                      columns=(full_name,))
+    model.add_related_column('groups', group_model)
+    return model
 
 
 def registration_model():
@@ -64,6 +67,8 @@ class UserModel(odm.RestModel):
     def create_model(self, request, data, session=None):
         '''Override create model so that it calls the backend method
         '''
+        if session:
+            data['odm_session'] = session
         return request.cache.auth_backend.create_user(request, **data)
 
 
