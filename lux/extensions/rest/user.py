@@ -29,6 +29,7 @@ PERMISSION_LEVELS = dict(NONE=NONE,
                          READ=READ,
                          UPDATE=UPDATE,
                          DELETE=DELETE)
+REVERSED_PERMISSIONS = dict(((v, k) for k, v in PERMISSION_LEVELS.items()))
 
 
 class AuthenticationError(ValueError):

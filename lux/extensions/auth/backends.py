@@ -98,14 +98,14 @@ class AuthMixin(PasswordMixin):
             else:
                 raise AuthenticationError('Invalid credentials')
 
-    def has_permission(self, request, name, level):
+    def has_permission(self, request, resource, level):
         user = request.cache.user
         # Superuser, always true
         if user.is_superuser():
             return True
         else:
             permissions = self.get_permissions(request)
-            return has_permission(request, permissions, name, level)
+            return has_permission(request, permissions, resource, level)
 
     def create_user(self, request, username=None, password=None, email=None,
                     first_name=None, last_name=None, active=False,
