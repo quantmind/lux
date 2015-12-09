@@ -6,9 +6,7 @@ from pulsar import PermissionDenied
 from pulsar.utils.html import nicename
 from pulsar.apps.wsgi import Json
 
-from .user import READ, PERMISSION_LEVELS
-
-PERMISSIONS = ['UPDATE', 'CREATE', 'DELETE']
+from .user import PERMISSION_LEVELS
 
 logger = logging.getLogger('lux.extensions.rest')
 
@@ -372,7 +370,7 @@ class RestModel(ColumnPermissionsMixin):
         '''Return an object representing the metadata for the model
         served by this router
         '''
-        columns = self.columns_with_permission(request, READ)
+        columns = self.columns_with_permission(request, 'read')
         #
         # Don't include columns which are excluded from meta
         exclude = set(exclude or ())
@@ -397,9 +395,9 @@ class RestModel(ColumnPermissionsMixin):
 
     def get_permissions(self, request):
         perms = {}
-        self._add_permission(request, perms, 'UPDATE', self.updateform)
-        self._add_permission(request, perms, 'CREATE', self.form)
-        self._add_permission(request, perms, 'DELETE', True)
+        self._add_permission(request, perms, 'update', self.updateform)
+        self._add_permission(request, perms, 'create', self.form)
+        self._add_permission(request, perms, 'delete', True)
         return perms
 
     def _do_sortby(self, request, query, entry, direction):
@@ -430,9 +428,10 @@ class RestModel(ColumnPermissionsMixin):
     def _add_permission(self, request, perms, name, avail):
         if avail:
             backend = request.cache.auth_backend
-            code = PERMISSION_LEVELS[name]
-            if backend.has_permission(request, self.name, code):
-                perms[name] = True
+            name = name.lower()
+            if name in PERMISSION_LEVELS:
+                if backend.has_permission(request, self.name, name):
+                    perms[name] = True
 
 
 class ModelMixin:

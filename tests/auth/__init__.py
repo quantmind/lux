@@ -22,13 +22,13 @@ API_URL = ''
 AUTHENTICATION_BACKENDS = ['lux.extensions.auth.TokenBackend',
                            'lux.extensions.auth.BrowserBackend']
 DEFAULT_PERMISSION_LEVELS = {
-    'group': rest.NONE,
-    'registration': rest.NONE,
-    'secret': rest.NONE,
-    'objective': 40,
-    'objective:subject': rest.NONE,
-    'objective:deadline': 20,
-    'objective:outcome': 10
+    'group': 'none',
+    'registration': 'none',
+    'secret': 'none',
+    'objective': '*',
+    'objective:subject': 'none',
+    'objective:deadline': ('read', 'update'),
+    'objective:outcome': 'read'
 }
 
 
@@ -54,11 +54,11 @@ class Extension(lux.Extension):
         data = response.json()
         secret = data.get('secret')
         if secret:
-            if secret['READ']:
+            if secret['read']:
                 doc.heaq.add_meta(name='permission', content='secret:read')
-            if secret['UPDATE']:
+            if secret['update']:
                 doc.heaq.add_meta(name='permission', content='secret:update')
-            if secret['CREATE']:
+            if secret['create']:
                 doc.heaq.add_meta(name='permission', content='secret:create')
 
 
@@ -168,8 +168,6 @@ class UserRest(odm.RestRouter):
         for resource in resources:
             vals = {}
             perms[resource] = vals
-            for name, code in rest.PERMISSION_LEVELS.items():
-                if not code:
-                    continue
-                vals[name] = backend.has_permission(request, resource, code)
+            for name in rest.PERMISSION_LEVELS:
+                vals[name] = backend.has_permission(request, resource, name)
         return self.json(request, perms)

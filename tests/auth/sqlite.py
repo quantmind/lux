@@ -120,8 +120,8 @@ class TestSqlite(test.AppTestCase,
                 name='objective subject',
                 description='Can use objective:subject',
                 policy={
-                    'action': 'objective:subject',
-                    'effect': 'allow'
+                    'resource': 'objective:subject',
+                    'action': '*'
                 })
             group.permissions.append(permission)
             #

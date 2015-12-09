@@ -98,14 +98,39 @@ class AuthMixin(PasswordMixin):
             else:
                 raise AuthenticationError('Invalid credentials')
 
-    def has_permission(self, request, name, level):
+    def has_permission(self, request, resource, level):
         user = request.cache.user
         # Superuser, always true
         if user.is_superuser():
             return True
         else:
-            permissions = self.get_permissions(request)
-            return has_permission(request, permissions, name, level)
+            permissions = self.get_permission_objects(request)
+            return has_permission(request, permissions, resource, level)
+
+    def get_permissions(self, request, resources, actions=None):
+        if not actions:
+            actions = ('read', 'update', 'create', 'delete')
+        if not isinstance(actions, (list, tuple)):
+            actions = (actions,)
+        if not isinstance(resources, (list, tuple)):
+            resources = (resources,)
+
+        obj = {}
+
+        if not request.cache.user.is_superuser():
+            permissions = self.get_permission_objects(request)
+            for resource in resources:
+                perms = {}
+                for action in actions:
+                    perms[action] = has_permission(request, permissions,
+                                                   resource, action)
+                obj[resource] = perms
+
+        else:
+            for resource in resources:
+                obj[resource] = dict(((a, True) for a in actions))
+
+        return obj
 
     def create_user(self, request, username=None, password=None, email=None,
                     first_name=None, last_name=None, active=False,
@@ -206,7 +231,7 @@ class AuthMixin(PasswordMixin):
         raise AuthenticationError('Could not confirm key')
 
     @cached(user=True)
-    def get_permissions(self, request):
+    def get_permission_objects(self, request):
         odm = request.app.odm()
         user = request.cache.user
         perms = {}

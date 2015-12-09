@@ -47,7 +47,7 @@ class CRUD(RestRouter):
     def get(self, request):
         '''Get a list of models
         '''
-        self.check_model_permission(request, rest.READ)
+        self.check_model_permission(request, 'read')
         # Columns the user doesn't have access to are dropped by
         # serialise_model
         return self.model(request).collection_response(request)
@@ -59,8 +59,8 @@ class CRUD(RestRouter):
         if not model.form:
             raise MethodNotAllowed
 
-        self.check_model_permission(request, rest.CREATE)
-        columns = model.columns_with_permission(request, rest.CREATE)
+        self.check_model_permission(request, 'create')
+        columns = model.columns_with_permission(request, 'create')
         columns = model.column_fields(columns, 'name')
 
         data, files = request.data_and_files()
@@ -92,14 +92,13 @@ class CRUD(RestRouter):
     def metadata(self, request):
         '''Model metadata
         '''
-        if request.method == 'OPTIONS':
-            request.app.fire('on_preflight', request)
-            return request.response
-
         backend = request.cache.auth_backend
         model = self.model(request.app)
+        if backend.has_permission(request, model.name, 'read'):
+            if request.method == 'OPTIONS':
+                request.app.fire('on_preflight', request)
+                return request.response
 
-        if backend.has_permission(request, model.name, rest.READ):
             meta = model.meta(request)
             return Json(meta).http_response(request)
         raise PermissionDenied
@@ -116,11 +115,11 @@ class CRUD(RestRouter):
             instance = self.get_instance(request, session=session)
 
             if request.method == 'GET':
-                self.check_model_permission(request, rest.READ)
+                self.check_model_permission(request, 'read')
                 data = model.serialise(request, instance)
 
             elif request.method == 'HEAD':
-                self.check_model_permission(request, rest.READ)
+                self.check_model_permission(request, 'read')
                 return request.response
 
             elif request.method in ('POST', 'PUT'):
@@ -129,8 +128,8 @@ class CRUD(RestRouter):
                 if not form_class:
                     raise MethodNotAllowed
 
-                self.check_model_permission(request, rest.UPDATE)
-                columns = model.columns_with_permission(request, rest.UPDATE)
+                self.check_model_permission(request, 'update')
+                columns = model.columns_with_permission(request, 'update')
                 columns = model.column_fields(columns, 'name')
 
                 data, files = request.data_and_files()
@@ -151,7 +150,7 @@ class CRUD(RestRouter):
 
             elif request.method == 'DELETE':
 
-                self.check_model_permission(request, rest.DELETE)
+                self.check_model_permission(request, 'delete')
                 model.delete_model(request, instance)
                 request.response.status_code = 204
                 return request.response

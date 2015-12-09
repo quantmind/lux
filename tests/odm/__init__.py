@@ -31,8 +31,11 @@ class TestEnum(Enum):
 class Extension(lux.Extension):
 
     def api_sections(self, app):
-        return [CRUDTask(), CRUDPerson(), UserCRUD(),
-                PermissionCRUD(), GroupCRUD()]
+        return [CRUDTask(),
+                CRUDPerson(),
+                UserCRUD(),
+                PermissionCRUD(),
+                GroupCRUD()]
 
 
 Model = odm.model_base('odmtest')

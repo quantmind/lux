@@ -25,10 +25,13 @@ class ApiClient:
     def head(self, path, **kw):
         return self.request('HEAD', path, **kw)
 
-    def request(self, method, path=None, **kw):
+    def request(self, method, path=None, token=None, headers=None, **kw):
         http = self.http()
         url = urljoin(self.app.config['API_URL'], path or '')
-        response = http.request(method, url, **kw)
+        headers = headers or []
+        if token:
+            headers.append(('Authorization', 'Bearer %s' % token))
+        response = http.request(method, url, headers=headers, **kw)
         if self.app.green_pool:
             return self.app.green_pool.wait(response)
         else:
