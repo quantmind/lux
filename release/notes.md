@@ -12,7 +12,7 @@
   * get request correctly handles multiple args [[209](https://github.com/quantmind/lux/pull/209)]
   * Add support for ``ne`` (not equals) and ``search`` operators  [[#212](https://github.com/quantmind/lux/pull/212)]
   * ``search`` operator is the default operator for string columns in the javascript ``lux.grid`` component
-* Added new ``get_permissions`` method to backend base class and implemented in the ``auth`` backend 
+* Added new ``get_permissions`` method to backend base class and implemented in the ``auth`` backend
 * Permissions controlled via JSON documents with actions specified as
   ``read``, ``update``, ``create`` and ``delete``. No more numeric values, only string allowed.
   It is possible to set the wildcard ``*`` for allowing or denyining all permissions
@@ -22,6 +22,7 @@
 ## Javascript
 * Added scrollbar to sidebar [[214](https://github.com/quantmind/lux/pull/214)]
 * Clearfix in sidebar [[215](https://github.com/quantmind/lux/pull/215)]
+* Add ability to remember the selected link in sidebar submenus [[211](https://github.com/quantmind/lux/pull/221)]
 
 ## Bug Fixes
 * Make sure ``MEDIA_URL`` does not end with a forward slash when adding the media router

@@ -31,7 +31,7 @@ ng-class="{'sidebar-fixed':sidebar.fixed}" bs-collapse>
         <span>{{link.name}}</span>
         <i ng-if="link.subitems" class="fa fa-angle-left pull-right"></i>
     </a>
-    <ul class="treeview-menu" ng-class="link.class" ng-if="link.subitems">
+    <ul class="treeview-menu" ng-class="{active:activeSubmenu(link)}" ng-if="link.subitems">
         <li ng-repeat="link in link.subitems" ng-class="{active:activeLink(link)}" ng-include="'subnav'">
         </li>
     </ul>

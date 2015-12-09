@@ -57,10 +57,37 @@
                     }
                 };
 
+                // recursively loops through arrays to
+                // find url match
+                function exploreSubmenus(array) {
+                    for (var i=0; i < array.length; i++) {
+                        if (array[i].href === $location.path()) {
+                            return true;
+                        } else if (array[i].subitems && array[i].subitems.length > 0) {
+                            if (exploreSubmenus(array[i].subitems)) return true;
+                        }
+                    }
+                }
+
+                scope.activeSubmenu = function(url) {
+                    var active = false;
+
+                    if (url.href && url.href === '#' && url.subitems.length > 0) {
+                        active = exploreSubmenus(url.subitems);
+                    } else {
+                        active = false;
+                    }
+                    return active;
+                };
+
                 // Check if a url is active
                 scope.activeLink = function (url) {
                     var loc;
                     if (url)
+                        // Check if any submenus/sublinks are active
+                        if (url.subitems && url.subitems.length > 0) {
+                            if (exploreSubmenus(url.subitems)) return true;
+                        }
                         url = typeof(url) === 'string' ? url : url.href || url.url;
                     if (!url) return;
                     if (isAbsolute.test(url))

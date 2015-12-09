@@ -5090,10 +5090,37 @@ function gridDataProviderWebsocketFactory ($scope) {
                     }
                 };
 
+                // recursively loops through arrays to
+                // find url match
+                function exploreSubmenus(array) {
+                    for (var i=0; i < array.length; i++) {
+                        if (array[i].href === $location.path()) {
+                            return true;
+                        } else if (array[i].subitems && array[i].subitems.length > 0) {
+                            if (exploreSubmenus(array[i].subitems)) return true;
+                        }
+                    }
+                }
+
+                scope.activeSubmenu = function(url) {
+                    var active = false;
+
+                    if (url.href && url.href === '#' && url.subitems.length > 0) {
+                        active = exploreSubmenus(url.subitems);
+                    } else {
+                        active = false;
+                    }
+                    return active;
+                };
+
                 // Check if a url is active
                 scope.activeLink = function (url) {
                     var loc;
                     if (url)
+                        // Check if any submenus/sublinks are active
+                        if (url.subitems && url.subitems.length > 0) {
+                            if (exploreSubmenus(url.subitems)) return true;
+                        }
                         url = typeof(url) === 'string' ? url : url.href || url.url;
                     if (!url) return;
                     if (isAbsolute.test(url))
@@ -6300,7 +6327,7 @@ angular.module("nav/templates/sidebar.tpl.html", []).run(["$templateCache", func
     "        <span>{{link.name}}</span>\n" +
     "        <i ng-if=\"link.subitems\" class=\"fa fa-angle-left pull-right\"></i>\n" +
     "    </a>\n" +
-    "    <ul class=\"treeview-menu\" ng-class=\"link.class\" ng-if=\"link.subitems\">\n" +
+    "    <ul class=\"treeview-menu\" ng-class=\"{active:activeSubmenu(link)}\" ng-if=\"link.subitems\">\n" +
     "        <li ng-repeat=\"link in link.subitems\" ng-class=\"{active:activeLink(link)}\" ng-include=\"'subnav'\">\n" +
     "        </li>\n" +
     "    </ul>\n" +
