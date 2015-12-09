@@ -79,25 +79,43 @@ class Admin(AdminRouter):
         # set self as the angular root
         self._angular_root = self
 
-    @cached
+    @cached(user=True)
     def sitemap(self, request):
-        sections = {}
-        sitemap = []
+        infos = []
+        resources = []
         for child in self.routes:
             if isinstance(child, AdminModel):
+                resource = child._model.name
+                resources.append(resource)
                 section, info = child.info(request)
+                infos.append((resource, section, info))
 
-                if section not in sections:
-                    items = []
-                    sections[section] = {'name': section,
-                                         'items': items}
-                    sitemap.append(sections[section])
-                else:
-                    items = sections[section]['items']
+        backend = request.cache.auth_backend
+        sections = {}
+        sitemap = []
 
-                items.append(info)
+        if backend:
+            permissions = backend.get_permissions(request, resources, 'read')
+            infos = self._permission_filter(permissions, infos)
+
+        for resource, section, info in infos:
+            if section not in sections:
+                items = []
+                sections[section] = {'name': section,
+                                     'items': items}
+                sitemap.append(sections[section])
+            else:
+                items = sections[section]['items']
+
+            items.append(info)
 
         return sitemap
+
+    def _permission_filter(self, permissions, infos):
+        for resource, section, info in infos:
+            permission = permissions.get(resource)
+            if permission and permission.get('read'):
+                yield resource, section, info
 
 
 class AdminModel(rest.RestMixin, AdminRouter):
