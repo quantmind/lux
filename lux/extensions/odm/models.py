@@ -207,6 +207,7 @@ class RestModel(rest.RestModel):
         return instance
 
     def update_model(self, request, instance, data):
+        self.columns(request)  # TODO, columns need to be loaded
         odm = request.app.odm()
         session = odm.session_from_object(instance)
         with odm.begin(session=session) as session:
