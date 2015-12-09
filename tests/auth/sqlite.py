@@ -1,5 +1,6 @@
 from lux.utils import test
 
+from .user import UserMixin
 from .signup import SignupMixin
 from .password import PasswordMixin
 from .odm import OdmMixin
@@ -82,6 +83,7 @@ class AuthUtils:
 
 
 class TestSqlite(test.AppTestCase,
+                 UserMixin,
                  OdmMixin,
                  SignupMixin,
                  PasswordMixin,
