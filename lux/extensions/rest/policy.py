@@ -1,6 +1,5 @@
 from lux.forms import ValidationError
 
-from .user import PERMISSION_LEVELS, REVERSED_PERMISSIONS
 
 POLICY = dict(effect=(str, frozenset(('allow', 'deny'))),
               # An action is a string or a list of PERMISSION_LEVELS
@@ -25,11 +24,11 @@ def has_permission(request, permissions, resource, action):
         else:
             default = request.config['DEFAULT_PERMISSION_LEVELS'].get(resource)
             if default is not None:
-                return _check_default_level(default, action)
+                return _has_policy_actions(action, default)
         resource = resource.rpartition(':')[0]
 
     default = request.config['DEFAULT_PERMISSION_LEVEL']
-    return _check_default_level(default, action)
+    return _has_policy_actions(action, default)
 
 
 def validate_policy(policy):
@@ -76,12 +75,6 @@ def validate_single_policy(policy):
     return p
 
 
-def as_action_string(action):
-    if isinstance(action, int):
-        return REVERSED_PERMISSIONS.get(action, 'NONE')
-    return str(action).upper()
-
-
 def _check_policies(policies, resource, action):
     """
     Checks an action against a list of policies
@@ -99,18 +92,6 @@ def _check_policies(policies, resource, action):
     return None
 
 
-def _check_default_level(default, level):
-    """
-    Compares a default permission level with requested level
-    :param default:     integer or level name
-    :param level:       requested level
-    :return:            Boolean
-    """
-    if isinstance(default, str):
-        default = PERMISSION_LEVELS.get(default.upper(), 0)
-    return level <= default
-
-
 def _has_policy_actions(action, actions):
     if actions == '*':
         return True
@@ -118,16 +99,17 @@ def _has_policy_actions(action, actions):
         for act in actions:
             if _has_policy_actions(action, act):
                 return True
-    else:
-        return as_action_string(action) == as_action_string(actions)
+    elif isinstance(action, str) and isinstance(actions, str):
+        return action.lower() == actions.lower()
 
 
 def _has_permission(policy, resource, action):
-    resources = policy['resource']
-    if not isinstance(resources, list):
-        resources = (resources,)
-    for available_resource in resources:
-        if available_resource == resource:
-            if _has_policy_actions(action, policy.get('action')):
-                return EFFECTS[policy.get('effect', 'allow')]
+    resources = policy.get('resource')
+    if resources:
+        if not isinstance(resources, list):
+            resources = (resources,)
+        for available_resource in resources:
+            if available_resource == resource:
+                if _has_policy_actions(action, policy.get('action')):
+                    return EFFECTS.get(policy.get('effect', 'allow'))
     return None

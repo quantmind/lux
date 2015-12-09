@@ -38,7 +38,7 @@ class RegistrationCRUD(RestRouter):
     def get(self, request):
         '''Get a list of models
         '''
-        self.check_model_permission(request, rest.READ)
+        self.check_model_permission(request, 'read')
         # Columns the user doesn't have access to are dropped by
         # serialise_model
         return self.model(request).collection_response(request)
@@ -79,7 +79,7 @@ class RegistrationCRUD(RestRouter):
         backend = request.cache.auth_backend
         model = self.model(request)
 
-        if backend.has_permission(request, model.name, rest.READ):
+        if backend.has_permission(request, model.name, 'read'):
             meta = model.meta(request)
             return Json(meta).http_response(request)
         raise PermissionDenied

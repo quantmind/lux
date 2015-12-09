@@ -52,7 +52,7 @@ class RestModel(rest.RestModel):
         :param session:     SQLAlchemy session
         :return:            query object
         """
-        entities = self.columns_with_permission(request, rest.READ)
+        entities = self.columns_with_permission(request, 'read')
         if not entities:
             raise PermissionDenied
         db_model = self.db_model()
@@ -72,7 +72,7 @@ class RestModel(rest.RestModel):
         :param kw:          not used
         :return:            dict
         """
-        exclude = self.columns_without_permission(request, rest.READ)
+        exclude = self.columns_without_permission(request, 'read')
         exclude = self.column_fields(exclude, 'name')
         return self.tojson(request, data, exclude=exclude)
 

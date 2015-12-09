@@ -12,6 +12,10 @@
   * get request correctly handles multiple args [[209](https://github.com/quantmind/lux/pull/209)]
   * Add support for ``ne`` (not equals) and ``search`` operators  [[#212](https://github.com/quantmind/lux/pull/212)]
   * ``search`` operator is the default operator for string columns in the javascript ``lux.grid`` component
+* Permissions controlled via JSON documents with actions specified as
+  ``read``, ``update``, ``create`` and ``delete``. No more numeric values, only string allowed.
+  It is possible to set the wildcard ``*`` for allowing or denyining all permissions
+  to a given resource.
 
 ## Javascript
 * Added scrollbar to sidebar [[214](https://github.com/quantmind/lux/pull/214)]

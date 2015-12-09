@@ -158,14 +158,13 @@ class CRUDAdmin(AdminModel):
     def get_form(self, request, form, id=None):
         if not form:
             raise Http404
-        perm_id, perm_name = ((rest.UPDATE, 'update') if id
-                              else (rest.CREATE, 'create'))
+        action = 'update' if id else 'create'
         backend = request.cache.auth_backend
         model = self._model
 
-        if backend.has_permission(request, model.name, perm_id):
+        if backend.has_permission(request, model.name, action):
             target = model.get_target(request, path=id, get=True)
-            html = form(request).as_form(action=target, actionType=perm_name)
+            html = form(request).as_form(action=target, actionType=action)
             context = {'html_form': html.render()}
             html = request.app.render_template(self.addtemplate, context)
             return self.html_response(request, html)

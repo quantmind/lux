@@ -7,9 +7,7 @@ If you need something different you can use this extension as a guide on
 how to write authentication backends and models in lux.
 '''
 import lux
-
 from lux import Parameter
-from lux.extensions import rest
 
 from .backends import (TokenBackend, SessionBackend, BrowserBackend,
                        ApiSessionBackend)
@@ -24,9 +22,7 @@ __all__ = ['TokenBackend', 'SessionBackend',
 class Extension(lux.Extension):
     _config = [
         Parameter('ANONYMOUS_GROUP', 'anonymous',
-                  'Name of the group for all anonymous users'),
-        Parameter('DEFAULT_PERMISSION_LEVEL', rest.READ,
-                  'Default permission level')
+                  'Name of the group for all anonymous users')
     ]
 
     def on_config(self, app):

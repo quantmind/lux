@@ -50,7 +50,7 @@ class TextCRUD(TextCRUDBase):
         if not model.form:
             raise Http404
         backend = request.cache.auth_backend
-        if backend.has_permission(request, model.name, rest.CREATE):
+        if backend.has_permission(request, model.name, 'create'):
             data, files = self.json_data_files(request)
             form = model.form(request, data=data, files=files)
             if form.is_valid():
@@ -97,7 +97,7 @@ class TextCRUD(TextCRUDBase):
 
         content = self.get_content(request, path)
         if request.method == 'HEAD':
-            if backend.has_permission(request, model.name, rest.READ):
+            if backend.has_permission(request, model.name, 'read'):
                 return request.response
 
         if request.method == 'POST':
@@ -130,7 +130,7 @@ class TextCRUD(TextCRUDBase):
         content = self.get_content(request, path)
         backend = request.cache.auth_backend
 
-        if backend.has_permission(request, model.name, rest.READ):
+        if backend.has_permission(request, model.name, 'read'):
             response = request.response
             response.content_type = content.content_type
             if content.content_type == 'text/html':

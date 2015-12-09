@@ -13,23 +13,11 @@ __all__ = ['AuthenticationError', 'MessageMixin',
            'UserMixin', 'SessionMixin',
            'normalise_email', 'PasswordMixin',
            'logout', 'User', 'Session',
-           'check_username',
-           'NONE', 'CREATE', 'READ', 'UPDATE', 'DELETE', 'PERMISSION_LEVELS']
+           'check_username', 'PERMISSION_LEVELS']
 
 
 UNUSABLE_PASSWORD = '!'
-
-NONE = 0
-CREATE = 30     # C
-READ = 10       # R
-UPDATE = 20     # U
-DELETE = 40     # D
-PERMISSION_LEVELS = dict(NONE=NONE,
-                         CREATE=CREATE,
-                         READ=READ,
-                         UPDATE=UPDATE,
-                         DELETE=DELETE)
-REVERSED_PERMISSIONS = dict(((v, k) for k, v in PERMISSION_LEVELS.items()))
+PERMISSION_LEVELS = set(('read', 'update', 'create', 'delete'))
 
 
 class AuthenticationError(ValueError):
