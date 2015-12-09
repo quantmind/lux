@@ -64,9 +64,9 @@ class MultiAuthBackend(AuthBase):
         cache.auth_backend = self
         return self._execute_backend_method('request', request)
 
-    def has_permission(self, request, target, level):
+    def has_permission(self, request, resource, action):
         has = self._execute_backend_method('has_permission',
-                                           request, target, level)
+                                           request, resource, action)
         return True if has is None else has
 
     def __iter__(self):
@@ -180,8 +180,15 @@ class AuthBackend(AuthBase,
         pass
 
     @auth_backend
-    def has_permission(self, request, target, level):  # pragma    nocover
+    def has_permission(self, request, resorce, action):  # pragma    nocover
         '''Check if the given request has permission over ``target``
         element with permission ``level``
+        '''
+        pass
+
+    @auth_backend
+    def get_permissions(self, request, resource,
+                        actions=None):  # pragma    nocover
+        '''Get a dictionary of permissions for the given resource
         '''
         pass

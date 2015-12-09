@@ -6,10 +6,10 @@ class AdminTest(test.AppTestCase):
     config_file = 'tests.admin'
 
     def test_app(self):
-        app = self.app
+        request = self.app.wsgi_request(path='/admin')
         admin = self.app.extensions['lux.extensions.admin'].admin
         self.assertIsInstance(admin, Admin)
-        sitemap = admin.sitemap(app)
+        sitemap = admin.sitemap(request)
         self.assertTrue(sitemap)
         self.assertEqual(len(sitemap), 1)
         items = {}

@@ -44,7 +44,7 @@ class AdminRouter(lux.HtmlRouter):
     '''
     def response_wrapper(self, callable, request):
         backend = request.cache.auth_backend
-        if backend.has_permission(request, 'site:admin', rest.READ):
+        if backend.has_permission(request, 'site:admin', 'read'):
             return callable(request)
         else:
             raise Http404
@@ -79,25 +79,43 @@ class Admin(AdminRouter):
         # set self as the angular root
         self._angular_root = self
 
-    @cached
+    @cached(user=True)
     def sitemap(self, request):
-        sections = {}
-        sitemap = []
+        infos = []
+        resources = []
         for child in self.routes:
             if isinstance(child, AdminModel):
+                resource = child._model.name
+                resources.append(resource)
                 section, info = child.info(request)
+                infos.append((resource, section, info))
 
-                if section not in sections:
-                    items = []
-                    sections[section] = {'name': section,
-                                         'items': items}
-                    sitemap.append(sections[section])
-                else:
-                    items = sections[section]['items']
+        backend = request.cache.auth_backend
+        sections = {}
+        sitemap = []
 
-                items.append(info)
+        if backend:
+            permissions = backend.get_permissions(request, resources, 'read')
+            infos = self._permission_filter(permissions, infos)
+
+        for resource, section, info in infos:
+            if section not in sections:
+                items = []
+                sections[section] = {'name': section,
+                                     'items': items}
+                sitemap.append(sections[section])
+            else:
+                items = sections[section]['items']
+
+            items.append(info)
 
         return sitemap
+
+    def _permission_filter(self, permissions, infos):
+        for resource, section, info in infos:
+            permission = permissions.get(resource)
+            if permission and permission.get('read'):
+                yield resource, section, info
 
 
 class AdminModel(rest.RestMixin, AdminRouter):
@@ -158,14 +176,13 @@ class CRUDAdmin(AdminModel):
     def get_form(self, request, form, id=None):
         if not form:
             raise Http404
-        perm_id, perm_name = ((rest.UPDATE, 'update') if id
-                              else (rest.CREATE, 'create'))
+        action = 'update' if id else 'create'
         backend = request.cache.auth_backend
         model = self._model
 
-        if backend.has_permission(request, model.name, perm_id):
+        if backend.has_permission(request, model.name, action):
             target = model.get_target(request, path=id, get=True)
-            html = form(request).as_form(action=target, actionType=perm_name)
+            html = form(request).as_form(action=target, actionType=action)
             context = {'html_form': html.render()}
             html = request.app.render_template(self.addtemplate, context)
             return self.html_response(request, html)

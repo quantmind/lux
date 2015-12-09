@@ -1,6 +1,5 @@
 import lux
 from lux import forms
-from lux.extensions import rest
 from lux.extensions.admin import register, CRUDAdmin
 
 
@@ -18,7 +17,7 @@ API_URL = 'api'
 AUTHENTICATION_BACKENDS = ['lux.extensions.auth.TokenBackend']
 DATASTORE = 'postgresql+green://lux:luxtest@127.0.0.1:5432/luxtests'
 DEFAULT_PERMISSION_LEVELS = {}
-DEFAULT_PERMISSION_LEVEL = rest.DELETE
+DEFAULT_PERMISSION_LEVEL = '*'
 
 
 class Extension(lux.Extension):

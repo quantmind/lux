@@ -79,7 +79,7 @@ class PermissionsMixin:
                                               content_type='application/json',
                                               token=token)
         self.assertValidationError(request.response, '',
-                                   text='"action" must be defined')
+                                   text='"resource" must be defined')
 
     def test_column_permissions_read(self):
         """Tests read requests against columns with permission level 0"""

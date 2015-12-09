@@ -6,10 +6,6 @@ from pulsar import PermissionDenied
 from pulsar.utils.html import nicename
 from pulsar.apps.wsgi import Json
 
-from .user import READ, PERMISSION_LEVELS
-
-PERMISSIONS = ['UPDATE', 'CREATE', 'DELETE']
-
 logger = logging.getLogger('lux.extensions.rest')
 
 __all__ = ['RestModel', 'RestColumn', 'ModelMixin']
@@ -372,7 +368,7 @@ class RestModel(ColumnPermissionsMixin):
         '''Return an object representing the metadata for the model
         served by this router
         '''
-        columns = self.columns_with_permission(request, READ)
+        columns = self.columns_with_permission(request, 'read')
         #
         # Don't include columns which are excluded from meta
         exclude = set(exclude or ())
@@ -380,7 +376,13 @@ class RestModel(ColumnPermissionsMixin):
         if exclude:
             columns = [c for c in columns if c['name'] not in exclude]
 
-        permissions = self.get_permissions(request)
+        backend = request.cache.auth_backend
+        permissions = backend.get_permissions(request, self.name)
+        permissions = permissions.get(self.name, {})
+        if not self.updateform:
+            permissions['update'] = False
+        if not self.form:
+            permissions['create'] = False
 
         meta = {'id': self.id_field,
                 'repr': self.repr_field,
@@ -394,13 +396,6 @@ class RestModel(ColumnPermissionsMixin):
         '''Serialise on model
         '''
         return self.tojson(request, data)
-
-    def get_permissions(self, request):
-        perms = {}
-        self._add_permission(request, perms, 'UPDATE', self.updateform)
-        self._add_permission(request, perms, 'CREATE', self.form)
-        self._add_permission(request, perms, 'DELETE', True)
-        return perms
 
     def _do_sortby(self, request, query, entry, direction):
         raise NotImplementedError
@@ -426,13 +421,6 @@ class RestModel(ColumnPermissionsMixin):
             columns.append(col.as_dict())
 
         return columns
-
-    def _add_permission(self, request, perms, name, avail):
-        if avail:
-            backend = request.cache.auth_backend
-            code = PERMISSION_LEVELS[name]
-            if backend.has_permission(request, self.name, code):
-                perms[name] = True
 
 
 class ModelMixin:

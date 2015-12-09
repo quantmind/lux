@@ -56,36 +56,36 @@
                 'create': {
                     title: 'Add',
                     icon: 'fa fa-plus',
-                    // Handle CREATE permission type
-                    permissionType: 'CREATE'
+                    // Handle create permission type
+                    permissionType: 'create'
                 },
                 'delete': {
                     title: 'Delete',
                     icon: 'fa fa-trash',
-                    permissionType: 'DELETE'
+                    permissionType: 'delete'
                 },
                 'columnsVisibility': {
                     title: 'Columns visibility',
                     icon: 'fa fa-eye'
                 }
             },
-            // Permissions are used to enable/disable grid actions like (CREATE, UPDATE, DELETE).
+            // Permissions are used to enable/disable grid actions like (create, update, delete).
             //
             // To enable permission of given type on menu item we need to specify `permissionType`
-            // e.g. `permissionType: 'CREATE'` on 'create' item will show 'Add' button on the grid.
+            // e.g. `permissionType: 'create'` will show 'Add' button on the grid.
             // If the `permissionType` is not specified on item at `gridDefaults.gridMenu` then
             // this item doesn't handle permissions (is always visible).
             //
-            // We always expect the permissions object i.e. `permissions: {'CREATE': true, 'DELETE': false, 'UPDATE': true}`.
+            // We always expect the permissions object i.e. `permissions: {'create': true, 'delete': false, 'update': true}`.
             // If some of value is not specified then default is `False` (according to values from `gridDefaults.permissions`)
             //
             // We allow to configure permissions from:
             // * `metadata API` override the grid options
             // * `grid options`
             permissions: {
-                CREATE: false,
-                UPDATE: false,
-                DELETE: false
+                create: false,
+                update: false,
+                delete: false
             },
             modal: {
                 delete: {
@@ -189,7 +189,7 @@
                     }
 
                     if (typeof column.field !== 'undefined' && column.field === metaFields.repr) {
-                        if (permissions.UPDATE) {
+                        if (permissions.update) {
                             // If there is an update permission then display link
                             column.cellTemplate = gridDefaults.wrapCell('<a ng-href="{{grid.appScope.getObjectIdField(row.entity)}}">{{COL_FIELD}}</a>');
                         }
