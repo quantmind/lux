@@ -6,8 +6,6 @@ from pulsar import PermissionDenied
 from pulsar.utils.html import nicename
 from pulsar.apps.wsgi import Json
 
-from .user import PERMISSION_LEVELS
-
 logger = logging.getLogger('lux.extensions.rest')
 
 __all__ = ['RestModel', 'RestColumn', 'ModelMixin']
@@ -378,7 +376,13 @@ class RestModel(ColumnPermissionsMixin):
         if exclude:
             columns = [c for c in columns if c['name'] not in exclude]
 
-        permissions = self.get_permissions(request)
+        backend = request.cache.auth_backend
+        permissions = backend.get_permissions(request, self.name)
+        permissions = permissions.get(self.name, {})
+        if not self.updateform:
+            permissions['update'] = False
+        if not self.form:
+            permissions['create'] = False
 
         meta = {'id': self.id_field,
                 'repr': self.repr_field,
@@ -392,13 +396,6 @@ class RestModel(ColumnPermissionsMixin):
         '''Serialise on model
         '''
         return self.tojson(request, data)
-
-    def get_permissions(self, request):
-        perms = {}
-        self._add_permission(request, perms, 'update', self.updateform)
-        self._add_permission(request, perms, 'create', self.form)
-        self._add_permission(request, perms, 'delete', True)
-        return perms
 
     def _do_sortby(self, request, query, entry, direction):
         raise NotImplementedError
@@ -424,14 +421,6 @@ class RestModel(ColumnPermissionsMixin):
             columns.append(col.as_dict())
 
         return columns
-
-    def _add_permission(self, request, perms, name, avail):
-        if avail:
-            backend = request.cache.auth_backend
-            name = name.lower()
-            if name in PERMISSION_LEVELS:
-                if backend.has_permission(request, self.name, name):
-                    perms[name] = True
 
 
 class ModelMixin:
