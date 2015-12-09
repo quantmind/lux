@@ -2,7 +2,6 @@ from sqlalchemy.exc import DataError
 from sqlalchemy.orm.exc import NoResultFound
 
 from pulsar import PermissionDenied, MethodNotAllowed, Http404
-from pulsar.apps.wsgi import Json
 
 import odm
 
@@ -84,7 +83,8 @@ class CRUD(RestRouter):
                     request.response.status_code = 201
         else:
             data = form.tojson()
-        return Json(data).http_response(request)
+
+        return self.json(request, data)
 
     # Additional Routes
 
@@ -92,15 +92,16 @@ class CRUD(RestRouter):
     def metadata(self, request):
         '''Model metadata
         '''
+        if request.method == 'OPTIONS':
+            request.app.fire('on_preflight', request)
+            return request.response
+
         backend = request.cache.auth_backend
         model = self.model(request.app)
         if backend.has_permission(request, model.name, 'read'):
-            if request.method == 'OPTIONS':
-                request.app.fire('on_preflight', request)
-                return request.response
-
             meta = model.meta(request)
-            return Json(meta).http_response(request)
+            return self.json(request, meta)
+
         raise PermissionDenied
 
     @route('<id>', method=('get', 'post', 'put', 'delete', 'head', 'options'))
@@ -158,4 +159,4 @@ class CRUD(RestRouter):
             else:
                 raise MethodNotAllowed
 
-            return Json(data).http_response(request)
+            return self.json(request, data)
