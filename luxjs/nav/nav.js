@@ -57,8 +57,8 @@
                     }
                 };
 
-                // function that recursively loops through
-                // arrays to find url match
+                // recursively loops through arrays to
+                // find url match
                 function exploreSubmenus(array) {
                     for (var i=0; i < array.length; i++) {
                         if (array[i].href === $location.path()) {
@@ -68,14 +68,6 @@
                         }
                     }
                 }
-
-                scope.activeLink = function (url) {
-                     var active = (url.href === $location.path());
-                     if (url.subitems && url.subitems.length > 0) {
-                         active = exploreSubmenus(url.subitems);
-                     }
-                     return active;
-                };
 
                 scope.activeSubmenu = function(url) {
                     var active = false;
@@ -89,20 +81,24 @@
                 };
 
                 // Check if a url is active
-                // scope.activeLink = function (url) {
-                //     var loc;
-                //     if (url)
-                //         url = typeof(url) === 'string' ? url : url.href || url.url;
-                //     if (!url) return;
-                //     if (isAbsolute.test(url))
-                //         loc = $location.absUrl();
-                //     else
-                //         loc = $location.path();
-                //     var rest = loc.substring(url.length),
-                //         base = loc.substring(0, url.length),
-                //         folder = url.substring(url.length-1) === '/';
-                //     return base === url && (folder || (rest === '' || rest.substring(0, 1) === '/'));
-                // };
+                scope.activeLink = function (url) {
+                    var loc;
+                    if (url)
+                        // Check if any submenus/sublinks are active
+                        if (url.subitems && url.subitems.length > 0) {
+                            if (exploreSubmenus(url.subitems)) return true;
+                        }
+                        url = typeof(url) === 'string' ? url : url.href || url.url;
+                    if (!url) return;
+                    if (isAbsolute.test(url))
+                        loc = $location.absUrl();
+                    else
+                        loc = $location.path();
+                    var rest = loc.substring(url.length),
+                        base = loc.substring(0, url.length),
+                        folder = url.substring(url.length-1) === '/';
+                    return base === url && (folder || (rest === '' || rest.substring(0, 1) === '/'));
+                };
             };
         }])
 
