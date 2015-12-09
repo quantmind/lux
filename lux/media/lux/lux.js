@@ -1,6 +1,6 @@
 //      Lux Library - v0.3.1
 
-//      Compiled 2015-12-07.
+//      Compiled 2015-12-09.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -5090,21 +5090,52 @@ function gridDataProviderWebsocketFactory ($scope) {
                     }
                 };
 
-                // Check if a url is active
+                // function that recursively loops through
+                // arrays to find url match
+                function exploreSubmenus(array) {
+                    for (var i=0; i < array.length; i++) {
+                        if (array[i].href === $location.path()) {
+                            return true;
+                        } else if (array[i].subitems && array[i].subitems.length > 0) {
+                            if (exploreSubmenus(array[i].subitems)) return true;
+                        }
+                    }
+                }
+
                 scope.activeLink = function (url) {
-                    var loc;
-                    if (url)
-                        url = typeof(url) === 'string' ? url : url.href || url.url;
-                    if (!url) return;
-                    if (isAbsolute.test(url))
-                        loc = $location.absUrl();
-                    else
-                        loc = $location.path();
-                    var rest = loc.substring(url.length),
-                        base = loc.substring(0, url.length),
-                        folder = url.substring(url.length-1) === '/';
-                    return base === url && (folder || (rest === '' || rest.substring(0, 1) === '/'));
+                     var active = (url.href === $location.path());
+                     if (url.subitems && url.subitems.length > 0) {
+                         active = exploreSubmenus(url.subitems);
+                     }
+                     return active;
                 };
+
+                scope.activeSubmenu = function(url) {
+                    var active = false;
+
+                    if (url.href && url.href === '#' && url.subitems.length > 0) {
+                        active = exploreSubmenus(url.subitems);
+                    } else {
+                        active = false;
+                    }
+                    return active;
+                };
+
+                // Check if a url is active
+                // scope.activeLink = function (url) {
+                //     var loc;
+                //     if (url)
+                //         url = typeof(url) === 'string' ? url : url.href || url.url;
+                //     if (!url) return;
+                //     if (isAbsolute.test(url))
+                //         loc = $location.absUrl();
+                //     else
+                //         loc = $location.path();
+                //     var rest = loc.substring(url.length),
+                //         base = loc.substring(0, url.length),
+                //         folder = url.substring(url.length-1) === '/';
+                //     return base === url && (folder || (rest === '' || rest.substring(0, 1) === '/'));
+                // };
             };
         }])
 
@@ -6300,7 +6331,7 @@ angular.module("nav/templates/sidebar.tpl.html", []).run(["$templateCache", func
     "        <span>{{link.name}}</span>\n" +
     "        <i ng-if=\"link.subitems\" class=\"fa fa-angle-left pull-right\"></i>\n" +
     "    </a>\n" +
-    "    <ul class=\"treeview-menu\" ng-class=\"link.class\" ng-if=\"link.subitems\">\n" +
+    "    <ul class=\"treeview-menu\" ng-class=\"{active:activeSubmenu(link)}\" ng-if=\"link.subitems\">\n" +
     "        <li ng-repeat=\"link in link.subitems\" ng-class=\"{active:activeLink(link)}\" ng-include=\"'subnav'\">\n" +
     "        </li>\n" +
     "    </ul>\n" +
