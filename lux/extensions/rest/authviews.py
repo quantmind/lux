@@ -9,7 +9,6 @@ This user actions are served under the "authorizations" url unless
 the model is overwritten.
 '''
 from pulsar import MethodNotAllowed, Http404, HttpException
-from pulsar.apps.wsgi import Json
 
 from lux import route
 
@@ -112,6 +111,8 @@ class ResetPasswordMixin:
             except AuthenticationError as e:
                 form.add_error_message(str(e))
                 result = form.tojson()
+        else:
+            result = form.tojson()
         return self.json(request, result)
 
     @route('reset-password/<key>', method=('post', 'options'))
@@ -141,7 +142,7 @@ class ResetPasswordMixin:
                 auth.confirm_auth_key(request, key)
         else:
             result = form.tojson()
-        return Json(result).http_response(request)
+        return self.json(request, result)
 
 
 class Authorization(RestRouter, SignUpMixin, ResetPasswordMixin):
@@ -200,4 +201,4 @@ class Authorization(RestRouter, SignUpMixin, ResetPasswordMixin):
                       'message': 'password changed'}
         else:
             result = form.tojson()
-        return Json(result).http_response(request)
+        return self.json(request, result)

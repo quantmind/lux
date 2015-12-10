@@ -10,6 +10,25 @@ class PasswordMixin:
         user = request.cache.user
         self.assertFalse(user.is_authenticated())
 
+    def test_reset_password_errors(self):
+        token = yield from self._token()
+        request = yield from self.client.post('/authorizations/reset-password',
+                                              body={},
+                                              content_type='application/json',
+                                              token=token)
+        self.json(request.response, 405)
+        request = yield from self.client.post('/authorizations/reset-password',
+                                              body={},
+                                              content_type='application/json')
+        self.assertValidationError(request.response)
+
+    def test_reset_password_200(self):
+        data = dict(email='bigpippo@pluto.com')
+        request = yield from self.client.post('/authorizations/reset-password',
+                                              body=data,
+                                              content_type='application/json')
+        self.json(request.response, 200)
+
     def test_login_fail(self):
         data = {'username': 'jdshvsjhvcsd',
                 'password': 'dksjhvckjsahdvsf'}
