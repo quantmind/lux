@@ -60,6 +60,8 @@ def test_app(test, config_file=None, argv=None, **params):
     kwargs.update(params)
     if 'SECRET_KEY' not in kwargs:
         kwargs['SECRET_KEY'] = generate_secret()
+    if 'PASSWORD_SECRET_KEY' not in kwargs:
+        kwargs['PASSWORD_SECRET_KEY'] = generate_secret()
     config_file = config_file or test.config_file
     if argv is None:
         argv = []

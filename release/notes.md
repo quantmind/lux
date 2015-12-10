@@ -18,6 +18,7 @@
   It is possible to set the wildcard ``*`` for allowing or denyining all permissions
   to a given resource.
 * Admin sitemap method check for read permission if a backend is available and cache on per user basis.
+* Uset ``PASSWORD_SECRET_KEY`` for encrypting passwords
 
 ## Javascript
 * Added scrollbar to sidebar [[214](https://github.com/quantmind/lux/pull/214)]
@@ -29,4 +30,4 @@
 * Several fixes in the ``lux.extensions.rest.client``
 * Allows to display arrays in codemirror editor when in JSON mode [[#171](https://github.com/quantmind/lux/pull/171)]
 
-**319 unit tests**
+**329 unit tests**

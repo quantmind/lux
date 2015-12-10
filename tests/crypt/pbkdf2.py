@@ -388,7 +388,7 @@ class TestPBKDF2(test.TestCase):
 
     def test_password_mixin(self):
         from lux.extensions.rest import PasswordMixin
-        app = self.application(SECRET_KEY='ekwjfbnerxfo8475f0cnk')
+        app = self.application(PASSWORD_SECRET_KEY='ekwjfbnerxfo8475f0cnk')
         raw = 'test-password-123'
         mixin = PasswordMixin()
         mixin.on_config(app)

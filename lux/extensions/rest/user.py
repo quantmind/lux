@@ -155,7 +155,7 @@ class PasswordMixin:
     def on_config(self, app):
         cfg = app.config
         self.encoding = cfg['ENCODING']
-        self.secret_key = cfg['SECRET_KEY'].encode()
+        self.secret_key = cfg['PASSWORD_SECRET_KEY'].encode()
         ckwargs = cfg['CRYPT_ALGORITHM']
         if not isinstance(ckwargs, dict):
             ckwargs = dict(module=ckwargs)

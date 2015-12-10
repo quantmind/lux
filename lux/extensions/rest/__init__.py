@@ -60,6 +60,10 @@ class Extension(MultiAuthBackend):
                   'Python dotted path to module which provides the '
                   '``encrypt`` and, optionally, ``decrypt`` method for '
                   'password and sensitive data encryption/decryption'),
+        Parameter('PASSWORD_SECRET_KEY',
+                  '',
+                  'A string or bytes used for encrypting data. Must be unique '
+                  'to the application and long and random enough'),
         Parameter('SECRET_KEY',
                   'secret-key',
                   'A string or bytes used for encrypting data. Must be unique '
