@@ -295,7 +295,8 @@ class RestModel(rest.RestModel):
         :param value:       comparison value, string or list/tuple
         :return:
         """
-        odm = request.app.odm()
+        app = request.app
+        odm = app.odm()
         field = getattr(odm[self.name], field)
         multiple = isinstance(value, (list, tuple))
 
@@ -319,9 +320,13 @@ class RestModel(rest.RestModel):
             elif op == 'search':
                 dialect_name = odm.binds[odm[self.name].__table__].dialect.name
                 if dialect_name == 'postgresql':
+                    ts_config = field.info.get(
+                        'text_search_config',
+                        app.config['DEFAULT_TEXT_SEARCH_CONFIG']
+                    )
                     query = query.filter(
-                        func.to_tsvector(cast(field, String)).op('@@')(
-                            func.plainto_tsquery(value))
+                        func.to_tsvector(ts_config, cast(field, String)).op(
+                            '@@')(func.plainto_tsquery(value))
                     )
                 else:
                     query = query.filter(field.match(value))
