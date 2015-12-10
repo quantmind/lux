@@ -38,8 +38,8 @@ class Extension(lux.Extension):
         Parameter('MIGRATIONS', None,
                   'Dictionary for mapping alembic settings'),
         Parameter('DEFAULT_TEXT_SEARCH_CONFIG', 'english',
-                  'Default config/language for :search operator full-text '
-                  'search')
+                  'Default config/language for :search full-text search '
+                  'operator')
     ]
 
     def on_config(self, app):
