@@ -1,38 +1,38 @@
 {
-    "scripts": {
-        "test": "grunt jasmine",
-        "postinstall": "bower install"
-    },
-    "contributors": [],
-    "keywords": [],
-    "name": "lux",
     "repository": {
         "url": "https://github.com/quantmind/lux",
         "type": "git"
     },
-    "title": "Lux Library",
-    "author": {
-        "name": "Luca Sbardella",
-        "email": "luca.sbardella@gmail.com"
-    },
+    "contributors": [],
+    "keywords": [],
     "dependencies": {
         "angular-jwt": ""
     },
-    "description": "python web toolkit",
-    "version": "0.4.0",
+    "name": "lux",
     "devDependencies": {
-        "grunt-contrib-jshint": "",
-        "grunt-template-jasmine-istanbul": "",
-        "grunt-html2js": "",
-        "grunt-contrib-concat": "",
-        "grunt-docco": "",
-        "grunt": "",
-        "grunt-contrib-jasmine": "",
-        "grunt-contrib-uglify": "",
+        "docco": "",
+        "grunt-contrib-copy": "",
         "benchmark": "",
         "grunt-contrib-watch": "",
-        "grunt-contrib-copy": "",
-        "docco": ""
+        "grunt-contrib-uglify": "",
+        "grunt-docco": "",
+        "grunt-contrib-concat": "",
+        "grunt-template-jasmine-istanbul": "",
+        "grunt-contrib-jshint": "",
+        "grunt-contrib-jasmine": "",
+        "grunt": "",
+        "grunt-html2js": ""
+    },
+    "description": "python web toolkit",
+    "title": "Lux Library",
+    "author": {
+        "email": "luca.sbardella@gmail.com",
+        "name": "Luca Sbardella"
+    },
+    "version": "0.4.0",
+    "scripts": {
+        "postinstall": "bower install",
+        "test": "grunt jasmine"
     },
     "licenses": [
         {
