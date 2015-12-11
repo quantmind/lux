@@ -36,7 +36,10 @@ class Extension(lux.Extension):
         Parameter('DATABASE_SESSION_SIGNALS', True,
                   'Register event handlers for database session'),
         Parameter('MIGRATIONS', None,
-                  'Dictionary for mapping alembic settings')
+                  'Dictionary for mapping alembic settings'),
+        Parameter('DEFAULT_TEXT_SEARCH_CONFIG', 'english',
+                  'Default config/language for :search full-text search '
+                  'operator')
     ]
 
     def on_config(self, app):
