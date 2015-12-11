@@ -8,7 +8,6 @@ from sqlalchemy import Column, desc, String
 from sqlalchemy.orm import class_mapper, load_only
 from sqlalchemy.sql.expression import func, cast
 
-from pulsar import PermissionDenied
 from pulsar.utils.html import nicename
 
 from odm.utils import get_columns
@@ -53,8 +52,6 @@ class RestModel(rest.RestModel):
         :return:            query object
         """
         entities = self.columns_with_permission(request, 'read')
-        if not entities:
-            raise PermissionDenied
         db_model = self.db_model()
         db_columns = self.db_columns(self.column_fields(entities))
         query = session.query(db_model).options(load_only(*db_columns))
