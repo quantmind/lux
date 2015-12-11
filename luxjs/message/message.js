@@ -109,10 +109,11 @@
                         return luxMessage.getDebugMode();
                     };
 
-                    scope.removeMessage = function (message) {
+                    scope.removeMessage = function ($event, message) {
+                        $event.preventDefault();
                         var msgs = scope.messages;
                         for (var i=0; i<msgs.length; ++i) {
-                            if (msgs[i].text === message.text) {
+                            if (msgs[i].$$hashKey === message.$$hashKey) {
                                 msgs.splice(i, 1);
                                 if (message.store) {
                                     //TODO: remove it from the store
@@ -136,4 +137,3 @@
                 }
             };
         }]);
-

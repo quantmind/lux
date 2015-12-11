@@ -1,6 +1,6 @@
-//      Lux Library - v0.3.1
+//      Lux Library - v0.4.0
 
-//      Compiled 2015-12-09.
+//      Compiled 2015-12-11.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -3658,10 +3658,11 @@ angular.module('lux.form.utils', ['lux.services'])
                         return luxMessage.getDebugMode();
                     };
 
-                    scope.removeMessage = function (message) {
+                    scope.removeMessage = function ($event, message) {
+                        $event.preventDefault();
                         var msgs = scope.messages;
                         for (var i=0; i<msgs.length; ++i) {
-                            if (msgs[i].text === message.text) {
+                            if (msgs[i].$$hashKey === message.$$hashKey) {
                                 msgs.splice(i, 1);
                                 if (message.store) {
                                     //TODO: remove it from the store
@@ -3685,7 +3686,6 @@ angular.module('lux.form.utils', ['lux.services'])
                 }
             };
         }]);
-
 
 //  Grid Data Provider Factory
 //	===================
@@ -6178,7 +6178,7 @@ angular.module("message/message.tpl.html", []).run(["$templateCache", function($
   $templateCache.put("message/message.tpl.html",
     "<div>\n" +
     "    <div class=\"alert alert-{{ message.type }}\" role=\"alert\" ng-repeat=\"message in messages\">\n" +
-    "        <a href=\"#\" class=\"close\" ng-click=\"removeMessage(message)\">&times;</a>\n" +
+    "        <a href=\"#\" class=\"close\" ng-click=\"removeMessage($event, message)\">&times;</a>\n" +
     "        <i ng-if=\"message.icon\" ng-class=\"message.icon\"></i>\n" +
     "        <span ng-bind-html=\"message.text\"></span>\n" +
     "    </div>\n" +
