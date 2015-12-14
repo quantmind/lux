@@ -95,7 +95,7 @@
                     else
                         loc = $location.path();
                     var rest = loc.substring(url.length),
-                        base = loc.substring(0, url.length),
+                        base = url.length < loc.length ? false : loc.substring(0, url.length),
                         folder = url.substring(url.length-1) === '/';
                     return base === url && (folder || (rest === '' || rest.substring(0, 1) === '/'));
                 };
