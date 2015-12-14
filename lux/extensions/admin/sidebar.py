@@ -29,7 +29,7 @@ def add_css(all):
     sidebar.link.color = '#fff'
     sidebar.link.background = '#263647'
     #
-    sidebar.menu.max_height = px(999)
+    sidebar.menu.max_height = px(5000)
 
     trans = sidebar.transition
     # Why this? because unitary operations don't work yet and px(0) fails
