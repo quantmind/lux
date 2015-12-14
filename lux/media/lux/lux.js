@@ -1,6 +1,6 @@
 //      Lux Library - v0.4.0
 
-//      Compiled 2015-12-11.
+//      Compiled 2015-12-14.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -5128,7 +5128,7 @@ function gridDataProviderWebsocketFactory ($scope) {
                     else
                         loc = $location.path();
                     var rest = loc.substring(url.length),
-                        base = loc.substring(0, url.length),
+                        base = url.length < loc.length ? false : loc.substring(0, url.length),
                         folder = url.substring(url.length-1) === '/';
                     return base === url && (folder || (rest === '' || rest.substring(0, 1) === '/'));
                 };
