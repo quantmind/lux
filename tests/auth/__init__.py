@@ -50,7 +50,8 @@ class Extension(lux.Extension):
                 SecretCRUD()]
 
     def on_html_document(self, app, request, doc):
-        response = app.api.get('/user/permissions?resource=secret')
+        api = app.api(request)
+        response = api.get('/user/permissions?resource=secret')
         data = response.json()
         secret = data.get('secret')
         if secret:

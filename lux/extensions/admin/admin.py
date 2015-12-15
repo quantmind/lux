@@ -134,8 +134,8 @@ class AdminModel(rest.RestMixin, AdminRouter):
     def info(self, request):
         '''Information for admin navigation
         '''
-        model = self._model
-        name = nicename(model.name)
+        url = self._model.url
+        name = nicename(url)
         info = {'title': name,
                 'name': name,
                 'href': self.full_route.path,

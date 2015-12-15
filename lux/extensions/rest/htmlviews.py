@@ -53,7 +53,7 @@ class SignUp(WebFormRouter):
     def confirmation(self, request):
         key = request.urlargs['key']
         url = 'authorizations/signup/%s' % key
-        api = request.app.api
+        api = request.app.api(request)
         response = api.post(url)
         raise_http_error(response)
         return self.html_response(request, '', self.confirmation_template)
@@ -61,7 +61,7 @@ class SignUp(WebFormRouter):
     @route('confirmation/<username>')
     def new_confirmation(self, request):
         username = request.urlargs['username']
-        api = request.app.api
+        api = request.app.api(request)
         response = api.post('authorizations/%s' % username)
         raise_http_error(response)
         return self.html_response(request, '', self.confirmation_template)
