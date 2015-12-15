@@ -1,6 +1,6 @@
 //      Lux Library - v0.4.0
 
-//      Compiled 2015-12-14.
+//      Compiled 2015-12-15.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -5431,9 +5431,9 @@ function gridDataProviderWebsocketFactory ($scope) {
         //
         //  Directive for the sidebar
         .directive('sidebar', ['$compile', 'sidebarService', 'navService', 'sidebarTemplate',
-                               'navbarTemplate', '$templateCache',
+                               'navbarTemplate', '$templateCache', '$window', '$timeout',
                         function ($compile, sidebarService, navService, sidebarTemplate, navbarTemplate,
-                                  $templateCache) {
+                                  $templateCache, $window, $timeout) {
             //
             return {
                 restrict: 'AE',
@@ -5464,6 +5464,28 @@ function gridDataProviderWebsocketFactory ($scope) {
                                 lux.querySelector(element, '.content-wrapper').append(inner);
                             else
                                 element.after(inner);
+                        },
+                        post: function(scope, element, attrs) {
+                            var triggered = false;
+
+                            $timeout(function() {
+                                return element.find('nav');
+                            }).then(function(nav) {
+
+                                angular.element($window).bind('scroll', function() {
+
+                                    if ($window.pageYOffset > 150 && triggered === false) {
+                                        nav.addClass('navbar--small');
+                                        triggered = true;
+                                        scope.$apply();
+                                    } else if ($window.pageYOffset <= 150 && triggered === true) {
+                                        nav.removeClass('navbar--small');
+                                        triggered = false;
+                                        scope.$apply();
+                                    }
+
+                                });
+                            });
                         }
                     };
                 }
