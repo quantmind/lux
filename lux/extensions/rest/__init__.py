@@ -169,7 +169,7 @@ class Extension(MultiAuthBackend):
                         for router in api_sections(app):
                             api.add_child(router)
 
-            app.api = ApiClient(app)
+            app.api = ApiClient()
 
         return middleware
 

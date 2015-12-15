@@ -16,9 +16,9 @@ class AdminTest(test.AppTestCase):
         for site in sitemap:
             items.update(((item['title'], item) for item in site['items']))
         self.assertEqual(len(items), 1)
-        blog = items['Blog']
+        blog = items['Blogs']
         self.assertEqual(blog['icon'], 'fa fa-book')
-        self.assertEqual(blog['title'], 'Blog')
+        self.assertEqual(blog['title'], 'Blogs')
         self.assertEqual(blog['href'], '/admin/blogs')
 
     def test_admin_home_view(self):

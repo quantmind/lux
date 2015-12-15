@@ -16,13 +16,13 @@ from ..policy import has_permission
 from ..htmlviews import ForgotPassword, Login, Logout, SignUp
 
 
-def auth_router(api, url, Router, path=None):
+def auth_router(api_url, url, Router, path=None):
     params = {'form_enctype': 'application/json'}
-    if is_absolute_uri(api) and hasattr(Router, 'post'):
+    if is_absolute_uri(api_url) and hasattr(Router, 'post'):
         action = luxrest('', path=url)
     else:
         params['post'] = None
-        action = luxrest(api, name='authorizations_url')
+        action = luxrest(api_url, name='authorizations_url')
 
     params['form_action'] = action
     if path is None:
@@ -59,25 +59,25 @@ class BrowserBackend(RegistrationMixin,
     def middleware(self, app):
         middleware = []
         cfg = app.config
-        api = cfg['API_URL']
+        api_url = cfg['API_URL']
 
         if cfg['LOGIN_URL']:
-            middleware.append(auth_router(api,
+            middleware.append(auth_router(api_url,
                                           cfg['LOGIN_URL'],
                                           self.LoginRouter, False))
 
         if cfg['LOGOUT_URL'] and self.LogoutRouter:
-            middleware.append(auth_router(api,
+            middleware.append(auth_router(api_url,
                                           cfg['LOGOUT_URL'],
                                           self.LogoutRouter))
 
         if cfg['REGISTER_URL']:
-            middleware.append(auth_router(api,
+            middleware.append(auth_router(api_url,
                                           cfg['REGISTER_URL'],
                                           self.SignUpRouter))
 
         if cfg['RESET_PASSWORD_URL']:
-            middleware.append(auth_router(api,
+            middleware.append(auth_router(api_url,
                                           cfg['RESET_PASSWORD_URL'],
                                           self.ForgotPasswordRouter))
 
@@ -117,7 +117,7 @@ class ApiSessionBackend(SessionBackendMixin,
     def get_user(self, request, **kw):
         '''Get User from username, id or email or authentication key.
         '''
-        api = request.app.api
+        api = request.app.api(request)
         for name, url in self.users_url.items():
             value = kw.get(name)
             if not value:
@@ -131,7 +131,7 @@ class ApiSessionBackend(SessionBackendMixin,
     def authenticate(self, request, **data):
         if not jwt:
             raise ImproperlyConfigured('JWT library not available')
-        api = request.app.api
+        api = request.app.api(request)
         try:
             # TODO: add address from request
             # client = request.get_client_address()
@@ -156,7 +156,7 @@ class ApiSessionBackend(SessionBackendMixin,
     def create_user(self, request, **data):
         '''Create a new user from the api
         '''
-        api = request.app.api
+        api = request.app.api(request)
         try:
             # TODO: add address from request
             # client = request.get_client_address()
@@ -202,10 +202,8 @@ class ApiSessionBackend(SessionBackendMixin,
             session = Session(session)
             if session.user:
                 # Check if the token is still a valid one
-                token = session.encoded
-                headers = [('Authorization', 'Bearer %s' % token)]
-                response = request.app.api.head('authorizations',
-                                                headers=headers)
+                api = request.app.api(request)
+                response = api.head('authorizations')
                 try:
                     raise_http_error(response)
                 except Http401:  # 401, redirect to login

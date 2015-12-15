@@ -11,10 +11,45 @@ class ApiClient:
     applications
     '''
     _http = None
-    _wait = None
 
-    def __init__(self, app):
-        self.app = app
+    def __call__(self, request):
+        return ApiClientRequest(request, self.http(request.app))
+
+    def http(self, app):
+        '''Get the HTTP client
+        '''
+        if self._http is None:
+            api_url = app.config['API_URL']
+            headers = [('content-type', 'application/json')]
+            # Remote API
+            if is_absolute_uri(api_url):
+                if app.green_pool:
+                    self._http = HttpClient(headers=headers)
+                else:
+                    self._http = HttpClient(loop=new_event_loop())
+            # Local API
+            else:
+                self._http = LocalClient(app, headers)
+            token = app.config['API_AUTHENTICATION_TOKEN']
+            if token:
+                self._http.headers['Athentication'] = 'Bearer %s' % token
+
+        return self._http
+
+
+class ApiClientRequest:
+
+    def __init__(self, request, http):
+        self._request = request
+        self._http = http
+
+    @property
+    def url(self):
+        return self._request.config['API_URL']
+
+    def __repr__(self):
+        return 'api(%s)' % self.url
+    __str__ = __repr__
 
     def get(self, path, **kw):
         return self.request('GET', path, **kw)
@@ -26,37 +61,19 @@ class ApiClient:
         return self.request('HEAD', path, **kw)
 
     def request(self, method, path=None, token=None, headers=None, **kw):
-        http = self.http()
-        url = urljoin(self.app.config['API_URL'], path or '')
+        request = self._request
+        url = urljoin(self.url, path or '')
         headers = headers or []
+        headers.append(('user-agent', request.get('HTTP_USER_AGENT')))
+        if not token and request.cache.session:
+            token = request.cache.session.encoded
         if token:
             headers.append(('Authorization', 'Bearer %s' % token))
-        response = http.request(method, url, headers=headers, **kw)
-        if self.app.green_pool:
-            return self.app.green_pool.wait(response)
+        response = self._http.request(method, url, headers=headers, **kw)
+        if request.app.green_pool:
+            return request.app.green_pool.wait(response)
         else:
             return response
-
-    def http(self):
-        '''Get the HTTP client
-        '''
-        if self._http is None:
-            api_url = self.app.config['API_URL']
-            headers = [('content-type', 'application/json')]
-            # Remote API
-            if is_absolute_uri(api_url):
-                if self.app.green_pool:
-                    self._http = HttpClient(headers=headers)
-                else:
-                    self._http = HttpClient(loop=new_event_loop())
-            # Local API
-            else:
-                self._http = LocalClient(self.app, headers)
-            token = self.app.config['API_AUTHENTICATION_TOKEN']
-            if token:
-                self._http.headers['Athentication'] = 'Bearer %s' % token
-
-        return self._http
 
 
 class LocalClient:
