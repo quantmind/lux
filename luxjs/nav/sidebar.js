@@ -133,9 +133,9 @@
         //
         //  Directive for the sidebar
         .directive('sidebar', ['$compile', 'sidebarService', 'navService', 'sidebarTemplate',
-                               'navbarTemplate', '$templateCache',
+                               'navbarTemplate', '$templateCache', '$window', '$timeout',
                         function ($compile, sidebarService, navService, sidebarTemplate, navbarTemplate,
-                                  $templateCache) {
+                                  $templateCache, $window, $timeout) {
             //
             return {
                 restrict: 'AE',
@@ -166,6 +166,28 @@
                                 lux.querySelector(element, '.content-wrapper').append(inner);
                             else
                                 element.after(inner);
+                        },
+                        post: function(scope, element, attrs) {
+                            var triggered = false;
+
+                            $timeout(function() {
+                                return element.find('nav');
+                            }).then(function(nav) {
+
+                                angular.element($window).bind('scroll', function() {
+
+                                    if ($window.pageYOffset > 150 && triggered === false) {
+                                        nav.addClass('navbar--small');
+                                        triggered = true;
+                                        scope.$apply();
+                                    } else if ($window.pageYOffset <= 150 && triggered === true) {
+                                        nav.removeClass('navbar--small');
+                                        triggered = false;
+                                        scope.$apply();
+                                    }
+
+                                });
+                            });
                         }
                     };
                 }
