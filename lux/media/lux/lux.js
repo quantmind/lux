@@ -1,6 +1,6 @@
 //      Lux Library - v0.4.0
 
-//      Compiled 2015-12-16.
+//      Compiled 2015-12-18.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -617,7 +617,7 @@ function(angular, root) {
                 if (!isObject(o.params)) {
                     o.params = {};
                 }
-                extend(o.params,  data);
+                extend(o.params,  data || {});
             }
 
             opts = extend(o, opts);
