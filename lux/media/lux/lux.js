@@ -1,6 +1,6 @@
 //      Lux Library - v0.4.0
 
-//      Compiled 2015-12-15.
+//      Compiled 2015-12-18.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -611,8 +611,14 @@ function(angular, root) {
             // handle urlparams when not an object
             var o = extend({}, api.defaults());
             o.method = method.toLowerCase();
-            if (ENCODE_URL_METHODS.indexOf(o.method) === -1) o.data = data;
-            else o.params = data;
+            if (ENCODE_URL_METHODS.indexOf(o.method) === -1) {
+                o.data = data;
+            } else {
+                if (!isObject(o.params)) {
+                    o.params = {};
+                }
+                extend(o.params,  data || {});
+            }
 
             opts = extend(o, opts);
 
