@@ -3511,11 +3511,12 @@ angular.module('lux.form.process', ['ngFileUpload'])
 
 /**
  * Created by Reupen on 02/06/2015.
+ * Edited by Tom on 18/12/2015.
  */
 
 angular.module('lux.form.utils', ['lux.services', 'lux.pagination'])
 
-    .directive('remoteOptions', ['$lux', 'LuxPagination', '$timeout', function ($lux, LuxPagination, $timeout) {
+    .directive('remoteOptions', ['$lux', 'LuxPagination', function ($lux, LuxPagination) {
 
         function remoteOptions(luxPag, target, scope, attrs, element) {
 
@@ -3590,7 +3591,6 @@ angular.module('lux.form.utils', ['lux.services', 'lux.pagination'])
             scope.$on('moreData', lazyLoad);
 
         }
-
 
         function link(scope, element, attrs) {
 
