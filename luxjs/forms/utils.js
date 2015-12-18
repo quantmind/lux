@@ -4,11 +4,29 @@
 
 angular.module('lux.form.utils', ['lux.services', 'lux.pagination'])
 
-    .directive('remoteOptions', ['$lux', 'LuxPagination', function ($lux, LuxPagination) {
+    .directive('remoteOptions', ['$lux', 'LuxPagination', '$timeout', function ($lux, LuxPagination, $timeout) {
 
         function remoteOptions(luxPag, target, scope, attrs, element) {
 
-            console.log(element);
+            function lazyLoad() {
+                var uiSelect = element[0].querySelector('.ui-select-choices');
+                var triggered = false;
+
+                if (!uiSelect) return;
+
+                var uiSelectChild = uiSelect.querySelector('.ui-select-choices-group');
+                uiSelect = angular.element(uiSelect);
+
+                uiSelect.bind('scroll', function() {
+                    var offset = uiSelectChild.clientHeight - this.clientHeight - 40;
+
+                    if (this.scrollTop >  offset && triggered === false) {
+                        triggered = true;
+                        luxPag.loadMore();
+                    }
+                });
+
+            }
 
             function buildSelect(data) {
 
@@ -30,14 +48,14 @@ angular.module('lux.form.utils', ['lux.services', 'lux.pagination'])
             }
 
             var id = attrs.remoteOptionsId || 'id',
-            nameOpts = attrs.remoteOptionsValue ? JSON.parse(attrs.remoteOptionsValue) : {
-                    type: 'field',
-                    source: 'id'
-                },
-            nameFromFormat = nameOpts.type === 'formatString',
-            initialValue = {},
-            params = JSON.parse(attrs.remoteOptionsParams || '{}'),
-            options = [];
+                nameOpts = attrs.remoteOptionsValue ? JSON.parse(attrs.remoteOptionsValue) : {
+                        type: 'field',
+                        source: 'id'
+                    },
+                nameFromFormat = nameOpts.type === 'formatString',
+                initialValue = {},
+                params = JSON.parse(attrs.remoteOptionsParams || '{}'),
+                options = [];
 
             scope[target.name] = options;
 
@@ -58,6 +76,7 @@ angular.module('lux.form.utils', ['lux.services', 'lux.pagination'])
 
             luxPag.getData(params, buildSelect);
 
+            scope.$on('moreData', lazyLoad);
 
         }
 
@@ -66,7 +85,7 @@ angular.module('lux.form.utils', ['lux.services', 'lux.pagination'])
 
             if (attrs.remoteOptions) {
                 var target = JSON.parse(attrs.remoteOptions);
-                var luxPag = new LuxPagination(target);
+                var luxPag = new LuxPagination(scope, target);
 
                 if (luxPag && target.name)
                     return remoteOptions(luxPag, target, scope, attrs, element);
@@ -87,7 +106,7 @@ angular.module('lux.form.utils', ['lux.services', 'lux.pagination'])
                 element.on('click', function () {
                     if (!window.getSelection().toString()) {
                         // Required for mobile Safari
-                        setSelectionRange(0, value.length);
+                        this.setSelectionRange(0, this.value.length);
                     }
                 });
             }

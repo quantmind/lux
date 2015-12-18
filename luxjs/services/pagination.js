@@ -8,12 +8,14 @@ angular.module('lux.pagination', ['lux.services'])
     .factory('LuxPagination', ['$lux', function($lux) {
 
         // LuxPagination constructor requires two args
+        // @param scope - the angular $scope of component's directive
         // @param target - object containing name and url, e.g.
         // {name: "groups_url", url: "http://127.0.0.1:6050"}
         // @param recursive - set to true if you want to recursively
         // request all data from the endpoint
 
-        function LuxPagination(target, recursive) {
+        function LuxPagination(scope, target, recursive) {
+            this.scope = scope;
             this.target = target;
             this.api = $lux.api(this.target);
 
@@ -29,8 +31,10 @@ angular.module('lux.pagination', ['lux.services'])
             if (cb) this.cb = cb;
 
             this.api.get(null, params).then(function(data) {
+
                 this.cb(data);
                 this.updateTarget(data);
+
             }.bind(this), function(error) {
                 var err = {error: error};
                 cb(err);
@@ -43,6 +47,7 @@ angular.module('lux.pagination', ['lux.services'])
             // recent last and next links from the API
 
             if (data.data.last) {
+                this.emitEvent();
                 this.urls = {
                     last: data.data.last,
                     next: data.data.next ? data.data.next : false
@@ -50,6 +55,12 @@ angular.module('lux.pagination', ['lux.services'])
                 if (this.recursive) this.loadMore();
             }
 
+        };
+
+        LuxPagination.prototype.emitEvent = function() {
+            // emit event if more data available, the component can
+            // listen for it and choose how to deal with it
+            this.scope.$emit('moreData');
         };
 
         LuxPagination.prototype.loadMore = function() {
