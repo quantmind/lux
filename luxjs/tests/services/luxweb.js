@@ -49,6 +49,17 @@ describe("Test lux.webapi module", function () {
         expect($httpBackend.flush).not.toThrow();
     });
 
+    it("works without any parameters for GETs", function () {
+        var client = $lux.api({
+            url: context.API_URL
+        });
+
+        $httpBackend.expectGET('/api').respond('');
+
+        client.get('/');
+        expect($httpBackend.flush).not.toThrow();
+    });
+
     it("formReady should stringify json array", function () {
         var client = scope.api(),
             mock_data = {

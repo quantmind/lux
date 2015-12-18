@@ -225,7 +225,7 @@
                 if (!isObject(o.params)) {
                     o.params = {};
                 }
-                extend(o.params,  data);
+                extend(o.params,  data || {});
             }
 
             opts = extend(o, opts);
