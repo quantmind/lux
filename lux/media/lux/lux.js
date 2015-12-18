@@ -1,6 +1,6 @@
 //      Lux Library - v0.4.0
 
-//      Compiled 2015-12-15.
+//      Compiled 2015-12-18.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -1070,6 +1070,79 @@ function(angular, root) {
 
             return api;
         };
+
+// Lux pagination module for controlling the flow of
+// repeat requests to the API.
+// It can return all data at an end point or offer
+// the next page on request from the relevant component
+
+angular.module('lux.pagination', ['lux.services'])
+
+    .factory('LuxPagination', ['$lux', function($lux) {
+
+        // LuxPagination constructor requires two args
+        // @param target - object containing name and url, e.g.
+        // {name: "groups_url", url: "http://127.0.0.1:6050"}
+        // @param recursive - set to true if you want to recursively
+        // request all data from the endpoint
+
+        function LuxPagination(target, recursive) {
+            this.target = target;
+            this.api = $lux.api(this.target);
+
+            if (recursive === true) this.recursive = true;
+        }
+
+        LuxPagination.prototype.getData = function(params, cb) {
+            // getData runs $lux.api.get() followed by the component's
+            // callback on the returned data or error.
+            // it's up to the component to handle the error.
+
+            this.params = params ? params : null;
+            if (cb) this.cb = cb;
+
+            this.api.get(null, params).then(function(data) {
+                this.cb(data);
+                this.updateTarget(data);
+            }.bind(this), function(error) {
+                var err = {error: error};
+                cb(err);
+            });
+
+        };
+
+        LuxPagination.prototype.updateTarget = function(data) {
+            // updateTarget creates an object containing the most
+            // recent last and next links from the API
+
+            if (data.data.last) {
+                this.urls = {
+                    last: data.data.last,
+                    next: data.data.next ? data.data.next : false
+                };
+                if (this.recursive) this.loadMore();
+            }
+
+        };
+
+        LuxPagination.prototype.loadMore = function() {
+            // loadMore applies new urls from updateTarget to the
+            // target object and makes another getData request.
+
+            if (this.urls.next === false) {
+                this.target.url = this.urls.last;
+            } else if (this.urls.next) {
+                this.target.url = this.urls.next;
+            }
+
+            // Call API with updated target URL
+            this.getData();
+
+        };
+
+        return LuxPagination;
+
+    }]);
 
     //
     //  Hash scrolling service
@@ -3429,39 +3502,18 @@ angular.module('lux.form.process', ['ngFileUpload'])
  * Created by Reupen on 02/06/2015.
  */
 
-angular.module('lux.form.utils', ['lux.services'])
+angular.module('lux.form.utils', ['lux.services', 'lux.pagination'])
 
-    .directive('remoteOptions', ['$lux', function ($lux) {
+    .directive('remoteOptions', ['$lux', 'LuxPagination', function ($lux, LuxPagination) {
 
-        function fill(api, target, scope, attrs) {
+        function remoteOptions(luxPag, target, scope, attrs, element) {
 
-            var id = attrs.remoteOptionsId || 'id',
-                nameOpts = attrs.remoteOptionsValue ? JSON.parse(attrs.remoteOptionsValue) : {
-                    type: 'field',
-                    source: 'id'
-                },
-                nameFromFormat = nameOpts.type === 'formatString',
-                initialValue = {},
-                params = JSON.parse(attrs.remoteOptionsParams || '{}'),
-                options = [];
+            console.log(element);
 
-            scope[target.name] = options;
+            function buildSelect(data) {
 
-            initialValue.id = '';
-            initialValue.name = 'Loading...';
+                if (data.error) return;
 
-            options.push(initialValue);
-
-            // Set empty value if field was not filled
-            if (scope[scope.formModelName][attrs.name] === undefined)
-                scope[scope.formModelName][attrs.name] = '';
-
-            api.get(null, params).then(function (data) {
-                if (attrs.multiple) {
-                    options.splice(0, 1);
-                } else {
-                    options[0].name = 'Please select...';
-                }
                 angular.forEach(data.data.result, function (val) {
                     var name;
                     if (nameFromFormat) {
@@ -3474,21 +3526,52 @@ angular.module('lux.form.utils', ['lux.services'])
                         name: name
                     });
                 });
-            }, function (data) {
-                /** TODO: add error alert */
-                options[0] = '(error loading options)';
-            });
+
+            }
+
+            var id = attrs.remoteOptionsId || 'id',
+            nameOpts = attrs.remoteOptionsValue ? JSON.parse(attrs.remoteOptionsValue) : {
+                    type: 'field',
+                    source: 'id'
+                },
+            nameFromFormat = nameOpts.type === 'formatString',
+            initialValue = {},
+            params = JSON.parse(attrs.remoteOptionsParams || '{}'),
+            options = [];
+
+            scope[target.name] = options;
+
+            initialValue.id = '';
+            initialValue.name = 'Loading...';
+
+            options.push(initialValue);
+
+            // Set empty value if field was not filled
+            if (scope[scope.formModelName][attrs.name] === undefined)
+                scope[scope.formModelName][attrs.name] = '';
+
+            if (attrs.multiple) {
+                options.splice(0, 1);
+            } else {
+                options[0].name = 'Please select...';
+            }
+
+            luxPag.getData(params, buildSelect);
+
+
         }
+
 
         function link(scope, element, attrs) {
 
             if (attrs.remoteOptions) {
-                var target = JSON.parse(attrs.remoteOptions),
-                    api = $lux.api(target);
+                var target = JSON.parse(attrs.remoteOptions);
+                var luxPag = new LuxPagination(target);
 
-                if (api && target.name)
-                    return fill(api, target, scope, attrs);
+                if (luxPag && target.name)
+                    return remoteOptions(luxPag, target, scope, attrs, element);
             }
+
             // TODO: message
         }
 
@@ -3504,7 +3587,7 @@ angular.module('lux.form.utils', ['lux.services'])
                 element.on('click', function () {
                     if (!window.getSelection().toString()) {
                         // Required for mobile Safari
-                        this.setSelectionRange(0, this.value.length);
+                        setSelectionRange(0, value.length);
                     }
                 });
             }

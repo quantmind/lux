@@ -2,39 +2,18 @@
  * Created by Reupen on 02/06/2015.
  */
 
-angular.module('lux.form.utils', ['lux.services'])
+angular.module('lux.form.utils', ['lux.services', 'lux.pagination'])
 
-    .directive('remoteOptions', ['$lux', function ($lux) {
+    .directive('remoteOptions', ['$lux', 'LuxPagination', function ($lux, LuxPagination) {
 
-        function fill(api, target, scope, attrs) {
+        function remoteOptions(luxPag, target, scope, attrs, element) {
 
-            var id = attrs.remoteOptionsId || 'id',
-                nameOpts = attrs.remoteOptionsValue ? JSON.parse(attrs.remoteOptionsValue) : {
-                    type: 'field',
-                    source: 'id'
-                },
-                nameFromFormat = nameOpts.type === 'formatString',
-                initialValue = {},
-                params = JSON.parse(attrs.remoteOptionsParams || '{}'),
-                options = [];
+            console.log(element);
 
-            scope[target.name] = options;
+            function buildSelect(data) {
 
-            initialValue.id = '';
-            initialValue.name = 'Loading...';
+                if (data.error) return;
 
-            options.push(initialValue);
-
-            // Set empty value if field was not filled
-            if (scope[scope.formModelName][attrs.name] === undefined)
-                scope[scope.formModelName][attrs.name] = '';
-
-            api.get(null, params).then(function (data) {
-                if (attrs.multiple) {
-                    options.splice(0, 1);
-                } else {
-                    options[0].name = 'Please select...';
-                }
                 angular.forEach(data.data.result, function (val) {
                     var name;
                     if (nameFromFormat) {
@@ -47,21 +26,52 @@ angular.module('lux.form.utils', ['lux.services'])
                         name: name
                     });
                 });
-            }, function (data) {
-                /** TODO: add error alert */
-                options[0] = '(error loading options)';
-            });
+
+            }
+
+            var id = attrs.remoteOptionsId || 'id',
+            nameOpts = attrs.remoteOptionsValue ? JSON.parse(attrs.remoteOptionsValue) : {
+                    type: 'field',
+                    source: 'id'
+                },
+            nameFromFormat = nameOpts.type === 'formatString',
+            initialValue = {},
+            params = JSON.parse(attrs.remoteOptionsParams || '{}'),
+            options = [];
+
+            scope[target.name] = options;
+
+            initialValue.id = '';
+            initialValue.name = 'Loading...';
+
+            options.push(initialValue);
+
+            // Set empty value if field was not filled
+            if (scope[scope.formModelName][attrs.name] === undefined)
+                scope[scope.formModelName][attrs.name] = '';
+
+            if (attrs.multiple) {
+                options.splice(0, 1);
+            } else {
+                options[0].name = 'Please select...';
+            }
+
+            luxPag.getData(params, buildSelect);
+
+
         }
+
 
         function link(scope, element, attrs) {
 
             if (attrs.remoteOptions) {
-                var target = JSON.parse(attrs.remoteOptions),
-                    api = $lux.api(target);
+                var target = JSON.parse(attrs.remoteOptions);
+                var luxPag = new LuxPagination(target);
 
-                if (api && target.name)
-                    return fill(api, target, scope, attrs);
+                if (luxPag && target.name)
+                    return remoteOptions(luxPag, target, scope, attrs, element);
             }
+
             // TODO: message
         }
 
@@ -77,7 +87,7 @@ angular.module('lux.form.utils', ['lux.services'])
                 element.on('click', function () {
                     if (!window.getSelection().toString()) {
                         // Required for mobile Safari
-                        this.setSelectionRange(0, this.value.length);
+                        setSelectionRange(0, value.length);
                     }
                 });
             }
