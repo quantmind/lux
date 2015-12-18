@@ -106,16 +106,17 @@ class Response:
     def __getattr__(self, name):
         return getattr(self.response, name)
 
-    def get_content(self):
+    @property
+    def content(self):
         '''Retrieve the body without flushing'''
         return b''.join(self.response.content)
 
-    def content_string(self, charset=None, errors=None):
+    def text(self, charset=None, errors=None):
         charset = charset or self.response.encoding or 'utf-8'
-        return self.get_content().decode(charset, errors or 'strict')
+        return self.content.decode(charset, errors or 'strict')
 
-    def json(self):
-        return json.loads(self.content_string())
+    def json(self, charset=None, errors=None):
+        return json.loads(self.text(charset, errors))
 
     def decode_content(self):
         '''Return the best possible representation of the response body.
@@ -125,5 +126,5 @@ class Response:
             if ct in JSON_CONTENT_TYPES:
                 return self.json()
             elif ct.startswith('text/'):
-                return self.content_string()
-        return self.get_content()
+                return self.text()
+        return self.content
