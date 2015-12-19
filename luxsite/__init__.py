@@ -10,6 +10,7 @@ def d(path):
 class Extension(lux.Extension):
 
     def middleware(self, app):
+        return []
         content = HtmlContent('/',
                               Sitemap('/sitemap.xml'),
                               SphinxDocs('/docs/',

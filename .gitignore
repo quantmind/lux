@@ -23,6 +23,7 @@ example/luxweb/settings.py
 lux/media/js/templates
 lux/media/lux/*.js
 lux/media/lux/*.css
+luxsite/media/lux.json
 
 *.log
 npm*

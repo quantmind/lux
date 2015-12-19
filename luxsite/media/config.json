@@ -1,0 +1,36 @@
+{
+    "js": {
+        "luxsite": {
+            "options": {
+                "banner": "lux/media/js/banner.js"
+            },
+            "src": [
+                "luxsite/media/js/src.js"
+            ],
+            "dest": "luxsite/media/luxsite/luxsite.js"
+        },
+        "lux": "all"
+    },
+    "sass": {
+        "luxsite": {
+            "files": {
+                "luxsite/media/luxsite/luxsite.css": "luxsite/media/scss/luxsite.scss"
+            }
+        }
+    },
+    "cssmin": {
+        "luxsite": {
+            "files": {
+                "luxsite/media/luxsite/luxsite.min.css": ["luxsite/media/luxsite/luxsite.css"]
+            }
+        }
+    },
+    "http": {
+        "giotto": {
+            "options": {
+                "url": "https://raw.githubusercontent.com/quantmind/giotto/master/dist/giotto.js"
+            },
+            "dest": "luxsite/media/luxsite/giotto.js"
+        }
+    }
+}

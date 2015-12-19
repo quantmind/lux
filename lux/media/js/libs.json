@@ -73,13 +73,5 @@
                 "lux/media/js/config/shim.js",
                 "lux/media/js/config/close.js"],
         "dest": "lux/media/lux/cfg.js"
-    },
-    "luxsite": {
-        "options": {
-            "banner": "lux/media/js/banner.js"
-        },
-        "src": ["lux/media/lux/cfg.js",
-                "lux/media/js/luxsite/src.js"],
-        "dest": "examples/luxsite/media/luxsite/luxsite.js"
     }
 }

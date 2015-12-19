@@ -2,153 +2,133 @@
 /*global config:true, task:true, process:true*/
 module.exports = function (grunt) {
     "use strict";
-    // bmll configuration.
-    var lux_root = '',
+    // configuration.
+    var src_root = 'luxsite/media/',
         //
-        lux_dir = lux_root + 'lux/media/lux',
-        lux_libs = grunt.file.readJSON(lux_dir + 'libs.json'),
-        libs = grunt.file.readJSON('js/libs.json'),
+        cfg = grunt.file.readJSON(src_root + 'config.json'),
+        js = cfg.js,
         path = require('path'),
-        buildTasks = ['gruntfile', 'html2js', 'requirejs', 'http', 'copy', 'concat', 'jshint', 'uglify', 'css'],
+        _ = require('lodash'),
+        baseTasks = ['gruntfile', 'shell:buildLuxConfig'],
+        jsTasks = ['requirejs', 'http', 'copy', 'concat', 'jshint', 'uglify'],
+        cssTasks = [],
+        skipEntries = ['options', 'watch'],
         concats = {
             options: {
                 sourceMap: false // TODO change to true when Chrome sourcemaps bug is fixed
             }
-        },
-        cfg = {
-            pkg: grunt.file.readJSON('package.json'),
-            requirejs: {
-                compile: {
-                    options: {
-                        baseUrl: 'js/',
-                        generateSourceMaps: false, // TODO change to true when Chrome sourcemaps bug is fixed
-                        paths: {
-                            angular: 'empty:',
-                            lux: 'empty:',
-                            d3: 'empty:',
-                            'angular-cookies': 'empty:',
-                            'angular-strap': 'empty:',
-                            'angular-file-upload': 'empty:',
-                            'angular-img-crop': 'empty:',
-                            'moment': 'empty:',
-                            'angular-moment': 'empty:',
-                            'angular-sanitize': 'empty:',
-                            'angular-ui-grid': 'empty:',
-                            'angular-infinite-scroll': 'empty:',
-                            'videojs': 'empty:',
-                            'giotto': 'empty:',
-                            'angular-touch': 'empty:', // TODO this is a lux dependency, should be removed
-                            'angular-scroll': 'empty:', // TODO find out who is using this
-                            'angular-ui-select': 'empty:', // TODO find out who is using this
-                            'angular-ui-router': 'empty:',
-                            'angular-strap-tpl': 'empty:',
-                            'moment-timezone': 'empty:',
-                            'lodash': 'empty:'
-                        },
-                        name: 'app',
-                        out: 'js/build/bundle.js',
-                        optimize: 'none'
-                    }
-                }
-            },
-            concat: concats,
-            http: {
-                cfg: {
-                    options: {
-                        url: 'https://raw.githubusercontent.com/quantmind/lux/' + lux_branch + '/lux/media/lux/cfg.js'
-                    },
-                    dest: 'js/deps/cfg.js'
+        };
+
+    cfg.pkg = grunt.file.readJSON('package.json');
+    cfg.requirejs = {
+        compile: {
+            options: {
+                baseUrl: src_root,
+                generateSourceMaps: false, // TODO change to true when Chrome sourcemaps bug is fixed
+                paths: {
+                    angular: 'empty:',
+                    lux: 'empty:',
+                    d3: 'empty:',
+                    'angular-cookies': 'empty:',
+                    'angular-strap': 'empty:',
+                    'angular-file-upload': 'empty:',
+                    'angular-img-crop': 'empty:',
+                    'moment': 'empty:',
+                    'angular-moment': 'empty:',
+                    'angular-sanitize': 'empty:',
+                    'angular-ui-grid': 'empty:',
+                    'angular-infinite-scroll': 'empty:',
+                    'videojs': 'empty:',
+                    'giotto': 'empty:',
+                    'angular-scroll': 'empty:', // TODO find out who is using this
+                    'angular-ui-select': 'empty:', // TODO find out who is using this
+                    'angular-ui-router': 'empty:',
+                    'angular-strap-tpl': 'empty:',
+                    'moment-timezone': 'empty:',
+                    'lodash': 'empty:'
                 },
-                lux: {
-                    options: {
-                        url: 'https://raw.githubusercontent.com/quantmind/lux/' + lux_branch + '/lux/media/lux/lux.js'
-                    },
-                    dest: 'js/deps/lux.js'
-                },
-                giotto: {
-                    options: {
-                        url: 'https://raw.githubusercontent.com/quantmind/giotto/master/dist/giotto.js'
-                    },
-                    dest: 'bmllportal/media/bmll/giotto.js'
-                },
-                giotto_min: {
-                    options: {
-                        url: 'https://raw.githubusercontent.com/quantmind/giotto/master/dist/giotto.min.js'
-                    },
-                    dest: 'bmllportal/media/bmll/giotto.min.js'
-                }
+                name: 'app',
+                out: src_root + 'build/bundle.js',
+                optimize: 'none'
+            }
+        }
+    };
+    cfg.concat = concats;
+
+    cfg.shell = {
+        buildLuxConfig: {
+            options: {
+                stdout: true,
+                stderr: true
             },
-            copy: {
-                ngImgCrop: {
-                    expand: true,
-                    src: ['node_modules/ng-img-crop/compile/minified/ng-img-crop.js'],
-                    dest: 'bmllportal/media/bmll/',
-                    flatten: true,
-                    filter: 'isFile'
-                }
-            },
-            clean: {
-                build: {
-                    src: ['scss/deps/*.css']
-                }
-            },
-            shell: {
-                buildPythonCSS: {
-                    options: {
-                        stdout: true,
-                        stderr: true
-                    },
-                    command: function() {
-                        return path.resolve('manage.py') + ' style --cssfile ' + path.resolve('scss/deps/bmll-lux');
-                    }
-                }
-            },
-            sass: {
-                options: {
+            command: function() {
+                return path.resolve('manage.py') + ' grunt';
+            }
+        }
+    };
+
+    //
+    // Add html2js task if available
+    if (cfg.html2js) {
+        grunt.log.debug('Adding html2js task');
+        grunt.loadNpmTasks('grunt-html2js');
+        jsTasks.splice(0, 0, 'html2js');
+    }
+
+    var buildTasks = baseTasks.concat(jsTasks);
+
+    //
+    // Build CSS if required
+    if (cfg.sass) {
+        grunt.log.debug('Adding sass configuration');
+
+        _.forOwn(cfg.sass, function (value, key) {
+            if (skipEntries.indexOf(key) < 0) cssTasks.push('sass:' + key);
+        });
+
+        if (cssTasks.length) {
+            buildTasks.push('css_only');
+
+            if (!cfg.sass.options)
+                cfg.sass.options = {
                     sourceMap: true,
                     sourceMapContents: true,
                     includePaths: [path.join(__dirname, 'node_modules')]
-                },
-                bmll: {
-                    files: {
-                        'bmllportal/media/bmll/bmll.css': 'scss/bmll.scss'
-                    }
-                }
+                };
+
+            if (cfg.cssmin) {
+                _.forOwn(cfg.cssmin, function (value, key) {
+                    if (skipEntries.indexOf(key) < 0) cssTasks.push('cssmin:' + key);
+                });
+
+                if (!cfg.cssmin.options)
+                    cfg.cssmin.options = {
+                        shorthandCompacting: false,
+                        roundingPrecision: -1,
+                        sourceMap: true,
+                        sourceMapInlineSources: true
+                    };
+            }
+        }
+    }
+
+    // Watch
+    if (cfg.watch) {
+        cfg.watch = {
+            options: {
+                atBegin: true,
+                // Start a live reload server on the default port 35729
+                livereload: true
             },
-            cssmin: {
-                options: {
-                    shorthandCompacting: false,
-                    roundingPrecision: -1,
-                    sourceMap: true,
-                    sourceMapInlineSources: true
-                },
-                bmll: {
-                    files: {
-                      'bmllportal/media/bmll/bmll.min.css': ['bmllportal/media/bmll/bmll.css']
-                    }
-                }
-            },
-            watch: {
-                options: {
-                    atBegin: true,
-                    // Start a live reload server on the default port 35729
-                    livereload: true
-                },
-                main: {
-                    files: ['js/**/*.js',
-                        '!js/build/**/*.js',
-                        '!js/tests/**/*.js',
-                        'js/**/*.tpl.html'],
-                    tasks: ['html2js', 'requirejs', 'copy', 'concat', 'uglify', 'jshint']
-                },
-                css: {
-                    files: ['scss/**/*.scss',
-                        'scss/**/*.sass',
-                        'bmllportal/css/*.py'],
-                    tasks: ['css'],
-                }
+            main: {
+                files: ['js/**/*.js',
+                    '!js/build/**/*.js',
+                    '!js/tests/**/*.js',
+                    'js/**/*.tpl.html'],
+                tasks: jsTasks
             }
         };
+    }
     //
     function for_each(obj, callback) {
         for (var p in obj) {
@@ -156,16 +136,6 @@ module.exports = function (grunt) {
                 callback.call(obj[p], p);
             }
         }
-    }
-
-    //
-    // html2js is special, add html2js task if available
-    if (libs.html2js) {
-        cfg.html2js = libs.html2js;
-        delete libs.html2js;
-        grunt.log.debug('Adding html2js task');
-        grunt.loadNpmTasks('grunt-html2js');
-        buildTasks.splice(0, 0, 'html2js');
     }
     //
     // Preprocess libs
@@ -205,7 +175,6 @@ module.exports = function (grunt) {
                 browser: true,
                 expr: true,
                 globals: {
-                    jQuery: true,
                     $: true,
                     lux: true,
                     requirejs: true,
@@ -311,8 +280,12 @@ module.exports = function (grunt) {
         ['karma:ci']);
     grunt.registerTask('all', 'Compile lint and test all libraries',
         ['build', 'test']);
-    grunt.registerTask('css', 'Compile python and sass styles',
-        ['clean:build', 'shell:buildPythonCSS', 'sass:bmll', 'cssmin:bmll']);
+
+    if (cssTasks.length) {
+        var allCssTasks = ['css_only'];
+        grunt.registerTask('css_only', 'Compile sass styles', cssTasks);
+        grunt.registerTask('css', 'Compile sass styles', allCssTasks);
+    }
     grunt.registerTask('default', ['build', 'karma:phantomjs']);
     //
     for_each(libs, function (name) {

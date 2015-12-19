@@ -4,35 +4,45 @@
         "type": "git"
     },
     "contributors": [],
-    "keywords": [],
-    "dependencies": {
-        "angular-jwt": ""
-    },
+    "keywords": ["web", "framework", "python", "angularjs"],
     "name": "lux",
     "devDependencies": {
-        "docco": "",
-        "grunt-contrib-copy": "",
-        "benchmark": "",
         "grunt-contrib-watch": "",
-        "grunt-contrib-uglify": "",
-        "grunt-docco": "",
-        "grunt-contrib-concat": "",
-        "grunt-template-jasmine-istanbul": "",
-        "grunt-contrib-jshint": "",
-        "grunt-contrib-jasmine": "",
+        "karma-firefox-launcher": "",
+        "grunt-http": "",
+        "grunt-contrib-copy": "",
+        "grunt-karma": "",
+        "phantomjs": "",
+        "grunt-contrib-requirejs": "",
+        "karma": "",
+        "grunt-sass": "",
+        "karma-phantomjs-launcher": "",
+        "requirejs": "",
         "grunt": "",
-        "grunt-html2js": ""
+        "karma-chrome-launcher": "",
+        "karma-jasmine": "",
+        "jasmine-core": "",
+        "grunt-shell": "",
+        "karma-junit-reporter": "",
+        "grunt-html2js": "",
+        "grunt-contrib-cssmin": "",
+        "grunt-contrib-jshint": "",
+        "karma-es5-shim": "",
+        "grunt-contrib-clean": "",
+        "karma-requirejs": "",
+        "karma-coverage": "",
+        "grunt-contrib-uglify": "",
+        "grunt-contrib-concat": ""
     },
     "description": "python web toolkit",
     "title": "Lux Library",
     "author": {
-        "email": "luca.sbardella@gmail.com",
+        "email": "lux@quantmind.com",
         "name": "Luca Sbardella"
     },
     "version": "0.4.0",
     "scripts": {
-        "postinstall": "bower install",
-        "test": "grunt jasmine"
+        "test": "grunt karma:ci"
     },
     "licenses": [
         {
