@@ -1,17 +1,5 @@
-import os
-
-import lux
-from lux.extensions.static import HtmlContent, SphinxDocs, Sitemap
-
-from .ui import add_css     # noqa
-
-
-def d(path):
-    return os.path.join(os.path.abspath(os.path.dirname(__file__)), path)
-
-
 APP_NAME = 'Lux'
-HTML_TITLE = 'Lux - Crafting super web applications with Python and AngularJS'
+HTML_TITLE = 'Lux - Crafting web applications with Python and AngularJS'
 SITE_URL = 'http://quantmind.github.io/lux'
 EXTENSIONS = ('lux.extensions.base',
               'lux.extensions.ui',
@@ -56,21 +44,7 @@ LINKS = {'Python': 'https://www.python.org/',
 
 
 # ANGULARJS CONFIGURATION
-HTML5_NAVIGATION = True
+HTML5_NAVIGATION = False
 ANGULAR_VIEW_ANIMATE = 'animate-fade'
 bind = ':5020'
 workers = 0
-
-
-class Extension(lux.Extension):
-
-    def middleware(self, app):
-        content = HtmlContent('/',
-                              Sitemap('/sitemap.xml'),
-                              SphinxDocs('/docs/',
-                                         dir=d('docs'),
-                                         meta={'template': 'doc.html'}),
-                              meta={'template': 'main.html'},
-                              dir=d('site'),
-                              drafts=None)
-        return [content]

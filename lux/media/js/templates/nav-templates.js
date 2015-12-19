@@ -139,7 +139,7 @@ angular.module("nav/templates/sidebar.tpl.html", []).run(["$templateCache", func
     "        <span>{{link.name}}</span>\n" +
     "        <i ng-if=\"link.subitems\" class=\"fa fa-angle-left pull-right\"></i>\n" +
     "    </a>\n" +
-    "    <ul class=\"treeview-menu\" ng-class=\"link.class\" ng-if=\"link.subitems\">\n" +
+    "    <ul class=\"treeview-menu\" ng-class=\"{active:activeSubmenu(link)}\" ng-if=\"link.subitems\">\n" +
     "        <li ng-repeat=\"link in link.subitems\" ng-class=\"{active:activeLink(link)}\" ng-include=\"'subnav'\">\n" +
     "        </li>\n" +
     "    </ul>\n" +

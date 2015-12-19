@@ -1,4 +1,4 @@
-# eclipse
+# IDE
 .project
 .pydevproject
 .settings
@@ -19,7 +19,10 @@ docs/build
 example/luxweb/settings.py
 
 # javascript
-luxjs/templates
+.grunt
+lux/media/js/templates
+lux/media/lux/*.js
+lux/media/lux/*.css
 
 *.log
 npm*

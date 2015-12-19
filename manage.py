@@ -1,3 +1,4 @@
+'''Run luxsite'''
 import lux
 
 
