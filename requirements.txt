@@ -1,4 +1,3 @@
 python-dateutil
 pytz
 pulsar
--e .

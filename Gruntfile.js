@@ -2,8 +2,9 @@
 /*global config:true, task:true, process:true*/
 module.exports = function (grunt) {
     "use strict";
-    var test_src = ['lux/media/lux/lux.js'];
-    var test_dependencies = [
+    var base_dir = 'lux/media/js/',
+        test_src = ['lux/media/lux/lux.js'],
+        test_dependencies = [
         'angular-ui-select',
         'angular-ui-grid',
         'angular-mocks',
@@ -14,9 +15,7 @@ module.exports = function (grunt) {
         'lodash'
     ];
     // Project configuration.
-    var docco_output = 'docs/lux/html/docco',
-        // All libraries
-        libs = grunt.file.readJSON('luxjs/libs.json'),
+    var libs = grunt.file.readJSON(base_dir + 'libs.json'),
         buildTasks = ['gruntfile', 'concat', 'jshint', 'uglify'],
         cfg = {
             pkg: grunt.file.readJSON('package.json'),
@@ -25,8 +24,8 @@ module.exports = function (grunt) {
                 test: {
                     src : test_src,
                     options : {
-                        specs : 'luxjs/tests/**/*.js',
-                        template: 'luxjs/tests/test.tpl.html',
+                        specs : base_dir + 'tests/**/*.js',
+                        template: base_dir + 'tests/test.tpl.html',
                         templateOptions: {
                             deps: test_dependencies
                         }
@@ -35,7 +34,7 @@ module.exports = function (grunt) {
                 coverage: {
                     src: test_src,
                     options: {
-                        specs: 'luxjs/tests/**/*.js',
+                        specs: base_dir + 'tests/**/*.js',
                         template: require('grunt-template-jasmine-istanbul'),
                         templateOptions: {
                             coverage: 'coverage/coverage.json',
@@ -56,7 +55,7 @@ module.exports = function (grunt) {
                                     type: 'text-summary'
                                 }
                             ],
-                            template: 'luxjs/tests/test.tpl.html',
+                            template: base_dir + 'tests/test.tpl.html',
                             templateOptions: {
                                 deps: test_dependencies
                             }
@@ -71,7 +70,7 @@ module.exports = function (grunt) {
                 },
                 files: [
                     '<%= concat.lux.src %>',
-                    'luxjs/**/*.tpl.html'
+                    base_dir + '**/*.tpl.html'
                 ],
                 tasks: ['html2js', 'concat', 'jshint', 'uglify', 'jasmine:test']
             }
@@ -121,21 +120,6 @@ module.exports = function (grunt) {
         return result;
     }
     //
-    function docco_libs () {
-        var src = [];
-        for_each(libs, function (name) {
-            src.push(this.dest);
-        });
-        return {
-            docs: {
-                'src': src,
-                options: {
-                    output: docco_output
-                }
-            }
-        };
-    }
-    //
     // js hint all libraries
     function jshint_libs () {
         var result = {
@@ -168,7 +152,6 @@ module.exports = function (grunt) {
     // -------------------------------
     cfg.uglify = uglify_libs();
     cfg.jshint = jshint_libs();
-    //cfg.docco = docco_libs();
     //
     // Initialise Grunt with all tasks defined above
     grunt.initConfig(cfg);
