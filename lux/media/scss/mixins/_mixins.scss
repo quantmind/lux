@@ -1,0 +1,23 @@
+// Border radius shorthand
+@mixin border-radius($radius) {
+  border-radius: $radius;
+  -webkit-border-radius: $radius;
+  -moz-border-radius: $radius;
+  -ms-border-radius: $radius;
+  -o-border-radius: $radius;
+}
+
+// Mixin for BMLL background-image
+@mixin bg-image($path, $size, $position) {
+    $url: "#{$media-url}/#{$path}";
+    background-image: url($url);
+    background-size: $size;
+    background-repeat: no-repeat;
+    background-position: $position;
+}
+
+@mixin transform($transforms) {
+        -ms-transform: $transforms;
+    -webkit-transform: $transforms;
+            transform: $transforms;
+}

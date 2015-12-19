@@ -1,0 +1,49 @@
+// BMLL Variables
+
+// Globals
+$media-url: '/media';
+
+// Font
+$font-size: 16px;
+
+// Colors
+$white: #fff;
+$purple: #8D698A;
+
+// Main
+$footer-border-color: #d0d0d0;
+$footer-bg: $white;
+$tabs-border: 1px solid #ddd;
+
+// Navbar
+$navbar-height: 60px;
+$navbar-text-padding: 18px;
+
+// Sidebar
+$sidebar-width: 250px;
+
+// Easing
+$ease-in-out-quad: cubic-bezier(0.455, 0.03, 0.515, 0.955);
+
+// Crop image
+$crop-image-size: 300px;
+
+// Grid
+$grid-font-size: 14px;
+$grid-modal-width: 70%;
+$grid-modal-height: 420px;
+$grid-success-color: #dff0d8;
+$grid-failure-color: #f2dede;
+
+// User page
+$user-page-popover-color: #fcc;
+$user-page-img-height: 200px;
+$user-page-img-width: 200px;
+$user-page-img-radius: 35px;
+
+// Custom media queries
+$screen-xs-tiny: 320px;
+$screen-xs-small: 390px;
+$screen-xs-wide: 568px;
+$screen-xl-min: 1500px;
+$screen-lg-wide: 1600px;

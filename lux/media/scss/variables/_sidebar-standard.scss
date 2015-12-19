@@ -1,0 +1,13 @@
+// Standard theme for sidebar
+// To create your own theme, dupicate this file, edit the variables and
+// update the @import in components/_sidebar.scss
+
+$sidebar-background-color: rgb(29, 29, 29);
+$sidebar-panel-bg-color: lighten($sidebar-background-color, 5%);
+
+$sidebar-active-link-bg-color: lighten($sidebar-background-color, 10%);
+$sidebar-active-link-color: rgb(255, 255, 255);
+
+$sidebar-submenu-bg-color: lighten($sidebar-background-color, 20%);
+$sidebar-submenu-link-color: lighten(rgb(29, 29, 29), 75%);
+$sidebar-submenu-active-link-color: rgb(255, 255, 255);

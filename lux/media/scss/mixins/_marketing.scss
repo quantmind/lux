@@ -1,0 +1,12 @@
+// Base header
+@mixin mkt-header() {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+    margin: 0;
+    color: $white;
+    font-weight: normal;
+    font-size: $mkt-header-font-lg-size;
+    text-transform: uppercase;
+    text-align: center;
+}

@@ -1,0 +1,36 @@
+.ui-grid {
+    font-size: $grid-font-size;
+}
+
+.ui-grid-canvas .ui-grid-row {
+    .ui-grid-cell {
+        &.success {
+            background-color: $grid-success-color;
+        }
+        &.failure {
+            background-color: $grid-failure-color;
+        }
+    }
+}
+
+.modal .modal-dialog.record-details {
+    width: $grid-modal-width;
+
+    .modal-body {
+        max-height: $grid-modal-height;
+        overflow-y: auto;
+    }
+}
+
+.lux-data-grid {
+    input.form-control {
+        width: 90%;
+        height: auto;
+        padding: 2px 4px;
+    }
+    select.form-control {
+        width: 90%;
+        height: auto;
+        padding: 2px;
+    }
+}
