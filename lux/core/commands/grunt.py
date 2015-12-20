@@ -4,6 +4,14 @@ import json
 import lux
 
 
+COMPONENTS = [
+    "services",
+    "forms",
+    "messages",
+    "nav"
+]
+
+
 class Command(lux.Command):
 
     help = ('Creates a Lux project directory structure for the given '
@@ -12,21 +20,54 @@ class Command(lux.Command):
 
     def run(self, options):
         # Read media/config.json
-        media_cfg = os.path.join(self.app.meta.media_dir, 'config.json')
-        if not os.path.isfile(media_cfg):
-            raise lux.CommandError('%s file not available' % media_cfg)
-        with open(media_cfg, 'r') as fp:
-            media_cfg = json.loads(fp.read())
         #
-        # add lux packages
-        lux_media = os.path.join(lux.PACKAGE_DIR, 'media')
-        luxjs = media_cfg.get('lux', {})
+        paths = {}
+        html2js = {}
 
-        if luxjs:
-            src = luxjs["src"]
-            luxjs["src"] = [os.path.join(lux_media, name) for name in src]
+        lux_entry = {
+            'paths': paths,
+            'html2js': html2js
+        }
+        paths['lux'] = self.js('lux')
+        template_dest = os.path.join(self.app.meta.media_dir,
+                                     'js', 'templates', 'lux')
+        #
+        # Loop through lux.js components
+        for name in os.listdir(self.js()):
+            if name.startswith('.') or name.startswith('_'):
+                continue
+            full_path = self.js(name)
+
+            if os.path.isdir(full_path):
+                templates = os.path.join(full_path, 'templates')
+                if os.path.isdir(templates):
+                    html2js[name] = {
+                        'src': os.path.join(templates, '*.tpl.html'),
+                        'dest': os.path.join(template_dest, name)
+                    }
+
+                for dirpath, dirnames, filenames in os.walk(full_path):
+                    relpath = []
+                    while len(dirpath) > len(full_path):
+                        dirpath, base = os.path.split(dirpath)
+                        relpath.append(base)
+                    relpath = '/'.join(relpath)
+
+                    for filename in filenames:
+                        if not filename.endswith('.js'):
+                            continue
+                        filename = filename[:-3]
+                        path = 'lux/%s' % name
+                        if relpath:
+                            path = '%s/%s' % (path, relpath)
+                        if filename != 'main':
+                            path = '%s/%s' % (path, filename)
+                        paths[path] = self.js(dirpath, filename)
 
         lux_cfg = os.path.join(self.app.meta.media_dir, 'lux.json')
         with open(lux_cfg, 'w') as fp:
-            fp.write(json.dumps(luxjs, indent=4))
+            fp.write(json.dumps(lux_entry, indent=4))
         self.write('"%s" created' % lux_cfg)
+
+    def js(self, *args):
+        return os.path.join(lux.PACKAGE_DIR, 'media', 'js', *args)

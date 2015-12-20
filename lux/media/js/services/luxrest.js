@@ -1,3 +1,5 @@
+define(['angular', 'lux', 'lux/services/luxweb'], function (angular, lux, luxWebApi) {
+    "use strict";
     //
     //	Angular Module for JS clients of Lux Rest APIs
     //	====================================================
@@ -13,7 +15,7 @@
             if ($scope.API_URL) {
                 //
                 // web api handler
-                var web = $lux.api('', luxweb);
+                var web = $lux.api('', luxWebApi);
                 // rest api handler
                 $lux.api($scope.API_URL, luxrest).scopeApi($scope, web);
             }
@@ -31,7 +33,7 @@
     //  --------------------------------------------------
     var luxrest = function (url, $lux) {
 
-        var api = luxweb(url, $lux);
+        var api = luxWebApi(url, $lux);
 
         api.httpOptions = function (request) {
             var options = request.options,
@@ -46,10 +48,10 @@
             //
             // If the call is for the authorizations_url api, add callback to store the token
             if (request.name === 'authorizations_url' &&
-                    request.options.url === request.baseUrl &&
-                    request.options.method === 'post') {
+                request.options.url === request.baseUrl &&
+                request.options.method === 'post') {
 
-                request.on.success(function(data, status) {
+                request.on.success(function (data, status) {
                     // reload the Page
                     $lux.window.location.reload();
                     //api.token(data.token);
@@ -70,3 +72,7 @@
 
         return api;
     };
+
+    return luxrest;
+
+});

@@ -1,9 +1,10 @@
-
+define(['angular', 'lux', 'lux/services/api'], function (angular, lux, apiFactory) {
+    "use strict";
     //
-    //	LUX API
+    //	LUX WEB API
     //	===================
     //
-    //  Angular module for interacting with lux-based REST APIs
+    //  Angular module for interacting with lux-based WEB APIs
     angular.module('lux.webapi', ['lux.services'])
 
         .run(['$rootScope', '$lux', function ($scope, $lux) {
@@ -13,14 +14,28 @@
             }
         }]);
 
+    //
+    //	Decode JWT
+    //	================
+    //
+    //	Decode a JASON Web Token and return the decoded object
+    lux.decodeJWToken = function (token) {
+        var parts = token.split('.');
+
+        if (parts.length !== 3) {
+            throw new Error('JWT must have 3 parts');
+        }
+
+        return lux.urlBase64DecodeToJSON(parts[1]);
+    };
 
     var //
-        //  HTTP verbs which don't send a csrf token in their requests
+    //  HTTP verbs which don't send a csrf token in their requests
         CSRFset = ['get', 'head', 'options'],
-        //
+    //
         luxweb = function (url, $lux) {
 
-            var api = baseapi(url, $lux),
+            var api = apiFactory(url, $lux),
                 request = api.request,
                 auth_name = 'authorizations_url',
                 web;
@@ -108,7 +123,7 @@
 
                             if (isArray(value)) {
                                 model[key] = [];
-                                forEach(value, function(item) {
+                                forEach(value, function (item) {
                                     model[key].push(item.id || item);
                                 });
                             } else {
@@ -176,3 +191,6 @@
 
             return api;
         };
+
+    return luxweb;
+});

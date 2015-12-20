@@ -1,3 +1,6 @@
+define(['lux/config/lux',
+        'lux/config/paths',
+        'lux/config/shim'], function (lux, defaultPaths, defaultShim) {
 
     function newPaths (cfg) {
         var all = {},
@@ -65,4 +68,7 @@
         require.config(cfg);
     };
 
-}(this));
+    return lux;
+
+});
+

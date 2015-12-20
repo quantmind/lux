@@ -1,3 +1,41 @@
+define(['angular', 'lux/config'], function(angular, lux) {
+    "use strict";
+
+    var forEach = angular.forEach,
+        extend = angular.extend,
+        angular_bootstrapped = false,
+        isArray = angular.isArray,
+        isString = angular.isString,
+        $ = angular.element,
+        slice = Array.prototype.slice,
+        lazyApplications = {},
+        defaults = {
+            url: '',    // base url for the web site
+            MEDIA_URL: '',  // default url for media content
+            hashPrefix: '',
+            ngModules: []
+        };
+
+    //
+    lux.version = '0.1.0';
+    lux.$ = $;
+    lux.angular = angular;
+    lux.forEach = angular.forEach;
+    lux.context = extend({}, defaults, lux.context);
+    lux.messages = {};
+
+    // Extend lux context with additional data
+    lux.extend = function (context) {
+        lux.context = extend(lux.context, context);
+        return lux;
+    };
+
+    lux.media = function (url, ctx) {
+        if (!ctx)
+            ctx = lux.context;
+        return joinUrl(ctx.url, ctx.MEDIA_URL, url);
+    };
+
     lux.loader = angular.module('lux.loader', [])
     	//
         .value('context', lux.context)
@@ -51,3 +89,6 @@
             });
         }
     };
+
+    return lux;
+});

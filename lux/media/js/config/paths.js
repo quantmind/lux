@@ -1,5 +1,6 @@
+define([], function () {
 
-    function defaultPaths () {
+    return function () {
         return {
             "angular": "//ajax.googleapis.com/ajax/libs/angularjs/1.4.7/angular",
             "angular-animate": "//ajax.googleapis.com/ajax/libs/angularjs/1.4.7/angular-animate",
@@ -43,4 +44,6 @@
             "stats": "//cdnjs.cloudflare.com/ajax/libs/stats.js/r11/Stats",
             "topojson": "//cdnjs.cloudflare.com/ajax/libs/topojson/1.6.19/topojson"
         };
-    }
+    };
+
+});

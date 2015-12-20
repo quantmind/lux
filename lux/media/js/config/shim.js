@@ -1,6 +1,6 @@
-
-    // Default shims
-    function defaultShim () {
+define([], function () {
+    // Default shim
+    return function () {
         return {
             angular: {
                 exports: "angular"
@@ -58,4 +58,6 @@
                 exports: "MathJax"
             }
         };
-    }
+    };
+
+});

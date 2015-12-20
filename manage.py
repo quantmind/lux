@@ -1,3 +1,4 @@
+#!/usr/bin/env python3.4
 '''Run luxsite'''
 import lux
 

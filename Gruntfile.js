@@ -6,11 +6,11 @@ module.exports = function (grunt) {
     var src_root = 'luxsite/media/',
         //
         cfg = grunt.file.readJSON(src_root + 'config.json'),
-        js = cfg.js,
+        libs = cfg.js,
         path = require('path'),
         _ = require('lodash'),
-        baseTasks = ['gruntfile', 'shell:buildLuxConfig'],
-        jsTasks = ['requirejs', 'http', 'copy', 'concat', 'jshint', 'uglify'],
+        baseTasks = ['gruntfile', 'shell:buildLuxConfig', 'luxbuild'],
+        jsTasks = ['requirejs'],
         cssTasks = [],
         skipEntries = ['options', 'watch'],
         concats = {
@@ -19,15 +19,17 @@ module.exports = function (grunt) {
             }
         };
 
+    delete cfg.js;
+    delete libs.lux;
+
     cfg.pkg = grunt.file.readJSON('package.json');
     cfg.requirejs = {
         compile: {
             options: {
-                baseUrl: src_root,
+                baseUrl: src_root + 'js',
                 generateSourceMaps: false, // TODO change to true when Chrome sourcemaps bug is fixed
                 paths: {
                     angular: 'empty:',
-                    lux: 'empty:',
                     d3: 'empty:',
                     'angular-cookies': 'empty:',
                     'angular-strap': 'empty:',
@@ -74,6 +76,10 @@ module.exports = function (grunt) {
         grunt.loadNpmTasks('grunt-html2js');
         jsTasks.splice(0, 0, 'html2js');
     }
+
+    if (cfg.http) jsTasks.push('http');
+    if (cfg.copy) jsTasks.push('copy');
+    jsTasks = jsTasks.concat(['concat', 'jshint', 'uglify']);
 
     var buildTasks = baseTasks.concat(jsTasks);
 
@@ -200,11 +206,6 @@ module.exports = function (grunt) {
     }
 
     //
-    // This Grunt Config Entry
-    // -------------------------------
-    // This Grunt Config Entry
-    // -------------------------------
-    //
     // Initialise Grunt with all tasks defined above
     cfg.uglify = uglify_libs();
     cfg.jshint = jshint_libs();
@@ -254,6 +255,12 @@ module.exports = function (grunt) {
     };
     //
     grunt.initConfig(cfg);
+    //
+    grunt.registerTask('luxbuild', 'Load lux configuration', function () {
+        var paths = cfg.requirejs.compile.options.paths,
+            obj = grunt.file.readJSON(src_root + 'lux.json');
+        _.extend(paths, obj.paths);
+    });
     //
     // These plugins provide necessary tasks.
     grunt.loadNpmTasks('grunt-contrib-requirejs', ['html2js']);

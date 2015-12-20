@@ -1,3 +1,6 @@
+define(['angular', 'lux'], function (angular, lux) {
+    "use strict";
+
     lux.messages.no_api = function (url) {
         return {
             text: 'Api client for "' + url + '" is not available',
@@ -29,114 +32,114 @@
         }])
         //
         .service('$lux', ['$location', '$window', '$q', '$http', '$log',
-                          '$timeout', 'ApiTypes', 'AuthApis', '$templateCache',
-                          '$compile',
-                          function ($location, $window, $q, $http, $log, $timeout,
-                                      ApiTypes, AuthApis, $templateCache, $compile) {
-            var $lux = this;
+            '$timeout', 'ApiTypes', 'AuthApis', '$templateCache',
+            '$compile',
+            function ($location, $window, $q, $http, $log, $timeout,
+                      ApiTypes, AuthApis, $templateCache, $compile) {
+                var $lux = this;
 
-            this.location = $location;
-            this.window = $window;
-            this.log = $log;
-            this.http = $http;
-            this.q = $q;
-            this.timeout = $timeout;
-            this.apiUrls = {};
-            this.$log = $log;
-            this.messages = extend({}, lux.messageService, {
-                pushMessage: function (message) {
-                    this.log($log, message);
-                }
-            });
-            //  Create a client api
-            //  -------------------------
-            //
-            //  context: an api name or an object containing, name, url and type.
-            //
-            //  name: the api name
-            //  url: the api base url
-            //  type: optional api type (default is ``lux``)
-            this.api = function (url, api) {
-                if (arguments.length === 1) {
-                    var defaults;
-                    if (isObject(url)) {
-                        defaults = url;
-                        url = url.url;
+                this.location = $location;
+                this.window = $window;
+                this.log = $log;
+                this.http = $http;
+                this.q = $q;
+                this.timeout = $timeout;
+                this.apiUrls = {};
+                this.$log = $log;
+                this.messages = extend({}, lux.messageService, {
+                    pushMessage: function (message) {
+                        this.log($log, message);
                     }
-                    api = ApiTypes[url];
-                    if (!api)
-                        $lux.messages.error(lux.messages.no_api(url));
-                    else
-                        return api(url, this).defaults(defaults);
-                } else if (arguments.length === 2) {
-                    ApiTypes[url] = api;
-                    return api(url, this);
-                }
-            };
-
-            // Set/get the authentication handler for a given api
-            this.authApi = function (api, auth) {
-                if (arguments.length === 1)
-                    return AuthApis[api.baseUrl()];
-                else if (arguments.length === 2)
-                    AuthApis[api.baseUrl()] = auth;
-            };
-
-            //
-            // Change the form data depending on content type
-            this.formData = function (contentType) {
-
-                return function (data) {
-                    data = extend(data || {}, $lux.csrf);
-                    if (contentType === 'application/x-www-form-urlencoded')
-                        return $.param(data);
-                    else if (contentType === 'multipart/form-data') {
-                        var fd = new FormData();
-                        forEach(data, function (value, key) {
-                            fd.append(key, value);
-                        });
-                        return fd;
-                    } else {
-                        return JSON.stringify(data);
+                });
+                //  Create a client api
+                //  -------------------------
+                //
+                //  context: an api name or an object containing, name, url and type.
+                //
+                //  name: the api name
+                //  url: the api base url
+                //  type: optional api type (default is ``lux``)
+                this.api = function (url, api) {
+                    if (arguments.length === 1) {
+                        var defaults;
+                        if (isObject(url)) {
+                            defaults = url;
+                            url = url.url;
+                        }
+                        api = ApiTypes[url];
+                        if (!api)
+                            $lux.messages.error(lux.messages.no_api(url));
+                        else
+                            return api(url, this).defaults(defaults);
+                    } else if (arguments.length === 2) {
+                        ApiTypes[url] = api;
+                        return api(url, this);
                     }
                 };
-            };
-            //
-            // Render a template from a url
-            this.renderTemplate = function (url, element, scope, callback) {
-                var template = $templateCache.get(url);
-                if (!template) {
-                    $http.get(url).then(function (resp) {
-                        template = resp.data;
-                        $templateCache.put(url, template);
+
+                // Set/get the authentication handler for a given api
+                this.authApi = function (api, auth) {
+                    if (arguments.length === 1)
+                        return AuthApis[api.baseUrl()];
+                    else if (arguments.length === 2)
+                        AuthApis[api.baseUrl()] = auth;
+                };
+
+                //
+                // Change the form data depending on content type
+                this.formData = function (contentType) {
+
+                    return function (data) {
+                        data = extend(data || {}, $lux.csrf);
+                        if (contentType === 'application/x-www-form-urlencoded')
+                            return $.param(data);
+                        else if (contentType === 'multipart/form-data') {
+                            var fd = new FormData();
+                            forEach(data, function (value, key) {
+                                fd.append(key, value);
+                            });
+                            return fd;
+                        } else {
+                            return JSON.stringify(data);
+                        }
+                    };
+                };
+                //
+                // Render a template from a url
+                this.renderTemplate = function (url, element, scope, callback) {
+                    var template = $templateCache.get(url);
+                    if (!template) {
+                        $http.get(url).then(function (resp) {
+                            template = resp.data;
+                            $templateCache.put(url, template);
+                            _render(element, template, scope, callback);
+                        }, function (resp) {
+                            $lux.messages.error('Could not load template from ' + url);
+                        });
+                    } else
                         _render(element, template, scope, callback);
-                    }, function (resp) {
-                        $lux.messages.error('Could not load template from ' + url);
-                    });
-                } else
-                    _render(element, template, scope, callback);
-            };
+                };
 
-            function _render(element, template, scope, callback) {
-                var elem = $compile(template)(scope);
-                element.append(elem);
-                if (callback) callback(elem);
-            }
-        }]);
+                function _render(element, template, scope, callback) {
+                    var elem = $compile(template)(scope);
+                    element.append(elem);
+                    if (callback) callback(elem);
+                }
+            }]);
     //
-    function wrapPromise (promise) {
+    function wrapPromise(promise) {
 
-        promise.success = function(fn) {
+        promise.success = function (fn) {
 
-            return wrapPromise(this.then(function(response) {
+            return wrapPromise(this.then(function (response) {
                 var r = fn(response.data, response.status, response.headers);
                 return r === undefined ? response : r;
             }));
         };
 
-        promise.error = function(fn) {
+        promise.error = function (fn) {
 
-            return wrapPromise(this.then(null, function(response) {
+            return wrapPromise(this.then(null, function (response) {
                 var r = fn(response.data, response.status, response.headers);
                 return r === undefined ? response : r;
             }));
@@ -149,7 +152,7 @@
     //
     //  Lux API Interface for REST
     //
-    var baseapi = function (url, $lux) {
+    lux.apiFactory = function (url, $lux) {
         //
         //  Object containing the urls for the api.
         var api = {},
@@ -175,7 +178,7 @@
         };
         //
         // API base url
-        api.baseUrl  = function () {
+        api.baseUrl = function () {
             return url;
         };
         //
@@ -200,16 +203,19 @@
         };
         //
         //  Add additional Http options to the request
-        api.httpOptions = function (request) {};
+        api.httpOptions = function (request) {
+        };
         //
         //  This function can be used to add authentication
-        api.authentication = function (request) {};
+        api.authentication = function (request) {
+        };
         //
         //  Return the current user
         //  ---------------------------
         //
         //  Only implemented by apis managing authentication
-        api.user = function () {};
+        api.user = function () {
+        };
         //
         // Perform the actual request and return a promise
         //	method: HTTP method
@@ -225,13 +231,13 @@
                 if (!isObject(o.params)) {
                     o.params = {};
                 }
-                extend(o.params,  data || {});
+                extend(o.params, data || {});
             }
 
             opts = extend(o, opts);
 
             var d = $lux.q.defer(),
-                //
+            //
                 request = extend({
                     name: opts.name,
                     //
@@ -272,7 +278,7 @@
          *
          * @returns      promise
          */
-        api.populateApiUrls = function() {
+        api.populateApiUrls = function () {
             $lux.log.info('Fetching api info');
             return $lux.http.get(url).then(function (resp) {
                 $lux.apiUrls[url] = resp.data;
@@ -285,7 +291,7 @@
          *
          * @returns     promise, resolved when API URLs available
          */
-        api.getApiNames = function() {
+        api.getApiNames = function () {
             var promise, deferred;
             if (!angular.isObject($lux.apiUrls[url])) {
                 promise = api.populateApiUrls();
@@ -303,8 +309,8 @@
          * @param target
          * @returns     promise, resolved when the URL is available
          */
-        api.getUrlForTarget = function(target) {
-            return api.getApiNames().then(function(apiUrls) {
+        api.getUrlForTarget = function (target) {
+            return api.getApiNames().then(function (apiUrls) {
                 var url = apiUrls[target.name];
                 if (target.path) {
                     url = joinUrl(url, target.path);
@@ -334,7 +340,7 @@
                     //
                 } else {
                     // Fetch the api urls
-                    return api.populateApiUrls(url).then(function() {
+                    return api.populateApiUrls(url).then(function () {
                         api.call(request);
                     }, request.error);
                     //
@@ -372,3 +378,6 @@
 
         return api;
     };
+
+    return lux.apiFactory;
+});

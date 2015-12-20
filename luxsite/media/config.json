@@ -5,11 +5,11 @@
                 "banner": "lux/media/js/banner.js"
             },
             "src": [
-                "luxsite/media/js/src.js"
+                "luxsite/media/js/require.config.js",
+                "luxsite/media/js/build/bundle.js"
             ],
             "dest": "luxsite/media/luxsite/luxsite.js"
-        },
-        "lux": "all"
+        }
     },
     "sass": {
         "luxsite": {

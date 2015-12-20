@@ -1,15 +1,24 @@
-//
-(function (root) {
+define([], function () {
     "use strict";
 
-    if (!root.lux)
-        root.lux = {};
-
-    // If a file assign http as protocol (https does not work with PhantomJS)
-    var protocol = root.location ? (root.location.protocol === 'file:' ? 'http:' : '') : '',
+    var root = window,
+        lux = root.lux || {},
+        // If a file assign http as protocol (https does not work with PhantomJS)
+        protocol = root.location ? (root.location.protocol === 'file:' ? 'http:' : '') : '',
         end = '.js',
         ostring = Object.prototype.toString;
 
+    if (isString(lux))
+        lux = {context: urlBase64DecodeToJSON(lux)};
+
+    root.lux = lux;
+
+    lux.isString = isString;
+    lux.isArray = isArray;
+    lux.urlBase64Decode = urlBase64Decode;
+    lux.urlBase64DecodeToJSON = urlBase64DecodeToJSON;
+
+    return lux;
 
     function isString (value) {
         return ostring.call(value) === '[object String]';
@@ -20,12 +29,12 @@
     }
 
     function minify () {
-        if (root.lux.context)
+        if (lux.context)
             return lux.context.MINIFIED_MEDIA;
     }
 
     function baseUrl () {
-        if (root.lux.context)
+        if (lux.context)
             return lux.context.MEDIA_URL;
     }
 
@@ -62,9 +71,4 @@
         return JSON.parse(decoded);
     }
 
-
-    if (isString(root.lux))
-        root.lux = {context: urlBase64DecodeToJSON(root.lux)};
-
-    root.lux.urlBase64Decode = urlBase64Decode;
-    root.lux.urlBase64DecodeToJSON = urlBase64DecodeToJSON;
+});

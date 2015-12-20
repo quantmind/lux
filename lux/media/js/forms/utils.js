@@ -1,6 +1,3 @@
-/**
- * Created by Reupen on 02/06/2015.
- */
 
 angular.module('lux.form.utils', ['lux.services'])
 
