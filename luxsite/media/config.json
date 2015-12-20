@@ -2,7 +2,7 @@
     "js": {
         "luxsite": {
             "options": {
-                "banner": "lux/media/js/banner.js"
+                "banner": "luxsite/media/js/banner.js"
             },
             "src": [
                 "luxsite/media/js/require.config.js",

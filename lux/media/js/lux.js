@@ -18,8 +18,6 @@ define(['angular', 'lux/config'], function(angular, lux) {
 
     //
     lux.version = '0.1.0';
-    lux.$ = $;
-    lux.angular = angular;
     lux.forEach = angular.forEach;
     lux.context = extend({}, defaults, lux.context);
     lux.messages = {};

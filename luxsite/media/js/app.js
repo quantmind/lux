@@ -1,7 +1,6 @@
 require([
     'lux',
-    'giotto',
-    'lux/forms'
+    'giotto'
 ], function(lux, d3) {
     'use strict';
 

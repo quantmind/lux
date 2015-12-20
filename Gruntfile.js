@@ -10,7 +10,7 @@ module.exports = function (grunt) {
         path = require('path'),
         _ = require('lodash'),
         baseTasks = ['gruntfile', 'shell:buildLuxConfig', 'luxbuild'],
-        jsTasks = ['requirejs'],
+        jsTasks = ['html2js', 'requirejs'],
         cssTasks = [],
         skipEntries = ['options', 'watch'],
         concats = {
@@ -69,14 +69,7 @@ module.exports = function (grunt) {
         }
     };
 
-    //
-    // Add html2js task if available
-    if (cfg.html2js) {
-        grunt.log.debug('Adding html2js task');
-        grunt.loadNpmTasks('grunt-html2js');
-        jsTasks.splice(0, 0, 'html2js');
-    }
-
+    if (!cfg.html2js) cfg.html2js = {};
     if (cfg.http) jsTasks.push('http');
     if (cfg.copy) jsTasks.push('copy');
     jsTasks = jsTasks.concat(['concat', 'jshint', 'uglify']);
@@ -258,11 +251,14 @@ module.exports = function (grunt) {
     //
     grunt.registerTask('luxbuild', 'Load lux configuration', function () {
         var paths = cfg.requirejs.compile.options.paths,
+            html2js = cfg.html2js,
             obj = grunt.file.readJSON(src_root + 'lux.json');
         _.extend(paths, obj.paths);
+        cfg.html2js = _.extend(html2js, obj.html2js);
     });
     //
     // These plugins provide necessary tasks.
+    grunt.loadNpmTasks('grunt-html2js');
     grunt.loadNpmTasks('grunt-contrib-requirejs', ['html2js']);
     grunt.loadNpmTasks('grunt-contrib-uglify');
     grunt.loadNpmTasks('grunt-contrib-jshint');

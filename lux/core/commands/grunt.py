@@ -30,7 +30,7 @@ class Command(lux.Command):
         }
         paths['lux'] = self.js('lux')
         template_dest = os.path.join(self.app.meta.media_dir,
-                                     'js', 'templates', 'lux')
+                                     'build', 'templates', 'lux')
         #
         # Loop through lux.js components
         for name in os.listdir(self.js()):
@@ -43,7 +43,7 @@ class Command(lux.Command):
                 if os.path.isdir(templates):
                     html2js[name] = {
                         'src': os.path.join(templates, '*.tpl.html'),
-                        'dest': os.path.join(template_dest, name)
+                        'dest': os.path.join(template_dest, '%s.js' % name)
                     }
 
                 for dirpath, dirnames, filenames in os.walk(full_path):
