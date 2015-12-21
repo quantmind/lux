@@ -139,7 +139,7 @@ angular.module('lux.form.utils', ['lux.services', 'lux.pagination'])
 
             if (attrs.remoteOptions) {
                 var target = JSON.parse(attrs.remoteOptions);
-                var luxPag = new LuxPagination(scope, target, false);
+                var luxPag = new LuxPagination(scope, target, attrs.multiple ? true : false);
 
                 if (luxPag && target.name)
                     return remoteOptions(luxPag, target, scope, attrs, element);
