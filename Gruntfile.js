@@ -5,12 +5,13 @@ module.exports = function (grunt) {
     // configuration.
     var src_root = 'luxsite/media/',
         //
-        cfg = grunt.file.readJSON(src_root + 'config.json'),
+        config_file = src_root + 'config.json',
+        cfg = grunt.file.readJSON(config_file),
         libs = cfg.js,
         path = require('path'),
         _ = require('lodash'),
         baseTasks = ['gruntfile', 'shell:buildLuxConfig', 'luxbuild'],
-        jsTasks = ['html2js', 'requirejs'],
+        jsTasks = ['requirejs'],
         cssTasks = [],
         skipEntries = ['options', 'watch'],
         concats = {
@@ -19,8 +20,12 @@ module.exports = function (grunt) {
             }
         };
 
+    if (!libs) {
+        grunt.log.error('"js" entry not available in "' + config_file + '"');
+        return grunt.failed;
+    }
+
     delete cfg.js;
-    delete libs.lux;
 
     cfg.pkg = grunt.file.readJSON('package.json');
     cfg.requirejs = {
@@ -31,6 +36,7 @@ module.exports = function (grunt) {
                 paths: {
                     angular: 'empty:',
                     d3: 'empty:',
+                    'giotto': 'empty:',
                     'angular-cookies': 'empty:',
                     'angular-strap': 'empty:',
                     'angular-file-upload': 'empty:',
@@ -41,7 +47,6 @@ module.exports = function (grunt) {
                     'angular-ui-grid': 'empty:',
                     'angular-infinite-scroll': 'empty:',
                     'videojs': 'empty:',
-                    'giotto': 'empty:',
                     'angular-scroll': 'empty:', // TODO find out who is using this
                     'angular-ui-select': 'empty:', // TODO find out who is using this
                     'angular-ui-router': 'empty:',
@@ -70,12 +75,12 @@ module.exports = function (grunt) {
         }
     };
 
-    if (!cfg.html2js) cfg.html2js = {};
     if (cfg.http) jsTasks.push('http');
     if (cfg.copy) jsTasks.push('copy');
     jsTasks = jsTasks.concat(['concat', 'jshint', 'uglify']);
 
-    var buildTasks = baseTasks.concat(jsTasks);
+    var buildTasks = baseTasks.concat(jsTasks),
+        testTasks = baseTasks.concat(['html2js', 'karma:dev']);
 
     //
     // Build CSS if required
@@ -114,20 +119,24 @@ module.exports = function (grunt) {
 
     // Watch
     if (cfg.watch) {
-        cfg.watch = {
-            options: {
+        var watch = {};
+        _.forOwn(cfg.sass, function (value, key) {
+            if (skipEntries.indexOf(key) < 0) {
+                if (_.isArray(value)) value = {files: value};
+                if (!value.tasks) value.tasks = jsTasks;
+                watch[key] = value;
+            }
+        });
+
+        watch.options = cfg.watch.options;
+        if (!watch.options)
+            watch.options = {
                 atBegin: true,
                 // Start a live reload server on the default port 35729
                 livereload: true
-            },
-            main: {
-                files: ['js/**/*.js',
-                    '!js/build/**/*.js',
-                    '!js/tests/**/*.js',
-                    'js/**/*.tpl.html'],
-                tasks: jsTasks
-            }
-        };
+            };
+
+        cfg.watch = watch;
     }
     //
     function for_each(obj, callback) {
@@ -252,15 +261,17 @@ module.exports = function (grunt) {
     //
     grunt.registerTask('luxbuild', 'Load lux configuration', function () {
         var paths = cfg.requirejs.compile.options.paths,
-            html2js = cfg.html2js,
-            obj = grunt.file.readJSON(src_root + 'lux.json');
+            filename = src_root + 'build/lux.json',
+            obj = grunt.file.readJSON(filename);
+        grunt.log.writeln('Read paths from "' + filename + '"');
         _.extend(paths, obj.paths);
-        cfg.html2js = _.extend(html2js, obj.html2js);
+        //_.forOwn(paths, function (value, key) {
+        //    grunt.log.writeln(key + ': ' + value);
+        //});
     });
     //
-    // These plugins provide necessary tasks.
-    grunt.loadNpmTasks('grunt-html2js');
-    grunt.loadNpmTasks('grunt-contrib-requirejs', ['html2js']);
+    // These plugins provide necessary tasks
+    grunt.loadNpmTasks('grunt-contrib-requirejs');
     grunt.loadNpmTasks('grunt-contrib-uglify');
     grunt.loadNpmTasks('grunt-contrib-jshint');
     grunt.loadNpmTasks('grunt-contrib-concat');
@@ -274,7 +285,7 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-contrib-clean');
     //
 
-    grunt.registerTask('test', ['html2js', 'karma:dev']);
+    grunt.registerTask('test', testTasks);
     grunt.registerTask('test:debug-chrome', ['karma:debug_chrome']);
     grunt.registerTask('test:debug-firefox', ['karma:debug_firefox']);
     grunt.registerTask('gruntfile', 'jshint Gruntfile.js',

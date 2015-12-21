@@ -3,9 +3,6 @@ define([], function () {
 
     var root = window,
         lux = root.lux || {},
-        // If a file assign http as protocol (https does not work with PhantomJS)
-        protocol = root.location ? (root.location.protocol === 'file:' ? 'http:' : '') : '',
-        end = '.js',
         ostring = Object.prototype.toString;
 
     if (isString(lux))
@@ -13,7 +10,10 @@ define([], function () {
 
     root.lux = lux;
 
-    lux.messages = {};
+    lux.root = root;
+    lux.messages = extend(lux.messages);
+    lux.require = extend(lux.require);
+    lux.extend = extend;
     lux.isString = isString;
     lux.isArray = isArray;
     lux.isObject = isObject;
@@ -21,6 +21,17 @@ define([], function () {
     lux.urlBase64DecodeToJSON = urlBase64DecodeToJSON;
 
     return lux;
+
+    function extend (o1, o2) {
+        if (!o1) o1 = {};
+        if (o2) {
+            for (var key in o2) {
+                if (o2.hasOwnProperty(key))
+                    o1[key] = o2[key];
+            }
+        }
+        return o1;
+    }
 
     function isString (value) {
         return ostring.call(value) === '[object String]';
@@ -32,26 +43,6 @@ define([], function () {
 
     function isObject (value) {
         return ostring.call(value) === '[object Object]';
-    }
-
-    function minify () {
-        if (lux.context)
-            return lux.context.MINIFIED_MEDIA;
-    }
-
-    function baseUrl () {
-        if (lux.context)
-            return lux.context.MEDIA_URL;
-    }
-
-    function extend (o1, o2) {
-        if (o2) {
-            for (var key in o2) {
-                if (o2.hasOwnProperty(key))
-                    o1[key] = o2[key];
-            }
-        }
-        return o1;
     }
 
     function urlBase64Decode (str) {

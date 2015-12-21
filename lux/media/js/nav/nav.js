@@ -1,3 +1,5 @@
+define(['lux',
+        'lux/templates/nav'], function () {
 
     //
     //  Lux Navigation module

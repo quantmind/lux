@@ -4,11 +4,7 @@ define(['angular', 'lux/utils', 'lux/services'], function(angular, lux) {
     var forEach = angular.forEach,
         extend = angular.extend,
         angular_bootstrapped = false,
-        isArray = angular.isArray,
-        isString = angular.isString,
         $ = angular.element,
-        slice = Array.prototype.slice,
-        lazyApplications = {},
         defaults = {
             url: '',    // base url for the web site
             MEDIA_URL: '',  // default url for media content
@@ -20,12 +16,6 @@ define(['angular', 'lux/utils', 'lux/services'], function(angular, lux) {
     lux.version = '0.1.0';
     lux.forEach = angular.forEach;
     lux.context = extend({}, defaults, lux.context);
-
-    // Extend lux context with additional data
-    lux.extend = function (context) {
-        lux.context = extend(lux.context, context);
-        return lux;
-    };
 
     lux.media = function (url, ctx) {
         if (!ctx)

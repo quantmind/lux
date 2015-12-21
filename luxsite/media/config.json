@@ -32,5 +32,11 @@
             },
             "dest": "luxsite/media/luxsite/giotto.js"
         }
+    },
+    "watch": {
+        "luxsite": ["luxsite/media/js/**/*.js",
+                    "luxsite/media/tests/**/*.js"],
+        "lux": ["lux/media/js/**/*.js",
+                "lux/media/js/**/*.tpl.html"]
     }
 }

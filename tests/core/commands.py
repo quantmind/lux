@@ -8,6 +8,14 @@ from lux.utils import test
 class CommandTests(test.TestCase):
     config_file = 'tests.core'
 
+    @test.test_timeout(10)
+    @test.green
+    def test_grunt(self):
+        command = self.fetch_command('grunt')
+        command([])
+
+
+class d:
     def test_getapp(self):
         app = self.application(GREEN_POOL=50)
         command = self.fetch_command('getapp', app)

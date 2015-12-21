@@ -24,7 +24,6 @@
         "jasmine-core": "",
         "grunt-shell": "",
         "karma-junit-reporter": "",
-        "grunt-html2js": "",
         "grunt-contrib-cssmin": "",
         "grunt-contrib-jshint": "",
         "karma-es5-shim": "",

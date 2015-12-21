@@ -2,11 +2,31 @@ define(['lux/config/lux',
         'lux/config/paths',
         'lux/config/shim'], function (lux, defaultPaths, defaultShim) {
 
+    // If a file assign http as protocol (https does not work with PhantomJS)
+    var root = lux.root,
+        protocol = root.location ? (root.location.protocol === 'file:' ? 'http:' : '') : '',
+        end = '.js';
+
+    // require.config override
+    lux.config = function (cfg) {
+        if(!cfg.baseUrl) {
+            var url = baseUrl();
+            if (url !== undefined) cfg.baseUrl = url;
+        }
+        cfg.shim = lux.extend(defaultShim(), cfg.shim);
+        cfg.paths = newPaths(cfg);
+        cfg.callback = callback(cfg);
+        cfg.deps = deps(cfg);
+        require.config(cfg);
+    };
+
+    return lux;
+
     function newPaths (cfg) {
         var all = {},
             min = minify() ? '.min' : '',
             prefix = root.local_require_prefix,
-            paths = extend(defaultPaths(), cfg.paths);
+            paths = lux.extend(defaultPaths(), cfg.paths);
 
         for(var name in paths) {
             if(paths.hasOwnProperty(name)) {
@@ -57,18 +77,28 @@ define(['lux/config/lux',
         return all;
     }
 
-    // require.config override
-    lux.config = function (cfg) {
-        if(!cfg.baseUrl) {
-            var url = baseUrl();
-            if (url !== undefined) cfg.baseUrl = url;
-        }
-        cfg.shim = extend(defaultShim(), cfg.shim);
-        cfg.paths = newPaths(cfg);
-        require.config(cfg);
-    };
+    function baseUrl () {
+        if (lux.context)
+            return lux.context.MEDIA_URL;
+    }
 
-    return lux;
+    function callback (cfg) {
+        if (!cfg.callback && lux.context)
+            return lux.context.require_callback;
+        else
+            return cfg.callback;
+    }
 
+    function deps (cfg) {
+        if (!cfg.deps && lux.context)
+            return lux.context.require_deps;
+        else
+            return cfg.deps;
+    }
+
+    function minify () {
+        if (lux.context)
+            return lux.context.MINIFIED_MEDIA;
+    }
 });
 

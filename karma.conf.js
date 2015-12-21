@@ -27,13 +27,15 @@ module.exports = function (config) {
         files: [{
             pattern: 'lux/media/js/**/*.js',
             included: false
-        }, {
-            pattern: 'js/**/*.js',
+        },{
+            pattern: 'luxsite/media/js/**/*.js',
+            included: false
+        },{
+            pattern: 'luxsite/build/**/*.js',
             included: false
         },
-            'luxsite/media/js/test.config.js',
-            'js/require.config.js',
-            'js/tests/karma.main.js'
+            'luxsite/media/build/test.config.js',
+            'luxsite/media/js/app.js'
         ],
         reporters: ['coverage', 'dots', 'junit'],
         junitReporter: {
