@@ -35,6 +35,9 @@ angular.module('lux.form.utils', ['lux.services', 'lux.pagination'])
             }
 
             function enableSearch() {
+                if (searchInput.data().boundToKeyDown) return;
+
+                searchInput.data('boundToKeyDown', true);
                 searchInput.bind('keyup', function(e) {
                     var query = e.srcElement.value;
                     var searchField = attrs.remoteOptionsId === 'id' ? nameOpts.source : attrs.remoteOptionsId;
@@ -73,15 +76,14 @@ angular.module('lux.form.utils', ['lux.services', 'lux.pagination'])
                 });
                 // Sort list alphabetically by name.
                 options.sort(function(a,b) {
+                    var one = a.name.toLowerCase();
+                    var two = b.name.toLowerCase();
                     // Ensure 'please select' remains at the top
-                    if (a.name === 'Please select...') return -1;
-                    if (a.name > b.name) {
-                        return 1;
-                    }
-                    if (a.name < b.name) {
-                        return -1;
-                    }
-                    return 0;
+                    if (one === 'please select...') return -1;
+
+                    if (one > two) return 1;
+                    else if (one < two) return -1;
+                    else return 0;
                 });
             }
 
@@ -112,9 +114,10 @@ angular.module('lux.form.utils', ['lux.services', 'lux.pagination'])
                 options.splice(0, 1);
                 // Increasing default API call limit as UISelect multiple
                 // displays all preselected options
-                params.limit = 250;
+                params.limit = 200;
             } else {
-                // This option should be disabled
+                // Options with id 'placeholder' are disabled in
+                // forms.js so users can't select them
                 options[0] = {
                     name: 'Please select...',
                     id: 'placeholder'
@@ -126,8 +129,8 @@ angular.module('lux.form.utils', ['lux.services', 'lux.pagination'])
             luxPag.getData(params, buildSelect);
             // Listen for LuxPagination to emit 'moreData' then run lazyLoad
             // lazyLoad and enableSearch
-            scope.$on('moreData', function() {
-                lazyLoad();
+            scope.$on('moreData', function(e) {
+                lazyLoad(e);
                 enableSearch();
             });
         }
@@ -136,7 +139,7 @@ angular.module('lux.form.utils', ['lux.services', 'lux.pagination'])
 
             if (attrs.remoteOptions) {
                 var target = JSON.parse(attrs.remoteOptions);
-                var luxPag = new LuxPagination(scope, target, attrs.multiple ? true : false);
+                var luxPag = new LuxPagination(scope, target, false);
 
                 if (luxPag && target.name)
                     return remoteOptions(luxPag, target, scope, attrs, element);

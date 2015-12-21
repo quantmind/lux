@@ -55,6 +55,8 @@ angular.module('lux.pagination', ['lux.services'])
                     last: data.data.last,
                     next: data.data.next ? data.data.next : false
                 };
+                // If the recursive param was set to true this will
+                // request data using the 'next' link
                 if (this.recursive) this.loadMore();
             }
 
