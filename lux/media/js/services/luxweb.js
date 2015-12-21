@@ -1,4 +1,4 @@
-define(['angular', 'lux', 'lux/services/api'], function (angular, lux, apiFactory) {
+define(['angular', 'lux/config', 'lux/services/api'], function (angular, lux, apiFactory) {
     "use strict";
     //
     //	LUX WEB API

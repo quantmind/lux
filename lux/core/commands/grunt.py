@@ -41,10 +41,13 @@ class Command(lux.Command):
             if os.path.isdir(full_path):
                 templates = os.path.join(full_path, 'templates')
                 if os.path.isdir(templates):
+                    path = 'lux/%s/templates' % name
+                    dest = os.path.join(template_dest, name)
                     html2js[name] = {
                         'src': os.path.join(templates, '*.tpl.html'),
-                        'dest': os.path.join(template_dest, '%s.js' % name)
+                        'dest': '%s.js' % dest
                     }
+                    paths[path] = dest
 
                 for dirpath, dirnames, filenames in os.walk(full_path):
                     relpath = []

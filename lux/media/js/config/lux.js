@@ -13,8 +13,10 @@ define([], function () {
 
     root.lux = lux;
 
+    lux.messages = {};
     lux.isString = isString;
     lux.isArray = isArray;
+    lux.isObject = isObject;
     lux.urlBase64Decode = urlBase64Decode;
     lux.urlBase64DecodeToJSON = urlBase64DecodeToJSON;
 
@@ -26,6 +28,10 @@ define([], function () {
 
     function isArray (value) {
         return ostring.call(value) === '[object Array]';
+    }
+
+    function isObject (value) {
+        return ostring.call(value) === '[object Object]';
     }
 
     function minify () {

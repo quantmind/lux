@@ -6,7 +6,7 @@
             },
             "src": [
                 "luxsite/media/js/require.config.js",
-                "luxsite/media/js/build/bundle.js"
+                "luxsite/media/build/bundle.js"
             ],
             "dest": "luxsite/media/luxsite/luxsite.js"
         }

@@ -1,4 +1,5 @@
 define(['lux/services/luxweb',
-        'lux/services/luxapi'], function () {
+        'lux/services/luxrest',
+        'lux/services/ws'], function () {
     "use strict";
 });

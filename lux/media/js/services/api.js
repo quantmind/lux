@@ -1,4 +1,4 @@
-define(['angular', 'lux'], function (angular, lux) {
+define(['angular', 'lux/config'], function (angular, lux) {
     "use strict";
 
     lux.messages.no_api = function (url) {

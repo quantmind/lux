@@ -9,8 +9,6 @@ EXTENSIONS = ('lux.extensions.base',
               'lux.extensions.static')
 
 STATIC_API = 'jsonapi'
-CMS_PARTIALS_PATH = d('context')
-STATIC_LOCATION = os.path.abspath('../../docs/luxsite')
 MD_EXTENSIONS = ['extra', 'meta', 'toc']
 CODE_HIGHLIGHT_THEME = 'zenburn'
 FAVICON = 'luxsite/favicon.ico'

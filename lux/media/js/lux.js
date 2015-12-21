@@ -1,4 +1,4 @@
-define(['angular', 'lux/config'], function(angular, lux) {
+define(['angular', 'lux/utils', 'lux/services'], function(angular, lux) {
     "use strict";
 
     var forEach = angular.forEach,
@@ -20,7 +20,6 @@ define(['angular', 'lux/config'], function(angular, lux) {
     lux.version = '0.1.0';
     lux.forEach = angular.forEach;
     lux.context = extend({}, defaults, lux.context);
-    lux.messages = {};
 
     // Extend lux context with additional data
     lux.extend = function (context) {
