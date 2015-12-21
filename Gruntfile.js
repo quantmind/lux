@@ -57,6 +57,7 @@ module.exports = function (grunt) {
     };
     cfg.concat = concats;
 
+    // Build lux configuration file read by ``luxbuild`` task
     cfg.shell = {
         buildLuxConfig: {
             options: {

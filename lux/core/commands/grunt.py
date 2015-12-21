@@ -1,15 +1,18 @@
 import os
 import json
+from string import Template
 
 import lux
 
 
-COMPONENTS = [
-    "services",
-    "forms",
-    "messages",
-    "nav"
-]
+test_config = '''
+window.lux = {
+    PATH_TO_LOCAL_REQUIRED_FILES: '$media_dir',
+    context: {
+        API_URL: '/api'
+    }
+};
+'''
 
 
 class Command(lux.Command):
@@ -19,7 +22,6 @@ class Command(lux.Command):
             'given directory.')
 
     def run(self, options):
-        # Read media/config.json
         #
         paths = {}
         html2js = {}
@@ -71,6 +73,16 @@ class Command(lux.Command):
         with open(lux_cfg, 'w') as fp:
             fp.write(json.dumps(lux_entry, indent=4))
         self.write('"%s" created' % lux_cfg)
+
+        test_cfg = os.path.join(self.app.meta.media_dir,
+                                'build', 'test.config.js')
+        media_dir = os.path.join(self.app.meta.media_dir,
+                                 self.app.config_module)
+        test_file = Template(test_config).safe_substitute(
+            {'media_dir': media_dir})
+        with open(test_cfg, 'w') as fp:
+            fp.write(test_file)
+        self.write('"%s" created' % test_cfg)
 
     def js(self, *args):
         return os.path.join(lux.PACKAGE_DIR, 'media', 'js', *args)
