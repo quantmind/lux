@@ -80,7 +80,7 @@ module.exports = function (grunt) {
     jsTasks = jsTasks.concat(['concat', 'jshint', 'uglify']);
 
     var buildTasks = baseTasks.concat(jsTasks),
-        testTasks = baseTasks.concat(['html2js', 'karma:dev']);
+        testTasks = baseTasks.concat(['karma:dev']);
 
     //
     // Build CSS if required

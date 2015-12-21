@@ -1,6 +1,6 @@
 (function () {
 
-    var TEST_REGEXP = /^\/base\/tests\/specs\//i;
+    var TEST_REGEXP = /\/tests\/specs\//i;
     var allTestFiles = [];
 
     // Get a list of all the test files to include
@@ -31,6 +31,6 @@
         }
     };
 
-    window.lux.require.paths = ${require_paths};
+    //window.lux.require.paths = ${require_paths};
 
 }());

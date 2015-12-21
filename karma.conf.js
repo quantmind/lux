@@ -28,10 +28,7 @@ module.exports = function (config) {
             pattern: 'lux/media/js/**/*.js',
             included: false
         },{
-            pattern: 'luxsite/media/js/**/*.js',
-            included: false
-        },{
-            pattern: 'luxsite/build/**/*.js',
+            pattern: 'luxsite/media/**/*.js',
             included: false
         },
             'luxsite/media/build/test.config.js',
