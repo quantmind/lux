@@ -9,7 +9,9 @@ angular.module('lux.form.utils', ['lux.services', 'lux.pagination'])
 
         function remoteOptions(luxPag, target, scope, attrs, element) {
 
-            function lazyLoad() {
+            function lazyLoad(e) {
+                // lazyLoad requests the next page of data from the API
+                // when nearing the bottom of a <select> list
                 var uiSelect = element[0].querySelector('.ui-select-choices');
                 var triggered = false;
 
@@ -19,6 +21,9 @@ angular.module('lux.form.utils', ['lux.services', 'lux.pagination'])
                 uiSelect = angular.element(uiSelect);
 
                 uiSelect.bind('scroll', function() {
+                    // 40 = arbitrary number to make offset slightly smaller,
+                    // this means the next api call will be just before the scroll
+                    // bar reaches the bottom of the list
                     var offset = uiSelectChild.clientHeight - this.clientHeight - 40;
 
                     if (this.scrollTop >  offset && triggered === false) {
@@ -30,7 +35,7 @@ angular.module('lux.form.utils', ['lux.services', 'lux.pagination'])
             }
 
             function buildSelect(data) {
-
+                // buildSelect
                 if (data.error) return;
 
                 angular.forEach(data.data.result, function (val) {
@@ -75,8 +80,10 @@ angular.module('lux.form.utils', ['lux.services', 'lux.pagination'])
                 options[0].name = 'Please select...';
             }
 
+            // Use LuxPagination's getData method to call the api
+            // with relevant parameters and pass in buildSelect as callback
             luxPag.getData(params, buildSelect);
-
+            // Listen for LuxPagination to emit 'moreData' then run lazyLoad
             scope.$on('moreData', lazyLoad);
 
         }
