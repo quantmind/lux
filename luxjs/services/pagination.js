@@ -7,16 +7,19 @@ angular.module('lux.pagination', ['lux.services'])
 
     .factory('LuxPagination', ['$lux', function($lux) {
 
-        // LuxPagination constructor requires three args
-        // @param scope - the angular $scope of component's directive
-        // @param target - object containing name and url, e.g.
-        // {name: "groups_url", url: "http://127.0.0.1:6050"}
-        // @param recursive - set to true if you want to recursively
-        // request all data from the endpoint
+        /**
+        * LuxPagination constructor requires three args
+        * @param scope - the angular $scope of component's directive
+        * @param target {object} - containing name and url, e.g.
+        * {name: "groups_url", url: "http://127.0.0.1:6050"}
+        * @param recursive {boolean}- set to true if you want to recursively
+        * request all data from the endpoint
+        */
 
         function LuxPagination(scope, target, recursive) {
             this.scope = scope;
             this.target = target;
+            this.orgUrl = this.target.url;
             this.api = $lux.api(this.target);
 
             if (recursive === true) this.recursive = true;
@@ -33,7 +36,7 @@ angular.module('lux.pagination', ['lux.services'])
             this.api.get(null, params).then(function(data) {
 
                 this.cb(data);
-                this.updateTarget(data);
+                this.updateUrls(data);
 
             }.bind(this), function(error) {
                 var err = {error: error};
@@ -42,8 +45,8 @@ angular.module('lux.pagination', ['lux.services'])
 
         };
 
-        LuxPagination.prototype.updateTarget = function(data) {
-            // updateTarget creates an object containing the most
+        LuxPagination.prototype.updateUrls = function(data) {
+            // updateUrls creates an object containing the most
             // recent last and next links from the API
 
             if (data.data.last) {
@@ -64,7 +67,7 @@ angular.module('lux.pagination', ['lux.services'])
         };
 
         LuxPagination.prototype.loadMore = function() {
-            // loadMore applies new urls from updateTarget to the
+            // loadMore applies new urls from updateUrls to the
             // target object and makes another getData request.
 
             if (this.urls.next === false) {
@@ -76,6 +79,16 @@ angular.module('lux.pagination', ['lux.services'])
             // Call API with updated target URL
             this.getData();
 
+        };
+
+        LuxPagination.prototype.search = function(query, searchField) {
+            this.params = this.params || {};
+            this.params[searchField] = query;
+            // Set current target URL to the original target URL to reset any
+            // existing limits/offsets so full endpoint is searched
+            this.target.url = this.orgUrl;
+
+            this.getData(this.params);
         };
 
         return LuxPagination;
