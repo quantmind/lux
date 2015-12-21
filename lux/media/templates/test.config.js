@@ -31,6 +31,4 @@
         }
     };
 
-    //window.lux.require.paths = ${require_paths};
-
 }());
