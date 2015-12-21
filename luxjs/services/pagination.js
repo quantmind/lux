@@ -1,13 +1,13 @@
 // Lux pagination module for controlling the flow of
 // repeat requests to the API.
 // It can return all data at an end point or offer
-// the next page on request from the relevant component
+// the next page on request for the relevant component
 
 angular.module('lux.pagination', ['lux.services'])
 
     .factory('LuxPagination', ['$lux', function($lux) {
 
-        // LuxPagination constructor requires two args
+        // LuxPagination constructor requires three args
         // @param scope - the angular $scope of component's directive
         // @param target - object containing name and url, e.g.
         // {name: "groups_url", url: "http://127.0.0.1:6050"}
