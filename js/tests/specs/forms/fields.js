@@ -1,36 +1,25 @@
- // Utility for creating a JSON form for testing
-    var testFormUtils = {
-        createForm: function (children, formAttrs) {
-            var form = {
-                field: {
-                    type: 'form'
-                },
-                children: []
-            };
-            angular.extend(form.field, formAttrs);
-            lux.forEach(children, function (attrs) {
-                form['children'].push({field: attrs});
-            });
-            return form;
-        },
-        digest: function ($compile, $rootScope, template) {
-            var scope = $rootScope.$new(),
-                element = $compile(template)(scope);
-            scope.$digest();
-            return element;
-        }
-    };
+define(['angular',
+        'lux',
+        'tests/mocks/utils',
+        'lux/forms'], function (angular, lux) {
+    "use strict";
+    var $ = angular.element;
 
-    describe("Test lux.form module", function() {
-        lux.formTests = {};
+    lux.formTests = {};
+
+
+    describe("Test lux.form module", function () {
 
         beforeEach(function () {
             module('lux.form');
         });
 
-        it("simple form - one input", inject(function($compile, $rootScope) {
-            lux.formTests.simple = testFormUtils.createForm([{type: 'text', name: 'body'}]);
-            var element = testFormUtils.digest($compile, $rootScope,
+        it("simple form - one input", inject(function ($compile, $rootScope) {
+            lux.formTests.simple = lux.tests.createForm([{
+                type: 'text',
+                name: 'body'
+            }]);
+            var element = lux.tests.digest($compile, $rootScope,
                 '<div><lux-form data-options="lux.formTests.simple"></lux-form></div>'),
                 form = element.children();
             //
@@ -45,15 +34,15 @@
             //
         }));
 
-        it("select input", inject(function($compile, $rootScope) {
-            lux.formTests.select = testFormUtils.createForm([{
+        it("select input", inject(function ($compile, $rootScope) {
+            lux.formTests.select = lux.tests.createForm([{
                 type: 'select',
                 name: 'choice',
                 required: true,
                 options: ['one', 'two', 'three']
             }]);
 
-            var element = testFormUtils.digest($compile, $rootScope,
+            var element = lux.tests.digest($compile, $rootScope,
                 '<div><lux-form data-options="lux.formTests.select"></lux-form></div>'),
                 form = element.children();
             //
@@ -66,7 +55,7 @@
             expect(tags[0].tagName).toBe('LABEL');
             expect(tags[1].tagName).toBe('SELECT');
 
-            var select = lux.$(tags[1]),
+            var select = $(tags[1]),
                 options = select.children();
             expect(options.length).toBe(3);
             //
@@ -75,7 +64,7 @@
     });
 
 
-    describe("Test lux.form with selectUI", function() {
+    describe("Test lux.form with selectUI", function () {
 
         // Angular module for select-UI forms
         angular.module('lux.form.test.selectui', ['lux.form'])
@@ -98,16 +87,16 @@
             module('lux.form.test.selectui');
         });
 
-        it("select input + widget", inject(function($compile, $rootScope) {
+        it("select input + widget", inject(function ($compile, $rootScope) {
 
-            lux.formSelectUITests.select = testFormUtils.createForm([{
+            lux.formSelectUITests.select = lux.tests.createForm([{
                 type: 'select',
                 name: 'choice',
                 required: true,
                 options: ['one', 'two', 'three']
             }]);
 
-            var element = testFormUtils.digest($compile, $rootScope,
+            var element = lux.tests.digest($compile, $rootScope,
                 '<div><lux-form data-options="lux.formSelectUITests.select"></lux-form></div>'),
                 form = element.children();
             //
@@ -121,23 +110,25 @@
             expect(tags[1].tagName).toBe('UI-SELECT');
             expect(tags[1].getAttribute('theme')).toBe('bootstrap');
 
-            var select = lux.$(tags[1]),
+            var select = $(tags[1]),
                 options = select.children();
             expect(options.length).toBe(2);
             //
         }));
     });
 
-    describe("Test lux.form with file field", function() {
-        lux.formTests = {};
+    describe("Test lux.form with file field", function () {
 
         beforeEach(function () {
             module('lux.form');
         });
 
-        it("adds the ngf-select directive", inject(function($compile, $rootScope) {
-            lux.formTests.file = testFormUtils.createForm([{type: 'file', name: 'file'}]);
-            var element = testFormUtils.digest($compile, $rootScope,
+        it("adds the ngf-select directive", inject(function ($compile, $rootScope) {
+            lux.formTests.file = lux.tests.createForm([{
+                type: 'file',
+                name: 'file'
+            }]);
+            var element = lux.tests.digest($compile, $rootScope,
                 '<div><lux-form data-options="lux.formTests.file"></lux-form></div>'),
                 form = element.children();
             //
@@ -151,9 +142,12 @@
             //
         }));
 
-        it("doesn't adds the ngf-select directive", inject(function($compile, $rootScope) {
-            lux.formTests.fileNoNgf = testFormUtils.createForm([{type: 'file', name: 'file'}], {useNgFileUpload: false});
-            var element = testFormUtils.digest($compile, $rootScope,
+        it("doesn't adds the ngf-select directive", inject(function ($compile, $rootScope) {
+            lux.formTests.fileNoNgf = lux.tests.createForm([{
+                type: 'file',
+                name: 'file'
+            }], {useNgFileUpload: false});
+            var element = lux.tests.digest($compile, $rootScope,
                 '<div><lux-form data-options="lux.formTests.fileNoNgf"></lux-form></div>'),
                 form = element.children();
             //
@@ -168,22 +162,24 @@
         }));
     });
 
-    describe("Test lux.form with date field", function() {
-        lux.formTests = {};
+    describe("Test lux.form with date field", function () {
 
         beforeEach(function () {
             module('lux.form');
         });
 
-        it("convert model from date string into date object", inject(function($compile, $rootScope) {
-            lux.formTests.date = testFormUtils.createForm([{type: 'date', name: 'date'}]);
-            var element = testFormUtils.digest($compile, $rootScope,
+        it("convert model from date string into date object", inject(function ($compile, $rootScope) {
+            lux.formTests.date = lux.tests.createForm([{
+                type: 'date',
+                name: 'date'
+            }]);
+            var element = lux.tests.digest($compile, $rootScope,
                 '<div><lux-form data-options="lux.formTests.date"></lux-form></div>');
             //
             var form = angular.element(element).find('form');
             var field = form.find('input').eq(0);
 
-            scope = form.scope();
+            var scope = form.scope();
             scope.form.date.$setViewValue('2011-04-02');
             scope.$digest();
 
@@ -193,3 +189,5 @@
             //
         }));
     });
+
+});

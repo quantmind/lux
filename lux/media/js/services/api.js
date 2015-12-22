@@ -1,6 +1,9 @@
 define(['angular', 'lux/config'], function (angular, lux) {
     "use strict";
 
+    var $ = angular.element,
+        extend = angular.extend;
+
     lux.messages.no_api = function (url) {
         return {
             text: 'Api client for "' + url + '" is not available',

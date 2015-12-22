@@ -5,6 +5,17 @@ define(['angular',
         'lux/forms/process'], function (angular, lux) {
     "use strict";
 
+    var $ = angular.element,
+        extend = angular.extend,
+        forEach = angular.forEach,
+        getOptions = lux.getOptions,
+        isString = lux.isString,
+        isObject = lux.isObject,
+        isArray = lux.isArray,
+        formid = function () {
+            return 'f' + lux.s4();
+        };
+
     lux.forms = {
         directives: {}
     };
@@ -12,7 +23,7 @@ define(['angular',
     //
     // Form module for lux
     //
-    //  Forms are created form a JSON object
+    //  Forms are created from JSON object
     //
     //  Forms layouts:
     //
@@ -28,7 +39,7 @@ define(['angular',
     //      formFieldChange: triggered when a form field changes:
     //          arguments: formmodel, field (changed)
     //
-    angular.module('lux.form', ['lux.form.utils', 'lux.form.handlers', 'ngFileUpload', 'lux.form.process'])
+    angular.module('lux.form', ['lux.form.utils', 'lux.form.handlers', 'lux.form.process'])
         //
         .constant('formDefaults', {
             // Default layout
@@ -243,7 +254,8 @@ define(['angular',
         .service('standardForm', ['$log', '$http', '$document', '$templateCache', 'formDefaults', 'formElements',
             function (log, $http, $document, $templateCache, formDefaults, formElements) {
                 //
-                var baseAttributes = ['id', 'name', 'title', 'style'],
+                var extendArray = lux.extendArray,
+                    baseAttributes = ['id', 'name', 'title', 'style'],
                     inputAttributes = extendArray([], baseAttributes, ['disabled', 'readonly', 'type', 'value', 'placeholder',
                         'autocapitalize', 'autocorrect']),
                     textareaAttributes = extendArray([], baseAttributes, ['disabled', 'readonly', 'placeholder', 'rows', 'cols']),
@@ -287,7 +299,7 @@ define(['angular',
                          */
                         function buildFieldInfo(formModelName, field, fieldType) {
                             var typeConfig = formModelName + 'Type';
-                            var textMode = getJsonOrNone(field.text_edit);
+                            var textMode = lux.getJsonOrNone(field.text_edit);
                             scope[typeConfig] = scope[typeConfig] || {};
 
                             if (textMode !== null)
@@ -941,7 +953,7 @@ define(['angular',
                         scope.formMessages = {};
                         scope.$lux = $lux;
                         if (!form.id)
-                            form.id = 'f' + s4();
+                            form.id = formid();
                         scope.formid = form.id;
                         scope.formCount = 0;
 
@@ -1137,4 +1149,8 @@ define(['angular',
         });
 
     return lux.forms;
+
+    function joinField(model, name, extra) {
+        return model + '["' + name + '"].' + extra;
+    }
 });

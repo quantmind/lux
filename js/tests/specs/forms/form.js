@@ -2,6 +2,7 @@ define(['angular',
         'lux',
         'tests/mocks/lux',
         'lux/forms'], function (angular, lux) {
+    "use strict";
 
     describe("Test lux.form module", function() {
 

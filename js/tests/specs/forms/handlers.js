@@ -1,4 +1,7 @@
-define(['angular', 'lux', 'lux/forms'], function (angular, lux) {
+define(['angular',
+        'lux',
+        'tests/mocks/lux',
+        'lux/forms'], function (angular, lux) {
 
     describe("Test lux.form.handlers module", function() {
 
@@ -7,8 +10,7 @@ define(['angular', 'lux', 'lux/forms'], function (angular, lux) {
         var errorMessageSpy;
 
         beforeEach(function () {
-            apiMock = createLuxApiMock();
-            var $luxMock = createLuxMock(apiMock);
+            var $luxMock = lux.mocks.$lux();
 
             angular.mock.module('lux.form.handlers', function($provide) {
                 $provide.value('$lux', $luxMock);
@@ -82,31 +84,6 @@ define(['angular', 'lux', 'lux/forms'], function (angular, lux) {
             expect(errorMessageSpy).toHaveBeenCalledWith(jasmine.any(String));
         });
 
-        function createLuxMock(apiMock) {
-            var $luxMock = {
-                api: function() {
-                    return apiMock;
-                }
-            };
-
-            return $luxMock;
-        }
-
-        function createLuxApiMock() {
-            var apiMock = {
-                get: jasmine.createSpy(),
-                delete: jasmine.createSpy(),
-                success: jasmine.createSpy(),
-                error: jasmine.createSpy()
-            };
-
-            apiMock.get.and.returnValue(apiMock);
-            apiMock.delete.and.returnValue(apiMock);
-            apiMock.success.and.returnValue(apiMock);
-            apiMock.error.and.returnValue(apiMock);
-
-            return apiMock;
-        }
     });
 
     // Function.prototype.bind polyfill
