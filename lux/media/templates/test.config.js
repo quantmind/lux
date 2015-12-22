@@ -1,6 +1,6 @@
 (function () {
 
-    var TEST_REGEXP = /\/tests\/specs\//i;
+    var TEST_REGEXP = /\/js\/tests\/specs\//i;
     var allTestFiles = [];
 
     // Get a list of all the test files to include

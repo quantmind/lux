@@ -3,9 +3,7 @@
 module.exports = function (grunt) {
     "use strict";
     // configuration.
-    var src_root = 'luxsite/media/',
-        //
-        config_file = src_root + 'config.json',
+    var config_file = 'js/config.json',
         cfg = grunt.file.readJSON(config_file),
         libs = cfg.js,
         path = require('path'),
@@ -31,7 +29,7 @@ module.exports = function (grunt) {
     cfg.requirejs = {
         compile: {
             options: {
-                baseUrl: src_root + 'js',
+                baseUrl: 'js',
                 generateSourceMaps: false, // TODO change to true when Chrome sourcemaps bug is fixed
                 paths: {
                     angular: 'empty:',
@@ -55,7 +53,7 @@ module.exports = function (grunt) {
                     'lodash': 'empty:'
                 },
                 name: 'app',
-                out: src_root + 'build/bundle.js',
+                out: 'js/build/bundle.js',
                 optimize: 'none'
             }
         }
@@ -261,7 +259,7 @@ module.exports = function (grunt) {
     //
     grunt.registerTask('luxbuild', 'Load lux configuration', function () {
         var paths = cfg.requirejs.compile.options.paths,
-            filename = src_root + 'build/lux.json',
+            filename = 'js/build/lux.json',
             obj = grunt.file.readJSON(filename);
         grunt.log.writeln('Read paths from "' + filename + '"');
         _.extend(paths, obj.paths);

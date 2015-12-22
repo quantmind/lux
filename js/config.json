@@ -2,11 +2,11 @@
     "js": {
         "luxsite": {
             "options": {
-                "banner": "luxsite/media/js/banner.js"
+                "banner": "js/banner.js"
             },
             "src": [
-                "luxsite/media/js/require.config.js",
-                "luxsite/media/build/bundle.js"
+                "js/require.config.js",
+                "js/build/bundle.js"
             ],
             "dest": "luxsite/media/luxsite/luxsite.js"
         }
@@ -14,7 +14,7 @@
     "sass": {
         "luxsite": {
             "files": {
-                "luxsite/media/luxsite/luxsite.css": "luxsite/media/scss/luxsite.scss"
+                "luxsite/media/luxsite/luxsite.css": "scss/luxsite.scss"
             }
         }
     },
@@ -34,8 +34,7 @@
         }
     },
     "watch": {
-        "luxsite": ["luxsite/media/js/**/*.js",
-                    "luxsite/media/tests/**/*.js"],
+        "luxsite": ["js/**/*.js"],
         "lux": ["lux/media/js/**/*.js",
                 "lux/media/js/**/*.tpl.html"]
     }

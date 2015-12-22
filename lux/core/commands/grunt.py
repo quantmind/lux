@@ -25,7 +25,7 @@ class Command(lux.Command):
         paths = self.grunt('lux', base)
         #
         # App package
-        paths.update(self.grunt('', self.app.meta.media_dir))
+        paths.update(self.grunt('', self.app_base()))
 
         self.save_config_paths(paths)
 
@@ -82,7 +82,8 @@ class Command(lux.Command):
         return paths
 
     def target(self, *args):
-        build_dir = os.path.join(self.app.meta.media_dir, 'build')
+        base = self.app_base()
+        build_dir = os.path.join(base, 'js', 'build')
         if not os.path.isdir(build_dir):
             os.makedirs(build_dir)
         return os.path.join(build_dir, *args) if args else build_dir
@@ -152,6 +153,9 @@ class Command(lux.Command):
         with open(test_cfg, 'w') as fp:
             fp.write(test_file)
         self.write('"%s" created' % test_cfg)
+
+    def app_base(self):
+        return os.path.dirname(self.app.meta.path)
 
     def template(self, name):
         filename = os.path.join(lux.PACKAGE_DIR, 'media', 'templates', name)
