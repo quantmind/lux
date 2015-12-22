@@ -34,7 +34,8 @@
         }
     },
     "watch": {
-        "luxsite": ["js/**/*.js"],
+        "luxsite": ["js/*.js",
+                    "js/tests/**/*.js"],
         "lux": ["lux/media/js/**/*.js",
                 "lux/media/js/**/*.tpl.html"]
     }

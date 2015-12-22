@@ -16,6 +16,32 @@ module.exports = function (grunt) {
             options: {
                 sourceMap: false // TODO change to true when Chrome sourcemaps bug is fixed
             }
+        },
+        requireOptions = {
+            baseUrl: 'js',
+            generateSourceMaps: false, // TODO change to true when Chrome sourcemaps bug is fixed
+            optimize: 'none',
+            paths: {
+                angular: 'empty:',
+                d3: 'empty:',
+                'giotto': 'empty:',
+                'angular-cookies': 'empty:',
+                'angular-strap': 'empty:',
+                'angular-file-upload': 'empty:',
+                'angular-img-crop': 'empty:',
+                'moment': 'empty:',
+                'angular-moment': 'empty:',
+                'angular-sanitize': 'empty:',
+                'angular-ui-grid': 'empty:',
+                'angular-infinite-scroll': 'empty:',
+                'videojs': 'empty:',
+                'angular-scroll': 'empty:', // TODO find out who is using this
+                'angular-ui-select': 'empty:', // TODO find out who is using this
+                'angular-ui-router': 'empty:',
+                'angular-strap-tpl': 'empty:',
+                'moment-timezone': 'empty:',
+                'lodash': 'empty:'
+            }
         };
 
     if (!libs) {
@@ -28,34 +54,16 @@ module.exports = function (grunt) {
     cfg.pkg = grunt.file.readJSON('package.json');
     cfg.requirejs = {
         compile: {
-            options: {
-                baseUrl: 'js',
-                generateSourceMaps: false, // TODO change to true when Chrome sourcemaps bug is fixed
-                paths: {
-                    angular: 'empty:',
-                    d3: 'empty:',
-                    'giotto': 'empty:',
-                    'angular-cookies': 'empty:',
-                    'angular-strap': 'empty:',
-                    'angular-file-upload': 'empty:',
-                    'angular-img-crop': 'empty:',
-                    'moment': 'empty:',
-                    'angular-moment': 'empty:',
-                    'angular-sanitize': 'empty:',
-                    'angular-ui-grid': 'empty:',
-                    'angular-infinite-scroll': 'empty:',
-                    'videojs': 'empty:',
-                    'angular-scroll': 'empty:', // TODO find out who is using this
-                    'angular-ui-select': 'empty:', // TODO find out who is using this
-                    'angular-ui-router': 'empty:',
-                    'angular-strap-tpl': 'empty:',
-                    'moment-timezone': 'empty:',
-                    'lodash': 'empty:'
-                },
+            options: _.extend({
                 name: 'app',
-                out: 'js/build/bundle.js',
-                optimize: 'none'
-            }
+                out: 'js/build/bundle.js'
+            }, requireOptions)
+        },
+        tests: {
+            options: _.extend({
+                name: 'tests/runner',
+                out: 'js/build/tests.runner.js'
+            }, requireOptions)
         }
     };
     cfg.concat = concats;

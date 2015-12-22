@@ -9,14 +9,13 @@ define(['lux/config/lux',
 
     // require.config override
     lux.config = function (cfg) {
+        cfg = lux.extend(cfg, lux.require);
         if(!cfg.baseUrl) {
             var url = baseUrl();
             if (url !== undefined) cfg.baseUrl = url;
         }
-        cfg.shim = lux.extend(defaultShim(), cfg.shim);
+        cfg.shim = lux.extend(defaultShim(root), cfg.shim);
         cfg.paths = newPaths(cfg);
-        cfg.callback = callback(cfg);
-        cfg.deps = deps(cfg);
         require.config(cfg);
     };
 
@@ -80,20 +79,6 @@ define(['lux/config/lux',
     function baseUrl () {
         if (lux.context)
             return lux.context.MEDIA_URL;
-    }
-
-    function callback (cfg) {
-        if (!cfg.callback && lux.context)
-            return lux.context.require_callback;
-        else
-            return cfg.callback;
-    }
-
-    function deps (cfg) {
-        if (!cfg.deps && lux.context)
-            return lux.context.require_deps;
-        else
-            return cfg.deps;
     }
 
     function minify () {

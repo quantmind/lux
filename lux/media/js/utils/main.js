@@ -1,7 +1,11 @@
-define(['lux/config'], function (lux) {
+define(['angular', 'lux/config'], function (angular, lux) {
     "use strict";
 
-    var generateCallbacks = function () {
+    var $ = angular.element,
+        root = lux.root,
+        forEach = angular.forEach,
+        slice = Array.prototype.slice,
+        generateCallbacks = function () {
             var callbackFunctions = [],
                 callFunctions = function () {
                     var self = this,
@@ -84,7 +88,7 @@ define(['lux/config'], function (lux) {
         } else {
             options = {};
         }
-        if (isObject(options))
+        if (lux.isObject(options))
             forEach(attrs, function (value, name) {
                 if (name.substring(0, 1) !== '$' && name !== 'options')
                     options[name] = value;
@@ -265,7 +269,7 @@ define(['lux/config'], function (lux) {
      * @returns {boolean}
      */
     lux.isJsonStringify = function (value) {
-        if (isObject(value) || isArray(value) || isString(value))
+        if (lux.isObject(value) || lux.isArray(value) || lux.isString(value))
             return true;
         return false;
     };

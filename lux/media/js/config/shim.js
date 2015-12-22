@@ -1,6 +1,6 @@
 define([], function () {
     // Default shim
-    return function () {
+    return function (root) {
         return {
             angular: {
                 exports: "angular"

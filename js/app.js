@@ -1,8 +1,8 @@
 require([
     'require.config',
-    'lux',
+    'angular',
     'giotto'
-], function(_, lux, d3) {
+], function(lux, angular, d3) {
 
     lux.bootstrap('luxsite', []);
 });

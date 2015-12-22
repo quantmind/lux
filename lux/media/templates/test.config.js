@@ -18,7 +18,7 @@
         context: {
             API_URL: '/api',
             // Karma serves files under /base, which is the basePath from your config file
-            MEDIA_URL: '/base/tests'
+            MEDIA_URL: '/base/js'
         },
         //
         require: {
@@ -27,7 +27,9 @@
             //
             callback: function () {
                 window.__karma__.start();
-            }
+            },
+            //
+            paths: ${require_paths}
         }
     };
 

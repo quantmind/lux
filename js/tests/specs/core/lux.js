@@ -10,15 +10,14 @@ define(['lux'], function (lux) {
 
         it("Check lux urls", function () {
             expect(lux.context.url).toBe('');
-            expect(lux.context.MEDIA_URL).toBe('');
         });
 
         it("Check lux media function", function () {
-            lux.context.MEDIA_URL = '/media/'
-            expect(lux.media('foo')).toBe('/media/foo');
-            expect(lux.media('/foo')).toBe('/media/foo');
-            expect(lux.media('////foo')).toBe('/media/foo');
-            expect(lux.media('//foo/////')).toBe('/media/foo/');
+            var ctx = {MEDIA_URL: '/mediax/'}
+            expect(lux.media('foo', ctx)).toBe('/mediax/foo');
+            expect(lux.media('/foo', ctx)).toBe('/mediax/foo');
+            expect(lux.media('////foo', ctx)).toBe('/mediax/foo');
+            expect(lux.media('//foo/////', ctx)).toBe('/mediax/foo/');
         });
 
         var joinUrl = lux.joinUrl;

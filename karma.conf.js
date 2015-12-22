@@ -24,15 +24,11 @@ module.exports = function (config) {
             }
         },
         singleRun: true,
-        files: [{
-            pattern: 'lux/media/js/**/*.js',
-            included: false
-        },{
-            pattern: 'luxsite/media/**/*.js',
-            included: false
-        },
-            'luxsite/media/build/test.config.js',
-            'luxsite/media/js/app.js'
+        files: [
+            {pattern: 'js/build/lux/**/*.js', included: false},
+            {pattern: 'js/tests/specs/core/**/*.js', included: false},
+            'js/build/test.config.js',
+            'js/build/tests.runner.js'
         ],
         reporters: ['coverage', 'dots', 'junit'],
         junitReporter: {

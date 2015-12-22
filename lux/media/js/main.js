@@ -20,7 +20,7 @@ define(['angular', 'lux/utils', 'lux/services'], function(angular, lux) {
     lux.media = function (url, ctx) {
         if (!ctx)
             ctx = lux.context;
-        return joinUrl(ctx.url, ctx.MEDIA_URL, url);
+        return lux.joinUrl(ctx.url, ctx.MEDIA_URL, url);
     };
 
     lux.loader = angular.module('lux.loader', [])
