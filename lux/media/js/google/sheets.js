@@ -1,8 +1,12 @@
+define(['angular',
+        'lux',
+        'lux/google/sheets',
+        'lux/services/api'], function (angular, lux, google, apiFactory) {
 
-    var googlesheets = function (url, $lux) {
+    google.sheets = function (url, $lux) {
         url = "https://spreadsheets.google.com";
 
-        var api = baseapi(url, $lux);
+        var api = apiFactory(url, $lux);
 
         api.httpOptions = function (request) {
             request.options.url = request.baseUrl() + '/feeds/list/' + this._url + '/' + urlparams.id + '/public/values?alt=json';
@@ -30,3 +34,7 @@
 
         return api;
     };
+
+    return google;
+
+});

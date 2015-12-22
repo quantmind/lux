@@ -1,3 +1,9 @@
+define(['angular',
+        'lux',
+        'angular-sanitize',
+        'lux/message/interface',
+        'lux/message/templates'], function (angular, lux) {
+    "use strict";
     //
     //  Lux messages
     //  =================
@@ -20,18 +26,19 @@
     //                luxMessage.info('info message');
     //
     //            }])
-    angular.module('lux.message', ['lux.services', 'templates-message', 'ngSanitize'])
+    angular
+        .module('lux.message', ['lux.services', 'templates-message', 'ngSanitize'])
         //
         //  Service for messages
         //
-        .service('luxMessage', ['$lux',  '$rootScope', function ($lux, $scope) {
+        .service('luxMessage', ['$lux', '$rootScope', function ($lux, $scope) {
 
             var log = lux.messageService.log;
 
             extend(this, lux.messageService, {
 
                 getMessages: function () {
-                    if( ! this.getStorage().getItem('messages') ){
+                    if (!this.getStorage().getItem('messages')) {
                         return [];
                     }
                     return JSON.parse(this.getStorage().getItem('messages')).reverse();
@@ -39,7 +46,7 @@
                 },
 
                 setMessages: function (messages) {
-                   this.getStorage().messages = JSON.stringify(messages);
+                    this.getStorage().messages = JSON.stringify(messages);
                 },
 
                 pushMessage: function (message) {
@@ -61,7 +68,7 @@
                 },
 
                 getDebugMode: function () {
-                    return !! JSON.parse(window.localStorage.getItem('debug'));
+                    return !!JSON.parse(window.localStorage.getItem('debug'));
                 },
 
                 setDebugMode: function (value) {
@@ -73,7 +80,7 @@
                 },
 
                 getStorage: function () {
-                    if( window.localStorage.getItem('messagesStorage') === 'session' ){
+                    if (window.localStorage.getItem('messagesStorage') === 'session') {
                         return window.sessionStorage;
                     }
                     return window.localStorage;
@@ -86,7 +93,7 @@
         //
         .directive('messages', ['luxMessage', function (luxMessage) {
 
-            function renderMessages (scope) {
+            function renderMessages(scope) {
                 //scope.messages = luxMessage.getMessages();
             }
 
@@ -105,14 +112,14 @@
 
                     scope.limit = !!attrs.limit ? parseInt(attrs.limit) : 5; //5 messages to show by default
 
-                    scope.debug = function(){
+                    scope.debug = function () {
                         return luxMessage.getDebugMode();
                     };
 
                     scope.removeMessage = function ($event, message) {
                         $event.preventDefault();
                         var msgs = scope.messages;
-                        for (var i=0; i<msgs.length; ++i) {
+                        for (var i = 0; i < msgs.length; ++i) {
                             if (msgs[i].$$hashKey === message.$$hashKey) {
                                 msgs.splice(i, 1);
                                 if (message.store) {
@@ -137,3 +144,5 @@
                 }
             };
         }]);
+
+});

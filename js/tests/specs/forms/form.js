@@ -1,4 +1,7 @@
-define(function(require) {
+define(['angular',
+        'lux',
+        'tests/mocks/lux',
+        'lux/forms'], function (angular, lux) {
 
     describe("Test lux.form module", function() {
 
@@ -31,8 +34,7 @@ define(function(require) {
         lux.formTests = {};
 
         beforeEach(function () {
-            apiMock = createLuxApiMock();
-            var $luxMock = createLuxMock(apiMock);
+            var $luxMock = lux.mocks.$lux();
 
             angular.mock.module('lux.form', function($provide) {
                 $provide.value('$lux', $luxMock);
@@ -193,32 +195,6 @@ define(function(require) {
             expect(label.find('input')[0].tagName).toBe('INPUT');
             expect(label.find('input').eq(0).attr('type')).toBe('checkbox');
         }));
-
-        function createLuxMock(apiMock) {
-            var $luxMock = {
-                api: function() {
-                    return apiMock;
-                }
-            };
-
-            return $luxMock;
-        }
-
-        function createLuxApiMock() {
-            var apiMock = {
-                get: jasmine.createSpy(),
-                delete: jasmine.createSpy(),
-                success: jasmine.createSpy(),
-                error: jasmine.createSpy()
-            };
-
-            apiMock.get.and.returnValue(apiMock);
-            apiMock.delete.and.returnValue(apiMock);
-            apiMock.success.and.returnValue(apiMock);
-            apiMock.error.and.returnValue(apiMock);
-
-            return apiMock;
-        }
     });
 
 });

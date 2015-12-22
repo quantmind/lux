@@ -1,3 +1,5 @@
+define(['lux'], function (lux) {
+
 
     //  Google Spreadsheet API
     //  -----------------------------
@@ -6,10 +8,9 @@
     //
     //      var api = $lux.api({name: 'googlesheets', url: sheetkey});
     //
+    lux.google = {};
 
-    //
-    //
-    var GoogleModel = function ($lux, data, opts) {
+    lux.google.Model = function ($lux, data, opts) {
         var i, j, ilen, jlen;
         this.column_names = [];
         this.name = data.feed.title.$t;
@@ -47,7 +48,7 @@
         }
     };
 
-    var GoogleSeries = function ($lux, data, opts) {
+    lux.google.Series = function ($lux, data, opts) {
         var i, j, ilen, jlen;
         this.column_names = [];
         this.name = data.feed.title.$t;
@@ -84,3 +85,7 @@
             }
         }
     };
+
+    return lux.google;
+
+});

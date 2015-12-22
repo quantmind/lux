@@ -1,6 +1,14 @@
 define(['angular',
-        'lux/services'], function (angular, lux) {
+        'lux',
+        'lux/forms/utils',
+        'lux/forms/handlers',
+        'lux/forms/process'], function (angular, lux) {
     "use strict";
+
+    lux.forms = {
+        directives: {}
+    };
+
     //
     // Form module for lux
     //
@@ -1128,4 +1136,5 @@ define(['angular',
             };
         });
 
+    return lux.forms;
 });

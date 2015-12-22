@@ -1,5 +1,8 @@
+define(['angular',
+        'lux',
+        'lux/services/scroll'], function (angular, lux) {
 
-    describe("Test lux.scroll module", function() {
+    describe("Test lux.scroll module", function () {
         angular.module('lux.scroll.test', ['lux.loader', 'lux.scroll']);
 
         beforeEach(function () {
@@ -22,7 +25,7 @@
                     time: 0.5
                 }
             };
-            module(function($provide) {
+            module(function ($provide) {
                 $provide.value('context', context_override);
             });
 
@@ -37,3 +40,5 @@
         });
 
     });
+
+});

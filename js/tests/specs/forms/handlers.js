@@ -1,4 +1,4 @@
-define(function(require) {
+define(['angular', 'lux', 'lux/forms'], function (angular, lux) {
 
     describe("Test lux.form.handlers module", function() {
 

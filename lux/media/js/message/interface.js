@@ -1,11 +1,15 @@
-    function asMessage (level, message) {
+define(['lux/config'], function (lux) {
+    "use strict";
+
+    function asMessage(level, message) {
         if (isString(message)) message = {text: message};
         message.type = level;
         return message;
     }
 
     lux.messageService = {
-        pushMessage: function () {},
+        pushMessage: function () {
+        },
 
         debug: function (text) {
             this.pushMessage(asMessage('debug', text));
@@ -33,3 +37,6 @@
             $log[type](message.text);
         }
     };
+
+    return lux;
+});

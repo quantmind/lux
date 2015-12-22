@@ -1,3 +1,6 @@
+define(['angular',
+        'lux',
+        'lux/google/models'], function (angular, lux, google) {
     //
     //  Module for interacting with google API and services
     angular.module('lux.google', ['lux.services'])
@@ -38,11 +41,11 @@
                 // <d3-force data-width=300 data-height=200></d3-force>
                 restrict: 'AE',
                 scope: true,
-                controller: function() {
+                controller: function () {
                     var self = this;
 
                     // Add a marker to the map
-                    self.addMarker = function(map, marker, location) {
+                    self.addMarker = function (map, marker, location) {
                         if (marker) {
                             var gmarker = new google.maps.Marker(angular.extend({
                                 position: location,
@@ -53,23 +56,23 @@
                     };
 
                     // Add marker using lat and lng
-                    self.addMarkerByLatLng = function(map, marker, lat, lng) {
+                    self.addMarkerByLatLng = function (map, marker, lat, lng) {
                         var loc = new google.maps.LatLng(lat, lng);
                         return self.addMarker(map, marker, loc);
                     };
 
                     // Returns an instance of location for specific lat and lng
-                    self.createLocation = function(lat, lng) {
+                    self.createLocation = function (lat, lng) {
                         return new google.maps.LatLng(lat, lng);
                     };
 
                     // Returns an instance of InfoWindow for specific content
-                    self.createInfoWindow = function(content) {
+                    self.createInfoWindow = function (content) {
                         return new google.maps.InfoWindow({content: content});
                     };
 
                     // Initialize google maps
-                    self.initialize = function(scope, element, attrs) {
+                    self.initialize = function (scope, element, attrs) {
                         var config = lux.getObject(attrs, 'config', scope),
                             lat = +config.lat,
                             lng = +config.lng,
@@ -97,7 +100,7 @@
                 },
                 //
                 link: function (scope, element, attrs, controller) {
-                    if(!scope.googlemaps) {
+                    if (!scope.googlemaps) {
                         $lux.log.error('Google maps url not available. Cannot load google maps directive');
                         return;
                     }
@@ -111,3 +114,5 @@
                 }
             };
         }]);
+
+});

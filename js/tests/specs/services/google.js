@@ -1,32 +1,39 @@
+define(['lux'], function (lux) {
 
-    describe("Test google spreadsheet api", function() {
+    describe("Test google spreadsheet api", function () {
 
-        function a () {
-        var $injector = luxInjector(),
-            $httpBackend = $injector.get('$httpBackend'),
-            $lux = $injector.get('$lux');
+        function a() {
+            var $injector = luxInjector(),
+                $httpBackend = $injector.get('$httpBackend'),
+                $lux = $injector.get('$lux');
 
-        $lux.http = function (options) {
-            var d = $httpBackend.expect(options.method, options.url, options.data);
-            d.success = function () {return this;};
-            d.error = function () {return this;};
-            return d;
-        };
+            $lux.http = function (options) {
+                var d = $httpBackend.expect(options.method, options.url, options.data);
+                d.success = function () {
+                    return this;
+                };
+                d.error = function () {
+                    return this;
+                };
+                return d;
+            };
 
-        beforeEach(function () {
-            $httpBackend.when("GET").respond([{}, {}, {}]);
-        });
-        //
-        it("contains spec with an expectation", function() {
-            var api = $lux.api({
-                name: 'googlesheets',
-                url: '19_Sy0WAiwvvfDXBxrbWtXHEYhgI44RPnrLlUUJMOImE'
+            beforeEach(function () {
+                $httpBackend.when("GET").respond([{}, {}, {}]);
             });
-            expect(api instanceof lux.ApiClient).toBe(true);
-            expect(api.name).toBe('googlesheets');
-            expect(api._url).toBe('19_Sy0WAiwvvfDXBxrbWtXHEYhgI44RPnrLlUUJMOImE');
             //
-            var d = api.getMany();
-        });
+            it("contains spec with an expectation", function () {
+                var api = $lux.api({
+                    name: 'googlesheets',
+                    url: '19_Sy0WAiwvvfDXBxrbWtXHEYhgI44RPnrLlUUJMOImE'
+                });
+                expect(api instanceof lux.ApiClient).toBe(true);
+                expect(api.name).toBe('googlesheets');
+                expect(api._url).toBe('19_Sy0WAiwvvfDXBxrbWtXHEYhgI44RPnrLlUUJMOImE');
+                //
+                var d = api.getMany();
+            });
         }
     });
+
+});

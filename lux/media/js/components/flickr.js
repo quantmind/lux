@@ -1,3 +1,5 @@
+define(['angular', 'lux'], function (angular, lux) {
+    "use strict";
     //
     //  Angular module for photos
     //  ============================
@@ -7,9 +9,10 @@
             //
             var endpoint = 'https://api.flickr.com/services/feeds/photos_faves.gne';
             //
-            function display (data) {
+            function display(data) {
 
             }
+
             //
             return {
                 restrict: 'AE',
@@ -25,3 +28,5 @@
                 }
             };
         }]);
+
+});

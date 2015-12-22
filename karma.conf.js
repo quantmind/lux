@@ -26,7 +26,9 @@ module.exports = function (config) {
         singleRun: true,
         files: [
             {pattern: 'js/build/lux/**/*.js', included: false},
+            {pattern: 'js/tests/mocks/**/*.js', included: false},
             {pattern: 'js/tests/specs/core/**/*.js', included: false},
+            {pattern: 'js/tests/specs/forms/form.js', included: false},
             'js/build/test.config.js',
             'js/build/tests.runner.js'
         ],
