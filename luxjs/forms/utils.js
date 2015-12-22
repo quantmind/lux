@@ -3,9 +3,9 @@
  * Edited by Tom on 18/12/2015.
  */
 
-angular.module('lux.form.utils', ['lux.services', 'lux.pagination'])
+angular.module('lux.form.utils', ['lux.pagination'])
 
-    .directive('remoteOptions', ['$lux', 'LuxPagination', function ($lux, LuxPagination) {
+    .directive('remoteOptions', ['$lux', 'luxPaginationFactory', function ($lux, LuxPagination) {
 
         function remoteOptions(luxPag, target, scope, attrs, element) {
 

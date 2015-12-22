@@ -4,8 +4,7 @@
 // the next page on request for the relevant component
 
 angular.module('lux.pagination', ['lux.services'])
-
-    .factory('LuxPagination', ['$lux', function($lux) {
+    .factory('luxPaginationFactory', ['$lux', function($lux) {
 
         /**
         * LuxPagination constructor requires three args
@@ -35,13 +34,12 @@ angular.module('lux.pagination', ['lux.services'])
 
             this.api.get(null, params).then(function(data) {
 
+                if (data.error) return cb(data);
+
                 this.cb(data);
                 this.updateUrls(data);
 
-            }.bind(this), function(error) {
-                var err = {error: error};
-                cb(err);
-            });
+            }.bind(this));
 
         };
 
@@ -49,7 +47,7 @@ angular.module('lux.pagination', ['lux.services'])
             // updateUrls creates an object containing the most
             // recent last and next links from the API
 
-            if (data.data.last) {
+            if (data && data.data && data.data.last) {
                 this.emitEvent();
                 this.urls = {
                     last: data.data.last,

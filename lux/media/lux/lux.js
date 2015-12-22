@@ -1,6 +1,6 @@
 //      Lux Library - v0.4.0
 
-//      Compiled 2015-12-21.
+//      Compiled 2015-12-22.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -1083,8 +1083,7 @@ function(angular, root) {
 // the next page on request for the relevant component
 
 angular.module('lux.pagination', ['lux.services'])
-
-    .factory('LuxPagination', ['$lux', function($lux) {
+    .factory('luxPaginationFactory', ['$lux', function($lux) {
 
         /**
         * LuxPagination constructor requires three args
@@ -1114,13 +1113,12 @@ angular.module('lux.pagination', ['lux.services'])
 
             this.api.get(null, params).then(function(data) {
 
+                if (data.error) return cb(data);
+
                 this.cb(data);
                 this.updateUrls(data);
 
-            }.bind(this), function(error) {
-                var err = {error: error};
-                cb(err);
-            });
+            }.bind(this));
 
         };
 
@@ -1128,7 +1126,7 @@ angular.module('lux.pagination', ['lux.services'])
             // updateUrls creates an object containing the most
             // recent last and next links from the API
 
-            if (data.data.last) {
+            if (data && data.data && data.data.last) {
                 this.emitEvent();
                 this.urls = {
                     last: data.data.last,
@@ -3538,9 +3536,9 @@ angular.module('lux.form.process', ['ngFileUpload'])
  * Edited by Tom on 18/12/2015.
  */
 
-angular.module('lux.form.utils', ['lux.services', 'lux.pagination'])
+angular.module('lux.form.utils', ['lux.pagination'])
 
-    .directive('remoteOptions', ['$lux', 'LuxPagination', function ($lux, LuxPagination) {
+    .directive('remoteOptions', ['$lux', 'luxPaginationFactory', function ($lux, LuxPagination) {
 
         function remoteOptions(luxPag, target, scope, attrs, element) {
 
