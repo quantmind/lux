@@ -27,8 +27,7 @@ module.exports = function (config) {
         files: [
             {pattern: 'js/build/lux/**/*.js', included: false},
             {pattern: 'js/tests/mocks/**/*.js', included: false},
-            {pattern: 'js/tests/specs/core/**/*.js', included: false},
-            {pattern: 'js/tests/specs/forms/**/*.js', included: false},
+            {pattern: 'js/tests/specs/**/*.js', included: false},
             'js/build/test.config.js',
             'js/build/tests.runner.js'
         ],

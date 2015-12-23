@@ -12,7 +12,7 @@ define(['angular',
         beforeEach(function () {
             var $luxMock = lux.mocks.$lux();
 
-            angular.mock.module('lux.form.handlers', function($provide) {
+            angular.mock.module('luxFormHandlers', function($provide) {
                 $provide.value('$lux', $luxMock);
             });
 

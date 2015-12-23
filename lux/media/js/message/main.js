@@ -1,8 +1,8 @@
 define(['angular',
         'lux',
-        'angular-sanitize',
         'lux/message/interface',
-        'lux/message/templates'], function (angular, lux) {
+        'lux/message/templates',
+        'angular-sanitize'], function (angular, lux, messageService) {
     "use strict";
     //
     //  Lux messages
@@ -27,7 +27,7 @@ define(['angular',
     //
     //            }])
     angular
-        .module('lux.message', ['lux.services', 'templates-message', 'ngSanitize'])
+        .module('luxMessage', ['luxServices', 'luxMessageTemplates', 'ngSanitize'])
         //
         //  Service for messages
         //
@@ -35,14 +35,12 @@ define(['angular',
 
             var log = lux.messageService.log;
 
-            extend(this, lux.messageService, {
+            angular.extend(this, messageService, {
 
                 getMessages: function () {
-                    if (!this.getStorage().getItem('messages')) {
-                        return [];
-                    }
-                    return JSON.parse(this.getStorage().getItem('messages')).reverse();
-
+                    var massages = this.getStorage().getItem('messages');
+                    if (!massages) return [];
+                    return JSON.parse(massages).reverse();
                 },
 
                 setMessages: function (messages) {
@@ -106,7 +104,7 @@ define(['angular',
             return {
                 restrict: 'AE',
                 replace: true,
-                templateUrl: "message/message.tpl.html",
+                templateUrl: "lux/message/templates/message.tpl.html",
                 link: function (scope, element, attrs) {
                     scope.messages = [];
 
@@ -145,4 +143,5 @@ define(['angular',
             };
         }]);
 
+    return lux;
 });

@@ -1,3 +1,3 @@
-            $templateCache.put("${module_name}",
+            $templateCache.put("${file_name}",
             ${text}
             );

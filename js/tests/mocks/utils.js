@@ -24,4 +24,6 @@ define(['angular', 'lux', 'angular-mocks'], function (angular, lux) {
         return element;
     };
 
+    return lux.tests;
+
 });

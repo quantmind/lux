@@ -3,6 +3,8 @@ import json
 import shutil
 from string import Template
 
+from pulsar.utils.html import capfirst
+
 import lux
 from lux.utils.files import skipfile
 
@@ -94,7 +96,8 @@ class Command(lux.Command):
         '''
         target_dir = self.target(prefix, 'templates')
         name = name or prefix
-        module_name = '%s/%s/templates' % (prefix, name)
+        file_name = '%s/%s/templates' % (prefix, name)
+        module_name = '%s%sTemplates' % (prefix.lower(), capfirst(name))
         paths = {}
         cache = []
         cache_template = self.template('template.cache.js')
@@ -103,10 +106,10 @@ class Command(lux.Command):
             if filename.endswith('.tpl.html'):
                 with open(os.path.join(templates, filename), 'r') as fp:
                     text = fp.read()
-                file_module_name = '%s/%s' % (module_name, filename)
+                file_module_name = '%s/%s' % (file_name, filename)
                 text = ' +\n'.join(self.lines(text))
                 cache.append(cache_template.safe_substitute(
-                    dict(text=text, module_name=file_module_name)))
+                    dict(text=text, file_name=file_module_name)))
 
         if cache:
             if not os.path.isdir(target_dir):
@@ -122,7 +125,7 @@ class Command(lux.Command):
                 fp.write(template)
 
             self.write('"%s" created' % target)
-            paths[module_name] = target[:-3]
+            paths[file_name] = target[:-3]
 
         return paths
 

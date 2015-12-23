@@ -17,7 +17,7 @@ define(['angular', 'lux'], function (angular, lux) {
     //
     //  ============================
     //
-    angular.module('lux.codemirror', ['lux.services'])
+    angular.module('luxCodemirror', ['luxServices'])
         //
         .constant('luxCodemirrorDefaults', {
             lineWrapping: true,

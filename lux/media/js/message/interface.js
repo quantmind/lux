@@ -2,7 +2,7 @@ define(['lux/config'], function (lux) {
     "use strict";
 
     function asMessage(level, message) {
-        if (isString(message)) message = {text: message};
+        if (lux.isString(message)) message = {text: message};
         message.type = level;
         return message;
     }
@@ -38,5 +38,5 @@ define(['lux/config'], function (lux) {
         }
     };
 
-    return lux;
+    return lux.messageService;
 });

@@ -1,7 +1,7 @@
 define(['angular', 'lux'], function (angular, lux) {
     "use strict";
 
-    angular.module('lux.form.handlers', ['lux.services'])
+    angular.module('luxFormHandlers', ['luxServices'])
 
         .run(['$lux', function ($lux) {
             var formHandlers = {};

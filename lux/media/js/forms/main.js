@@ -39,9 +39,9 @@ define(['angular',
     //      formFieldChange: triggered when a form field changes:
     //          arguments: formmodel, field (changed)
     //
-    angular.module('lux.form', ['lux.form.utils', 'lux.form.handlers', 'lux.form.process'])
+    angular.module('luxForm', ['luxFormUtils', 'luxFormHandlers', 'luxFormProcess'])
         //
-        .constant('formDefaults', {
+        .constant('luxFormDefaults', {
             // Default layout
             layout: 'default',
             // for horizontal layout
@@ -251,8 +251,8 @@ define(['angular',
 
         //
         // The formService is a reusable component for redering form fields
-        .service('standardForm', ['$log', '$http', '$document', '$templateCache', 'formDefaults', 'formElements',
-            function (log, $http, $document, $templateCache, formDefaults, formElements) {
+        .service('standardForm', ['$log', '$http', '$document', '$templateCache', 'luxFormDefaults', 'formElements',
+            function (log, $http, $document, $templateCache, luxFormDefaults, formElements) {
                 //
                 var extendArray = lux.extendArray,
                     baseAttributes = ['id', 'name', 'title', 'style'],
@@ -342,7 +342,7 @@ define(['angular',
                             if (field) {
 
                                 // extend child.field with options
-                                forEach(formDefaults, function (_, name) {
+                                forEach(luxFormDefaults, function (_, name) {
                                     if (field[name] === undefined)
                                         field[name] = scope.field[name];
                                 });
@@ -385,7 +385,7 @@ define(['angular',
                         // lux-codemirror directive
                         if (scope.field.hasOwnProperty('text_edit')) {
                             element.attr('lux-codemirror', scope.field.text_edit);
-                        } else if (formDefaults.dateTypes.indexOf(scope.field.type) > -1) {
+                        } else if (luxFormDefaults.dateTypes.indexOf(scope.field.type) > -1) {
                             // Convert date string to date object
                             element.attr('format-date', '');
                         } else if (scope.formAttrs.useNgFileUpload && scope.field.type === 'file') {
@@ -480,7 +480,7 @@ define(['angular',
 
                         // Add default placeholder to date field if not exist
                         if (field.type === 'date' && field.placeholder === undefined) {
-                            field.placeholder = formDefaults.defaultDatePlaceholder;
+                            field.placeholder = luxFormDefaults.defaultDatePlaceholder;
                         }
 
                         if (!field.showLabels || field.type === 'hidden') {
@@ -899,8 +899,8 @@ define(['angular',
             });
         }])
         //
-        .service('formBaseRenderer', ['$lux', '$compile', 'formDefaults',
-            function ($lux, $compile, formDefaults) {
+        .service('formBaseRenderer', ['$lux', '$compile', 'luxFormDefaults',
+            function ($lux, $compile, luxFormDefaults) {
                 //
                 // Internal function for compiling a scope
                 this.createElement = function (scope) {
@@ -931,7 +931,7 @@ define(['angular',
                             formmodel = {};
 
                         // extend with form defaults
-                        data.field = extend({}, formDefaults, form);
+                        data.field = extend({}, luxFormDefaults, form);
                         extend(scope, data);
                         form = scope.field;
                         if (form.model) {
@@ -966,16 +966,16 @@ define(['angular',
                                 var field = message.field;
                                 if (field && !scope[scope.formName].hasOwnProperty(field)) {
                                     message.message = field + ' ' + message.message;
-                                    field = formDefaults.FORMKEY;
+                                    field = luxFormDefaults.FORMKEY;
                                 } else if (!field) {
-                                    field = formDefaults.FORMKEY;
+                                    field = luxFormDefaults.FORMKEY;
                                 }
 
                                 if (error) message.error = error;
 
                                 scope.formMessages[field] = [message];
 
-                                if (message.error && field !== formDefaults.FORMKEY) {
+                                if (message.error && field !== luxFormDefaults.FORMKEY) {
                                     scope.formErrors[field] = message.message;
                                     scope[scope.formName][field].$invalid = true;
                                 }

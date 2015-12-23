@@ -1,6 +1,6 @@
 define(['angular'], function (angular) {
 
-    angular.module("lux.restapi.mock", [])
+    angular.module("luxRestApiMock", [])
 
         .config(['$provide', function ($provide) {
 

@@ -7,7 +7,7 @@ define(['angular', 'lux/config', 'lux/services/luxweb'], function (angular, lux,
     //	If the ``API_URL`` is defined at root scope, register the
     //	javascript client with the $lux service and add functions to the root
     //	scope to retrieve the api client handler and user informations
-    angular.module('lux.restapi', ['lux.services'])
+    angular.module('luxRestApi', ['luxServices'])
 
         .run(['$rootScope', '$lux', function ($scope, $lux) {
 
