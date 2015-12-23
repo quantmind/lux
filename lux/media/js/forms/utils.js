@@ -2,7 +2,7 @@ define(['angular',
         'lux'], function (angular, lux) {
     "use strict";
 
-    angular.module('luxFormUtils', ['luxServices'])
+    angular.module('lux.form.utils', ['lux.services'])
 
         .directive('remoteOptions', ['$lux', function ($lux) {
 

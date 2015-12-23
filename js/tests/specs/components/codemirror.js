@@ -11,7 +11,7 @@ define(['angular',
             spies = angular.noop;
 
         beforeEach(function () {
-            module('luxCodemirror');
+            module('lux.codemirror');
 
             inject(function (_$rootScope_, _$compile_, _$timeout_) {
                 scope = _$rootScope_.$new();

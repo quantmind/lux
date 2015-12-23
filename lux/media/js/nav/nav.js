@@ -1,6 +1,6 @@
 define(['lux',
         'lux/templates/nav'], function () {
-
+    "use strict";
     //
     //  Lux Navigation module
     //  ============================
@@ -38,7 +38,7 @@ define(['lux',
         fluid: true
     };
 
-    angular.module('lux.nav', ['templates-nav', 'lux.bs'])
+    angular.module('lux.nav', ['lux.nav.templates', 'lux.bs'])
         //
         .service('linkService', ['$location', '$window', function ($location, $window) {
 
@@ -62,7 +62,7 @@ define(['lux',
                 // recursively loops through arrays to
                 // find url match
                 function exploreSubmenus(array) {
-                    for (var i=0; i < array.length; i++) {
+                    for (var i = 0; i < array.length; i++) {
                         if (array[i].href === $location.path()) {
                             return true;
                         } else if (array[i].subitems && array[i].subitems.length > 0) {
@@ -71,7 +71,7 @@ define(['lux',
                     }
                 }
 
-                scope.activeSubmenu = function(url) {
+                scope.activeSubmenu = function (url) {
                     var active = false;
 
                     if (url.href && url.href === '#' && url.subitems.length > 0) {
@@ -86,11 +86,11 @@ define(['lux',
                 scope.activeLink = function (url) {
                     var loc;
                     if (url)
-                        // Check if any submenus/sublinks are active
+                    // Check if any submenus/sublinks are active
                         if (url.subitems && url.subitems.length > 0) {
                             if (exploreSubmenus(url.subitems)) return true;
                         }
-                        url = typeof(url) === 'string' ? url : url.href || url.url;
+                    url = typeof(url) === 'string' ? url : url.href || url.url;
                     if (!url) return;
                     if (isAbsolute.test(url))
                         loc = $location.absUrl();
@@ -98,7 +98,7 @@ define(['lux',
                         loc = $location.path();
                     var rest = loc.substring(url.length),
                         base = url.length < loc.length ? false : loc.substring(0, url.length),
-                        folder = url.substring(url.length-1) === '/';
+                        folder = url.substring(url.length - 1) === '/';
                     return base === url && (folder || (rest === '' || rest.substring(0, 1) === '/'));
                 };
             };
@@ -135,7 +135,7 @@ define(['lux',
                 return c !== navbar.collapse;
             };
 
-            this.collapseForWide = function(navbar, element) {
+            this.collapseForWide = function (navbar, element) {
                 var width = window.innerWidth > 0 ? window.innerWidth : screen.width,
                     c = navbar.collapse;
 
@@ -154,12 +154,12 @@ define(['lux',
                 restrict: 'AE',
 
                 link: function (scope, element, attrs) {
-                    element.css('min-height', $window.innerHeight+'px');
+                    element.css('min-height', $window.innerHeight + 'px');
 
-                    scope.$watch(function(){
+                    scope.$watch(function () {
                         return $window.innerHeight;
-                    }, function(value) {
-                        element.css('min-height', value+'px');
+                    }, function (value) {
+                        element.css('min-height', value + 'px');
                     });
                 }
             };
@@ -248,7 +248,7 @@ define(['lux',
                     if (navbar && navbar.theme)
                         element.addClass('navbar-' + navbar.theme);
                     var inner = $($document[0].createElement('div')).addClass('navbar2-page')
-                                    .append(scope.navbar2Content);
+                        .append(scope.navbar2Content);
                     // compile
                     $compile(inner)(scope);
                     // and append
@@ -257,6 +257,7 @@ define(['lux',
                     function resize() {
                         inner.attr('style', 'min-height: ' + windowHeight() + 'px');
                     }
+
                     //
                     windowResize(resize);
                     //
@@ -264,3 +265,5 @@ define(['lux',
                 }
             };
         }]);
+
+});

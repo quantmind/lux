@@ -137,7 +137,7 @@ define(['angular', 'lux/config'], function (angular, lux) {
     //
     //
     //
-    angular.module('luxSockJs', [])
+    angular.module('lux.sockjs', [])
 
         .run(['$rootScope', '$log', function (scope, log) {
 

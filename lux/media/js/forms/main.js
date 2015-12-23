@@ -19,7 +19,6 @@ define(['angular',
     lux.forms = {
         directives: {}
     };
-
     //
     // Form module for lux
     //
@@ -39,7 +38,7 @@ define(['angular',
     //      formFieldChange: triggered when a form field changes:
     //          arguments: formmodel, field (changed)
     //
-    angular.module('luxForm', ['luxFormUtils', 'luxFormHandlers', 'luxFormProcess'])
+    angular.module('lux.form', ['lux.form.utils', 'lux.form.handlers', 'lux.form.process'])
         //
         .constant('luxFormDefaults', {
             // Default layout

@@ -23,7 +23,7 @@ define(['angular', 'lux/utils', 'lux/services'], function(angular, lux) {
         return lux.joinUrl(ctx.url, ctx.MEDIA_URL, url);
     };
 
-    lux.loader = angular.module('luxLoader', [])
+    lux.loader = angular.module('lux.loader', [])
     	//
         .value('context', lux.context)
         //
@@ -63,7 +63,7 @@ define(['angular', 'lux/utils', 'lux/services'], function(angular, lux) {
                 mods.push(mod);
             });
             // Insert the lux loader as first module
-            mods.splice(0, 0, 'luxLoader');
+            mods.splice(0, 0, 'lux.loader');
             angular.module(name, mods);
             angular.bootstrap(document, [name]);
         }

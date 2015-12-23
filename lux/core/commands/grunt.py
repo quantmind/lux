@@ -3,8 +3,6 @@ import json
 import shutil
 from string import Template
 
-from pulsar.utils.html import capfirst
-
 import lux
 from lux.utils.files import skipfile
 
@@ -97,7 +95,7 @@ class Command(lux.Command):
         target_dir = self.target(prefix, 'templates')
         name = name or prefix
         file_name = '%s/%s/templates' % (prefix, name)
-        module_name = '%s%sTemplates' % (prefix.lower(), capfirst(name))
+        module_name = '%s.%s.templates' % (prefix, name)
         paths = {}
         cache = []
         cache_template = self.template('template.cache.js')

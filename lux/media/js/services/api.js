@@ -15,7 +15,7 @@ define(['angular', 'lux/config'], function (angular, lux) {
     //	===================
     //
     //	A factory of javascript clients to web services
-    angular.module('luxServices', [])
+    angular.module('lux.services', [])
         //
         .value('ApiTypes', {})
         //

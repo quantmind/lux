@@ -11,7 +11,7 @@ define(['angular',
     describe("Test lux.form module", function () {
 
         beforeEach(function () {
-            module('luxForm');
+            module('lux.form');
         });
 
         it("simple form - one input", inject(function ($compile, $rootScope) {
@@ -67,7 +67,7 @@ define(['angular',
     describe("Test lux.form with selectUI", function () {
 
         // Angular module for select-UI forms
-        angular.module('luxFormTestSelectUi', ['luxForm'])
+        angular.module('lux.form.test.select.ui', ['lux.form'])
 
             .factory('formElements', ['defaultFormElements', function (defaultFormElements) {
                 return function () {
@@ -84,7 +84,7 @@ define(['angular',
         lux.formSelectUITests = {};
 
         beforeEach(function () {
-            module('luxFormTestSelectUi');
+            module('lux.form.test.select.ui');
         });
 
         it("select input + widget", inject(function ($compile, $rootScope) {
@@ -120,7 +120,7 @@ define(['angular',
     describe("Test lux.form with file field", function () {
 
         beforeEach(function () {
-            module('luxForm');
+            module('lux.form');
         });
 
         it("adds the ngf-select directive", inject(function ($compile, $rootScope) {
@@ -165,7 +165,7 @@ define(['angular',
     describe("Test lux.form with date field", function () {
 
         beforeEach(function () {
-            module('luxForm');
+            module('lux.form');
         });
 
         it("convert model from date string into date object", inject(function ($compile, $rootScope) {

@@ -3,7 +3,7 @@ define(['angular',
         'lux/forms/handlers'], function (angular, lux) {
     "use strict";
 
-    angular.module('luxFormProcess', ['ngFileUpload'])
+    angular.module('lux.form.process', ['ngFileUpload'])
         .run(['$lux', 'Upload', function ($lux, Upload) {
 
             //

@@ -3,7 +3,7 @@ define(['angular',
         'tests/mocks/utils'], function (angular, lux, utils) {
 
     beforeEach(function () {
-        module('luxMessage');
+        module('lux.message');
     });
 
     describe("Messages", function () {

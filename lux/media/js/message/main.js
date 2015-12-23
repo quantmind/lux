@@ -27,7 +27,7 @@ define(['angular',
     //
     //            }])
     angular
-        .module('luxMessage', ['luxServices', 'luxMessageTemplates', 'ngSanitize'])
+        .module('lux.message', ['lux.services', 'lux.message.templates', 'ngSanitize'])
         //
         //  Service for messages
         //

@@ -21,9 +21,9 @@ define(['angular',
         };
     }
 
-    angular.module('luxGrid', ['luxServices', 'luxGridDataProviderFactory', 'luxGridTemplates',
-                               'ui.grid', 'ui.grid.pagination', 'ui.grid.selection', 'ui.grid.autoResize',
-                               'ui.grid.resizeColumns'])
+    angular.module('lux.grid', ['lux.services', 'lux.grid.data', 'lux.grid.templates',
+                                'ui.grid', 'ui.grid.pagination', 'ui.grid.selection', 'ui.grid.autoResize',
+                                'ui.grid.resizeColumns'])
         //
         .constant('luxGridDefaults', {
             //
@@ -155,6 +155,23 @@ define(['angular',
             wrapCell: function (template) {
                 return '<div class="ui-grid-cell-contents">' + template + '</div>';
             }
+        })
+        //
+        //  Data providers service
+        .service('luxGridDataProviders', function () {
+            var providers = {};
+
+            this.all = providers;
+
+            this.register = function (type, providerFactory) {
+                providers[type] = providerFactory;
+            };
+
+            this.create = function (type, target, subPath, gridState, listener) {
+                var Provider = providers[type];
+                if (Provider) return new Provider(target, subPath, gridState, listener);
+            };
+
         })
         //
         .service('GridService', ['$lux', '$q', '$location', '$compile', '$modal', 'uiGridConstants', 'luxGridDefaults', 'GridDataProviderFactory', '$timeout', '$templateCache',

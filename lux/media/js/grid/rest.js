@@ -1,13 +1,18 @@
-define(['angular', 'lux'], function (angular, lux) {
 //  Grid Data Provider
 //	===================
 //
 //	provides data to a lux.grid using REST calls
+define(['angular', 'lux.grid'], function (angular, lux) {
+    "use strict";
 
-    angular.module('luxGridDataProviderREST', ['luxServices'])
-        .factory('GridDataProviderREST', ['$lux', gridDataProviderRESTFactory]);
+    angular.module('lux.grid.rest', ['lux.grid'])
 
-    function gridDataProviderRESTFactory($lux) {
+        .run(['$lux', 'luxGridDataProviders'], function ($lux, luxGridDataProviders) {
+
+            luxGridDataProviders.register('rest', restProvider($lux));
+        });
+
+    function restProvider ($lux) {
 
         function GridDataProviderREST(target, subPath, gridState, listener) {
             this._api = $lux.api(target);

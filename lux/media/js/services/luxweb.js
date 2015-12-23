@@ -5,7 +5,7 @@ define(['angular', 'lux/config', 'lux/services/api'], function (angular, lux, ap
     //	===================
     //
     //  Angular module for interacting with lux-based WEB APIs
-    angular.module('luxWebApi', ['luxServices'])
+    angular.module('lux.webapi', ['lux.services'])
 
         .run(['$rootScope', '$lux', function ($scope, $lux) {
             //

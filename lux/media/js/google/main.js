@@ -3,7 +3,7 @@ define(['angular',
         'lux/google/models'], function (angular, lux, google) {
     //
     //  Module for interacting with google API and services
-    angular.module('luxGoogle', ['luxServices'])
+    angular.module('lux.google', ['lux.services'])
         //
         .run(['$rootScope', '$lux', '$log', function (scope, $lux, log) {
             var analytics = scope.google ? scope.google.analytics : null;
