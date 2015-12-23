@@ -20,14 +20,14 @@ angular.module('lux.form.utils', ['lux.pagination'])
                 var uiSelectChild = uiSelect.querySelector('.ui-select-choices-group');
                 uiSelect = angular.element(uiSelect);
 
-                uiSelect.bind('scroll', function() {
+                uiSelect.on('scroll', function() {
                     // 40 = arbitrary number to make offset slightly smaller,
                     // this means the next api call will be just before the scroll
                     // bar reaches the bottom of the list
                     var offset = uiSelectChild.clientHeight - this.clientHeight - 40;
 
                     if (this.scrollTop > offset) {
-                        uiSelect.unbind();
+                        uiSelect.off();
                         luxPag.loadMore();
                     }
                 });
@@ -35,10 +35,10 @@ angular.module('lux.form.utils', ['lux.pagination'])
             }
 
             function enableSearch() {
-                if (searchInput.data().boundToKeyDown) return;
+                if (searchInput.data().onKeyUp) return;
 
-                searchInput.data('boundToKeyDown', true);
-                searchInput.bind('keyup', function(e) {
+                searchInput.data('onKeyUp', true);
+                searchInput.on('keyup', function(e) {
                     var query = e.srcElement.value;
                     var searchField = attrs.remoteOptionsId === 'id' ? nameOpts.source : attrs.remoteOptionsId;
 
