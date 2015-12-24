@@ -42,10 +42,11 @@ describe('Test lux.form.utils module', function() {
     });
 
     it('remote options are parsed and an instance of LuxPagination is created and the getData method is called', function() {
-        spyOn(JSON, 'parse').and.callThrough();
         var remoteOptions = '{"url": "http://127.0.0.1:6050", "name": "groups_url"}';
         var markup = '<div data-remote-options=\'' + remoteOptions + '\' data-remote-options-id="" name="groups[]"><input type="text"></input></div>';
-        var elem = getCompiledElem(markup);
+
+        spyOn(JSON, 'parse').and.callThrough();
+        getCompiledElem(markup);
 
         expect(JSON.parse).toHaveBeenCalled();
         expect(LuxPagination).toHaveBeenCalledWith(scope, JSON.parse(remoteOptions), false);
@@ -55,17 +56,18 @@ describe('Test lux.form.utils module', function() {
     it('if multiple attr is present instance of LuxPag is recursive and getData called with raised limit', function() {
         var remoteOptions = '{"url": "http://127.0.0.1:6050", "name": "groups_url"}';
         var markup = '<div multiple="multiple" data-remote-options=\'' + remoteOptions + '\' data-remote-options-id="" name="groups[]"><input type="text"></input></div>';
-        var elem = getCompiledElem(markup);
+
+        getCompiledElem(markup);
 
         expect(LuxPagination).toHaveBeenCalledWith(scope, JSON.parse(remoteOptions), true);
         expect(LuxPagination.prototype.getData).toHaveBeenCalledWith({limit: 200}, jasmine.any(Function));
     });
 
     it('scope.$on is called when "more Data" event is emitted', function() {
-        spyOn(scope, '$on').and.callThrough();
         var markup = '<div data-remote-options=\'{"url": "http://127.0.0.1:6050", "name": "groups_url"}\' data-remote-options-id="" name="groups[]" multiple="multiple"><input type="text"></input></div>';
-        var elem = getCompiledElem(markup);
 
+        spyOn(scope, '$on').and.callThrough();
+        getCompiledElem(markup);
         scope.$emit('moreData');
 
         expect(scope.$on).toHaveBeenCalledWith('moreData', jasmine.any(Function));
@@ -110,10 +112,10 @@ describe('Test lux.form.utils module', function() {
         var markup = '<div data-remote-options=\'{"url": "http://127.0.0.1:6050", "name": "groups_url"}\' data-remote-options-id="" name="groups[]" multiple="multiple"><input type="text"></input></div>';
         var elem = getCompiledElem(markup);
         var searchInput = angular.element(elem[0].querySelector('input[type=text]'));
+
         searchInput.data('onKeyUp', true);
         searchInput.on = jasmine.createSpy('searchInput.on');
         searchInput.data = jasmine.createSpy('searchInput.data');
-
 
         scope.$emit('moreData');
         searchInput.triggerHandler('keyup');
@@ -125,12 +127,46 @@ describe('Test lux.form.utils module', function() {
     it('lazyLoad binds uiSelect to onscroll event and calls luxPag.loadMore if scroll offset reached', function() {
         var markup = '<div data-remote-options=\'{"url": "http://127.0.0.1:6050", "name": "groups_url"}\' data-remote-options-id="" name="groups[]" multiple="multiple"><input type="text"></input><ul class="ui-select-choices"><li class="ui-select-choices-group"></li></ul></div>';
         var elem = getCompiledElem(markup);
-        var uiSelect = elem[0].querySelector('.ui-select-choices');
-        uiSelect = angular.element(uiSelect);
+        var uiSelect = angular.element(elem[0].querySelector('.ui-select-choices'));
 
         scope.$emit('moreData');
         uiSelect.triggerHandler('scroll');
 
         expect(LuxPagination.prototype.loadMore).toHaveBeenCalled();
+    });
+
+    it('buildSelect calls angular.forEach on data returned from luxPag.getData', function() {
+        var remoteOptionsValue = '{"source": "name", "type": "field"}';
+        var markup = '<div data-remote-options=\'{"url": "http://127.0.0.1:6050", "name": "groups_url"}\' data-remote-options-value=\'' + remoteOptionsValue + '\' data-remote-options-id="" name="groups[]" multiple="multiple"><input type="text"></input><ul class="ui-select-choices"><li class="ui-select-choices-group"></li></ul></div>';
+        var fakeData = {
+            data: {
+                result: [
+                    {
+                        name: 'bmll',
+                        id: 1
+                    },
+                    {
+                        name: 'moex',
+                        id: 2
+                    },
+                    {
+                        name: 'bmll',
+                        id: 3
+                    },
+                    {
+                        name: 'lol',
+                        id: 4
+                    }
+                ]
+            }
+        };
+
+        LuxPagination.prototype.getData = function(params, cb) {
+            cb(fakeData);
+        };
+        spyOn(angular, 'forEach').and.callThrough();
+        getCompiledElem(markup);
+
+        expect(angular.forEach).toHaveBeenCalledWith(fakeData.data.result, jasmine.any(Function));
     });
 });

@@ -48,14 +48,15 @@ angular.module('lux.pagination', ['lux.services'])
             // recent last and next links from the API
 
             if (data && data.data && data.data.last) {
-                this.emitEvent();
                 this.urls = {
                     last: data.data.last,
                     next: data.data.next ? data.data.next : false
                 };
                 // If the recursive param was set to true this will
-                // request data using the 'next' link
+                // request data using the 'next' link; if not it will emitEvent()
+                // so the component knows there's more data available
                 if (this.recursive) this.loadMore();
+                else this.emitEvent();
             }
 
         };
@@ -77,7 +78,7 @@ angular.module('lux.pagination', ['lux.services'])
             }
 
             // Call API with updated target URL
-            this.getData();
+            this.getData(this.params);
 
         };
 

@@ -5,7 +5,10 @@
 
 angular.module('lux.form.utils', ['lux.pagination'])
 
-    .directive('remoteOptions', ['$lux', 'luxPaginationFactory', function ($lux, LuxPagination) {
+    .constant('lazyLoadOffset', 40) // API will be called this number of pixels
+                                    // before bottom of UIselect list
+
+    .directive('remoteOptions', ['$lux', 'luxPaginationFactory', 'lazyLoadOffset', function ($lux, LuxPagination, lazyLoadOffset) {
 
         function remoteOptions(luxPag, target, scope, attrs, element) {
 
@@ -21,10 +24,7 @@ angular.module('lux.form.utils', ['lux.pagination'])
                 uiSelect = angular.element(uiSelect);
 
                 uiSelect.on('scroll', function() {
-                    // 40 = arbitrary number to make offset slightly smaller,
-                    // this means the next api call will be just before the scroll
-                    // bar reaches the bottom of the list
-                    var offset = uiSelectChild.clientHeight - this.clientHeight - 40;
+                    var offset = uiSelectChild.clientHeight - this.clientHeight - lazyLoadOffset;
 
                     if (this.scrollTop > offset) {
                         uiSelect.off();

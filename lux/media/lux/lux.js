@@ -1,6 +1,6 @@
 //      Lux Library - v0.4.0
 
-//      Compiled 2015-12-23.
+//      Compiled 2015-12-24.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -1127,14 +1127,15 @@ angular.module('lux.pagination', ['lux.services'])
             // recent last and next links from the API
 
             if (data && data.data && data.data.last) {
-                this.emitEvent();
                 this.urls = {
                     last: data.data.last,
                     next: data.data.next ? data.data.next : false
                 };
                 // If the recursive param was set to true this will
-                // request data using the 'next' link
+                // request data using the 'next' link; if not it will emitEvent()
+                // so the component knows there's more data available
                 if (this.recursive) this.loadMore();
+                else this.emitEvent();
             }
 
         };
@@ -1156,7 +1157,7 @@ angular.module('lux.pagination', ['lux.services'])
             }
 
             // Call API with updated target URL
-            this.getData();
+            this.getData(this.params);
 
         };
 
@@ -3538,7 +3539,10 @@ angular.module('lux.form.process', ['ngFileUpload'])
 
 angular.module('lux.form.utils', ['lux.pagination'])
 
-    .directive('remoteOptions', ['$lux', 'luxPaginationFactory', function ($lux, LuxPagination) {
+    .constant('lazyLoadOffset', 40) // API will be called this number of pixels
+                                    // before bottom of UIselect list
+
+    .directive('remoteOptions', ['$lux', 'luxPaginationFactory', 'lazyLoadOffset', function ($lux, LuxPagination, lazyLoadOffset) {
 
         function remoteOptions(luxPag, target, scope, attrs, element) {
 
@@ -3554,10 +3558,7 @@ angular.module('lux.form.utils', ['lux.pagination'])
                 uiSelect = angular.element(uiSelect);
 
                 uiSelect.on('scroll', function() {
-                    // 40 = arbitrary number to make offset slightly smaller,
-                    // this means the next api call will be just before the scroll
-                    // bar reaches the bottom of the list
-                    var offset = uiSelectChild.clientHeight - this.clientHeight - 40;
+                    var offset = uiSelectChild.clientHeight - this.clientHeight - lazyLoadOffset;
 
                     if (this.scrollTop > offset) {
                         uiSelect.off();
