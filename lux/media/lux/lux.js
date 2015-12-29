@@ -1,6 +1,6 @@
 //      Lux Library - v0.4.0
 
-//      Compiled 2015-12-24.
+//      Compiled 2015-12-29.
 //      Copyright (c) 2015 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -1113,12 +1113,16 @@ angular.module('lux.pagination', ['lux.services'])
 
             this.api.get(null, params).then(function(data) {
 
-                if (data.error) return cb(data);
+                // removes search from parameters so this.params is
+                // clean for a generic loadMore or new search
+                if (this.searchField) delete this.params[this.searchField];
 
                 this.cb(data);
                 this.updateUrls(data);
 
-            }.bind(this));
+            }.bind(this), function(error) {
+                cb(error);
+            });
 
         };
 
@@ -1150,6 +1154,8 @@ angular.module('lux.pagination', ['lux.services'])
             // loadMore applies new urls from updateUrls to the
             // target object and makes another getData request.
 
+            if (!this.urls.next && !this.urls.last) throw 'No more data available';
+
             if (this.urls.next === false) {
                 this.target.url = this.urls.last;
             } else if (this.urls.next) {
@@ -1162,8 +1168,9 @@ angular.module('lux.pagination', ['lux.services'])
         };
 
         LuxPagination.prototype.search = function(query, searchField) {
+            this.searchField = searchField;
             this.params = this.params || {};
-            this.params[searchField] = query;
+            this.params[this.searchField] = query;
             // Set current target URL to the original target URL to reset any
             // existing limits/offsets so full endpoint is searched
             this.target.url = this.orgUrl;

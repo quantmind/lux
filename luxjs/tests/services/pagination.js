@@ -74,20 +74,6 @@ describe('Test lux.pagination module', function() {
         expect(luxPag.updateUrls).toHaveBeenCalledWith(mockData);
     });
 
-    it('LuxPagination.getData passes data into cb and returns if error', function() {
-        var params = 'params';
-        var cb = jasmine.createSpy('callback');
-        var mockError = {error: true};
-        var luxPag = new LuxPagination('scope', 'target');
-
-        // Fake promise returning error data
-        luxPag.api = createMockPromise(mockError);
-        LuxPagination.prototype.updateUrls = jasmine.createSpy('updateUrls');
-        luxPag.getData(params, cb);
-        expect(luxPag.cb).toHaveBeenCalledWith(mockError);
-        expect(luxPag.updateUrls).not.toHaveBeenCalled();
-    });
-
     it('LuxPagination.updateUrls triggers emitEvent() and updates this.urls', function() {
         var data = {
             data: {
