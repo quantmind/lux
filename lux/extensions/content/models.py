@@ -2,10 +2,6 @@ import os
 import glob
 import mimetypes
 
-from dulwich.porcelain import rm, add, init, commit, open_repo
-from dulwich.file import GitFile
-from dulwich.errors import NotGitRepository
-
 from pulsar.utils.httpurl import remove_double_slash
 
 from lux import cached, get_reader
@@ -51,10 +47,8 @@ class Content(rest.RestModel):
     '''
     def __init__(self, name, repo, path=None, ext='md', content_meta=None,
                  columns=None, **kwargs):
-        try:
-            self.repo = open_repo(repo)
-        except NotGitRepository:
-            self.repo = init(repo)
+        if not os.path.isdir(repo):
+            os.makedirs(repo)
         self.path = repo
         self.ext = ext
         self.content_meta = content_meta or {}
@@ -81,77 +75,6 @@ class Content(rest.RestModel):
         target = {'url': self.url}
         target.update(**extra_data)
         return target
-
-    def write(self, request, user, data, new=False, message=None):
-        '''Write a file into the repository
-
-        When ``new`` the file must not exist, when not
-        ``new``, the file must exist.
-        '''
-        name = data['name']
-        path = self.path
-        filepath = os.path.join(path, self._format_filename(name))
-        if new:
-            if not message:
-                message = "Created %s" % name
-            if os.path.isfile(filepath):
-                raise DataError('%s not available' % name)
-            else:
-                dir = os.path.dirname(filepath)
-                if not os.path.isdir(dir):
-                    os.makedirs(dir)
-        else:
-            if not message:
-                message = "Updated %s" % name
-            if not os.path.isfile(filepath):
-                raise DataError('%s not available' % name)
-
-        content = self.content(data)
-
-        # write file
-        with open(filepath, 'wb') as f:
-            f.write(_b(content))
-
-        filename = get_rel_dir(filepath, self.repo.path)
-
-        add(self.repo, [filename])
-        committer = user.username if user.is_authenticated() else 'anonymous'
-        commit_hash = commit(self.repo, _b(message), committer=_b(committer))
-
-        return dict(hash=commit_hash.decode('utf-8'),
-                    body=content,
-                    filename=filename,
-                    name=name)
-
-    def delete(self, request, user, data, message=None):
-        '''Delete file(s) from repository
-        '''
-        files_to_del = data.get('files')
-        if not files_to_del:
-            raise DataError('Nothing to delete')
-        # convert to list if not already
-        if not isinstance(files_to_del, (list, tuple)):
-            files_to_del = [files_to_del]
-
-        filenames = []
-        path = self.path
-
-        for file in files_to_del:
-            filepath = os.path.join(path, self._format_filename(file))
-            # remove only files that really exist and not dirs
-            if os.path.exists(filepath) and os.path.isfile(filepath):
-                # remove from disk
-                os.remove(filepath)
-                filename = get_rel_dir(filepath, self.repo.path)
-                filenames.append(filename)
-
-        if filenames:
-            rm(self.repo, filenames)
-            if not message:
-                message = 'Deleted %s' % ';'.join(filenames)
-
-            return commit(self.repo, _b(message),
-                          committer=_b(user.username))
 
     def exist(self, request, name):
         '''Check if a resource ``name`` exists
@@ -195,8 +118,7 @@ class Content(rest.RestModel):
         name = self._format_filename(name)
         path = self.path
         src = os.path.join(path, name)
-        # use dulwich GitFile to obeys the git file locking protocol
-        with GitFile(src, 'rb') as f:
+        with open(src, 'rb') as f:
             content = f.read()
 
         ext = '.%s' % self.ext
@@ -216,7 +138,7 @@ class Content(rest.RestModel):
         return filename
 
     def _path(self, request, path):
-        '''Append extension to file name
+        '''relative pathof content
         '''
         return remove_double_slash('/%s/%s' % (self.url, path))
 

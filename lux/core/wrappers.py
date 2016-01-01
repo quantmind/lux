@@ -1,7 +1,8 @@
 import json
+import asyncio
 from collections import Mapping
 
-from pulsar import ImproperlyConfigured
+from pulsar import ImproperlyConfigured, is_async
 from pulsar.apps.wsgi import (route, wsgi_request, cached_property,
                               html_factory)
 from pulsar.apps import wsgi
@@ -319,7 +320,12 @@ def error_handler(request, exc):
 def as_async_wsgi(wsgi):
 
     def _(environ, start_response):
-        yield None
-        return wsgi(environ, start_response)
+        result = wsgi(environ, start_response)
+        if is_async(result):
+            return asyncio.async(result)
+        else:
+            future = asyncio.Future()
+            future.set_result(result)
+            return future
 
     return _

@@ -180,4 +180,4 @@ class Command(lux.Command):
 
 
 def escape_quote(text):
-    return text.replace('"','\\"')
+    return text.replace('"', '\\"')

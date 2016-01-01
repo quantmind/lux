@@ -1,6 +1,7 @@
 from pulsar import Setting
 
 import lux
+from lux.extensions.content import CMS, static
 
 
 class Command(lux.Command):
@@ -14,6 +15,8 @@ class Command(lux.Command):
     help = "create the static site"
 
     def run(self, options):
-        if options.relative_url:
-            self.app.config['SITE_URL'] = ''
-        return self.app.extensions['lux.extensions.static'].build(self.app)
+        cms = self.app.cms
+        if not isinstance(cms, CMS):
+            raise lux.CommandError('cms not an instance of '
+                                   'lux.extensions.content.CMS')
+        return static.build(cms)

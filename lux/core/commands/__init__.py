@@ -9,7 +9,7 @@ import logging
 from functools import partial
 
 from pulsar import (Setting, get_event_loop, Application, ImproperlyConfigured,
-                    asyncio, Config, get_actor)
+                    asyncio, Config, get_actor, is_async)
 from pulsar.utils.config import Loglevel, Debug, LogHandlers
 
 from lux import __version__
@@ -144,8 +144,10 @@ class Command(ConsoleParser):
         if pool:
             result = pool.submit(run)
         else:
-            result = loop.run_in_executor(None, run)
-        return result if loop.is_running() else loop.run_until_complete(result)
+            result = run()
+        if is_async(result) and not loop.is_running():
+            result = loop.run_until_complete(result)
+        return result
 
     @property
     def logger(self):

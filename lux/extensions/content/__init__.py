@@ -1,4 +1,5 @@
 import lux
+from lux import Parameter
 from lux.extensions.angular import add_ng_modules
 
 from .models import Content
@@ -12,6 +13,13 @@ __all__ = ['Content', 'TextCRUD', 'TextCMS', 'CMS', 'TextForm', 'add_css',
 
 
 class Extension(lux.Extension):
+    _config = [
+        Parameter('STATIC_LOCATION', 'build',
+                  'Directory where the static site is created')
+        ]
+
+    def on_config(self, app):
+        app.require('lux.extensions.rest')
 
     def context(self, request, context):
         if request.cache.html_main:

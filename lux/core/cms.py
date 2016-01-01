@@ -36,6 +36,10 @@ class CMS:
         self.app = app
         self.key = key
 
+    @property
+    def config(self):
+        return self.app.config
+
     def page(self, path):
         '''Obtain a page object from a request path.
 

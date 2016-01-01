@@ -253,6 +253,8 @@ class Content(Cacheable):
             if 'head' in data:
                 head.update(data['head'])
 
+            data['ext'] = self.suffix
+            data['path'] = self._path
             data['url'] = request.absolute_uri(self._path)
             data['head'] = head
             return data
