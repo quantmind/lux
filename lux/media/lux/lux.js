@@ -1077,6 +1077,115 @@ function(angular, root) {
             return api;
         };
 
+// Lux pagination module for controlling the flow of
+// repeat requests to the API.
+// It can return all data at an end point or offer
+// the next page on request for the relevant component
+
+angular.module('lux.pagination', ['lux.services'])
+    .factory('luxPaginationFactory', ['$lux', function($lux) {
+
+        /**
+        * LuxPagination constructor requires three args
+        * @param scope - the angular $scope of component's directive
+        * @param target {object} - containing name and url, e.g.
+        * {name: "groups_url", url: "http://127.0.0.1:6050"}
+        * @param recursive {boolean}- set to true if you want to recursively
+        * request all data from the endpoint
+        */
+
+        function LuxPagination(scope, target, recursive) {
+            this.scope = scope;
+            this.target = target;
+            this.orgUrl = this.target.url;
+            this.api = $lux.api(this.target);
+
+            if (recursive === true) this.recursive = true;
+        }
+
+        LuxPagination.prototype.getData = function(params, cb) {
+            // getData runs $lux.api.get() followed by the component's
+            // callback on the returned data or error.
+            // it's up to the component to handle the error.
+
+            this.params = params ? params : null;
+            if (cb) this.cb = cb;
+
+            this.api.get(null, this.params).then(function(data) {
+
+                // removes search from parameters so this.params is
+                // clean for next generic loadMore or new search. Also
+                // adds searched flag.
+                if (this.searchField) {
+                    data.searched = true;
+                    delete this.params[this.searchField];
+                }
+
+                this.cb(data);
+                this.updateUrls(data);
+
+            }.bind(this), function(error) {
+                this.cb(error);
+            }.bind(this));
+
+        };
+
+        LuxPagination.prototype.updateUrls = function(data) {
+            // updateUrls creates an object containing the most
+            // recent last and next links from the API
+
+            if (data && data.data && data.data.last) {
+                this.urls = {
+                    last: data.data.last,
+                    next: data.data.next ? data.data.next : false
+                };
+                // If the recursive param was set to true this will
+                // request data using the 'next' link; if not it will emitEvent
+                // so the component knows there's more data available
+                if (this.recursive) this.loadMore();
+                else this.emitEvent();
+            }
+
+        };
+
+        LuxPagination.prototype.emitEvent = function() {
+            // emit event if more data available, the component can
+            // listen for it and choose how to deal with it
+            this.scope.$emit('moreData');
+        };
+
+        LuxPagination.prototype.loadMore = function() {
+            // loadMore applies new urls from updateUrls to the
+            // target object and makes another getData request.
+
+            if (!this.urls.next && !this.urls.last) throw 'Updated URLs not set.';
+
+            if (this.urls.next === false) {
+                this.target.url = this.urls.last;
+            } else if (this.urls.next) {
+                this.target.url = this.urls.next;
+            }
+
+            // Call API with updated target URL
+            this.getData(this.params);
+
+        };
+
+        LuxPagination.prototype.search = function(query, searchField) {
+            this.searchField = searchField;
+            this.params = this.params || {};
+            this.params[this.searchField] = query;
+            // Set current target URL to the original target URL to reset any
+            // existing limits/offsets so full endpoint is searched
+            this.target.url = this.orgUrl;
+
+            this.getData(this.params);
+        };
+
+        return LuxPagination;
+
+    }]);
+
     //
     //  Hash scrolling service
     angular.module('lux.scroll', [])
@@ -2696,6 +2805,9 @@ angular.module('lux.cms.core', [])
                         choices_inner = $($document[0].createElement('div')),
                         choices_inner_small = $($document[0].createElement('small')),
                         choices = $($document[0].createElement('ui-select-choices'))
+                                    // Ensure any inserted placeholders are disabled
+                                    // i.e. 'Please Select...'
+                                    .attr('ui-disable-choice', 'item.id === "placeholder"')
                                     .append(choices_inner);
 
                     if (field.multiple)
@@ -3433,23 +3545,119 @@ angular.module('lux.form.process', ['ngFileUpload'])
 
 /**
  * Created by Reupen on 02/06/2015.
+ * Edited by Tom on 18/12/2015.
  */
 
-angular.module('lux.form.utils', ['lux.services'])
+angular.module('lux.form.utils', ['lux.pagination'])
 
-    .directive('remoteOptions', ['$lux', function ($lux) {
+    .constant('lazyLoadOffset', 40) // API will be called this number of pixels
+                                    // before bottom of UIselect list
 
-        function fill(api, target, scope, attrs) {
+    .directive('remoteOptions', ['$lux', 'luxPaginationFactory', 'lazyLoadOffset', '$timeout', function ($lux, LuxPagination, lazyLoadOffset, $timeout) {
 
-            var id = attrs.remoteOptionsId || 'id',
-                nameOpts = attrs.remoteOptionsValue ? JSON.parse(attrs.remoteOptionsValue) : {
+        function remoteOptions(luxPag, target, scope, attrs, element) {
+
+            function lazyLoad(e) {
+                // lazyLoad requests the next page of data from the API
+                // when nearing the bottom of a <select> list
+                var uiSelect = element[0].querySelector('.ui-select-choices');
+
+                e.stopPropagation();
+                if (!uiSelect) return;
+
+                var uiSelectChild = uiSelect.querySelector('.ui-select-choices-group');
+                uiSelect = angular.element(uiSelect);
+
+                uiSelect.on('scroll', function() {
+                    var offset = uiSelectChild.clientHeight - this.clientHeight - lazyLoadOffset;
+
+                    if (this.scrollTop > offset) {
+                        uiSelect.off();
+                        luxPag.loadMore();
+                    }
+                });
+
+            }
+
+            function enableSearch() {
+                if (searchInput.data().onKeyUp) return;
+
+                searchInput.data('onKeyUp', true);
+                searchInput.on('keyup', function(e) {
+                    var query = e.srcElement.value;
+                    var searchField = attrs.remoteOptionsId === 'id' ? nameOpts.source : attrs.remoteOptionsId;
+
+                    cleanSearchResults();
+
+                    // Only call API with search if query is > 3 chars
+                    if (query.length > 3) {
+                        luxPag.search(query, searchField);
+                    }
+                });
+            }
+
+            function loopAndPush(data) {
+                angular.forEach(data.data.result, function (val) {
+                    var name;
+                    if (nameFromFormat) {
+                        name = formatString(nameOpts.source, val);
+                    } else {
+                        name = val[nameOpts.source];
+                    }
+
+                    options.push({
+                        id: val[id],
+                        name: name,
+                        searched: data.searched ? true : false
+                    });
+                });
+
+                cleanDuplicates();
+            }
+
+            function cleanSearchResults() {
+                // options objects containing data.searched will be removed
+                // after relevant search.
+                for (var i = 0; i<options.length; i++) {
+                    if (options[i].searched) options.splice(i, 1);
+                }
+            }
+
+            function cleanDuplicates() {
+                // $timeout waits for rootScope.$digest to finish,
+                // then removes duplicates from options list on the next tick.
+                $timeout(function() {
+                    return scope.$select.selected;
+                }).then(function(selected) {
+                    for (var a=0; a<options.length; a++) {
+                        for (var b=0; b<selected.length; b++) {
+                            if(options[a].id === selected[b].id) options.splice(a, 1);
+                        }
+                    }
+                });
+            }
+
+            function buildSelect(data) {
+                // buildSelect uses data from the API to populate
+                // the options variable, which builds our <select> list
+                if (data.data && data.data.error) {
+                    options.splice(0, 1, {id: 'placeholder', name: 'Unable to load data...'});
+                    throw new Error(data.data.message);
+                } else {
+                    loopAndPush(data);
+                }
+            }
+
+            var id = attrs.remoteOptionsId || 'id';
+            var nameOpts = attrs.remoteOptionsValue ? JSON.parse(attrs.remoteOptionsValue) : {
                     type: 'field',
                     source: 'id'
-                },
-                nameFromFormat = nameOpts.type === 'formatString',
-                initialValue = {},
-                params = JSON.parse(attrs.remoteOptionsParams || '{}'),
-                options = [];
+                };
+            var nameFromFormat = nameOpts.type === 'formatString';
+            var initialValue = {};
+            var params = JSON.parse(attrs.remoteOptionsParams || '{}');
+            var options = [];
+            var searchInput = angular.element(element[0].querySelector('input[type=text]'));
 
             scope[target.name] = options;
 
@@ -3459,42 +3667,47 @@ angular.module('lux.form.utils', ['lux.services'])
             options.push(initialValue);
 
             // Set empty value if field was not filled
-            if (scope[scope.formModelName][attrs.name] === undefined)
+            if (scope[scope.formModelName][attrs.name] === undefined) {
                 scope[scope.formModelName][attrs.name] = '';
+            }
 
-            api.get(null, params).then(function (data) {
-                if (attrs.multiple) {
-                    options.splice(0, 1);
-                } else {
-                    options[0].name = 'Please select...';
-                }
-                angular.forEach(data.data.result, function (val) {
-                    var name;
-                    if (nameFromFormat) {
-                        name = formatString(nameOpts.source, val);
-                    } else {
-                        name = val[nameOpts.source];
-                    }
-                    options.push({
-                        id: val[id],
-                        name: name
-                    });
-                });
-            }, function (data) {
-                /** TODO: add error alert */
-                options[0] = '(error loading options)';
+            if (attrs.multiple) {
+                // Increasing default API call limit as UISelect multiple
+                // displays all preselected options
+                params.limit = 200;
+                params.sortby = nameOpts.source ? nameOpts.source + ':asc' : 'id:asc';
+                options.splice(0, 1);
+            } else {
+                params.sortby = params.sortby ? params.sortby + ':asc' : 'id:asc';
+                // Options with id 'placeholder' are disabled in
+                // forms.js so users can't select them
+                options[0] = {
+                    name: 'Please select...',
+                    id: 'placeholder'
+                };
+            }
+
+            // Use LuxPagination's getData method to call the api
+            // with relevant parameters and pass in buildSelect as callback
+            luxPag.getData(params, buildSelect);
+            // Listen for LuxPagination to emit 'moreData' then run
+            // lazyLoad and enableSearch
+            scope.$on('moreData', function(e) {
+                lazyLoad(e);
+                enableSearch();
             });
         }
 
         function link(scope, element, attrs) {
 
             if (attrs.remoteOptions) {
-                var target = JSON.parse(attrs.remoteOptions),
-                    api = $lux.api(target);
+                var target = JSON.parse(attrs.remoteOptions);
+                var luxPag = new LuxPagination(scope, target, attrs.multiple ? true : false);
 
-                if (api && target.name)
-                    return fill(api, target, scope, attrs);
+                if (luxPag && target.name)
+                    return remoteOptions(luxPag, target, scope, attrs, element);
             }
+
             // TODO: message
         }
 

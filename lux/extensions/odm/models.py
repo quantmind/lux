@@ -147,7 +147,7 @@ class RestModel(rest.RestModel):
         '''
         exclude = set(exclude or ())
         exclude.update(self._exclude)
-        columns = self.columns(request.app)
+        columns = self.columns(request)
 
         fields = {}
         for col in columns:
@@ -192,6 +192,7 @@ class RestModel(rest.RestModel):
             return data
 
     def create_model(self, request, data, session=None):
+        self.columns(request)  # TODO, columns need to be loaded
         odm = request.app.odm()
         db_model = self.db_model()
         with odm.begin(session=session) as session:
@@ -214,6 +215,7 @@ class RestModel(rest.RestModel):
         return instance
 
     def delete_model(self, request, instance):
+        self.columns(request)  # TODO, columns need to be loaded
         odm = request.app.odm()
         session = odm.session_from_object(instance)
         with odm.begin(session=session) as session:
