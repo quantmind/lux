@@ -1,7 +1,7 @@
 //      Lux Library - v0.4.0
 
-//      Compiled 2015-12-29.
-//      Copyright (c) 2015 - Luca Sbardella
+//      Compiled 2016-01-05.
+//      Copyright (c) 2016 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
 //      http://quantmind.github.io/lux
@@ -1111,18 +1111,22 @@ angular.module('lux.pagination', ['lux.services'])
             this.params = params ? params : null;
             if (cb) this.cb = cb;
 
-            this.api.get(null, params).then(function(data) {
+            this.api.get(null, this.params).then(function(data) {
 
                 // removes search from parameters so this.params is
-                // clean for a generic loadMore or new search
-                if (this.searchField) delete this.params[this.searchField];
+                // clean for next generic loadMore or new search. Also
+                // adds searched flag.
+                if (this.searchField) {
+                    data.searched = true;
+                    delete this.params[this.searchField];
+                }
 
                 this.cb(data);
                 this.updateUrls(data);
 
             }.bind(this), function(error) {
-                cb(error);
-            });
+                this.cb(error);
+            }.bind(this));
 
         };
 
@@ -1136,7 +1140,7 @@ angular.module('lux.pagination', ['lux.services'])
                     next: data.data.next ? data.data.next : false
                 };
                 // If the recursive param was set to true this will
-                // request data using the 'next' link; if not it will emitEvent()
+                // request data using the 'next' link; if not it will emitEvent
                 // so the component knows there's more data available
                 if (this.recursive) this.loadMore();
                 else this.emitEvent();
@@ -1154,7 +1158,7 @@ angular.module('lux.pagination', ['lux.services'])
             // loadMore applies new urls from updateUrls to the
             // target object and makes another getData request.
 
-            if (!this.urls.next && !this.urls.last) throw 'No more data available';
+            if (!this.urls.next && !this.urls.last) throw 'Updated URLs not set.';
 
             if (this.urls.next === false) {
                 this.target.url = this.urls.last;
@@ -3549,7 +3553,7 @@ angular.module('lux.form.utils', ['lux.pagination'])
     .constant('lazyLoadOffset', 40) // API will be called this number of pixels
                                     // before bottom of UIselect list
 
-    .directive('remoteOptions', ['$lux', 'luxPaginationFactory', 'lazyLoadOffset', function ($lux, LuxPagination, lazyLoadOffset) {
+    .directive('remoteOptions', ['$lux', 'luxPaginationFactory', 'lazyLoadOffset', '$timeout', function ($lux, LuxPagination, lazyLoadOffset, $timeout) {
 
         function remoteOptions(luxPag, target, scope, attrs, element) {
 
@@ -3583,6 +3587,8 @@ angular.module('lux.form.utils', ['lux.pagination'])
                     var query = e.srcElement.value;
                     var searchField = attrs.remoteOptionsId === 'id' ? nameOpts.source : attrs.remoteOptionsId;
 
+                    cleanSearchResults();
+
                     // Only call API with search if query is > 3 chars
                     if (query.length > 3) {
                         luxPag.search(query, searchField);
@@ -3590,11 +3596,7 @@ angular.module('lux.form.utils', ['lux.pagination'])
                 });
             }
 
-            function buildSelect(data) {
-                // buildSelect uses data from the API to populate
-                // the options variable, which builds our <select> list
-                if (data.error) return;
-
+            function loopAndPush(data) {
                 angular.forEach(data.data.result, function (val) {
                     var name;
                     if (nameFromFormat) {
@@ -3603,29 +3605,47 @@ angular.module('lux.form.utils', ['lux.pagination'])
                         name = val[nameOpts.source];
                     }
 
-                    // If the value already exists in the select, don't
-                    // add it again.
-                    for (var i=0; i<options.length; i++) {
-                        if (options[i].id === val[id]) return;
-                    }
-
                     options.push({
                         id: val[id],
-                        name: name
+                        name: name,
+                        searched: data.searched ? true : false
                     });
-
                 });
-                // Sort list alphabetically by name.
-                options.sort(function(a,b) {
-                    var one = a.name.toLowerCase();
-                    var two = b.name.toLowerCase();
-                    // Ensure 'please select' remains at the top
-                    if (one === 'please select...') return -1;
 
-                    if (one > two) return 1;
-                    else if (one < two) return -1;
-                    else return 0;
+                cleanDuplicates();
+            }
+
+            function cleanSearchResults() {
+                // options objects containing data.searched will be removed
+                // after relevant search.
+                for (var i = 0; i<options.length; i++) {
+                    if (options[i].searched) options.splice(i, 1);
+                }
+            }
+
+            function cleanDuplicates() {
+                // $timeout waits for rootScope.$digest to finish,
+                // then removes duplicates from options list on the next tick.
+                $timeout(function() {
+                    return scope.$select.selected;
+                }).then(function(selected) {
+                    for (var a=0; a<options.length; a++) {
+                        for (var b=0; b<selected.length; b++) {
+                            if(options[a].id === selected[b].id) options.splice(a, 1);
+                        }
+                    }
                 });
+            }
+
+            function buildSelect(data) {
+                // buildSelect uses data from the API to populate
+                // the options variable, which builds our <select> list
+                if (data.data && data.data.error) {
+                    options.splice(0, 1, {id: 'placeholder', name: 'Unable to load data...'});
+                    throw new Error(data.data.message);
+                } else {
+                    loopAndPush(data);
+                }
             }
 
             var id = attrs.remoteOptionsId || 'id';
@@ -3652,11 +3672,13 @@ angular.module('lux.form.utils', ['lux.pagination'])
             }
 
             if (attrs.multiple) {
-                options.splice(0, 1);
                 // Increasing default API call limit as UISelect multiple
                 // displays all preselected options
                 params.limit = 200;
+                params.sortby = nameOpts.source ? nameOpts.source + ':asc' : 'id:asc';
+                options.splice(0, 1);
             } else {
+                params.sortby = params.sortby ? params.sortby + ':asc' : 'id:asc';
                 // Options with id 'placeholder' are disabled in
                 // forms.js so users can't select them
                 options[0] = {
@@ -3668,7 +3690,7 @@ angular.module('lux.form.utils', ['lux.pagination'])
             // Use LuxPagination's getData method to call the api
             // with relevant parameters and pass in buildSelect as callback
             luxPag.getData(params, buildSelect);
-            // Listen for LuxPagination to emit 'moreData' then run lazyLoad
+            // Listen for LuxPagination to emit 'moreData' then run
             // lazyLoad and enableSearch
             scope.$on('moreData', function(e) {
                 lazyLoad(e);

@@ -44,23 +44,24 @@ describe('Test lux.form.utils module', function() {
     it('remote options are parsed and an instance of LuxPagination is created and the getData method is called', function() {
         var remoteOptions = '{"url": "http://127.0.0.1:6050", "name": "groups_url"}';
         var markup = '<div data-remote-options=\'' + remoteOptions + '\' data-remote-options-id="" name="groups[]"><input type="text"></input></div>';
+        var params = {sortby: 'id:asc'};
 
         spyOn(JSON, 'parse').and.callThrough();
         getCompiledElem(markup);
 
         expect(JSON.parse).toHaveBeenCalled();
         expect(LuxPagination).toHaveBeenCalledWith(scope, JSON.parse(remoteOptions), false);
-        expect(LuxPagination.prototype.getData).toHaveBeenCalledWith({}, jasmine.any(Function));
+        expect(LuxPagination.prototype.getData).toHaveBeenCalledWith(params, jasmine.any(Function));
     });
 
     it('if multiple attr is present instance of LuxPag is recursive and getData called with raised limit', function() {
         var remoteOptions = '{"url": "http://127.0.0.1:6050", "name": "groups_url"}';
         var markup = '<div multiple="multiple" data-remote-options=\'' + remoteOptions + '\' data-remote-options-id="" name="groups[]"><input type="text"></input></div>';
-
+        var params = {limit: 200, sortby: 'id:asc'};
         getCompiledElem(markup);
 
         expect(LuxPagination).toHaveBeenCalledWith(scope, JSON.parse(remoteOptions), true);
-        expect(LuxPagination.prototype.getData).toHaveBeenCalledWith({limit: 200}, jasmine.any(Function));
+        expect(LuxPagination.prototype.getData).toHaveBeenCalledWith(params, jasmine.any(Function));
     });
 
     it('scope.$on is called when "more Data" event is emitted', function() {

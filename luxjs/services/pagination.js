@@ -32,18 +32,22 @@ angular.module('lux.pagination', ['lux.services'])
             this.params = params ? params : null;
             if (cb) this.cb = cb;
 
-            this.api.get(null, params).then(function(data) {
+            this.api.get(null, this.params).then(function(data) {
 
                 // removes search from parameters so this.params is
-                // clean for a generic loadMore or new search
-                if (this.searchField) delete this.params[this.searchField];
+                // clean for next generic loadMore or new search. Also
+                // adds searched flag.
+                if (this.searchField) {
+                    data.searched = true;
+                    delete this.params[this.searchField];
+                }
 
                 this.cb(data);
                 this.updateUrls(data);
 
             }.bind(this), function(error) {
-                cb(error);
-            });
+                this.cb(error);
+            }.bind(this));
 
         };
 
@@ -57,7 +61,7 @@ angular.module('lux.pagination', ['lux.services'])
                     next: data.data.next ? data.data.next : false
                 };
                 // If the recursive param was set to true this will
-                // request data using the 'next' link; if not it will emitEvent()
+                // request data using the 'next' link; if not it will emitEvent
                 // so the component knows there's more data available
                 if (this.recursive) this.loadMore();
                 else this.emitEvent();
@@ -75,7 +79,7 @@ angular.module('lux.pagination', ['lux.services'])
             // loadMore applies new urls from updateUrls to the
             // target object and makes another getData request.
 
-            if (!this.urls.next && !this.urls.last) throw 'No more data available';
+            if (!this.urls.next && !this.urls.last) throw 'Updated URLs not set.';
 
             if (this.urls.next === false) {
                 this.target.url = this.urls.last;
