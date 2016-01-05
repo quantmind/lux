@@ -1,7 +1,7 @@
 //      Lux Library - v0.4.0
 
-//      Compiled 2015-12-18.
-//      Copyright (c) 2015 - Luca Sbardella
+//      Compiled 2016-01-05.
+//      Copyright (c) 2016 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
 //      http://quantmind.github.io/lux
@@ -2021,8 +2021,8 @@ angular.module('lux.cms.core', [])
                 path.split('/').forEach(function (name) {
                     if (name) {
                         last = {
-                            label: name.split('-').map(capitalize).join(' '),
-                            href: joinUrl(last.href, name+'/')
+                            label: name.split(/[-_]+/).map(capitalize).join(' '),
+                            href: joinUrl(last.href, name)
                         };
                         if (last.href.length >= lux.context.url.length)
                             steps.push(last);
