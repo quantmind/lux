@@ -98,7 +98,7 @@
                 path.split('/').forEach(function (name) {
                     if (name) {
                         last = {
-                            label: name.split('-').map(capitalize).join(' '),
+                            label: name.split(/[-_]+/).map(capitalize).join(' '),
                             href: joinUrl(last.href, name)
                         };
                         if (last.href.length >= lux.context.url.length)
