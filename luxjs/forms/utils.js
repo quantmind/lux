@@ -1,22 +1,118 @@
 /**
  * Created by Reupen on 02/06/2015.
+ * Edited by Tom on 18/12/2015.
  */
 
-angular.module('lux.form.utils', ['lux.services'])
+angular.module('lux.form.utils', ['lux.pagination'])
 
-    .directive('remoteOptions', ['$lux', function ($lux) {
+    .constant('lazyLoadOffset', 40) // API will be called this number of pixels
+                                    // before bottom of UIselect list
 
-        function fill(api, target, scope, attrs) {
+    .directive('remoteOptions', ['$lux', 'luxPaginationFactory', 'lazyLoadOffset', '$timeout', function ($lux, LuxPagination, lazyLoadOffset, $timeout) {
 
-            var id = attrs.remoteOptionsId || 'id',
-                nameOpts = attrs.remoteOptionsValue ? JSON.parse(attrs.remoteOptionsValue) : {
+        function remoteOptions(luxPag, target, scope, attrs, element) {
+
+            function lazyLoad(e) {
+                // lazyLoad requests the next page of data from the API
+                // when nearing the bottom of a <select> list
+                var uiSelect = element[0].querySelector('.ui-select-choices');
+
+                e.stopPropagation();
+                if (!uiSelect) return;
+
+                var uiSelectChild = uiSelect.querySelector('.ui-select-choices-group');
+                uiSelect = angular.element(uiSelect);
+
+                uiSelect.on('scroll', function() {
+                    var offset = uiSelectChild.clientHeight - this.clientHeight - lazyLoadOffset;
+
+                    if (this.scrollTop > offset) {
+                        uiSelect.off();
+                        luxPag.loadMore();
+                    }
+                });
+
+            }
+
+            function enableSearch() {
+                if (searchInput.data().onKeyUp) return;
+
+                searchInput.data('onKeyUp', true);
+                searchInput.on('keyup', function(e) {
+                    var query = e.srcElement.value;
+                    var searchField = attrs.remoteOptionsId === 'id' ? nameOpts.source : attrs.remoteOptionsId;
+
+                    cleanSearchResults();
+
+                    // Only call API with search if query is > 3 chars
+                    if (query.length > 3) {
+                        luxPag.search(query, searchField);
+                    }
+                });
+            }
+
+            function loopAndPush(data) {
+                angular.forEach(data.data.result, function (val) {
+                    var name;
+                    if (nameFromFormat) {
+                        name = formatString(nameOpts.source, val);
+                    } else {
+                        name = val[nameOpts.source];
+                    }
+
+                    options.push({
+                        id: val[id],
+                        name: name,
+                        searched: data.searched ? true : false
+                    });
+                });
+
+                cleanDuplicates();
+            }
+
+            function cleanSearchResults() {
+                // options objects containing data.searched will be removed
+                // after relevant search.
+                for (var i = 0; i<options.length; i++) {
+                    if (options[i].searched) options.splice(i, 1);
+                }
+            }
+
+            function cleanDuplicates() {
+                // $timeout waits for rootScope.$digest to finish,
+                // then removes duplicates from options list on the next tick.
+                $timeout(function() {
+                    return scope.$select.selected;
+                }).then(function(selected) {
+                    for (var a=0; a<options.length; a++) {
+                        for (var b=0; b<selected.length; b++) {
+                            if(options[a].id === selected[b].id) options.splice(a, 1);
+                        }
+                    }
+                });
+            }
+
+            function buildSelect(data) {
+                // buildSelect uses data from the API to populate
+                // the options variable, which builds our <select> list
+                if (data.data && data.data.error) {
+                    options.splice(0, 1, {id: 'placeholder', name: 'Unable to load data...'});
+                    throw new Error(data.data.message);
+                } else {
+                    loopAndPush(data);
+                }
+            }
+
+            var id = attrs.remoteOptionsId || 'id';
+            var nameOpts = attrs.remoteOptionsValue ? JSON.parse(attrs.remoteOptionsValue) : {
                     type: 'field',
                     source: 'id'
-                },
-                nameFromFormat = nameOpts.type === 'formatString',
-                initialValue = {},
-                params = JSON.parse(attrs.remoteOptionsParams || '{}'),
-                options = [];
+                };
+            var nameFromFormat = nameOpts.type === 'formatString';
+            var initialValue = {};
+            var params = JSON.parse(attrs.remoteOptionsParams || '{}');
+            var options = [];
+            var searchInput = angular.element(element[0].querySelector('input[type=text]'));
 
             scope[target.name] = options;
 
@@ -26,42 +122,47 @@ angular.module('lux.form.utils', ['lux.services'])
             options.push(initialValue);
 
             // Set empty value if field was not filled
-            if (scope[scope.formModelName][attrs.name] === undefined)
+            if (scope[scope.formModelName][attrs.name] === undefined) {
                 scope[scope.formModelName][attrs.name] = '';
+            }
 
-            api.get(null, params).then(function (data) {
-                if (attrs.multiple) {
-                    options.splice(0, 1);
-                } else {
-                    options[0].name = 'Please select...';
-                }
-                angular.forEach(data.data.result, function (val) {
-                    var name;
-                    if (nameFromFormat) {
-                        name = formatString(nameOpts.source, val);
-                    } else {
-                        name = val[nameOpts.source];
-                    }
-                    options.push({
-                        id: val[id],
-                        name: name
-                    });
-                });
-            }, function (data) {
-                /** TODO: add error alert */
-                options[0] = '(error loading options)';
+            if (attrs.multiple) {
+                // Increasing default API call limit as UISelect multiple
+                // displays all preselected options
+                params.limit = 200;
+                params.sortby = nameOpts.source ? nameOpts.source + ':asc' : 'id:asc';
+                options.splice(0, 1);
+            } else {
+                params.sortby = params.sortby ? params.sortby + ':asc' : 'id:asc';
+                // Options with id 'placeholder' are disabled in
+                // forms.js so users can't select them
+                options[0] = {
+                    name: 'Please select...',
+                    id: 'placeholder'
+                };
+            }
+
+            // Use LuxPagination's getData method to call the api
+            // with relevant parameters and pass in buildSelect as callback
+            luxPag.getData(params, buildSelect);
+            // Listen for LuxPagination to emit 'moreData' then run
+            // lazyLoad and enableSearch
+            scope.$on('moreData', function(e) {
+                lazyLoad(e);
+                enableSearch();
             });
         }
 
         function link(scope, element, attrs) {
 
             if (attrs.remoteOptions) {
-                var target = JSON.parse(attrs.remoteOptions),
-                    api = $lux.api(target);
+                var target = JSON.parse(attrs.remoteOptions);
+                var luxPag = new LuxPagination(scope, target, attrs.multiple ? true : false);
 
-                if (api && target.name)
-                    return fill(api, target, scope, attrs);
+                if (luxPag && target.name)
+                    return remoteOptions(luxPag, target, scope, attrs, element);
             }
+
             // TODO: message
         }
 

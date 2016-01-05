@@ -460,6 +460,9 @@
                         choices_inner = $($document[0].createElement('div')),
                         choices_inner_small = $($document[0].createElement('small')),
                         choices = $($document[0].createElement('ui-select-choices'))
+                                    // Ensure any inserted placeholders are disabled
+                                    // i.e. 'Please Select...'
+                                    .attr('ui-disable-choice', 'item.id === "placeholder"')
                                     .append(choices_inner);
 
                     if (field.multiple)
