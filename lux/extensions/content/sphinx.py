@@ -40,4 +40,3 @@ def build_page(app, dirpath, filename, src, location):
 
     with open(full_src, 'r') as fp:
         data = json.loads(fp.read())
-

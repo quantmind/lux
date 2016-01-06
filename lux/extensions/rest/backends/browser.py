@@ -223,7 +223,7 @@ class ApiSessionBackend(SessionBackendMixin,
         BrowserBackend.on_html_document(self, app, request, doc)
         if request.method == 'GET':
             session = request.cache.session
-            if session.user:
+            if session and session.user:
                 doc.head.add_meta(name="user-token", content=session.encoded)
 
     def _key(self, id):
