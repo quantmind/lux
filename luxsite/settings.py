@@ -2,11 +2,11 @@ APP_NAME = 'Lux'
 HTML_TITLE = 'Lux - Crafting web applications with Python and AngularJS'
 SITE_URL = 'http://quantmind.github.io/lux'
 EXTENSIONS = ('lux.extensions.base',
-              'lux.extensions.ui',
               'lux.extensions.angular',
               'lux.extensions.oauth',
               'lux.extensions.code',
-              'lux.extensions.static')
+              'lux.extensions.rest',
+              'lux.extensions.content')
 
 STATIC_API = 'jsonapi'
 MD_EXTENSIONS = ['extra', 'meta', 'toc']

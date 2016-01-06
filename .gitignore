@@ -25,6 +25,7 @@ lux/media/lux/*.js
 lux/media/lux/*.css
 luxsite/media/luxsite/*.js
 luxsite/media/luxsite/*.css
+scss/deps
 
 *.log
 npm*

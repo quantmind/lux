@@ -22,27 +22,43 @@ class Command(lux.Command):
 
     def run(self, options):
         #
-        shutil.rmtree(self.target())
-        # copy lux files into target
+        # SCSS first
+        self.media('scss', self.scss_target)
 
+        #
+        # Javascript second
         base = self.app_base()
         current = os.getcwd()
         os.chdir(base)
         try:
-            # Lux package
-            src = os.path.join(lux.PACKAGE_DIR, 'media', 'js')
-
-            lux_loc = self.target('lux')
-            self.write('Copy files from "%s" to "%s"' % (src, lux_loc))
-            shutil.copytree(src, lux_loc)
-            paths = self.grunt('lux', lux_loc)
+            sources = self.media('js', self.js_target)
             #
-            # App package
+            self.write('Create build require config')
+            paths = {}
+            for name, _ in sources:
+                paths.update(self.grunt(name, self.js_target(name)))
             paths.update(self.grunt('', self.app_base()))
 
             self.save_config_paths(paths)
         finally:
             os.chdir(current)
+
+    def media(self, media, get_target):
+        target = get_target()
+        if os.path.isdir(target):
+            shutil.rmtree(target)
+        sources = [('lux', os.path.join(lux.PACKAGE_DIR, 'media', media))]
+        for ext in self.app.extensions.values():
+            if ext.meta.media_dir:
+                src = os.path.join(ext.meta.media_dir, media)
+                if os.path.isdir(src):
+                    name = ext.meta.name.split('.')[-1]
+                    sources.append((name, src))
+
+        for name, src in sources:
+            self._copy(src, get_target(name))
+
+        return sources
 
     def grunt(self, prefix, base):
         '''Create required paths for prefix
@@ -90,9 +106,9 @@ class Command(lux.Command):
         return paths
 
     def templates(self, templates, prefix, base, name):
-        '''Create a template file for angular
+        '''Create the templates directory with valid angular template modules
         '''
-        target_dir = self.target(prefix, 'templates')
+        target_dir = self.js_target(prefix, 'templates')
         name = name or prefix
         file_name = '%s/%s/templates' % (prefix, name)
         module_name = '%s.%s.templates' % (prefix, name)
@@ -128,10 +144,9 @@ class Command(lux.Command):
         return paths
 
     def save_config_paths(self, paths):
-
         # Save lux.json for building the javascript file
         entry = dict(paths=paths)
-        lux_cfg = self.target('lux.json')
+        lux_cfg = self.js_target('lux.json')
         with open(lux_cfg, 'w') as fp:
             fp.write(json.dumps(entry, indent=4))
         self.write('"%s" created' % lux_cfg)
@@ -139,13 +154,13 @@ class Command(lux.Command):
         #
         # Create Karma files
         cfg_paths = {}
-        base = self.js_src()
+        base = self.js_target_base()
         for name, path in paths.items():
             relpath = os.path.relpath(path, base)
             cfg_paths[name] = relpath
         # Test config
         test_template = self.template('test.config.js')
-        test_cfg = self.target('test.config.js')
+        test_cfg = self.js_target('test.config.js')
         media_dir = os.path.join(self.app.meta.media_dir,
                                  self.app.config_module, '')
         test_file = test_template.safe_substitute(
@@ -160,14 +175,16 @@ class Command(lux.Command):
         '''
         return os.path.dirname(self.app.meta.path)
 
-    def js_src(self):
-        return os.path.join(self.app_base(), 'js')
+    def scss_target(self, *args):
+        base = os.path.join(self.app_base(), 'scss', 'deps')
+        return self._join_paths(base, *args)
 
-    def target(self, *args):
-        build_dir = os.path.join(self.js_src(), 'build')
-        if not os.path.isdir(build_dir):
-            os.makedirs(build_dir)
-        return os.path.join(build_dir, *args) if args else build_dir
+    def js_target(self, *args):
+        dir = os.path.join(self.js_target_base(), 'build')
+        return self._join_paths(dir, *args)
+
+    def js_target_base(self):
+        return os.path.join(self.app_base(), 'js')
 
     def template(self, name):
         filename = os.path.join(lux.PACKAGE_DIR, 'media', 'templates', name)
@@ -177,6 +194,16 @@ class Command(lux.Command):
     def lines(self, text):
         for line in text.split('\n'):
             yield '         "%s\\n"' % escape_quote(line)
+
+    def _join_paths(self, dir, *args):
+        dir = os.path.join(dir, *args) if args else dir
+        return dir
+
+    def _copy(self, src, target):
+        self.write('Copy files from "%s" to "%s"' % (src, target))
+        if os.path.isdir(target):
+            shutil.rmtree(target)
+        shutil.copytree(src, target)
 
 
 def escape_quote(text):
