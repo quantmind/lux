@@ -5,7 +5,11 @@
     },
     "contributors": [],
     "keywords": ["web", "framework", "python", "angularjs"],
-    "name": "lux",
+    "name": "luxsite",
+    "dependencies": {
+        "ngImgCrop": "git://github.com/iblank/ngImgCrop.git#39649fad4ee310cff71aca2c581fcb02fc872328",
+        "bootstrap-sass": "^3.3.6"
+    },
     "devDependencies": {
         "grunt-contrib-watch": "",
         "karma-firefox-launcher": "",
