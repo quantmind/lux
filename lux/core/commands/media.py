@@ -162,7 +162,7 @@ class Command(lux.Command):
         test_template = self.template('test.config.js')
         test_cfg = self.js_target('test.config.js')
         media_dir = os.path.join(self.app.meta.media_dir,
-                                 self.app.config_module, '')
+                                 self.app.meta.name, '')
         test_file = test_template.safe_substitute(
             {'media_dir': media_dir,
              'require_paths': json.dumps(cfg_paths, indent=4)})

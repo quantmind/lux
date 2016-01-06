@@ -76,7 +76,7 @@ module.exports = function (grunt) {
                 stderr: true
             },
             command: function() {
-                return path.resolve('manage.py') + ' grunt';
+                return path.resolve('manage.py') + ' media';
             }
         }
     };
