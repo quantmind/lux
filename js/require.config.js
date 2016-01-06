@@ -5,7 +5,7 @@ define(['lux/config'], function (lux) {
 
     lux.require.paths = lux.extend(lux.require.paths, {
         'giotto': localRequiredPath + 'luxsite/giotto',
-        'angular-img-crop': localRequiredPath + 'bmll/ng-img-crop.js',
+        'angular-img-crop': localRequiredPath + 'luxsite/ng-img-crop.js',
         'angular-infinite-scroll': '//cdnjs.cloudflare.com/ajax/libs/ngInfiniteScroll/1.2.1/ng-infinite-scroll',
         'videojs': '//vjs.zencdn.net/4.12/video.js',
         'moment-timezone': '//cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.4.0/moment-timezone-with-data-2010-2020'

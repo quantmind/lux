@@ -32,7 +32,6 @@ class TextForm(forms.Form):
 class TextCRUDBase(rest.RestMixin, HtmlRouter):
     response_content_types = None
     render_file = RouterParam()
-    uimodules = ('lux.blog',)
 
 
 class TextCRUD(TextCRUDBase):
@@ -206,7 +205,7 @@ class CMS(lux.CMS):
 
     def add_router(self, router, sitemap=True):
         if isinstance(router, Content):
-            router = TextCMS(router)
+            router = TextCMS(router, html=True)
 
         if sitemap:
             path = str(router.route)

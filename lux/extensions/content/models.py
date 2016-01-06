@@ -39,14 +39,12 @@ OPERATORS = {
 
 
 class Content(rest.RestModel):
-    '''A Rest model with git backend using dulwich_
+    '''A Rest model with file-system backend
 
     This model provide basic CRUD operations for a RestFul web API.
-
-    .. _dulwich: https://www.samba.org/~jelmer/dulwich/docs/
     '''
     def __init__(self, name, repo, path=None, ext='md', content_meta=None,
-                 columns=None, **kwargs):
+                 columns=None, api_prefix='content'):
         if not os.path.isdir(repo):
             os.makedirs(repo)
         self.path = repo
@@ -56,9 +54,11 @@ class Content(rest.RestModel):
             path = name
         if path:
             self.path = os.path.join(self.path, path)
-        self.path = self.path
         columns = columns or COLUMNS[:]
-        super().__init__(name, columns=columns, **kwargs)
+        api_url = api_prefix
+        if api_url:
+            api_url = '%s/%s' % (api_url, name)
+        super().__init__(name, columns=columns, url=api_url, html_url=path)
 
     def session(self, request):
         return Query(request, self)
@@ -112,6 +112,7 @@ class Content(rest.RestModel):
             data.pop('site', None)
         return data
 
+    # INTERNALS
     def _content(self, request, name):
         '''Read content from file in the repository
         '''

@@ -34,8 +34,10 @@ class RestRoot(lux.Router):
 
 
 class RestMixin(ModelMixin):
-
-    def __init__(self, *args, **kwargs):
+    '''A mixin to be used in conjunction with Routers, usually
+    as the first class in the multi-inheritance declaration
+    '''
+    def __init__(self, *args, html=False, **kwargs):
         if self._model is None and args:
             model, args = args[0], args[1:]
             self.set_model(model)
@@ -43,7 +45,9 @@ class RestMixin(ModelMixin):
         if not isinstance(self._model, RestModel):
             raise NotImplementedError('REST model not available')
 
-        super().__init__(self._model.url, *args, **kwargs)
+        url = self._model.html_url if html else self._model.url
+        assert url is not None, "Model %s has no valid url" % self._model
+        super().__init__(url, *args, **kwargs)
 
     def json(self, request, data):
         '''Return a response as application/json

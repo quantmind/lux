@@ -10,12 +10,10 @@ class CommandTests(test.TestCase):
 
     @test.test_timeout(10)
     @test.green
-    def test_grunt(self):
-        command = self.fetch_command('grunt')
+    def test_media(self):
+        command = self.fetch_command('media')
         command([])
 
-
-class d:
     def test_getapp(self):
         app = self.application(GREEN_POOL=50)
         command = self.fetch_command('getapp', app)

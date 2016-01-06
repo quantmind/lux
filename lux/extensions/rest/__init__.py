@@ -105,7 +105,9 @@ class Extension(MultiAuthBackend):
                   jscontext=True),
         Parameter('POST_LOGOUT_URL', None,
                   'URL users are redirected to after logged out',
-                  jscontext=True)]
+                  jscontext=True),
+        Parameter('WEB_SITE_URL', None,
+                  'Url of the website registering to')]
 
     def on_config(self, app):
         self.backends = []

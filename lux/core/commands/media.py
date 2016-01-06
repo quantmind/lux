@@ -17,14 +17,14 @@ def skipdir(path):
 
 class Command(lux.Command):
 
-    help = ('Creates a Lux project configuration files for javascript')
+    help = ('Creates a lux project configuration files for javascript and '
+            'scss compilation')
     src = 'js'
 
     def run(self, options):
         #
         # SCSS first
         self.media('scss', self.scss_target)
-
         #
         # Javascript second
         base = self.app_base()

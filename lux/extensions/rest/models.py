@@ -5,6 +5,10 @@ from copy import copy
 from pulsar import PermissionDenied
 from pulsar.utils.html import nicename
 from pulsar.apps.wsgi import Json
+# from pulsar.utils.httpurl import is_absolute_uri
+
+import lux
+
 
 logger = logging.getLogger('lux.extensions.rest')
 
@@ -145,7 +149,7 @@ class ColumnPermissionsMixin:
         return tuple((col for col in columns if not perms.get(col['name'])))
 
 
-class RestModel(ColumnPermissionsMixin):
+class RestModel(lux.LuxModel, ColumnPermissionsMixin):
     '''Hold information about a model used for REST views
 
     .. attribute:: name
@@ -191,19 +195,22 @@ class RestModel(ColumnPermissionsMixin):
         self.form = form
         self.updateform = updateform
         self.url = url if url is not None else '%ss' % name
-        self.api_name = '%s_url' % (self.url or self.name)
+        self.api_name = '%s_url' % self.url.replace('/', '_')
         self.id_field = id_field or 'id'
         self.repr_field = repr_field or 'id'
-        self._api_url = api_url
-        self._html_url = html_url
+        self.html_url = html_url
+        self.api_url = api_url
         self._columns = columns
         self._exclude = set(exclude or ())
         self._hidden = set(hidden or ())
 
     def __repr__(self):
         return self.name
-
     __str__ = __repr__
+
+    @property
+    def identifier(self):
+        return self.url
 
     def set_model_attribute(self, instance, name, value):
         '''Set the the attribute ``name`` to ``value`` in a model ``instance``
@@ -245,15 +252,15 @@ class RestModel(ColumnPermissionsMixin):
         return self._col_mapping
 
     def get_target(self, request, **extra_data):
-        '''Get a target for a form
+        '''Get a target object for this model
 
         Used by HTML Router to get information about the LUX REST API
         of this Rest Model
         '''
-        url = self._api_url or request.app.config.get('API_URL')
-        if not url:
+        api_url = self.api_url or request.config.get('API_URL')
+        if not api_url:
             return
-        target = {'url': url, 'name': self.api_name}
+        target = {'url': api_url, 'name': self.api_name}
         target.update(**extra_data)
         return target
 

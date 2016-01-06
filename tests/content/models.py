@@ -16,8 +16,11 @@ class TestContentModel(test.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.repo = Content('Tests', PWD, '')
-        cls.user = User()
+        cls.repo = Content('tests', PWD, '')
+        with open(os.path.join(PWD, 'index.md'), 'w') as fp:
+            fp.write('\n'.join(('title: Index', '', 'Just an index')))
+        with open(os.path.join(PWD, 'foo.md'), 'w') as fp:
+            fp.write('\n'.join(('title: This is Foo', '', 'Just foo')))
 
     @classmethod
     def tearDownClass(cls):
@@ -29,66 +32,22 @@ class TestContentModel(test.TestCase):
         self.assertIsInstance(self.repo, Content)
 
         # repo not exist
-        pwd = os.path.join(PWD, '../repo_test')
+        pwd = os.path.join(PWD, 'repo_test')
         Content('Test', pwd)
         self.assertTrue(os.path.exists(pwd))
-        shutil.rmtree(pwd)
-
-    def test_write(self):
-        # no file but trying to open one
-        data = {'body': 'Test message', 'name': 'Test'}
-        app = self.application()
-        request = app.wsgi_request(app_handler=True, urlargs={})
-
-        with self.assertRaises(DataError) as e:
-            self.repo.write(request, self.user, data)
-        self.assertEqual(str(e.exception), 'Test not available')
-
-        # create first file
-        commit = self.repo.write(request, self.user, data, new=True)
-        self.assertTrue(commit)
-        self.assertTrue(os.path.exists(os.path.join(PWD, 'Test.md')))
-
-        # try to overwrite file
-        with self.assertRaises(DataError) as e:
-            self.repo.write(request, self.user, data, new=True)
-        self.assertEqual(str(e.exception), 'Test not available')
-
-    def test_delete(self):
-        data = {'name': 'delete_me', 'body': 'Delete me!',
-                'files': 'delete_me'}
-        # create file and delete it
-        app = self.application()
-        request = app.wsgi_request(app_handler=True, urlargs={})
-
-        self.repo.write(request, self.user, data, new=True)
-        self.assertTrue(os.path.exists(os.path.join(PWD, 'delete_me.md')))
-        self.repo.delete(request, self.user, data)
-        self.assertFalse(os.path.exists(os.path.join(PWD, 'delete_me.md')))
-        # no file to delete
-        data['files'] = None
-        with self.assertRaises(DataError) as e:
-            self.repo.delete(request, self.user, data)
-        self.assertEqual(str(e.exception), 'Nothing to delete')
 
     def test_all(self):
-        data = {'name': 'all_file', 'body': 'nothing'}
         app = self.application()
-        request = app.wsgi_request(app_handler=True, urlargs={})
-
-        self.repo.write(request, self.user, data, new=True)
-        models = dict(((v['url'], v) for v in self.repo.all(request)))
+        request = app.wsgi_request()
+        models = dict(((v['html_url'], v) for v in self.repo.all(request)))
         host = request.get_host()
-        self.assertIn('http://%s/Testss/all_file' % host, models)
+        self.assertIn('http://%s/tests/index' % host, models)
 
     def test_read(self):
-        data = {'name': 'README', 'body': 'Readme message'}
         app = self.application()
-        request = app.wsgi_request(app_handler=True, urlargs={})
-
-        self.repo.write(request, self.user, data, new=True)
-        content = self.repo.read(request, 'README')
-        self.assertEqual(content._content, '<p>Readme message</p>')
+        request = app.wsgi_request()
+        content = self.repo.read(request, 'foo')
+        self.assertEqual(content._content, '<p>Just foo</p>')
         # try to read wrong file
         with self.assertRaises(DataError) as e:
             self.repo.read(request, 'Not_exist')
