@@ -22,7 +22,7 @@ from .extension import Extension, Parameter, EventMixin
 from .wrappers import wsgi_request, HeadMeta, error_handler, as_async_wsgi
 from .engines import template_engine
 from .cms import CMS
-from .models import LuxModel
+from .models import ModelContainer
 from .cache import create_cache
 
 
@@ -262,7 +262,7 @@ class Application(ConsoleParser, Extension, EventMixin):
         self.meta.argv = callable._argv
         self.meta.script = callable._script
         self.auth_backend = self
-        self.models = {}
+        self.models = ModelContainer()
         self.config = self._build_config(callable._config_file)
         self.fire('on_config')
         if handler:
@@ -352,17 +352,6 @@ class Application(ConsoleParser, Extension, EventMixin):
         '''Get version of this :class:`App`. Required by
         :class:`.ConsoleParser`.'''
         return self.meta.version
-
-    def register_model(self, model):
-        '''Register a new Lux Model to the application
-        '''
-        assert isinstance(model, LuxModel), ('An instance of a lux model '
-                                             'is required')
-        if model.identifier in self.models:
-            raise ImproperlyConfigured('Model %s already registered' %
-                                       model.identifier)
-        if model.identifier:
-            self.models[model.identifier] = model
 
     def wsgi_request(self, environ=None, loop=None, path=None,
                      app_handler=None, urlargs=None, **kw):
