@@ -29,15 +29,24 @@ class TextForm(forms.Form):
     published = forms.DateTimeField(required=False)
 
 
-class TextCRUD(rest.RestMixin, HtmlRouter):
+class TextCRUDBase(rest.RestMixin, HtmlRouter):
+    '''Base class so that the render_file method is specified
+    '''
     response_content_types = None
     render_file = RouterParam()
+    uimodules = ('lux.blog',)
+
+
+class TextCRUD(TextCRUDBase):
 
     def get_instance(self, request):
         path = request.urlargs['path']
         if path.endswith('/'):
             path = '%sindex' % path
-        model = self.model(request)
+        return self.get_content(request, path)
+
+    def get_content(self, request, path):
+        model = self.model(request.app)
         try:
             return model.read(request, path)
         except DataError:
@@ -224,6 +233,7 @@ class CMS(lux.CMS):
 
     def inner_html(self, request, page, self_comp=''):
         html = super().inner_html(request, page, self_comp)
+        # inject html_main into cache
         request.cache.html_main = html
         path = request.path[1:]
 

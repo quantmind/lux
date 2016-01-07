@@ -74,7 +74,7 @@ class CsrfBackend(AuthBackend):
             secret_key = request.config['SECRET_KEY']
             token = jwt.decode(token, secret_key)
         except jwt.ExpiredSignature:
-            raise PermissionDenied('Expired token')
+            raise PermissionDenied(bad_token)
         except Exception:
             raise PermissionDenied(bad_token)
         else:

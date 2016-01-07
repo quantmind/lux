@@ -1,11 +1,10 @@
 import os
-import shutil
 
 from lux.utils import test
 from lux.extensions.rest import UserMixin
 from lux.extensions.content.models import Content, DataError
 
-from . import PWD, remove_repo
+from . import PWD, remove_repo, create_content
 
 
 class User(UserMixin):
@@ -17,10 +16,7 @@ class TestContentModel(test.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.model = Content('tests', PWD, '')
-        with open(os.path.join(PWD, 'index.md'), 'w') as fp:
-            fp.write('\n'.join(('title: Index', '', 'Just an index')))
-        with open(os.path.join(PWD, 'foo.md'), 'w') as fp:
-            fp.write('\n'.join(('title: This is Foo', '', 'Just foo')))
+        create_content('tests')
 
     @classmethod
     def tearDownClass(cls):
@@ -52,12 +48,5 @@ class TestContentModel(test.TestCase):
         content = self.model.read(request, 'foo')
         data = self.model.tojson(request, content)
         self.assertTrue(data)
-        self.assertEqual(data['title'], 'This is foo')
+        self.assertEqual(data['title'], 'This is Foo')
         self.assertEqual(data['path'], 'foo')
-
-    def test_all(self):
-        app = self.application()
-        request = app.wsgi_request()
-        models = dict(((v['html_url'], v) for v in self.model.all(request)))
-        host = request.get_host()
-        self.assertIn('http://%s/tests/index' % host, models)
