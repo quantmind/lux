@@ -9,4 +9,4 @@ beautifulsoup4
 rethinkdb
 redis
 dulwich
-pulsar-odm
+pulsar-odm=0.3.0
