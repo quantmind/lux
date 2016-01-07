@@ -68,6 +68,9 @@ class RestMixin(ModelMixin):
 class RestRouter(RestMixin, lux.Router):
     response_content_types = REST_CONTENT_TYPES
 
+    def get_instance(self, request):
+        raise NotImplementedError
+
     def options(self, request):
         '''Handle the CORS preflight request
         '''

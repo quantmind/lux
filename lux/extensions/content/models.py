@@ -55,9 +55,7 @@ class Content(rest.RestModel):
         if path:
             self.path = os.path.join(self.path, path)
         columns = columns or COLUMNS[:]
-        api_url = api_prefix
-        if api_url:
-            api_url = '%s/%s' % (api_url, name)
+        api_url = '%s/%s' % (api_prefix, name)
         super().__init__(name, columns=columns, url=api_url, html_url=path)
 
     def session(self, request):
@@ -65,6 +63,12 @@ class Content(rest.RestModel):
 
     def query(self, request, session, *filters):
         return session
+
+    def tojson(self, request, obj, exclude=None, **kw):
+        data = obj.json(request)
+        data['url'] = self.get_url(request, data['path'])
+        data['html_url'] = self.get_html_url(request, data['path'])
+        return data
 
     def get_target(self, request, **extra_data):
         '''Get a target for a form
@@ -91,8 +95,8 @@ class Content(rest.RestModel):
         try:
             src, name, content = self._content(request, name)
             reader = get_reader(request.app, src)
-            path = self._path(request, name)
-            return reader.process(content, path, src=src,
+            # path = self._path(request, name)
+            return reader.process(content, name, src=src,
                                   meta=self.content_meta)
         except IOError:
             raise DataError('%s not available' % name)

@@ -29,14 +29,20 @@ class TextForm(forms.Form):
     published = forms.DateTimeField(required=False)
 
 
-class TextCRUDBase(rest.RestMixin, HtmlRouter):
+class TextCRUD(rest.RestMixin, HtmlRouter):
     response_content_types = None
     render_file = RouterParam()
 
+    def get_instance(self, request):
+        path = request.urlargs['path']
+        if path.endswith('/'):
+            path = '%sindex' % path
+        model = self.model(request)
+        try:
+            return model.read(request, path)
+        except DataError:
+            raise Http404
 
-class TextCRUD(TextCRUDBase):
-    '''CRUD views for the text APIs
-    '''
     def get_html(self, request):
         '''Return a div for pagination
         '''
@@ -103,13 +109,6 @@ class TextCRUD(TextCRUDBase):
             content.bla = None
 
         raise PermissionDenied
-
-    def get_content(self, request, path, sha=None):
-        model = self.model(request.app)
-        try:
-            return model.read(request, path)
-        except DataError:
-            raise Http404
 
     def create_model(self, request, data):
         '''Create a new document

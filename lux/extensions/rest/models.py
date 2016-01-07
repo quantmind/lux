@@ -1,11 +1,12 @@
 import json
 import logging
 from copy import copy
+from urllib.parse import urljoin
 
 from pulsar import PermissionDenied
 from pulsar.utils.html import nicename
 from pulsar.apps.wsgi import Json
-# from pulsar.utils.httpurl import is_absolute_uri
+from pulsar.utils.httpurl import is_absolute_uri
 
 import lux
 
@@ -404,6 +405,14 @@ class RestModel(lux.LuxModel, ColumnPermissionsMixin):
         '''
         return self.tojson(request, data)
 
+    def get_url(self, request, path):
+        return self._build_url(request, path, self.url,
+                               request.config.get('API_URL'))
+
+    def get_html_url(self, request, path):
+        return self._build_url(request, path, self.html_url,
+                               request.config.get('WEB_SITE_URL'))
+
     def _do_sortby(self, request, query, entry, direction):
         raise NotImplementedError
 
@@ -428,6 +437,18 @@ class RestModel(lux.LuxModel, ColumnPermissionsMixin):
             columns.append(col.as_dict())
 
         return columns
+
+    def _build_url(self, request, path, url, base):
+        if url is None:
+            return
+        if not is_absolute_uri(url):
+            base = base or request.absolute_uri()
+            url = urljoin(base, url)
+        if path:
+            if not url.endswith('/'):
+                url = '%s/' % url
+            url = urljoin(url, path)
+        return url
 
 
 class ModelMixin:
