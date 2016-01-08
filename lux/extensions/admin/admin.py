@@ -15,7 +15,7 @@ adminMap = {}
 
 def is_admin(cls, check_model=True):
     if isclass(cls) and issubclass(cls, AdminModel) and cls is not AdminModel:
-        return bool(cls._model) if check_model else True
+        return bool(cls.model) if check_model else True
     return False
 
 
@@ -27,14 +27,14 @@ class register:
     '''
     def __init__(self, model):
         if isinstance(model, RouterType):
-            model = model._model
+            model = model.model
         if not isinstance(model, rest.RestModel):
             model = rest.RestModel(model)
         self.model = model
 
     def __call__(self, cls):
         assert is_admin(cls, False)
-        cls._model = self.model
+        cls.model = self.model
         adminMap[self.model.name] = cls
         return cls
 
@@ -85,7 +85,7 @@ class Admin(AdminRouter):
         resources = []
         for child in self.routes:
             if isinstance(child, AdminModel):
-                resource = child._model.name
+                resource = child.model.name
                 resources.append(resource)
                 section, info = child.info(request)
                 infos.append((resource, section, info))
@@ -134,7 +134,7 @@ class AdminModel(rest.RestMixin, AdminRouter):
     def info(self, request):
         '''Information for admin navigation
         '''
-        url = self._model.url
+        url = self.model.url
         name = nicename(url)
         info = {'title': name,
                 'name': name,
@@ -144,8 +144,8 @@ class AdminModel(rest.RestMixin, AdminRouter):
 
     def get_html(self, request):
         app = request.app
-        model = self._model
-        options = dict(target=model.get_target(request))
+        model = self.model
+        options = dict(target=model.get_target())
         if self.permissions is not None:
             options['permissions'] = self.permissions
         context = {'grid': grid(options)}
@@ -178,10 +178,10 @@ class CRUDAdmin(AdminModel):
             raise Http404
         action = 'update' if id else 'create'
         backend = request.cache.auth_backend
-        model = self._model
+        model = self.model
 
         if backend.has_permission(request, model.name, action):
-            target = model.get_target(request, path=id, get=True)
+            target = model.get_target(path=id, get=True)
             html = form(request).as_form(action=target, actionType=action)
             context = {'html_form': html.render()}
             html = request.app.render_template(self.addtemplate, context)

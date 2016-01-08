@@ -108,7 +108,7 @@ class TextRouter(TextRouterBase):
             return self.render_file(request, path, True)
         except Http404:
             if not path.endswith('/'):
-                if model.exist(request, '%s/index' % path):
+                if self.model.exist(request, '%s/index' % path):
                     raise HttpRedirect('%s/' % path)
             raise
 
@@ -176,7 +176,7 @@ class RouterMap(Sitemap):
     content_router = None
 
     def items(self, request):
-        model = self.content_router.model(request)
+        model = self.content_router.model
         for item in model.all(request):
             yield AttributeDictionary(loc=item['url'],
                                       lastmod=item['modified'],
@@ -196,6 +196,7 @@ class CMS(lux.CMS):
     def add_router(self, router, sitemap=True):
         if isinstance(router, Content):
             router = TextCMS(router, html=True)
+        router.model = self.app.models.register(router.model)
 
         if sitemap:
             path = str(router.route)

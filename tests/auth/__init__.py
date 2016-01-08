@@ -90,11 +90,11 @@ class SecretForm(forms.Form):
 
 
 class ObjectiveCRUD(odm.CRUD):
-    _model = odm.RestModel('objective', ObjectiveForm, ObjectiveForm)
+    model = odm.RestModel('objective', ObjectiveForm, ObjectiveForm)
 
 
 class SecretCRUD(odm.CRUD):
-    _model = odm.RestModel('secret', SecretForm, SecretForm)
+    model = odm.RestModel('secret', SecretForm, SecretForm)
 
 
 def user_model():
@@ -123,7 +123,7 @@ class UserRest(odm.RestRouter):
     """Rest view for the authenticated user
     No CREATE, simple read, updates and other update-type operations
     """
-    _model = user_model()
+    model = user_model()
 
     def get_instance(self, request, session=None):
         user = ensure_authenticated(request)

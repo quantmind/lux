@@ -223,7 +223,7 @@ class RestModel(lux.LuxModel, ColumnPermissionsMixin):
         Used by HTML Router to get information about the LUX REST API
         of this Rest Model
         '''
-        api_url = self.api_url or request.config.get('API_URL')
+        api_url = self.api_url or self.app.config.get('API_URL')
         if not api_url:
             return
         target = {'url': api_url, 'name': self.api_name}

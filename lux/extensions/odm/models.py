@@ -118,7 +118,7 @@ class RestModel(rest.RestModel):
             if isinstance(current_value, (list, set)):
                 if not isinstance(value, (list, tuple, set)):
                     raise TypeError('list or tuple required')
-                relmodel = col.model(self._app)
+                relmodel = col.model
                 idfield = relmodel.id_field
                 all = set((getattr(v, idfield) for v in value))
                 avail = set()
@@ -163,7 +163,7 @@ class RestModel(rest.RestModel):
                 elif isinstance(data, Enum):
                     data = data.name
                 elif isinstance(restcol, ModelColumn):
-                    related = restcol.model(request.app)
+                    related = request.app.models.register(restcol.model)
                     data = self._related_model(request, related, data)
                 else:   # Test Json
                     json.dumps(data)
@@ -350,12 +350,18 @@ class ModelMixin(rest.ModelMixin):
     RestModel = RestModel
 
 
-class ModelColumn(RestColumn, ModelMixin):
+class ModelColumn(RestColumn):
     '''A Column based on another model
     '''
     def __init__(self, name, model, **kwargs):
+        self._model = model
         super().__init__(name, **kwargs)
-        self.set_model(model)
+
+    @property
+    def model(self):
+        if hasattr(self._model, '__call__'):
+            self._model = self._model()
+        return self._model
 
 
 def column_info(name, col):
