@@ -23,7 +23,6 @@ class RestRoot(lux.Router):
 
     def apis(self, request):
         routes = {}
-        app = request.app
         for router in self.routes:
             routes[router.model.api_name] = request.absolute_uri(router.path())
         return routes

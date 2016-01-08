@@ -1,6 +1,5 @@
 import json
 import logging
-from copy import copy
 from urllib.parse import urljoin
 
 from pulsar import PermissionDenied

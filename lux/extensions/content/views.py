@@ -3,7 +3,6 @@ import logging
 
 from pulsar import PermissionDenied, Http404, HttpRedirect
 from pulsar.apps.wsgi import route, Json, RouterParam
-from pulsar.utils.slugify import slugify
 from pulsar.utils.structures import AttributeDictionary
 from pulsar.utils.httpurl import remove_double_slash
 

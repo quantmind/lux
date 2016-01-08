@@ -52,8 +52,6 @@ class RelationshipField(MultipleMixin, forms.Field, ModelMixin):
         odm = app.odm()
         model = self.get_model(bfield.request)
         db_model = model.db_model()
-        # TODO: this works but it is not general
-        # pkname = db_model.__mapper__.primary_key[0].key
         if not self.multiple:
             value = (value,)
         idcolumn = getattr(db_model, model.id_field)
