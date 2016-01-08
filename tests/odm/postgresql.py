@@ -110,18 +110,19 @@ class TestPostgreSql(TestPostgreSqlBase):
 
     def test_rest_model(self):
         from tests.odm import CRUDTask, CRUDPerson
-        model = CRUDTask().model(self.app)
+        model = self.app.models.register(CRUDTask().model)
         self.assertEqual(model.name, 'task')
-        columns = model.columns(self.app)
+        columns = model.columns()
         self.assertTrue(columns)
 
-        model = CRUDPerson().model(self.app)
-        self.assertEqual(model, CRUDPerson().model(self.app))
+        model = self.app.models.register(CRUDPerson().model)
+        self.assertEqual(model,
+                         self.app.models.register(CRUDPerson().model))
 
         self.assertEqual(model.name, 'person')
         self.assertEqual(model.url, 'people')
         self.assertEqual(model.api_name, 'people_url')
-        columns = model.columns(self.app)
+        columns = model.columns()
         self.assertTrue(columns)
 
     @test.green
@@ -386,7 +387,7 @@ class TestPostgreSql(TestPostgreSqlBase):
         from lux.extensions.odm import RelationshipField, RestModel
         field = RelationshipField(RestModel('book'), name='test_book',
                                   multiple=True)
-        self.assertEqual(field._model.name, 'book')
+        self.assertEqual(field.model.name, 'book')
         attrs = field.getattrs()
         self.assertEqual(attrs.get('multiple'), True)
         self.assertEqual(attrs.get('label'), 'Test book')

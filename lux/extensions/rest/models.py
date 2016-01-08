@@ -217,7 +217,7 @@ class RestModel(lux.LuxModel, ColumnPermissionsMixin):
         '''
         return dict(((c['name'], c) for c in self.columns()))
 
-    def get_target(self, request, **extra_data):
+    def get_target(self, **extra_data):
         '''Get a target object for this model
 
         Used by HTML Router to get information about the LUX REST API
@@ -230,22 +230,19 @@ class RestModel(lux.LuxModel, ColumnPermissionsMixin):
         target.update(**extra_data)
         return target
 
-    def field_options(self, request):
+    def field_options(self):
         '''Return a generator of options for a html serializer
         '''
-        if not request:
-            logger.error('%s cannot get remote target. No request', self)
-        else:
-            target = self.get_target(request)
-            yield 'data-remote-options', json.dumps(target)
-            yield 'data-remote-options-id', self.id_field
-            yield 'data-remote-options-value', json.dumps({
-                'type': 'field',
-                'source': self.repr_field})
-            yield 'data-ng-options', self.remote_options_str.format(
-                options=self.api_name)
-            yield 'data-ng-options-ui-select', \
-                self.remote_options_str_ui_select.format(options=self.api_name)
+        target = self.get_target()
+        yield 'data-remote-options', json.dumps(target)
+        yield 'data-remote-options-id', self.id_field
+        yield 'data-remote-options-value', json.dumps({
+            'type': 'field',
+            'source': self.repr_field})
+        yield 'data-ng-options', self.remote_options_str.format(
+            options=self.api_name)
+        yield 'data-ng-options-ui-select', \
+            self.remote_options_str_ui_select.format(options=self.api_name)
 
     def limit(self, request, limit=None, max_limit=None):
         '''The maximum number of items to return when fetching list

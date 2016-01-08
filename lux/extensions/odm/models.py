@@ -92,7 +92,7 @@ class RestModel(rest.RestModel):
     def db_columns(self, columns=None):
         '''Return a list of columns available in the database table
         '''
-        dbc = self.get_db_columns()
+        dbc = self._get_db_columns()
         if columns is None:
             return tuple(dbc.keys())
         else:
@@ -101,7 +101,7 @@ class RestModel(rest.RestModel):
     def add_related_column(self, name, model, field=None, **kw):
         '''Add a related column to the model
         '''
-        assert not self.app, 'already loaded'
+        assert not self._app, 'already loaded'
         if field:
             self._exclude.add(field)
         column = ModelColumn(name, model, field=field, **kw)
@@ -215,10 +215,11 @@ class RestModel(rest.RestModel):
         with odm.begin(session=session) as session:
             session.delete(instance)
 
+    # INTERNALS
     def _load_columns(self):
         '''List of column definitions
         '''
-        db_columns = self.get_db_columns()
+        db_columns = self._get_db_columns()
         self._rest_columns = {}
         input_columns = self._columns or []
         cols = db_columns._data.copy()
@@ -250,7 +251,7 @@ class RestModel(rest.RestModel):
         columns.append(info)
 
     @lazymethod
-    def get_db_columns(self):
+    def _get_db_columns(self):
         return get_columns(self.db_model())
 
     def _related_model(self, request, model, obj):

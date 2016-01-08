@@ -25,6 +25,9 @@ class RelationshipField(MultipleMixin, forms.Field, ModelMixin):
         self.format_string = format_string
         self.get_field = get_field
 
+    def get_model(self, request):
+        return request.app.models.register(self.model)
+
     def getattrs(self, form=None):
         attrs = super().getattrs(form)
         if not form:
@@ -32,8 +35,8 @@ class RelationshipField(MultipleMixin, forms.Field, ModelMixin):
                          self.__class__.__name__, self.name)
         else:
             request = form.request
-            model = self.model
-            attrs.update(model.field_options(request))
+            model = self.get_model(request)
+            attrs.update(model.field_options())
             if self.format_string:
                 attrs['data-remote-options-value'] = json.dumps({
                     'type': 'formatString',
@@ -47,7 +50,7 @@ class RelationshipField(MultipleMixin, forms.Field, ModelMixin):
         app = bfield.request.app
         # Get a reference to the object data mapper
         odm = app.odm()
-        model = self.model
+        model = self.get_model(bfield.request)
         db_model = model.db_model()
         # TODO: this works but it is not general
         # pkname = db_model.__mapper__.primary_key[0].key
