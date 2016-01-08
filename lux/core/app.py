@@ -262,7 +262,7 @@ class Application(ConsoleParser, Extension, EventMixin):
         self.meta.argv = callable._argv
         self.meta.script = callable._script
         self.auth_backend = self
-        self.models = ModelContainer()
+        self.models = ModelContainer(self)
         self.config = self._build_config(callable._config_file)
         self.fire('on_config')
         if handler:

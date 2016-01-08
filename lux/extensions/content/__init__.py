@@ -3,13 +3,14 @@ from lux import Parameter
 from lux.extensions.angular import add_ng_modules
 
 from .models import Content
-from .views import TextCRUD, TextCMS, TextForm, CMS
+from .views import TextRouter, TextCMS, ContentCRUD, TextForm, CMS
 from .github import GithubHook, EventHandler, PullRepo
 
 
 __all__ = ['Content',
-           'TextCRUD',
+           'TextRouter',
            'TextCMS',
+           'ContentCRUD',
            'CMS',
            'TextForm',
            'GithubHook',

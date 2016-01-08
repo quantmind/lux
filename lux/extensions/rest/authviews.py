@@ -148,7 +148,7 @@ class ResetPasswordMixin:
 class Authorization(RestRouter, SignUpMixin, ResetPasswordMixin):
     '''Authentication views.
     '''
-    _model = RestModel('authorization')
+    model = RestModel('authorization')
     login_form = LoginForm
     change_password_form = ChangePasswordForm
     request_reset_password_form = EmailForm

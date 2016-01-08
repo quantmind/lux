@@ -169,6 +169,12 @@ class Extension(MultiAuthBackend):
                     api_sections = getattr(extension, 'api_sections', None)
                     if api_sections:
                         for router in api_sections(app):
+                            if not isinstance(router, ModelMixin):
+                                raise ImproperlyConfigured('Router must be a '
+                                                           'ModelMixin')
+                            # Register model
+                            router.model = app.models.register(router.model)
+                            # Add router
                             api.add_child(router)
 
             app.api = ApiClient()

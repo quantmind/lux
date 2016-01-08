@@ -97,21 +97,21 @@ class UserForm(forms.Form):
 
 
 class CRUDTask(odm.CRUD):
-    _model = task_model()
+    model = task_model()
 
 
 class CRUDPerson(odm.CRUD):
-    _model = person_model()
+    model = person_model()
 
 
 class UserCRUD(odm.CRUD):
     '''Test custom CRUD view and RestModel
     '''
-    _model = odm.RestModel('user',
-                           UserForm,
-                           UserForm,
-                           columns=('username', 'active', 'superuser'),
-                           exclude=('password', 'permissions'))
+    model = odm.RestModel('user',
+                          UserForm,
+                          UserForm,
+                          columns=('username', 'active', 'superuser'),
+                          exclude=('password', 'permissions'))
 
     def serialise_model(self, request, data, in_list=False):
         return self.model.tojson(request, data, exclude=('superuser',))

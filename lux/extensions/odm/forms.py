@@ -32,7 +32,7 @@ class RelationshipField(MultipleMixin, forms.Field, ModelMixin):
                          self.__class__.__name__, self.name)
         else:
             request = form.request
-            model = self.model(request)
+            model = self.model
             attrs.update(model.field_options(request))
             if self.format_string:
                 attrs['data-remote-options-value'] = json.dumps({
@@ -47,7 +47,7 @@ class RelationshipField(MultipleMixin, forms.Field, ModelMixin):
         app = bfield.request.app
         # Get a reference to the object data mapper
         odm = app.odm()
-        model = self.model(app)
+        model = self.model
         db_model = model.db_model()
         # TODO: this works but it is not general
         # pkname = db_model.__mapper__.primary_key[0].key

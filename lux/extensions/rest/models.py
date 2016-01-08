@@ -7,6 +7,7 @@ from pulsar import PermissionDenied
 from pulsar.utils.html import nicename
 from pulsar.apps.wsgi import Json
 from pulsar.utils.httpurl import is_absolute_uri
+from pulsar.utils.log import lazymethod
 
 import lux
 
@@ -115,7 +116,7 @@ class ColumnPermissionsMixin:
 
         if not ret:
             perm = self.has_permission_for_column
-            columns = self.columns(request)
+            columns = self.columns()
             ret = {
                 col['name']: perm(request, col, level) for
                 col in columns
@@ -132,7 +133,7 @@ class ColumnPermissionsMixin:
         :param level:       access level
         :return:            frozenset of column names
         """
-        columns = self.columns(request)
+        columns = self.columns()
         perms = self.column_permissions(request, level)
         return tuple((col for col in columns if perms.get(col['name'])))
 
@@ -145,7 +146,7 @@ class ColumnPermissionsMixin:
         :param level:       access level
         :return:            frozenset of column names
         """
-        columns = self.columns(request)
+        columns = self.columns()
         perms = self.column_permissions(request, level)
         return tuple((col for col in columns if not perms.get(col['name'])))
 
@@ -183,9 +184,6 @@ class RestModel(lux.LuxModel, ColumnPermissionsMixin):
     '''
     remote_options_str = 'item.id as item.name for item in {options}'
     remote_options_str_ui_select = 'item.id as item in {options}'
-    _app = None
-    _loaded = False
-    _col_mapping = None
 
     def __init__(self, name, form=None, updateform=None, columns=None,
                  url=None, api_name=None, exclude=None,
@@ -213,44 +211,11 @@ class RestModel(lux.LuxModel, ColumnPermissionsMixin):
     def identifier(self):
         return self.url
 
-    def set_model_attribute(self, instance, name, value):
-        '''Set the the attribute ``name`` to ``value`` in a model ``instance``
-        '''
-        setattr(instance, name, value)
-
-    def tojson(self, request, object, exclude=None, decoder=None):
-        '''Convert a model ``object`` into a JSON serializable
-        dictionary
-        '''
-        raise NotImplementedError
-
-    def session(self, request):
-        '''Return a session for aggregating a query.
-        The retunred object should be context manager and support the query
-        method.
-        '''
-        raise NotImplementedError
-
-    def query(self, request, session, *filters):
-        '''Manipulate a query if needed
-        '''
-        raise NotImplementedError
-
-    def columns(self, request):
-        '''Return a list fields describing the entries for a given model
-        instance'''
-        if not self._loaded:
-            self._columns = self._load_columns(request.app)
-            self._loaded = True
-        return self._columns
-
-    def columnsMapping(self, request):
+    @lazymethod
+    def columnsMapping(self):
         '''Returns a dictionary of names/columns objects
         '''
-        if self._col_mapping is None:
-            self._col_mapping = dict(((c['name'], c) for c in
-                                      self.columns(request)))
-        return self._col_mapping
+        return dict(((c['name'], c) for c in self.columns()))
 
     def get_target(self, request, **extra_data):
         '''Get a target object for this model
@@ -348,7 +313,7 @@ class RestModel(lux.LuxModel, ColumnPermissionsMixin):
         return Json(data).http_response(request)
 
     def filter(self, request, query, text, params):
-        columns = self.columnsMapping(request.app)
+        columns = self.columnsMapping()
 
         for key, value in params.items():
             bits = key.split(':')
@@ -419,12 +384,7 @@ class RestModel(lux.LuxModel, ColumnPermissionsMixin):
     def _do_filter(self, request, query, field, op, value):
         raise NotImplementedError
 
-    def _add_to_app(self, app):
-        model = copy(self)
-        model._app = app
-        return model
-
-    def _load_columns(self, app):
+    def _load_columns(self):
         '''List of column definitions
         '''
         input_columns = self._columns or []
@@ -455,7 +415,7 @@ class ModelMixin:
     '''Mixin for accessing Rest models from the application object
     '''
     RestModel = RestModel
-    _model = None
+    model = None
 
     def set_model(self, model):
         '''Set the default model for this mixin
@@ -463,38 +423,7 @@ class ModelMixin:
         assert model
         if isinstance(model, str):
             model = self.RestModel(model)
-        self._model = model
-
-    def model(self, app, model=None):
-        '''Return a :class:`.RestModel` model registered with ``app``.
-
-        If ``model`` is not available, uses the :attr:`._model`
-        attribute.
-        '''
-        app = app.app
-        rest_models = getattr(app, '_rest_models', None)
-        if rest_models is None:
-            rest_models = {}
-            app._rest_models = rest_models
-
-        if not model:
-            if hasattr(self._model, '__call__'):
-                self._model = self._model()
-            model = self._model
-
-        assert model, 'No model specified'
-
-        if isinstance(model, RestModel):
-            url = model.url
-            if url not in rest_models:
-                rest_models[url] = model._add_to_app(app)
-        else:
-            url = model
-
-        if url in rest_models:
-            return rest_models[url]
-        else:
-            raise RuntimeError('model url "%s" not available' % url)
+        self.model = model
 
     def check_model_permission(self, request, level, model=None):
         """
@@ -505,7 +434,7 @@ class ModelMixin:
         :param level:       access level
         :raise:             PermissionDenied
         """
-        model = self.model(request, model)
+        model = self.model
         backend = request.cache.auth_backend
         if not backend.has_permission(request, model.name, level):
             raise PermissionDenied

@@ -9,6 +9,7 @@ from sqlalchemy.orm import class_mapper, load_only
 from sqlalchemy.sql.expression import func, cast
 
 from pulsar.utils.html import nicename
+from pulsar.utils.log import lazymethod
 
 from odm.utils import get_columns
 
@@ -32,9 +33,6 @@ class RestColumn(rest.RestColumn):
 class RestModel(rest.RestModel):
     '''A rest model based on SqlAlchemy ORM
     '''
-    _db_columns = None
-    _rest_columns = None
-
     def session(self, request):
         '''Obtain a session
         '''
@@ -89,22 +87,21 @@ class RestModel(rest.RestModel):
     def db_model(self):
         '''Database model
         '''
-        assert self._app, 'ODM Rest Model not loaded'
-        return self._app.odm()[self.name]
+        return self.app.odm()[self.name]
 
     def db_columns(self, columns=None):
         '''Return a list of columns available in the database table
         '''
-        assert self._db_columns, 'ODM Rest Model not loaded'
+        dbc = self.get_db_columns()
         if columns is None:
-            return tuple(self._db_columns.keys())
+            return tuple(dbc.keys())
         else:
-            return [c for c in columns if c in self._db_columns]
+            return [c for c in columns if c in dbc]
 
     def add_related_column(self, name, model, field=None, **kw):
         '''Add a related column to the model
         '''
-        assert not self._loaded, 'already loaded'
+        assert not self.app, 'already loaded'
         if field:
             self._exclude.add(field)
         column = ModelColumn(name, model, field=field, **kw)
@@ -147,7 +144,7 @@ class RestModel(rest.RestModel):
         '''
         exclude = set(exclude or ())
         exclude.update(self._exclude)
-        columns = self.columns(request)
+        columns = self.columns()
 
         fields = {}
         for col in columns:
@@ -192,7 +189,6 @@ class RestModel(rest.RestModel):
             return data
 
     def create_model(self, request, data, session=None):
-        self.columns(request)  # TODO, columns need to be loaded
         odm = request.app.odm()
         db_model = self.db_model()
         with odm.begin(session=session) as session:
@@ -205,7 +201,6 @@ class RestModel(rest.RestModel):
         return instance
 
     def update_model(self, request, instance, data):
-        self.columns(request)  # TODO, columns need to be loaded
         odm = request.app.odm()
         session = odm.session_from_object(instance)
         with odm.begin(session=session) as session:
@@ -215,20 +210,18 @@ class RestModel(rest.RestModel):
         return instance
 
     def delete_model(self, request, instance):
-        self.columns(request)  # TODO, columns need to be loaded
         odm = request.app.odm()
         session = odm.session_from_object(instance)
         with odm.begin(session=session) as session:
             session.delete(instance)
 
-    def _load_columns(self, app):
+    def _load_columns(self):
         '''List of column definitions
         '''
-        model = self.db_model()
-        self._db_columns = get_columns(model)
+        db_columns = self.get_db_columns()
         self._rest_columns = {}
         input_columns = self._columns or []
-        cols = self._db_columns._data.copy()
+        cols = db_columns._data.copy()
         columns = []
 
         for info in input_columns:
@@ -255,6 +248,10 @@ class RestModel(rest.RestModel):
         if name in self._hidden:
             info['hidden'] = True
         columns.append(info)
+
+    @lazymethod
+    def get_db_columns(self):
+        return get_columns(self.db_model())
 
     def _related_model(self, request, model, obj):
         if isinstance(obj, list):
