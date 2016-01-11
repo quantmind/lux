@@ -238,6 +238,14 @@ class TestMixin:
             self.assertEqual(data['message'], text)
             self.assertTrue(data['error'])
 
+    def check_og_meta(self, bs, type=None, image=None):
+        meta = bs.find('meta', property='og:type')
+        self.assertEqual(meta['content'], type or 'website')
+        #
+        if image:
+            meta = bs.find('meta', property='og:image')
+            self.assertEqual(meta['content'], image)
+
     def _content(self, response):
         return b''.join(response.content)
 

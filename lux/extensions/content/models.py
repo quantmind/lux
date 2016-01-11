@@ -45,15 +45,14 @@ class Content(rest.RestModel):
     '''
     def __init__(self, name, repo, path=None, ext='md', content_meta=None,
                  columns=None, api_prefix='content'):
-        if not os.path.isdir(repo):
-            os.makedirs(repo)
-        self.path = repo
+        directory = os.path.join(repo, name)
+        if not os.path.isdir(directory):
+            os.makedirs(directory)
+        self.directory = directory
         self.ext = ext
         self.content_meta = content_meta or {}
         if path is None:
             path = name
-        if path:
-            self.path = os.path.join(self.path, path)
         columns = columns or COLUMNS[:]
         api_url = '%s/%s' % (api_prefix, name)
         super().__init__(name, columns=columns, url=api_url, html_url=path)
@@ -104,10 +103,10 @@ class Content(rest.RestModel):
     def all(self, request):
         '''Return list of all files stored in repo
         '''
-        path = self.path
-        files = glob.glob(os.path.join(path, '*.%s' % self.ext))
+        directory = self.directory
+        files = glob.glob(os.path.join(directory, '*.%s' % self.ext))
         for file in files:
-            filename = get_rel_dir(file, path)
+            filename = get_rel_dir(file, directory)
             yield self.read(request, filename).json(request)
 
     def serialise_model(self, request, data, in_list=False, **kw):
@@ -121,8 +120,8 @@ class Content(rest.RestModel):
         '''Read content from file in the repository
         '''
         name = self._format_filename(name)
-        path = self.path
-        src = os.path.join(path, name)
+        directory = self.directory
+        src = os.path.join(directory, name)
         with open(src, 'rb') as f:
             content = f.read()
 
