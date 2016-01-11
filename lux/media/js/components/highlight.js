@@ -1,3 +1,7 @@
+define(['angular', 'lux'], function (angular, lux) {
+    "use strict";
+
+    var root = lux.root;
     //
     //  Code highlighting with highlight.js
     //
@@ -8,8 +12,9 @@
     //  Note:
     //      MAKE SURE THE lux.extensions.code EXTENSIONS IS INCLUDED IN
     //      YOUR CONFIG FILE
-    angular.module('highlight', [])
-        .directive('highlight', ['$rootScope', '$log', function ($rootScope, log) {
+    angular.module('lux.highlight', [])
+
+        .directive('luxHighlight', ['$rootScope', '$log', function ($rootScope, log) {
             return {
                 link: function link(scope, element, attrs) {
                     log.info('Highlighting code');
@@ -20,7 +25,7 @@
 
     var highlight = function (elem) {
         require(['highlight'], function () {
-            forEach($(elem)[0].querySelectorAll('code'), function(block) {
+            forEach($(elem)[0].querySelectorAll('code'), function (block) {
                 var elem = $(block),
                     parent = elem.parent();
                 if (isTag(parent, 'pre')) {
@@ -31,7 +36,7 @@
                 }
             });
             // Handle sphinx highlight
-            forEach($(elem)[0].querySelectorAll('.highlight pre'), function(block) {
+            forEach($(elem)[0].querySelectorAll('.highlight pre'), function (block) {
                 var elem = $(block).addClass('hljs'),
                     div = elem.parent(),
                     p = div.parent();
@@ -42,3 +47,5 @@
 
         });
     };
+
+});

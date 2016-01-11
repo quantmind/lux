@@ -85,9 +85,9 @@ class BrowserBackend(RegistrationMixin,
 
     def on_html_document(self, app, request, doc):
         if is_absolute_uri(app.config['API_URL']):
-            add_ng_modules(doc, ('lux.restapi', 'lux.users'))
+            add_ng_modules(doc, ('lux.restapi',))
         else:
-            add_ng_modules(doc, ('lux.webapi', 'lux.users'))
+            add_ng_modules(doc, ('lux.webapi',))
 
 
 class ApiSessionBackend(SessionBackendMixin,
