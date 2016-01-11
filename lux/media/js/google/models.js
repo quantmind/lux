@@ -1,5 +1,5 @@
 define(['lux'], function (lux) {
-
+    "use strict";
 
     //  Google Spreadsheet API
     //  -----------------------------
@@ -86,6 +86,6 @@ define(['lux'], function (lux) {
         }
     };
 
-    return lux.google;
+    return lux;
 
 });

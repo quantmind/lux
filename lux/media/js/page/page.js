@@ -1,8 +1,13 @@
+define(['angular',
+        'lux/config',
+        'lux/page/templates'], function (angular, lux) {
+    "use strict";
+    //
     //  Lux Page
     //  ==============
     //
     //  Design to work with the ``lux.extension.angular``
-    angular.module('lux.page', ['lux.form', 'lux.scroll', 'templates-page'])
+    angular.module('lux.page', ['lux.page.templates'])
         //
         .service('pageService', ['$lux', 'dateFilter', function ($lux, dateFilter) {
 
@@ -70,15 +75,15 @@
                     loc = window.location.pathname;
                 var rest = loc.substring(url.length),
                     base = loc.substring(0, url.length),
-                    folder = url.substring(url.length-1) === '/';
+                    folder = url.substring(url.length - 1) === '/';
                 return base === url && (folder || (rest === '' || rest.substring(0, 1) === '/'));
             };
 
             //
-            $scope.$on('animIn', function() {
+            $scope.$on('animIn', function () {
                 log.info('Page ' + page.toString() + ' animation in');
             });
-            $scope.$on('animOut', function() {
+            $scope.$on('animOut', function () {
                 log.info('Page ' + page.toString() + ' animation out');
             });
         }])
@@ -106,9 +111,9 @@
                     }
                 });
                 if (steps.length) {
-                    last = steps[steps.length-1];
-                    if (path.substring(path.length-1) !== '/' && last.href.substring(last.href.length-1) === '/')
-                        last.href = last.href.substring(0, last.href.length-1);
+                    last = steps[steps.length - 1];
+                    if (path.substring(path.length - 1) !== '/' && last.href.substring(last.href.length - 1) === '/')
+                        last.href = last.href.substring(0, last.href.length - 1);
                     last.last = true;
                     steps[0].label = 'Home';
                 }
@@ -124,7 +129,7 @@
                 templateUrl: "page/breadcrumbs.tpl.html",
                 link: {
                     post: function (scope) {
-                        var renderBreadcrumb = function() {
+                        var renderBreadcrumb = function () {
                             scope.steps = $breadcrumbs.crumbs();
                         };
 
@@ -144,7 +149,9 @@
                 restrict: 'AE',
                 link: function (scope, element) {
                     var dt = new Date();
-                    element.html(dt.getFullYear()+'');
+                    element.html(dt.getFullYear() + '');
                 }
             };
         });
+
+});

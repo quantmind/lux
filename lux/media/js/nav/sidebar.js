@@ -1,5 +1,4 @@
-define(['lux',
-        'lux/templates/nav'], function () {
+define(['lux/nav/navbar'], function () {
     "use strict";
     //
     //  Sidebar module

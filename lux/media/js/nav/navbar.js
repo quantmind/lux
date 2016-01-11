@@ -1,11 +1,9 @@
 define(['lux',
-        'lux/templates/nav'], function () {
+        'lux/nav/templates'], function () {
     "use strict";
     //
     //  Lux Navigation module
     //  ============================
-    //
-    //  * Requires ``lux.bs`` for the collapsable directives
     //
     //  Html:
     //
@@ -38,7 +36,7 @@ define(['lux',
         fluid: true
     };
 
-    angular.module('lux.nav', ['lux.nav.templates', 'lux.bs'])
+    angular.module('lux.nav', ['lux.nav.templates'])
         //
         .service('linkService', ['$location', '$window', function ($location, $window) {
 

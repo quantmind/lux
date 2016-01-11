@@ -1,3 +1,5 @@
+define(['angular', 'lux/page/page'], function (angular) {
+    "use strict";
     //
     //	Lux.router
     //	===================
@@ -15,3 +17,5 @@
                 rewriteLinks: false
             }).hashPrefix(lux.context.hashPrefix);
         }]);
+
+});

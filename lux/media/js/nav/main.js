@@ -1,4 +1,7 @@
-define(['lux/nav/nav',
-        'lux/nav.sidebar'], function () {
-        "use strict";
+define(['lux',
+        'lux/nav/navbar',
+        'lux/nav/sidebar'], function (lux) {
+    "use strict";
+
+    return lux;
 });

@@ -1,4 +1,7 @@
-define(['angular', 'lux/utils', 'lux/services'], function(angular, lux) {
+define(['angular',
+        'lux/utils',
+        'lux/services',
+        'lux/page'], function(angular, lux) {
     "use strict";
 
     var forEach = angular.forEach,

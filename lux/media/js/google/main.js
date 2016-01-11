@@ -1,6 +1,9 @@
 define(['angular',
-        'lux',
-        'lux/google/models'], function (angular, lux, google) {
+        'lux/google/models',
+        'lux/google/sheets'], function (angular, lux) {
+    "use strict";
+    //
+    var root = lux.root;
     //
     //  Module for interacting with google API and services
     angular.module('lux.google', ['lux.services'])
@@ -31,7 +34,7 @@ define(['angular',
             }
 
             // Googlesheet api
-            $lux.api('googlesheets', googlesheets);
+            $lux.api('googlesheets', lux.google.sheets);
         }])
         //
         .directive('googleMap', ['$lux', function ($lux) {

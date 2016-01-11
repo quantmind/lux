@@ -1,9 +1,9 @@
 define(['angular',
-        'lux',
-        'lux/google/sheets',
-        'lux/services/api'], function (angular, lux, google, apiFactory) {
+        'lux/google/models',
+        'lux/services/api'], function (angular, lux, apiFactory) {
+    "use strict";
 
-    google.sheets = function (url, $lux) {
+    lux.google.sheets = function (url, $lux) {
         url = "https://spreadsheets.google.com";
 
         var api = apiFactory(url, $lux);
@@ -35,6 +35,6 @@ define(['angular',
         return api;
     };
 
-    return google;
+    return lux;
 
 });
