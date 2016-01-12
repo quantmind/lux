@@ -617,8 +617,8 @@
 
                         var grid = '<div ui-if="gridOptions.data.length>0" class="grid" ui-grid="gridOptions" ui-grid-pagination ui-grid-selection ui-grid-auto-resize></div>';
                         element.append($compile(grid)(scope));
-                    },
-                },
+                    }
+                }
             };
 
         }])
