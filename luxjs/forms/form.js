@@ -29,6 +29,8 @@ angular.module('lux.form', ['lux.form.utils', 'lux.form.handlers', 'ngFileUpload
         //
         dateTypes: ['date', 'datetime', 'datetime-local'],
         defaultDatePlaceholder: 'YYYY-MM-DD',
+        defaultSelectPlaceholder: 'Please select...',
+        defaultUiSelectPlaceholder: 'Search or select {label}',
         //
         formErrorClass: 'form-error',
         FORMKEY: 'm__form',
@@ -389,8 +391,6 @@ angular.module('lux.form', ['lux.form.utils', 'lux.form.handlers', 'ngFileUpload
                             group.options.push(opt);
                         } else
                             options.push(opt);
-                        // Set the default value if not available
-                        if (angular.isUndefined(field.value)) field.value = opt.value;
                     });
 
                     var info = scope.info,
@@ -409,8 +409,24 @@ angular.module('lux.form', ['lux.form.utils', 'lux.form.handlers', 'ngFileUpload
                 // Standard select widget
                 selectStandard: function (scope, element, field, groupList, options) {
                     var groups = {},
-                        group, grp,
+                        group,
+                        grp,
+                        placeholder,
                         select = this._select(scope.info.element, element);
+
+                    if (!field.multiple && !angular.isDefined(field['data-remote-options'])) {
+                        placeholder = angular.element($document[0].createElement('option'))
+                            .attr('value', '').text(field.placeholder || formDefaults.defaultSelectPlaceholder);
+
+                        if (field.required) {
+                            placeholder.attr('disabled', 'disabled');
+                        }
+
+                        select.append(placeholder);
+                        if (angular.isUndefined(field.value)) {
+                            field.value = '';
+                        }
+                    }
 
                     if (groupList.length) {
                         if (options.length)
@@ -461,7 +477,9 @@ angular.module('lux.form', ['lux.form.utils', 'lux.form.handlers', 'ngFileUpload
                         .attr('ng-change', 'fireFieldChange("' + field.name + '")');
 
                     match = $($document[0].createElement('ui-select-match'))
-                        .attr('placeholder', 'Select or search ' + field.label.toLowerCase());
+                        .attr('placeholder',
+                            field.placeholder || formatString(formDefaults.defaultUiSelectPlaceholder, {label: field.label.toLowerCase()})
+                        );
 
                     if (!field.required) {
                         match.attr('allow-clear', 'true');
@@ -500,9 +518,9 @@ angular.module('lux.form', ['lux.form.utils', 'lux.form.handlers', 'ngFileUpload
                             repeatItems = 'opt.value as opt in ' + optsId + ' | filter: $select.search';
 
                         if (field.multiple)
-                            match.html('{{$item.value}}');
+                            match.html('{{$item.repr || $item.value}}');
                         else
-                            match.html('{{$select.selected.value}}');
+                            match.html('{{$select.selected.repr || $select.selected.value}}');
 
                         if (groupList.length) {
                             // Groups require raw options
