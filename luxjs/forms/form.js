@@ -1,115 +1,115 @@
+//
+// Form module for lux
+//
+//  Forms are created form a JSON object
+//
+//  Forms layouts:
+//
+//      - default
+//      - inline
+//      - horizontal
+//
+//  Events:
+//
+//      formReady: triggered once the form has rendered
+//          arguments: formmodel, formscope
+//
+//      formFieldChange: triggered when a form field changes:
+//          arguments: formmodel, field (changed)
+//
+angular.module('lux.form', ['lux.form.utils', 'lux.form.handlers', 'ngFileUpload', 'lux.form.process'])
     //
-    // Form module for lux
-    //
-    //  Forms are created form a JSON object
-    //
-    //  Forms layouts:
-    //
-    //      - default
-    //      - inline
-    //      - horizontal
-    //
-    //  Events:
-    //
-    //      formReady: triggered once the form has rendered
-    //          arguments: formmodel, formscope
-    //
-    //      formFieldChange: triggered when a form field changes:
-    //          arguments: formmodel, field (changed)
-    //
-    angular.module('lux.form', ['lux.form.utils', 'lux.form.handlers', 'ngFileUpload', 'lux.form.process'])
+    .constant('formDefaults', {
+        // Default layout
+        layout: 'default',
+        // for horizontal layout
+        labelSpan: 2,
+        showLabels: true,
+        novalidate: true,
         //
-        .constant('formDefaults', {
-            // Default layout
-            layout: 'default',
-            // for horizontal layout
-            labelSpan: 2,
-            showLabels: true,
-            novalidate: true,
-            //
-            dateTypes: ['date', 'datetime', 'datetime-local'],
-            defaultDatePlaceholder: 'YYYY-MM-DD',
-            //
-            formErrorClass: 'form-error',
-            FORMKEY: 'm__form',
-            useNgFileUpload: true
-        })
+        dateTypes: ['date', 'datetime', 'datetime-local'],
+        defaultDatePlaceholder: 'YYYY-MM-DD',
         //
-        .constant('defaultFormElements', function () {
-            return {
-                'text': {element: 'input', type: 'text', editable: true, textBased: true},
-                'date': {element: 'input', type: 'date', editable: true, textBased: true},
-                'datetime': {element: 'input', type: 'datetime', editable: true, textBased: true},
-                'datetime-local': {element: 'input', type: 'datetime-local', editable: true, textBased: true},
-                'email': {element: 'input', type: 'email', editable: true, textBased: true},
-                'month': {element: 'input', type: 'month', editable: true, textBased: true},
-                'number': {element: 'input', type: 'number', editable: true, textBased: true},
-                'password': {element: 'input', type: 'password', editable: true, textBased: true},
-                'search': {element: 'input', type: 'search', editable: true, textBased: true},
-                'tel': {element: 'input', type: 'tel', editable: true, textBased: true},
-                'textarea': {element: 'textarea', editable: true, textBased: true},
-                'time': {element: 'input', type: 'time', editable: true, textBased: true},
-                'url': {element: 'input', type: 'url', editable: true, textBased: true},
-                'week': {element: 'input', type: 'week', editable: true, textBased: true},
-                //  Specialized editables
-                'checkbox': {element: 'input', type: 'checkbox', editable: true, textBased: false},
-                'color': {element: 'input', type: 'color', editable: true, textBased: false},
-                'file': {element: 'input', type: 'file', editable: true, textBased: false},
-                'range': {element: 'input', type: 'range', editable: true, textBased: false},
-                'select': {element: 'select', editable: true, textBased: false},
-                //  Pseudo-non-editables (containers)
-                'checklist': {element: 'div', editable: false, textBased: false},
-                'fieldset': {element: 'fieldset', editable: false, textBased: false},
-                'div': {element: 'div', editable: false, textBased: false},
-                'form': {element: 'form', editable: false, textBased: false},
-                'radio': {element: 'div', editable: false, textBased: false},
-                //  Non-editables (mostly buttons)
-                'button': {element: 'button', type: 'button', editable: false, textBased: false},
-                'hidden': {element: 'input', type: 'hidden', editable: false, textBased: false},
-                'image': {element: 'input', type: 'image', editable: false, textBased: false},
-                'legend': {element: 'legend', editable: false, textBased: false},
-                'reset': {element: 'button', type: 'reset', editable: false, textBased: false},
-                'submit': {element: 'button', type: 'submit', editable: false, textBased: false}
-            };
-        })
+        formErrorClass: 'form-error',
+        FORMKEY: 'm__form',
+        useNgFileUpload: true
+    })
+    //
+    .constant('defaultFormElements', function () {
+        return {
+            'text': {element: 'input', type: 'text', editable: true, textBased: true},
+            'date': {element: 'input', type: 'date', editable: true, textBased: true},
+            'datetime': {element: 'input', type: 'datetime', editable: true, textBased: true},
+            'datetime-local': {element: 'input', type: 'datetime-local', editable: true, textBased: true},
+            'email': {element: 'input', type: 'email', editable: true, textBased: true},
+            'month': {element: 'input', type: 'month', editable: true, textBased: true},
+            'number': {element: 'input', type: 'number', editable: true, textBased: true},
+            'password': {element: 'input', type: 'password', editable: true, textBased: true},
+            'search': {element: 'input', type: 'search', editable: true, textBased: true},
+            'tel': {element: 'input', type: 'tel', editable: true, textBased: true},
+            'textarea': {element: 'textarea', editable: true, textBased: true},
+            'time': {element: 'input', type: 'time', editable: true, textBased: true},
+            'url': {element: 'input', type: 'url', editable: true, textBased: true},
+            'week': {element: 'input', type: 'week', editable: true, textBased: true},
+            //  Specialized editables
+            'checkbox': {element: 'input', type: 'checkbox', editable: true, textBased: false},
+            'color': {element: 'input', type: 'color', editable: true, textBased: false},
+            'file': {element: 'input', type: 'file', editable: true, textBased: false},
+            'range': {element: 'input', type: 'range', editable: true, textBased: false},
+            'select': {element: 'select', editable: true, textBased: false},
+            //  Pseudo-non-editables (containers)
+            'checklist': {element: 'div', editable: false, textBased: false},
+            'fieldset': {element: 'fieldset', editable: false, textBased: false},
+            'div': {element: 'div', editable: false, textBased: false},
+            'form': {element: 'form', editable: false, textBased: false},
+            'radio': {element: 'div', editable: false, textBased: false},
+            //  Non-editables (mostly buttons)
+            'button': {element: 'button', type: 'button', editable: false, textBased: false},
+            'hidden': {element: 'input', type: 'hidden', editable: false, textBased: false},
+            'image': {element: 'input', type: 'image', editable: false, textBased: false},
+            'legend': {element: 'legend', editable: false, textBased: false},
+            'reset': {element: 'button', type: 'reset', editable: false, textBased: false},
+            'submit': {element: 'button', type: 'submit', editable: false, textBased: false}
+        };
+    })
+    //
+    .factory('formElements', ['defaultFormElements', function (defaultFormElements) {
+        return defaultFormElements;
+    }])
+    //
+    .run(['$rootScope', '$lux', function (scope, $lux) {
         //
-        .factory('formElements', ['defaultFormElements', function (defaultFormElements) {
-            return defaultFormElements;
-        }])
-        //
-        .run(['$rootScope', '$lux', function (scope, $lux) {
-            //
-            //  Listen for a Lux form to be available
-            //  If it uses the api for posting, register with it
-            scope.$on('formReady', function (e, model, formScope) {
-                var attrs = formScope.formAttrs,
-                    action = attrs ? attrs.action : null,
-                    actionType = attrs ? attrs.actionType : null;
+        //  Listen for a Lux form to be available
+        //  If it uses the api for posting, register with it
+        scope.$on('formReady', function (e, model, formScope) {
+            var attrs = formScope.formAttrs,
+                action = attrs ? attrs.action : null,
+                actionType = attrs ? attrs.actionType : null;
 
-                if (isObject(action) && actionType !== 'create') {
-                    var api = $lux.api(action);
-                    if (api) {
-                        $lux.log.info('Form ' + formScope.formModelName + ' registered with "' +
-                            api.toString() + '" api');
-                        api.formReady(model, formScope);
-                    }
+            if (isObject(action) && actionType !== 'create') {
+                var api = $lux.api(action);
+                if (api) {
+                    $lux.log.info('Form ' + formScope.formModelName + ' registered with "' +
+                        api.toString() + '" api');
+                    api.formReady(model, formScope);
                 }
-            });
-        }])
+            }
+        });
+    }])
 
-        //
-        // The formService is a reusable component for redering form fields
-        .service('standardForm', ['$log', '$http', '$document', '$templateCache', 'formDefaults', 'formElements',
-                                  function (log, $http, $document, $templateCache, formDefaults, formElements) {
+    //
+    // The formService is a reusable component for redering form fields
+    .service('standardForm', ['$log', '$http', '$document', '$templateCache', 'formDefaults', 'formElements',
+        function (log, $http, $document, $templateCache, formDefaults, formElements) {
             //
             var baseAttributes = ['id', 'name', 'title', 'style'],
                 inputAttributes = extendArray([], baseAttributes, ['disabled', 'readonly', 'type', 'value', 'placeholder',
-                                                                  'autocapitalize', 'autocorrect']),
+                    'autocapitalize', 'autocorrect']),
                 textareaAttributes = extendArray([], baseAttributes, ['disabled', 'readonly', 'placeholder', 'rows', 'cols']),
                 buttonAttributes = extendArray([], baseAttributes, ['disabled']),
-                // Don't include action in the form attributes
-                formAttributes = extendArray([], baseAttributes, ['accept-charset','autocomplete',
-                                                                  'enctype', 'method', 'novalidate', 'target']),
+            // Don't include action in the form attributes
+                formAttributes = extendArray([], baseAttributes, ['accept-charset', 'autocomplete',
+                    'enctype', 'method', 'novalidate', 'target']),
                 validationAttributes = ['minlength', 'maxlength', 'min', 'max', 'required'],
                 ngAttributes = ['disabled', 'minlength', 'maxlength', 'required'],
                 elements = formElements();
@@ -144,7 +144,7 @@
                      * @param field {object}
                      * @param fieldType {string} - type of the field
                      */
-                    function buildFieldInfo (formModelName, field, fieldType) {
+                    function buildFieldInfo(formModelName, field, fieldType) {
                         var typeConfig = formModelName + 'Type';
                         var textMode = getJsonOrNone(field.text_edit);
                         scope[typeConfig] = scope[typeConfig] || {};
@@ -167,10 +167,10 @@
 
                     if (info) {
                         if (info.hasOwnProperty('type') && typeof this[info.type] === 'function')
-                            // Pick the renderer by checking `type`
+                        // Pick the renderer by checking `type`
                             fieldType = info.type;
                         else
-                            // If no element type, use the `element`
+                        // If no element type, use the `element`
                             fieldType = info.element;
                     }
 
@@ -228,7 +228,7 @@
                     return element;
                 },
                 //
-                addDirectives: function(scope, element) {
+                addDirectives: function (scope, element) {
                     // lux-codemirror directive
                     if (scope.field.hasOwnProperty('text_edit')) {
                         element.attr('lux-codemirror', scope.field.text_edit);
@@ -258,8 +258,8 @@
                     var field = scope.field,
                         info = scope.info,
                         form = $($document[0].createElement(info.element))
-                                    .attr('role', 'form').addClass(this.className)
-                                    .attr('ng-model', field.model);
+                            .attr('role', 'form').addClass(this.className)
+                            .attr('ng-model', field.model);
                     this.formMessages(scope, form);
                     return this.addAttrs(scope, form, formAttributes);
                 },
@@ -292,10 +292,10 @@
                         input = angular.element($document[0].createElement(info.element)),
                         label = angular.element($document[0].createElement('label')).attr('for', field.id),
                         span = angular.element($document[0].createElement('span'))
-                                    .css('margin-left', '5px')
-                                    .css('position', 'relative')
-                                    .css('bottom', '2px')
-                                    .html(field.label),
+                            .css('margin-left', '5px')
+                            .css('position', 'relative')
+                            .css('bottom', '2px')
+                            .html(field.label),
                         element = angular.element($document[0].createElement('div')).addClass(this.element);
 
                     input.attr('ng-model', scope.formModelName + '["' + field.name + '"]');
@@ -368,7 +368,10 @@
                         groups = {},
                         groupList = [],
                         options = [],
-                        group;
+                        group,
+                        useUiSelect;
+
+                    useUiSelect = elements.select.hasOwnProperty('widget') && elements.select.widget.name === 'selectUI';
 
                     forEach(field.options, function (opt) {
                         if (typeof(opt) === 'string') {
@@ -387,24 +390,24 @@
                         } else
                             options.push(opt);
                         // Set the default value if not available
-                        if (!field.value) field.value = opt.value;
+                        if (angular.isUndefined(field.value)) field.value = opt.value;
                     });
 
                     var info = scope.info,
                         element = this.input(scope);
 
-                    if (elements.select.hasOwnProperty('widget') && elements.select.widget.name === 'selectUI')
-                        // UI-Select widget
+                    if (useUiSelect)
+                    // UI-Select widget
                         this.selectUI(scope, element, field, groupList, options);
                     else
-                        // Standard select
+                    // Standard select
                         this.selectStandard(scope, element, field, groupList, options);
 
                     return this.onChange(scope, element);
                 },
                 //
                 // Standard select widget
-                selectStandard: function(scope, element, field, groupList, options) {
+                selectStandard: function (scope, element, field, groupList, options) {
                     var groups = {},
                         group, grp,
                         select = this._select(scope.info.element, element);
@@ -415,18 +418,18 @@
 
                         forEach(groupList, function (group) {
                             grp = $($document[0].createElement('optgroup'))
-                                    .attr('label', group.name);
+                                .attr('label', group.name);
                             select.append(grp);
                             forEach(group.options, function (opt) {
                                 opt = $($document[0].createElement('option'))
-                                        .attr('value', opt.value).html(opt.repr || opt.value);
+                                    .attr('value', opt.value).html(opt.repr || opt.value);
                                 grp.append(opt);
                             });
                         });
                     } else {
                         forEach(options, function (opt) {
                             opt = $($document[0].createElement('option'))
-                                    .attr('value', opt.value).html(opt.repr || opt.value);
+                                .attr('value', opt.value).html(opt.repr || opt.value);
                             select.append(opt);
                         });
                     }
@@ -436,7 +439,8 @@
                 },
                 //
                 // UI-Select widget
-                selectUI: function(scope, element, field, groupList, options) {
+                selectUI: function (scope, element, field, groupList, options) {
+                    var selectUI, match, choices_inner, choices_inner_small, choices;
                     //
                     scope.groupBy = function (item) {
                         return item.group;
@@ -448,22 +452,30 @@
                     if (field.hasOwnProperty('search'))
                         scope.enableSearch = field.search;
 
-                    var selectUI = $($document[0].createElement('ui-select'))
-                                    .attr('id', field.id)
-                                    .attr('name', field.name)
-                                    .attr('ng-model', scope.formModelName + '["' + field.name + '"]')
-                                    .attr('theme', elements.select.widget.theme)
-                                    .attr('search-enabled', 'enableSearch')
-                                    .attr('ng-change', 'fireFieldChange("' + field.name + '")'),
-                        match = $($document[0].createElement('ui-select-match'))
-                                    .attr('placeholder', 'Select or search ' + field.label.toLowerCase()),
-                        choices_inner = $($document[0].createElement('div')),
-                        choices_inner_small = $($document[0].createElement('small')),
-                        choices = $($document[0].createElement('ui-select-choices'))
-                                    // Ensure any inserted placeholders are disabled
-                                    // i.e. 'Please Select...'
-                                    .attr('ui-disable-choice', 'item.id === "placeholder"')
-                                    .append(choices_inner);
+                    selectUI = $($document[0].createElement('ui-select'))
+                        .attr('id', field.id)
+                        .attr('name', field.name)
+                        .attr('ng-model', scope.formModelName + '["' + field.name + '"]')
+                        .attr('theme', elements.select.widget.theme)
+                        .attr('search-enabled', 'enableSearch')
+                        .attr('ng-change', 'fireFieldChange("' + field.name + '")');
+
+                    match = $($document[0].createElement('ui-select-match'))
+                        .attr('placeholder', 'Select or search ' + field.label.toLowerCase());
+
+                    if (!field.required) {
+                        match.attr('allow-clear', 'true');
+                    }
+
+                    choices_inner = $($document[0].createElement('div'));
+
+                    choices_inner_small = $($document[0].createElement('small'));
+
+                    choices = $($document[0].createElement('ui-select-choices'))
+                    // Ensure any inserted placeholders are disabled
+                    // i.e. 'Please Select...'
+                        .attr('ui-disable-choice', 'item.id === "placeholder"')
+                        .append(choices_inner);
 
                     if (field.multiple)
                         selectUI.attr('multiple', true);
@@ -471,9 +483,9 @@
                     if (field.hasOwnProperty('data-remote-options')) {
                         // Remote options
                         selectUI.attr('data-remote-options', field['data-remote-options'])
-                                .attr('data-remote-options-id', field['data-remote-options-id'])
-                                .attr('data-remote-options-value', field['data-remote-options-value'])
-                                .attr('data-remote-options-params', field['data-remote-options-params']);
+                            .attr('data-remote-options-id', field['data-remote-options-id'])
+                            .attr('data-remote-options-value', field['data-remote-options-value'])
+                            .attr('data-remote-options-params', field['data-remote-options-params']);
 
                         if (field.multiple)
                             match.html('{{$item.repr || $item.name || $item.id}}');
@@ -496,7 +508,7 @@
                             // Groups require raw options
                             scope[optsId] = field.options;
                             choices.attr('group-by', 'groupBy')
-                                   .attr('repeat', repeatItems);
+                                .attr('repeat', repeatItems);
                             choices_inner.attr('ng-bind-html', 'opt.repr || opt.value');
                         } else {
                             scope[optsId] = options;
@@ -571,17 +583,17 @@
                 inputError: function (scope, element) {
                     var field = scope.field,
                         self = this,
-                        // True when the form is submitted
+                    // True when the form is submitted
                         submitted = scope.formName + '.submitted',
-                        // True if the field is dirty
+                    // True if the field is dirty
                         dirty = joinField(scope.formName, field.name, '$dirty'),
                         invalid = joinField(scope.formName, field.name, '$invalid'),
                         error = joinField(scope.formName, field.name, '$error') + '.',
                         input = $(element[0].querySelector(scope.info.element)),
                         p = $($document[0].createElement('p'))
-                                .attr('ng-show', '(' + submitted + ' || ' + dirty + ') && ' + invalid)
-                                .addClass('text-danger error-block')
-                                .addClass(scope.formErrorClass),
+                            .attr('ng-show', '(' + submitted + ' || ' + dirty + ') && ' + invalid)
+                            .addClass('text-danger error-block')
+                            .addClass(scope.formErrorClass),
                         value,
                         attrname;
                     // Loop through validation attributes
@@ -592,8 +604,8 @@
                             if (ngAttributes.indexOf(attr) > -1) attrname = 'ng-' + attr;
                             input.attr(attrname, value);
                             p.append($($document[0].createElement('span'))
-                                         .attr('ng-show', error + attr)
-                                         .html(self.errorMessage(scope, attr)));
+                                .attr('ng-show', error + attr)
+                                .html(self.errorMessage(scope, attr)));
                         }
                     });
 
@@ -602,18 +614,18 @@
                         nameError = '$invalid';
                     if (errors)
                         nameError += ' && !' + joinField(scope.formName, field.name, '$error.required');
-                        // Show only if server side errors don't exist
-                        nameError += ' && !formErrors.' + field.name;
+                    // Show only if server side errors don't exist
+                    nameError += ' && !formErrors.' + field.name;
                     p.append(this.fieldErrorElement(scope, nameError, self.errorMessage(scope, 'invalid')));
 
                     // Add the invalid handler for server side errors
                     var name = '$invalid';
-                        name += ' && !' + joinField(scope.formName, field.name, '$error.required');
-                        // Show only if server side errors exists
-                        name += ' && formErrors.' + field.name;
+                    name += ' && !' + joinField(scope.formName, field.name, '$error.required');
+                    // Show only if server side errors exists
+                    name += ' && formErrors.' + field.name;
                     p.append(
                         this.fieldErrorElement(scope, name, self.errorMessage(scope, 'invalid'))
-                        .html('{{formErrors["' + field.name + '"]}}')
+                            .html('{{formErrors["' + field.name + '"]}}')
                     );
 
                     return element.append(p);
@@ -624,8 +636,8 @@
                         value = joinField(scope.formName, field.name, name);
 
                     return $($document[0].createElement('span'))
-                                .attr('ng-show', value)
-                                .html(msg);
+                        .attr('ng-show', value)
+                        .html(msg);
                 },
                 //
                 // Add element which containes form messages and errors
@@ -633,15 +645,15 @@
                     var messages = $($document[0].createElement('p')),
                         a = scope.formAttrs;
                     messages.attr('ng-repeat', 'message in formMessages.' + a.FORMKEY)
-                            .attr('ng-bind', 'message.message')
-                            .attr('ng-class', "message.error ? 'text-danger' : 'text-info'");
+                        .attr('ng-bind', 'message.message')
+                        .attr('ng-class', "message.error ? 'text-danger' : 'text-info'");
                     return form.append(messages);
                 },
                 //
                 errorMessage: function (scope, attr) {
                     var message = attr + 'Message',
                         field = scope.field,
-                        handler = this[attr+'ErrorMessage'] || this.defaultErrorMesage;
+                        handler = this[attr + 'ErrorMessage'] || this.defaultErrorMesage;
                     return field[message] || handler.call(this, scope);
                 },
                 //
@@ -679,7 +691,7 @@
                 //
                 _select: function (tag, element) {
                     if (isArray(element)) {
-                        for (var i=0; i<element.length; ++i) {
+                        for (var i = 0; i < element.length; ++i) {
                             if (element[0].tagName === tag)
                                 return element;
                         }
@@ -689,10 +701,10 @@
                 }
             });
         }])
-        //
-        // Bootstrap Horizontal form renderer
-        .service('horizontalForm', ['$document', 'standardForm',
-                                    function ($document, standardForm) {
+    //
+    // Bootstrap Horizontal form renderer
+    .service('horizontalForm', ['$document', 'standardForm',
+        function ($document, standardForm) {
             //
             // extend the standardForm service
             extend(this, standardForm, {
@@ -708,8 +720,8 @@
                         wrapper = $($document[0].createElement('div'));
                     labelSpan = Math.max(2, Math.min(labelSpan, 10));
                     $(children[0]).addClass('control-label col-sm-' + labelSpan);
-                    wrapper.addClass('col-sm-' + (12-labelSpan));
-                    for (var i=1; i<children.length; ++i)
+                    wrapper.addClass('col-sm-' + (12 - labelSpan));
+                    for (var i = 1; i < children.length; ++i)
                         wrapper.append($(children[i]));
                     return element.append(wrapper);
                 },
@@ -721,30 +733,30 @@
                         wrapper = $($document[0].createElement('div'));
                     labelSpan = Math.max(2, Math.min(labelSpan, 10));
                     wrapper.addClass('col-sm-offset-' + labelSpan)
-                           .addClass('col-sm-' + (12-labelSpan));
+                        .addClass('col-sm-' + (12 - labelSpan));
                     outer.append(wrapper.append(element));
                     return outer;
                 }
             });
         }])
-        //
-        .service('inlineForm', ['standardForm', function (standardForm) {
-            extend(this, standardForm, {
+    //
+    .service('inlineForm', ['standardForm', function (standardForm) {
+        extend(this, standardForm, {
 
-                name: 'inline',
+            name: 'inline',
 
-                className: 'form-inline',
+            className: 'form-inline',
 
-                input: function (scope) {
-                    var element = standardForm.input(scope);
-                    $(element[0].getElementsByTagName('label')).addClass('sr-only');
-                    return element;
-                }
-            });
-        }])
-        //
-        .service('formBaseRenderer', ['$lux', '$compile', 'formDefaults',
-                function ($lux, $compile, formDefaults) {
+            input: function (scope) {
+                var element = standardForm.input(scope);
+                $(element[0].getElementsByTagName('label')).addClass('sr-only');
+                return element;
+            }
+        });
+    }])
+    //
+    .service('formBaseRenderer', ['$lux', '$compile', 'formDefaults',
+        function ($lux, $compile, formDefaults) {
             //
             // Internal function for compiling a scope
             this.createElement = function (scope) {
@@ -763,7 +775,7 @@
                 // No data, maybe this form was loaded via angular ui router
                 // try to evaluate internal scripts
                 if (!data) {
-                    var scripts= element[0].getElementsByTagName('script');
+                    var scripts = element[0].getElementsByTagName('script');
                     forEach(scripts, function (js) {
                         globalEval(js.innerHTML);
                     });
@@ -854,9 +866,11 @@
                 }
             };
 
-            this.preCompile = function () {};
+            this.preCompile = function () {
+            };
 
-            this.postCompile = function () {};
+            this.postCompile = function () {
+            };
 
             this.checkField = function (name) {
                 var checker = this['check_' + name];
@@ -874,7 +888,7 @@
                 }
             };
 
-            this.processForm = function(scope) {
+            this.processForm = function (scope) {
                 // Clear form errors and messages
                 scope.formMessages = [];
                 scope.formErrors = [];
@@ -884,108 +898,108 @@
                 }
             };
         }])
-        //
-        // Default form Renderer, roll your own if you like
-        .service('formRenderer', ['formBaseRenderer', 'standardForm', 'horizontalForm', 'inlineForm',
-            function (base, stdForm, horForm, inlForm) {
-                var renderer = extend(this, base);
-                this[stdForm.name] = stdForm;
-                this[horForm.name] = horForm;
-                this[inlForm.name] = inlForm;
+    //
+    // Default form Renderer, roll your own if you like
+    .service('formRenderer', ['formBaseRenderer', 'standardForm', 'horizontalForm', 'inlineForm',
+        function (base, stdForm, horForm, inlForm) {
+            var renderer = extend(this, base);
+            this[stdForm.name] = stdForm;
+            this[horForm.name] = horForm;
+            this[inlForm.name] = inlForm;
 
-                // Create the directive
-                this.directive = function () {
+            // Create the directive
+            this.directive = function () {
 
-                    return {
-                        restrict: "AE",
-                        //
-                        scope: {},
-                        //
-                        compile: function () {
-                            return {
-                                pre: function (scope, element, attr) {
-                                    // Initialise the scope from the attributes
-                                    renderer.initScope(scope, element, attr);
-                                },
-                                post: function (scope, element) {
-                                    // create the form
-                                    renderer.createForm(scope, element);
-                                    // Emit the form upwards through the scope hierarchy
-                                    scope.$emit('formReady', scope[scope.formModelName], scope);
-                                }
-                            };
-                        }
-                    };
-                };
-            }
-        ])
-        //
-        // Lux form
-        .directive('luxForm', ['formRenderer', function (formRenderer) {
-            return formRenderer.directive();
-        }])
-        //
-        .directive("checkRepeat", ['$log', function (log) {
-            return {
-                require: "ngModel",
-
-                restrict: 'A',
-
-                link: function(scope, element, attrs, ctrl) {
-                    var other = element.inheritedData("$formController")[attrs.checkRepeat];
-                    if (other) {
-                        ctrl.$parsers.push(function(value) {
-                            if(value === other.$viewValue) {
-                                ctrl.$setValidity("repeat", true);
-                                return value;
+                return {
+                    restrict: "AE",
+                    //
+                    scope: {},
+                    //
+                    compile: function () {
+                        return {
+                            pre: function (scope, element, attr) {
+                                // Initialise the scope from the attributes
+                                renderer.initScope(scope, element, attr);
+                            },
+                            post: function (scope, element) {
+                                // create the form
+                                renderer.createForm(scope, element);
+                                // Emit the form upwards through the scope hierarchy
+                                scope.$emit('formReady', scope[scope.formModelName], scope);
                             }
-                            ctrl.$setValidity("repeat", false);
-                        });
-
-                        other.$parsers.push(function(value) {
-                            ctrl.$setValidity("repeat", value === ctrl.$viewValue);
-                            return value;
-                        });
-                    } else {
-                        log.error('Check repeat directive could not find ' + attrs.checkRepeat);
+                        };
                     }
-                 }
+                };
             };
-        }])
-        //
-        // A directive which add keyup and change event callaback
-        .directive('watchChange', function() {
-            return {
-                scope: {
-                    onchange: '&watchChange'
-                },
-                //
-                link: function(scope, element, attrs) {
-                    element.on('keyup', function() {
-                        scope.$apply(function () {
-                            scope.onchange();
-                        });
-                    }).on('change', function() {
-                        scope.$apply(function () {
-                            scope.onchange();
-                        });
+        }
+    ])
+    //
+    // Lux form
+    .directive('luxForm', ['formRenderer', function (formRenderer) {
+        return formRenderer.directive();
+    }])
+    //
+    .directive("checkRepeat", ['$log', function (log) {
+        return {
+            require: "ngModel",
+
+            restrict: 'A',
+
+            link: function (scope, element, attrs, ctrl) {
+                var other = element.inheritedData("$formController")[attrs.checkRepeat];
+                if (other) {
+                    ctrl.$parsers.push(function (value) {
+                        if (value === other.$viewValue) {
+                            ctrl.$setValidity("repeat", true);
+                            return value;
+                        }
+                        ctrl.$setValidity("repeat", false);
                     });
-                }
-            };
-        })
-        //
-        // Format string date to date object
-        .directive('formatDate', function () {
-            return {
-                require: '?ngModel',
-                link: function (scope, elem, attrs, ngModel) {
-                    // All date-related inputs like <input type="date">
-                    // require the model to be a Date object in Angular 1.3+.
-                    ngModel.$formatters.push(function(modelValue){
-                        if (typeof modelValue === 'string' || typeof modelValue === 'number')
-                            return new Date(modelValue);
-                        return modelValue;
+
+                    other.$parsers.push(function (value) {
+                        ctrl.$setValidity("repeat", value === ctrl.$viewValue);
+                        return value;
                     });
+                } else {
+                    log.error('Check repeat directive could not find ' + attrs.checkRepeat);
                 }
-            };
-        });
+            }
+        };
+    }])
+    //
+    // A directive which add keyup and change event callaback
+    .directive('watchChange', function () {
+        return {
+            scope: {
+                onchange: '&watchChange'
+            },
+            //
+            link: function (scope, element, attrs) {
+                element.on('keyup', function () {
+                    scope.$apply(function () {
+                        scope.onchange();
+                    });
+                }).on('change', function () {
+                    scope.$apply(function () {
+                        scope.onchange();
+                    });
+                });
+            }
+        };
+    })
+    //
+    // Format string date to date object
+    .directive('formatDate', function () {
+        return {
+            require: '?ngModel',
+            link: function (scope, elem, attrs, ngModel) {
+                // All date-related inputs like <input type="date">
+                // require the model to be a Date object in Angular 1.3+.
+                ngModel.$formatters.push(function (modelValue) {
+                    if (typeof modelValue === 'string' || typeof modelValue === 'number')
+                        return new Date(modelValue);
+                    return modelValue;
+                });
+            }
+        };
+    });
