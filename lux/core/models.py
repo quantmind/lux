@@ -24,7 +24,7 @@ class ModelContainer(dict):
             return self[model.identifier]
 
         model = copy(model)
-        model._app = self._app
+        model.register(self._app)
         if model.identifier:
             self[model.identifier] = model
 
@@ -38,12 +38,15 @@ class LuxModel:
     @property
     def app(self):
         if not self._app:
-            raise ImproperlyConfigured('Model %s not registered' % self)
+            raise ImproperlyConfigured('Model "%s" not registered' % self)
         return self._app
 
     @lazymethod
     def columns(self):
         return self._load_columns()
+
+    def register(self, app):
+        self._app = app
 
     def set_model_attribute(self, instance, name, value):
         '''Set the the attribute ``name`` to ``value`` in a model ``instance``

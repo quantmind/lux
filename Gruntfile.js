@@ -80,10 +80,41 @@ module.exports = function (grunt) {
             }
         }
     };
-
-    if (cfg.http) jsTasks.push('http');
-    if (cfg.copy) jsTasks.push('copy');
-    jsTasks = jsTasks.concat(['concat', 'jshint', 'uglify']);
+    //
+    //  Additional JS tasks
+    //  -----------------------
+    //
+    //  Tasks are loaded only if specified in the cfg
+    //
+    //  HTTP
+    if (cfg.http) {
+        grunt.loadNpmTasks('grunt-http');
+        jsTasks.push('http');
+    }
+    //
+    //  COPY
+    if (cfg.copy) {
+        grunt.loadNpmTasks('grunt-contrib-copy');
+        jsTasks.push('copy');
+    }
+    //
+    //  HTML2JS
+    if (cfg.html2js) {
+        jsTasks = ['html2js'].concat(jsTasks);
+        grunt.loadNpmTasks('grunt-html2js');
+    }
+    //
+    //  ESLINT
+    if (cfg.eslint) {
+        jsTasks = ['eslint'].concat(jsTasks);
+        if (!cfg.eslint.options)
+            cfg.eslint.options = {
+                quiet: true
+            };
+        grunt.loadNpmTasks('grunt-eslint');
+    }
+    // CONCAT and UGLIFY always added at the end
+    jsTasks = jsTasks.concat(['concat', 'uglify']);
 
     var buildTasks = baseTasks.concat(jsTasks),
         testTasks = baseTasks.concat(['karma:dev']);
@@ -145,79 +176,18 @@ module.exports = function (grunt) {
         cfg.watch = watch;
     }
     //
-    function for_each(obj, callback) {
-        for (var p in obj) {
-            if (obj.hasOwnProperty(p)) {
-                callback.call(obj[p], p);
-            }
-        }
-    }
-    //
-    // Preprocess libs
-    for_each(libs, function (name) {
-        var options = this.options;
+    // Pre-process Javascript libs
+    _.forOwn(libs, function (value, name) {
+        var options = value.options;
         if (options && options.banner) {
             options.banner = grunt.file.read(options.banner);
         }
-        if (this.dest)
-            concats[name] = this;
+        if (value.dest)
+            concats[name] = value;
     });
-    //
-    function uglify_libs() {
-        var result = {};
-        for_each(concats, function (name) {
-            if (name !== 'options' && this.minify !== false) {
-                result[name] = {
-                    dest: this.dest.replace('.js', '.min.js'),
-                    src: [this.dest],
-                    options: {
-                        sourceMap: false, // TODO change to true when Chrome sourcemaps bug is fixed
-                        sourceMapIn: this.dest + '.map',
-                        sourceMapIncludeSources: false // TODO change to true when Chrome sourcemaps bug is fixed
-                    }
-                };
-            }
-        });
-        return result;
-    }
-
-    //
-    // js hint all libraries
-    function jshint_libs() {
-        var result = {
-            gruntfile: "Gruntfile.js",
-            options: {
-                browser: true,
-                expr: true,
-                globals: {
-                    $: true,
-                    lux: true,
-                    requirejs: true,
-                    require: true,
-                    exports: true,
-                    console: true,
-                    DOMParser: true,
-                    Showdown: true,
-                    prettyPrint: true,
-                    module: true,
-                    ok: true,
-                    equal: true,
-                    test: true,
-                    asyncTest: true,
-                    start: true
-                }
-            }
-        };
-        for_each(libs, function (name) {
-            result[name] = this.dest;
-        });
-        return result;
-    }
-
     //
     // Initialise Grunt with all tasks defined above
     cfg.uglify = uglify_libs();
-    cfg.jshint = jshint_libs();
     // Main config is in karma.conf.js, with overrides below
     // We may want to set up an auto-watch config, see https://github.com/karma-runner/grunt-karma#running-tests
     cfg.karma = {
@@ -271,9 +241,6 @@ module.exports = function (grunt) {
             obj = grunt.file.readJSON(filename);
         grunt.log.writeln('Read paths from "' + filename + '"');
         _.extend(paths, obj.paths);
-        //_.forOwn(paths, function (value, key) {
-        //    grunt.log.writeln(key + ': ' + value);
-        //});
     });
     //
     // These plugins provide necessary tasks
@@ -281,13 +248,9 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-contrib-uglify');
     grunt.loadNpmTasks('grunt-contrib-jshint');
     grunt.loadNpmTasks('grunt-contrib-concat');
-    grunt.loadNpmTasks('grunt-contrib-copy');
     grunt.loadNpmTasks('grunt-karma');
     grunt.loadNpmTasks('grunt-contrib-watch');
-    grunt.loadNpmTasks('grunt-http');
-    grunt.loadNpmTasks('grunt-sass');
     grunt.loadNpmTasks('grunt-shell');
-    grunt.loadNpmTasks('grunt-contrib-cssmin');
     grunt.loadNpmTasks('grunt-contrib-clean');
     //
 
@@ -309,12 +272,43 @@ module.exports = function (grunt) {
     }
     grunt.registerTask('default', ['build', 'karma:phantomjs']);
     //
-    for_each(libs, function (name) {
-        var tasks = [];
-        if (concats[name]) tasks.push('concat:' + name);
-        tasks.push('jshint:' + name);
-        if (this.minify !== false) tasks.push('uglify:' + name);
-        //
-        grunt.registerTask(name, tasks.join(', '), tasks);
-    });
+    // Add a watch entry to ``cfg``
+    function add_watch (obj, name, tasks) {
+        var src = obj[name],
+            watch = src ? src.watch : null;
+        if (watch) {
+            delete src.watch;
+            if (!cfg.watch)
+                cfg.watch = {
+                    options: {
+                        atBegin: true,
+                        // Start a live reload server on the default port 35729
+                        livereload: true
+                    }
+                };
+            cfg.watch[name] = watch;
+            if (!watch.tasks) {
+                watch.tasks = tasks;
+            }
+        }
+    }
+    //
+    //  uglify libraries
+    function uglify_libs() {
+        var result = {};
+        _.forOwn(concats, function (value, name) {
+            if (name !== 'options' && value.minify !== false) {
+                result[name] = {
+                    dest: value.dest.replace('.js', '.min.js'),
+                    src: [value.dest],
+                    options: {
+                        sourceMap: false, // TODO change to true when Chrome sourcemaps bug is fixed
+                        sourceMapIn: value.dest + '.map',
+                        sourceMapIncludeSources: false // TODO change to true when Chrome sourcemaps bug is fixed
+                    }
+                };
+            }
+        });
+        return result;
+    }
 };
