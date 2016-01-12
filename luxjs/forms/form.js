@@ -419,7 +419,7 @@ angular.module('lux.form', ['lux.form.utils', 'lux.form.handlers', 'ngFileUpload
                             .attr('value', '').text(field.placeholder || formDefaults.defaultSelectPlaceholder);
 
                         if (field.required) {
-                            placeholder.attr('disabled', 'disabled');
+                            placeholder.prop('disabled', true);
                         }
 
                         select.append(placeholder);
@@ -475,6 +475,10 @@ angular.module('lux.form', ['lux.form.utils', 'lux.form.handlers', 'ngFileUpload
                         .attr('theme', elements.select.widget.theme)
                         .attr('search-enabled', 'enableSearch')
                         .attr('ng-change', 'fireFieldChange("' + field.name + '")');
+
+                    if (field.required) {
+                        selectUI.attr('required', 'required');
+                    }
 
                     match = $($document[0].createElement('ui-select-match'))
                         .attr('placeholder',
