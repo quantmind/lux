@@ -2,15 +2,15 @@
 //	===================
 //
 //	provides data to a lux.grid using websockets
-define(['angular', 'lux.grid'], function (angular, lux) {
+define(['angular', 'lux/grid'], function (angular, lux) {
     "use strict";
 
     angular.module('lux.grid.websocket', ['lux.grid', 'lux.sockjs'])
 
-        .run(['$rootScope', 'luxGridDataProviders'], function ($scope, luxGridDataProviders) {
+        .run(['$rootScope', 'luxGridDataProviders', function ($scope, luxGridDataProviders) {
 
             luxGridDataProviders.register('rest', gridDataProviderWebsocketFactory($scope));
-        });
+        }]);
 
 
     function gridDataProviderWebsocketFactory ($scope) {
@@ -28,12 +28,12 @@ define(['angular', 'lux.grid'], function (angular, lux) {
         GridDataProviderWebsocket.prototype.connect = function() {
             checkIfDestroyed.call(this);
 
-            function onConnect(sock) {
+            function onConnect (sock) {
                 /*jshint validthis:true */
                 this.getPage();
             }
 
-            function onMessage(sock, msg) {
+            function onMessage (sock, msg) {
                 /*jshint validthis:true */
                 var tasks;
 
@@ -69,7 +69,6 @@ define(['angular', 'lux.grid'], function (angular, lux) {
             this._sockJs.connect(onConnect.bind(this));
 
             var sendFakeRecordOnce = function() {};
-            };
 
         };
 
@@ -81,7 +80,7 @@ define(['angular', 'lux.grid'], function (angular, lux) {
             // not yet implemented
         };
 
-        function checkIfDestroyed() {
+        function checkIfDestroyed () {
             /* jshint validthis:true */
             if (this._listener === null || typeof this._listener === 'undefined') {
                 throw 'GridDataProviderREST#connect error: either you forgot to define a listener, or you are attempting to use this data provider after it was destroyed.';

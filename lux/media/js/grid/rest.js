@@ -2,7 +2,7 @@
 //	===================
 //
 //	provides data to a lux.grid using REST calls
-define(['angular', 'lux.grid'], function (angular, lux) {
+define(['angular', 'lux/grid'], function (angular, lux) {
     "use strict";
 
     angular.module('lux.grid.rest', ['lux.grid'])

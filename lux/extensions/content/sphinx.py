@@ -36,7 +36,7 @@ def build_page(app, dirpath, filename, src, location):
     bits = filename.split('.')
     bits[-1] = 'html'
     full_src = os.path.join(dirpath, filename)
-    target = dst_path(dirpath, '.'.join(bits), src, location)
+    dst_path(dirpath, '.'.join(bits), src, location)
 
     with open(full_src, 'r') as fp:
-        data = json.loads(fp.read())
+        json.loads(fp.read())

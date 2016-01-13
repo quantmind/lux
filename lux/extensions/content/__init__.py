@@ -1,6 +1,5 @@
 import lux
 from lux import Parameter
-from lux.extensions.angular import add_ng_modules
 
 from .models import Content
 from .views import TextRouter, TextCMS, ContentCRUD, TextForm, CMS

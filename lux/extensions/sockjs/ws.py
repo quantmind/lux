@@ -188,8 +188,8 @@ class RpcWsMethod:
         pass
 
     def pubsub(self, key=None):
-        '''Convenience method for a pubsub handler
-        '''
+        """Convenience method for a pubsub handler
+        """
         return self.app.pubsub(key or self.name)
 
 
@@ -210,14 +210,14 @@ class RpcWsCall:
 
 
 class LuxWs(ws.WS):
-    '''Lux websocket
+    """Lux websocket
 
     .. attribute: methods
 
         Dictionary of RPC web-socket handlers. Each handler is accessed by
         its name defined at extension level as ``ws_<method>``.
 
-    '''
+    """
     def __init__(self, app):
         self.rpc_methods = dict(self._ws_methods(app))
 

@@ -9,7 +9,7 @@
 define(['angular',
         'lux',
         'angular-ui-grid',
-        'lux/grid/data'], function (angular, lux) {
+        'lux/grid/templates'], function (angular, lux) {
     "use strict";
 
     function dateSorting(column) {
@@ -648,36 +648,6 @@ define(['angular',
                         if (opts) {
                             scope.gridOptions = GridService.buildOptions(scope, opts);
                             GridService.getInitialData(scope, 'GridDataProviderRest', opts);
-                        }
-
-                        var grid = '<div ui-if="gridOptions.data.length>0" class="grid" ui-grid="gridOptions" ui-grid-pagination ui-grid-selection ui-grid-auto-resize></div>';
-                        element.append($compile(grid)(scope));
-                    },
-                },
-            };
-
-        }])
-        // Directive to build Angular-UI grid options using Websockets
-        .directive('websocketGrid', ['$compile', 'GridService', function ($compile, GridService) {
-
-            return {
-                restrict: 'A',
-                link: {
-                    pre: function (scope, element, attrs) {
-                        var scripts = element[0].getElementsByTagName('script');
-
-                        forEach(scripts, function (js) {
-                            globalEval(js.innerHTML);
-                        });
-
-                        var opts = attrs;
-                        if (attrs.websocketGrid) opts = {options: attrs.websocketGrid};
-
-                        opts = getOptions(opts);
-
-                        if (opts) {
-                            scope.gridOptions = GridService.buildOptions(scope, opts);
-                            GridService.getInitialData(scope, 'GridDataProviderWebsocket', opts.config);
                         }
 
                         var grid = '<div ui-if="gridOptions.data.length>0" class="grid" ui-grid="gridOptions" ui-grid-pagination ui-grid-selection ui-grid-auto-resize></div>';
