@@ -1,5 +1,5 @@
 define(['angular',
-        'lux/config',
+        'lux',
         'lux/page/templates'], function (angular, lux) {
     "use strict";
     //

@@ -24,7 +24,7 @@ class Command(lux.Command):
     def run(self, options):
         #
         # SCSS first
-        self.media('scss', self.scss_target)
+        self.media('scss', self.scss_target, copy=True)
         #
         # Javascript second
         base = self.app_base()
@@ -33,17 +33,16 @@ class Command(lux.Command):
         try:
             sources = self.media('js', self.js_target)
             #
-            self.write('Create build require config')
             paths = {}
-            for name, _ in sources:
-                paths.update(self.grunt(name, self.js_target(name)))
-            paths.update(self.grunt('', self.app_base()))
+            for name, src in sources:
+                paths.update(self.required_paths(name, src))
+            paths.update(self.required_paths('', self.app_base()))
 
             self.save_config_paths(paths)
         finally:
             os.chdir(current)
 
-    def media(self, media, get_target):
+    def media(self, media, get_target, copy=False):
         target = get_target()
         if os.path.isdir(target):
             shutil.rmtree(target)
@@ -55,33 +54,45 @@ class Command(lux.Command):
                     name = ext.meta.name.split('.')[-1]
                     sources.append((name, src))
 
-        for name, src in sources:
-            self._copy(src, get_target(name))
+        if copy:
+            for name, src in sources:
+                self._copy(src, get_target(name))
 
         return sources
 
-    def grunt(self, prefix, base):
-        '''Create required paths for prefix
-        '''
-        paths = self.process_files(prefix, base, base)
+    def required_paths(self, prefix, src):
+        """Create required paths for ``prefix``
 
-        for name in os.listdir(base):
-            full_path = os.path.join(base, name)
-            if not skipdir(full_path):
-                paths.update(self.process_files(prefix, base, full_path, name))
+        :param prefix: the name of the library (lux, mylib, ...)
+        :param src: the source folder for ``prefix``
+        :param target: the directory where to place files which need building
+            (for example templates)
+        """
+        paths = self.process_files(prefix, src)
+
+        for name in os.listdir(src):
+            src_name = os.path.join(src, name)
+            if not skipdir(src_name):
+                paths.update(self.process_files(prefix, src_name, name))
 
         return paths
 
-    def process_files(self, prefix, base, full_path, name=None):
+    def process_files(self, prefix, src, name=None):
+        """
+        :param prefix: the library name (lux, mylib, ...)
+        :param src: the source directory of files
+        :param name: when ``None`` don't recursively walk subpaths
+        :return: a dictionary for requirejs
+        """
         paths = {}
 
-        templates = os.path.join(full_path, 'templates')
+        templates = os.path.join(src, 'templates')
         if os.path.isdir(templates):
-            paths.update(self.templates(templates, prefix, base, name))
+            paths.update(self.templates(prefix, templates, name))
 
         if prefix:
-            for dirpath, dirnames, filenames in os.walk(full_path):
-                relpath = os.path.relpath(dirpath, full_path)
+            for dirpath, dirnames, filenames in os.walk(src):
+                relpath = os.path.relpath(dirpath, src)
                 if relpath == '.':
                     relpath = ''
 
@@ -105,13 +116,17 @@ class Command(lux.Command):
 
         return paths
 
-    def templates(self, templates, prefix, base, name):
+    def templates(self, prefix, templates, name=None):
         '''Create the templates directory with valid angular template modules
         '''
-        target_dir = self.js_target(prefix, 'templates')
-        name = name or prefix
-        file_name = '%s/%s/templates' % (prefix, name)
-        module_name = '%s.%s.templates' % (prefix, name)
+        tmpl = 'templates'
+        bits = [prefix]
+        if name:
+            bits.append(name)
+        target_dir = self.js_target(*bits)
+        bits.append(tmpl)
+        file_name = '/'.join(bits)
+        module_name = '.'.join(bits)
         paths = {}
         cache = []
         cache_template = self.template('template.cache.js')
@@ -128,7 +143,7 @@ class Command(lux.Command):
         if cache:
             if not os.path.isdir(target_dir):
                 os.makedirs(target_dir)
-            target = os.path.join(target_dir, '%s.js' % name)
+            target = os.path.join(target_dir, '%s.js' % tmpl)
 
             cache = '\n'.join(cache)
             template = self.template('template.module.js')

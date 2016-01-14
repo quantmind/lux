@@ -1,14 +1,13 @@
 define(['angular',
         'lux',
-        'lux/message/interface',
         'lux/message/templates',
-        'angular-sanitize'], function (angular, lux, messageService) {
+        'angular-sanitize'], function (angular, lux) {
     "use strict";
     //
     //  Lux messages
     //  =================
     //
-    //  An implementation of the messageService interface
+    //  An implementation of the lux.messageService interface
     //
     //  Usage:
     //
@@ -35,7 +34,7 @@ define(['angular',
 
             var log = lux.messageService.log;
 
-            angular.extend(this, messageService, {
+            angular.extend(this, lux.messageService, {
 
                 getMessages: function () {
                     var massages = this.getStorage().getItem('messages');

@@ -38,5 +38,7 @@ define(['lux/config'], function (lux) {
         }
     };
 
+    lux.messages = lux.extend(lux.messages);
+
     return lux.messageService;
 });

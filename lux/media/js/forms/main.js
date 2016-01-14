@@ -17,8 +17,16 @@ define(['angular',
         };
 
     lux.forms = {
+        overrides: [],
         directives: {}
     };
+
+    function extendForm (form) {
+        lux.forms.overrides.forEach(function (override) {
+            override(form);
+        });
+        return form;
+    }
     //
     // Form module for lux
     //
@@ -117,11 +125,10 @@ define(['angular',
                 }
             });
         }])
-
         //
-        // The formService is a reusable component for redering form fields
-        .service('standardForm', ['$log', '$http', '$document', '$templateCache', 'formDefaults', 'formElements',
-                                  function (log, $http, $document, $templateCache, formDefaults, formElements) {
+        // A factory for rendering form fields
+        .factory('baseForm', ['$log', '$http', '$document', '$templateCache', 'formDefaults', 'formElements',
+                function (log, $http, $document, $templateCache, formDefaults, formElements) {
             //
             var baseAttributes = ['id', 'name', 'title', 'style'],
                 inputAttributes = extendArray([], baseAttributes, ['disabled', 'readonly', 'type', 'value', 'placeholder',
@@ -135,7 +142,7 @@ define(['angular',
                 ngAttributes = ['disabled', 'minlength', 'maxlength', 'required'],
                 elements = formElements();
 
-            extend(this, {
+            return {
                 name: 'default',
                 //
                 className: '',
@@ -414,18 +421,13 @@ define(['angular',
                     var info = scope.info,
                         element = this.input(scope);
 
-                    if (elements.select.hasOwnProperty('widget') && elements.select.widget.name === 'selectUI')
-                        // UI-Select widget
-                        this.selectUI(scope, element, field, groupList, options);
-                    else
-                        // Standard select
-                        this.selectStandard(scope, element, field, groupList, options);
+                    this.selectWidget(scope, element, field, groupList, options);
 
                     return this.onChange(scope, element);
                 },
                 //
                 // Standard select widget
-                selectStandard: function(scope, element, field, groupList, options) {
+                selectWidget: function(scope, element, field, groupList, options) {
                     var groups = {},
                         group, grp,
                         select = this._select(scope.info.element, element);
@@ -454,90 +456,6 @@ define(['angular',
 
                     if (field.multiple)
                         select.attr('multiple', true);
-                },
-                //
-                // UI-Select widget
-                selectUI: function(scope, element, field, groupList, options) {
-                    //
-                    scope.groupBy = function (item) {
-                        return item.group;
-                    };
-                    // Search specified global
-                    scope.enableSearch = elements.select.widget.enableSearch;
-
-                    // Search specified for field
-                    if (field.hasOwnProperty('search'))
-                        scope.enableSearch = field.search;
-
-                    var selectUI = $($document[0].createElement('ui-select'))
-                                    .attr('id', field.id)
-                                    .attr('name', field.name)
-                                    .attr('ng-model', scope.formModelName + '["' + field.name + '"]')
-                                    .attr('theme', elements.select.widget.theme)
-                                    .attr('search-enabled', 'enableSearch')
-                                    .attr('ng-change', 'fireFieldChange("' + field.name + '")'),
-                        match = $($document[0].createElement('ui-select-match'))
-                                    .attr('placeholder', 'Select or search ' + field.label.toLowerCase()),
-                        choices_inner = $($document[0].createElement('div')),
-                        choices_inner_small = $($document[0].createElement('small')),
-                        choices = $($document[0].createElement('ui-select-choices'))
-                                    // Ensure any inserted placeholders are disabled
-                                    // i.e. 'Please Select...'
-                                    .attr('ui-disable-choice', 'item.id === "placeholder"')
-                                    .append(choices_inner);
-
-                    if (field.multiple)
-                        selectUI.attr('multiple', true);
-
-                    if (field.hasOwnProperty('data-remote-options')) {
-                        // Remote options
-                        selectUI.attr('data-remote-options', field['data-remote-options'])
-                                .attr('data-remote-options-id', field['data-remote-options-id'])
-                                .attr('data-remote-options-value', field['data-remote-options-value'])
-                                .attr('data-remote-options-params', field['data-remote-options-params']);
-
-                        if (field.multiple)
-                            match.html('{{$item.repr || $item.name || $item.id}}');
-                        else
-                            match.html('{{$select.selected.name || $select.selected.id}}');
-
-                        choices.attr('repeat', field['data-ng-options-ui-select'] + ' | filter: $select.search');
-                        choices_inner.html('{{item.name || item.id}}');
-                    } else {
-                        // Local options
-                        var optsId = field.name + '_opts',
-                            repeatItems = 'opt.value as opt in ' + optsId + ' | filter: $select.search';
-
-                        if (field.multiple)
-                            match.html('{{$item.value}}');
-                        else
-                            match.html('{{$select.selected.value}}');
-
-                        if (groupList.length) {
-                            // Groups require raw options
-                            scope[optsId] = field.options;
-                            choices.attr('group-by', 'groupBy')
-                                   .attr('repeat', repeatItems);
-                            choices_inner.attr('ng-bind-html', 'opt.repr || opt.value');
-                        } else {
-                            scope[optsId] = options;
-                            choices.attr('repeat', repeatItems);
-
-                            if (options.length > 0) {
-                                var attrsNumber = Object.keys(options[0]).length;
-                                choices_inner.attr('ng-bind-html', 'opt.repr || opt.value');
-
-                                if (attrsNumber > 1) {
-                                    choices_inner_small.attr('ng-bind-html', 'opt.value');
-                                    choices.append(choices_inner_small);
-                                }
-                            }
-                        }
-                    }
-
-                    selectUI.append(match);
-                    selectUI.append(choices);
-                    element[0].replaceChild(selectUI[0], element[0].childNodes[1]);
                 },
                 //
                 button: function (scope) {
@@ -708,63 +626,64 @@ define(['angular',
                         return $(element[0].querySelector(tag));
                     }
                 }
-            });
+            };
+        }])
+        .factory('standardForm', ['baseForm', function (baseForm) {
+            return extendForm(baseForm());
         }])
         //
         // Bootstrap Horizontal form renderer
-        .service('horizontalForm', ['$document', 'standardForm',
-                                    function ($document, standardForm) {
+        .factory('horizontalForm', ['$document', 'baseForm', function ($document, baseForm) {
             //
-            // extend the standardForm service
-            extend(this, standardForm, {
-
+            // extend the standardForm factory
+            return extendForm(extend(baseForm(), {
                 name: 'horizontal',
-
                 className: 'form-horizontal',
+                input: input,
+                button: button
+            }));
 
-                input: function (scope) {
-                    var element = standardForm.input(scope),
-                        children = element.children(),
-                        labelSpan = scope.field.labelSpan ? +scope.field.labelSpan : 2,
-                        wrapper = $($document[0].createElement('div'));
-                    labelSpan = Math.max(2, Math.min(labelSpan, 10));
-                    $(children[0]).addClass('control-label col-sm-' + labelSpan);
-                    wrapper.addClass('col-sm-' + (12-labelSpan));
-                    for (var i=1; i<children.length; ++i)
-                        wrapper.append($(children[i]));
-                    return element.append(wrapper);
-                },
+            function input (scope) {
+                var element = standardForm.input(scope),
+                    children = element.children(),
+                    labelSpan = scope.field.labelSpan ? +scope.field.labelSpan : 2,
+                    wrapper = $($document[0].createElement('div'));
+                labelSpan = Math.max(2, Math.min(labelSpan, 10));
+                $(children[0]).addClass('control-label col-sm-' + labelSpan);
+                wrapper.addClass('col-sm-' + (12-labelSpan));
+                for (var i=1; i<children.length; ++i)
+                    wrapper.append($(children[i]));
+                return element.append(wrapper);
+            }
 
-                button: function (scope) {
-                    var element = standardForm.button(scope),
-                        labelSpan = scope.field.labelSpan ? +scope.field.labelSpan : 2,
-                        outer = $($document[0].createElement('div')).addClass(this.inputGroupClass),
-                        wrapper = $($document[0].createElement('div'));
-                    labelSpan = Math.max(2, Math.min(labelSpan, 10));
-                    wrapper.addClass('col-sm-offset-' + labelSpan)
-                           .addClass('col-sm-' + (12-labelSpan));
-                    outer.append(wrapper.append(element));
-                    return outer;
-                }
-            });
+            function button (scope) {
+                var element = standardForm.button(scope),
+                    labelSpan = scope.field.labelSpan ? +scope.field.labelSpan : 2,
+                    outer = $($document[0].createElement('div')).addClass(this.inputGroupClass),
+                    wrapper = $($document[0].createElement('div'));
+                labelSpan = Math.max(2, Math.min(labelSpan, 10));
+                wrapper.addClass('col-sm-offset-' + labelSpan)
+                       .addClass('col-sm-' + (12-labelSpan));
+                outer.append(wrapper.append(element));
+                return outer;
+            }
         }])
         //
-        .service('inlineForm', ['standardForm', function (standardForm) {
-            extend(this, standardForm, {
-
+        .factory('inlineForm', ['baseForm', function (baseForm) {
+            return extendForm(extend(baseForm(), {
                 name: 'inline',
-
                 className: 'form-inline',
+                input: input
+            }));
 
-                input: function (scope) {
-                    var element = standardForm.input(scope);
-                    $(element[0].getElementsByTagName('label')).addClass('sr-only');
-                    return element;
-                }
-            });
+            function input (scope) {
+                var element = standardForm.input(scope);
+                $(element[0].getElementsByTagName('label')).addClass('sr-only');
+                return element;
+            }
         }])
         //
-        .service('formBaseRenderer', ['$lux', '$compile', 'formDefaults',
+        .factory('formBaseRenderer', ['$lux', '$compile', 'formDefaults',
                 function ($lux, $compile, formDefaults) {
             //
             // Internal function for compiling a scope
@@ -907,7 +826,7 @@ define(['angular',
         }])
         //
         // Default form Renderer, roll your own if you like
-        .service('formRenderer', ['formBaseRenderer', 'standardForm', 'horizontalForm', 'inlineForm',
+        .factory('formRenderer', ['formBaseRenderer', 'standardForm', 'horizontalForm', 'inlineForm',
             function (base, stdForm, horForm, inlForm) {
                 var renderer = extend(this, base);
                 this[stdForm.name] = stdForm;
@@ -1011,7 +930,7 @@ define(['angular',
             };
         });
 
-    return lux.forms;
+    return lux;
 
     function joinField(model, name, extra) {
         return model + '["' + name + '"].' + extra;

@@ -1,4 +1,4 @@
-define(['angular', 'lux/config', 'lux/services/api'], function (angular, lux, apiFactory) {
+define(['angular', 'lux'], function (angular, lux) {
     "use strict";
     //
     //	LUX WEB API
@@ -35,7 +35,7 @@ define(['angular', 'lux/config', 'lux/services/api'], function (angular, lux, ap
     //
         luxweb = function (url, $lux) {
 
-            var api = apiFactory(url, $lux),
+            var api = lux.apiFactory(url, $lux),
                 request = api.request,
                 auth_name = 'authorizations_url',
                 web;

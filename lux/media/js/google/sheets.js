@@ -1,12 +1,12 @@
 define(['angular',
-        'lux/google/models',
-        'lux/services/api'], function (angular, lux, apiFactory) {
+        'lux',
+        'lux/google/models'], function (angular, lux) {
     "use strict";
 
     lux.google.sheets = function (url, $lux) {
         url = "https://spreadsheets.google.com";
 
-        var api = apiFactory(url, $lux);
+        var api = lux.apiFactory(url, $lux);
 
         api.httpOptions = function (request) {
             request.options.url = request.baseUrl() + '/feeds/list/' + this._url + '/' + urlparams.id + '/public/values?alt=json';

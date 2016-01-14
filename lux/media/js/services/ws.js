@@ -1,4 +1,4 @@
-define(['angular', 'lux/config'], function (angular, lux) {
+define(['angular', 'lux'], function (angular, lux) {
     "use strict";
 
     //

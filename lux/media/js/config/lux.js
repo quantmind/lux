@@ -11,7 +11,6 @@ define([], function () {
     root.lux = lux;
 
     lux.root = root;
-    lux.messages = extend(lux.messages);
     lux.require = extend(lux.require);
     lux.extend = extend;
     lux.isString = isString;

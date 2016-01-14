@@ -21,8 +21,9 @@ define(['angular',
         };
     }
 
-    angular.module('lux.grid', ['lux.services', 'lux.grid.data', 'lux.grid.templates',
-                                'ui.grid', 'ui.grid.pagination', 'ui.grid.selection', 'ui.grid.autoResize',
+    angular.module('lux.grid', ['lux.services', 'lux.grid.templates',
+                                'ui.grid', 'ui.grid.pagination',
+                                'ui.grid.selection', 'ui.grid.autoResize',
                                 'ui.grid.resizeColumns'])
         //
         .constant('luxGridDefaults', {

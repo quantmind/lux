@@ -1,4 +1,6 @@
-define(['angular', 'lux/config', 'lux/services/luxweb'], function (angular, lux, luxWebApi) {
+define(['angular',
+        'lux',
+        'lux/services/luxweb'], function (angular, lux, luxWebApi) {
     "use strict";
     //
     //	Angular Module for JS clients of Lux Rest APIs
