@@ -16,7 +16,6 @@ build
 src
 deps
 lux.egg-info
-docs/build
 example/luxweb/settings.py
 
 # javascript/css
@@ -25,8 +24,8 @@ example/luxweb/settings.py
 lux/media/js/templates
 lux/media/lux/*.js
 lux/media/lux/*.css
-luxsite/media/luxsite/*.js
-luxsite/media/luxsite/*.css
+example/luxsite/media/luxsite/*.js
+example/luxsite/media/luxsite/*.scss
 
 *.log
 npm*

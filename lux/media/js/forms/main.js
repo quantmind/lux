@@ -194,7 +194,7 @@ define(['angular',
                     scope.info = info;
 
                     if (info) {
-                        if (info.hasOwnProperty('type') && typeof this[info.type] === 'function')
+                        if (info.hasOwnProperty('type') && typeof self[info.type] === 'function')
                             // Pick the renderer by checking `type`
                             fieldType = info.type;
                         else
@@ -202,14 +202,14 @@ define(['angular',
                             fieldType = info.element;
                     }
 
-                    renderer = this[fieldType];
+                    renderer = self[fieldType];
 
                     buildFieldInfo(scope.formModelName, thisField, fieldType);
 
                     if (!renderer)
-                        renderer = this.renderNotElements;
+                        renderer = self.renderNotElements;
 
-                    var element = renderer.call(this, scope);
+                    var element = renderer.call(self, scope);
 
                     forEach(scope.children, function (child) {
                         var field = child.field;
@@ -428,17 +428,15 @@ define(['angular',
                 //
                 // Standard select widget
                 selectWidget: function(scope, element, field, groupList, options) {
-                    var groups = {},
-                        group, grp,
-                        select = this._select(scope.info.element, element);
+                    var select = this._select(scope.info.element, element);
 
                     if (groupList.length) {
                         if (options.length)
                             groupList.push({name: 'other', options: options});
 
                         forEach(groupList, function (group) {
-                            grp = $($document[0].createElement('optgroup'))
-                                    .attr('label', group.name);
+                            var grp = $($document[0].createElement('optgroup'))
+                                        .attr('label', group.name);
                             select.append(grp);
                             forEach(group.options, function (opt) {
                                 opt = $($document[0].createElement('option'))
@@ -636,12 +634,14 @@ define(['angular',
         .factory('horizontalForm', ['$document', 'baseForm', function ($document, baseForm) {
             //
             // extend the standardForm factory
-            return extendForm(extend(baseForm(), {
+            var form = extendForm(extend(baseForm(), {
                 name: 'horizontal',
                 className: 'form-horizontal',
                 input: input,
                 button: button
             }));
+
+            return form;
 
             function input (scope) {
                 var element = standardForm.input(scope),
@@ -659,7 +659,7 @@ define(['angular',
             function button (scope) {
                 var element = standardForm.button(scope),
                     labelSpan = scope.field.labelSpan ? +scope.field.labelSpan : 2,
-                    outer = $($document[0].createElement('div')).addClass(this.inputGroupClass),
+                    outer = $($document[0].createElement('div')).addClass(form.inputGroupClass),
                     wrapper = $($document[0].createElement('div'));
                 labelSpan = Math.max(2, Math.min(labelSpan, 10));
                 wrapper.addClass('col-sm-offset-' + labelSpan)
@@ -737,7 +737,7 @@ define(['angular',
                     scope.formMessages = {};
                     scope.$lux = $lux;
                     if (!form.id)
-                        form.id = 'f' + s4();
+                        form.id = formid();
                     scope.formid = form.id;
                     scope.formCount = 0;
 
