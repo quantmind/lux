@@ -22,10 +22,8 @@ example/luxweb/settings.py
 .grunt
 *.map
 lux/media/js/templates
-lux/media/lux/*.js
-lux/media/lux/*.css
 example/luxsite/media/luxsite/*.js
-example/luxsite/media/luxsite/*.scss
+example/luxsite/media/luxsite/*.css
 
 *.log
 npm*

@@ -1,56 +1,57 @@
 {
-    "repository": {
-        "url": "https://github.com/quantmind/lux",
-        "type": "git"
-    },
-    "contributors": [],
-    "keywords": ["web", "framework", "python", "angularjs"],
     "name": "luxsite",
+    "title": "luxsite",
+    "version": "0.1.0",
+    "author": {
+        "name": "quantmind.com",
+        "email": "message@quantmind.com"
+    },
+    "keywords": [],
+    "licenses": [{}],
+    "description": "",
+    "repository": {
+        "type": "git",
+        "url": ""
+    },
+    "scripts": {
+        "test": "grunt karma:ci && grunt coveralls"
+    },
     "dependencies": {
-        "ngImgCrop": "git://github.com/iblank/ngImgCrop.git#39649fad4ee310cff71aca2c581fcb02fc872328",
-        "bootstrap-sass": "^3.3.6"
+        "bootstrap-sass": "",
+        "ngImgCrop": "git://github.com/iblank/ngImgCrop.git#39649fad4ee310cff71aca2c581fcb02fc872328"
     },
     "devDependencies": {
-        "grunt-contrib-watch": "",
-        "karma-firefox-launcher": "",
+        "eslint": "^1.10.3",
+        "eslint-config-angular": "^0.4.0",
+        "eslint-plugin-angular": "^0.15.0",
+        "eslint-plugin-disable": "^0.2.0",
+        "requirejs": "^2.1.20",
+        "phantomjs": "^1.9.18",
+        "jasmine-core": "^2.3.4",
+        "karma": "^0.13.14",
+        "karma-jasmine": "^0.3.6",
+        "karma-chrome-launcher": "^0.2.1",
+        "karma-firefox-launcher": "^0.1.6",
+        "karma-coverage": "^0.5.3",
+        "karma-es5-shim": "0.0.4",
+        "karma-requirejs": "^0.2.2",
+        "karma-phantomjs-launcher": "^0.2.1",
+        "karma-junit-reporter": "^0.3.8",
+        "grunt": "",
         "grunt-http": "",
         "grunt-contrib-copy": "",
-        "grunt-karma": "",
-        "phantomjs": "",
-        "grunt-contrib-requirejs": "",
-        "karma": "",
-        "grunt-sass": "",
-        "karma-phantomjs-launcher": "",
-        "requirejs": "",
-        "grunt": "",
-        "karma-chrome-launcher": "",
-        "karma-jasmine": "",
-        "jasmine-core": "",
-        "grunt-shell": "",
-        "karma-junit-reporter": "",
-        "grunt-contrib-cssmin": "",
-        "grunt-contrib-jshint": "",
-        "karma-es5-shim": "",
+        "grunt-karma": "^0.12.1",
         "grunt-contrib-clean": "",
-        "karma-requirejs": "",
-        "karma-coverage": "",
+        "grunt-contrib-requirejs": "^0.4.4",
+        "grunt-contrib-watch": "",
+        "grunt-eslint": "^17.3.1",
+        "grunt-contrib-cssmin": "",
         "grunt-contrib-uglify": "",
-        "grunt-contrib-concat": ""
-    },
-    "description": "python web toolkit",
-    "title": "Lux Library",
-    "author": {
-        "email": "lux@quantmind.com",
-        "name": "Luca Sbardella"
-    },
-    "version": "0.4.0",
-    "scripts": {
-        "test": "grunt karma:ci"
-    },
-    "licenses": [
-        {
-            "type": "BSD"
-        }
-    ],
-    "homepage": "http://quantmind.github.io/lux"
+        "grunt-html2js": "",
+        "grunt-contrib-concat": "",
+        "grunt-sass": "",
+        "grunt-coveralls": "",
+        "grunt-shell": "",
+        "grunt-contrib-jshint": ""
+    }
 }

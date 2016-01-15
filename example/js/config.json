@@ -9,6 +9,9 @@
                 "js/build/bundle.js"
             ],
             "dest": "luxsite/media/luxsite/luxsite.js"
+        },
+        "watch": {
+            "luxsite": ["js/*/**.js"]
         }
     },
     "sass": {
@@ -32,11 +35,5 @@
             },
             "dest": "luxsite/media/luxsite/giotto.js"
         }
-    },
-    "watch": {
-        "luxsite": ["js/*.js",
-                    "js/tests/**/*.js"],
-        "lux": ["lux/media/js/**/*.js",
-                "lux/media/js/**/*.tpl.html"]
     }
 }

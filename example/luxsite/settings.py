@@ -6,6 +6,7 @@ EXTENSIONS = ('lux.extensions.base',
               'lux.extensions.oauth',
               'lux.extensions.code',
               'lux.extensions.rest',
+              'lux.extensions.ui',
               'lux.extensions.content')
 
 STATIC_API = 'jsonapi'
