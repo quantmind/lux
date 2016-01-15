@@ -1,6 +1,8 @@
 // Standard theme for navbar
 // To create your own theme, dupicate this file, edit the variables and
 // update the @import in components/_navbar.scss
+$navbar-height: 60px;
+$navbar-text-padding: 18px;
 
 $navbar-background: rgb(242, 242, 242);
 $navbar-hover-background: #E4E4E4;
