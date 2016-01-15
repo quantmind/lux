@@ -30,7 +30,7 @@ function gridDataProviderWebsocketFactory ($scope) {
             /*jshint validthis:true */
             var tasks;
 
-            if (msg.data.event === 'record-update') {
+            if (msg.event === 'record-update') {
                 tasks = msg.data.data;
 
                 this._listener.onDataReceived({
@@ -39,7 +39,7 @@ function gridDataProviderWebsocketFactory ($scope) {
                     type: 'update'
                 });
 
-            } else if (msg.data.event === 'records') {
+            } else if (msg.event === 'records') {
                 tasks = msg.data.data;
 
                 this._listener.onDataReceived({
@@ -50,7 +50,7 @@ function gridDataProviderWebsocketFactory ($scope) {
 
                 setTimeout(sendFakeRecordOnce.bind(this), 0); // TODO Remove this. It's a dummy status update for development.
 
-            } else if (msg.data.event === 'columns-metadata') {
+            } else if (msg.event === 'columns-metadata') {
                 this._listener.onMetadataReceived(msg.data.data);
             }
         }
