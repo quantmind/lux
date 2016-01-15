@@ -33,11 +33,6 @@ class TokenBackend(TokenBackendMixin, RegistrationMixin, AuthBackend):
         return Json({'success': True,
                      'token': token}).http_response(request)
 
-    def logout_response(self, request, user):
-        '''TODO: do we set the token as expired!? Or we simply do nothing?
-        '''
-        return Json({'success': True}).http_response(request)
-
     def request(self, request):
         '''Check for ``HTTP_AUTHORIZATION`` header and if it is available
         and the authentication type if ``bearer`` try to perform

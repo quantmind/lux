@@ -71,6 +71,10 @@ class SessionBackendMixin(TokenBackendMixin):
                   'Name of the cookie which stores session id')
     ]
 
+    def logout(self, request):
+        request.cache.user = self.anonymous()
+        request.cache.session = self.create_session(request)
+
     def login_response(self, request, user):
         session = self.create_session(request, user)
         request.cache.session = session
@@ -78,14 +82,6 @@ class SessionBackendMixin(TokenBackendMixin):
         request.response.status_code = 201
         return Json({'success': True,
                      'token': token}).http_response(request)
-
-    def logout_response(self, request, user):
-        '''Logout and create a new session
-        '''
-        if user.is_authenticated():
-            request.cache.user = self.anonymous()
-            request.cache.session = self.create_session(request)
-        return Json({'success': True}).http_response(request)
 
     # MIDDLEWARE
     def request(self, request):

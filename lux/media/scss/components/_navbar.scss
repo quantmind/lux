@@ -165,3 +165,12 @@
         }
     }
 }
+
+.nav-center {
+  > li, > li {
+    float: none;
+    display: inline-block;
+  }
+
+  text-align: center;
+}

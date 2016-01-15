@@ -2,7 +2,7 @@ import json
 from urllib.parse import urljoin
 
 from pulsar import new_event_loop
-from pulsar.apps.http import HttpClient, JSON_CONTENT_TYPES
+from pulsar.apps.http import HTTPError, HttpClient, JSON_CONTENT_TYPES
 from pulsar.utils.httpurl import is_absolute_uri
 
 
@@ -61,6 +61,14 @@ class ApiClientRequest:
         return self.request('HEAD', path, **kw)
 
     def request(self, method, path=None, token=None, headers=None, **kw):
+        response = self._req(method, path, token, headers=headers, **kw)
+        request = self._request
+        if request.app.green_pool:
+            return request.app.green_pool.wait(response)
+        else:
+            return response
+
+    def _req(self, method, path, token=None, headers=None, **kw):
         request = self._request
         url = urljoin(self.url, path or '')
         headers = headers or []
@@ -69,11 +77,26 @@ class ApiClientRequest:
             token = request.cache.session.encoded
         if token:
             headers.append(('Authorization', 'Bearer %s' % token))
-        response = self._http.request(method, url, headers=headers, **kw)
-        if request.app.green_pool:
-            return request.app.green_pool.wait(response)
-        else:
-            return response
+        response = yield from self._http.request(method, url,
+                                                 headers=headers, **kw)
+        again = False
+        try:
+            response.raise_for_status()
+        except HTTPError as exc:
+            if exc.code == 401:
+                if token:
+                    request.cache.auth_backend.logout(request)
+                    again = True
+                else:
+                    raise
+            else:
+                raise
+
+        if again:
+            response = yield from self._req(method, path,
+                                            headers=headers, **kw)
+
+        return response
 
 
 class LocalClient:
