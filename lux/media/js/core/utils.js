@@ -1,8 +1,8 @@
-define(['angular', 'lux/config'], function (angular, lux) {
-    "use strict";
+define(['angular',
+        'lux/config'], function (angular, lux) {
+    'use strict';
 
-    var $ = angular.element,
-        root = lux.root,
+    var root = lux.root,
         forEach = angular.forEach,
         slice = Array.prototype.slice,
         generateCallbacks = function () {
@@ -42,7 +42,7 @@ define(['angular', 'lux/config'], function (angular, lux) {
     //
     // Check if element has tagName tag
     lux.isTag = function (element, tag) {
-        element = $(element);
+        element = angular.element(element);
         return element.length === 1 && element[0].tagName === tag.toUpperCase();
     };
     //
@@ -122,9 +122,9 @@ define(['angular', 'lux/config'], function (angular, lux) {
     //
     //  Simple wrapper for a querySelector
     lux.querySelector = function (elem, query) {
-        elem = $(elem);
+        elem = angular.element(elem);
         if (elem.length && query)
-            return $(elem[0].querySelector(query));
+            return angular.element(elem[0].querySelector(query));
         else
             return elem;
     };

@@ -2,7 +2,7 @@ define(['angular',
         'lux',
         'lux/message/templates',
         'angular-sanitize'], function (angular, lux) {
-    "use strict";
+    'use strict';
     //
     //  Lux messages
     //  =================
@@ -25,25 +25,24 @@ define(['angular',
     //                luxMessage.info('info message');
     //
     //            }])
-    angular
-        .module('lux.message', ['lux.services', 'lux.message.templates', 'ngSanitize'])
+    angular.module('lux.message', ['lux.services', 'lux.message.templates', 'ngSanitize'])
         //
         //  Service for messages
         //
-        .service('luxMessage', ['$lux', '$rootScope', function ($lux, $scope) {
+        .factory('luxMessage', ['$lux', '$rootScope', function ($lux, $scope) {
 
             var log = lux.messageService.log;
 
-            angular.extend(this, lux.messageService, {
+            return angular.extend({}, lux.messageService, {
 
                 getMessages: function () {
                     var massages = this.getStorage().getItem('messages');
                     if (!massages) return [];
-                    return JSON.parse(massages).reverse();
+                    return angular.fromJson(massages).reverse();
                 },
 
                 setMessages: function (messages) {
-                    this.getStorage().messages = JSON.stringify(messages);
+                    this.getStorage().messages = angular.toJson(messages);
                 },
 
                 pushMessage: function (message) {
@@ -65,22 +64,22 @@ define(['angular',
                 },
 
                 getDebugMode: function () {
-                    return !!JSON.parse(window.localStorage.getItem('debug'));
+                    return !!angular.fromJson($lux.window.localStorage.getItem('debug'));
                 },
 
                 setDebugMode: function (value) {
-                    window.localStorage.debug = JSON.stringify(value);
+                    $lux.window.localStorage.debug = angular.toJson(value);
                 },
 
                 setStorage: function (storage) {
-                    window.localStorage.messagesStorage = storage;
+                    $lux.window.localStorage.messagesStorage = storage;
                 },
 
                 getStorage: function () {
-                    if (window.localStorage.getItem('messagesStorage') === 'session') {
-                        return window.sessionStorage;
+                    if ($lux.window.localStorage.getItem('messagesStorage') === 'session') {
+                        return $lux.window.sessionStorage;
                     }
-                    return window.localStorage;
+                    return $lux.window.localStorage;
 
                 }
             });
@@ -90,7 +89,7 @@ define(['angular',
         //
         .directive('messages', ['luxMessage', function (luxMessage) {
 
-            function renderMessages(scope) {
+            function renderMessages() {
                 //scope.messages = luxMessage.getMessages();
             }
 
@@ -103,7 +102,7 @@ define(['angular',
             return {
                 restrict: 'AE',
                 replace: true,
-                templateUrl: "lux/message/templates/message.tpl.html",
+                templateUrl: 'lux/message/templates/message.tpl.html',
                 link: function (scope, element, attrs) {
                     scope.messages = [];
 

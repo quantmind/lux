@@ -1,7 +1,7 @@
 define(['angular',
         'lux',
         'lux/page/templates'], function (angular, lux) {
-    "use strict";
+    'use strict';
     //
     //  Lux Page
     //  ==============
@@ -9,89 +9,99 @@ define(['angular',
     //  Design to work with the ``lux.extension.angular``
     angular.module('lux.page', ['lux.page.templates'])
         //
-        .service('pageService', ['$lux', 'dateFilter', function ($lux, dateFilter) {
+        .factory('pageInfo', ['$lux', '$document', 'dateFilter',
+            function ($lux, $document, dateFilter) {
 
-            this.addInfo = function (page, $scope) {
-                if (!page)
-                    return $lux.log.error('No page, cannot add page information');
-                if (page.head && page.head.title) {
-                    document.title = page.head.title;
-                }
-                if (page.author) {
-                    if (page.author instanceof Array)
-                        page.authors = page.author.join(', ');
-                    else
-                        page.authors = page.author;
-                }
-                var date;
-                if (page.date) {
-                    try {
-                        date = new Date(page.date);
-                    } catch (e) {
-                        $lux.log.error('Could not parse date');
+                function pageInfo(page, $scope) {
+                    if (!page)
+                        return $lux.log.error('No page, cannot add page information');
+                    if (page.head && page.head.title) {
+                        $document[0].title = page.head.title;
                     }
-                    page.date = date;
-                    page.dateText = dateFilter(date, $scope.dateFormat);
+                    if (page.author) {
+                        if (page.author instanceof Array)
+                            page.authors = page.author.join(', ');
+                        else
+                            page.authors = page.author;
+                    }
+                    var date;
+                    if (page.date) {
+                        try {
+                            date = new Date(page.date);
+                        } catch (e) {
+                            $lux.log.error('Could not parse date');
+                        }
+                        page.date = date;
+                        page.dateText = dateFilter(date, $scope.dateFormat);
+                    }
+                    page.toString = function () {
+                        return this.name || this.url || '<noname>';
+                    };
+
+                    //
+                    page.toggle = function ($event) {
+                        $event.preventDefault();
+                        $event.stopPropagation();
+                        if (this.link)
+                            this.link.active = !this.link.active;
+                    };
+
+                    page.load = function () {
+                        if (this.link)
+                            $scope.page = this.link;
+                    };
+
+                    page.activeLink = function (url) {
+                        var loc;
+                        if (lux.isAbsolute.test(url))
+                            loc = $lux.location.absUrl();
+                        else
+                            loc = $lux.window.location.pathname;
+                        var rest = loc.substring(url.length),
+                            base = loc.substring(0, url.length),
+                            folder = url.substring(url.length - 1) === '/';
+                        return base === url && (folder || (rest === '' || rest.substring(0, 1) === '/'));
+                    };
+
+                    return page;
                 }
-                page.toString = function () {
-                    return this.name || this.url || '<noname>';
+
+                pageInfo.formatDate = function (dt, format) {
+                    if (!dt)
+                        dt = new Date();
+                    return dateFilter(dt, format || 'yyyy-MM-ddTHH:mm:ss');
                 };
 
-                return page;
-            };
-
-            this.formatDate = function (dt, format) {
-                if (!dt)
-                    dt = new Date();
-                return dateFilter(dt, format || 'yyyy-MM-ddTHH:mm:ss');
-            };
-        }])
+                return pageInfo;
+            }
+        ])
         //
-        .controller('Page', ['$scope', '$log', '$lux', 'pageService', function ($scope, log, $lux, pageService) {
-            //
-            $lux.log.info('Setting up angular page');
-            //
-            var page = $scope.page;
-            // If the page is a string, retrieve it from the pages object
-            if (typeof page === 'string')
-                page = $scope.pages ? $scope.pages[page] : null;
-            $scope.page = pageService.addInfo(page, $scope);
-            //
-            $scope.togglePage = function ($event) {
-                $event.preventDefault();
-                $event.stopPropagation();
-                this.link.active = !this.link.active;
-            };
+        .controller('PageController', ['$log', '$lux', 'pageInfo',
+            function (log, $lux, pageInfo) {
+                //
+                $lux.log.info('Setting up page');
+                //
+                var vm = this,
+                    page = vm.page;
+                // If the page is a string, retrieve it from the pages object
+                if (angular.isString(page))
+                    page = vm.pages ? vm.pages[page] : null;
 
-            $scope.loadPage = function ($event) {
-                $scope.page = this.link;
-            };
+                vm.page = pageInfo(page, vm);
 
-            $scope.activeLink = function (url) {
-                var loc;
-                if (isAbsolute.test(url))
-                    loc = $lux.location.absUrl();
-                else
-                    loc = window.location.pathname;
-                var rest = loc.substring(url.length),
-                    base = loc.substring(0, url.length),
-                    folder = url.substring(url.length - 1) === '/';
-                return base === url && (folder || (rest === '' || rest.substring(0, 1) === '/'));
-            };
+                vm.$on('animIn', function () {
+                    log.info('Page ' + page.toString() + ' animation in');
+                });
+                vm.$on('animOut', function () {
+                    log.info('Page ' + page.toString() + ' animation out');
+                });
+            }
+        ])
 
-            //
-            $scope.$on('animIn', function () {
-                log.info('Page ' + page.toString() + ' animation in');
-            });
-            $scope.$on('animOut', function () {
-                log.info('Page ' + page.toString() + ' animation out');
-            });
-        }])
+        .factory('luxBreadcrumbs', ['$lux', function ($lux) {
 
-        .service('$breadcrumbs', [function () {
-
-            this.crumbs = function () {
-                var loc = window.location,
+            return function () {
+                var loc = $lux.window.location,
                     path = loc.pathname,
                     steps = [],
                     last = {
@@ -103,8 +113,8 @@ define(['angular',
                 path.split('/').forEach(function (name) {
                     if (name) {
                         last = {
-                            label: name.split(/[-_]+/).map(capitalize).join(' '),
-                            href: joinUrl(last.href, name)
+                            label: name.split(/[-_]+/).map(lux.capitalize).join(' '),
+                            href: lux.joinUrl(last.href, name)
                         };
                         if (last.href.length >= lux.context.url.length)
                             steps.push(last);
@@ -122,28 +132,26 @@ define(['angular',
         }])
         //
         //  Directive for displaying breadcrumbs navigation
-        .directive('breadcrumbs', ['$breadcrumbs', '$rootScope', function ($breadcrumbs, $rootScope) {
+        .directive('breadcrumbs', ['$rootScope', 'luxBreadcrumbs', function ($rootScope, luxBreadcrumbs) {
             return {
                 restrict: 'AE',
                 replace: true,
-                templateUrl: "page/breadcrumbs.tpl.html",
+                templateUrl: 'lux/page/templates/breadcrumbs.tpl.html',
                 link: {
                     post: function (scope) {
-                        var renderBreadcrumb = function () {
-                            scope.steps = $breadcrumbs.crumbs();
+                        var crumbs = function () {
+                            scope.steps = luxBreadcrumbs();
                         };
 
-                        $rootScope.$on('$viewContentLoaded', function () {
-                            renderBreadcrumb();
-                        });
+                        $rootScope.$on('$viewContentLoaded', crumbs);
 
-                        renderBreadcrumb();
+                        crumbs();
                     }
                 }
             };
         }])
         //
-        //  Simply display the current yeat
+        //  Simply display the current year
         .directive('year', function () {
             return {
                 restrict: 'AE',

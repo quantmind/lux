@@ -1,5 +1,6 @@
 define(['angular',
-        'lux'], function (angular, lux) {
+        'lux',
+        'lux/services/pagination'], function (angular, lux) {
     "use strict";
 
     angular.module('lux.form.utils', ['lux.pagination'])
@@ -7,7 +8,8 @@ define(['angular',
         .constant('lazyLoadOffset', 40) // API will be called this number of pixels
                                         // before bottom of UIselect list
 
-        .directive('remoteOptions', ['$lux', 'luxPaginationFactory', 'lazyLoadOffset', '$timeout', function ($lux, LuxPagination, lazyLoadOffset, $timeout) {
+        .directive('remoteOptions', ['$lux', 'luxPaginationFactory', 'lazyLoadOffset', '$timeout',
+            function ($lux, LuxPagination, lazyLoadOffset, $timeout) {
 
             function remoteOptions(luxPag, target, scope, attrs, element) {
 

@@ -5,7 +5,7 @@ define(['angular',
 
     angular.module('lux.form.ui.select', ['lux.form', 'ui.select'])
 
-        .run(['$lux', '$document', function ($lux, $document) {
+        .run(['$document', function ($document) {
             lux.forms.overrides.push(function (form) {
 
                 var selectWidget = form.selectWidget;

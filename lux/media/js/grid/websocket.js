@@ -2,8 +2,9 @@
 //	===================
 //
 //	provides data to a lux.grid using websockets
-define(['angular', 'lux/grid'], function (angular, lux) {
-    "use strict";
+define(['angular',
+        'lux/grid'], function (angular) {
+    'use strict';
 
     angular.module('lux.grid.websocket', ['lux.grid', 'lux.sockjs'])
 
@@ -26,21 +27,21 @@ define(['angular', 'lux/grid'], function (angular, lux) {
         };
 
         GridDataProviderWebsocket.prototype.connect = function() {
-            checkIfDestroyed.call(this);
+            var self = this;
 
-            function onConnect (sock) {
-                /*jshint validthis:true */
-                this.getPage();
+            checkIfDestroyed.call(self);
+
+            function onConnect () {
+                self.getPage();
             }
 
             function onMessage (sock, msg) {
-                /*jshint validthis:true */
                 var tasks;
 
                 if (msg.data.event === 'record-update') {
                     tasks = msg.data.data;
 
-                    this._listener.onDataReceived({
+                    self._listener.onDataReceived({
                         total: msg.data.total,
                         result: tasks,
                         type: 'update'
@@ -49,7 +50,7 @@ define(['angular', 'lux/grid'], function (angular, lux) {
                 } else if (msg.data.event === 'records') {
                     tasks = msg.data.data;
 
-                    this._listener.onDataReceived({
+                    self._listener.onDataReceived({
                         total: msg.data.total,
                         result: tasks,
                         type: 'update'
@@ -58,7 +59,7 @@ define(['angular', 'lux/grid'], function (angular, lux) {
                     setTimeout(sendFakeRecordOnce.bind(this), 0); // TODO Remove this. It's a dummy status update for development.
 
                 } else if (msg.data.event === 'columns-metadata') {
-                    this._listener.onMetadataReceived(msg.data.data);
+                    self._listener.onMetadataReceived(msg.data.data);
                 }
             }
 

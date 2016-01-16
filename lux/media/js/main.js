@@ -4,7 +4,6 @@ define(['angular',
 
     var extend = angular.extend,
         angular_bootstrapped = false,
-        $ = angular.element,
         defaults = {
             url: '',    // base url for the web site
             MEDIA_URL: '',  // default url for media content
@@ -33,12 +32,13 @@ define(['angular',
         }])
 
         .run(['$rootScope', '$log', '$timeout', 'context',
-              	function (scope, $log, $timeout, context) {
-            $log.info('Extend root scope with context');
-            extend(scope, context);
-            scope.$timeout = $timeout;
-            scope.$log = $log;
-        }]);
+            function (scope, $log, $timeout, context) {
+                $log.info('Extend root scope with context');
+                extend(scope, context);
+                scope.$timeout = $timeout;
+                scope.$log = $log;
+            }
+        ]);
     //
     //  Bootstrap the document
     //  ============================
@@ -71,7 +71,7 @@ define(['angular',
         if (!angular_bootstrapped) {
             angular_bootstrapped = true;
             //
-            $(document).ready(function() {
+            angular.element(document).ready(function() {
                 _bootstrap();
             });
         }

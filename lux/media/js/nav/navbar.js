@@ -34,7 +34,7 @@ define(['angular',
             // Fixed navbar
             fixed: false,
             search: false,
-            url: lux.context.url,
+            url: '/',
             target: '_self',
             toggle: true,
             fluid: true,
@@ -74,7 +74,7 @@ define(['angular',
                     if (url.subitems && url.subitems.length > 0) {
                         if (exploreSubmenus(url.subitems)) return true;
                     }
-                url = typeof(url) === 'string' ? url : url.href || url.url;
+                url = angular.isString(url) ? url : url.href || url.url;
                 if (!url) return;
                 if (lux.isAbsolute.test(url))
                     loc = $location.absUrl();
@@ -124,7 +124,7 @@ define(['angular',
                 luxNavbar.maybeCollapse(navbar);
 
                 return navbar;
-            };
+            }
 
             luxNavbar.template = function () {
                 return navBarDefaults.template;
@@ -161,7 +161,7 @@ define(['angular',
             return {
                 restrict: 'AE',
 
-                link: function (scope, element, attrs) {
+                link: function (scope, element) {
                     element.css('min-height', $window.innerHeight + 'px');
 
                     scope.$watch(function () {
@@ -200,14 +200,14 @@ define(['angular',
                 scope.links = navLinks;
                 //
                 lux.windowResize(function () {
-                    if (luxNavigation.collapseForWide(scope.navbar, element))
+                    if (luxNavbar.collapseForWide(scope.navbar, element))
                         scope.$apply();
                 });
                 //
                 // When using ui-router, and a view changes collapse the
                 //  navigation if needed
                 scope.$on('$locationChangeSuccess', function () {
-                    luxNavigation.maybeCollapse(scope.navbar);
+                    luxNavbar.maybeCollapse(scope.navbar);
                     //scope.$apply();
                 });
             }

@@ -1,5 +1,7 @@
-define(['angular', 'lux/page/page'], function (angular) {
-    "use strict";
+define(['angular',
+        'lux',
+        'lux/page/page'], function (angular, lux) {
+    'use strict';
     //
     //	Lux.router
     //	===================

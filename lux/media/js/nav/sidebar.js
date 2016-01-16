@@ -96,7 +96,7 @@ define(['angular',
                 });
 
                 return navbar;
-            }
+            };
 
             return luxSidebars;
 

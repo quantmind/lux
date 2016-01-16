@@ -1,5 +1,5 @@
 define(['angular', 'lux/config'], function (angular, lux) {
-    "use strict";
+    'use strict';
 
     var $ = angular.element,
         extend = angular.extend;
@@ -23,10 +23,10 @@ define(['angular', 'lux/config'], function (angular, lux) {
         //
         .run(['$lux', function ($lux) {
             //
-            var name = $(document.querySelector("meta[name=csrf-param]")).attr('content'),
-                csrf_token = $(document.querySelector("meta[name=csrf-token]")).attr('content');
+            var name = $(document.querySelector('meta[name=csrf-param]')).attr('content'),
+                csrf_token = $(document.querySelector('meta[name=csrf-token]')).attr('content');
 
-            $lux.user_token = $(document.querySelector("meta[name=user-token]")).attr('content');
+            $lux.user_token = $(document.querySelector('meta[name=user-token]')).attr('content');
 
             if (name && csrf_token) {
                 $lux.csrf = {};
@@ -65,7 +65,7 @@ define(['angular', 'lux/config'], function (angular, lux) {
                 this.api = function (url, api) {
                     if (arguments.length === 1) {
                         var defaults;
-                        if (isObject(url)) {
+                        if (angular.isObject(url)) {
                             defaults = url;
                             url = url.url;
                         }
