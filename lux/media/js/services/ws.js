@@ -1,5 +1,5 @@
-define(['angular', 'lux'], function (angular, lux) {
-    "use strict";
+define(['angular', 'lux'], function (angular) {
+    'use strict';
 
     //
     // Websocket handler for RPC and pub/sub messages
@@ -31,7 +31,7 @@ define(['angular', 'lux'], function (angular, lux) {
                 id: ++context.id,
                 data: data
             };
-            var msg = JSON.stringify(data);
+            var msg = angular.toJson(data);
             if (callback) {
                 context.executed[data.id] = callback;
             }
@@ -73,7 +73,7 @@ define(['angular', 'lux'], function (angular, lux) {
                         if (msg.data)
                             msg.data = angular.fromJson(msg.data);
                         if (msg.channel === 'rpc') {
-                            if (typeof msg.data.id !== 'undefined') {
+                            if (angular.isDefined(msg.data.id)) {
                                 if (context.executed[msg.data.id]) {
                                     context.executed[msg.data.id](msg.data.data, sock);
                                     if (msg.data.rpcComplete) {
@@ -100,8 +100,8 @@ define(['angular', 'lux'], function (angular, lux) {
 
         handler.sendMessage = function (msg, forceEncode) {
             return handler.connect(function (sock) {
-                if (typeof msg !== 'string' || forceEncode) {
-                    msg = JSON.stringify(msg);
+                if (!angular.isString(msg) || forceEncode) {
+                    msg = angular.fromJson(msg);
                 }
                 sock.send(msg);
             });

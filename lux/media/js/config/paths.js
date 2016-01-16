@@ -7,6 +7,7 @@ define([], function () {
             "angular-mocks": "//ajax.googleapis.com/ajax/libs/angularjs/1.4.7/angular-mocks.js",
             "angular-sanitize": "//ajax.googleapis.com/ajax/libs/angularjs/1.4.7/angular-sanitize",
             "angular-touch": "//cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.7/angular-touch",
+            "angular-ui-bootstrap": "https://cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/1.0.3/ui-bootstrap-tpls",
             "angular-strap": "//cdnjs.cloudflare.com/ajax/libs/angular-strap/2.2.1/angular-strap",
             "angular-strap-tpl": "//cdnjs.cloudflare.com/ajax/libs/angular-strap/2.2.4/angular-strap.tpl",
             "angular-ui-router": "//cdnjs.cloudflare.com/ajax/libs/angular-ui-router/0.2.14/angular-ui-router",

@@ -1,6 +1,6 @@
 define(['angular',
         'lux/core'], function(angular, lux) {
-    "use strict";
+    'use strict';
 
     var extend = angular.extend,
         angular_bootstrapped = false,
@@ -24,14 +24,14 @@ define(['angular',
     };
 
     lux.loader = angular.module('lux.loader', [])
-    	//
+
         .value('context', lux.context)
-        //
+
         .config(['$controllerProvider', function ($controllerProvider) {
             lux.loader.cp = $controllerProvider;
             lux.loader.controller = $controllerProvider;
         }])
-        //
+
         .run(['$rootScope', '$log', '$timeout', 'context',
               	function (scope, $log, $timeout, context) {
             $log.info('Extend root scope with context');

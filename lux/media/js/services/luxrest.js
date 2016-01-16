@@ -1,7 +1,7 @@
 define(['angular',
         'lux',
         'lux/services/luxweb'], function (angular, lux, luxWebApi) {
-    "use strict";
+    'use strict';
     //
     //	Angular Module for JS clients of Lux Rest APIs
     //	====================================================
@@ -53,7 +53,7 @@ define(['angular',
                 request.options.url === request.baseUrl &&
                 request.options.method === 'post') {
 
-                request.on.success(function (data, status) {
+                request.on.success(function () {
                     // reload the Page
                     $lux.window.location.reload();
                     //api.token(data.token);

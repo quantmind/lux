@@ -1,5 +1,5 @@
-define(['angular', 'lux'], function (angular, lux) {
-    "use strict";
+define(['angular'], function (angular) {
+    'use strict';
     //
     //  Hash scrolling service
     angular.module('lux.scroll', [])
@@ -27,16 +27,14 @@ define(['angular', 'lux'], function (angular, lux) {
             $anchorScrollProvider.disableAutoScrolling();
         }])
         //
-        .run(['$rootScope', '$location', '$log', '$timeout', 'scrollDefaults',
-            function (scope, location, log, timer, scrollDefaults) {
+        .run(['$rootScope', '$window', '$location', '$document', '$log', '$timeout', 'scrollDefaults',
+            function (scope, $window, location, $document, log, timer, scrollDefaults) {
                 //
                 var target = null,
-                    scroll = scope.scroll = extend({}, scrollDefaults, scope.scroll);
+                    scroll = scope.scroll = angular.extend({}, scrollDefaults, scope.scroll);
                 //
                 scroll.browser = true;
                 scroll.path = false;
-                //
-                scope.$location = location;
                 //
                 // This is the first event triggered when the path location changes
                 scope.$on('$locationChangeSuccess', function () {
@@ -86,20 +84,20 @@ define(['angular', 'lux'], function (angular, lux) {
                         return;
                     // set the location.hash to the id of
                     // the element you wish to scroll to.
-                    if (typeof(hash) === 'string') {
+                    if (angular.isString(hash)) {
                         var highlight = true;
                         if (hash.substring(0, 1) === '#')
                             hash = hash.substring(1);
                         if (hash)
-                            target = document.getElementById(hash);
+                            target = $document[0].getElementById(hash);
                         else {
                             highlight = false;
-                            target = document.getElementsByTagName('body');
+                            target = $document[0].getElementsByTagName('body');
                             target = target.length ? target[0] : null;
                         }
                         if (target) {
                             _clearTargets();
-                            target = $(target);
+                            target = angular.element(target);
                             if (highlight)
                                 target.addClass(scroll.scrollTargetClass)
                                     .removeClass(scroll.scrollTargetClassFinish);
@@ -110,8 +108,8 @@ define(['angular', 'lux'], function (angular, lux) {
                 }
 
                 function _clearTargets() {
-                    forEach(document.querySelectorAll('.' + scroll.scrollTargetClass), function (el) {
-                        $(el).removeClass(scroll.scrollTargetClass);
+                    angular.forEach($document[0].querySelectorAll('.' + scroll.scrollTargetClass), function (el) {
+                        angular.element(el).removeClass(scroll.scrollTargetClass);
                     });
                 }
 
@@ -119,14 +117,14 @@ define(['angular', 'lux'], function (angular, lux) {
                     var stopY = elmYPosition(target[0]) - scroll.offset;
 
                     if (delay === 0) {
-                        window.scrollTo(0, stopY);
+                        $window.scrollTo(0, stopY);
                         _finished();
                     } else {
                         var startY = currentYPosition(),
                             distance = stopY > startY ? stopY - startY : startY - stopY,
                             step = Math.round(distance / scroll.frames);
 
-                        if (delay === null || delay === undefined) {
+                        if (delay === null || angular.isUndefined(delay)) {
                             delay = 1000 * scroll.time / scroll.frames;
                             if (distance < 200)
                                 delay = 0;
@@ -137,24 +135,22 @@ define(['angular', 'lux'], function (angular, lux) {
 
                 function _nextScroll(y, delay, stepY, stopY) {
                     var more = true,
-                        y2, d;
+                        y2;
                     if (y < stopY) {
                         y2 = y + stepY;
                         if (y2 >= stopY) {
                             more = false;
                             y2 = stopY;
                         }
-                        d = y2 - y;
                     } else {
                         y2 = y - stepY;
                         if (y2 <= stopY) {
                             more = false;
                             y2 = stopY;
                         }
-                        d = y - y2;
                     }
                     timer(function () {
-                        window.scrollTo(0, y2);
+                        $window.scrollTo(0, y2);
                         if (more)
                             _nextScroll(y2, delay, stepY, stopY);
                         else {
@@ -173,7 +169,7 @@ define(['angular', 'lux'], function (angular, lux) {
                 }
 
                 function _clear(delay) {
-                    if (delay === undefined) delay = 0;
+                    if (angular.isUndefined(delay)) delay = 0;
                     timer(function () {
                         log.info('Reset scrolling');
                         scroll.browser = false;
@@ -183,16 +179,16 @@ define(['angular', 'lux'], function (angular, lux) {
 
                 function currentYPosition() {
                     // Firefox, Chrome, Opera, Safari
-                    if (window.pageYOffset) {
-                        return window.pageYOffset;
+                    if ($window.pageYOffset) {
+                        return $window.pageYOffset;
                     }
                     // Internet Explorer 6 - standards mode
-                    if (document.documentElement && document.documentElement.scrollTop) {
-                        return document.documentElement.scrollTop;
+                    if ($document[0].documentElement && $document[0].documentElement.scrollTop) {
+                        return $document[0].documentElement.scrollTop;
                     }
                     // Internet Explorer 6, 7 and 8
-                    if (document.body.scrollTop) {
-                        return document.body.scrollTop;
+                    if ($document[0].body.scrollTop) {
+                        return $document[0].body.scrollTop;
                     }
                     return 0;
                 }
@@ -201,7 +197,7 @@ define(['angular', 'lux'], function (angular, lux) {
                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
                 function elmYPosition(node) {
                     var y = node.offsetTop;
-                    while (node.offsetParent && node.offsetParent != document.body) {
+                    while (node.offsetParent && node.offsetParent != $document[0].body) {
                         node = node.offsetParent;
                         y += node.offsetTop;
                     }

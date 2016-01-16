@@ -1,16 +1,16 @@
 <nav ng-attr-id="{{navbar.id}}" class="navbar navbar-{{navbar.themeTop}}"
 ng-class="{'navbar-fixed-top':navbar.fixed, 'navbar-static-top':navbar.top}" role="navigation"
-ng-model="navbar.collapse" bs-collapse>
+ng-model="navbar.collapse" uib-collapse>
     <div class="{{navbar.container}}">
         <div class="navbar-header">
-            <button ng-if="navbar.toggle" type="button" class="navbar-toggle" bs-collapse-toggle>
+            <button ng-if="navbar.toggle" type="button" class="navbar-toggle" uib-collapse-toggle>
                 <span class="sr-only">Toggle navigation</span>
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
             </button>
             <ul class="nav navbar-nav main-nav">
-                <li ng-if="navbar.itemsLeft" ng-repeat="link in navbar.itemsLeft" ng-class="{active:activeLink(link)}" navbar-link>
+                <li ng-if="navbar.itemsLeft" ng-repeat="link in navbar.itemsLeft" ng-class="{active:links.activeLink(link)}" navbar-link>
                 </li>
             </ul>
             <a ng-if="navbar.brandImage" href="{{navbar.url}}" class="navbar-brand" target="{{navbar.target}}">
@@ -20,12 +20,12 @@ ng-model="navbar.collapse" bs-collapse>
                 {{navbar.brand}}
             </a>
         </div>
-        <nav class="navbar-collapse" bs-collapse-target>
+        <nav class="navbar-collapse" uib-collapse-target>
             <ul ng-if="navbar.items" class="nav navbar-nav navbar-left">
-                <li ng-repeat="link in navbar.items" ng-class="{active:activeLink(link)}" navbar-link></li>
+                <li ng-repeat="link in navbar.items" ng-class="{active:links.activeLink(link)}" navbar-link></li>
             </ul>
             <ul ng-if="navbar.itemsRight" class="nav navbar-nav navbar-right">
-                <li ng-repeat="link in navbar.itemsRight" ng-class="{active:activeLink(link)}" navbar-link>
+                <li ng-repeat="link in navbar.itemsRight" ng-class="{active:links.activeLink(link)}" navbar-link>
                 </li>
             </ul>
         </nav>

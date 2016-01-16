@@ -1,3 +1,7 @@
+define(['angular',
+        'lux',
+        'angular-ui-router'], function (angular, lux) {
+    'use strict';
     //
     //  UI-Routing
     //
@@ -8,7 +12,7 @@
 
     // Hack for delaying with ui-router state.href
     // TODO: fix this!
-    var stateHref = lux.stateHref = function (state, State, Params) {
+    lux.stateHref = function (state, State, Params) {
         if (Params) {
             var url = state.href(State, Params);
             return url.replace(/%2F/g, '/');
@@ -22,7 +26,7 @@
     //	========================
     //
     //	Complements the lux server and angular ui.router
-    function LuxStateProvider ($stateProvider, $urlRouterProvider) {
+    function LuxStateProvider($stateProvider, $urlRouterProvider) {
 
         var states = lux.context.states,
             pages = lux.context.pages;
@@ -56,7 +60,7 @@
         this.setup = function () {
             //
             if (pages) {
-                forEach(states, function (name) {
+                angular.forEach(states, function (name) {
                     var page = pages[name];
                     // Redirection
                     if (page.redirectTo)
@@ -68,9 +72,9 @@
                             delete page.resolveTemplate;
                             var templateUrl = page.templateUrl;
 
-                            page.templateUrl = function ($stateParams){
+                            page.templateUrl = function ($stateParams) {
                                 var url = templateUrl;
-                                forEach($stateParams, function (value, name) {
+                                angular.forEach($stateParams, function (value, name) {
                                     url = url.replace(':' + name, value);
                                 });
                                 return url;
@@ -99,20 +103,21 @@
             scope.$stateParams = $stateParams;
         }])
         //
-        .provider('luxState', ["$stateProvider", "$urlRouterProvider", LuxStateProvider])
+        .provider('luxState', ['$stateProvider', '$urlRouterProvider', LuxStateProvider])
         //
-        .config(['$locationProvider', function ($locationProvider) {
+        .config(['$document', '$locationProvider', function ($document, $locationProvider) {
             //
             $locationProvider.html5Mode(true).hashPrefix(lux.context.hashPrefix);
-            $(document.querySelector('#seo-view')).remove();
+            angular.element($document.querySelector('#seo-view')).remove();
             lux.context.uiRouterEnabled = true;
         }])
         //
         // Default controller for an Html5 page loaded via the ui router
-        .controller('Html5', ['$scope', '$state', 'pageService', 'page', 'items',
+        .controller('Html5Controller', ['$scope', '$state', 'pageService', 'page', 'items',
             function ($scope, $state, pageService, page, items) {
-                $scope.items = items ? items.data : null;
-                $scope.page = pageService.addInfo(page, $scope);
+                var vm = this;
+                vm.items = items ? items.data : null;
+                vm.page = pageService.addInfo(page, $scope);
             }])
         //
         // A directive to compile Html received from the server
@@ -128,10 +133,10 @@
                             var html = page.html;
                             if (html.main) html = html.main;
                             element.html(html);
-                            var scripts= element[0].getElementsByTagName('script');
+                            var scripts = element[0].getElementsByTagName('script');
                             // Execute scripts in the loaded html
-                            forEach(scripts, function (js) {
-                                globalEval(js.innerHTML);
+                            angular.forEach(scripts, function (js) {
+                                lux.globalEval(js.innerHTML);
                             });
                             $compile(element.contents())(scope);
                             // load required scripts if necessary
@@ -141,3 +146,5 @@
                 }
             };
         }]);
+
+});

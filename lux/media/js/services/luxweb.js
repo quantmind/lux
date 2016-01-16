@@ -1,5 +1,5 @@
 define(['angular', 'lux'], function (angular, lux) {
-    "use strict";
+    'use strict';
     //
     //	LUX WEB API
     //	===================
@@ -30,15 +30,14 @@ define(['angular', 'lux'], function (angular, lux) {
     };
 
     var //
-    //  HTTP verbs which don't send a csrf token in their requests
+        //  HTTP verbs which don't send a csrf token in their requests
         CSRFset = ['get', 'head', 'options'],
-    //
+        //
         luxweb = function (url, $lux) {
 
             var api = lux.apiFactory(url, $lux),
                 request = api.request,
-                auth_name = 'authorizations_url',
-                web;
+                auth_name = 'authorizations_url';
 
             // Set the name of the authentication endpoints
             api.authName = function (name) {
@@ -50,7 +49,7 @@ define(['angular', 'lux'], function (angular, lux) {
             };
 
             // Set/Get the user token
-            api.token = function (token) {
+            api.token = function () {
                 return $lux.user_token;
             };
 
@@ -72,7 +71,7 @@ define(['angular', 'lux'], function (angular, lux) {
                     } else {
                         $lux.window.location.reload();
                     }
-                }, function (response) {
+                }, function () {
                     $lux.messages.error('Error while logging out');
                 });
             };
@@ -103,7 +102,7 @@ define(['angular', 'lux'], function (angular, lux) {
                 var resolve = api.defaults().get;
                 if (resolve) {
                     api.get().success(function (data) {
-                        forEach(data, function (value, key) {
+                        lux.forEach(data, function (value, key) {
                             // TODO: do we need a callback for JSON fields?
                             // or shall we leave it here?
 
@@ -111,19 +110,19 @@ define(['angular', 'lux'], function (angular, lux) {
                             var jsonArrayKey = key.split('[]')[0];
 
                             // Stringify json only if has json mode enabled
-                            if (modelType[jsonArrayKey] === 'json' && isJsonStringify(value)) {
+                            if (modelType[jsonArrayKey] === 'json' && lux.isJsonStringify(value)) {
 
                                 // Get rid of the brackets from the json array field
-                                if (isArray(value)) {
+                                if (angular.isArray(value)) {
                                     key = jsonArrayKey;
                                 }
 
-                                value = JSON.stringify(value, null, 4);
+                                value = angular.toJson(value, null, 4);
                             }
 
-                            if (isArray(value)) {
+                            if (angular.isArray(value)) {
                                 model[key] = [];
-                                forEach(value, function (item) {
+                                angular.forEach(value, function (item) {
                                     model[key].push(item.id || item);
                                 });
                             } else {
@@ -152,7 +151,7 @@ define(['angular', 'lux'], function (angular, lux) {
                 var options = request.options;
 
                 if ($lux.csrf && CSRFset.indexOf(options.method === -1)) {
-                    options.data = extend(options.data || {}, $lux.csrf);
+                    options.data = angular.extend(options.data || {}, $lux.csrf);
                 }
 
                 if (!options.headers)

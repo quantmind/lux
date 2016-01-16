@@ -31,7 +31,7 @@ define(['angular', 'lux/config'], function (angular, lux) {
     };
     //
     lux.windowResize = function (callback) {
-        addEvent(window, 'onresize', callback);
+        lux.addEvent(window, 'onresize', callback);
     };
     //
     lux.windowHeight = function () {
