@@ -35,5 +35,13 @@
             },
             "dest": "luxsite/media/luxsite/giotto.js"
         }
+    },
+    "eslint": {
+        "options": {
+            "quiet": false
+        },
+        "target": ["Gruntfile.js",
+                   "js/*.js",
+                   "../lux/media/js/**/*.js"]
     }
 }

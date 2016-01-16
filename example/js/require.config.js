@@ -1,3 +1,4 @@
+/* eslint-plugin-disable angular */
 define(['lux/config'], function (lux) {
     'use strict';
 

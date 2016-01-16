@@ -1,0 +1,40 @@
+{
+  "rules": {
+    "indent": [
+      2,
+      4,
+      {
+        "SwitchCase": 1
+      }
+    ],
+    "quotes": [
+      2,
+      "single",
+      "avoid-escape"
+    ],
+    "semi": [
+      2,
+      "always"
+    ],
+    "angular/no-digest": 0,
+    "angular/di": [
+      2,
+      "array"
+    ]
+  },
+  "env": {
+    "browser": true,
+    "amd": true
+  },
+  "plugins": [
+    "disable"
+  ],
+  "extends": [
+    "eslint:recommended",
+    "angular"
+  ],
+  "globals": {
+    "module": true,
+    "inject": true
+  }
+}

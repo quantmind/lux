@@ -2,8 +2,7 @@ define(['angular',
         'lux/core'], function(angular, lux) {
     "use strict";
 
-    var forEach = angular.forEach,
-        extend = angular.extend,
+    var extend = angular.extend,
         angular_bootstrapped = false,
         $ = angular.element,
         defaults = {
@@ -60,7 +59,7 @@ define(['angular',
             if(!mods) mods = [];
 
             // Add all modules from input
-            forEach(modules, function (mod) {
+            lux.forEach(modules, function (mod) {
                 mods.push(mod);
             });
             // Insert the lux loader as first module

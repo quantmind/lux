@@ -1,5 +1,7 @@
-define(['lux/nav/navbar'], function () {
-    "use strict";
+define(['angular',
+        'lux',
+        'lux/nav/navbar'], function (angular, lux) {
+    'use strict';
     //
     //  Sidebar module
     //
@@ -106,7 +108,7 @@ define(['lux/nav/navbar'], function () {
                     navbar.top = true;
                     //
                     // Add toggle to the navbar
-                    forEach(sidebars, function (sidebar) {
+                    lux.forEach(sidebars, function (sidebar) {
                         if (sidebar.toggle) {
                             if (!navbar.itemsLeft) navbar.itemsLeft = [];
 

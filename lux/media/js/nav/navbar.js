@@ -1,6 +1,7 @@
-define(['lux',
-        'lux/nav/templates'], function () {
-    "use strict";
+define(['angular',
+        'lux',
+        'lux/nav/templates'], function (angular, lux) {
+    'use strict';
     //
     //  Lux Navigation module
     //  ============================
