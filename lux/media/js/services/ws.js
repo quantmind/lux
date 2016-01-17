@@ -1,10 +1,12 @@
-define(['angular', 'lux'], function (angular) {
+define(['angular',
+        'lux'], function (angular) {
     'use strict';
 
     //
     // Websocket handler for RPC and pub/sub messages
-    function sockJs(url, websockets, websocketChannels, log) {
+    function sockJs($lux, url, websockets, websocketChannels) {
         var handler = {},
+            log = $lux.log,
             context = websockets[url];
 
         if (!context) {
@@ -132,20 +134,20 @@ define(['angular', 'lux'], function (angular) {
     }
 
     //
-    //  Sock module
+    //  lux.sockjs module
     //  ==================
     //
     //
     //
-    angular.module('lux.sockjs', [])
+    angular.module('lux.sockjs', ['lux.services'])
 
-        .run(['$rootScope', '$log', function (scope, log) {
+        .run(['$lux', function ($lux) {
 
             var websockets = {},
                 websocketChannels = {};
 
-            scope.sockJs = function (url) {
-                return sockJs(url, websockets, websocketChannels, log);
+            $lux.sockJs = function (url) {
+                return sockJs($lux, url, websockets, websocketChannels);
             };
 
         }]);

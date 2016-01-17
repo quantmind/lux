@@ -8,17 +8,18 @@ define(['angular',
 
     angular.module('lux.grid.websocket', ['lux.grid', 'lux.sockjs'])
 
-        .run(['$rootScope', 'luxGridDataProviders', function ($scope, luxGridDataProviders) {
+        .run(['$lux', 'luxGridDataProviders', function ($lux, dataProvider) {
 
-            luxGridDataProviders.register('rest', gridDataProviderWebsocketFactory($scope));
+            dataProvider.register('websocket', gridDataProviderWebsocketFactory($lux, dataProvider));
         }]);
 
 
-    function gridDataProviderWebsocketFactory ($scope) {
+    function gridDataProviderWebsocketFactory ($lux, dataProvider) {
 
-        function GridDataProviderWebsocket(websocketUrl, channel, listener) {
-            this._websocketUrl = websocketUrl;
-            this._channel= channel;
+        function GridDataProviderWebsocket (target, subPath, gridState, listener) {
+            this._websocketUrl = target;
+            this._channel = subPath;
+            this._gridState = gridState;
             this._listener = listener;
         }
 
@@ -29,7 +30,7 @@ define(['angular',
         GridDataProviderWebsocket.prototype.connect = function() {
             var self = this;
 
-            checkIfDestroyed.call(self);
+            dataProvider.check(self);
 
             function onConnect () {
                 self.getPage();
@@ -56,37 +57,27 @@ define(['angular',
                         type: 'update'
                     });
 
-                    setTimeout(sendFakeRecordOnce.bind(this), 0); // TODO Remove this. It's a dummy status update for development.
-
                 } else if (msg.data.event === 'columns-metadata') {
                     self._listener.onMetadataReceived(msg.data.data);
                 }
             }
 
-            this._sockJs = $scope.sockJs(this._websocketUrl);
+            this._sockJs = $lux.sockJs(this._websocketUrl);
 
             this._sockJs.addListener(this._channel, onMessage.bind(this));
 
             this._sockJs.connect(onConnect.bind(this));
 
-            var sendFakeRecordOnce = function() {};
-
         };
 
-        GridDataProviderWebsocket.prototype.getPage = function(options) {
-            this._sockJs.rpc(this._channel, {});
+        GridDataProviderWebsocket.prototype.getPage = function (options) {
+            this._sockJs.rpc(this._channel, options);
         };
 
         GridDataProviderWebsocket.prototype.deleteItem = function(identifier, onSuccess, onFailure) {
-            // not yet implemented
+            var options = {id: identifier};
+            this._sockJs.rpc(this._channel, options);
         };
-
-        function checkIfDestroyed () {
-            /* jshint validthis:true */
-            if (this._listener === null || typeof this._listener === 'undefined') {
-                throw 'GridDataProviderREST#connect error: either you forgot to define a listener, or you are attempting to use this data provider after it was destroyed.';
-            }
-        }
 
         return GridDataProviderWebsocket;
     }

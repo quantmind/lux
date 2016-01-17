@@ -12,89 +12,42 @@ define(['angular',
         .factory('pageInfo', ['$lux', '$document', 'dateFilter',
             function ($lux, $document, dateFilter) {
 
-                function pageInfo(page, $scope) {
-                    if (!page)
-                        return $lux.log.error('No page, cannot add page information');
-                    if (page.head && page.head.title) {
-                        $document[0].title = page.head.title;
-                    }
+                function pageInfo (page, scope) {
+                    // If the page is a string, retrieve it from the pages object
+                    if (angular.isString(scope.page))
+                        angular.extend(page, scope.pages ? scope.pages[page] : null)
+
                     if (page.author) {
-                        if (page.author instanceof Array)
+                        if (angular.isArray(page.author))
                             page.authors = page.author.join(', ');
                         else
                             page.authors = page.author;
                     }
-                    var date;
+
                     if (page.date) {
                         try {
-                            date = new Date(page.date);
+                            page.date = new Date(page.date);
+                            page.dateText = dateFilter(page.date, scope.dateFormat);
                         } catch (e) {
                             $lux.log.error('Could not parse date');
                         }
-                        page.date = date;
-                        page.dateText = dateFilter(date, $scope.dateFormat);
                     }
-                    page.toString = function () {
-                        return this.name || this.url || '<noname>';
-                    };
 
-                    //
-                    page.toggle = function ($event) {
-                        $event.preventDefault();
-                        $event.stopPropagation();
-                        if (this.link)
-                            this.link.active = !this.link.active;
-                    };
-
-                    page.load = function () {
-                        if (this.link)
-                            $scope.page = this.link;
-                    };
-
-                    page.activeLink = function (url) {
-                        var loc;
-                        if (lux.isAbsolute.test(url))
-                            loc = $lux.location.absUrl();
-                        else
-                            loc = $lux.window.location.pathname;
-                        var rest = loc.substring(url.length),
-                            base = loc.substring(0, url.length),
-                            folder = url.substring(url.length - 1) === '/';
-                        return base === url && (folder || (rest === '' || rest.substring(0, 1) === '/'));
-                    };
+                    page.path = $lux.window.location.pathname;
 
                     return page;
                 }
-
-                pageInfo.formatDate = function (dt, format) {
-                    if (!dt)
-                        dt = new Date();
-                    return dateFilter(dt, format || 'yyyy-MM-ddTHH:mm:ss');
-                };
 
                 return pageInfo;
             }
         ])
         //
-        .controller('PageController', ['$log', '$lux', 'pageInfo',
-            function (log, $lux, pageInfo) {
+        .controller('LuxPageController', ['$rootScope', '$lux', 'pageInfo',
+            function (scope, $lux, pageInfo) {
                 //
                 $lux.log.info('Setting up page');
                 //
-                var vm = this,
-                    page = vm.page;
-                // If the page is a string, retrieve it from the pages object
-                if (angular.isString(page))
-                    page = vm.pages ? vm.pages[page] : null;
-
-                vm.page = pageInfo(page, vm);
-
-                vm.$on('animIn', function () {
-                    log.info('Page ' + page.toString() + ' animation in');
-                });
-                vm.$on('animOut', function () {
-                    log.info('Page ' + page.toString() + ' animation out');
-                });
+                pageInfo(this, scope);
             }
         ])
 

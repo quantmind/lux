@@ -10,7 +10,24 @@ define(['angular',
         'lux',
         'angular-ui-grid',
         'lux/grid/templates'], function (angular, lux) {
-    "use strict";
+    'use strict';
+
+    var dataProviders = {};
+
+    function registerProvider (type, providerFactory) {
+        dataProviders[type] = providerFactory;
+    }
+
+    function createProvider (type, target, subPath, gridState, listener) {
+        var Provider = dataProviders[type];
+        if (Provider) return new Provider(target, subPath, gridState, listener);
+    }
+
+    function checkProvider (provider) {
+        if (provider._listener === null || angular.isUndefined(provider)) {
+            throw 'GridDataProvider#connect error: either you forgot to define a listener, or you are attempting to use this data provider after it was destroyed.';
+        }
+    }
 
     function dateSorting(column) {
 
@@ -96,19 +113,19 @@ define(['angular',
                 delete: {
                     templates: {
                         'empty': 'grid/templates/modal.empty.tpl.html',
-                        'delete': 'grid/templates/modal.delete.tpl.html',
+                        'delete': 'grid/templates/modal.delete.tpl.html'
                     },
                     messages: {
                         'info': 'Are you sure you want to delete',
                         'danger': 'DANGER - THIS CANNOT BE UNDONE',
                         'success': 'Successfully deleted',
                         'error': 'Error while deleting ',
-                        'empty': 'Please, select some',
+                        'empty': 'Please, select some'
                     }
                 },
                 columnsVisibility: {
                     templates: {
-                        'default': 'lux/grid/templates/modal.columns.tpl.html',
+                        'default': 'lux/grid/templates/modal.columns.tpl.html'
                     },
                     messages: {
                         'info': 'Click button with column name to toggle visibility'
@@ -159,26 +176,36 @@ define(['angular',
         })
         //
         //  Data providers service
-        .service('luxGridDataProviders', function () {
-            var providers = {};
-
-            this.all = providers;
-
-            this.register = function (type, providerFactory) {
-                providers[type] = providerFactory;
+        .factory('luxGridDataProviders', function () {
+            return {
+                register: registerProvider,
+                create: createProvider,
+                check: checkProvider
             };
-
-            this.create = function (type, target, subPath, gridState, listener) {
-                var Provider = providers[type];
-                if (Provider) return new Provider(target, subPath, gridState, listener);
-            };
-
         })
         //
-        .service('GridService', ['$lux', '$q', '$location', '$compile', '$modal', 'uiGridConstants', 'luxGridDefaults', 'GridDataProviderFactory', '$timeout', '$templateCache',
-            function ($lux, $q, $location, $compile, $modal, uiGridConstants, luxGridDefaults, GridDataProviderFactory, $timeout, $templateCache) {
+        .factory('gridService', ['$lux', '$compile', '$modal',
+            'uiGridConstants','luxGridDefaults', '$templateCache',
+            function ($lux, $compile, $modal, uiGridConstants, luxGridDefaults, $templateCache) {
 
-                var gridDataProvider;
+                function gridService (scope, element, attrs) {
+                    var scripts = element[0].getElementsByTagName('script'),
+                        opts = lux.getOptions(attrs);
+
+                    angular.forEach(scripts, function (js) {
+                        lux.globalEval(js.innerHTML);
+                    });
+
+                    if (opts) {
+                        scope.gridOptions = buildOptions(scope, opts);
+                        getInitialData(scope, opts);
+                    }
+
+                    var grid = '<div ui-if="gridOptions.data.length>0" class="grid" ui-grid="gridOptions" ui-grid-pagination ui-grid-selection ui-grid-auto-resize></div>';
+                    element.append($compile(grid)(scope));
+                }
+
+                return gridService;
 
                 function parseColumns(columns, metaFields, permissions) {
                     var columnDefs = [],
@@ -205,15 +232,15 @@ define(['angular',
                         var callback = luxGridDefaults.columns[col.type];
                         if (callback) callback(column, col, uiGridConstants, luxGridDefaults);
 
-                        if (typeof col.cellFilter === 'string') {
+                        if (angular.isString(col.cellFilter)) {
                             column.cellFilter = col.cellFilter;
                         }
 
-                        if (typeof col.cellTemplateName === 'string') {
+                        if (angular.isString(col.cellTemplateName)) {
                             column.cellTemplate = luxGridDefaults.wrapCell($templateCache.get(col.cellTemplateName));
                         }
 
-                        if (typeof column.field !== 'undefined' && column.field === metaFields.repr) {
+                        if (angular.isDefined(column.field) && column.field === metaFields.repr) {
                             if (permissions.update) {
                                 // If there is an update permission then display link
                                 column.cellTemplate = luxGridDefaults.wrapCell('<a ng-href="{{grid.appScope.getObjectIdField(row.entity)}}">{{COL_FIELD}}</a>');
@@ -229,7 +256,7 @@ define(['angular',
                 }
 
                 // Get specified page using params
-                function getPage(scope) {
+                function getPage (scope) {
                     var query = angular.extend({}, scope.gridState);
 
                     // Add filter if available
@@ -252,8 +279,8 @@ define(['angular',
                 }
 
                 // Return state name (last part of the URL)
-                function getStateName() {
-                    return window.location.href.split('/').pop(-1);
+                function getStateName () {
+                    return $lux.window.location.href.split('/').pop(-1);
                 }
 
                 // Return model name
@@ -268,7 +295,7 @@ define(['angular',
                         title, menuItem,
                         permissions = gridOptions.permissions;
 
-                    forEach(gridMenu, function (item, key) {
+                    angular.forEach(gridMenu, function (item, key) {
                         title = item.title;
 
                         if (key === 'create') {
@@ -296,24 +323,22 @@ define(['angular',
                 }
 
                 // Add menu actions to grid
-                function addGridMenu(scope, gridOptions) {
+                function addGridMenu (scope, gridOptions) {
                     var modalScope = scope.$new(true),
                         modal, template,
                         stateName = getStateName();
 
-                    scope.create = function ($event) {
-                        // if location path is available then we use ui-router
+                    scope.create = function () {
                         if (lux.context.uiRouterEnabled)
-                            $location.path($location.path() + '/add');
+                            $lux.location.path($lux.location.path() + '/add');
                         else
                             $lux.window.location.href += '/add';
                     };
 
-                    scope.delete = function ($event) {
+                    scope.delete = function () {
                         modalScope.selected = scope.gridApi.selection.getSelectedRows();
 
-                        var firstField = gridOptions.columnDefs[0].field,
-                            subPath = scope.options.target.path || '';
+                        var firstField = gridOptions.columnDefs[0].field;
 
                         // Modal settings
                         angular.extend(modalScope, {
@@ -321,7 +346,7 @@ define(['angular',
                             'repr_field': scope.gridOptions.metaFields.repr || firstField,
                             'infoMessage': luxGridDefaults.modal.delete.messages.info + ' ' + stateName + ':',
                             'dangerMessage': luxGridDefaults.modal.delete.messages.danger,
-                            'emptyMessage': luxGridDefaults.modal.delete.messages.empty + ' ' + stateName + '.',
+                            'emptyMessage': luxGridDefaults.modal.delete.messages.empty + ' ' + stateName + '.'
                         });
 
                         if (modalScope.selected.length > 0)
@@ -341,11 +366,11 @@ define(['angular',
                                 var defer = $lux.q.defer(),
                                     pk = item[scope.gridOptions.metaFields.id];
 
-                                function onSuccess(resp) {
+                                function onSuccess() {
                                     defer.resolve(luxGridDefaults.modal.delete.messages.success);
                                 }
 
-                                function onFailure(error) {
+                                function onFailure() {
                                     defer.reject(luxGridDefaults.modal.delete.messages.error);
                                 }
 
@@ -356,11 +381,11 @@ define(['angular',
 
                             var promises = [];
 
-                            forEach(modalScope.selected, function (item, _) {
+                            angular.forEach(modalScope.selected, function (item, _) {
                                 promises.push(deleteItem(item));
                             });
 
-                            $q.all(promises).then(function (results) {
+                            $lux.q.all(promises).then(function (results) {
                                 getPage(scope);
                                 modal.hide();
                                 $lux.messages.success(results[0] + ' ' + results.length + ' ' + stateName);
@@ -402,21 +427,22 @@ define(['angular',
 
                     updateGridMenu(scope, luxGridDefaults.gridMenu, gridOptions);
 
-                    extend(gridOptions, {
+                    angular.extend(gridOptions, {
                         enableGridMenu: true,
                         gridMenuShowHideColumns: false,
                     });
                 }
 
                 // Get initial data
-                this.getInitialData = function (scope, connectionType, gridConfig) {
+                function getInitialData (scope, gridConfig) {
+
                     scope.gridCellDetailsModal = function (id, content) {
                         $modal({
-                            "title": "Details for " + id,
-                            "content": content,
-                            "placement": "center",
-                            "backdrop": true,
-                            "template": 'grid/templates/modal.record.details.tpl.html'
+                            title: 'Details for ' + id,
+                            content: content,
+                            placement: 'center',
+                            backdrop: true,
+                            template: 'lux/grid/templates/modal.record.details.tpl.html'
                         });
                     };
 
@@ -489,7 +515,7 @@ define(['angular',
                 };
 
                 // Builds grid options
-                this.buildOptions = function (scope, options) {
+                function buildOptions (scope, options) {
                     scope.options = options;
                     scope.paginationOptions = luxGridDefaults.paginationOptions;
                     scope.gridState = luxGridDefaults.gridState;
@@ -629,34 +655,14 @@ define(['angular',
             }])
         //
         // Directive to build Angular-UI grid options using Lux REST API
-        .directive('restGrid', ['$compile', 'GridService', function ($compile, GridService) {
+        .directive('luxGrid', ['gridService', function (gridService) {
 
             return {
                 restrict: 'A',
                 link: {
-                    pre: function (scope, element, attrs) {
-                        var scripts = element[0].getElementsByTagName('script');
-
-                        forEach(scripts, function (js) {
-                            globalEval(js.innerHTML);
-                        });
-
-                        var opts = attrs;
-                        if (attrs.restGrid) opts = {options: attrs.restGrid};
-
-                        opts = getOptions(opts);
-
-                        if (opts) {
-                            scope.gridOptions = GridService.buildOptions(scope, opts);
-                            GridService.getInitialData(scope, 'GridDataProviderRest', opts);
-                        }
-
-                        var grid = '<div ui-if="gridOptions.data.length>0" class="grid" ui-grid="gridOptions" ui-grid-pagination ui-grid-selection ui-grid-auto-resize></div>';
-                        element.append($compile(grid)(scope));
-                    },
-                },
+                    pre: gridService
+                }
             };
-
         }]);
 
 });

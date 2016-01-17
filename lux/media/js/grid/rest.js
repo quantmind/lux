@@ -2,19 +2,19 @@
 //	===================
 //
 //	provides data to a lux.grid using REST calls
-define(['angular', 'lux/grid'], function (angular, lux) {
-    "use strict";
+define(['angular', 'lux/grid'], function (angular) {
+    'use strict';
 
     angular.module('lux.grid.rest', ['lux.grid'])
 
         .run(['$lux', 'luxGridDataProviders'], function ($lux, luxGridDataProviders) {
 
-            luxGridDataProviders.register('rest', restProvider($lux));
+            luxGridDataProviders.register('rest', restProvider($lux, luxGridDataProviders));
         });
 
-    function restProvider ($lux) {
+    function restProvider ($lux, dataProvider) {
 
-        function GridDataProviderREST(target, subPath, gridState, listener) {
+        function GridDataProviderREST (target, subPath, gridState, listener) {
             this._api = $lux.api(target);
             this._subPath = subPath;
             this._gridState = gridState;
@@ -22,17 +22,17 @@ define(['angular', 'lux/grid'], function (angular, lux) {
         }
 
         GridDataProviderREST.prototype.connect = function () {
-            checkIfDestroyed.call(this);
-            getMetadata.call(this, getData.bind(this, {path: this._subPath}, this._gridState));
+            dataProvider.check(this);
+            getMetadata(this, getData.bind(this, {path: this._subPath}, this._gridState));
         };
 
         GridDataProviderREST.prototype.getPage = function (options) {
-            checkIfDestroyed.call(this);
-            getData.call(this, {}, options);
+            dataProvider.check(this);
+            getData(this, {}, options);
         };
 
         GridDataProviderREST.prototype.deleteItem = function (identifier, onSuccess, onFailure) {
-            checkIfDestroyed.call(this);
+            dataProvider.check(this);
             this._api.delete({path: this._subPath + '/' + identifier})
                 .success(onSuccess)
                 .error(onFailure);
@@ -42,30 +42,19 @@ define(['angular', 'lux/grid'], function (angular, lux) {
             this._listener = null;
         };
 
-        function checkIfDestroyed() {
-            /* jshint validthis:true */
-            if (this._listener === null || typeof this._listener === 'undefined') {
-                throw 'GridDataProviderREST#connect error: either you forgot to define a listener, or you are attempting to use this data provider after it was destroyed.';
-            }
-        }
-
-        function getMetadata(callback) {
-            /* jshint validthis:true */
-            this._api.get({
-                path: this._subPath + '/metadata'
+        function getMetadata(self, callback) {
+            self._api.get({
+                path: self._subPath + '/metadata'
             }).success(function (metadata) {
-                this._listener.onMetadataReceived(metadata);
-                if (typeof callback === 'function') {
-                    callback();
-                }
-            }.bind(this));
+                self._listener.onMetadataReceived(metadata);
+                if (angular.isFunction(callback)) callback();
+            });
         }
 
-        function getData(path, options) {
-            /* jshint validthis:true */
-            this._api.get(path, options).success(function (data) {
-                this._listener.onDataReceived(data);
-            }.bind(this));
+        function getData(self, path, options) {
+            self._api.get(path, options).success(function (data) {
+                self._listener.onDataReceived(data);
+            });
         }
 
         return GridDataProviderREST;

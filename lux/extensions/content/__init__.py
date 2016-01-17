@@ -14,7 +14,8 @@ __all__ = ['Content',
            'TextForm',
            'GithubHook',
            'EventHandler',
-           'PullRepo']
+           'PullRepo',
+           'html_contents']
 
 
 class Extension(lux.Extension):
@@ -30,3 +31,10 @@ class Extension(lux.Extension):
         if request.cache.html_main:
             context['html_main'] = request.cache.html_main
         return context
+
+
+def html_contents(app):
+    contents = sorted(app.models.values(), key=lambda c: c.html_url or '')
+    for content in reversed(contents):
+        if content.html_url is not None and isinstance(content, Content):
+            yield content

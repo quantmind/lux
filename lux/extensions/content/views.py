@@ -112,8 +112,6 @@ class TextRouter(TextRouterBase):
             raise
 
     def render_file(self, request, path='', as_response=False):
-        if path.endswith('/'):
-            path = '%sindex' % path
         model = self.model
         backend = request.cache.auth_backend
 

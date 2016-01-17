@@ -119,9 +119,12 @@ class Content(rest.RestModel):
     def _content(self, request, name):
         '''Read content from file in the repository
         '''
-        name = self._format_filename(name)
-        directory = self.directory
-        src = os.path.join(directory, name)
+        src = os.path.join(self.directory, name)
+        if os.path.isdir(src):
+            name = os.path.join(src, 'index')
+        file_name = self._format_filename(name)
+        src = os.path.join(self.directory, file_name)
+
         with open(src, 'rb') as f:
             content = f.read()
 
