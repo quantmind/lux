@@ -1,17 +1,18 @@
 (function () {
 
+    var root = this;
     var TEST_REGEXP = /\/js\/tests\/specs\//i;
     var allTestFiles = [];
 
     // Get a list of all the test files to include
-    Object.keys(window.__karma__.files).forEach(function (file) {
+    Object.keys(root.__karma__.files).forEach(function (file) {
         if (TEST_REGEXP.test(file)) {
             allTestFiles.push(file);
         }
     });
 
 
-    window.lux = {
+    root.lux = {
         //
         PATH_TO_LOCAL_REQUIRED_FILES: '${media_dir}',
         //
@@ -26,7 +27,7 @@
             deps: allTestFiles,
             //
             callback: function () {
-                window.__karma__.start();
+                root.__karma__.start();
             },
             //
             paths: ${require_paths}

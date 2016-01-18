@@ -3,12 +3,12 @@
 //
 //  Dependencies:
 //
-//      - use $modal service from angular-strap library
-//
-//
+//  - use the angular-ui-grid library
+//  - use $uibModal service from angular-ui-bootstrap library
 define(['angular',
         'lux',
         'angular-ui-grid',
+        'angular-ui-bootstrap',
         'lux/grid/templates'], function (angular, lux) {
     'use strict';
 
@@ -184,9 +184,9 @@ define(['angular',
             };
         }])
         //
-        .factory('gridService', ['$lux', '$compile', '$document', '$modal',
+        .factory('gridService', ['$lux', '$compile', '$document', '$uibModal',
             'uiGridConstants','luxGridDefaults', '$templateCache',
-            function ($lux, $compile, $document, $modal, uiGridConstants,
+            function ($lux, $compile, $document, $uibModal, uiGridConstants,
                       luxGridDefaults, $templateCache) {
 
                 function gridService(scope, element, attrs) {
@@ -355,7 +355,7 @@ define(['angular',
                         else
                             template = luxGridDefaults.modal.delete.templates.empty;
 
-                        modal = $modal({
+                        modal = $uibModal({
                             scope: modalScope,
                             template: template,
                             show: true
@@ -419,7 +419,7 @@ define(['angular',
                         };
                         //
                         template = luxGridDefaults.modal.columnsVisibility.templates.default;
-                        modal = $modal({
+                        modal = $uibModal({
                             scope: modalScope,
                             template: template,
                             show: true
@@ -438,7 +438,7 @@ define(['angular',
                 function getInitialData(scope, gridConfig) {
 
                     scope.gridCellDetailsModal = function (id, content) {
-                        $modal({
+                        $uibModal({
                             title: 'Details for ' + id,
                             content: content,
                             placement: 'center',

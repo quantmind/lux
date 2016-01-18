@@ -22,10 +22,11 @@ define(['angular', 'lux/config'], function (angular, lux) {
         //
         .run(['$lux', function ($lux) {
             //
-            var name = angular.element($lux.document[0].querySelector('meta[name=csrf-param]')).attr('content'),
-                csrf_token = angular.element($lux.document[0].querySelector('meta[name=csrf-token]')).attr('content');
+            var doc = $lux.window.document,
+                name = angular.element(doc.querySelector('meta[name=csrf-param]')).attr('content'),
+                csrf_token = angular.element(doc.querySelector('meta[name=csrf-token]')).attr('content');
 
-            $lux.user_token = angular.element($lux.document[0].querySelector('meta[name=user-token]')).attr('content');
+            $lux.user_token = angular.element(doc.querySelector('meta[name=user-token]')).attr('content');
 
             if (name && csrf_token) {
                 $lux.csrf = {};

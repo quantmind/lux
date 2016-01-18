@@ -174,8 +174,8 @@ class Command(lux.Command):
             relpath = os.path.relpath(path, base)
             cfg_paths[name] = relpath
         # Test config
-        test_template = self.template('test.config.js')
-        test_cfg = self.js_target('test.config.js')
+        test_template = self.template('tests.config.js')
+        test_cfg = self.js_target('tests.config.js')
         media_dir = os.path.join(self.app.meta.media_dir,
                                  self.app.meta.name, '')
         test_file = test_template.safe_substitute(

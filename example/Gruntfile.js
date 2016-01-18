@@ -23,7 +23,7 @@ module.exports = function(grunt) {
             optimize: 'none',
             name: 'app',
             out: 'js/build/bundle.js',
-            paths: _.reduce(cfg.thirdParty, function(obj, el) {
+            paths: _.reduce(cfg.thirdParty, function (obj, el) {
                 obj[el] = 'empty:';
                 return obj;
             }, {})
@@ -39,16 +39,14 @@ module.exports = function(grunt) {
     cfg.pkg = grunt.file.readJSON('package.json');
     cfg.requirejs = {
         compile: {
-            options: _.extend({
-                name: 'app',
-                out: 'js/build/bundle.js'
-            }, requireOptions)
+            options: _.extend({}, requireOptions)
         },
+        // require for the test suite
         tests: {
-            options: _.extend({
+            options: _.extend({}, requireOptions, {
                 name: 'tests/runner',
                 out: 'js/build/tests.runner.js'
-            }, requireOptions)
+            })
         }
     };
     cfg.concat = concats;

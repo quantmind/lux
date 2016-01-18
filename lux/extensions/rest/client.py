@@ -2,7 +2,7 @@ import json
 from urllib.parse import urljoin
 
 from pulsar import new_event_loop
-from pulsar.apps.http import HTTPError, HttpClient, JSON_CONTENT_TYPES
+from pulsar.apps.http import HttpClient, JSON_CONTENT_TYPES
 from pulsar.utils.httpurl import is_absolute_uri
 
 
@@ -77,26 +77,9 @@ class ApiClientRequest:
             token = request.cache.session.encoded
         if token:
             req_headers.append(('Authorization', 'Bearer %s' % token))
-
         response = yield from self._http.request(method, url,
                                                  headers=req_headers, **kw)
-        again = False
-        try:
-            response.raise_for_status()
-        except HTTPError as exc:
-            if exc.code == 401:
-                if token:
-                    request.cache.auth_backend.logout(request)
-                    again = True
-                else:
-                    raise
-            else:
-                raise
-
-        if again:
-            response = yield from self._req(method, path,
-                                            headers=headers, **kw)
-
+        response.raise_for_status()
         return response
 
 

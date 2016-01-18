@@ -13,7 +13,9 @@ __all__ = ['AuthenticationError', 'MessageMixin',
            'UserMixin', 'SessionMixin',
            'normalise_email', 'PasswordMixin',
            'logout', 'User', 'Session',
-           'check_username', 'PERMISSION_LEVELS']
+           'check_username',
+           'user_permissions',
+           'PERMISSION_LEVELS']
 
 
 UNUSABLE_PASSWORD = '!'
@@ -271,3 +273,12 @@ def check_username(request, username):
                               'alphanumeric characters or single hyphens, '
                               'and cannot begin or end with a hyphen')
     return username
+
+
+def user_permissions(request):
+    """Return a dictionary of permissions for the current user
+    """
+    backend = request.cache.auth_backend
+    resources = request.url_data.get('resource', ())
+    actions = request.url_data.get('action')
+    return backend.get_permissions(request, resources, actions=actions)
