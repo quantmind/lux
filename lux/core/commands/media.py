@@ -24,7 +24,7 @@ class Command(lux.Command):
     def run(self, options):
         #
         # SCSS first
-        self.media('scss', self.scss_target, copy=True)
+        self.media('scss', self.scss_target)
         #
         # Javascript second
         base = self.app_base()
@@ -42,7 +42,7 @@ class Command(lux.Command):
         finally:
             os.chdir(current)
 
-    def media(self, media, get_target, copy=False):
+    def media(self, media, get_target, copy=True):
         target = get_target()
         if os.path.isdir(target):
             shutil.rmtree(target)
@@ -55,8 +55,12 @@ class Command(lux.Command):
                     sources.append((name, src))
 
         if copy:
+            targets = []
             for name, src in sources:
-                self._copy(src, get_target(name))
+                target = get_target(name)
+                self._copy(src, target)
+                targets.append((name, target))
+            sources = targets
 
         return sources
 
@@ -90,6 +94,7 @@ class Command(lux.Command):
         if os.path.isdir(templates):
             paths.update(self.templates(prefix, templates, name))
 
+        base = self.app_base()
         if prefix:
             for dirpath, dirnames, filenames in os.walk(src):
                 relpath = os.path.relpath(dirpath, src)
@@ -111,8 +116,11 @@ class Command(lux.Command):
                     if filename != 'main':
                         path = '%s/%s' % (path, filename) if path else filename
                     assert path, "path not available"
-                    assert path not in paths, "path %s already in paths" % path
-                    paths[path] = os.path.join(dirpath, filename)
+                    loc = os.path.join(dirpath, filename)
+                    loc = os.path.relpath(loc, base)
+                    if path in paths:
+                        assert paths[path] == loc, "path %s already in paths" % path
+                    paths[path] = loc
 
         return paths
 
