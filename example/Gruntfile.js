@@ -21,31 +21,12 @@ module.exports = function(grunt) {
             baseUrl: 'js/',
             generateSourceMaps: false, // TODO change to true when Chrome sourcemaps bug is fixed
             optimize: 'none',
-            paths: {
-                angular: 'empty:',
-                lux: 'empty:',
-                d3: 'empty:',
-                'angular-cookies': 'empty:',
-                'angular-strap': 'empty:',
-                'angular-file-upload': 'empty:',
-                'angular-img-crop': 'empty:',
-                'moment': 'empty:',
-                'angular-moment': 'empty:',
-                'angular-sanitize': 'empty:',
-                'angular-ui-grid': 'empty:',
-                'angular-infinite-scroll': 'empty:',
-                'videojs': 'empty:',
-                'giotto': 'empty:',
-                'angular-touch': 'empty:', // TODO this is a lux dependency, should be removed
-                'angular-scroll': 'empty:', // TODO find out who is using this
-                'angular-ui-select': 'empty:', // TODO find out who is using this
-                'angular-ui-router': 'empty:',
-                'angular-strap-tpl': 'empty:',
-                'moment-timezone': 'empty:',
-                'lodash': 'empty:'
-            },
             name: 'app',
-            out: 'js/build/bundle.js'
+            out: 'js/build/bundle.js',
+            paths: _.reduce(cfg.thirdParty, function(obj, el) {
+                obj[el] = 'empty:';
+                return obj;
+            }, {})
         };
 
     if (!jslibs) {
@@ -186,25 +167,6 @@ module.exports = function(grunt) {
         add_watch(jslibs, name, jsTasks);
         if (value.dest) concats[name] = value;
     });
-    //
-    function uglify_jslibs() {
-        var result = {};
-        _.forOwn(concats, function(value, name) {
-            if (name !== 'options' && value.minify !== false) {
-                result[name] = {
-                    dest: value.dest.replace('.js', '.min.js'),
-                    src: [value.dest],
-                    options: {
-                        sourceMap: false, // TODO change to true when Chrome sourcemaps bug is fixed
-                        sourceMapIn: value.dest + '.map',
-                        sourceMapIncludeSources: false // TODO change to true when Chrome sourcemaps bug is fixed
-                    }
-                };
-            }
-        });
-        return result;
-    }
-
     // Initialise Grunt with all tasks defined above
     cfg.uglify = uglify_jslibs();
     // Main config is in karma.conf.js, with overrides below
@@ -301,5 +263,23 @@ module.exports = function(grunt) {
                 watch.tasks = tasks;
             }
         }
+    }
+    //
+    function uglify_jslibs() {
+        var result = {};
+        _.forOwn(concats, function(value, name) {
+            if (name !== 'options' && value.minify !== false) {
+                result[name] = {
+                    dest: value.dest.replace('.js', '.min.js'),
+                    src: [value.dest],
+                    options: {
+                        sourceMap: false, // TODO change to true when Chrome sourcemaps bug is fixed
+                        sourceMapIn: value.dest + '.map',
+                        sourceMapIncludeSources: false // TODO change to true when Chrome sourcemaps bug is fixed
+                    }
+                };
+            }
+        });
+        return result;
     }
 };

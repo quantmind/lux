@@ -43,5 +43,23 @@
         "target": ["Gruntfile.js",
                    "js/*.js",
                    "../lux/media/js/**/*.js"]
-    }
+    },
+    "thirdParty": [
+        "d3",
+        "giotto",
+        "lodash",
+        "moment",
+        "moment-timezone",
+        "videojs",
+        "angular",
+        "angular-cookies",
+        "angular-ui-bootstrap",
+        "angular-file-upload",
+        "angular-img-crop",
+        "angular-moment",
+        "angular-sanitize",
+        "angular-ui-grid",
+        "angular-infinite-scroll",
+        "angular-ui-select"
+        ]
 }

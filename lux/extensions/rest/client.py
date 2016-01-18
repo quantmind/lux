@@ -71,14 +71,15 @@ class ApiClientRequest:
     def _req(self, method, path, token=None, headers=None, **kw):
         request = self._request
         url = urljoin(self.url, path or '')
-        headers = headers or []
-        headers.append(('user-agent', request.get('HTTP_USER_AGENT')))
+        req_headers = headers[:] if headers else []
+        req_headers.append(('user-agent', request.get('HTTP_USER_AGENT')))
         if not token and request.cache.session:
             token = request.cache.session.encoded
         if token:
-            headers.append(('Authorization', 'Bearer %s' % token))
+            req_headers.append(('Authorization', 'Bearer %s' % token))
+
         response = yield from self._http.request(method, url,
-                                                 headers=headers, **kw)
+                                                 headers=req_headers, **kw)
         again = False
         try:
             response.raise_for_status()
