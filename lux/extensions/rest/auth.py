@@ -1,7 +1,6 @@
 from functools import partial
 
 import lux
-from pulsar.apps.wsgi import Json
 
 from .user import UserMixin, AuthenticationError
 

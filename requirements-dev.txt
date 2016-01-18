@@ -1,4 +1,3 @@
 coverage
 flake8
 cython
--e git+https://github.com/quantmind/pulsar.git@dev#egg=pulsar

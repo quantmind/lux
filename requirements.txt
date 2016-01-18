@@ -1,3 +1,4 @@
 python-dateutil
 pytz
-pulsar
+pulsar==1.1.0
+-e .

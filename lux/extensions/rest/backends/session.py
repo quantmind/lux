@@ -28,7 +28,9 @@ class CsrfBackend(AuthBackend):
         Parameter('CSRF_PARAM', 'authenticity_token',
                   'CSRF parameter name in forms'),
         Parameter('BAD_CSRF_TOKEN_MESSAGE', 'CSRF token missing or incorrect',
-                  'Message to display when CSRF is wrong')
+                  'Message to display when CSRF is wrong'),
+        Parameter('EXPIRED_CSRF_TOKEN_MESSAGE', 'CSRF token expired',
+                  'Message to display when CSRF token has expired')
     ]
     CSRF_SET = frozenset(('GET', 'HEAD', 'OPTIONS'))
 
@@ -66,6 +68,7 @@ class CsrfBackend(AuthBackend):
 
     def validate_csrf_token(self, request, token):
         bad_token = request.config['BAD_CSRF_TOKEN_MESSAGE']
+        expired_token = request.config['EXPIRED_CSRF_TOKEN_MESSAGE']
         if not jwt:     # pragma    nocover
             raise ImproperlyConfigured('JWT library not available')
         if not token:
@@ -74,7 +77,7 @@ class CsrfBackend(AuthBackend):
             secret_key = request.config['SECRET_KEY']
             token = jwt.decode(token, secret_key)
         except jwt.ExpiredSignature:
-            raise PermissionDenied(bad_token)
+            raise PermissionDenied(expired_token)
         except Exception:
             raise PermissionDenied(bad_token)
         else:
