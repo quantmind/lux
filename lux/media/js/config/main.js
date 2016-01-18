@@ -1,6 +1,7 @@
 define(['lux/config/lux',
         'lux/config/paths',
         'lux/config/shim'], function (lux, defaultPaths, defaultShim) {
+    'use strict';
 
     // If a file assign http as protocol (https does not work with PhantomJS)
     var root = lux.root,
@@ -43,6 +44,10 @@ define(['lux/config/lux',
                     else if (name.substring(0, 3) === "d3-")
                         cfg.shim[name] = {
                             deps: ["d3"]
+                        };
+                    else if (name.substring(0, 11) === "codemirror-")
+                        cfg.shim[name] = {
+                            deps: ["codemirror"]
                         };
                 }
 

@@ -1,7 +1,7 @@
 define(['angular',
         'lux/forms',
         'angular-ui-select'], function (angular, lux) {
-    "use strict";
+    'use strict';
 
     angular.module('lux.form.ui.select', ['lux.form', 'ui.select'])
 

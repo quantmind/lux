@@ -1,7 +1,7 @@
 define(['lux/forms',
         'angular',
         'angular-file-upload'], function (lux) {
-    "use strict";
+    'use strict';
 
     angular.module('lux.form.fileupload', ['lux.form', 'ngFileUpload'])
 

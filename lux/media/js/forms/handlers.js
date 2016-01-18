@@ -1,5 +1,5 @@
 define(['angular', 'lux'], function (angular, lux) {
-    "use strict";
+    'use strict';
 
     angular.module('lux.form.handlers', ['lux.services'])
 
@@ -26,29 +26,29 @@ define(['angular', 'lux'], function (angular, lux) {
             };
 
             //
-            formHandlers.passwordRecovery = function (response, scope) {
+            formHandlers.passwordRecovery = function (response) {
                 var email = response.data.email;
                 if (email) {
-                    var text = "We have sent an email to <strong>" + email + "</strong>. Please follow the instructions to change your password.";
+                    var text = 'We have sent an email to <strong>' + email + '</strong>. Please follow the instructions to change your password.';
                     $lux.messages.success(text);
                 }
                 else
-                    $lux.messages.error("Could not find that email");
+                    $lux.messages.error('Could not find that email');
             };
 
             //
-            formHandlers.signUp = function (response, scope) {
+            formHandlers.signUp = function (response) {
                 var email = response.data.email;
                 if (email) {
-                    var text = "We have sent an email to <strong>" + email + "</strong>. Please follow the instructions to confirm your email.";
+                    var text = 'We have sent an email to <strong>' + email + '</strong>. Please follow the instructions to confirm your email.';
                     $lux.messages.success(text);
                 }
                 else
-                    $lux.messages.error("Something wrong, please contact the administrator");
+                    $lux.messages.error('Something wrong, please contact the administrator');
             };
 
             //
-            formHandlers.passwordChanged = function (response, scope) {
+            formHandlers.passwordChanged = function (response) {
                 if (response.data.success) {
                     var text = 'Password succesfully changed. You can now <a title="login" href="' + lux.context.LOGIN_URL + '">login</a> again.';
                     $lux.messages.success(text);
@@ -56,7 +56,7 @@ define(['angular', 'lux'], function (angular, lux) {
                     $lux.messages.error('Could not change password');
             };
 
-            formHandlers.enquiry = function (response, scope) {
+            formHandlers.enquiry = function (response) {
                 if (response.data.success) {
                     var text = 'Thank you for your feedback!';
                     $lux.messages.success(text);

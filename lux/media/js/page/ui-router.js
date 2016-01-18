@@ -9,18 +9,6 @@ define(['angular',
     //  Only when context.html5mode is true
     //  Python implementation in the lux.extensions.angular Extension
     //
-
-    // Hack for delaying with ui-router state.href
-    // TODO: fix this!
-    lux.stateHref = function (state, State, Params) {
-        if (Params) {
-            var url = state.href(State, Params);
-            return url.replace(/%2F/g, '/');
-        } else {
-            return state.href(State);
-        }
-    };
-
     //
     //  Lux State Provider
     //	========================

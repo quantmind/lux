@@ -1,55 +1,38 @@
 define([], function () {
+    'use strict';
     // Default shim
     return function (root) {
         return {
             angular: {
-                exports: "angular"
+                exports: 'angular'
             },
-            "angular-strap-tpl": {
-                deps: ["angular", "angular-strap"]
+            'angular-strap-tpl': {
+                deps: ['angular', 'angular-strap']
             },
-            "angular-ui-select": {
-                deps: ['angular']
-            },
-            "google-analytics": {
-                exports: root.GoogleAnalyticsObject || "ga"
+            'google-analytics': {
+                exports: root.GoogleAnalyticsObject || 'ga'
             },
             highlight: {
-                exports: "hljs"
+                exports: 'hljs'
             },
-            "codemirror": {
-                exports: "CodeMirror"
+            'codemirror': {
+                exports: 'CodeMirror'
             },
-            "codemirror-markdown": {
-                deps: ["codemirror"]
-            },
-            "codemirror-xml": {
-                deps: ["codemirror"]
-            },
-            "codemirror-javascript": {
-                deps: ["codemirror"]
-            },
-            "codemirror-python": {
-                deps: ["codemirror"]
-            },
-            "codemirror-css": {
-                deps: ["codemirror"]
-            },
-            "codemirror-htmlmixed": {
-                deps: ["codemirror", "codemirror-xml", "codemirror-javascript", "codemirror-css"],
+            'codemirror-htmlmixed': {
+                deps: ['codemirror', 'codemirror-xml', 'codemirror-javascript', 'codemirror-css'],
             },
             restangular: {
-                deps: ["angular"]
+                deps: ['angular']
             },
             crossfilter: {
-                exports: "crossfilter"
+                exports: 'crossfilter'
             },
             trianglify: {
-                deps: ["d3"],
-                exports: "Trianglify"
+                deps: ['d3'],
+                exports: 'Trianglify'
             },
             mathjax: {
-                exports: "MathJax"
+                exports: 'MathJax'
             }
         };
     };

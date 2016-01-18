@@ -1,5 +1,5 @@
 define([], function () {
-    "use strict";
+    'use strict';
 
     var root = window,
         lux = root.lux || {},

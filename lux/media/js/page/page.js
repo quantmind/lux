@@ -15,7 +15,7 @@ define(['angular',
                 function pageInfo (page, scope) {
                     // If the page is a string, retrieve it from the pages object
                     if (angular.isString(scope.page))
-                        angular.extend(page, scope.pages ? scope.pages[page] : null)
+                        angular.extend(page, scope.pages ? scope.pages[page] : null);
 
                     if (page.author) {
                         if (angular.isArray(page.author))
@@ -44,10 +44,11 @@ define(['angular',
         //
         .controller('LuxPageController', ['$rootScope', '$lux', 'pageInfo',
             function (scope, $lux, pageInfo) {
+                var vm = this;
                 //
                 $lux.log.info('Setting up page');
                 //
-                pageInfo(this, scope);
+                pageInfo(vm, scope);
             }
         ])
 
@@ -92,13 +93,15 @@ define(['angular',
                 templateUrl: 'lux/page/templates/breadcrumbs.tpl.html',
                 link: {
                     post: function (scope) {
-                        var crumbs = function () {
-                            scope.steps = luxBreadcrumbs();
-                        };
 
-                        $rootScope.$on('$viewContentLoaded', crumbs);
+                        var regCrumbs = $rootScope.$on('$viewContentLoaded', crumbs);
+                        scope.$on('$destroy', regCrumbs);
 
                         crumbs();
+
+                        function crumbs () {
+                            scope.steps = luxBreadcrumbs();
+                        }
                     }
                 }
             };

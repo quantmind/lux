@@ -1,3 +1,4 @@
+/* eslint-plugin-disable angular */
 define(['angular',
         'lux/config'], function (angular, lux) {
     'use strict';
@@ -138,11 +139,11 @@ define(['angular',
     lux.loadCss = function (filename) {
         if (!loadedCss[filename]) {
             loadedCss[filename] = true;
-            var fileref = document.createElement("link");
-            fileref.setAttribute("rel", "stylesheet");
-            fileref.setAttribute("type", "text/css");
-            fileref.setAttribute("href", filename);
-            document.getElementsByTagName("head")[0].appendChild(fileref);
+            var fileref = document.createElement('link');
+            fileref.setAttribute('rel', 'stylesheet');
+            fileref.setAttribute('type', 'text/css');
+            fileref.setAttribute('href', filename);
+            document.getElementsByTagName('head')[0].appendChild(fileref);
         }
     };
     //
@@ -153,7 +154,7 @@ define(['angular',
             // We use an anonymous function so that context is window
             // rather than jQuery in Firefox
             (root.execScript || function (data) {
-                root["eval"].call(root, data);
+                root['eval'].call(root, data);
             })(data);
         }
     };
@@ -164,8 +165,8 @@ define(['angular',
         str = str.toLowerCase();
 
         // remove accents, swap ñ for n, etc
-        var from = "àáäâèéëêìíïîòóöôùúüûñç·/_,:;";
-        var to = "aaaaeeeeiiiioooouuuunc------";
+        var from = 'àáäâèéëêìíïîòóöôùúüûñç·/_,:;';
+        var to = 'aaaaeeeeiiiioooouuuunc------';
         for (var i = 0, l = from.length; i < l; i++) {
             str = str.replace(new RegExp(from.charAt(i), 'g'), to.charAt(i));
         }
@@ -233,9 +234,9 @@ define(['angular',
 
     /**
      * Formats a string (using simple substitution)
-     * @param   {String}    str         e.g. "Hello {name}!"
-     * @param   {Object}    values      e.g. {name: "King George III"}
-     * @returns {String}                e.g. "Hello King George III!"
+     * @param   {String}    str         e.g. 'Hello {name}!'
+     * @param   {Object}    values      e.g. {name: 'King George III'}
+     * @returns {String}                e.g. 'Hello King George III!'
      */
     lux.formatString = function (str, values) {
         return str.replace(/{(\w+)}/g, function (match, placeholder) {
@@ -272,6 +273,17 @@ define(['angular',
         if (lux.isObject(value) || lux.isArray(value) || lux.isString(value))
             return true;
         return false;
+    };
+
+    // Hack for delaying with ui-router state.href
+    // TODO: fix this!
+    lux.stateHref = function (state, State, Params) {
+        if (Params) {
+            var url = state.href(State, Params);
+            return url.replace(/%2F/g, '/');
+        } else {
+            return state.href(State);
+        }
     };
 
     return lux;

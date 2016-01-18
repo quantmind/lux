@@ -163,7 +163,7 @@ define(['angular', 'lux/config'], function (angular, lux) {
 
         api.toString = function () {
             if (defaults.name)
-                return joinUrl(api.baseUrl(), defaults.name);
+                return lux.joinUrl(api.baseUrl(), defaults.name);
             else
                 return api.baseUrl();
         };
@@ -231,7 +231,7 @@ define(['angular', 'lux/config'], function (angular, lux) {
             if (ENCODE_URL_METHODS.indexOf(o.method) === -1) {
                 o.data = data;
             } else {
-                if (!isObject(o.params)) {
+                if (!angular.isObject(o.params)) {
                     o.params = {};
                 }
                 extend(o.params, data || {});
@@ -316,7 +316,7 @@ define(['angular', 'lux/config'], function (angular, lux) {
             return api.getApiNames().then(function (apiUrls) {
                 var url = apiUrls[target.name];
                 if (target.path) {
-                    url = joinUrl(url, target.path);
+                    url = lux.joinUrl(url, target.path);
                 }
                 return url;
             });
@@ -358,7 +358,7 @@ define(['angular', 'lux/config'], function (angular, lux) {
             if (!opts.url) {
                 var href = request.baseUrl;
                 if (opts.path)
-                    href = joinUrl(request.baseUrl, opts.path);
+                    href = lux.joinUrl(request.baseUrl, opts.path);
                 opts.url = href;
             }
 

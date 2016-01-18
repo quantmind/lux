@@ -1,7 +1,7 @@
 define(['angular',
         'lux',
         'lux/forms/handlers'], function (angular, lux) {
-    "use strict";
+    'use strict';
 
     var formProcessors = {};
 
@@ -86,7 +86,7 @@ define(['angular',
     formProcessors.default = function ($lux, p) {
 
         if (p.api) {
-            return p.api.request(p.attrs.method, target, p.model);
+            return p.api.request(p.attrs.method, p.target, p.model);
         } else if (p.target) {
             var enctype = p.attrs.enctype || 'application/json',
                 ct = enctype.split(';')[0],
@@ -126,14 +126,14 @@ define(['angular',
         function process () {
             var _process = formProcessors[scope.formProcessor || 'default'];
             form.submitted = true;
-            return _process($lux, process)
-        };
+            return _process($lux, process);
+        }
 
         process.form = form;
         process.model = scope[scope.formModelName];
         process.attrs = scope.formAttrs;
         process.target = scope.action;
-        process.method = attrs.method || 'post';
+        process.method = scope.formAttrs.method || 'post';
         process.api = angular.isObject(scope.action) ? $lux.api(scope.action) : null;
 
         return process;

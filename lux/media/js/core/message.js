@@ -1,5 +1,5 @@
 define(['lux/config'], function (lux) {
-    "use strict";
+    'use strict';
 
     function asMessage(level, message) {
         if (lux.isString(message)) message = {text: message};

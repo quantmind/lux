@@ -1,5 +1,5 @@
 define(['angular', 'lux'], function (angular, lux) {
-    "use strict";
+    'use strict';
 
     var root = lux.root;
     //

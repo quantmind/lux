@@ -3,10 +3,9 @@ define(['angular',
         'lux/forms/process',
         'lux/forms/utils',
         'lux/forms/handlers'], function (angular, lux, formProcessors) {
-    "use strict";
+    'use strict';
 
-    var $ = angular.element,
-        extend = angular.extend,
+    var extend = angular.extend,
         forEach = angular.forEach,
         extendArray = lux.extendArray,
         isString = lux.isString,
@@ -198,7 +197,7 @@ define(['angular',
                         scope.info = info;
 
                         if (info) {
-                            if (info.hasOwnProperty('type') && typeof self[info.type] === 'function')
+                            if (info.type && angular.isFunction(self[info.type]))
                             // Pick the renderer by checking `type`
                                 fieldType = info.type;
                             else
@@ -222,12 +221,12 @@ define(['angular',
 
                                 // extend child.field with options
                                 forEach(formDefaults, function (_, name) {
-                                    if (field[name] === undefined)
+                                    if (angular.isUndefined(field[name]))
                                         field[name] = scope.field[name];
                                 });
                                 //
                                 // Make sure children is defined, otherwise it will be inherited from the parent scope
-                                if (child.children === undefined)
+                                if (angular.isUndefined(child.children))
                                     child.children = null;
                                 child = driver.createElement(extend(scope, child));
 
@@ -275,7 +274,8 @@ define(['angular',
                     },
                     //
                     renderNotForm: function (scope) {
-                        return $($document[0].createElement('span')).html(field.label || '');
+                        var field = scope.field;
+                        return angular.element($document[0].createElement('span')).html(field.label || '');
                     },
                     //
                     fillDefaults: function (scope) {
@@ -289,7 +289,7 @@ define(['angular',
                     form: function (scope) {
                         var field = scope.field,
                             info = scope.info,
-                            form = $($document[0].createElement(info.element))
+                            form = angular.element($document[0].createElement(info.element))
                                 .attr('role', 'form').addClass(this.className)
                                 .attr('ng-model', field.model);
                         this.formMessages(scope, form);
@@ -304,15 +304,15 @@ define(['angular',
                     fieldset: function (scope) {
                         var field = scope.field,
                             info = scope.info,
-                            element = $($document[0].createElement(info.element));
+                            element = angular.element($document[0].createElement(info.element));
                         if (field.label)
-                            element.append($($document[0].createElement('legend')).html(field.label));
+                            element.append(angular.element($document[0].createElement('legend')).html(field.label));
                         return element;
                     },
                     //
                     div: function (scope) {
                         var info = scope.info,
-                            element = $($document[0].createElement(info.element)).addClass(scope.extraClasses);
+                            element = angular.element($document[0].createElement(info.element)).addClass(scope.extraClasses);
                         return element;
                     },
                     //
@@ -358,19 +358,19 @@ define(['angular',
                         input.attr('ng-model', scope.formModelName + '["' + field.name + '"]');
 
                         // Add default placeholder to date field if not exist
-                        if (field.type === 'date' && field.placeholder === undefined) {
+                        if (field.type === 'date' && angular.isUndefined(field.placeholder)) {
                             field.placeholder = formDefaults.defaultDatePlaceholder;
                         }
 
                         if (!field.showLabels || field.type === 'hidden') {
                             label.addClass('sr-only');
                             // Add placeholder if not defined
-                            if (field.placeholder === undefined)
+                            if (angular.isUndefined(field.placeholder))
                                 field.placeholder = field.label;
                         }
 
                         this.addAttrs(scope, input, attributes || inputAttributes);
-                        if (field.value !== undefined) {
+                        if (angular.isDefined(field.value)) {
                             scope[scope.formModelName][field.name] = field.value;
                             if (info.textBased)
                                 input.attr('value', field.value);
@@ -403,7 +403,7 @@ define(['angular',
                             group;
 
                         forEach(field.options, function (opt) {
-                            if (typeof(opt) === 'string') {
+                            if (angular.isString(opt)) {
                                 opt = {'value': opt};
                             } else if (isArray(opt)) {
                                 opt = {
@@ -425,8 +425,7 @@ define(['angular',
                             if (!field.value) field.value = opt.value;
                         });
 
-                        var info = scope.info,
-                            element = this.input(scope);
+                        var element = this.input(scope);
 
                         this.selectWidget(scope, element, field, groupList, options);
 
@@ -445,18 +444,18 @@ define(['angular',
                                 });
 
                             forEach(groupList, function (group) {
-                                var grp = $($document[0].createElement('optgroup'))
+                                var grp = angular.element($document[0].createElement('optgroup'))
                                     .attr('label', group.name);
                                 select.append(grp);
                                 forEach(group.options, function (opt) {
-                                    opt = $($document[0].createElement('option'))
+                                    opt = angular.element($document[0].createElement('option'))
                                         .attr('value', opt.value).html(opt.repr || opt.value);
                                     grp.append(opt);
                                 });
                             });
                         } else {
                             forEach(options, function (opt) {
-                                opt = $($document[0].createElement('option'))
+                                opt = angular.element($document[0].createElement('option'))
                                     .attr('value', opt.value).html(opt.repr || opt.value);
                                 select.append(opt);
                             });
@@ -469,7 +468,7 @@ define(['angular',
                     button: function (scope) {
                         var field = scope.field,
                             info = scope.info,
-                            element = $($document[0].createElement(info.element)).addClass(this.buttonClass);
+                            element = angular.element($document[0].createElement(info.element)).addClass(this.buttonClass);
                         field.name = field.name || info.element;
                         field.label = field.label || field.name;
                         element.html(field.label);
@@ -507,7 +506,7 @@ define(['angular',
                     //  Add change event
                     onChange: function (scope, element) {
                         var field = scope.field,
-                            input = $(element[0].querySelector(scope.info.element));
+                            input = angular.element(element[0].querySelector(scope.info.element));
                         input.attr('ng-change', 'fireFieldChange("' + field.name + '")');
                         return element;
                     },
@@ -524,8 +523,8 @@ define(['angular',
                             dirty = joinField(scope.formName, field.name, '$dirty'),
                             invalid = joinField(scope.formName, field.name, '$invalid'),
                             error = joinField(scope.formName, field.name, '$error') + '.',
-                            input = $(element[0].querySelector(scope.info.element)),
-                            p = $($document[0].createElement('p'))
+                            input = angular.element(element[0].querySelector(scope.info.element)),
+                            p = angular.element($document[0].createElement('p'))
                                 .attr('ng-show', '(' + submitted + ' || ' + dirty + ') && ' + invalid)
                                 .addClass('text-danger error-block')
                                 .addClass(scope.formErrorClass),
@@ -535,10 +534,10 @@ define(['angular',
                         forEach(validationAttributes, function (attr) {
                             value = field[attr];
                             attrname = attr;
-                            if (value !== undefined && value !== false && value !== null) {
+                            if (angular.isDefined(value) && value !== false && value !== null) {
                                 if (ngAttributes.indexOf(attr) > -1) attrname = 'ng-' + attr;
                                 input.attr(attrname, value);
-                                p.append($($document[0].createElement('span'))
+                                p.append(angular.element($document[0].createElement('span'))
                                     .attr('ng-show', error + attr)
                                     .html(self.errorMessage(scope, attr)));
                             }
@@ -570,18 +569,18 @@ define(['angular',
                         var field = scope.field,
                             value = joinField(scope.formName, field.name, name);
 
-                        return $($document[0].createElement('span'))
+                        return angular.element($document[0].createElement('span'))
                             .attr('ng-show', value)
                             .html(msg);
                     },
                     //
                     // Add element which containes form messages and errors
                     formMessages: function (scope, form) {
-                        var messages = $($document[0].createElement('p')),
+                        var messages = angular.element($document[0].createElement('p')),
                             a = scope.formAttrs;
                         messages.attr('ng-repeat', 'message in formMessages.' + a.FORMKEY)
                             .attr('ng-bind', 'message.message')
-                            .attr('ng-class', "message.error ? 'text-danger' : 'text-info'");
+                            .attr('ng-class', 'message.error ? "text-danger" : "text-info"');
                         return form.append(messages);
                     },
                     //
@@ -616,7 +615,7 @@ define(['angular',
                     //
                     requiredErrorMessage: function (scope) {
                         var msg = scope.field.required_error;
-                        return msg || scope.field.label + " is required";
+                        return msg || scope.field.label + ' is required';
                     },
                     //
                     // Return the function to handle form processing
@@ -638,7 +637,7 @@ define(['angular',
                                 return element;
                         }
                     } else {
-                        return $(element[0].querySelector(tag));
+                        return angular.element(element[0].querySelector(tag));
                     }
                 }
             }
@@ -652,33 +651,35 @@ define(['angular',
         .factory('horizontalForm', ['$document', 'baseForm', function ($document, baseForm) {
             //
             // extend the standardForm factory
-            var form = extendForm(baseForm, {
-                name: 'horizontal',
-                className: 'form-horizontal',
-                input: input,
-                button: button
-            });
+            var baseInput = baseForm.input,
+                baseButton = baseForm.button,
+                form = extendForm(baseForm, {
+                    name: 'horizontal',
+                    className: 'form-horizontal',
+                    input: input,
+                    button: button
+                });
 
             return form;
 
             function input (scope) {
-                var element = standardForm.input(scope),
+                var element = baseInput(scope),
                     children = element.children(),
                     labelSpan = scope.field.labelSpan ? +scope.field.labelSpan : 2,
-                    wrapper = $($document[0].createElement('div'));
+                    wrapper = angular.element($document[0].createElement('div'));
                 labelSpan = Math.max(2, Math.min(labelSpan, 10));
-                $(children[0]).addClass('control-label col-sm-' + labelSpan);
+                angular.element(children[0]).addClass('control-label col-sm-' + labelSpan);
                 wrapper.addClass('col-sm-' + (12-labelSpan));
                 for (var i=1; i<children.length; ++i)
-                    wrapper.append($(children[i]));
+                    wrapper.append(angular.element(children[i]));
                 return element.append(wrapper);
             }
 
             function button (scope) {
-                var element = standardForm.button(scope),
+                var element = baseButton(scope),
                     labelSpan = scope.field.labelSpan ? +scope.field.labelSpan : 2,
-                    outer = $($document[0].createElement('div')).addClass(form.inputGroupClass),
-                    wrapper = $($document[0].createElement('div'));
+                    outer = angular.element($document[0].createElement('div')).addClass(form.inputGroupClass),
+                    wrapper = angular.element($document[0].createElement('div'));
                 labelSpan = Math.max(2, Math.min(labelSpan, 10));
                 wrapper.addClass('col-sm-offset-' + labelSpan)
                        .addClass('col-sm-' + (12-labelSpan));
@@ -688,6 +689,8 @@ define(['angular',
         }])
         //
         .factory('inlineForm', ['baseForm', function (baseForm) {
+            var baseInput = baseForm.input;
+
             return extendForm(baseForm, {
                 name: 'inline',
                 className: 'form-inline',
@@ -695,8 +698,8 @@ define(['angular',
             });
 
             function input (scope) {
-                var element = standardForm.input(scope);
-                $(element[0].getElementsByTagName('label')).addClass('sr-only');
+                var element = baseInput(scope);
+                angular.element(element[0].getElementsByTagName('label')).addClass('sr-only');
                 return element;
             }
         }])
@@ -776,7 +779,7 @@ define(['angular',
 
                         scope.fireFieldChange = function (field) {
                             // Delete previous field error from server side
-                            if (scope.formErrors[field] !== undefined) {
+                            if (angular.isDefined(scope.formErrors[field])) {
                                 delete scope.formErrors[field];
                             }
                             // Triggered every time a form field changes
@@ -840,7 +843,7 @@ define(['angular',
                     scope.formErrors = [];
 
                     if (scope.form.$invalid) {
-                        return $scope.showErrors();
+                        return scope.showErrors();
                     }
                 };
 
@@ -858,7 +861,7 @@ define(['angular',
         // Lux form
         .directive('luxForm', ['formRenderer', function (formRenderer) {
             return {
-                restrict: "AE",
+                restrict: 'AE',
                 //
                 scope: {},
                 //
@@ -879,31 +882,31 @@ define(['angular',
             };
         }])
         //
-        .directive("checkRepeat", ['$log', function (log) {
+        .directive('checkRepeat', ['$log', function (log) {
             return {
-                require: "ngModel",
+                require: 'ngModel',
 
                 restrict: 'A',
 
                 link: function(scope, element, attrs, ctrl) {
-                    var other = element.inheritedData("$formController")[attrs.checkRepeat];
+                    var other = element.inheritedData('$formController')[attrs.checkRepeat];
                     if (other) {
                         ctrl.$parsers.push(function(value) {
                             if(value === other.$viewValue) {
-                                ctrl.$setValidity("repeat", true);
+                                ctrl.$setValidity('repeat', true);
                                 return value;
                             }
-                            ctrl.$setValidity("repeat", false);
+                            ctrl.$setValidity('repeat', false);
                         });
 
                         other.$parsers.push(function(value) {
-                            ctrl.$setValidity("repeat", value === ctrl.$viewValue);
+                            ctrl.$setValidity('repeat', value === ctrl.$viewValue);
                             return value;
                         });
                     } else {
                         log.error('Check repeat directive could not find ' + attrs.checkRepeat);
                     }
-                 }
+                }
             };
         }])
         //
@@ -914,7 +917,7 @@ define(['angular',
                     onchange: '&watchChange'
                 },
                 //
-                link: function(scope, element, attrs) {
+                link: function(scope, element) {
                     element.on('keyup', function() {
                         scope.$apply(function () {
                             scope.onchange();
@@ -933,10 +936,10 @@ define(['angular',
             return {
                 require: '?ngModel',
                 link: function (scope, elem, attrs, ngModel) {
-                    // All date-related inputs like <input type="date">
+                    // All date-related inputs like <input type='date'>
                     // require the model to be a Date object in Angular 1.3+.
                     ngModel.$formatters.push(function(modelValue){
-                        if (typeof modelValue === 'string' || typeof modelValue === 'number')
+                        if (angular.isString(modelValue) || angular.isNumber(modelValue))
                             return new Date(modelValue);
                         return modelValue;
                     });
