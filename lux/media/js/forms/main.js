@@ -911,7 +911,7 @@ define(['angular',
         }])
         //
         // A directive which add keyup and change event callaback
-        .directive('watchChange', function() {
+        .directive('watchChange', [function() {
             return {
                 scope: {
                     onchange: '&watchChange'
@@ -929,10 +929,10 @@ define(['angular',
                     });
                 }
             };
-        })
+        }])
         //
         // Format string date to date object
-        .directive('formatDate', function () {
+        .directive('formatDate', [function () {
             return {
                 require: '?ngModel',
                 link: function (scope, elem, attrs, ngModel) {
@@ -945,7 +945,7 @@ define(['angular',
                     });
                 }
             };
-        });
+        }]);
 
     return lux;
 

@@ -8,10 +8,10 @@ define(['angular',
         .run(['$document', function ($document) {
             lux.forms.overrides.push(function (form) {
 
-                var selectWidget = form.selectWidget;
+                var selectWidget = form.selectWidget,
+                    elements = form.elements;
 
                 form.selectWidget = function (scope, element, field, groupList, options) {
-                    var elements = form.elements;
                     if (elements.select.hasOwnProperty('widget') && elements.select.widget.name === 'selectUI')
                     // UI-Select widget
                         return selectUiWidget(scope, element, field, groupList, options);
@@ -32,18 +32,18 @@ define(['angular',
                     if (field.hasOwnProperty('search'))
                         scope.enableSearch = field.search;
 
-                    var selectUI = $($document[0].createElement('ui-select'))
+                    var selectUI = angular.element($document[0].createElement('ui-select'))
                         .attr('id', field.id)
                         .attr('name', field.name)
                         .attr('ng-model', scope.formModelName + '["' + field.name + '"]')
                         .attr('theme', elements.select.widget.theme)
                         .attr('search-enabled', 'enableSearch')
                         .attr('ng-change', 'fireFieldChange("' + field.name + '")'),
-                        match = $($document[0].createElement('ui-select-match'))
+                        match = angular.element($document[0].createElement('ui-select-match'))
                             .attr('placeholder', 'Select or search ' + field.label.toLowerCase()),
-                        choices_inner = $($document[0].createElement('div')),
-                        choices_inner_small = $($document[0].createElement('small')),
-                        choices = $($document[0].createElement('ui-select-choices'))
+                        choices_inner = angular.element($document[0].createElement('div')),
+                        choices_inner_small = angular.element($document[0].createElement('small')),
+                        choices = angular.element($document[0].createElement('ui-select-choices'))
                         // Ensure any inserted placeholders are disabled
                         // i.e. 'Please Select...'
                             .attr('ui-disable-choice', 'item.id === "placeholder"')

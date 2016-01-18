@@ -1,3 +1,4 @@
+/* eslint-plugin-disable angular */
 define(['lux/config/lux',
         'lux/config/paths',
         'lux/config/shim'], function (lux, defaultPaths, defaultShim) {
@@ -37,17 +38,17 @@ define(['lux/config/lux',
 
                 if (!cfg.shim[name]) {
                     // Add angular dependency
-                    if (name.substring(0, 8) === "angular-")
+                    if (name.substring(0, 8) === 'angular-')
                         cfg.shim[name] = {
-                            deps: ["angular"]
+                            deps: ['angular']
                         };
-                    else if (name.substring(0, 3) === "d3-")
+                    else if (name.substring(0, 3) === 'd3-')
                         cfg.shim[name] = {
-                            deps: ["d3"]
+                            deps: ['d3']
                         };
-                    else if (name.substring(0, 11) === "codemirror-")
+                    else if (name.substring(0, 11) === 'codemirror-')
                         cfg.shim[name] = {
-                            deps: ["codemirror"]
+                            deps: ['codemirror']
                         };
                 }
 

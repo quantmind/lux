@@ -1,18 +1,14 @@
-define(['angular', 'lux'], function (angular, lux) {
+define(['angular', 'lux'], function (angular) {
     'use strict';
     //
     //  Angular module for photos
     //  ============================
     //
-    angular.module('photos', ['lux.services'])
+    angular.module('lux.photos', ['lux.services'])
         .directive('flickr', ['$lux', function ($lux) {
             //
             var endpoint = 'https://api.flickr.com/services/feeds/photos_faves.gne';
             //
-            function display(data) {
-
-            }
-
             //
             return {
                 restrict: 'AE',
@@ -27,6 +23,10 @@ define(['angular', 'lux'], function (angular, lux) {
                     });
                 }
             };
+
+            function display() {
+                return endpoint;
+            }
         }]);
 
 });

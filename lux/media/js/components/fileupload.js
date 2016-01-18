@@ -20,7 +20,7 @@ define(['lux/forms',
                     promise;
 
                 if (api) {
-                    promise = api.getUrlForTarget(target).then(function (url) {
+                    promise = api.getUrlForTarget(process.target).then(function (url) {
                         uploadUrl = url;
                         uploadHeaders.Authorization = 'bearer ' + api.token();
                     });

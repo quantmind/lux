@@ -19,7 +19,7 @@ define([], function () {
                 exports: 'CodeMirror'
             },
             'codemirror-htmlmixed': {
-                deps: ['codemirror', 'codemirror-xml', 'codemirror-javascript', 'codemirror-css'],
+                deps: ['codemirror', 'codemirror-xml', 'codemirror-javascript', 'codemirror-css']
             },
             restangular: {
                 deps: ['angular']

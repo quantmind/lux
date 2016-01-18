@@ -108,7 +108,7 @@ define(['angular',
         }])
         //
         //  Simply display the current year
-        .directive('year', function () {
+        .directive('year', [function () {
             return {
                 restrict: 'AE',
                 link: function (scope, element) {
@@ -116,6 +116,6 @@ define(['angular',
                     element.html(dt.getFullYear() + '');
                 }
             };
-        });
+        }]);
 
 });

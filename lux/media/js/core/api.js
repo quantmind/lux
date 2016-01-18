@@ -1,8 +1,7 @@
 define(['angular', 'lux/config'], function (angular, lux) {
     'use strict';
 
-    var $ = angular.element,
-        extend = angular.extend;
+    var extend = angular.extend;
 
     lux.messages.no_api = function (url) {
         return {
@@ -23,10 +22,10 @@ define(['angular', 'lux/config'], function (angular, lux) {
         //
         .run(['$lux', function ($lux) {
             //
-            var name = $(document.querySelector('meta[name=csrf-param]')).attr('content'),
-                csrf_token = $(document.querySelector('meta[name=csrf-token]')).attr('content');
+            var name = angular.element($lux.document[0].querySelector('meta[name=csrf-param]')).attr('content'),
+                csrf_token = angular.element($lux.document[0].querySelector('meta[name=csrf-token]')).attr('content');
 
-            $lux.user_token = $(document.querySelector('meta[name=user-token]')).attr('content');
+            $lux.user_token = angular.element($lux.document[0].querySelector('meta[name=user-token]')).attr('content');
 
             if (name && csrf_token) {
                 $lux.csrf = {};
@@ -34,26 +33,32 @@ define(['angular', 'lux/config'], function (angular, lux) {
             }
         }])
         //
-        .service('$lux', ['$location', '$window', '$q', '$http', '$log',
-            '$timeout', 'ApiTypes', 'AuthApis', '$templateCache',
-            '$compile',
+        .factory('$lux', ['$location', '$window', '$q', '$http', '$log',
+            '$timeout', 'ApiTypes', 'AuthApis', '$templateCache', '$compile',
             function ($location, $window, $q, $http, $log, $timeout,
                       ApiTypes, AuthApis, $templateCache, $compile) {
-                var $lux = this;
 
-                this.location = $location;
-                this.window = $window;
-                this.log = $log;
-                this.http = $http;
-                this.q = $q;
-                this.timeout = $timeout;
-                this.apiUrls = {};
-                this.$log = $log;
-                this.messages = extend({}, lux.messageService, {
-                    pushMessage: function (message) {
-                        this.log($log, message);
-                    }
-                });
+                var $lux = {
+                    location: $location,
+                    window: $window,
+                    log: $log,
+                    http: $http,
+                    q: $q,
+                    timeout: $timeout,
+                    templateCache: $templateCache,
+                    compile: $compile,
+                    apiUrls: {},
+                    api: api,
+                    authApi: authApi,
+                    formData: formData,
+                    renderTemplate: renderTemplate,
+                    messages: extend({}, lux.messageService, {
+                        pushMessage: function (message) {
+                            this.log($log, message);
+                        }
+                    })
+                };
+                return $lux;
                 //  Create a client api
                 //  -------------------------
                 //
@@ -62,7 +67,7 @@ define(['angular', 'lux/config'], function (angular, lux) {
                 //  name: the api name
                 //  url: the api base url
                 //  type: optional api type (default is ``lux``)
-                this.api = function (url, api) {
+                function api (url, api) {
                     if (arguments.length === 1) {
                         var defaults;
                         if (angular.isObject(url)) {
@@ -78,50 +83,50 @@ define(['angular', 'lux/config'], function (angular, lux) {
                         ApiTypes[url] = api;
                         return api(url, this);
                     }
-                };
+                }
 
                 // Set/get the authentication handler for a given api
-                this.authApi = function (api, auth) {
+                function authApi (api, auth) {
                     if (arguments.length === 1)
                         return AuthApis[api.baseUrl()];
                     else if (arguments.length === 2)
                         AuthApis[api.baseUrl()] = auth;
-                };
+                }
 
                 //
                 // Change the form data depending on content type
-                this.formData = function (contentType) {
+                function formData (contentType) {
 
                     return function (data) {
                         data = extend(data || {}, $lux.csrf);
                         if (contentType === 'application/x-www-form-urlencoded')
-                            return $.param(data);
+                            return angular.element.param(data);
                         else if (contentType === 'multipart/form-data') {
                             var fd = new FormData();
-                            forEach(data, function (value, key) {
+                            angular.forEach(data, function (value, key) {
                                 fd.append(key, value);
                             });
                             return fd;
                         } else {
-                            return JSON.stringify(data);
+                            return angular.toJson(data);
                         }
                     };
-                };
+                }
                 //
                 // Render a template from a url
-                this.renderTemplate = function (url, element, scope, callback) {
+                function renderTemplate (url, element, scope, callback) {
                     var template = $templateCache.get(url);
                     if (!template) {
                         $http.get(url).then(function (resp) {
                             template = resp.data;
                             $templateCache.put(url, template);
                             _render(element, template, scope, callback);
-                        }, function (resp) {
+                        }, function () {
                             $lux.messages.error('Could not load template from ' + url);
                         });
                     } else
                         _render(element, template, scope, callback);
-                };
+                }
 
                 function _render(element, template, scope, callback) {
                     var elem = $compile(template)(scope);
@@ -136,7 +141,7 @@ define(['angular', 'lux/config'], function (angular, lux) {
 
             return wrapPromise(this.then(function (response) {
                 var r = fn(response.data, response.status, response.headers);
-                return r === undefined ? response : r;
+                return angular.isUndefined(r) ? response : r;
             }));
         };
 
@@ -144,7 +149,7 @@ define(['angular', 'lux/config'], function (angular, lux) {
 
             return wrapPromise(this.then(null, function (response) {
                 var r = fn(response.data, response.status, response.headers);
-                return r === undefined ? response : r;
+                return angular.isUndefined(r) ? response : r;
             }));
         };
 
@@ -176,8 +181,8 @@ define(['angular', 'lux/config'], function (angular, lux) {
             return api;
         };
 
-        api.formReady = function (model, formScope) {
-            $ux.log.error('Cannot handle form ready');
+        api.formReady = function () {
+            $lux.log.error('Cannot handle form ready');
         };
         //
         // API base url
@@ -206,11 +211,11 @@ define(['angular', 'lux/config'], function (angular, lux) {
         };
         //
         //  Add additional Http options to the request
-        api.httpOptions = function (request) {
+        api.httpOptions = function () {
         };
         //
         //  This function can be used to add authentication
-        api.authentication = function (request) {
+        api.authentication = function () {
         };
         //
         //  Return the current user
@@ -251,13 +256,13 @@ define(['angular', 'lux/config'], function (angular, lux) {
                     options: opts,
                     //
                     error: function (response) {
-                        if (isString(response.data))
+                        if (angular.isString(response.data))
                             response.data = {error: true, message: data};
                         d.reject(response);
                     },
                     //
                     success: function (response) {
-                        if (isString(response.data))
+                        if (angular.isString(response.data))
                             response.data = {message: data};
 
                         if (!response.data || response.data.error)

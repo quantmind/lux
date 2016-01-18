@@ -176,13 +176,13 @@ define(['angular',
         })
         //
         //  Data providers service
-        .factory('luxGridDataProviders', function () {
+        .factory('luxGridDataProviders', [function () {
             return {
                 register: registerProvider,
                 create: createProvider,
                 check: checkProvider
             };
-        })
+        }])
         //
         .factory('gridService', ['$lux', '$compile', '$document', '$modal',
             'uiGridConstants','luxGridDefaults', '$templateCache',

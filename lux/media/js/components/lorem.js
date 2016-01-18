@@ -1,4 +1,4 @@
-define(['angular', 'lux'], function (angular, lux) {
+define(['angular'], function (angular) {
     'use strict';
 
     var lorem_defaults = {
@@ -22,16 +22,15 @@ define(['angular', 'lux'], function (angular, lux) {
         ];
 
     angular.module('lux.lorem', [])
-        .directive('lorem', function () {
+        .directive('lorem', [function () {
             //
             return {
                 restrict: 'AE',
                 //
                 link: function (scope, element, attrs) {
-                    var opts = extend({}, lorem_defaults, attrs),
+                    var opts = angular.extend({}, lorem_defaults, attrs),
                         howmany = +opts.paragraphs,
-                        paragraphs = [],
-                        ipsum_text = '';
+                        paragraphs = [];
                     //
                     for (var i = 0; i < howmany; i++) {
                         paragraphs.push(lorem_text[Math.floor(Math.random() * lorem_text.length)]);
@@ -47,12 +46,12 @@ define(['angular', 'lux'], function (angular, lux) {
                     }
                     paragraphs.forEach(function (paragraph) {
                         if (opts.tags)
-                            element.append($('<p>' + paragraph + '</p>'));
+                            element.append(angular.element('<p>' + paragraph + '</p>'));
                         else
                             element.append(paragraph + '\n\n');
                     });
                 }
             };
-        });
+        }]);
 
 });

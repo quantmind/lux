@@ -16,7 +16,7 @@ define(['angular', 'lux'], function (angular, lux) {
 
         .directive('luxHighlight', ['$rootScope', '$log', function ($rootScope, log) {
             return {
-                link: function link(scope, element, attrs) {
+                link: function link(scope, element) {
                     log.info('Highlighting code');
                     highlight(element);
                 }
@@ -25,10 +25,10 @@ define(['angular', 'lux'], function (angular, lux) {
 
     var highlight = function (elem) {
         require(['highlight'], function () {
-            forEach($(elem)[0].querySelectorAll('code'), function (block) {
-                var elem = $(block),
+            angular.forEach(angular.element(elem)[0].querySelectorAll('code'), function (block) {
+                var elem = angular.element(block),
                     parent = elem.parent();
-                if (isTag(parent, 'pre')) {
+                if (lux.isTag(parent, 'pre')) {
                     root.hljs.highlightBlock(block);
                     parent.addClass('hljs');
                 } else {
@@ -36,8 +36,8 @@ define(['angular', 'lux'], function (angular, lux) {
                 }
             });
             // Handle sphinx highlight
-            forEach($(elem)[0].querySelectorAll('.highlight pre'), function (block) {
-                var elem = $(block).addClass('hljs'),
+            angular.forEach(angular.element(elem)[0].querySelectorAll('.highlight pre'), function (block) {
+                var elem = angular.element(block).addClass('hljs'),
                     div = elem.parent(),
                     p = div.parent();
                 if (p.length && p[0].className.substring(0, 10) === 'highlight-')

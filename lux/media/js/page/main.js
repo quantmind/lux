@@ -20,4 +20,5 @@ define(['angular',
             }).hashPrefix(lux.context.hashPrefix);
         }]);
 
+    return lux;
 });
