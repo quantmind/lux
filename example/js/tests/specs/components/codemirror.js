@@ -1,10 +1,10 @@
 define(['angular',
         'lux',
         'tests/mocks/lux',
-        'lux/components/codemirror'], function (angular, lux) {
-    "use strict";
+        'lux/components/codemirror'], function (angular) {
+    'use strict';
 
-    describe("Test lux.codemirror module", function () {
+    describe('Test lux.codemirror module', function () {
 
         var scope, $compile, $timeout,
             cm = null,
@@ -30,10 +30,6 @@ define(['angular',
         });
 
         it('instance should be defined', function () {
-            function compile() {
-                $compile('<div lux-codemirror></div>')(scope);
-            }
-
             expect(window.CodeMirror).toBeDefined();
         });
 

@@ -20,6 +20,7 @@ class Command(lux.Command):
     help = ('Creates a lux project configuration files for javascript and '
             'scss compilation')
     src = 'js'
+    copy = True
 
     def run(self, options):
         #
@@ -31,7 +32,7 @@ class Command(lux.Command):
         current = os.getcwd()
         os.chdir(base)
         try:
-            sources = self.media('js', self.js_target)
+            sources = self.media('js', self.js_target, self.copy)
             #
             paths = {}
             for name, src in sources:
@@ -94,7 +95,6 @@ class Command(lux.Command):
         if os.path.isdir(templates):
             paths.update(self.templates(prefix, templates, name))
 
-        base = self.app_base()
         if prefix:
             for dirpath, dirnames, filenames in os.walk(src):
                 relpath = os.path.relpath(dirpath, src)
@@ -117,10 +117,7 @@ class Command(lux.Command):
                         path = '%s/%s' % (path, filename) if path else filename
                     assert path, "path not available"
                     loc = os.path.join(dirpath, filename)
-                    loc = os.path.relpath(loc, base)
-                    if path in paths:
-                        assert paths[path] == loc, "path %s already in paths" % path
-                    paths[path] = loc
+                    self._add_to_paths(paths, path, loc)
 
         return paths
 
@@ -162,7 +159,7 @@ class Command(lux.Command):
                 fp.write(template)
 
             self.write('"%s" created' % target)
-            paths[file_name] = target[:-3]
+            self._add_to_paths(paths, file_name, target[:-3])
 
         return paths
 
@@ -176,11 +173,15 @@ class Command(lux.Command):
 
         #
         # Create Karma files
-        cfg_paths = {}
-        base = self.js_target_base()
-        for name, path in paths.items():
-            relpath = os.path.relpath(path, base)
-            cfg_paths[name] = relpath
+        if self.copy:
+            cfg_paths = paths
+        else:
+            cfg_paths = {}
+            base = self.js_target_base()
+            for name, path in paths.items():
+                src = 'file://%s' % path
+                # src = os.path.relpath(path, base)
+                cfg_paths[name] = src
         # Test config
         test_template = self.template('tests.config.js')
         test_cfg = self.js_target('tests.config.js')
@@ -227,6 +228,14 @@ class Command(lux.Command):
         if os.path.isdir(target):
             shutil.rmtree(target)
         shutil.copytree(src, target)
+
+    def _add_to_paths(self, paths, path, loc):
+        if self.copy:
+            base = self.js_target_base()
+            loc = os.path.relpath(loc, base)
+        if path in paths:
+            assert paths[path] == loc, "path %s already in paths" % path
+        paths[path] = loc
 
 
 def escape_quote(text):

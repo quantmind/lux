@@ -1,8 +1,8 @@
 define(['angular',
         'lux',
         'tests/mocks/lux',
-        'lux/forms'], function (angular, lux) {
-    "use strict";
+        'lux/forms'], function (angular) {
+    'use strict';
 
     describe('Test lux.form.utils module', function () {
         var LuxPagination;
@@ -20,7 +20,7 @@ define(['angular',
 
             scope.$digest();
             return compiled;
-        };
+        }
 
         beforeEach(function () {
 
@@ -52,11 +52,11 @@ define(['angular',
             var markup = '<div data-remote-options=\'' + remoteOptions + '\' data-remote-options-id="" name="groups[]"><input type="text"></input></div>';
             var params = {sortby: 'id:asc'};
 
-            spyOn(JSON, 'parse').and.callThrough();
+            spyOn(angular, 'fromJson').and.callThrough();
             getCompiledElem(markup);
 
-            expect(JSON.parse).toHaveBeenCalled();
-            expect(LuxPagination).toHaveBeenCalledWith(scope, JSON.parse(remoteOptions), false);
+            expect(angular.fromJson).toHaveBeenCalled();
+            expect(LuxPagination).toHaveBeenCalledWith(scope, angular.fromJson(remoteOptions), false);
             expect(LuxPagination.prototype.getData).toHaveBeenCalledWith(params, jasmine.any(Function));
         });
 
@@ -66,7 +66,7 @@ define(['angular',
             var params = {limit: 200, sortby: 'id:asc'};
             getCompiledElem(markup);
 
-            expect(LuxPagination).toHaveBeenCalledWith(scope, JSON.parse(remoteOptions), true);
+            expect(LuxPagination).toHaveBeenCalledWith(scope, angular.fromJson(remoteOptions), true);
             expect(LuxPagination.prototype.getData).toHaveBeenCalledWith(params, jasmine.any(Function));
         });
 

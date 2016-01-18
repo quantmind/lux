@@ -1,8 +1,10 @@
 define(['angular',
         'lux',
-        'tests/mocks/rest'], function (angular, lux) {
+        'lux/services',
+        'tests/mocks/rest'], function (angular) {
+    'use strict';
 
-    describe("Test lux.webapi module", function () {
+    describe('Test lux.webapi module', function () {
         var context = {
                 API_URL: '/api'
             },
@@ -14,7 +16,7 @@ define(['angular',
             .value('context', context);
 
         beforeEach(function () {
-            module('lux.webapi.test');
+            angular.module('lux.webapi.test');
 
             inject(['$lux', '$rootScope', '$httpBackend', function (_$lux_, _$rootScope_, _$httpBackend_) {
                 $lux = _$lux_;
@@ -28,7 +30,7 @@ define(['angular',
             $httpBackend.verifyNoOutstandingRequest();
         });
 
-        it("uses default parameters for GETs", function () {
+        it('uses default parameters for GETs', function () {
             var client = $lux.api({
                 url: context.API_URL,
                 params: {
@@ -42,7 +44,7 @@ define(['angular',
             expect($httpBackend.flush).not.toThrow();
         });
 
-        it("works without default parameters for GETs", function () {
+        it('works without default parameters for GETs', function () {
             var client = $lux.api({
                 url: context.API_URL
             });
@@ -53,7 +55,7 @@ define(['angular',
             expect($httpBackend.flush).not.toThrow();
         });
 
-        it("works without any parameters for GETs", function () {
+        it('works without any parameters for GETs', function () {
             var client = $lux.api({
                 url: context.API_URL
             });
@@ -64,7 +66,7 @@ define(['angular',
             expect($httpBackend.flush).not.toThrow();
         });
 
-        it("formReady should stringify json array", function () {
+        it('formReady should stringify json array', function () {
             var client = scope.api(),
                 mock_data = {
                     'jsonArrayField': [1, 2, 3]
@@ -86,7 +88,7 @@ define(['angular',
             expect(typeof model.jsonArrayField).toBe('string');
         });
 
-        it("formReady should set a set array of items", function () {
+        it('formReady should set a set array of items', function () {
             var client = scope.api(),
                 mock_data = {
                     arrayField: [1, 2, 3],
@@ -112,7 +114,7 @@ define(['angular',
             expect(model.arrayObjectField[1]).toBe(6);
         });
 
-        it("formReady should set string value", function () {
+        it('formReady should set string value', function () {
             var client = scope.api(),
                 mock_data = {
                     stringField: 'testString',

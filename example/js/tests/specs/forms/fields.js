@@ -2,19 +2,18 @@ define(['angular',
         'lux',
         'tests/mocks/utils',
         'lux/forms'], function (angular, lux) {
-    "use strict";
-    var $ = angular.element;
+    'use strict';
 
     lux.formTests = {};
 
 
-    describe("Test lux.form module", function () {
+    describe('Test lux.form module', function () {
 
         beforeEach(function () {
             module('lux.form');
         });
 
-        it("simple form - one input", inject(function ($compile, $rootScope) {
+        it('simple form - one input', inject(function ($compile, $rootScope) {
             lux.formTests.simple = lux.tests.createForm([{
                 type: 'text',
                 name: 'body'
@@ -34,7 +33,7 @@ define(['angular',
             //
         }));
 
-        it("select input", inject(function ($compile, $rootScope) {
+        it('select input', inject(function ($compile, $rootScope) {
             lux.formTests.select = lux.tests.createForm([{
                 type: 'select',
                 name: 'choice',
@@ -55,7 +54,7 @@ define(['angular',
             expect(tags[0].tagName).toBe('LABEL');
             expect(tags[1].tagName).toBe('SELECT');
 
-            var select = $(tags[1]),
+            var select = angular.element(tags[1]),
                 options = select.children();
             expect(options.length).toBe(3);
             //
@@ -64,7 +63,7 @@ define(['angular',
     });
 
 
-    describe("Test lux.form with selectUI", function () {
+    describe('Test lux.form with selectUI', function () {
 
         // Angular module for select-UI forms
         angular.module('lux.form.test.select.ui', ['lux.form'])
@@ -87,7 +86,7 @@ define(['angular',
             module('lux.form.test.select.ui');
         });
 
-        it("select input + widget", inject(function ($compile, $rootScope) {
+        it('select input + widget', inject(function ($compile, $rootScope) {
 
             lux.formSelectUITests.select = lux.tests.createForm([{
                 type: 'select',
@@ -110,20 +109,20 @@ define(['angular',
             expect(tags[1].tagName).toBe('UI-SELECT');
             expect(tags[1].getAttribute('theme')).toBe('bootstrap');
 
-            var select = $(tags[1]),
+            var select = angular.element(tags[1]),
                 options = select.children();
             expect(options.length).toBe(2);
             //
         }));
     });
 
-    describe("Test lux.form with file field", function () {
+    describe('Test lux.form with file field', function () {
 
         beforeEach(function () {
             module('lux.form');
         });
 
-        it("adds the ngf-select directive", inject(function ($compile, $rootScope) {
+        it('adds the ngf-select directive', inject(function ($compile, $rootScope) {
             lux.formTests.file = lux.tests.createForm([{
                 type: 'file',
                 name: 'file'
@@ -142,7 +141,7 @@ define(['angular',
             //
         }));
 
-        it("doesn't adds the ngf-select directive", inject(function ($compile, $rootScope) {
+        it('doesnt adds the ngf-select directive', inject(function ($compile, $rootScope) {
             lux.formTests.fileNoNgf = lux.tests.createForm([{
                 type: 'file',
                 name: 'file'
@@ -162,13 +161,13 @@ define(['angular',
         }));
     });
 
-    describe("Test lux.form with date field", function () {
+    describe('Test lux.form with date field', function () {
 
         beforeEach(function () {
             module('lux.form');
         });
 
-        it("convert model from date string into date object", inject(function ($compile, $rootScope) {
+        it('convert model from date string into date object', inject(function ($compile, $rootScope) {
             lux.formTests.date = lux.tests.createForm([{
                 type: 'date',
                 name: 'date'

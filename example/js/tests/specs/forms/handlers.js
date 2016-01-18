@@ -2,8 +2,9 @@ define(['angular',
         'lux',
         'tests/mocks/lux',
         'lux/forms'], function (angular, lux) {
+    'use strict';
 
-    describe("Test lux.form.handlers module", function() {
+    describe('Test lux.form.handlers module', function() {
 
         var $lux;
         var successMessageSpy;
@@ -85,32 +86,5 @@ define(['angular',
         });
 
     });
-
-    // Function.prototype.bind polyfill
-    // PhantomJS has no Function.prototype.bind method
-    if (!Function.prototype.bind) {
-    Function.prototype.bind = function(oThis) {
-        if (typeof this !== 'function') {
-            // closest thing possible to the ECMAScript 5
-            // internal IsCallable function
-            throw new TypeError('Function.prototype.bind - what is trying to be bound is not callable');
-        }
-
-        var aArgs   = Array.prototype.slice.call(arguments, 1),
-            fToBind = this,
-            fNOP    = function() {},
-            fBound  = function() {
-                return fToBind.apply(this instanceof fNOP ? this : oThis, aArgs.concat(Array.prototype.slice.call(arguments)));
-            };
-
-        if (this.prototype) {
-            // native functions don't have a prototype
-            fNOP.prototype = this.prototype;
-        }
-        fBound.prototype = new fNOP();
-            return fBound;
-        };
-    }
-
 
 });

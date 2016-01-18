@@ -1,127 +1,83 @@
-define(function(require) {
+define(['lux',
+        'tests/mocks/utils',
+        'lux/grid'], function (lux, tests) {
+    'use strict';
 
-    describe("Test lux.grid module", function() {
+    describe('Test lux.grid module', function() {
 
-        var $rootScope;
-        var $compile;
-        var modal = jasmine.createSpyObj('modal', ['show']);
-        var apiMock;
-
-        function digest(scope, template) {
-            var element = $compile(template)(scope);
-            return element;
-        };
+        // var modal = jasmine.createSpyObj('modal', ['show']);
 
         lux.gridTests = {};
 
-        beforeEach(function () {
-            apiMock = createLuxApiMock();
-            var $luxMock = createLuxMock(apiMock);
+        it('default permissions of actions',
+            inject(function ($compile, $rootScope) {
+                lux.gridTests.pGrid1 = {
+                    'target': {'name': 'dummy', 'url': 'dummy://url'}
+                };
+                var element = tests.digest($compile, $rootScope, '<div rest-grid="lux.gridTests.pGrid1"></div>'),
+                    scope = element.scope();
 
-            angular.mock.module('lux.grid', function($provide) {
-                $provide.value('$lux', $luxMock);
-                $provide.value('$modal', modal);
-            });
+                expect(scope.gridOptions.permissions.update).toBe(false);
+                expect(scope.gridOptions.permissions.create).toBe(false);
+                expect(scope.gridOptions.permissions.delete).toBe(false);
+            })
+        );
 
-            inject(function (_$compile_, _$rootScope_) {
-                $compile = _$compile_;
-                $rootScope = _$rootScope_;
-            });
-        });
+        it('initially has only one item of the menu - column visibility',
+            inject(function ($compile, $rootScope) {
+                lux.gridTests.pGrid2 = {
+                    'target': {'name': 'dummy', 'url': 'dummy://url'}
+                };
 
-        afterEach(function () {
-        });
+                var element = tests.digest($compile, $rootScope, '<div rest-grid="lux.gridTests.pGrid2"></div>'),
+                    scope = element.scope();
 
-        it('default permissions of actions', function() {
-            lux.gridTests.pGrid1 = {
-                "target": {"name": "dummy", "url": "dummy://url"},
-            };
-            var scope = $rootScope.$new();
-            var element = digest(scope, '<div rest-grid="lux.gridTests.pGrid1"></div>');
-            scope.$digest();
+                expect(scope.gridOptions.gridMenuCustomItems.length).toBe(1);
+                expect(scope.gridOptions.gridMenuCustomItems[0].title).toEqual('Columns visibility');
+            })
+        );
 
-            expect(scope.gridOptions.permissions.update).toBe(false);
-            expect(scope.gridOptions.permissions.create).toBe(false);
-            expect(scope.gridOptions.permissions.delete).toBe(false);
-        });
+        it('adds create and delete permissions',
+            inject(function ($compile, $rootScope) {
 
-        it('initially has only one item of the menu - column visibility', function() {
-            lux.gridTests.pGrid2 = {
-                "target": {"name": "dummy", "url": "dummy://url"},
-            };
-            var scope = $rootScope.$new();
-            var element = digest(scope, '<div rest-grid="lux.gridTests.pGrid2"></div>');
-            scope.$digest();
+                lux.gridTests.pGrid3 = {
+                    'target': {'name': 'dummy', 'url': 'dummy://url'},
+                    'permissions': {'create': true, 'delete': true}
+                };
 
-            expect(scope.gridOptions.gridMenuCustomItems.length).toBe(1);
-            expect(scope.gridOptions.gridMenuCustomItems[0].title).toEqual('Columns visibility');
-        });
+                var element = tests.digest($compile, $rootScope, '<div rest-grid="lux.gridTests.pGrid3"></div>'),
+                    scope = element.scope();
 
-        it('adds create and delete permissions', function() {
-            lux.gridTests.pGrid3 = {
-                "target": {"name": "dummy", "url": "dummy://url"},
-                "permissions": {"create": true, "delete": true}
-            };
-            var scope = $rootScope.$new();
-            var element = digest(scope, '<div rest-grid="lux.gridTests.pGrid3"></div>');
-            scope.$digest();
+                expect(scope.gridOptions.permissions.create).toBe(true);
+                expect(scope.gridOptions.permissions.delete).toBe(true);
+                expect(scope.gridOptions.permissions.update).toBe(false);
+                expect(scope.gridOptions.gridMenuCustomItems.length).toBe(3);
+                expect(scope.gridOptions.gridMenuCustomItems[0].title).toContain('Add');
+                expect(scope.gridOptions.gridMenuCustomItems[1].title).toContain('Delete');
+            })
+        );
 
-            expect(scope.gridOptions.permissions.create).toBe(true);
-            expect(scope.gridOptions.permissions.delete).toBe(true);
-            expect(scope.gridOptions.permissions.update).toBe(false);
-            expect(scope.gridOptions.gridMenuCustomItems.length).toBe(3);
-            expect(scope.gridOptions.gridMenuCustomItems[0].title).toContain('Add');
-            expect(scope.gridOptions.gridMenuCustomItems[1].title).toContain('Delete');
-        });
+        it('check getStringOrJsonField method',
+            inject(function ($compile, $rootScope) {
+                lux.gridTests.pGrid4 = {
+                    'target': {'name': 'dummy', 'url': 'dummy://url'}
+                };
+                var element = tests.digest($compile, $rootScope, '<div rest-grid="lux.gridTests.pGrid4"></div>'),
+                    scope = element.scope();
 
-        it('check getStringOrJsonField method', function() {
-            lux.gridTests.pGrid4 = {
-                "target": {"name": "dummy", "url": "dummy://url"},
-            };
-            var scope = $rootScope.$new();
-            var element = digest(scope, '<div rest-grid="lux.gridTests.pGrid4"></div>');
-            scope.$digest();
+                var result = scope.getStringOrJsonField({'repr': 'Field'});
+                expect(result).toBe('Field');
 
-            var result = scope.getStringOrJsonField({'repr': 'Field'});
-            expect(result).toBe('Field');
+                result = scope.getStringOrJsonField({'repr': 'Field', 'id': 'Field ID'});
+                expect(result).toBe('Field');
 
-            result = scope.getStringOrJsonField({'repr': 'Field', 'id': 'Field ID'});
-            expect(result).toBe('Field');
+                result = scope.getStringOrJsonField({'id': 'Field ID'});
+                expect(result).toBe('Field ID');
 
-            result = scope.getStringOrJsonField({'id': 'Field ID'});
-            expect(result).toBe('Field ID');
+                result = scope.getStringOrJsonField('test string');
+                expect(result).toBe('test string');
+            })
+        );
 
-            result = scope.getStringOrJsonField('test string');
-            expect(result).toBe('test string');
-        });
-
-        function createLuxMock(apiMock) {
-            var $luxMock = {
-                api: function() {
-                    return apiMock;
-                },
-                window: {
-                    location: {}
-                }
-            };
-
-            return $luxMock;
-        }
-
-        function createLuxApiMock() {
-            var apiMock = {
-                get: jasmine.createSpy(),
-                delete: jasmine.createSpy(),
-                success: jasmine.createSpy(),
-                error: jasmine.createSpy()
-            };
-
-            apiMock.get.and.returnValue(apiMock);
-            apiMock.delete.and.returnValue(apiMock);
-            apiMock.success.and.returnValue(apiMock);
-            apiMock.error.and.returnValue(apiMock);
-
-            return apiMock;
-        }
     });
 });

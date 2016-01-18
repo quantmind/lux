@@ -1,15 +1,15 @@
 define(['angular',
-        'lux',
-        'lux/services/scroll'], function (angular, lux) {
+        'lux/services/scroll'], function (angular) {
+    'use strict';
 
-    describe("Test lux.scroll module", function () {
+    describe('Test lux.scroll module', function () {
         angular.module('lux.scroll.test', ['lux.loader', 'lux.scroll']);
 
         beforeEach(function () {
             module('lux.scroll.test');
         });
 
-        it("Scroll scope defaults", inject(['$rootScope', function (scope) {
+        it('Scroll scope defaults', inject(['$rootScope', function (scope) {
             var scroll = scope.scroll;
             expect(typeof(scroll)).toBe('object');
             expect(scroll.time).toBe(1);
@@ -17,7 +17,7 @@ define(['angular',
             expect(scroll.frames).toBe(25);
         }]));
 
-        it("Scroll scope overrides", function () {
+        it('Scroll scope overrides', function () {
             var context_override = {
                 scroll: {
                     offset: 20,

@@ -1,5 +1,7 @@
-define(['angular', 'lux', 'angular-mocks'], function (angular, lux) {
-    "use strict";
+define(['angular',
+        'lux',
+        'angular-mocks'], function (angular, lux) {
+    'use strict';
 
     lux.tests = {};
 

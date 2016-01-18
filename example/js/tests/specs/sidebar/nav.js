@@ -1,7 +1,9 @@
 define(['angular',
-        'lux'], function (angular, lux) {
+        'lux',
+        'lux/nav'], function (angular, lux) {
+    'use strict';
 
-    describe("Test lux.nav module", function () {
+    describe('Test lux.nav module', function () {
         //
         var digest = function ($compile, $rootScope, template) {
             var scope = $rootScope.$new(),
@@ -14,7 +16,7 @@ define(['angular',
             module('lux.nav');
         });
 
-        it("navbar directive", inject(function ($compile, $rootScope) {
+        it('navbar directive', inject(function ($compile, $rootScope) {
             var template = '<navbar data-theme="inverse" data-id="navid3" data-top=1></navbar>',
                 element = digest($compile, $rootScope, template);
 
@@ -29,7 +31,7 @@ define(['angular',
             expect(nav.attr('id')).toBe('navid3');
         }));
 
-        it("navbar directive with options from object", inject(function ($compile, $rootScope) {
+        it('navbar directive with options from object', inject(function ($compile, $rootScope) {
             lux.context._navbar1 = {
                 id: 'navbar1',
                 theme: 'inverse',
@@ -51,25 +53,6 @@ define(['angular',
             expect(nav.attr('id')).toBe('navbar1');
         }));
 
-        it("navbar2 directive", inject(function ($compile, $rootScope) {
-            var element = '<navbar2></navbar2>';
-            return
-            scope = $rootScope.$new();
-            scope.items2 = [
-                {href: '/', name: 'home'},
-                {href: '/foo'}];
-            controller = $controller('Navigation', {'$scope': scope});
-
-            expect(scope.navbar.items2.length).toBe(2);
-            element = $compile(element)(scope);
-            var nav = element.find('nav');
-            //
-            expect(nav.parent()).toBe(element);
-            expect(nav.hasClass('navbar')).toBe(true);
-            expect(nav.hasClass('navbar-default')).toBe(true);
-
-            expect(scope.navbar.collapseWidth).toBe(768);
-        }));
     });
 
 });

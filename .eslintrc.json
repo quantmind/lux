@@ -16,6 +16,7 @@
       2,
       "always"
     ],
+    "strict": 2,
     "angular/no-digest": 0,
     "angular/di": [
       2,

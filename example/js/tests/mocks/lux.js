@@ -1,32 +1,59 @@
-define(['lux', 'angular-mocks'], function (lux) {
-    "use strict";
+define(['angular',
+        'lux',
+        'tests/mocks/window',
+        'tests/mocks/http'], function(angular) {
+    'use strict';
 
-    lux.mocks = {};
+    angular.module('lux.mocks.lux', ['lux.mocks.window', 'lux.mocks.http'])
 
-    lux.mocks.$lux = function (apiMock) {
-        if (!apiMock) apiMock = lux.mocks.createApiMock();
-        return {
-            api: function () {
-                return apiMock;
+        .factory('$lux', ['$window', function ($window) {
+            var thenSpy = jasmine.createSpy();
+            var luxApiMock = {
+                get: jasmine.createSpy(),
+                delete: jasmine.createSpy(),
+                success: jasmine.createSpy(),
+                error: jasmine.createSpy(),
+                post: function() {
+                    return {
+                        then: function() {}
+                    };
+                }
+            };
+            luxApiMock.get.and.returnValue({
+                then: thenSpy
+            });
+
+            var luxMock = {
+                api: api,
+                getLastThenSpy: getLastThenSpy,
+                resetAllSpies: resetAllSpies,
+                window: $window,
+                formHandlers: {},
+                getApiMock: getApiMock,
+                getThenSpy: getThenSpy
+            };
+
+            function api() {
+                return luxApiMock;
             }
-        };
-    };
 
-    lux.mocks.createApiMock = function () {
-        var apiMock = {
-            get: jasmine.createSpy(),
-            delete: jasmine.createSpy(),
-            success: jasmine.createSpy(),
-            error: jasmine.createSpy()
-        };
+            function getLastThenSpy() {
+                return thenSpy;
+            }
 
-        apiMock.get.and.returnValue(apiMock);
-        apiMock.delete.and.returnValue(apiMock);
-        apiMock.success.and.returnValue(apiMock);
-        apiMock.error.and.returnValue(apiMock);
+            function resetAllSpies() {
+                thenSpy.calls.reset();
+                luxApiMock.get.calls.reset();
+            }
 
-        return apiMock;
-    };
+            function getApiMock() {
+                return luxApiMock;
+            }
 
-    return lux.mocks;
+            function getThenSpy() {
+                return thenSpy;
+            }
+
+            return luxMock;
+        }]);
 });

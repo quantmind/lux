@@ -1,19 +1,20 @@
 define(['lux'], function (lux) {
+    'use strict';
 
-    describe("Test lux utilities", function () {
+    describe('Test lux utilities', function () {
 
-        it("Check lux object", function () {
+        it('Check lux object', function () {
             expect(lux).not.toBe(undefined);
             expect(typeof(lux.version)).toBe('string');
             expect(lux.version.split('.').length).toBe(3);
         });
 
-        it("Check lux urls", function () {
+        it('Check lux urls', function () {
             expect(lux.context.url).toBe('');
         });
 
-        it("Check lux media function", function () {
-            var ctx = {MEDIA_URL: '/mediax/'}
+        it('Check lux media function', function () {
+            var ctx = {MEDIA_URL: '/mediax/'};
             expect(lux.media('foo', ctx)).toBe('/mediax/foo');
             expect(lux.media('/foo', ctx)).toBe('/mediax/foo');
             expect(lux.media('////foo', ctx)).toBe('/mediax/foo');
@@ -22,7 +23,7 @@ define(['lux'], function (lux) {
 
         var joinUrl = lux.joinUrl;
 
-        it("Check joinUrl", function () {
+        it('Check joinUrl', function () {
             expect(joinUrl('bla', 'foo')).toBe('bla/foo');
             expect(joinUrl('bla/', '/foo')).toBe('bla/foo');
             expect(joinUrl('bla', '')).toBe('bla');
@@ -30,7 +31,7 @@ define(['lux'], function (lux) {
             expect(joinUrl('bla//////', '///foo')).toBe('bla/foo');
         });
 
-        it("Test addEvent", function () {
+        it('Test addEvent', function () {
             expect(typeof(lux.addEvent)).toBe('function');
             var el = {},
                 slice = Array.prototype.slice,
@@ -48,7 +49,7 @@ define(['lux'], function (lux) {
             expect(c.args[1]).toBe('luca');
         });
 
-        it("Test extendArray", function () {
+        it('Test extendArray', function () {
             var extendArray = lux.extendArray;
 
             expect(extendArray()).toBe(undefined);
@@ -65,19 +66,19 @@ define(['lux'], function (lux) {
 
         });
 
-        it("Test getOptions", function () {
+        it('Test getOptions', function () {
             var a = [];
             lux.testing = {'v': a};
             expect(lux.getOptions({options: 'lux.testing.v', b: 4})).toBe(a);
             a = 'ciao';
             lux.testing.v = a;
             expect(lux.getOptions({options: 'lux.testing.v', b: 4})).toBe(a);
-            a = {}
+            a = {};
             lux.testing.v = a;
             expect(lux.getOptions({options: 'lux.testing.v', b: 4}).b).toBe(4);
         });
 
-        it("Test querySelector", function () {
+        it('Test querySelector', function () {
             var body = lux.querySelector(document);
             expect(body.length).toBe(1);
             expect(body[0]).toBe(document);
@@ -87,21 +88,21 @@ define(['lux'], function (lux) {
             expect(body[0].tagName).toBe('BODY');
         });
 
-        it("Check getJsonOrNone", function () {
+        it('Check getJsonOrNone', function () {
             var res;
-            res = lux.getJsonOrNone("{\"id\": 1}");
+            res = lux.getJsonOrNone('{"id": 1}');
             expect(res.id).toBe(1);
-            res = lux.getJsonOrNone("{id: 1}");
+            res = lux.getJsonOrNone('{id: 1}');
             expect(res).toBe(null);
         });
 
-        it("Check isJsonStringify", function () {
+        it('Check isJsonStringify', function () {
             var res;
-            res = lux.isJsonStringify("[123, 234]");
+            res = lux.isJsonStringify('[123, 234]');
             expect(res).toBe(true);
-            res = lux.isJsonStringify("{id: 1}");
+            res = lux.isJsonStringify('{id: 1}');
             expect(res).toBe(true);
-            res = lux.isJsonStringify("value");
+            res = lux.isJsonStringify('value');
             expect(res).toBe(true);
         });
     });

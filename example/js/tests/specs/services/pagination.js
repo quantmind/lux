@@ -1,7 +1,7 @@
 define(['angular',
         'lux/services/pagination',
         'tests/mocks/rest'], function (angular) {
-    "use strict";
+    'use strict';
 
     describe('Test lux.pagination module', function () {
         var LuxPagination;
@@ -15,17 +15,18 @@ define(['angular',
                         then: function (callbacks) {
                             return callbacks(data);
                         }
-                    }
+                    };
                 })
-            }
+            };
         }
 
         beforeEach(function () {
 
             angular.mock.module('lux.pagination', function ($provide) {
-                $provide.service('$lux', function () {
-                    this.api = jasmine.createSpy('apiInit');
-                    this.api.get = jasmine.createSpy('apiGet');
+                $provide.factory('$lux', function () {
+                    var api = jasmine.createSpy('apiInit');
+                    api.get = jasmine.createSpy('apiGet');
+                    return {api: api};
                 });
             });
 
@@ -43,7 +44,7 @@ define(['angular',
             var scope = 'scope';
             var target = {
                 url: 'originalUrl'
-            }
+            };
             var luxPag = new LuxPagination(scope, target);
 
             expect(luxPag.scope).toEqual(scope);
@@ -110,7 +111,7 @@ define(['angular',
 
         });
 
-        it("LuxPagination.updateUrls won't do anything if data is incorrect", function () {
+        it('LuxPagination.updateUrls wont do anything if data is incorrect', function () {
             var data = null;
             var luxPag = new LuxPagination('scope', 'target');
 
@@ -122,7 +123,7 @@ define(['angular',
             expect(luxPag.emitEvent).not.toHaveBeenCalled();
         });
 
-        it("LuxPagination.emitEvent emits event 'moreData' on the provided scope", function () {
+        it('LuxPagination.emitEvent emits event moreData on the provided scope', function () {
             var scope = {
                 $emit: jasmine.createSpy('scopeEmit')
             };
@@ -177,7 +178,7 @@ define(['angular',
                 searchField: query
             });
 
-        })
+        });
 
     });
 

@@ -42,6 +42,7 @@
         },
         "target": ["Gruntfile.js",
                    "js/*.js",
+                   "js/tests/**/*.js",
                    "../lux/media/js/**/*.js"]
     },
     "thirdParty": [

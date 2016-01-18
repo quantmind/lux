@@ -1,9 +1,9 @@
 define(['angular',
-        'lux',
-        'tests/mocks/rest'], function (angular, lux) {
-    "use strict";
+        'lux/services',
+        'tests/mocks/rest'], function (angular) {
+    'use strict';
 
-    describe("Test lux.restapi module", function () {
+    describe('Test lux.restapi module', function () {
         var context = {
                 API_URL: '/api'
             },
@@ -27,15 +27,15 @@ define(['angular',
 
         });
 
-        it("Luxrest api object", function () {
-            expect(_.isFunction(scope.api)).toBe(true);
+        it('Luxrest api object', function () {
+            expect(angular.isFunction(scope.api)).toBe(true);
             var client = scope.api();
-            expect(_.isObject(client)).toBe(true);
+            expect(angular.isObject(client)).toBe(true);
 
             expect(client.baseUrl()).toBe('/api');
         });
 
-        it("populates the API URLs", function () {
+        it('populates the API URLs', function () {
             var client = scope.api();
             $httpBackend.expectGET(context.API_URL).respond(mock_data);
             client.populateApiUrls();
@@ -43,7 +43,7 @@ define(['angular',
             expect($lux.apiUrls[context.API_URL]['authorizations_url']).toBe('/api/authorizations');
         });
 
-        it("gets API URLs", function () {
+        it('gets API URLs', function () {
             var client = scope.api(),
                 apiNames = {};
             $httpBackend.expectGET(context.API_URL).respond(mock_data);
@@ -54,7 +54,7 @@ define(['angular',
             expect(apiNames['authorizations_url']).toBe('/api/authorizations');
         });
 
-        it("gets a URL for an API target", function () {
+        it('gets a URL for an API target', function () {
             var client = scope.api(),
                 url = '';
             $httpBackend.expectGET(context.API_URL).respond(mock_data);
