@@ -19,6 +19,7 @@ define(['angular',
                     };
                 }
             };
+
             luxApiMock.get.and.returnValue({
                 then: thenSpy
             });
@@ -33,7 +34,7 @@ define(['angular',
                 getThenSpy: getThenSpy
             };
 
-            function api() {
+            function api () {
                 return luxApiMock;
             }
 

@@ -1,3 +1,4 @@
+/* eslint angular/no-private-call: [2,{"allow":["$$hashKey"]}] */
 define(['angular',
         'lux',
         'lux/message/templates',
@@ -106,7 +107,7 @@ define(['angular',
                 link: function (scope, element, attrs) {
                     scope.messages = [];
 
-                    scope.limit = !!attrs.limit ? parseInt(attrs.limit) : 5; //5 messages to show by default
+                    scope.limit = attrs.limit ? parseInt(attrs.limit) : 5; //5 messages to show by default
 
                     scope.debug = function () {
                         return luxMessage.getDebugMode();

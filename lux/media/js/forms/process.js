@@ -132,9 +132,9 @@ define(['angular',
         process.form = form;
         process.model = scope[scope.formModelName];
         process.attrs = scope.formAttrs;
-        process.target = scope.action;
+        process.target = scope.formAttrs.action;
         process.method = scope.formAttrs.method || 'post';
-        process.api = angular.isObject(scope.action) ? $lux.api(scope.action) : null;
+        process.api = angular.isObject(process.target) ? $lux.api(process.target) : null;
 
         return process;
     }

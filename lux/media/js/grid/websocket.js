@@ -76,7 +76,7 @@ define(['angular',
 
         GridDataProviderWebsocket.prototype.deleteItem = function(identifier, onSuccess, onFailure) {
             var options = {id: identifier};
-            this._sockJs.rpc(this._channel, options);
+            this._sockJs.rpc(this._channel, options).then(onSuccess, onFailure);
         };
 
         return GridDataProviderWebsocket;

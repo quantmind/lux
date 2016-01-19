@@ -1,12 +1,14 @@
-define(['tests/mocks/lux',
+define(['angular',
+        'tests/mocks/lux',
         'lux/grid',
-        'lux/grid/rest'], function () {
+        'lux/grid/rest'], function (angular) {
     'use strict';
 
     describe('Test lux.grid.rest module', function() {
 
+        var $lux = angular.injector(['lux.mocks.lux']).get('$lux');
+        var api = $lux.api();
         var GridDataProviderREST;
-        var apiMock;
         var listener;
         var dataProvider;
         var target = { url: 'dummy://url'};
@@ -15,10 +17,6 @@ define(['tests/mocks/lux',
         var options = { dummy: 'options' };
 
         beforeEach(function () {
-
-            angular.mock.module('lux.grid.dataProviderREST', function($provide) {
-                $provide.value('$lux', $luxMock);
-            });
 
             inject(function (_GridDataProviderREST_) {
                 GridDataProviderREST = _GridDataProviderREST_;
@@ -35,16 +33,16 @@ define(['tests/mocks/lux',
         it('connect()', function() {
             dataProvider.connect();
 
-            expect(apiMock.get).toHaveBeenCalledWith({ path: 'dummy/subPath/metadata' });
+            expect(api.get).toHaveBeenCalledWith({ path: 'dummy/subPath/metadata' });
 
-            var onMetadataReceivedSuccessCallback = apiMock.success.calls.all()[0].args[0];
+            var onMetadataReceivedSuccessCallback = api.success.calls.all()[0].args[0];
             onMetadataReceivedSuccessCallback('metadata');
 
             expect(listener.onMetadataReceived).toHaveBeenCalledWith('metadata');
 
-            expect(apiMock.get).toHaveBeenCalledWith({ path: subPath }, gridState);
+            expect(api.get).toHaveBeenCalledWith({ path: subPath }, gridState);
 
-            var onDataReceivedSuccessCallback = apiMock.success.calls.all()[1].args[0];
+            var onDataReceivedSuccessCallback = api.success.calls.all()[1].args[0];
             onDataReceivedSuccessCallback('data');
 
             expect(listener.onDataReceived).toHaveBeenCalledWith('data');
@@ -54,9 +52,9 @@ define(['tests/mocks/lux',
         it('getPage()', function() {
             dataProvider.getPage(options);
 
-            expect(apiMock.get).toHaveBeenCalledWith({}, options);
+            expect(api.get).toHaveBeenCalledWith({}, options);
 
-            var onDataReceivedSuccessCallback = apiMock.success.calls.all()[0].args[0];
+            var onDataReceivedSuccessCallback = api.success.calls.all()[0].args[0];
             onDataReceivedSuccessCallback('data');
 
             expect(listener.onDataReceived).toHaveBeenCalledWith('data');
@@ -69,9 +67,9 @@ define(['tests/mocks/lux',
 
             dataProvider.deleteItem(identifier, onSuccess, onFailure);
 
-            expect(apiMock.delete).toHaveBeenCalledWith({ path: subPath + '/' + identifier});
-            expect(apiMock.success).toHaveBeenCalledWith(onSuccess);
-            expect(apiMock.error).toHaveBeenCalledWith(onFailure);
+            expect(api.delete).toHaveBeenCalledWith({ path: subPath + '/' + identifier});
+            expect(api.success).toHaveBeenCalledWith(onSuccess);
+            expect(api.error).toHaveBeenCalledWith(onFailure);
         });
 
         it('destroy()', function() {
