@@ -1,6 +1,6 @@
-//      Lux Library - v0.4.0
+//      Lux Library - v0.5.0
 
-//      Compiled 2016-01-05.
+//      Compiled 2016-01-11.
 //      Copyright (c) 2016 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -88,7 +88,7 @@
             "angular-strap": "//cdnjs.cloudflare.com/ajax/libs/angular-strap/2.2.1/angular-strap",
             "angular-strap-tpl": "//cdnjs.cloudflare.com/ajax/libs/angular-strap/2.2.4/angular-strap.tpl",
             "angular-ui-router": "//cdnjs.cloudflare.com/ajax/libs/angular-ui-router/0.2.14/angular-ui-router",
-            "angular-ui-select": "//cdnjs.cloudflare.com/ajax/libs/angular-ui-select/0.12.0/select",
+            "angular-ui-select": "//cdnjs.cloudflare.com/ajax/libs/angular-ui-select/0.13.2/select",
             "angular-cookies": "//cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.4/angular-cookies",
             "angular-ui-grid": "//cdnjs.cloudflare.com/ajax/libs/angular-ui-grid/3.0.7/ui-grid",
             "angular-scroll": "//cdnjs.cloudflare.com/ajax/libs/angular-scroll/0.7.2/angular-scroll",
