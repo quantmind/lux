@@ -56,7 +56,7 @@ define(['angular',
 
             var select = angular.element(tags[1]),
                 options = select.children();
-            expect(options.length).toBe(3);
+            expect(options.length).toBe(4);
             //
         }));
 
