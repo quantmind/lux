@@ -217,7 +217,6 @@ module.exports = function(grunt) {
         var paths = cfg.requirejs.compile.options.paths,
             filename = 'js/build/lux.json',
             obj = grunt.file.readJSON(filename);
-        grunt.log.writeln('Read paths from "' + filename + '"');
         _.extend(paths, obj.paths);
     });
 

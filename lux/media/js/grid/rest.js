@@ -14,11 +14,9 @@ define(['angular', 'lux/grid'], function (angular) {
 
     function restProvider ($lux, dataProvider) {
 
-        function GridDataProviderREST (target, subPath, gridState, listener) {
-            this._api = $lux.api(target);
-            this._subPath = subPath;
-            this._gridState = gridState;
-            this._listener = listener;
+        function GridDataProviderREST (grid) {
+            this._api = $lux.api(grid.options.target);
+            this._listener = grid;
         }
 
         GridDataProviderREST.prototype.connect = function () {
@@ -39,7 +37,7 @@ define(['angular', 'lux/grid'], function (angular) {
         };
 
         GridDataProviderREST.prototype.destroy = function () {
-            this._listener = null;
+            delete this._listener;
         };
 
         function getMetadata(self, callback) {

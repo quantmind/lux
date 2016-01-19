@@ -1,6 +1,6 @@
 define(['angular',
         'lux/services/pagination',
-        'tests/mocks/rest'], function (angular) {
+        'tests/mocks/http'], function (angular) {
     'use strict';
 
     describe('Test lux.pagination module', function () {

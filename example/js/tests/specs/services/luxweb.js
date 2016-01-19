@@ -1,7 +1,7 @@
 define(['angular',
         'lux',
         'lux/services',
-        'tests/mocks/rest'], function (angular) {
+        'tests/mocks/http'], function (angular) {
     'use strict';
 
     describe('Test lux.webapi module', function () {
