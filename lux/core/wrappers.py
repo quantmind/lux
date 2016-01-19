@@ -296,8 +296,11 @@ def error_handler(request, exc):
         content_type = response.content_type.split(';')[0]
     is_html = content_type == 'text/html'
 
-    if app.debug and response.status_code >= 500:
-        msg = render_error_debug(request, exc, is_html)
+    if response.status_code >= 500:
+        if app.debug:
+            msg = render_error_debug(request, exc, is_html)
+        else:
+            msg = error_messages.get(response.status_code)
     else:
         msg = str(exc) or error_messages.get(response.status_code)
 

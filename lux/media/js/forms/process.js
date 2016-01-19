@@ -118,23 +118,21 @@ define(['angular',
 
         var form = scope[scope.formName];
 
-        // Flag the form as submitted
-        form.submitted = true;
-        // clear form messages
-        scope.formMessages = {};
-
         function process () {
             var _process = formProcessors[scope.formProcessor || 'default'];
+            // Flag the form as submitted
             form.submitted = true;
+            // clear form messages
+            scope.formMessages = {};
             return _process($lux, process);
         }
 
         process.form = form;
         process.model = scope[scope.formModelName];
         process.attrs = scope.formAttrs;
-        process.target = scope.action;
+        process.target = scope.formAttrs.action;
         process.method = scope.formAttrs.method || 'post';
-        process.api = angular.isObject(scope.action) ? $lux.api(scope.action) : null;
+        process.api = angular.isObject(process.target) ? $lux.api(process.target) : null;
 
         return process;
     }

@@ -491,7 +491,7 @@ define(['angular',
                             var callback = self.processForm(scope);
                             //
                             if (field.click) {
-                                callback = getRootAttribute(field.click);
+                                callback = lux.getObject(field, 'click', scope);
                                 if (!angular.isFunction(callback)) {
                                     log.error('Could not locate click function "' + field.click + '" for button');
                                     return;
