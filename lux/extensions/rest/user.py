@@ -277,6 +277,8 @@ def check_username(request, username):
 
 def user_permissions(request):
     """Return a dictionary of permissions for the current user
+
+    :request: a WSGI request with url data ``resource`` and ``action``.
     """
     backend = request.cache.auth_backend
     resources = request.url_data.get('resource', ())

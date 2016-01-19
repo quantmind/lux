@@ -177,10 +177,8 @@ class Command(lux.Command):
             cfg_paths = paths
         else:
             cfg_paths = {}
-            base = self.js_target_base()
             for name, path in paths.items():
                 src = 'file://%s' % path
-                # src = os.path.relpath(path, base)
                 cfg_paths[name] = src
         # Test config
         test_template = self.template('tests.config.js')
