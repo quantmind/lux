@@ -92,6 +92,7 @@ module.exports = function(grunt) {
     //
     //  HTML2JS
     if (cfg.html2js) {
+        // html2js goes first
         jsTasks = ['html2js'].concat(jsTasks);
         grunt.loadNpmTasks('grunt-html2js');
     }
@@ -106,8 +107,10 @@ module.exports = function(grunt) {
     }
     // CONCAT and UGLIFY always added at the end
     jsTasks = jsTasks.concat(['concat', 'uglify']);
+    // Add initial tasks
+    jsTasks = baseTasks.concat(jsTasks);
 
-    var buildTasks = baseTasks.concat(jsTasks),
+    var buildTasks = [].concat(jsTasks),
         testTasks = baseTasks.concat(['karma:dev']);
     //
     //  Build CSS if required
@@ -234,7 +237,8 @@ module.exports = function(grunt) {
     grunt.registerTask('test', testTasks);
     grunt.registerTask('test:debug-chrome', ['karma:debug_chrome']);
     grunt.registerTask('test:debug-firefox', ['karma:debug_firefox']);
-    grunt.registerTask('build', 'Compile and lint all libraries', buildTasks);
+    grunt.registerTask('js', 'Compile and lint javascript libraries', jsTasks);
+    grunt.registerTask('build', 'Compile and lint javascript and css libraries', buildTasks);
     grunt.registerTask('coverage', 'Test coverage using Jasmine and Istanbul', ['clean:test', 'karma:ci']);
     grunt.registerTask('all', 'Compile lint and test all libraries', ['build', 'test']);
     grunt.registerTask('default', ['build', 'karma:phantomjs']);

@@ -118,14 +118,12 @@ define(['angular',
 
         var form = scope[scope.formName];
 
-        // Flag the form as submitted
-        form.submitted = true;
-        // clear form messages
-        scope.formMessages = {};
-
         function process () {
             var _process = formProcessors[scope.formProcessor || 'default'];
+            // Flag the form as submitted
             form.submitted = true;
+            // clear form messages
+            scope.formMessages = {};
             return _process($lux, process);
         }
 

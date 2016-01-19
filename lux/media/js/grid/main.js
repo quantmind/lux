@@ -21,7 +21,7 @@ define(['angular',
                                 'ui.grid.selection', 'ui.grid.autoResize',
                                 'ui.grid.resizeColumns'])
         //
-        .value('luxGridDefaults', {
+        .constant('luxGridDefaults', {
             //
             enableColumnResizing: true,
             enableFiltering: true,
@@ -189,8 +189,11 @@ define(['angular',
 
                 return gridService;
 
-                function parseColumns(columns, metaFields, permissions) {
-                    var columnDefs = [],
+                function parseColumns (grid, metadata) {
+                    var columns = grid.columns || metadata.columns,
+                        metaFields = grid.metaFields,
+                        permissions = grid.permissions,
+                        columnDefs = [],
                         column;
 
                     angular.forEach(columns, function (col) {
@@ -211,21 +214,21 @@ define(['angular',
                         if (!col.hasOwnProperty('filter'))
                             column.enableFiltering = false;
 
-                        var callback = luxGridDefaults.columns[col.type];
-                        if (callback) callback(column, col, uiGridConstants, luxGridDefaults);
+                        var callback = grid.columns[col.type];
+                        if (callback) callback(column, col, uiGridConstants, grid);
 
                         if (angular.isString(col.cellFilter)) {
                             column.cellFilter = col.cellFilter;
                         }
 
                         if (angular.isString(col.cellTemplateName)) {
-                            column.cellTemplate = luxGridDefaults.wrapCell($templateCache.get(col.cellTemplateName));
+                            column.cellTemplate = grid.wrapCell($templateCache.get(col.cellTemplateName));
                         }
 
                         if (angular.isDefined(column.field) && column.field === metaFields.repr) {
                             if (permissions.update) {
                                 // If there is an update permission then display link
-                                column.cellTemplate = luxGridDefaults.wrapCell('<a ng-href="{{grid.appScope.getObjectIdField(row.entity)}}">{{COL_FIELD}}</a>');
+                                column.cellTemplate = grid.wrapCell('<a ng-href="{{grid.appScope.getObjectIdField(row.entity)}}">{{COL_FIELD}}</a>');
                             }
                             // Set repr column as the first column
                             columnDefs.splice(0, 0, column);
@@ -307,7 +310,7 @@ define(['angular',
                         angular.extend(grid.permissions, metadata.permissions);
 
                         updateGridMenu(scope, grid);
-                        grid.columnDefs = parseColumns(grid.columns || metadata.columns, grid.metaFields, grid.permissions);
+                        grid.columnDefs = parseColumns(grid, metadata);
                     }
                 }
 
