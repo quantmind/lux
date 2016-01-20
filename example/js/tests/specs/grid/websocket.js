@@ -1,4 +1,5 @@
-define(['lux',
+define(['tests/mocks/lux',
+        'lux',
         'lux/grid',
         'lux/grid/websocket'], function () {
     'use strict';

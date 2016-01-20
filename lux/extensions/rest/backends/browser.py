@@ -1,5 +1,5 @@
-'''Backends for Browser based Authentication
-'''
+"""Backends for Browser based Authentication
+"""
 import uuid
 from urllib.parse import urlencode
 
@@ -34,11 +34,11 @@ def auth_router(api_url, url, Router, path=None):
 
 class BrowserBackend(RegistrationMixin,
                      AuthBackend):
-    '''Authentication backend for rendering Forms in the Browser
+    """Authentication backend for rendering Forms in the Browser
 
     It can be used by web servers delegating authentication to a backend API
     or handling authentication on the same site.
-    '''
+    """
     _config = [
         Parameter('LOGIN_URL', '/login', 'Url to login page', True),
         Parameter('LOGOUT_URL', '/logout', 'Url to logout', True),
@@ -93,7 +93,7 @@ class BrowserBackend(RegistrationMixin,
 class ApiSessionBackend(SessionBackendMixin,
                         ModelMixin,
                         BrowserBackend):
-    '''Authenticating against a RESTful HTTP API.
+    """Authenticating against a RESTful HTTP API.
 
     The workflow for authentication is the following:
 
@@ -103,21 +103,25 @@ class ApiSessionBackend(SessionBackendMixin,
     * create the session with same id as the token id and set the user as
       session key
     * Save the session in cache and return the original encoded token
-    '''
+    """
     permissions_url = None
+    """url for user permissions.
+
+    This can be a remote or internal url.
+    """
     users_url = {'id': 'users',
                  'username': 'users',
                  'email': 'users',
                  'auth_key': 'users/authkey'}
 
     def api_sections(self, app):
-        '''Does not provide any view to the api
-        '''
+        """Does not provide any view to the api. Important!
+        """
         return ()
 
     def get_user(self, request, **kw):
-        '''Get User from username, id or email or authentication key.
-        '''
+        """Get User from username, id or email or authentication key.
+        """
         api = request.app.api(request)
         for name, url in self.users_url.items():
             value = kw.get(name)
@@ -155,8 +159,8 @@ class ApiSessionBackend(SessionBackendMixin,
                 raise AuthenticationError('Invalid credentials')
 
     def create_user(self, request, **data):
-        '''Create a new user from the api
-        '''
+        """Create a new user from the api
+        """
         api = request.app.api(request)
         try:
             # TODO: add address from request
@@ -179,6 +183,8 @@ class ApiSessionBackend(SessionBackendMixin,
         return self._get_permissions(request, resources, actions)
 
     def has_permission(self, request, resource, action):
+        """Implement :class:`~AuthBackend.has_permission` method
+        """
         data = self._get_permissions(request, resource, action)
         resource = data.get(resource)
         if resource:
@@ -186,8 +192,8 @@ class ApiSessionBackend(SessionBackendMixin,
         return False
 
     def create_session(self, request, user=None):
-        '''Login and return response
-        '''
+        """Login and return response
+        """
         if user:
             user = User(user)
             session = Session(id=user.pop('token_id'),

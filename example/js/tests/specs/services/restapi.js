@@ -7,12 +7,11 @@ define(['angular',
         var context = {
                 API_URL: '/api'
             },
-            mock_data = {'authorizations_url': '/api/authorizations'},
             $lux,
             scope,
             $httpBackend;
 
-        angular.module('lux.restapi.test', ['lux.loader', 'lux.restapi', 'lux.restapi.mock'])
+        angular.module('lux.restapi.test', ['lux.loader', 'lux.restapi', 'lux.mocks.http'])
             .value('context', context);
 
         beforeEach(function () {

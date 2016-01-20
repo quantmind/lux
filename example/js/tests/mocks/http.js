@@ -1,8 +1,9 @@
 define(['angular',
-        'tests/data/restapi'], function (angular, api_mock_data) {
+        'tests/data/restapi',
+        'angular-mocks'], function (angular, api_mock_data) {
     'use strict';
 
-    angular.module('luxRestApiMock', [])
+    angular.module('lux.mocks.http', [])
 
         .config(['$provide', function ($provide) {
 

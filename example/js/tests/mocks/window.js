@@ -1,4 +1,5 @@
-define(['angular'], function(angular) {
+define(['angular',
+        'angular-mocks'], function(angular) {
     'use strict';
 
     angular.module('lux.mocks.window', [])

@@ -1,164 +1,68 @@
 define(['angular',
         'lux',
         'tests/mocks/utils',
-        'lux/forms'], function (angular, lux) {
+        'lux/forms'], function (angular, lux, tests) {
     'use strict';
 
-    lux.formTests = {};
+    lux.formFieldTests = {};
 
 
-    describe('Test lux.form module', function () {
-
-        beforeEach(function () {
-            module('lux.form');
-        });
-
-        it('simple form - one input', inject(function ($compile, $rootScope) {
-            lux.formTests.simple = lux.tests.createForm([{
-                type: 'text',
-                name: 'body'
-            }]);
-            var element = lux.tests.digest($compile, $rootScope,
-                '<div><lux-form data-options="lux.formTests.simple"></lux-form></div>'),
-                form = element.children();
-            //
-            expect(form.length).toBe(1);
-            expect(form[0].tagName).toBe('FORM');
-            expect(form.children().length).toBe(1);
-            expect(form.children()[0].tagName).toBe('DIV');
-            //
-            var tags = form.children().children();
-            expect(tags[0].tagName).toBe('LABEL');
-            expect(tags[1].tagName).toBe('INPUT');
-            //
-        }));
-
-        it('select input', inject(function ($compile, $rootScope) {
-            lux.formTests.select = lux.tests.createForm([{
-                type: 'select',
-                name: 'choice',
-                required: true,
-                options: ['one', 'two', 'three']
-            }]);
-
-            var element = lux.tests.digest($compile, $rootScope,
-                '<div><lux-form data-options="lux.formTests.select"></lux-form></div>'),
-                form = element.children();
-            //
-            expect(form.length).toBe(1);
-            expect(form[0].tagName).toBe('FORM');
-            expect(form.children().length).toBe(1);
-            expect(form.children()[0].tagName).toBe('DIV');
-            //
-            var tags = form.children().children();
-            expect(tags[0].tagName).toBe('LABEL');
-            expect(tags[1].tagName).toBe('SELECT');
-
-            var select = angular.element(tags[1]),
-                options = select.children();
-            expect(options.length).toBe(4);
-            //
-        }));
-
-    });
-
-
-    describe('Test lux.form with selectUI', function () {
-
-        // Angular module for select-UI forms
-        angular.module('lux.form.test.select.ui', ['lux.form'])
-
-            .factory('formElements', ['defaultFormElements', function (defaultFormElements) {
-                return function () {
-                    var elements = defaultFormElements();
-                    elements.select.widget = {
-                        name: 'selectUI',
-                        enableSearch: true,
-                        theme: 'bootstrap'
-                    };
-                    return elements;
-                };
-            }]);
-        //
-        lux.formSelectUITests = {};
-
-        beforeEach(function () {
-            module('lux.form.test.select.ui');
-        });
-
-        it('select input + widget', inject(function ($compile, $rootScope) {
-
-            lux.formSelectUITests.select = lux.tests.createForm([{
-                type: 'select',
-                name: 'choice',
-                required: true,
-                options: ['one', 'two', 'three']
-            }]);
-
-            var element = lux.tests.digest($compile, $rootScope,
-                '<div><lux-form data-options="lux.formSelectUITests.select"></lux-form></div>'),
-                form = element.children();
-            //
-            expect(form.length).toBe(1);
-            expect(form[0].tagName).toBe('FORM');
-            expect(form.children().length).toBe(1);
-            expect(form.children()[0].tagName).toBe('DIV');
-            //
-            var tags = form.children().children();
-            expect(tags[0].tagName).toBe('LABEL');
-            expect(tags[1].tagName).toBe('UI-SELECT');
-            expect(tags[1].getAttribute('theme')).toBe('bootstrap');
-
-            var select = angular.element(tags[1]),
-                options = select.children();
-            expect(options.length).toBe(2);
-            //
-        }));
-    });
-
-    describe('Test lux.form with file field', function () {
+    describe('Test lux.form fields', function () {
 
         beforeEach(function () {
             module('lux.form');
         });
 
-        it('adds the ngf-select directive', inject(function ($compile, $rootScope) {
-            lux.formTests.file = lux.tests.createForm([{
-                type: 'file',
-                name: 'file'
-            }]);
-            var element = lux.tests.digest($compile, $rootScope,
-                '<div><lux-form data-options="lux.formTests.file"></lux-form></div>'),
-                form = element.children();
-            //
-            expect(form.children().length).toBe(1);
-            //
-            var tags = form.children().children();
-            expect(tags[0].tagName).toBe('LABEL');
-            expect(tags[1].tagName).toBe('INPUT');
-            expect(tags[1].getAttribute('type')).toBe('file');
-            expect(tags[1].hasAttribute('ngf-select')).toBeTruthy();
-            //
-        }));
+        it('simple form - one input',
+            inject(function ($compile, $rootScope) {
+                lux.formFieldTests.simple = tests.createForm([{
+                    type: 'text',
+                    name: 'body'
+                }]);
+                var element = tests.digest($compile, $rootScope,
+                    '<div><lux-form data-options="lux.formFieldTests.simple"></lux-form></div>'),
+                    form = element.children();
+                //
+                expect(form.length).toBe(1);
+                expect(form[0].tagName).toBe('FORM');
+                expect(form.children().length).toBe(1);
+                expect(form.children()[0].tagName).toBe('DIV');
+                //
+                var tags = form.children().children();
+                expect(tags[0].tagName).toBe('LABEL');
+                expect(tags[1].tagName).toBe('INPUT');
+                //
+            })
+        );
 
-        it('doesnt adds the ngf-select directive', inject(function ($compile, $rootScope) {
-            lux.formTests.fileNoNgf = lux.tests.createForm([{
-                type: 'file',
-                name: 'file'
-            }], {useNgFileUpload: false});
-            var element = lux.tests.digest($compile, $rootScope,
-                '<div><lux-form data-options="lux.formTests.fileNoNgf"></lux-form></div>'),
-                form = element.children();
-            //
-            expect(form.children().length).toBe(1);
-            //
-            var tags = form.children().children();
-            expect(tags[0].tagName).toBe('LABEL');
-            expect(tags[1].tagName).toBe('INPUT');
-            expect(tags[1].getAttribute('type')).toBe('file');
-            expect(tags[1].hasAttribute('ngf-select')).toBeFalsy();
-            //
-        }));
+        it('select input',
+            inject(function ($compile, $rootScope) {
+                lux.formFieldTests.select = tests.createForm([{
+                    type: 'select',
+                    name: 'choice',
+                    required: true,
+                    options: ['one', 'two', 'three']
+                }]);
+
+                var element = tests.digest($compile, $rootScope,
+                    '<div><lux-form data-options="lux.formFieldTests.select"></lux-form></div>'),
+                    form = element.children();
+                //
+                expect(form.length).toBe(1);
+                expect(form[0].tagName).toBe('FORM');
+                expect(form.children().length).toBe(1);
+                expect(form.children()[0].tagName).toBe('DIV');
+                //
+                var tags = form.children().children();
+                expect(tags[0].tagName).toBe('LABEL');
+                expect(tags[1].tagName).toBe('SELECT');
+
+                var select = angular.element(tags[1]),
+                    options = select.children();
+                expect(options.length).toBe(4);
+                //
+            }));
+
     });
 
     describe('Test lux.form with date field', function () {
@@ -168,12 +72,12 @@ define(['angular',
         });
 
         it('convert model from date string into date object', inject(function ($compile, $rootScope) {
-            lux.formTests.date = lux.tests.createForm([{
+            lux.formFieldTests.date = lux.tests.createForm([{
                 type: 'date',
                 name: 'date'
             }]);
             var element = lux.tests.digest($compile, $rootScope,
-                '<div><lux-form data-options="lux.formTests.date"></lux-form></div>');
+                '<div><lux-form data-options="lux.formFieldTests.date"></lux-form></div>');
             //
             var form = angular.element(element).find('form');
             var field = form.find('input').eq(0);

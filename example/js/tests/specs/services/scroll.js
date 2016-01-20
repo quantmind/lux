@@ -1,4 +1,5 @@
 define(['angular',
+        'angular-mocks',
         'lux/services/scroll'], function (angular) {
     'use strict';
 

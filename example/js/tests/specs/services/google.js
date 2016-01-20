@@ -1,5 +1,7 @@
-define(['lux',
-        'lux/google'], function (lux) {
+define(['angular',
+        'lux',
+        'lux/google',
+        'tests/mocks/lux'], function (angular, lux) {
     'use strict';
 
     describe('Test google spreadsheet api', function () {
