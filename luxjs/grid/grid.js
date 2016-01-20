@@ -401,13 +401,18 @@
                     scope.gridOptions.columnDefs = parseColumns(gridConfig.columns || metadata.columns, scope.gridOptions.metaFields, scope.gridOptions.permissions);
                 }
 
+                function flashClass(obj, className) {
+                    obj[className] = true;
+                    $timeout(function() {
+                        obj[className] = false;
+                    }, 2000);
+                }
+
                 function onDataReceived(data) {
                     require(['lodash'], function(_) {
                         scope.gridOptions.totalItems = data.total;
 
-                        if (data.type === 'update') {
-                            scope.gridState.limit = data.total;
-                        } else {
+                        if (data.type !== 'update') {
                             scope.gridOptions.data = [];
                         }
 
@@ -421,6 +426,8 @@
                                 scope.gridOptions.data.push(row);
                             } else {
                                 scope.gridOptions.data[index] = _.merge(scope.gridOptions.data[index], row);
+
+                                flashClass(scope.gridOptions.data[index], 'statusUpdated');
                             }
 
                         });
@@ -617,8 +624,8 @@
 
                         var grid = '<div ui-if="gridOptions.data.length>0" class="grid" ui-grid="gridOptions" ui-grid-pagination ui-grid-selection ui-grid-auto-resize></div>';
                         element.append($compile(grid)(scope));
-                    },
-                },
+                    }
+                }
             };
 
         }])

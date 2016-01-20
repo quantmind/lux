@@ -161,7 +161,7 @@ class RpcWsMethod:
     def __init__(self, name, ws):
         self.name = name
         self.ws = ws
-        maybe_async(self.on_init())
+        self._on_init = maybe_async(self.on_init())
 
     @property
     def app(self):

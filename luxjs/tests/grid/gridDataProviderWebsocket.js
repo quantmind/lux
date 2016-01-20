@@ -52,8 +52,8 @@ define(function(require) {
 
         it('connect() passes record-update data from websocket response to onDataReceived', function () {
             var msg = {
+                event: 'record-update',
                 data: {
-                    event: 'record-update',
                     data: 'dummy data'
                 }
             };
@@ -72,8 +72,8 @@ define(function(require) {
 
         it('connect() passes records data from websocket response to onDataReceived', function () {
             var msg = {
+                event: 'records',
                 data: {
-                    event: 'records',
                     data: 'dummy data'
                 }
             };
@@ -92,8 +92,8 @@ define(function(require) {
 
         it('connect() passes columns-metadata data from websocket response to onMetadataReceived', function () {
             var msg = {
+                event: 'columns-metadata',
                 data: {
-                    event: 'columns-metadata',
                     data: 'dummy data'
                 }
             };
