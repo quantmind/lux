@@ -2,11 +2,12 @@ define(['angular',
         'lux',
         'tests/mocks/utils',
         'lux/components/fileupload'], function (angular, lux, tests) {
+    'use strict';
 
-    describe('Test lux.form with file field', function () {
+    describe('Test lux.components.fileupload', function () {
 
         beforeEach(function () {
-            module('lux.form');
+            module('lux.form.fileupload');
         });
 
         it('adds the ngf-select directive',

@@ -2,7 +2,7 @@ define([], function () {
     'use strict';
 
     return {
-        '/': {
+        '/api': {
             'groups_url': '/api/groups',
             'users_url': '/api/users',
             'securities_url': '/api/securities',
@@ -11,7 +11,7 @@ define([], function () {
             'permissions_url': '/api/permissions',
             'exchanges_url': '/api/exchanges'
         },
-        '/exchanges': {
+        '/api/exchanges': {
             'result': [{
                 'id': '1',
                 'name': 'item 1'
@@ -20,7 +20,16 @@ define([], function () {
                 'name': 'item 2'
             }]
         },
-        '/authorizations': {
+        '/api/authorizations': {
+            'result': [{
+                'id': '1',
+                'name': 'item 1'
+            }, {
+                'id': '2',
+                'name': 'item 2'
+            }]
+        },
+        '/api/users': {
             'result': [{
                 'id': '1',
                 'name': 'item 1'

@@ -2,6 +2,7 @@ define(['angular',
         'lux',
         'tests/mocks/utils',
         'lux/components/ui.select'], function (angular, lux, tests) {
+    'use strict';
 
     describe('Test lux.form with selectUI', function () {
         //

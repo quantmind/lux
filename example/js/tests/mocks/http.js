@@ -3,12 +3,7 @@ define(['angular',
         'angular-mocks'], function (angular, api_mock_data) {
     'use strict';
 
-    angular.module('lux.mocks.http', [])
-
-        .config(['$provide', function ($provide) {
-
-            $provide.decorator('$httpBackend', angular.mock.e2e.$httpBackendDecorator);
-        }])
+    angular.module('lux.mocks.http', ['ngMockE2E'])
 
         .run(['$httpBackend', function ($httpBackend) {
 

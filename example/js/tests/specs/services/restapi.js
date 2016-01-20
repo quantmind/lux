@@ -1,72 +1,62 @@
 define(['angular',
         'lux/services',
-        'tests/mocks/http'], function (angular) {
+        'tests/data/restapi',
+        'tests/mocks/http'], function (angular, lux, mock_data) {
     'use strict';
 
     describe('Test lux.restapi module', function () {
-        var context = {
-                API_URL: '/api'
-            },
-            $lux,
-            scope,
-            $httpBackend;
 
-        angular.module('lux.restapi.test', ['lux.loader', 'lux.restapi', 'lux.mocks.http'])
-            .value('context', context);
+        angular.module('lux.restapi.test', ['lux.loader', 'lux.mocks.http', 'lux.restapi'])
+            .value('context', {API_URL: '/api'});
+
 
         beforeEach(function () {
             module('lux.restapi.test');
-            // module('lux.restapi.mock');
-
-            inject(['$lux', '$rootScope', '$httpBackend', function (_$lux_, _$rootScope_, _$httpBackend_) {
-                $lux = _$lux_;
-                scope = _$rootScope_;
-                $httpBackend = _$httpBackend_;
-            }]);
-
         });
 
-        it('Luxrest api object', function () {
-            expect(angular.isFunction(scope.api)).toBe(true);
-            var client = scope.api();
-            expect(angular.isObject(client)).toBe(true);
+        it('Luxrest api object',
+            inject(['$lux', function ($lux) {
+                expect(angular.isFunction($lux.api)).toBe(true);
+                var client = $lux.api('/api');
+                expect(angular.isObject(client)).toBe(true);
+                expect(client.baseUrl()).toBe('/api');
+            }])
+        );
 
-            expect(client.baseUrl()).toBe('/api');
-        });
+        it('gets the API URLs',
+            function (done) {
+                inject(['$lux', function ($lux) {
+                    var client = $lux.api('/api');
+                    client.get().then(function (response) {
+                        done();
+                        expect(response).toBe(mock_data['/api']);
+                    });
+                    //$httpBackend.expectGET(context.API_URL).respond(mock_data);
+                    //client.populateApiUrls();
+                    //$httpBackend.flush();
+                    //expect($lux.apiUrls[context.API_URL]['authorizations_url']).toBe('/api/authorizations');
+                }]);
+            }
+        );
 
-        it('populates the API URLs', function () {
-            var client = scope.api();
-            $httpBackend.expectGET(context.API_URL).respond(mock_data);
-            client.populateApiUrls();
-            $httpBackend.flush();
-            expect($lux.apiUrls[context.API_URL]['authorizations_url']).toBe('/api/authorizations');
-        });
+        it('gets a URL for an API target',
+            inject(['$lux', function ($lux) {
+                var client = $lux.api('/api');
+                var response = client.get('users');
+                expect(response).toBe(mock_data['/api/users']);
+                //$httpBackend.expectGET(context.API_URL).respond(mock_data);
+                //client.getUrlForTarget({
+                //    url: context.API_URL,
+                //    name: 'authorizations_url',
+                //   path: 'test'
+                //}).then(function (_url_) {
+                //    url = _url_;
+                //});
+                //$httpBackend.flush();
+                //expect(url).toBe('/api/authorizations/test');
+            }])
+        );
 
-        it('gets API URLs', function () {
-            var client = scope.api(),
-                apiNames = {};
-            $httpBackend.expectGET(context.API_URL).respond(mock_data);
-            client.getApiNames().then(function (_apiNames_) {
-                apiNames = _apiNames_;
-            });
-            $httpBackend.flush();
-            expect(apiNames['authorizations_url']).toBe('/api/authorizations');
-        });
-
-        it('gets a URL for an API target', function () {
-            var client = scope.api(),
-                url = '';
-            $httpBackend.expectGET(context.API_URL).respond(mock_data);
-            client.getUrlForTarget({
-                url: context.API_URL,
-                name: 'authorizations_url',
-                path: 'test'
-            }).then(function (_url_) {
-                url = _url_;
-            });
-            $httpBackend.flush();
-            expect(url).toBe('/api/authorizations/test');
-        });
     });
 
 });
