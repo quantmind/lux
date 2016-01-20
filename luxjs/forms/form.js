@@ -637,14 +637,14 @@ angular.module('lux.form', ['lux.form.utils', 'lux.form.handlers', 'ngFileUpload
                     if (errors)
                         nameError += ' && !' + joinField(scope.formName, field.name, '$error.required');
                     // Show only if server side errors don't exist
-                    nameError += ' && !formErrors.' + field.name;
+                    nameError += ' && !formErrors["' + field.name + '"]';
                     p.append(this.fieldErrorElement(scope, nameError, self.errorMessage(scope, 'invalid')));
 
                     // Add the invalid handler for server side errors
                     var name = '$invalid';
                     name += ' && !' + joinField(scope.formName, field.name, '$error.required');
                     // Show only if server side errors exists
-                    name += ' && formErrors.' + field.name;
+                    name += ' && formErrors["' + field.name + '"]';
                     p.append(
                         this.fieldErrorElement(scope, name, self.errorMessage(scope, 'invalid'))
                             .html('{{formErrors["' + field.name + '"]}}')
