@@ -1,6 +1,6 @@
 //      Lux Library - v0.5.0
 
-//      Compiled 2016-01-19.
+//      Compiled 2016-01-21.
 //      Copyright (c) 2016 - Luca Sbardella
 //      Licensed BSD.
 //      For all details and documentation:
@@ -2982,14 +2982,14 @@ angular.module('lux.form', ['lux.form.utils', 'lux.form.handlers', 'ngFileUpload
                     if (errors)
                         nameError += ' && !' + joinField(scope.formName, field.name, '$error.required');
                     // Show only if server side errors don't exist
-                    nameError += ' && !formErrors.' + field.name;
+                    nameError += ' && !formErrors["' + field.name + '"]';
                     p.append(this.fieldErrorElement(scope, nameError, self.errorMessage(scope, 'invalid')));
 
                     // Add the invalid handler for server side errors
                     var name = '$invalid';
                     name += ' && !' + joinField(scope.formName, field.name, '$error.required');
                     // Show only if server side errors exists
-                    name += ' && formErrors.' + field.name;
+                    name += ' && formErrors["' + field.name + '"]';
                     p.append(
                         this.fieldErrorElement(scope, name, self.errorMessage(scope, 'invalid'))
                             .html('{{formErrors["' + field.name + '"]}}')
@@ -5117,16 +5117,17 @@ function gridDataProviderWebsocketFactory ($scope) {
                     katex.render(text, element[0]);
                 }
                 catch(err) {
+                    var estr = ''+err;
                     if (fallback) {
                         require(['mathjax'], function (mathjax) {
                             try {
                                 render_mathjax(mathjax, text, element);
                             } catch (e) {
-                                error(element, err += ' - ' + e);
+                                error(element, estr += ' - ' + e);
                             }
                         });
                     } else
-                        error(element, err);
+                        error(element, estr);
                 }
             }
 

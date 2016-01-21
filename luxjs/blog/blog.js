@@ -66,16 +66,17 @@
                     katex.render(text, element[0]);
                 }
                 catch(err) {
+                    var estr = ''+err;
                     if (fallback) {
                         require(['mathjax'], function (mathjax) {
                             try {
                                 render_mathjax(mathjax, text, element);
                             } catch (e) {
-                                error(element, err += ' - ' + e);
+                                error(element, estr += ' - ' + e);
                             }
                         });
                     } else
-                        error(element, err);
+                        error(element, estr);
                 }
             }
 
