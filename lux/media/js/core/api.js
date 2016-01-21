@@ -35,10 +35,17 @@ define(['angular', 'lux/config'], function (angular, lux) {
             }
         }])
         //
+        .factory('luxHttpPromise', [function () {
+            //
+            return _luxHttpPromise();
+        }])
+        //
         .factory('$lux', ['$location', '$window', '$q', '$http', '$log',
             '$timeout', 'ApiTypes', 'AuthApis', '$templateCache', '$compile',
+            'luxHttpPromise',
             function ($location, $window, $q, $http, $log, $timeout,
-                      ApiTypes, AuthApis, $templateCache, $compile) {
+                      ApiTypes, AuthApis, $templateCache, $compile,
+                      luxHttpPromise) {
 
                 var $lux = {
                     location: $location,
@@ -50,6 +57,7 @@ define(['angular', 'lux/config'], function (angular, lux) {
                     templateCache: $templateCache,
                     compile: $compile,
                     apiUrls: {},
+                    promise: luxHttpPromise,
                     api: api,
                     authApi: authApi,
                     formData: formData,
@@ -136,27 +144,6 @@ define(['angular', 'lux/config'], function (angular, lux) {
                     if (callback) callback(elem);
                 }
             }]);
-    //
-    function wrapPromise(promise) {
-
-        promise.success = function (fn) {
-
-            return wrapPromise(this.then(function (response) {
-                var r = fn(response.data, response.status, response.headers);
-                return angular.isUndefined(r) ? response : r;
-            }));
-        };
-
-        promise.error = function (fn) {
-
-            return wrapPromise(this.then(null, function (response) {
-                var r = fn(response.data, response.status, response.headers);
-                return angular.isUndefined(r) ? response : r;
-            }));
-        };
-
-        return promise;
-    }
 
     var ENCODE_URL_METHODS = ['delete', 'get', 'head', 'options'];
     //
@@ -248,12 +235,12 @@ define(['angular', 'lux/config'], function (angular, lux) {
 
             var d = $lux.q.defer(),
             //
-                request = extend({
+                request = {
                     name: opts.name,
                     //
                     deferred: d,
                     //
-                    on: wrapPromise(d.promise),
+                    on: $lux.promise(d.promise, opts),
                     //
                     options: opts,
                     //
@@ -272,7 +259,7 @@ define(['angular', 'lux/config'], function (angular, lux) {
                         else
                             d.resolve(response);
                     }
-                });
+                };
             //
             delete opts.name;
             if (opts.url === api.baseUrl())
@@ -390,4 +377,39 @@ define(['angular', 'lux/config'], function (angular, lux) {
     };
 
     return lux.apiFactory;
+
+    //
+    function _luxHttpPromise () {
+
+        function luxHttpPromise (promise, options) {
+
+            promise.options = function () {
+                return options;
+            };
+
+            angular.forEach(luxHttpPromise, function (value, key) {
+                promise[key] = value;
+            });
+
+            return promise;
+        }
+
+        luxHttpPromise.success = function (fn) {
+
+            return luxHttpPromise(this.then(function (response) {
+                var r = fn(response.data, response.status, response.headers);
+                return angular.isUndefined(r) ? response : r;
+            }), this.options());
+        };
+
+        luxHttpPromise.error = function (fn) {
+
+            return luxHttpPromise(this.then(null, function (response) {
+                var r = fn(response.data, response.status, response.headers);
+                return angular.isUndefined(r) ? response : r;
+            }), this.options());
+        };
+
+        return luxHttpPromise;
+    }
 });

@@ -1,12 +1,12 @@
 define(['angular',
         'lux/services',
         'tests/data/restapi',
-        'tests/mocks/http'], function (angular, lux, api_mock_data, httpMock) {
+        'tests/mocks/http'], function (angular, lux, api_mock_data) {
     'use strict';
 
     describe('Test lux.restapi module', function () {
 
-        var $lux, $httpBackend;
+        var $lux;
 
         angular.module('lux.restapi.test', ['lux.loader', 'lux.mocks.http', 'lux.restapi'])
             .value('context', {API_URL: '/api'});
@@ -14,8 +14,7 @@ define(['angular',
 
         beforeEach(function () {
             module('lux.restapi.test');
-            inject(function (_$httpBackend_, _$lux_) {
-                $httpBackend = _$httpBackend_;
+            inject(function (_$lux_) {
                 $lux = _$lux_;
             });
         });
@@ -28,11 +27,11 @@ define(['angular',
         });
 
         it('gets the API URLs', function () {
-            var client = $lux.api('/api'),
-                promise = client.get();
-            httpMock.getOK('/api', promise, function (data) {
+            var client = $lux.api('/api');
+
+            client.get().expect(function (data) {
                 expect(data).toBe(api_mock_data['/api']);
-            })
+            });
         });
 
         //it('gets a URL for an API target',
