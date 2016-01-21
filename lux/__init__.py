@@ -1,7 +1,7 @@
 '''python web toolkit'''
 import os
 
-VERSION = (0, 5, 0, 'final', 0)
+VERSION = (0, 5, 1, 'final', 0)
 __author__ = 'Luca Sbardella'
 __contact__ = "luca@quantmind.com"
 PACKAGE_DIR = os.path.dirname(os.path.abspath(__file__))
