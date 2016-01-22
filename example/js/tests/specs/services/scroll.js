@@ -4,6 +4,7 @@ define(['angular',
     'use strict';
 
     describe('Test lux.scroll module', function () {
+
         angular.module('lux.scroll.test', ['lux.loader', 'lux.scroll']);
 
         beforeEach(function () {

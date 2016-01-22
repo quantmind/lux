@@ -4,54 +4,31 @@ define(['angular',
         'angular-mocks'], function (angular, lux) {
     'use strict';
 
-    lux.tests = {
-        async: asyncTest
-    };
+    lux.tests = {};
 
-    angular.module('lux.utils.test', ['lux.services', 'ngMockE2E'])
+    angular.module('lux.utils.test', ['lux.services', 'ngMock'])
 
-        .run(['luxHttpPromise', '$httpBackend', '$rootScope',
-            function (luxHttpPromise, $httpBackend, $rootScope) {
+        .run(['luxHttpPromise', '$httpBackend',
+            function (luxHttpPromise, $httpBackend) {
                 //
-                extendHttpPromise(luxHttpPromise, $httpBackend, $rootScope);
+                extendHttpPromise(luxHttpPromise, $httpBackend);
             }]
-        )
-        //
-        .factory('luxHttpTest', ['$lux', '$httpBackend', function ($lux, $httpBackend) {
+        );
 
-            return {
-                getOK: function (url, promise, callback) {
-                    $httpBackend.whenGET(url).respond(200);
-                    return httpExpect(promise, callback);
-                }
-            };
+    //
+    //  Add the expect function to the promise
+    function extendHttpPromise (luxHttpPromise, $httpBackend) {
 
-            function httpExpect (promise, callback) {
-                var done = false;
-                promise.then(function (data, headers) {
-                    done = true;
-                    callback(data, headers);
-                });
-                expect(done).toBe(true);
-            }
-
-        }]);
-
-
-    function extendHttpPromise (luxHttpPromise, $httpBackend, $rootScope) {
-
-        luxHttpPromise.expect = function (data, headers, status) {
+        luxHttpPromise.expect = function (data) {
             var promise = this,
-                done = false,
-                options = promise.options();
-            $httpBackend.expect(options.method.toUpperCase(), options.url);
+                done = false;
 
-            $rootScope.result = promise.then(function (d, headers) {
+            promise.then(function (response) {
                 done = true;
                 if (angular.isFunction(data))
-                    data(d, headers);
+                    data(response.data, response.status, response.headers);
                 else
-                    expect(d).toEqual(data);
+                    expect(response.data).toEqual(data);
             });
 
             $httpBackend.flush();
@@ -60,21 +37,4 @@ define(['angular',
     }
 
     return lux.tests;
-
-    function asyncTest (before, testFunction) {
-        var $timeout = angular.injector().get('$timeout');
-
-        return test;
-
-        function test () {
-            $timeout(function () {
-                var result = before();
-                result.then(beforeDone);
-            }, 1000);
-        }
-
-        function beforeDone (result) {
-            if (testFunction) testFunction(result);
-        }
-    }
 });

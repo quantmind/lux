@@ -28,9 +28,9 @@ module.exports = function (config) {
             {pattern: 'js/build/lux/**/*.js', included: false},
             {pattern: 'js/tests/data/*.js', included: false},
             {pattern: 'js/tests/mocks/*.js', included: false},
-            {pattern: 'js/tests/specs/services/restapi.js', included: false},
-            'js/build/tests.config.js',
-            'js/build/tests.runner.js'
+            {pattern: 'js/tests/specs/sidebar/*.js', included: false},
+            {pattern: 'js/build/tests.config.js', watched: false},
+            {pattern: 'js/build/tests.runner.js', watched: false}
         ],
         reporters: ['coverage', 'dots', 'junit'],
         junitReporter: {

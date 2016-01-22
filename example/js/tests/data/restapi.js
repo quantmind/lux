@@ -6,7 +6,6 @@ define([], function () {
             'groups_url': '/api/groups',
             'users_url': '/api/users',
             'securities_url': '/api/securities',
-            'user_url': '/api/user',
             'authorizations_url': '/api/authorizations',
             'permissions_url': '/api/permissions',
             'exchanges_url': '/api/exchanges'
@@ -31,12 +30,16 @@ define([], function () {
         },
         '/api/users': {
             'result': [{
-                'id': '1',
-                'name': 'item 1'
+                'id': 'pippo',
+                'name': 'super pippo'
             }, {
-                'id': '2',
+                'id': 'pluto',
                 'name': 'item 2'
             }]
+        },
+        '/api/users/pippo': {
+            'id': 'pippo',
+            'name': 'super pippo'
         }
     };
 });

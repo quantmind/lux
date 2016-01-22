@@ -1,11 +1,17 @@
 define(['angular',
-        'lux/services/pagination',
-        'tests/mocks/http'], function (angular) {
+        'tests/data/restapi',
+        'tests/mocks/http',
+        'lux/services/pagination'], function (angular) {
     'use strict';
 
     describe('Test lux.pagination module', function () {
         var LuxPagination;
         var $lux;
+
+        angular.module('lux.pagination.test', ['lux.pagination'])
+            .run(['$lux', function ($lux) {
+                spyOn($lux, 'api');
+            }]);
 
         // create a mock promise that returns data param
         function createMockPromise(data) {
@@ -21,23 +27,13 @@ define(['angular',
         }
 
         beforeEach(function () {
+            module('lux.pagination.test');
 
-            angular.mock.module('lux.pagination', function ($provide) {
-                $provide.factory('$lux', function () {
-                    var api = jasmine.createSpy('apiInit');
-                    api.get = jasmine.createSpy('apiGet');
-                    return {api: api};
-                });
-            });
-
-            angular.mock.inject(function (_luxPaginationFactory_, _$lux_) {
+            inject(function (_luxPaginationFactory_, _$lux_) {
                 $lux = _$lux_;
                 LuxPagination = _luxPaginationFactory_;
             });
 
-        });
-
-        afterEach(function () {
         });
 
         it('LuxPagination applies params to itself and set up API', inject(function () {

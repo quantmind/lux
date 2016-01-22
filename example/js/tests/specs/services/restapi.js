@@ -11,9 +11,9 @@ define(['angular',
         angular.module('lux.restapi.test', ['lux.loader', 'lux.mocks.http', 'lux.restapi'])
             .value('context', {API_URL: '/api'});
 
-
         beforeEach(function () {
             module('lux.restapi.test');
+
             inject(function (_$lux_) {
                 $lux = _$lux_;
             });
@@ -28,28 +28,21 @@ define(['angular',
 
         it('gets the API URLs', function () {
             var client = $lux.api('/api');
+
             client.get().expect(function (data) {
-                expect(data).toBe(api_mock_data['/api']);
+                expect(data).toEqual(api_mock_data['/api']);
             });
         });
 
-        //it('gets a URL for an API target',
-        //    inject(['$lux', function ($lux) {
-        //        var client = $lux.api('/api');
-        //        var response = client.get('users');
-        //        expect(response).toBe(mock_data['/api/users']);
-                //$httpBackend.expectGET(context.API_URL).respond(mock_data);
-                //client.getUrlForTarget({
-                //    url: context.API_URL,
-                //    name: 'authorizations_url',
-                //   path: 'test'
-                //}).then(function (_url_) {
-                //    url = _url_;
-                //});
-                //$httpBackend.flush();
-                //expect(url).toBe('/api/authorizations/test');
-        //    }])
-        //);
+        it('Gets a list of users', function () {
+            var client = $lux.api({url: '/api', name: 'users_url'});
+            client.get().expect(function (data) {
+                expect(data).toEqual(api_mock_data['/api/users']);
+            });
+            client.get({path: 'pippo'}).expect(function (data) {
+                expect(data).toEqual(api_mock_data['/api/users/pippo']);
+            });
+        });
 
     });
 

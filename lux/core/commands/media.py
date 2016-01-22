@@ -1,6 +1,7 @@
 import os
 import json
-import shutil
+# import shutil
+import distutils.core
 from string import Template
 
 import lux
@@ -45,8 +46,8 @@ class Command(lux.Command):
 
     def media(self, media, get_target, copy=True):
         target = get_target()
-        if os.path.isdir(target):
-            shutil.rmtree(target)
+        # if os.path.isdir(target):
+        #     shutil.rmtree(target)
         sources = [('lux', os.path.join(lux.PACKAGE_DIR, 'media', media))]
         for ext in self.app.extensions.values():
             if ext.meta.media_dir:
@@ -223,9 +224,10 @@ class Command(lux.Command):
 
     def _copy(self, src, target):
         self.write('Copy files from "%s" to "%s"' % (src, target))
-        if os.path.isdir(target):
-            shutil.rmtree(target)
-        shutil.copytree(src, target)
+        # if os.path.isdir(target):
+        #     shutil.rmtree(target)
+        # shutil.copytree(src, target)
+        distutils.dir_util.copy_tree(src, target)
 
     def _add_to_paths(self, paths, path, loc):
         if self.copy:
