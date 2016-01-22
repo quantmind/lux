@@ -28,7 +28,6 @@ define(['angular',
 
         it('gets the API URLs', function () {
             var client = $lux.api('/api');
-
             client.get().expect(function (data) {
                 expect(data).toBe(api_mock_data['/api']);
             });

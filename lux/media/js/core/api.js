@@ -95,6 +95,7 @@ define(['angular', 'lux/config'], function (angular, lux) {
                     }
                 }
 
+                //
                 // Set/get the authentication handler for a given api
                 function authApi (api, auth) {
                     if (arguments.length === 1)
@@ -265,7 +266,7 @@ define(['angular', 'lux/config'], function (angular, lux) {
             if (opts.url === api.baseUrl())
                 delete opts.url;
             //
-            api.call(request);
+            sendRequest(request);
             //
             return request.on;
         };
@@ -316,13 +317,14 @@ define(['angular', 'lux/config'], function (angular, lux) {
             });
         };
 
+        return api;
         //
         //  Execute an API call for a given request
         //  This method is hardly used directly,
         //	the ``request`` method is normally used.
         //
         //      request: a request object obtained from the ``request`` method
-        api.call = function (request) {
+        function sendRequest (request) {
             //
             if (!request.baseUrl && request.name) {
                 var apiUrls = $lux.apiUrls[url];
@@ -338,7 +340,7 @@ define(['angular', 'lux/config'], function (angular, lux) {
                 } else {
                     // Fetch the api urls
                     return api.populateApiUrls(url).then(function () {
-                        api.call(request);
+                        sendRequest(request);
                     }, request.error);
                     //
                 }
@@ -357,11 +359,7 @@ define(['angular', 'lux/config'], function (angular, lux) {
             }
 
             api.httpOptions(request);
-
-            //
-            // Fetch authentication token?
-            var r = api.authentication(request);
-            if (r) return r;
+            api.authentication(request);
             //
             var options = request.options;
 
@@ -371,9 +369,7 @@ define(['angular', 'lux/config'], function (angular, lux) {
             }
             else
                 request.error('Api url not available');
-        };
-
-        return api;
+        }
     };
 
     return lux.apiFactory;
