@@ -1,6 +1,6 @@
 import os
 import json
-# import shutil
+import shutil
 import distutils.core
 from string import Template
 
@@ -11,17 +11,13 @@ from lux.utils.files import skipfile
 SKIPDIRS = set(('templates', 'build'))
 
 
-def skipdir(path):
-    name = os.path.basename(path)
-    return skipfile(name) or not os.path.isdir(path) or name in SKIPDIRS
-
-
 class Command(lux.Command):
 
     help = ('Creates a lux project configuration files for javascript and '
             'scss compilation')
     src = 'js'
     copy = True
+    clean = False
 
     def run(self, options):
         #
@@ -45,9 +41,10 @@ class Command(lux.Command):
             os.chdir(current)
 
     def media(self, media, get_target, copy=True):
-        target = get_target()
-        # if os.path.isdir(target):
-        #     shutil.rmtree(target)
+        if self.clean:
+            target = get_target()
+            if os.path.isdir(target):
+                shutil.rmtree(target)
         sources = [('lux', os.path.join(lux.PACKAGE_DIR, 'media', media))]
         for ext in self.app.extensions.values():
             if ext.meta.media_dir:
@@ -224,10 +221,7 @@ class Command(lux.Command):
 
     def _copy(self, src, target):
         self.write('Copy files from "%s" to "%s"' % (src, target))
-        # if os.path.isdir(target):
-        #     shutil.rmtree(target)
-        # shutil.copytree(src, target)
-        distutils.dir_util.copy_tree(src, target)
+        copy(src, target, self.clean)
 
     def _add_to_paths(self, paths, path, loc):
         if self.copy:
@@ -240,3 +234,17 @@ class Command(lux.Command):
 
 def escape_quote(text):
     return text.replace('"', '\\"')
+
+
+def skipdir(path):
+    name = os.path.basename(path)
+    return skipfile(name) or not os.path.isdir(path) or name in SKIPDIRS
+
+
+def copy(src, target, clean=False):
+    if clean:
+        if os.path.isdir(target):
+            shutil.rmtree(target)
+        shutil.copytree(src, target)
+    else:
+        distutils.dir_util.copy_tree(src, target)

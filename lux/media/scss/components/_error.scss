@@ -1,9 +1,9 @@
 #page-error {
-    @include bg-image('general/404.jpg', cover, left top);
-    color: $white;
+    @include bg-image($error-page-background, cover, left top);
+    color: $error-page-color;
 
     a, a:hover {
-        color: $white;
+        color: $error-page-color;
         text-decoration: underline;
     }
 }

@@ -106,8 +106,9 @@ class ApiSessionBackend(SessionBackendMixin,
     """
     permissions_url = None
     """url for user permissions.
-
-    This can be a remote or internal url.
+    """
+    signup_url = 'authorizations/signup'
+    """url for signup a user.
     """
     users_url = {'id': 'users',
                  'username': 'users',
@@ -165,11 +166,9 @@ class ApiSessionBackend(SessionBackendMixin,
         try:
             # TODO: add address from request
             # client = request.get_client_address()
-            response = api.post('authorizations/signup', data=data)
+            response = api.post(self.signup_url, data=data)
             if response.status_code == 201:
                 return User(response.json())
-            else:
-                response.raise_for_status()
 
         except Exception:
             if data.get('username'):

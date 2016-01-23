@@ -359,12 +359,13 @@ class AppTestCase(unittest.TestCase, TestMixin):
 class WebApiTestCase(AppTestCase):
     """Test case for an api-web application pair
     """
-    web_config = None
+    web_config_file = None
 
     @classmethod
     def setUpClass(cls):
         yield from super().setUpClass()
-        cls.web = test_app(cls, config_file=cls.web_config,
+        assert cls.web_config_file, "no web_config_file specified"
+        cls.web = test_app(cls, config_file=cls.web_config_file,
                            config_params=False)
         api = cls.web.api
         http = api.http(cls.web)

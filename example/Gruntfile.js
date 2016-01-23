@@ -51,8 +51,8 @@ module.exports = function(grunt) {
     };
     cfg.concat = concats;
 
-    // Tasks run by lux python library
-    cfg.shell = {
+    // Extend shell tasks with lux configuration tasks
+    cfg.shell = _.extend({
         buildLuxConfig: {
             options: {
                 stdout: true,
@@ -71,7 +71,20 @@ module.exports = function(grunt) {
                 return path.resolve('manage.py') + ' style --cssfile ' + path.resolve('scss/deps/py.lux');
             }
         }
-    };
+    }, cfg.shell);
+    //
+    // Extend clean tasks with standard cleanup duties
+    cfg.clean = _.extend({
+        js: {
+            src: ['js/build']
+        },
+        css: {
+            src: ['scss/deps']
+        },
+        test: {
+            src: ['coverage', 'junit']
+        }
+    }, cfg.clean);
     //
     //  Additional JS tasks
     //  -----------------------
@@ -233,7 +246,6 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-shell');
     grunt.loadNpmTasks('grunt-contrib-clean');
     //
-
     grunt.registerTask('test', testTasks);
     grunt.registerTask('test:debug-chrome', ['karma:debug_chrome']);
     grunt.registerTask('test:debug-firefox', ['karma:debug_firefox']);

@@ -29,8 +29,8 @@ module.exports = function (config) {
             {pattern: 'js/tests/data/*.js', included: false},
             {pattern: 'js/tests/mocks/*.js', included: false},
             {pattern: 'js/tests/specs/sidebar/*.js', included: false},
-            {pattern: 'js/build/tests.config.js', watched: false},
-            {pattern: 'js/build/tests.runner.js', watched: false}
+            {pattern: 'js/build/tests.config.js'},
+            {pattern: 'js/build/tests.runner.js'}
         ],
         reporters: ['coverage', 'dots', 'junit'],
         junitReporter: {

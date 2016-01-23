@@ -3,12 +3,24 @@ from urllib.parse import urljoin
 
 from pulsar import new_event_loop
 from pulsar.apps.http import HttpClient, JSON_CONTENT_TYPES
-from pulsar.utils.httpurl import is_absolute_uri
+from pulsar.utils.httpurl import is_absolute_uri, HTTPError, URLError
+
+
+class GreenHttp:
+
+    def __init__(self, http, pool):
+        self._http = http
+        self._pool = pool
+
+    def request(self, method, url, **kw):
+        return self._pool.wait(self._http.request(method, url, **kw), True)
 
 
 class ApiClient:
-    '''A python client for a Lux Api which can be used by other lux
-    applications
+    '''A python client for a Lux REST Api
+
+    The api can be remote (API_URL is an absolute url) or local (served by
+    the same application this client is part of)
     '''
     _http = None
 
@@ -24,7 +36,8 @@ class ApiClient:
             # Remote API
             if is_absolute_uri(api_url):
                 if app.green_pool:
-                    self._http = HttpClient(headers=headers)
+                    self._http = GreenHttp(HttpClient(headers=headers),
+                                           app.green_pool)
                 else:
                     self._http = HttpClient(loop=new_event_loop())
             # Local API
@@ -61,14 +74,6 @@ class ApiClientRequest:
         return self.request('HEAD', path, **kw)
 
     def request(self, method, path=None, token=None, headers=None, **kw):
-        response = self._req(method, path, token, headers=headers, **kw)
-        request = self._request
-        if request.app.green_pool:
-            return request.app.green_pool.wait(response)
-        else:
-            return response
-
-    def _req(self, method, path, token=None, headers=None, **kw):
         request = self._request
         url = urljoin(self.url, path or '')
         req_headers = headers[:] if headers else []
@@ -77,9 +82,16 @@ class ApiClientRequest:
             token = request.cache.session.encoded
         if token:
             req_headers.append(('Authorization', 'Bearer %s' % token))
-        response = yield from self._http.request(method, url,
-                                                 headers=req_headers, **kw)
-        response.raise_for_status()
+        response = self._http.request(method, url, headers=req_headers, **kw)
+        if response.is_error:
+            if response.status_code:
+                content = response.decode_content()
+                if isinstance(content, dict):
+                    content = content.get('message') or response.text()
+                raise HTTPError(response.url, response.status_code,
+                                content, response.headers, None)
+            else:
+                raise URLError(response.on_finished.result.error)
         return response
 
 

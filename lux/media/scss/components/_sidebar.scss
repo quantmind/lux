@@ -1,8 +1,3 @@
-@import '../variables/common';
-@import '../variables/navbar';
-@import '../variables/sidebar';
-@import '../mixins/mixins';
-
 .sidebar {
     @include transform(translateX(-250px));
     background-color: $sidebar-background-color;
