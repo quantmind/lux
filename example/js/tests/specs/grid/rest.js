@@ -1,23 +1,26 @@
-define(['lux',
+define(['angular',
+        'lux',
         'lux/testing',
         'tests/mocks/http',
-        'lux/grid/rest'], function (lux, tests, api_mock_data) {
+        'lux/grid/rest'], function (angular, lux, tests, api_mock_data) {
     'use strict';
 
     describe('Test lux.grid module', function() {
 
         var target = {'name': 'users_url', 'url': '/api'},
-            $lux, $rootScope;
+            $lux, $rootScope, $httpBackend;
 
-        angular.module('lux.grid.test', ['lux.loader', 'lux.mocks.http', 'lux.grid', 'lux.grid.rest'])
+        angular.module('lux.grid.rest.test', ['lux.loader', 'lux.mocks.http',
+            'lux.grid', 'lux.grid.rest'])
             .value('context', {API_URL: '/api'});
 
         beforeEach(function () {
-            module('lux.grid.test');
+            module('lux.grid.rest.test');
 
-            inject(function (_$lux_, _$rootScope_) {
+            inject(function (_$lux_, _$rootScope_, _$httpBackend_) {
                 $lux = _$lux_;
                 $rootScope = _$rootScope_;
+                $httpBackend = _$httpBackend_;
             });
         });
 
@@ -28,7 +31,7 @@ define(['lux',
 
             var element = tests.digest($lux.compile, $rootScope, '<div lux-grid="lux.gridTests.pGrid1"></div>'),
                 scope = element.scope(),
-                grid = scope.grid.lux,
+                grid = getGrid(scope),
                 metadata = api_mock_data['/api/users/metadata'];
 
             expect(grid.metaFields['id']).toBe(metadata['id']);
@@ -86,5 +89,17 @@ define(['lux',
             expect(result).toBe('test string');
         });
 
+        function getGrid(scope) {
+            var grid = scope.grid;
+            expect(angular.isObject(grid)).toBe(true);
+            expect(angular.isObject(grid.options)).toBe(true);
+            expect(grid.scope).toBe(scope);
+            $httpBackend.flush(2);
+            expect(scope.grid).not.toBe(grid);
+            expect(scope.grid.lux).toBe(grid);
+            expect(scope.grid).toBe(grid.api);
+            expect(grid.options).toBe(scope.grid.grid.options);
+            $httpBackend.flush(1);
+        }
     });
 });

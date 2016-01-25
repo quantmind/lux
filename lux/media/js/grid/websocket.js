@@ -3,7 +3,8 @@
 //
 //	provides data to a lux.grid using websockets
 define(['angular',
-        'lux/grid'], function (angular) {
+        'lux/grid',
+        'lux/services'], function (angular) {
     'use strict';
 
     angular.module('lux.grid.websocket', ['lux.grid', 'lux.sockjs'])

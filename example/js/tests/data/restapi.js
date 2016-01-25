@@ -1,7 +1,7 @@
-define([], function () {
+define(['angular'], function (angular) {
     'use strict';
 
-    return {
+    var mock_data = {
         '/api': {
             'groups_url': '/api/groups',
             'users_url': '/api/users',
@@ -51,10 +51,14 @@ define([], function () {
                     displayName: 'Username'
                 }
             ]
-        },
-        '/api/users/pippo': {
-            username: 'pippo',
-            name: 'super pippo'
         }
     };
+
+    mock_data['/api/users?limit=25&offset=0&page=1'] = mock_data['/api/users'];
+
+    angular.forEach(mock_data['/api/users']['result'], function (item) {
+        mock_data['/api/users/' + item['username']] = item;
+    });
+
+    return mock_data;
 });

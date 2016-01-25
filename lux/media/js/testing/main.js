@@ -1,8 +1,11 @@
 /* eslint angular/no-private-call: [2,{"allow":["$$hashKey"]}] */
 define(['angular',
         'lux',
-        'angular-mocks'], function (angular, lux) {
+        'lodash',
+        'angular-mocks'], function (angular, lux, _) {
     'use strict';
+
+    lux._ = _;
 
     lux.tests = {
         createForm: createForm,

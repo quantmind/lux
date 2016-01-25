@@ -58,12 +58,9 @@ define(['angular',
 
         luxGridApi.onMetadataCallbacks.push(gridMenu);
 
-        function gridMenu(grid, metadata) {
+        function gridMenu(grid) {
             var options = grid.options;
             if (!options.showMenu) return;
-
-            // Overwrite current permissions with permissions from metadata
-            angular.extend(grid.permissions, metadata.permissions);
 
             var scope = grid.scope,
                 modalScope = scope.$new(true),

@@ -3,10 +3,11 @@
 //
 //	provides data to a lux.grid using REST calls
 define(['angular',
-        'lux/grid'], function (angular) {
+        'lux/grid',
+        'lux/services'], function (angular) {
     'use strict';
 
-    angular.module('lux.grid.rest', ['lux.grid'])
+    angular.module('lux.grid.rest', ['lux.grid', 'lux.restapi'])
 
         .run(['$lux', 'luxGridDataProviders', function ($lux, luxGridDataProviders) {
 
@@ -39,7 +40,7 @@ define(['angular',
         };
 
         GridDataProviderREST.prototype.destroy = function () {
-            this._gridApi = null;
+            this._grid = null;
         };
 
         return GridDataProviderREST;
@@ -48,12 +49,12 @@ define(['angular',
             self._api.get({
                 path: 'metadata'
             }).success(function (metadata) {
-                self._gridApi.lux.onMetadataReceived(metadata);
+                self._grid.onMetadataReceived(metadata);
             });
         }
 
         function getData(self) {
-            var grid = self._gridApi.lux,
+            var grid = self._grid,
                 query = grid.state.query();
             self._api.get({params: query}).success(function (data) {
                 grid.onDataReceived(data);
