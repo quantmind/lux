@@ -76,20 +76,24 @@ define(['angular',
         function luxGridApi(scope, element, options) {
             options = angular.extend({}, luxGridDefaults, options);
             options.onRegisterApi = onRegisterApi;
+            options.permissions = angular.extend({
+                create: false,
+                update: false,
+                delete: false
+            }, options.permissions);
+            //
             var grid = {
                 scope: scope,
                 options: options,
                 uiGridConstants: uiGridConstants,
+                element: function () {
+                    return element;
+                },
                 onMetadataReceived: onMetadataReceived,
                 onDataReceived: function (data) {
                     onDataReceived(grid, data);
                 },
                 refreshPage: refreshPage,
-                permissions: {
-                    create: false,
-                    update: false,
-                    delete: false
-                },
                 // Return state name (last part of the URL)
                 getStateName: getStateName,
                 getModelName: getModelName,
@@ -168,7 +172,7 @@ define(['angular',
                 repr: metadata.repr
             };
             // Overwrite current permissions with permissions from metadata
-            angular.extend(grid.permissions, metadata.permissions);
+            angular.extend(grid.options.permissions, metadata.permissions);
 
             grid.getObjectIdField = getObjectIdField;
 
@@ -181,7 +185,7 @@ define(['angular',
         function parseColumns(grid, metadata) {
             var options = grid.options,
                 metaFields = grid.metaFields,
-                permissions = grid.permissions,
+                permissions = options.permissions,
                 columnDefs = [],
                 callback,
                 column;
@@ -233,7 +237,8 @@ define(['angular',
 
         function onDataReceived(grid, data) {
             var _ = lux._,
-                result = data.result;
+                result = data.result,
+                options = grid.options;
 
             if (!angular.isArray(result))
                 return $lux.messages.error('Grid got bad data from provider');
@@ -243,7 +248,7 @@ define(['angular',
             if (data.type === 'update') {
                 grid.state.limit(data.total);
             } else {
-                grid.data = [];
+                options.data = [];
             }
 
             angular.forEach(result, function (row) {
@@ -251,13 +256,12 @@ define(['angular',
                 var lookup = {};
                 lookup[id] = row[id];
 
-                var index = _.findIndex(grid.data, lookup);
+                var index = _.findIndex(options.data, lookup);
                 if (index === -1) {
-                    grid.data.push(row);
+                    options.data.push(row);
                 } else {
-                    grid.data[index] = _.merge(grid.data[index], row);
+                    options.data[index] = _.merge(options.data[index], row);
                 }
-
             });
 
             // Update grid height
@@ -281,7 +285,7 @@ define(['angular',
         var options = grid.options,
             scope = grid.scope,
             length = grid.totalItems,
-            element = scope.element(),
+            element = grid.element(),
         //element = angular.element($document[0].getElementsByClassName('grid')[0]),
             totalPages = scope.grid.pagination.getTotalPages(),
             currentPage = grid.state.page(),

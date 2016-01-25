@@ -35,19 +35,19 @@ define(['angular',
                 metadata = api_mock_data['/api/users/metadata'];
 
             expect(grid.metaFields['id']).toBe(metadata['id']);
-            expect(grid.permissions.update).toBe(false);
-            expect(grid.permissions.create).toBe(false);
-            expect(grid.permissions.delete).toBe(false);
+            expect(grid.options.permissions.update).toBe(false);
+            expect(grid.options.permissions.create).toBe(false);
+            expect(grid.options.permissions.delete).toBe(false);
         });
 
         it('initially has only one item of the menu - column visibility', function () {
             lux.gridTests.pGrid2 = {target: target};
 
             var element = tests.digest($lux.compile, $rootScope, '<div lux-grid="lux.gridTests.pGrid2"></div>'),
-                scope = element.scope();
+                grid = getGrid(element.scope());
 
-            expect(scope.gridOptions.gridMenuCustomItems.length).toBe(1);
-            expect(scope.gridOptions.gridMenuCustomItems[0].title).toEqual('Columns visibility');
+            expect(grid.options.gridMenuCustomItems.length).toBe(1);
+            expect(grid.options.gridMenuCustomItems[0].title).toEqual('Columns visibility');
         });
 
         it('adds create and delete permissions', function () {
@@ -57,35 +57,35 @@ define(['angular',
             };
 
             var element = tests.digest($lux.compile, $rootScope, '<div lux-grid="lux.gridTests.pGrid3"></div>'),
-                scope = element.scope();
+                grid = getGrid(element.scope());
 
-            expect(scope.gridOptions.permissions.create).toBe(true);
-            expect(scope.gridOptions.permissions.delete).toBe(true);
-            expect(scope.gridOptions.permissions.update).toBe(false);
-            expect(scope.gridOptions.gridMenuCustomItems.length).toBe(3);
-            expect(scope.gridOptions.gridMenuCustomItems[0].title).toContain('Add');
-            expect(scope.gridOptions.gridMenuCustomItems[1].title).toContain('Delete');
+            expect(grid.options.permissions.create).toBe(true);
+            expect(grid.options.permissions.delete).toBe(true);
+            expect(grid.options.permissions.update).toBe(false);
+            expect(grid.options.gridMenuCustomItems.length).toBe(3);
+            expect(grid.options.gridMenuCustomItems[0].title).toContain('Add');
+            expect(grid.options.gridMenuCustomItems[1].title).toContain('Delete');
         });
 
         it('check getStringOrJsonField method', function () {
             lux.gridTests.pGrid4 = {target: target};
 
             var element = tests.digest($lux.compile, $rootScope, '<div lux-grid="lux.gridTests.pGrid4"></div>'),
-                scope = element.scope();
+                grid = getGrid(element.scope());
 
-            var result = scope.getStringOrJsonField({'repr': 'Field'});
+            var result = grid.getStringOrJsonField({'repr': 'Field'});
             expect(result).toBe('Field');
 
-            result = scope.getStringOrJsonField({
+            result = grid.getStringOrJsonField({
                 'repr': 'Field',
                 'id': 'Field ID'
             });
             expect(result).toBe('Field');
 
-            result = scope.getStringOrJsonField({'id': 'Field ID'});
+            result = grid.getStringOrJsonField({'id': 'Field ID'});
             expect(result).toBe('Field ID');
 
-            result = scope.getStringOrJsonField('test string');
+            result = grid.getStringOrJsonField('test string');
             expect(result).toBe('test string');
         });
 
@@ -100,6 +100,7 @@ define(['angular',
             expect(scope.grid).toBe(grid.api);
             expect(grid.options).toBe(scope.grid.grid.options);
             $httpBackend.flush(1);
+            return grid;
         }
     });
 });
