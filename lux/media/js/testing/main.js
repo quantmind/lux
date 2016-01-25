@@ -4,7 +4,10 @@ define(['angular',
         'angular-mocks'], function (angular, lux) {
     'use strict';
 
-    lux.tests = {};
+    lux.tests = {
+        createForm: createForm,
+        digest: digest
+    };
 
     angular.module('lux.utils.test', ['lux.services', 'ngMock'])
 
@@ -37,4 +40,25 @@ define(['angular',
     }
 
     return lux.tests;
+
+    function createForm (children, formAttrs) {
+        var form = {
+            field: {
+                type: 'form'
+            },
+            children: []
+        };
+        angular.extend(form.field, formAttrs);
+        angular.forEach(children, function (attrs) {
+            form['children'].push({field: attrs});
+        });
+        return form;
+    }
+
+    function digest ($compile, $rootScope, template) {
+        var scope = $rootScope.$new(),
+            element = $compile(template)(scope);
+        scope.$digest();
+        return element;
+    }
 });

@@ -31,6 +31,14 @@ define(['angular', 'lux'], function (angular, lux) {
             url: 'https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.3.0'
         })
         //
+        .run([function () {
+            lux.forms.directives.push(function(scope, element) {
+                // lux-codemirror directive
+                if (scope.field.hasOwnProperty('text_edit'))
+                    element.attr('lux-codemirror', scope.field.text_edit);
+            });
+        }])
+        //
         .directive('luxCodemirror', ['$lux', 'luxCodemirrorDefaults',
             function ($lux, luxCodemirrorDefaults) {
                 //

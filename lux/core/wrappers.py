@@ -31,22 +31,25 @@ DEFAULT_CONTENT_TYPES = unique_tuple(('text/html', 'text/plain', 'text/csv'),
 
 
 class WsgiRequest(wsgi.WsgiRequest):
-    '''Extend pulsar :class:`~pulsar.apps.wsgi.wrappers.WsgiRequest` with
+    """Extend pulsar :class:`~pulsar.apps.wsgi.wrappers.WsgiRequest` with
     additional methods and attributes.
-    '''
+    """
     @property
     def app(self):
-        '''The :class:`.Application` running the website.'''
+        """The :class:`.Application` running the website.
+        """
         return self.cache.app
 
     @property
     def config(self):
-        '''The :attr:`.Application.config` dictionary'''
+        """The :attr:`.Application.config` dictionary
+        """
         return self.cache.app.config
 
     @property
     def logger(self):
-        '''Shortcut to app logger'''
+        """Shortcut to app logger
+        """
         return self.cache.app.logger
 
     @property
@@ -55,13 +58,14 @@ class WsgiRequest(wsgi.WsgiRequest):
 
     @cached_property
     def html_document(self):
-        '''The HTML document for this request.'''
+        """The HTML document for this request
+        """
         return self.app.html_document(self)
 
     @property
     def scheme(self):
-        '''Protocol scheme, one of ``http`` and ``https``
-        '''
+        """Protocol scheme, one of ``http`` and ``https``
+        """
         HEADER = self.config['SECURE_PROXY_SSL_HEADER']
         if HEADER:
             try:
@@ -75,8 +79,8 @@ class WsgiRequest(wsgi.WsgiRequest):
 
     @property
     def is_secure(self):
-        '''``True`` if this request is via a TLS connection
-        '''
+        """``True`` if this request is via a TLS connection
+        """
         return self.scheme == 'https'
 
 
@@ -97,30 +101,30 @@ class JsonRouter(Router):
     response_content_types = ['application/json']
 
     def json(self, request, data):
-        '''Return a response as application/json
-        '''
+        """Return a response as application/json
+        """
         return Json(data).http_response(request)
 
 
 class HtmlRouter(Router):
-    '''Extend pulsar :class:`~pulsar.apps.wsgi.routers.Router`
+    """Extend pulsar :class:`~pulsar.apps.wsgi.routers.Router`
     with content management.
-    '''
+    """
     html_body_template = RouterParam(None)
-    '''Template for the html body'''
+    """Template for the html body"""
     uirouter = RouterParam(None)
     uimodules = RouterParam(None)
     response_content_types = TEXT_CONTENT_TYPES
     template = None
-    '''Inner template'''
+    """Inner template"""
 
     def get(self, request):
         html = self.get_html(request)
         return self.html_response(request, html)
 
     def html_response(self, request, html, inner_template=None):
-        '''Render `html` as a full Html document or a partial.
-        '''
+        """Render `html` as a full Html document or a partial
+        """
         app = request.app
         # get cms for this router
         cms = self.cms(app)
@@ -153,29 +157,29 @@ class HtmlRouter(Router):
         return inner_template or self.template
 
     def get_html(self, request):
-        '''Must be implemented by subclasses.
+        """Must be implemented by subclasses.
 
         This method should return the main part of the html body.
         It is rendered where the $html_main key is placed.
-        '''
+        """
         return ''
 
     def context(self, request):
-        '''Add router specific entries to the template
-        ``context`` dictionary'''
+        """Add router specific entries to the template ``context`` dictionary
+        """
         pass
 
     def cms(self, app):
         return app.cms
 
     def childname(self, prefix):
-        '''key for a child router
-        '''
+        """key for a child router
+        """
         return '%s%s' % (self.name, prefix) if self.name else prefix
 
     def make_router(self, rule, **params):
-        '''Create a new :class:`.Router` form rule and parameters
-        '''
+        """Create a new :class:`.Router` form rule and parameters
+        """
         params.setdefault('cls', HtmlRouter)
         return super().make_router(rule, **params)
 
@@ -185,8 +189,8 @@ class HtmlRouter(Router):
                 r.add_api_urls(request, api)
 
     def angular_page(self, app, router, page):
-        '''Add angular router information (lux.extensions.angular)
-        '''
+        """Add angular router information (lux.extensions.angular)
+        """
         url = page['url']
         if router.route.variables:
             # Variables in the url
@@ -201,12 +205,12 @@ class HtmlRouter(Router):
 
 
 class HeadMeta(object):
-    '''Wrapper for HTML5 head metatags.
+    """Wrapper for HTML5 head metatags.
 
      Handle meta tags and the Object graph protocol (OGP_)
 
     .. _OGP: http://ogp.me/
-    '''
+    """
     def __init__(self, head):
         self.head = head
         self.namespaces = {}
@@ -234,10 +238,10 @@ class HeadMeta(object):
         return iter(self.head.meta.children)
 
     def set(self, entry, content):
-        '''Set the a meta tag with ``content`` and ``entry`` in the HTML5 head.
+        """Set the a meta tag with ``content`` and ``entry`` in the HTML5 head.
         The ``key`` for ``entry`` is either ``name`` or ``property`` depending
         on the value of ``entry``.
-        '''
+        """
         content = self.as_string(content)
         if not content:
             return
@@ -283,7 +287,7 @@ def json_message(message, **obj):
 
 
 def error_handler(request, exc):
-    '''Default renderer for errors.'''
+    """Default renderer for errors."""
     app = request.app
     response = request.response
     if not response.content_type:

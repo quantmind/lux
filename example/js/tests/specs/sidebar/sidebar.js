@@ -1,6 +1,6 @@
 define(['angular',
         'lux',
-        'tests/mocks/utils',
+        'lux/testing',
         'lux/nav'], function (angular, lux, tests) {
     'use strict';
 

@@ -6,7 +6,7 @@ from urllib.parse import urlencode
 from pulsar import ImproperlyConfigured, HttpException
 from pulsar.utils.httpurl import is_absolute_uri, HTTPError
 
-from lux import Parameter, raise_http_error, Http401, HttpRedirect
+from lux import Parameter, Http401, HttpRedirect
 from lux.extensions.angular import add_ng_modules
 
 from .mixins import jwt, SessionBackendMixin
@@ -95,6 +95,9 @@ class ApiSessionBackend(SessionBackendMixin,
                         BrowserBackend):
     """Authenticating against a RESTful HTTP API.
 
+    THis backend requires a real cache backend, it cannot work with dummy
+    cache and will raise an error.
+
     The workflow for authentication is the following:
 
     * Redirect the authentication to the remote api
@@ -140,9 +143,7 @@ class ApiSessionBackend(SessionBackendMixin,
         api = request.app.api(request)
         try:
             # TODO: add address from request
-            # client = request.get_client_address()
             response = api.post('authorizations', data=data)
-            raise_http_error(response)
             token = response.json().get('token')
             payload = jwt.decode(token, verify=False)
             user = User(payload)
@@ -211,9 +212,8 @@ class ApiSessionBackend(SessionBackendMixin,
             if session.user:
                 # Check if the token is still a valid one
                 api = request.app.api(request)
-                response = api.head('authorizations')
                 try:
-                    raise_http_error(response)
+                    api.head('authorizations')
                 except Http401:  # 401, redirect to login
                     url = request.config['LOGIN_URL']
                     request.cache.session = self.create_session(request)
@@ -225,7 +225,11 @@ class ApiSessionBackend(SessionBackendMixin,
         data = session.all()
         if session.user:
             data['user'] = session.user.all()
-        request.app.cache_server.set_json(self._key(session.id), data)
+        store = request.app.cache_server
+        if store.name == 'dummy':
+            request.logger.error('Cannot use dummy cache with %s backend',
+                                 self.__class__.__name__)
+        store.set_json(self._key(session.id), data)
 
     def on_html_document(self, app, request, doc):
         BrowserBackend.on_html_document(self, app, request, doc)

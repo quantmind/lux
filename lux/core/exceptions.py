@@ -31,11 +31,14 @@ errors = {HttpRedirect.status: HttpRedirect,
 
 def raise_http_error(response):
     if not is_succesful(response.status_code):
-        content = response.decode_content()
-        if isinstance(content, dict):
-            content = content.get('message', '')
-        ErrorClass = errors.get(response.status_code)
-        if ErrorClass:
-            raise ErrorClass(content)
+        if response.status_code:
+            content = response.decode_content()
+            if isinstance(content, dict):
+                content = content.get('message', '')
+            ErrorClass = errors.get(response.status_code)
+            if ErrorClass:
+                raise ErrorClass(content)
+            else:
+                raise HttpException(content, status=response.status_code)
         else:
-            raise HttpException(content, status=response.status_code)
+            raise HttpException

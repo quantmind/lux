@@ -3,7 +3,9 @@ from urllib.parse import urljoin
 
 from pulsar import new_event_loop
 from pulsar.apps.http import HttpClient, JSON_CONTENT_TYPES
-from pulsar.utils.httpurl import is_absolute_uri, HTTPError, URLError
+from pulsar.utils.httpurl import is_absolute_uri
+
+from lux import raise_http_error
 
 
 class GreenHttp:
@@ -83,15 +85,7 @@ class ApiClientRequest:
         if token:
             req_headers.append(('Authorization', 'Bearer %s' % token))
         response = self._http.request(method, url, headers=req_headers, **kw)
-        if response.is_error:
-            if response.status_code:
-                content = response.decode_content()
-                if isinstance(content, dict):
-                    content = content.get('message') or response.text()
-                raise HTTPError(response.url, response.status_code,
-                                content, response.headers, None)
-            else:
-                raise URLError(response.on_finished.result.error)
+        raise_http_error(response)
         return response
 
 

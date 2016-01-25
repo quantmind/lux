@@ -30,7 +30,7 @@ define(['angular',
 
     lux.forms = {
         overrides: [],
-        directives: {},
+        directives: [],
         processors: formProcessors
     };
 
@@ -67,6 +67,7 @@ define(['angular',
             layout: 'default',
             // for horizontal layout
             labelSpan: 2,
+            debounce: 500,
             showLabels: true,
             novalidate: true,
             //
@@ -120,25 +121,30 @@ define(['angular',
             return defaultFormElements;
         }])
         //
-        .run(['$rootScope', '$lux', function (scope, $lux) {
-            //
-            //  Listen for a Lux form to be available
-            //  If it uses the api for posting, register with it
-            scope.$on('formReady', function (e, model, formScope) {
-                var attrs = formScope.formAttrs,
-                    action = attrs ? attrs.action : null,
-                    actionType = attrs ? attrs.actionType : null;
+        .run(['$rootScope', '$lux', 'formDefaults',
+            function (scope, $lux, formDefaults) {
+                //
+                //  Listen for a Lux form to be available
+                //  If it uses the api for posting, register with it
+                scope.$on('formReady', function (e, model, formScope) {
+                    var attrs = formScope.formAttrs,
+                        action = attrs ? attrs.action : null,
+                        actionType = attrs ? attrs.actionType : null;
 
-                if (isObject(action) && actionType !== 'create') {
-                    var api = $lux.api(action);
-                    if (api) {
-                        $lux.log.info('Form ' + formScope.formModelName + ' registered with "' +
-                            api.toString() + '" api');
-                        api.formReady(model, formScope);
+                    if (isObject(action) && actionType !== 'create') {
+                        var api = $lux.api(action);
+                        if (api) {
+                            $lux.log.info('Form ' + formScope.formModelName + ' registered with "' +
+                                api.toString() + '" api');
+                            api.formReady(model, formScope);
+                        }
                     }
-                }
-            });
-        }])
+                    //
+                    // Convert date string to date object
+                    lux.forms.directives.push(fieldToDate(formDefaults));
+                });
+            }]
+        )
         //
         // A factory for rendering form fields
         .factory('baseForm', ['$log', '$http', '$document', '$templateCache',
@@ -259,20 +265,6 @@ define(['angular',
                         return element;
                     },
                     //
-                    addDirectives: function (scope, element) {
-                        // lux-codemirror directive
-                        if (scope.field.hasOwnProperty('text_edit')) {
-                            element.attr('lux-codemirror', scope.field.text_edit);
-                        } else if (formDefaults.dateTypes.indexOf(scope.field.type) > -1) {
-                            // Convert date string to date object
-                            element.attr('format-date', '');
-                        } else if (scope.formAttrs.useNgFileUpload && scope.field.type === 'file') {
-                            element.attr('ngf-select', '');
-                            scope.formProcessor = 'ngFileUpload';
-                        }
-                        return element;
-                    },
-                    //
                     renderNotForm: function (scope) {
                         var field = scope.field;
                         return angular.element($document[0].createElement('span')).html(field.label || '');
@@ -352,10 +344,13 @@ define(['angular',
                             info = scope.info,
                             input = angular.element($document[0].createElement(info.element)).addClass(this.inputClass),
                             label = angular.element($document[0].createElement('label')).attr('for', field.id).html(field.label),
+                            modelOptions = angular.extend({}, field.modelOptions, scope.inputModelOptions),
                             element;
 
                         // Add model attribute
                         input.attr('ng-model', scope.formModelName + '["' + field.name + '"]');
+                        // Add input model options
+                        input.attr('ng-model-options', angular.toJson(modelOptions));
 
                         // Add default placeholder to date field if not exist
                         if (field.type === 'date' && angular.isUndefined(field.placeholder)) {
@@ -377,7 +372,7 @@ define(['angular',
                         }
 
                         // Add directive to element
-                        input = this.addDirectives(scope, input);
+                        input = addDirectives(scope, input);
 
                         if (this.inputGroupClass) {
                             element = angular.element($document[0].createElement('div'));
@@ -518,7 +513,7 @@ define(['angular',
                         var field = scope.field,
                             self = this,
                         // True when the form is submitted
-                            submitted = scope.formName + '.submitted',
+                            submitted = scope.formName + '.$submitted',
                         // True if the field is dirty
                             dirty = joinField(scope.formName, field.name, '$dirty'),
                             invalid = joinField(scope.formName, field.name, '$invalid'),
@@ -746,6 +741,9 @@ define(['angular',
                         scope.formClasses = {};
                         scope.formErrors = {};
                         scope.formMessages = {};
+                        scope.inputModelOptions = {
+                            debounce: formDefaults.debounce
+                        };
                         scope.$lux = $lux;
                         if (!form.id)
                             form.id = formid();
@@ -882,34 +880,6 @@ define(['angular',
             };
         }])
         //
-        .directive('checkRepeat', ['$log', function (log) {
-            return {
-                require: 'ngModel',
-
-                restrict: 'A',
-
-                link: function(scope, element, attrs, ctrl) {
-                    var other = element.inheritedData('$formController')[attrs.checkRepeat];
-                    if (other) {
-                        ctrl.$parsers.push(function(value) {
-                            if(value === other.$viewValue) {
-                                ctrl.$setValidity('repeat', true);
-                                return value;
-                            }
-                            ctrl.$setValidity('repeat', false);
-                        });
-
-                        other.$parsers.push(function(value) {
-                            ctrl.$setValidity('repeat', value === ctrl.$viewValue);
-                            return value;
-                        });
-                    } else {
-                        log.error('Check repeat directive could not find ' + attrs.checkRepeat);
-                    }
-                }
-            };
-        }])
-        //
         // A directive which add keyup and change event callaback
         .directive('watchChange', [function() {
             return {
@@ -951,5 +921,22 @@ define(['angular',
 
     function joinField(model, name, extra) {
         return model + '["' + name + '"].' + extra;
+    }
+
+    function fieldToDate(formDefaults) {
+
+        return convert;
+
+        function convert(scope, element) {
+            if (formDefaults.dateTypes.indexOf(scope.field.type) > -1)
+                element.attr('format-date', '');
+        }
+    }
+
+    function addDirectives(scope, element) {
+        angular.forEach(lux.forms.directives, function (callback) {
+            callback(scope, element);
+        });
+        return element;
     }
 });

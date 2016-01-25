@@ -16,6 +16,9 @@ define(['angular', 'lux/config'], function (angular, lux) {
     //	A factory of javascript clients to web services
     angular.module('lux.services', [])
         //
+        .constant('loginUrl', lux.context.LOGIN_URL || '')
+        //
+        .constant('postLoginUrl', lux.context.POST_LOGIN_URL || '/')
         // Registered api
         .value('ApiTypes', {})
         //
@@ -42,10 +45,10 @@ define(['angular', 'lux/config'], function (angular, lux) {
         //
         .factory('$lux', ['$location', '$window', '$q', '$http', '$log',
             '$timeout', 'ApiTypes', 'AuthApis', '$templateCache', '$compile',
-            'luxHttpPromise',
+            '$rootScope', 'luxHttpPromise',
             function ($location, $window, $q, $http, $log, $timeout,
                       ApiTypes, AuthApis, $templateCache, $compile,
-                      luxHttpPromise) {
+                      $scope, luxHttpPromise) {
 
                 var $lux = {
                     location: $location,
@@ -65,6 +68,7 @@ define(['angular', 'lux/config'], function (angular, lux) {
                     messages: extend({}, lux.messageService, {
                         pushMessage: function (message) {
                             this.log($log, message);
+                            $scope.$broadcast('messageAdded', message);
                         }
                     })
                 };

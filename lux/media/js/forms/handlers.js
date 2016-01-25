@@ -1,10 +1,7 @@
-define(['angular', 'lux'], function (angular, lux) {
+define(['angular', 'lux'], function (angular) {
     'use strict';
 
     angular.module('lux.form.handlers', ['lux.services'])
-        .constant('loginUrl', lux.context.LOGIN_URL || '')
-
-        .constant('postLoginUrl', lux.context.POST_LOGIN_URL || '/')
 
         .run(['$lux', 'loginUrl', 'postLoginUrl',
             function ($lux, loginUrl, postLoginUrl) {

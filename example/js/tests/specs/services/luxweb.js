@@ -19,6 +19,11 @@ define(['angular',
             });
         });
 
+        it('Check api handler', function () {
+            var client = $lux.api('/api');
+            expect(angular.isObject(client)).toBe(true);
+        });
+
     });
 
 });

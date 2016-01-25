@@ -188,6 +188,34 @@ define(['angular',
                     });
                 }
             };
+        }])
+        //
+        .directive('checkRepeat', ['$log', function (log) {
+            return {
+                require: 'ngModel',
+
+                restrict: 'A',
+
+                link: function(scope, element, attrs, ctrl) {
+                    var other = element.inheritedData('$formController')[attrs.checkRepeat];
+                    if (other) {
+                        ctrl.$parsers.push(function(value) {
+                            if(value === other.$viewValue) {
+                                ctrl.$setValidity('repeat', true);
+                                return value;
+                            }
+                            ctrl.$setValidity('repeat', false);
+                        });
+
+                        other.$parsers.push(function(value) {
+                            ctrl.$setValidity('repeat', value === ctrl.$viewValue);
+                            return value;
+                        });
+                    } else {
+                        log.error('Check repeat directive could not find ' + attrs.checkRepeat);
+                    }
+                }
+            };
         }]);
 
 });

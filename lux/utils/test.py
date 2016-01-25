@@ -18,7 +18,6 @@ from pulsar.apps.test import test_timeout, sequential   # noqa
 
 import lux
 from lux.core.commands.generate_secret_key import generate_secret
-from lux.extensions.rest import ApiClient
 logger = logging.getLogger('lux.test')
 
 

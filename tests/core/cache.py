@@ -64,6 +64,10 @@ class TestWrappers(test.TestCase, LockTests):
         self.cache.set('h', 56)
         self.assertEqual(self.cache.get('h'), None)
 
+    def test_cache_name(self):
+        self.assertEqual(self.cache.name, 'dummy')
+        self.assertEqual(str(self.cache), 'dummy://')
+
     def test_bad_url(self):
         app = self.application(CACHE_SERVER='cbjhb://')
         self.assertRaises(ImproperlyConfigured,

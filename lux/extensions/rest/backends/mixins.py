@@ -19,20 +19,20 @@ class TokenBackendMixin:
     """Mixin for token and session based authentication back-ends
     """
     def session_expiry(self, request):
-        '''Expiry for a session or a token
-        '''
+        """Expiry for a session or a token
+        """
         session_expiry = request.config['SESSION_EXPIRY']
         if session_expiry:
             return datetime.now() + timedelta(seconds=session_expiry)
 
     def api_sections(self, app):
-        '''At the authorization router to the api
-        '''
+        """At the authorization router to the api
+        """
         yield Authorization()
 
     def encode_token(self, request, user=None, expiry=None, **token):
-        '''Encode a JWT
-        '''
+        """Encode a JWT
+        """
         if not jwt:     # pragma    nocover
             raise ImproperlyConfigured('JWT library not available')
 
@@ -55,17 +55,17 @@ class TokenBackendMixin:
             raise BadRequest(str(exc))
 
     def create_token(self, request, user, **kwargs):  # pragma    nocover
-        '''Create a new token and store it
-        '''
+        """Create a new token and store it
+        """
         raise NotImplementedError
 
 
 class SessionBackendMixin(TokenBackendMixin):
-    '''Mixin for :class:`.AuthBackend` via sessions.
+    """Mixin for :class:`.AuthBackend` via sessions.
 
     This mixin implement the request and response middleware and introduce
     three abstract method for session CRUD operations
-    '''
+    """
     _config = [
         Parameter('SESSION_COOKIE_NAME', 'LUX',
                   'Name of the cookie which stores session id')
@@ -118,16 +118,16 @@ class SessionBackendMixin(TokenBackendMixin):
 
     # ABSTRACT METHODS WHICH MUST BE IMPLEMENTED
     def get_session(self, request, key):
-        '''Retrieve a session from its key
-        '''
+        """Retrieve a session from its key
+        """
         raise NotImplementedError
 
     def create_session(self, request, user=None):
-        '''Create a new session
-        '''
+        """Create a new session
+        """
         raise NotImplementedError
 
     def session_save(self, request, session):
-        '''Save an existing session
-        '''
+        """Save an existing session
+        """
         raise NotImplementedError

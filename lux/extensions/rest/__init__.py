@@ -1,4 +1,4 @@
-'''
+"""
 Extension for Restful web services.
 
 This extension should be added before any other extensions
@@ -11,7 +11,7 @@ just after the :mod:`lux.extensions.base`::
                   ...
                   ]
 
-'''
+"""
 from importlib import import_module
 from urllib.parse import urljoin
 
@@ -32,15 +32,15 @@ from .authviews import *        # noqa
 
 
 def luxrest(url, **rest):
-    '''Dictionary containing the api type and the api url name
-    '''
+    """Dictionary containing the api type and the api url name
+    """
     rest['url'] = url
     return rest
 
 
 def website_url(request, location=None):
-    '''A website url
-    '''
+    """A website url
+    """
     url = request.config.get('WEB_SITE_URL')
     url = url or request.absolute_uri('/')
     if location:
@@ -188,7 +188,8 @@ class Extension(MultiAuthBackend):
         return middleware
 
     def api_sections(self, app):
-        '''Called by the api extension'''
+        """Called by this extension to build API middleware
+        """
         for backend in self.backends:
             api_sections = getattr(backend, 'api_sections', None)
             if api_sections:

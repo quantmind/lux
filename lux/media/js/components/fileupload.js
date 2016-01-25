@@ -1,17 +1,18 @@
-define(['lux/forms',
-        'angular',
-        'angular-file-upload'], function (lux) {
+define(['angular',
+        'lux/forms',
+        'angular-file-upload'], function (angular, lux) {
     'use strict';
 
     angular.module('lux.form.fileupload', ['lux.form', 'ngFileUpload'])
 
         .run(['$q', 'Upload', function ($q, Upload) {
-            lux.forms.directives.file = function (scope, element) {
+
+            lux.forms.directives.push(function (scope, element) {
                 if (scope.formAttrs.useNgFileUpload && scope.field.type === 'file') {
                     element.attr('ngf-select', '');
                     scope.formProcessor = 'ngFileUpload';
                 }
-            };
+            });
 
             lux.forms.processors.ngFileUpload = function ($lux, process) {
                 var uploadUrl = process.target,

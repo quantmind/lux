@@ -35,8 +35,15 @@ define(['angular',
                 var scope = this,
                     process = formProcessor($lux, scope),
                     api;
+
+                // Flag the form as submitted
+                process.form.$setSubmitted();
                 //
-                if (process.form.$invalid) return;
+                // Invalid?
+                if (process.form.$invalid) {
+                    process.form.$setDirty();
+                    return;
+                }
                 //
                 var promise = process();
 
@@ -47,7 +54,7 @@ define(['angular',
                 //
                 promise.then(
                     function (response) {
-                        var data = response.data;
+                        var data = getData(response);
                         var hookName = process.attrs.resultHandler;
                         var hook = hookName && $lux.formHandlers[hookName];
                         if (hook) {
@@ -67,7 +74,7 @@ define(['angular',
                         }
                     },
                     function (response) {
-                        var data = response.data || {};
+                        var data = getData(response);
 
                         if (data.errors) {
                             scope.addMessages(data.errors, 'error');
@@ -80,6 +87,11 @@ define(['angular',
                             $lux.messages.error(message);
                         }
                     });
+
+                function getData (response) {
+                    process.form.$pending = false;
+                    return response.data || {};
+                }
             };
         }]);
 
@@ -120,8 +132,8 @@ define(['angular',
 
         function process () {
             var _process = formProcessors[scope.formProcessor || 'default'];
-            // Flag the form as submitted
-            form.submitted = true;
+            // set as pending
+            form.$pending = true;
             // clear form messages
             scope.formMessages = {};
             return _process($lux, process);
