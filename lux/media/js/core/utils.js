@@ -80,20 +80,26 @@ define(['angular',
     //  Retrive options for the ``options`` string in ``attrs`` if available.
     //  Used by directive when needing to specify options in javascript rather
     //  than html data attributes.
-    lux.getOptions = function (attrs) {
+    lux.getOptions = function (attrs, optionName) {
         var options;
-        if (attrs && typeof attrs.options === 'string') {
-            options = getAttribute(root, attrs.options);
-            if (typeof options === 'function')
+        if (attrs) {
+            if (optionName) options = attrs[optionName];
+            if (!options) {
+                optionName = 'options';
+                options = attrs[optionName];
+            }
+            if (angular.isString(options))
+                options = getAttribute(root, options);
+            if (angular.isFunction(options))
                 options = options();
-        } else {
-            options = {};
+            if (lux.isObject(options))
+                angular.forEach(attrs, function (value, name) {
+                    if (name.substring(0, 1) !== '$' && name !== optionName)
+                        options[name] = value;
+                });
         }
-        if (lux.isObject(options))
-            forEach(attrs, function (value, name) {
-                if (name.substring(0, 1) !== '$' && name !== 'options')
-                    options[name] = value;
-            });
+        if (!options) options = {};
+
         return options;
     };
     //

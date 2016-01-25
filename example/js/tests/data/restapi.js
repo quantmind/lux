@@ -30,16 +30,31 @@ define([], function () {
         },
         '/api/users': {
             'result': [{
-                'id': 'pippo',
+                'username': 'pippo',
                 'name': 'super pippo'
             }, {
-                'id': 'pluto',
-                'name': 'item 2'
+                'username': 'pluto',
+                'name': 'pluto the dog'
             }]
         },
+        '/api/users/metadata': {
+            'default-limit': 25,
+            repr: 'full_name',
+            id: 'username',
+            columns: [
+                {
+                    name: 'full_name',
+                    displayName: 'Name'
+                },
+                {
+                    name: 'username',
+                    displayName: 'Username'
+                }
+            ]
+        },
         '/api/users/pippo': {
-            'id': 'pippo',
-            'name': 'super pippo'
+            username: 'pippo',
+            name: 'super pippo'
         }
     };
 });

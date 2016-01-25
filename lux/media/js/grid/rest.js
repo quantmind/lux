@@ -1,27 +1,29 @@
-//  Grid Data Provider
-//	===================
+//  Grid REST Data Provider
+//	==========================
 //
 //	provides data to a lux.grid using REST calls
-define(['angular', 'lux/grid'], function (angular) {
+define(['angular',
+        'lux/grid'], function (angular) {
     'use strict';
 
     angular.module('lux.grid.rest', ['lux.grid'])
 
-        .run(['$lux', 'luxGridDataProviders'], function ($lux, luxGridDataProviders) {
+        .run(['$lux', 'luxGridDataProviders', function ($lux, luxGridDataProviders) {
 
             luxGridDataProviders.register('rest', restProvider($lux, luxGridDataProviders));
-        });
+        }]);
 
     function restProvider ($lux, dataProvider) {
 
         function GridDataProviderREST (grid) {
-            this._api = $lux.api(grid.options.target);
-            this._listener = grid;
+            var target = grid.options.target;
+            this._api = $lux.api(target);
+            this._grid = grid;
         }
 
         GridDataProviderREST.prototype.connect = function () {
             dataProvider.check(this);
-            getMetadata(this, getData.bind(this, {path: this._subPath}, this._gridState));
+            getMetadata(this);
         };
 
         GridDataProviderREST.prototype.getPage = function (options) {
@@ -37,25 +39,26 @@ define(['angular', 'lux/grid'], function (angular) {
         };
 
         GridDataProviderREST.prototype.destroy = function () {
-            delete this._listener;
+            this._gridApi = null;
         };
 
-        function getMetadata(self, callback) {
-            self._api.get({
-                path: self._subPath + '/metadata'
-            }).success(function (metadata) {
-                self._listener.onMetadataReceived(metadata);
-                if (angular.isFunction(callback)) callback();
-            });
-        }
-
-        function getData(self, path, options) {
-            self._api.get(path, options).success(function (data) {
-                self._listener.onDataReceived(data);
-            });
-        }
-
         return GridDataProviderREST;
+
+        function getMetadata(self) {
+            self._api.get({
+                path: 'metadata'
+            }).success(function (metadata) {
+                self._gridApi.lux.onMetadataReceived(metadata);
+            });
+        }
+
+        function getData(self) {
+            var grid = self._gridApi.lux,
+                query = grid.state.query();
+            self._api.get({params: query}).success(function (data) {
+                grid.onDataReceived(data);
+            });
+        }
     }
 
 });

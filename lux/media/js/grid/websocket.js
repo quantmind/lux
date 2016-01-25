@@ -16,15 +16,12 @@ define(['angular',
 
     function gridDataProviderWebsocketFactory ($lux, dataProvider) {
 
-        function GridDataProviderWebsocket (target, subPath, gridState, listener) {
-            this._websocketUrl = target;
-            this._channel = subPath;
-            this._gridState = gridState;
-            this._listener = listener;
+        function GridDataProviderWebsocket (grid) {
+            this._grid = grid;
         }
 
         GridDataProviderWebsocket.prototype.destroy = function() {
-            this._listener = null;
+            this._grid = null;
         };
 
         GridDataProviderWebsocket.prototype.connect = function() {
@@ -42,7 +39,7 @@ define(['angular',
                 if (msg.data.event === 'record-update') {
                     tasks = msg.data.data;
 
-                    self._listener.onDataReceived({
+                    self._grid.onDataReceived({
                         total: msg.data.total,
                         result: tasks,
                         type: 'update'
@@ -51,14 +48,14 @@ define(['angular',
                 } else if (msg.data.event === 'records') {
                     tasks = msg.data.data;
 
-                    self._listener.onDataReceived({
+                    self._grid.onDataReceived({
                         total: msg.data.total,
                         result: tasks,
                         type: 'update'
                     });
 
                 } else if (msg.data.event === 'columns-metadata') {
-                    self._listener.onMetadataReceived(msg.data.data);
+                    self._grid.onMetadataReceived(msg.data.data);
                 }
             }
 

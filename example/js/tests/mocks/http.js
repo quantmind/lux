@@ -12,4 +12,5 @@ define(['angular',
             }
         }]);
 
+    return api_mock_data;
 });

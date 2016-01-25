@@ -1,83 +1,90 @@
-define(['angular',
-        'tests/mocks/lux',
-        'lux/grid',
-        'lux/grid/rest'], function (angular) {
+define(['lux',
+        'lux/testing',
+        'tests/mocks/http',
+        'lux/grid/rest'], function (lux, tests, api_mock_data) {
     'use strict';
 
-    describe('Test lux.grid.rest module', function() {
+    describe('Test lux.grid module', function() {
 
-        var $lux = angular.injector(['lux.mocks.lux']).get('$lux');
-        var api = $lux.api();
-        var GridDataProviderREST;
-        var listener;
-        var dataProvider;
-        var target = { url: 'dummy://url'};
-        var subPath = 'dummy/subPath';
-        var gridState = { dummy: 'gridstate' };
-        var options = { dummy: 'options' };
+        var target = {'name': 'users_url', 'url': '/api'},
+            $lux, $rootScope;
+
+        angular.module('lux.grid.test', ['lux.loader', 'lux.mocks.http', 'lux.grid', 'lux.grid.rest'])
+            .value('context', {API_URL: '/api'});
 
         beforeEach(function () {
+            module('lux.grid.test');
 
-            inject(function (_GridDataProviderREST_) {
-                GridDataProviderREST = _GridDataProviderREST_;
+            inject(function (_$lux_, _$rootScope_) {
+                $lux = _$lux_;
+                $rootScope = _$rootScope_;
             });
+        });
 
-            listener = {
-                onMetadataReceived: jasmine.createSpy(),
-                onDataReceived: jasmine.createSpy()
+        lux.gridTests = {};
+
+        it('default permissions of actions', function () {
+            lux.gridTests.pGrid1 = {target: target};
+
+            var element = tests.digest($lux.compile, $rootScope, '<div lux-grid="lux.gridTests.pGrid1"></div>'),
+                scope = element.scope(),
+                grid = scope.grid.lux,
+                metadata = api_mock_data['/api/users/metadata'];
+
+            expect(grid.metaFields['id']).toBe(metadata['id']);
+            expect(grid.permissions.update).toBe(false);
+            expect(grid.permissions.create).toBe(false);
+            expect(grid.permissions.delete).toBe(false);
+        });
+
+        it('initially has only one item of the menu - column visibility', function () {
+            lux.gridTests.pGrid2 = {target: target};
+
+            var element = tests.digest($lux.compile, $rootScope, '<div lux-grid="lux.gridTests.pGrid2"></div>'),
+                scope = element.scope();
+
+            expect(scope.gridOptions.gridMenuCustomItems.length).toBe(1);
+            expect(scope.gridOptions.gridMenuCustomItems[0].title).toEqual('Columns visibility');
+        });
+
+        it('adds create and delete permissions', function () {
+            lux.gridTests.pGrid3 = {
+                target: target,
+                permissions: {'create': true, 'delete': true}
             };
 
-            dataProvider = new GridDataProviderREST(target, subPath, gridState, listener);
+            var element = tests.digest($lux.compile, $rootScope, '<div lux-grid="lux.gridTests.pGrid3"></div>'),
+                scope = element.scope();
+
+            expect(scope.gridOptions.permissions.create).toBe(true);
+            expect(scope.gridOptions.permissions.delete).toBe(true);
+            expect(scope.gridOptions.permissions.update).toBe(false);
+            expect(scope.gridOptions.gridMenuCustomItems.length).toBe(3);
+            expect(scope.gridOptions.gridMenuCustomItems[0].title).toContain('Add');
+            expect(scope.gridOptions.gridMenuCustomItems[1].title).toContain('Delete');
         });
 
-        it('connect()', function() {
-            dataProvider.connect();
+        it('check getStringOrJsonField method', function () {
+            lux.gridTests.pGrid4 = {target: target};
 
-            expect(api.get).toHaveBeenCalledWith({ path: 'dummy/subPath/metadata' });
+            var element = tests.digest($lux.compile, $rootScope, '<div lux-grid="lux.gridTests.pGrid4"></div>'),
+                scope = element.scope();
 
-            var onMetadataReceivedSuccessCallback = api.success.calls.all()[0].args[0];
-            onMetadataReceivedSuccessCallback('metadata');
+            var result = scope.getStringOrJsonField({'repr': 'Field'});
+            expect(result).toBe('Field');
 
-            expect(listener.onMetadataReceived).toHaveBeenCalledWith('metadata');
+            result = scope.getStringOrJsonField({
+                'repr': 'Field',
+                'id': 'Field ID'
+            });
+            expect(result).toBe('Field');
 
-            expect(api.get).toHaveBeenCalledWith({ path: subPath }, gridState);
+            result = scope.getStringOrJsonField({'id': 'Field ID'});
+            expect(result).toBe('Field ID');
 
-            var onDataReceivedSuccessCallback = api.success.calls.all()[1].args[0];
-            onDataReceivedSuccessCallback('data');
-
-            expect(listener.onDataReceived).toHaveBeenCalledWith('data');
-
-        });
-
-        it('getPage()', function() {
-            dataProvider.getPage(options);
-
-            expect(api.get).toHaveBeenCalledWith({}, options);
-
-            var onDataReceivedSuccessCallback = api.success.calls.all()[0].args[0];
-            onDataReceivedSuccessCallback('data');
-
-            expect(listener.onDataReceived).toHaveBeenCalledWith('data');
-        });
-
-        it('deleteItem()', function() {
-            var identifier = 'my ID';
-            var onSuccess = function() {};
-            var onFailure = function() {};
-
-            dataProvider.deleteItem(identifier, onSuccess, onFailure);
-
-            expect(api.delete).toHaveBeenCalledWith({ path: subPath + '/' + identifier});
-            expect(api.success).toHaveBeenCalledWith(onSuccess);
-            expect(api.error).toHaveBeenCalledWith(onFailure);
-        });
-
-        it('destroy()', function() {
-            dataProvider.destroy();
-
-            expect(dataProvider.connect).toThrow();
+            result = scope.getStringOrJsonField('test string');
+            expect(result).toBe('test string');
         });
 
     });
-
 });
