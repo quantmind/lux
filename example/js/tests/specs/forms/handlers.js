@@ -1,35 +1,24 @@
 define(['angular',
         'lux',
-        'tests/mocks/lux',
+        'lux/testing',
         'lux/forms'], function (angular, lux) {
     'use strict';
 
     describe('Test lux.form.handlers module', function() {
-
-        var $lux;
-        var successMessageSpy;
-        var errorMessageSpy;
+        var $lux, successMessageSpy, errorMessageSpy;
 
         beforeEach(function () {
-            var $luxMock = lux.mocks.$lux();
-
-            angular.mock.module('lux.form.handlers', function($provide) {
-                $provide.value('$lux', $luxMock);
-            });
+            module('lux.form');
 
             inject(function (_$lux_) {
                 $lux = _$lux_;
+                successMessageSpy = jasmine.createSpy();
+                errorMessageSpy = jasmine.createSpy();
+
+                $lux.messages = {};
+                $lux.messages.success = successMessageSpy;
+                $lux.messages.error = errorMessageSpy;
             });
-
-            successMessageSpy = jasmine.createSpy();
-            errorMessageSpy = jasmine.createSpy();
-
-            $lux.messages = {};
-            $lux.messages.success = successMessageSpy;
-            $lux.messages.error = errorMessageSpy;
-        });
-
-        afterEach(function () {
         });
 
         it('Creates a $lux.formHandlers object', function() {
@@ -38,27 +27,27 @@ define(['angular',
         });
 
         it('Creates $lux.formHandlers.reload method', function() {
-            expect(typeof $lux.formHandlers.reload).toBe('function');
+            expect(angular.isFunction($lux.formHandlers.reload)).toBe(true);
         });
 
         it('Creates $lux.formHandlers.redirectHome method', function() {
-            expect(typeof $lux.formHandlers.redirectHome).toBe('function');
+            expect(angular.isFunction($lux.formHandlers.redirectHome)).toBe(true);
         });
 
         it('Creates $lux.formHandlers.login method', function() {
-            expect(typeof $lux.formHandlers.login).toBe('function');
+            expect(angular.isFunction($lux.formHandlers.login)).toBe(true);
         });
 
         it('Creates $lux.formHandlers.passwordRecovery method', function() {
-            expect(typeof $lux.formHandlers.passwordRecovery).toBe('function');
+            expect(angular.isFunction($lux.formHandlers.passwordRecovery)).toBe(true);
         });
 
         it('Creates $lux.formHandlers.passwordChanged method', function() {
-            expect(typeof $lux.formHandlers.passwordChanged).toBe('function');
+            expect(angular.isFunction($lux.formHandlers.passwordChanged)).toBe(true);
         });
 
         it('Creates $lux.formHandlers.enquiry method', function() {
-            expect(typeof $lux.formHandlers.enquiry).toBe('function');
+            expect(angular.isFunction($lux.formHandlers.enquiry)).toBe(true);
         });
 
         it('on success, $lux.formHandlers.enquiry method displays success message', function() {
@@ -67,9 +56,7 @@ define(['angular',
                     success: true
                 }
             };
-
             $lux.formHandlers.enquiry(mockResponse);
-
             expect(successMessageSpy).toHaveBeenCalledWith(jasmine.any(String));
         });
 
@@ -79,9 +66,7 @@ define(['angular',
                     success: false
                 }
             };
-
             $lux.formHandlers.enquiry(mockResponse);
-
             expect(errorMessageSpy).toHaveBeenCalledWith(jasmine.any(String));
         });
 

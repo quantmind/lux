@@ -1,6 +1,6 @@
 define(['angular',
         'lux',
-        'tests/mocks/utils',
+        'lux/testing',
         'lux/components/fileupload'], function (angular, lux, tests) {
     'use strict';
 

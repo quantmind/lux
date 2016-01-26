@@ -1,6 +1,6 @@
 define(['angular',
         'lux/message',
-        'tests/mocks/utils'], function (angular, lux, utils) {
+        'lux/testing'], function (angular, lux, tests) {
     'use strict';
 
     beforeEach(function () {
@@ -9,14 +9,13 @@ define(['angular',
 
     describe('Messages', function () {
 
-        it('messages directive', inject(function($compile, $rootScope) {
-            var template = '<messages></messages>',
-                element = utils.digest($compile, $rootScope, template),
+        it('messages directive', function() {
+            var element = tests.compile('<messages></messages>'),
                 scope = element.scope();
 
             expect(element[0].tagName).toBe('DIV');
             expect(scope.messages.length).toBe(0);
-        }));
+        });
 
     });
 

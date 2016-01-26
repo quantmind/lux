@@ -1,4 +1,5 @@
-define(['angular', 'lux'], function (angular, lux) {
+define(['angular',
+        'lux/forms'], function (angular, lux) {
     'use strict';
     //
     //  Lux Codemirror module
@@ -55,15 +56,12 @@ define(['angular', 'lux'], function (angular, lux) {
                 };
 
                 function codemirror(scope, element, attrs, ngModel) {
-                    var jsModuleSuffix,
-                        options = angular.extend(
+                    var options = setMode(angular.extend(
                             {value: element.text()},
-                            luxCodemirrorDefaults || {},
-                            scope.$eval(attrs.luxCodemirror) || {}
-                        );
-
-                    options = setMode(options);
-                    jsModuleSuffix = getJSModuleSuffix(options.mode);
+                            luxCodemirrorDefaults,
+                            scope.$eval(attrs.luxCodemirror)
+                        )),
+                        jsModuleSuffix = getJSModuleSuffix(options.mode);
 
                     require(['codemirror-' + jsModuleSuffix], function () {
                         // Require CodeMirror
@@ -71,22 +69,13 @@ define(['angular', 'lux'], function (angular, lux) {
                             throw new Error('lux-codemirror needs CodeMirror to work!');
                         }
 
-                        var cm = newEditor(element, options);
-
-                        ngModelLink(cm, ngModel, scope);
-
-                        // Allow access to the CodeMirror instance through a broadcasted event
-                        // eg: $broadcast('CodeMirror', function(cm){...});
-                        scope.$on('CodeMirror', function (event, callback) {
-                            if (angular.isFunction(callback))
-                                callback(cm);
-                            else
-                                throw new Error('the CodeMirror event requires a callback function');
-                        });
+                        scope.cm = newEditor(element, options);
+                        ngModelLink(ngModel, scope);
 
                         scope.$on('$viewContentLoaded', function () {
-                            cm.refresh();
+                            scope.cm.refresh();
                         });
+                        scope.$emit('CodeMirror', scope.cm);
                     });
                 }
 
@@ -100,23 +89,19 @@ define(['angular', 'lux'], function (angular, lux) {
                 //
                 // Creates a new instance of the editor
                 function newEditor(element, options) {
-                    var cm;
-
                     if (element[0].tagName === 'TEXTAREA') {
-                        cm = $lux.window.CodeMirror.fromTextArea(element[0], options);
+                        return $lux.window.CodeMirror.fromTextArea(element[0], options);
                     } else {
                         element.html('');
-                        cm = new $lux.window.CodeMirror(function (cm_el) {
+                        return new $lux.window.CodeMirror(function (cm_el) {
                             element.append(cm_el);
                         }, options);
                     }
-
-                    return cm;
                 }
 
                 //
                 // Allows play with ng-model
-                function ngModelLink(cm, ngModel, scope) {
+                function ngModelLink(ngModel, scope) {
                     if (!ngModel) return;
 
                     // CodeMirror expects a string, so make sure it gets one.
@@ -133,11 +118,11 @@ define(['angular', 'lux'], function (angular, lux) {
                     // This takes care of the synchronizing the codeMirror element with the underlying model, in the case that it is changed by something else.
                     ngModel.$render = function () {
                         var safeViewValue = ngModel.$viewValue || '';
-                        cm.setValue(safeViewValue);
+                        scope.cm.setValue(safeViewValue);
                     };
 
                     // Keep the ngModel in sync with changes from CodeMirror
-                    cm.on('change', function (instance) {
+                    scope.cm.on('change', function (instance) {
                         var newValue = instance.getValue();
                         if (newValue !== ngModel.$viewValue) {
                             scope.$evalAsync(function () {

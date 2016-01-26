@@ -1,7 +1,6 @@
 define(['angular',
         'lux',
-        'tests/data/restapi',
-        'tests/mocks/utils',
+        'tests/mocks/http',
         'lux/forms'], function (angular, lux, api_mock_data) {
     'use strict';
 

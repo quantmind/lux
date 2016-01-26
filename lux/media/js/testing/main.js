@@ -9,7 +9,8 @@ define(['angular',
 
     lux.tests = {
         createForm: createForm,
-        digest: digest
+        digest: digest,
+        compile: compile
     };
 
     angular.module('lux.utils.test', ['lux.services', 'ngMock'])
@@ -62,6 +63,15 @@ define(['angular',
         var scope = $rootScope.$new(),
             element = $compile(template)(scope);
         scope.$digest();
+        return element;
+    }
+
+    // Compile a template
+    function compile (template) {
+        var element = null;
+        inject(function($lux, $rootScope) {
+            element = digest($lux.compile, $rootScope, template);
+        });
         return element;
     }
 });

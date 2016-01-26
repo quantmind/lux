@@ -19,6 +19,8 @@ lux.egg-info
 example/luxweb/settings.py
 
 # javascript/css
+coverage
+junit
 .grunt
 *.map
 lux/media/js/templates
