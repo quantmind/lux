@@ -24,7 +24,7 @@ define(['angular',
         //
         .value('sidebarDefaults', {
             collapse: true,
-            toggle: 'Menu',
+            toggleName: 'Menu',
             url: lux.context.url || '/',
             infoText: 'Signed in as',
             template: 'lux/nav/templates/sidebar.tpl.html'
@@ -80,16 +80,16 @@ define(['angular',
                 //
                 // Add toggle to the navbar
                 lux.forEach(sidebars, function (sidebar) {
-                    if (sidebar.toggle) {
+                    if (sidebar.toggleName) {
                         if (!navbar.itemsLeft) navbar.itemsLeft = [];
 
                         navbar.itemsLeft.splice(0, 0, {
                             href: sidebar.position,
-                            title: sidebar.toggle,
-                            name: sidebar.toggle,
+                            title: sidebar.toggleName,
+                            name: sidebar.toggleName,
                             klass: 'sidebar-toggle',
                             icon: 'fa fa-bars',
-                            action: 'toggleSidebar',
+                            action: sidebar.toggle.bind(sidebar),
                             right: 'vert-divider'
                         });
                     }

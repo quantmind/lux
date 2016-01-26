@@ -53,16 +53,9 @@ define(['angular',
 
             function click (e, link) {
                 if (link.action) {
-                    var func = this[link.action];
+                    var func = link.action;
                     if (func)
                         func(e, link.href, link);
-                }
-
-                // This patches an Angular bug with touch,
-                // whereby ng-click prevents href from working
-                var href = angular.element(e.currentTarget).attr('href');
-                if (e.type === 'touchend' && href) {
-                    $window.location.assign(href);
                 }
             }
 
