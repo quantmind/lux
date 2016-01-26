@@ -5,7 +5,6 @@ EXTENSIONS = ['lux.extensions.base',
               'tests']
 
 MEDIA_URL = 'static'
-# Force greenlet (sqlite threads are slow)
-GREEN_POOL = 50
+GREEN_POOL = 100
 
 thread_workers = 1

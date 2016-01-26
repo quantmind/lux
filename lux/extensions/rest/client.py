@@ -14,6 +14,10 @@ class GreenHttp:
         self._http = http
         self._pool = pool
 
+    @property
+    def headers(self):
+        return self._http.headers
+
     def request(self, method, url, **kw):
         return self._pool.wait(self._http.request(method, url, **kw), True)
 
@@ -79,7 +83,8 @@ class ApiClientRequest:
         request = self._request
         url = urljoin(self.url, path or '')
         req_headers = headers[:] if headers else []
-        req_headers.append(('user-agent', request.get('HTTP_USER_AGENT')))
+        agent = request.get('HTTP_USER_AGENT', request.config['APP_NAME'])
+        req_headers.append(('user-agent', agent))
         if not token and request.cache.session:
             token = request.cache.session.encoded
         if token:

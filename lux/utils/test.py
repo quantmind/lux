@@ -13,10 +13,10 @@ from pulsar.utils.httpurl import encode_multipart_formdata
 from pulsar.utils.string import random_string
 from pulsar.utils.websocket import SUPPORTED_VERSIONS, websocket_key
 from pulsar.apps.wsgi import WsgiResponse
-from pulsar.apps.http import HttpClient
 from pulsar.apps.test import test_timeout, sequential   # noqa
 
 import lux
+from lux.extensions.rest.client import LocalClient
 from lux.core.commands.generate_secret_key import generate_secret
 logger = logging.getLogger('lux.test')
 
@@ -101,9 +101,11 @@ class TestClient:
         cmd = self.app.get_command(command)
         return cmd(argv, **kwargs)
 
-    def request_start_response(self, path=None, HTTP_ACCEPT=None,
+    def request_start_response(self, method, path, HTTP_ACCEPT=None,
                                headers=None, body=None, content_type=None,
                                token=None, cookie=None, **extra):
+        extra['REQUEST_METHOD'] = method.upper()
+        path = path or '/'
         extra['HTTP_ACCEPT'] = HTTP_ACCEPT or '*/*'
         extra['pulsar.connection'] = mock.MagicMock()
         heads = self.headers[:]
@@ -120,32 +122,28 @@ class TestClient:
         start_response = mock.MagicMock()
         return request, start_response
 
-    def request(self, **params):
-        request, sr = self.request_start_response(**params)
+    def request(self, method, path, **params):
+        request, sr = self.request_start_response(method, path, **params)
         yield from self.app(request.environ, sr)
         return request
 
     def get(self, path=None, **extra):
-        extra['REQUEST_METHOD'] = 'GET'
-        return self.request(path=path, **extra)
+        return self.request('get', path, **extra)
 
     def post(self, path=None, **extra):
-        return self._post_put('POST', path=path, **extra)
+        return self._post_put('post', path, **extra)
 
     def put(self, path=None, **extra):
-        return self._post_put('PUT', path=path, **extra)
+        return self._post_put('put', path, **extra)
 
     def delete(self, path=None, **extra):
-        extra['REQUEST_METHOD'] = 'DELETE'
-        return self.request(path=path, **extra)
+        return self.request('delete', path, **extra)
 
     def options(self, path=None, **extra):
-        extra['REQUEST_METHOD'] = 'OPTIONS'
-        return self.request(path=path, **extra)
+        return self.request('options', path, **extra)
 
     def head(self, path=None, **extra):
-        extra['REQUEST_METHOD'] = 'HEAD'
-        return self.request(path=path, **extra)
+        return self.request('head', path, **extra)
 
     def wsget(self, path):
         """make a websocket request"""
@@ -155,15 +153,14 @@ class TestClient:
                    ('Sec-WebSocket-Key', websocket_key())]
         return self.get(path, headers=headers)
 
-    def _post_put(self, m, path=None, body=None, content_type=None, **extra):
-        extra['REQUEST_METHOD'] = m
+    def _post_put(self, method, path, body=None, content_type=None, **extra):
         if body is not None and not isinstance(body, bytes):
             if content_type is None:
                 body, content_type = encode_multipart_formdata(body)
             elif content_type == 'application/json':
                 body = json.dumps(body).encode('utf-8')
 
-        return self.request(path=path, content_type=content_type,
+        return self.request(method, path, content_type=content_type,
                             body=body, **extra)
 
 
@@ -355,6 +352,15 @@ class AppTestCase(unittest.TestCase, TestMixin):
                                         '--password', password])
 
 
+class TestApiClient(TestClient):
+    """Api client test handler
+    """
+    def request(self, method, path, **params):
+        request, sr = self.request_start_response(method, path, **params)
+        request = self.app(request.environ, sr)
+        return request.response
+
+
 class WebApiTestCase(AppTestCase):
     """Test case for an api-web application pair
     """
@@ -362,14 +368,14 @@ class WebApiTestCase(AppTestCase):
 
     @classmethod
     def setUpClass(cls):
-        yield from super().setUpClass()
         assert cls.web_config_file, "no web_config_file specified"
+        yield from super().setUpClass()
         cls.web = test_app(cls, config_file=cls.web_config_file,
                            config_params=False)
         api = cls.web.api
         http = api.http(cls.web)
-        assert isinstance(http, HttpClient), "API_URL not an absolute url"
-        http = TestClient(cls.app, http.headers)
+        assert not isinstance(http, LocalClient), "API_URL not an absolute url"
+        http = TestApiClient(cls.app, http.headers)
         api._http = http
         assert api.http(cls.web) == http
-        cls.client = TestClient(cls.web)
+        cls.webclient = TestClient(cls.web)

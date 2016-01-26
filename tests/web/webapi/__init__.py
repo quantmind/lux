@@ -1,18 +1,17 @@
 import lux
+from lux import route
 from lux.extensions import odm, rest
 from lux.extensions.auth.forms import user_model
 from lux.utils.auth import ensure_authenticated
 
 
+__test__ = False
+
+
 class Extension(lux.Extension):
 
     def api_sessions(self, app):
-        return [UserRest(),
-                UserCRUD(),
-                GroupCRUD(),
-                PermissionCRUD(),
-                RegistrationCRUD(),
-                TokenCRUD()]
+        return [UserRest()]
 
 
 class UserRest(odm.RestRouter):

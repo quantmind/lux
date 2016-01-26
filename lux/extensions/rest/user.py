@@ -249,7 +249,7 @@ def logout(request):
     form = Form(request, data=request.body_data() or {})
 
     if form.is_valid():
-        request.cache.auth_backend.logout()
+        request.cache.auth_backend.logout(request)
         return Json({'success': True}).http_response(request)
     else:
         return Json(form.tojson()).http_response(request)
