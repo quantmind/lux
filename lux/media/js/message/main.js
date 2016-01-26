@@ -6,7 +6,7 @@ define(['angular',
     'use strict';
     //
     //  A directive to displayl ux messages
-    angular.module('lux.message', ['lux.message.templates', 'ngSanitize'])
+    angular.module('lux.message', ['lux.services', 'lux.message.templates', 'ngSanitize'])
         //
         .directive('messages', [function () {
 

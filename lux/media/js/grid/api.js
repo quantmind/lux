@@ -63,7 +63,9 @@ define(['angular',
             // Renders a link for the fields of url type
             url: function (column, col, grid) {
                 column.cellTemplate = grid.wrapCell('<a ng-href="{{COL_FIELD.url || COL_FIELD}}">{{COL_FIELD.repr || COL_FIELD}}</a>');
-            }
+            },
+            //
+            wrapCell: wrapCell
         })
         //
         .factory('luxGridApi', ['$lux', 'uiGridConstants', 'luxGridDefaults',
