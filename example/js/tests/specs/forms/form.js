@@ -99,16 +99,18 @@ define(['angular',
                 required: true
             }]);
 
-            var element = tests.compile('<div><lux-form data-options="lux.formTests.vForm6"></lux-form></div>');
-
-            var _form = element.find('form');
-            var validators = _form.find('span');
-            var scope = _form.scope();
+            var element = tests.compile('<div><lux-form data-options="lux.formTests.vForm6"></lux-form></div>'),
+                form = element.find('form'),
+                scope = form.scope(),
+                validators = form.find('span');
 
             // Submit invalid email (angular validation)
             scope.form.login.$setViewValue('invalid_email');
-            scope.form.$setSubmitted(true);
             scope.$digest();
+            expect(validators.eq(0).hasClass('ng-hide')).toBe(true);
+            expect(validators.eq(1).hasClass('ng-hide')).toBe(false);
+            expect(validators.eq(2).hasClass('ng-hide')).toBe(true);
+            scope.form.$setSubmitted();
             expect(validators.eq(0).hasClass('ng-hide')).toBe(true);
             expect(validators.eq(1).hasClass('ng-hide')).toBe(false);
             expect(validators.eq(2).hasClass('ng-hide')).toBe(true);

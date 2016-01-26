@@ -4,7 +4,7 @@ import uuid
 from urllib.parse import urlencode
 
 from pulsar import ImproperlyConfigured, HttpException
-from pulsar.utils.httpurl import is_absolute_uri, HTTPError
+from pulsar.utils.httpurl import is_absolute_uri
 
 from lux import Parameter, Http401, HttpRedirect
 from lux.extensions.angular import add_ng_modules
@@ -241,7 +241,7 @@ class ApiSessionBackend(SessionBackendMixin,
     def _key(self, id):
         return 'session:%s' % id
 
-    def _get_permissions(self, request, resources, actions=None):
+    def _get_permissions(self, request, resources, actions=None, tried=0):
         assert self.permissions_url, "permission url not available"
         if not isinstance(resources, (list, tuple)):
             resources = (resources,)
@@ -251,14 +251,25 @@ class ApiSessionBackend(SessionBackendMixin,
                 actions = (actions,)
             query.extend((('action', action) for action in actions))
         query = urlencode(query)
+        again = False
+        tried += 1
         api = request.app.api(request)
         try:
-            response = api.get('%s?%s' % (self.permissions_url, query))
-        except HTTPError as exc:
-            if exc.code == 401 and request.session.user.is_authenticated():
-                request.cache.auth_backend.logout(request)
-                raise HttpRedirect(request.config['LOGIN_URL']) from exc
-            else:
-                raise
+            try:
+                response = api.get('%s?%s' % (self.permissions_url, query))
+            except Http401:
+                if tried == 1:
+                    again = True
+                else:
+                    raise
+        except Exception as exc:
+            # This should not really happen
+            request.logger.error('Could not load permissions from API server:'
+                                 ' %s', exc)
+            return {}
 
-        return response.json()
+        if again:
+            request.cache.auth_backend.logout(request)
+            return self._get_permissions(request, resources, actions, tried)
+        else:
+            return response.json()

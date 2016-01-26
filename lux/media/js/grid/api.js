@@ -92,14 +92,12 @@ define(['angular',
                     return element;
                 },
                 onMetadataReceived: onMetadataReceived,
-                onDataReceived: function (data) {
-                    onDataReceived(grid, data);
-                },
+                onDataReceived: onDataReceived,
                 refreshPage: refreshPage,
                 // Return state name (last part of the URL)
                 getStateName: getStateName,
                 getModelName: getModelName,
-                wrapCell: wrapCell,
+                wrapCell: luxGridColumnProcessors.wrapCell,
                 getBooleanIconField: getBooleanIconField,
                 getStringOrJsonField: getStringOrJsonField
             };
@@ -135,6 +133,12 @@ define(['angular',
                 grid.dataProvider.getPage();
             }
 
+            function onDataReceived (data) {
+                angular.forEach(luxGridApi.onDataCallbacks, function (callback) {
+                    callback(grid, data);
+                });
+            }
+
             // Get specified page using params
             function refreshPage() {
                 var query = grid.state.query();
@@ -149,9 +153,11 @@ define(['angular',
 
         luxGridApi.onMetadataCallbacks = [];
         luxGridApi.gridApiCallbacks = [];
+        luxGridApi.onDataCallbacks = [];
         luxGridApi.gridApiCallbacks.push(luxGridPagination);
         luxGridApi.onMetadataCallbacks.push(modelMeta);
         luxGridApi.onMetadataCallbacks.push(parseColumns);
+        luxGridApi.onDataCallbacks.push(parseData);
 
         return luxGridApi;
 
@@ -237,7 +243,14 @@ define(['angular',
             options.columnDefs = columnDefs;
         }
 
-        function onDataReceived(grid, data) {
+        function flashClass(obj, className) {
+            obj[className] = true;
+            $lux.timeout(function() {
+                obj[className] = false;
+            }, 2000);
+        }
+
+        function parseData(grid, data) {
             var _ = lux._,
                 result = data.result,
                 options = grid.options;
@@ -263,6 +276,7 @@ define(['angular',
                     options.data.push(row);
                 } else {
                     options.data[index] = _.merge(options.data[index], row);
+                    flashClass(options.data[index], 'statusUpdated');
                 }
             });
 
