@@ -17,22 +17,22 @@ ng-class="{'sidebar-fixed':sidebar.fixed}" bs-collapse>
             {{section.name}}
         </li>
         <li ng-repeat-end ng-repeat="link in section.items" class="treeview"
-        ng-class="{active:activeLink(link)}" ng-include="'subnav'"></li>
+        ng-class="{active:links.activeLink(link)}" ng-include="'subnav'"></li>
     </ul>
 </aside>
-<div class="sidebar-page clearfix" ng-click="closeSideBar()" full-page>
+<div class="sidebar-page clearfix" ng-click="sidebar.close()" full-page>
     <div class="content-wrapper"></div>
     <div class="overlay"></div>
 </div>
 
 <script type="text/ng-template" id="subnav">
-    <a ng-href="{{link.href}}" ng-attr-title="{{link.title}}" ng-click="menuCollapse($event)">
+    <a ng-href="{{link.href}}" ng-attr-title="{{link.title}}" ng-click="sidebar.menuCollapse($event)">
         <i ng-if="link.icon" class="{{link.icon}}"></i>
         <span>{{link.name}}</span>
         <i ng-if="link.subitems" class="fa fa-angle-left pull-right"></i>
     </a>
-    <ul class="treeview-menu" ng-class="{active:activeSubmenu(link)}" ng-if="link.subitems">
-        <li ng-repeat="link in link.subitems" ng-class="{active:activeLink(link)}" ng-include="'subnav'">
+    <ul class="treeview-menu" ng-class="{active:links.activeSubmenu(link)}" ng-if="link.subitems">
+        <li ng-repeat="link in link.subitems" ng-class="{active:links.activeLink(link)}" ng-include="'subnav'">
         </li>
     </ul>
 </script>
