@@ -14,7 +14,7 @@
 
     root.lux = {
         //
-        PATH_TO_LOCAL_REQUIRED_FILES: '${media_dir}',
+        PATH_TO_LOCAL_REQUIRED_FILES: ${media_dir},
         //
         context: {
             API_URL: '/api',

@@ -3,6 +3,7 @@ import json
 import shutil
 import distutils.core
 from string import Template
+from pathlib import PurePath
 
 import lux
 from lux.utils.files import skipfile
@@ -115,6 +116,7 @@ class Command(lux.Command):
                         path = '%s/%s' % (path, filename) if path else filename
                     assert path, "path not available"
                     loc = os.path.join(dirpath, filename)
+
                     self._add_to_paths(paths, path, loc)
 
         return paths
@@ -183,7 +185,7 @@ class Command(lux.Command):
         test_cfg = self.js_target('tests.config.js')
         media_dir = os.path.join(self.app.meta.media_dir, '')
         test_file = test_template.safe_substitute(
-            {'media_dir': media_dir,
+            {'media_dir': json.dumps(media_dir),
              'require_paths': json.dumps(cfg_paths, indent=4)})
         with open(test_cfg, 'w') as fp:
             fp.write(test_file)
@@ -226,6 +228,7 @@ class Command(lux.Command):
         if self.copy:
             base = self.js_target_base()
             loc = os.path.relpath(loc, base)
+            loc = PurePath(loc).as_posix()
         if path in paths:
             assert paths[path] == loc, "path %s already in paths" % path
         paths[path] = loc
