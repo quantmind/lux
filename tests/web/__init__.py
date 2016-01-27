@@ -43,10 +43,10 @@ class WebsiteTest(test.WebApiTestCase):
         if status == 201:
             cookie2 = self.cookie(request.response)
             self.assertTrue(cookie.startswith('test-website='))
-            self.assertNotAlmostEqual(cookie, cookie2)
+            self.assertNotEqual(cookie, cookie2)
             self.assertFalse(request.cache.user.is_authenticated())
             self.assertTrue('token' in data)
-            return data['token']
+            return cookie2, data['token']
 
 
 def testdb(app):

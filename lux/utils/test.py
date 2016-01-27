@@ -6,17 +6,19 @@ import string
 import logging
 import json
 from unittest import mock
+from urllib.parse import urlparse, urlunparse
 from io import StringIO
 
 from pulsar import get_event_loop
-from pulsar.utils.httpurl import encode_multipart_formdata
+from pulsar.utils.httpurl import (Headers, encode_multipart_formdata,
+                                  ENCODE_BODY_METHODS)
 from pulsar.utils.string import random_string
 from pulsar.utils.websocket import SUPPORTED_VERSIONS, websocket_key
 from pulsar.apps.wsgi import WsgiResponse
 from pulsar.apps.test import test_timeout, sequential   # noqa
 
 import lux
-from lux.extensions.rest.client import LocalClient
+from lux.extensions.rest.client import LocalClient, Response
 from lux.core.commands.generate_secret_key import generate_secret
 logger = logging.getLogger('lux.test')
 
@@ -104,6 +106,7 @@ class TestClient:
     def request_start_response(self, method, path, HTTP_ACCEPT=None,
                                headers=None, body=None, content_type=None,
                                token=None, cookie=None, **extra):
+        method = method.upper()
         extra['REQUEST_METHOD'] = method.upper()
         path = path or '/'
         extra['HTTP_ACCEPT'] = HTTP_ACCEPT or '*/*'
@@ -117,6 +120,16 @@ class TestClient:
             heads.append(('Authorization', 'Bearer %s' % token))
         if cookie:
             heads.append(('Cookie', cookie))
+
+        # Encode body
+        if (method in ENCODE_BODY_METHODS and body and
+                not isinstance(body, bytes)):
+            content_type = Headers(heads).get('content-type')
+            if content_type is None:
+                body, content_type = encode_multipart_formdata(body)
+            elif content_type == 'application/json':
+                body = json.dumps(body).encode('utf-8')
+
         request = self.app.wsgi_request(path=path, headers=heads, body=body,
                                         extra=extra)
         start_response = mock.MagicMock()
@@ -131,10 +144,10 @@ class TestClient:
         return self.request('get', path, **extra)
 
     def post(self, path=None, **extra):
-        return self._post_put('post', path, **extra)
+        return self.request('post', path, **extra)
 
     def put(self, path=None, **extra):
-        return self._post_put('put', path, **extra)
+        return self.request('put', path, **extra)
 
     def delete(self, path=None, **extra):
         return self.request('delete', path, **extra)
@@ -152,16 +165,6 @@ class TestClient:
                    ('Sec-WebSocket-Version', str(max(SUPPORTED_VERSIONS))),
                    ('Sec-WebSocket-Key', websocket_key())]
         return self.get(path, headers=headers)
-
-    def _post_put(self, method, path, body=None, content_type=None, **extra):
-        if body is not None and not isinstance(body, bytes):
-            if content_type is None:
-                body, content_type = encode_multipart_formdata(body)
-            elif content_type == 'application/json':
-                body = json.dumps(body).encode('utf-8')
-
-        return self.request(method, path, content_type=content_type,
-                            body=body, **extra)
 
 
 class TestMixin:
@@ -355,10 +358,17 @@ class AppTestCase(unittest.TestCase, TestMixin):
 class TestApiClient(TestClient):
     """Api client test handler
     """
-    def request(self, method, path, **params):
+    def request(self, method, path, data=None, **params):
+        """Override :meth:`TestClient.request` for testing Api clients
+        inside a lux application
+        """
+        path = urlunparse(('', '') + tuple(urlparse(path))[2:])
+        params['body'] = data
         request, sr = self.request_start_response(method, path, **params)
-        request = self.app(request.environ, sr)
-        return request.response
+        response = self.app(request.environ, sr)
+        green_pool = self.app.green_pool
+        response = green_pool.wait(response, True) if green_pool else response
+        return Response(response)
 
 
 class WebApiTestCase(AppTestCase):
@@ -375,7 +385,7 @@ class WebApiTestCase(AppTestCase):
         api = cls.web.api
         http = api.http(cls.web)
         assert not isinstance(http, LocalClient), "API_URL not an absolute url"
-        http = TestApiClient(cls.app, http.headers)
+        http = TestApiClient(cls.app, list(http.headers))
         api._http = http
         assert api.http(cls.web) == http
         cls.webclient = TestClient(cls.web)
