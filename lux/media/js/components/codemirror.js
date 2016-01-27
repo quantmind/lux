@@ -40,8 +40,8 @@ define(['angular',
             });
         }])
         //
-        .directive('luxCodemirror', ['$lux', 'luxCodemirrorDefaults',
-            function ($lux, luxCodemirrorDefaults) {
+        .directive('luxCodemirror', ['$window', '$lux', 'luxCodemirrorDefaults',
+            function ($window, $lux, luxCodemirrorDefaults) {
                 //
                 return {
                     restrict: 'EA',
@@ -65,7 +65,7 @@ define(['angular',
 
                     require(['codemirror-' + jsModuleSuffix], function () {
                         // Require CodeMirror
-                        if (angular.isUndefined($lux.window.CodeMirror)) {
+                        if (angular.isUndefined($window.CodeMirror)) {
                             throw new Error('lux-codemirror needs CodeMirror to work!');
                         }
 
@@ -90,10 +90,10 @@ define(['angular',
                 // Creates a new instance of the editor
                 function newEditor(element, options) {
                     if (element[0].tagName === 'TEXTAREA') {
-                        return $lux.window.CodeMirror.fromTextArea(element[0], options);
+                        return $window.CodeMirror.fromTextArea(element[0], options);
                     } else {
                         element.html('');
-                        return new $lux.window.CodeMirror(function (cm_el) {
+                        return new $window.CodeMirror(function (cm_el) {
                             element.append(cm_el);
                         }, options);
                     }

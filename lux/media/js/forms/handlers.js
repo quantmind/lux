@@ -3,18 +3,18 @@ define(['angular', 'lux'], function (angular) {
 
     angular.module('lux.form.handlers', ['lux.services'])
 
-        .run(['$lux', 'loginUrl', 'postLoginUrl',
-            function ($lux, loginUrl, postLoginUrl) {
+        .run(['$window', '$lux', 'loginUrl', 'postLoginUrl',
+            function ($window, $lux, loginUrl, postLoginUrl) {
                 var formHandlers = {};
                 $lux.formHandlers = formHandlers;
 
                 formHandlers.reload = function () {
-                    $lux.window.location.reload();
+                    $window.location.reload();
                 };
 
                 formHandlers.redirectHome = function (response, scope) {
                     var href = scope.formAttrs.redirectTo || '/';
-                    $lux.window.location.href = href;
+                    $window.location.href = href;
                 };
 
                 // response handler for login form
@@ -23,7 +23,7 @@ define(['angular', 'lux'], function (angular) {
                         api = $lux.api(target);
                     if (api)
                         api.token(response.data.token);
-                    $lux.window.location.href = postLoginUrl;
+                    $window.location.href = postLoginUrl;
                 };
 
                 //

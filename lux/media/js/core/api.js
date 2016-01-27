@@ -24,9 +24,9 @@ define(['angular', 'lux/config'], function (angular, lux) {
         //
         .value('AuthApis', {})
         //
-        .run(['$lux', function ($lux) {
+        .run(['$window', '$lux', function ($window, $lux) {
             //
-            var doc = $lux.window.document,
+            var doc = $window.document,
                 name = angular.element(doc.querySelector('meta[name=csrf-param]')).attr('content'),
                 csrf_token = angular.element(doc.querySelector('meta[name=csrf-token]')).attr('content');
 

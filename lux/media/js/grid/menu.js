@@ -51,10 +51,10 @@ define(['angular',
             };
         }])
         //
-        .run(['$lux', 'luxGridApi', '$uibModal', initGridMenu]);
+        .run(['$window', '$lux', 'luxGridApi', '$uibModal', initGridMenu]);
 
 
-    function initGridMenu ($lux, luxGridApi, $uibModal) {
+    function initGridMenu ($window, $lux, luxGridApi, $uibModal) {
 
         luxGridApi.onMetadataCallbacks.push(gridMenu);
 
@@ -78,7 +78,7 @@ define(['angular',
                 if (lux.context.uiRouterEnabled)
                     $lux.location.path($lux.location.path() + '/add');
                 else
-                    $lux.window.location.href += '/add';
+                    $window.location.href += '/add';
             };
 
             actions.delete = function () {

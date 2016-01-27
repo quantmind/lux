@@ -68,11 +68,11 @@ define(['angular',
             wrapCell: wrapCell
         })
         //
-        .factory('luxGridApi', ['$lux', 'uiGridConstants', 'luxGridDefaults',
+        .factory('luxGridApi', ['$window', '$lux', 'uiGridConstants', 'luxGridDefaults',
             'luxGridDataProviders', 'luxGridColumnProcessors', createApi]);
 
 
-    function createApi ($lux, uiGridConstants, luxGridDefaults, luxGridDataProviders, luxGridColumnProcessors) {
+    function createApi ($window, $lux, uiGridConstants, luxGridDefaults, luxGridDataProviders, luxGridColumnProcessors) {
         //
         //  Lux grid factory function
         function luxGridApi(scope, element, options) {
@@ -162,7 +162,7 @@ define(['angular',
         return luxGridApi;
 
         function getStateName() {
-            return $lux.window.location.href.split('/').pop(-1);
+            return $window.location.href.split('/').pop(-1);
         }
 
         function getModelName() {
@@ -185,7 +185,7 @@ define(['angular',
             grid.getObjectIdField = getObjectIdField;
 
             function getObjectIdField(entity) {
-                var reprPath = grid.options.reprPath || $lux.window.location;
+                var reprPath = grid.options.reprPath || $window.location;
                 return reprPath + '/' + entity[grid.metaFields.id];
             }
         }
