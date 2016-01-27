@@ -37,7 +37,9 @@ define(['angular',
             },
             paginationPageSize: 25,
             //
-            gridFilters: {}
+            gridFilters: {},
+            //
+            template: 'lux/grid/templates/grid.tpl.html'
         })
         .constant('luxGridColumnProcessors', {
             date: dateSorting,
@@ -113,7 +115,7 @@ define(['angular',
                     callback(grid, metadata);
                 });
                 scope.gridOptions = grid.options;
-                $lux.renderTemplate('lux/grid/templates/grid.tpl.html', element, scope);
+                $lux.renderTemplate(options.template, element, scope);
             }
 
             function onRegisterApi(gridApi) {
