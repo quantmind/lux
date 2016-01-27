@@ -1,7 +1,7 @@
 import lux
 from lux import route
 from lux.extensions import odm, rest
-from lux.extensions.auth.forms import user_model
+from lux.extensions.auth.forms import UserModel, group_model
 from lux.utils.auth import ensure_authenticated
 
 __test__ = False
@@ -9,8 +9,18 @@ __test__ = False
 
 class Extension(lux.Extension):
 
-    def api_sessions(self, app):
+    def api_sections(self, app):
         return [UserRest()]
+
+
+def user_model():
+    model = UserModel('user',
+                      url='user',
+                      id_field='username',
+                      repr_field='name',
+                      exclude=('password',))
+    model.add_related_column('groups', group_model)
+    return model
 
 
 class UserRest(odm.RestRouter):
