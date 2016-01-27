@@ -113,7 +113,20 @@ class Command(ConsoleParser):
         app()
         # make sure the handler is created
         self.app.get_handler()
-        return self.run_until_complete(app.cfg, **params)
+        run = partial(self.run, app.cfg, **params)
+        pool = self.app.green_pool
+        if pool:
+            if pool.in_green_worker:
+                return pool.wait(run())
+            else:
+                result = pool.submit(run)
+        else:
+            result = run()
+        #
+        loop = get_event_loop()
+        if is_async(result) and not loop.is_running():
+            result = loop.run_until_complete(result)
+        return result
 
     def get_version(self):
         """Return the :class:`.Command` version.
@@ -132,22 +145,6 @@ class Command(ConsoleParser):
         This is the only method which needs implementing by subclasses.
         '''
         raise NotImplementedError
-
-    def run_until_complete(self, options, **params):
-        '''Execute the :meth:`run` method using pulsar asynchronous engine.
-
-        Most commands are run using this method.
-        '''
-        pool = self.app.green_pool
-        loop = get_event_loop()
-        run = partial(self.run, options, **params)
-        if pool:
-            result = pool.submit(run)
-        else:
-            result = run()
-        if is_async(result) and not loop.is_running():
-            result = loop.run_until_complete(result)
-        return result
 
     @property
     def logger(self):

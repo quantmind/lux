@@ -24,7 +24,7 @@ class TestContentModel(test.TestCase):
 
     def test_initialization(self):
         # repo exist
-        self.assertEqual(str(self.model.path), PWD)
+        self.assertEqual(str(self.model.directory), os.path.join(PWD, 'tests'))
         self.assertIsInstance(self.model, Content)
 
         # repo not exist
