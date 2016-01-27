@@ -53,6 +53,7 @@
         "moment-timezone",
         "videojs",
         "angular",
+        "angular-animate",
         "angular-cookies",
         "angular-ui-bootstrap",
         "angular-file-upload",

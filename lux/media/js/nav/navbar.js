@@ -1,5 +1,6 @@
 define(['angular',
         'lux',
+        'angular-animate',
         'angular-ui-bootstrap',
         'lux/nav/templates'], function (angular, lux) {
     'use strict';
@@ -21,13 +22,13 @@ define(['angular',
     //          url: "/",           //  href of the brand (if brand is defined)
     //      };
     //
-    angular.module('lux.nav', ['ui.bootstrap', 'lux.nav.templates'])
+    angular.module('lux.nav', ['ui.bootstrap', 'lux.nav.templates', 'ngAnimate'])
         //
         .value('navBarDefaults', {
             collapseWidth: 768,
             theme: 'default',
             search_text: '',
-            collapse: '',
+            isCollapsed: false,
             // Navigation place on top of the page (add navbar-static-top class to navbar)
             // nabar2 it is always placed on top
             top: false,
@@ -125,25 +126,22 @@ define(['angular',
 
             luxNavbar.maybeCollapse = function (navbar) {
                 var width = $window.innerWidth > 0 ? $window.innerWidth : screen.width,
-                    c = navbar.collapse;
+                    c = navbar.isCollapsed;
 
-                if (width < navbar.collapseWidth)
-                    navbar.collapse = 'collapse';
-                else
-                    navbar.collapse = '';
-                return c !== navbar.collapse;
+                navbar.isCollapsed = width < navbar.collapseWidth;
+                return c !== navbar.isCollapsed;
             };
 
             luxNavbar.collapseForWide = function (navbar, element) {
                 var width = $window.innerWidth > 0 ? $window.innerWidth : screen.width,
-                    c = navbar.collapse;
+                    c = navbar.isCollapsed;
 
-                if (width > navbar.collapseWidth || navbar.collapse === '') {
+                if (width > navbar.collapseWidth || !navbar.isCollapsed) {
                     // If dropdown was opened then collapse
                     if (element.find('nav')[1].classList.contains('in'))
-                        navbar.collapse = 'collapse';
+                        navbar.isCollapsed = true;
                 }
-                return c !== navbar.collapse;
+                return c !== navbar.isCollapsed;
             };
 
             return luxNavbar;
