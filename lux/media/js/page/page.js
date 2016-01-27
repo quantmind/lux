@@ -9,8 +9,8 @@ define(['angular',
     //  Design to work with the ``lux.extension.angular``
     angular.module('lux.page', ['lux.page.templates'])
         //
-        .factory('pageInfo', ['$lux', '$document', 'dateFilter',
-            function ($lux, $document, dateFilter) {
+        .factory('pageInfo', ['$window', '$lux', '$document', 'dateFilter',
+            function ($window, $lux, $document, dateFilter) {
 
                 function pageInfo (page, scope) {
                     // If the page is a string, retrieve it from the pages object
@@ -33,7 +33,7 @@ define(['angular',
                         }
                     }
 
-                    page.path = $lux.window.location.pathname;
+                    page.path = $window.location.pathname;
 
                     return page;
                 }
@@ -52,10 +52,10 @@ define(['angular',
             }
         ])
 
-        .factory('luxBreadcrumbs', ['$lux', function ($lux) {
+        .factory('luxBreadcrumbs', ['$window', '$lux', function ($window, $lux) {
 
             return function () {
-                var loc = $lux.window.location,
+                var loc = $window.location,
                     path = loc.pathname,
                     steps = [],
                     last = {
