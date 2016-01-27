@@ -3,9 +3,9 @@ from tests import web
 
 class AuthTest(web.WebsiteTest):
 
-    def test_web_app(self):
-        web = self.web
-        self.assertEqual(web.meta.name, 'tests.web.website')
+    def test_apps(self):
+        self.assertEqual(self.web.meta.name, 'tests.web.website')
+        self.assertEqual(self.app.meta.name, 'tests.web.webapi')
 
     def test_get_login(self):
         request = yield from self.webclient.get('/login')
@@ -17,5 +17,11 @@ class AuthTest(web.WebsiteTest):
         self.assertEqual(response, None)
 
     def test_login(self):
-        token = yield from self._login()
-        a = 1
+        cookie, token = yield from self._login()
+        self.assertTrue(cookie)
+        self.assertTrue(token)
+
+    def test_authenticated_view(self):
+        cookie, token = yield from self._login()
+        request = yield from self.webclient.get('/', cookie=cookie)
+        bs = self.bs(request.response, 200)
