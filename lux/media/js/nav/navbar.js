@@ -44,7 +44,7 @@ define(['angular',
         //
         .value('navLinkTemplate', 'lux/nav/templates/link.tpl.html')
 
-        .factory('navLinks', ['$location', '$window', function ($location, $window) {
+        .factory('navLinks', ['$location', function ($location) {
 
             return {
                 click: click,

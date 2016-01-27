@@ -52,7 +52,7 @@ define(['angular',
             }
         ])
 
-        .factory('luxBreadcrumbs', ['$window', '$lux', function ($window, $lux) {
+        .factory('luxBreadcrumbs', ['$window', function ($window) {
 
             return function () {
                 var loc = $window.location,
