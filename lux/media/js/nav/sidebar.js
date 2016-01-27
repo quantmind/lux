@@ -89,7 +89,7 @@ define(['angular',
                             name: sidebar.toggleName,
                             klass: 'sidebar-toggle',
                             icon: 'fa fa-bars',
-                            action: sidebar.toggle.bind(sidebar),
+                            action: angular.isFunction(sidebar.toggle) ? sidebar.toggle.bind(sidebar) : undefined,
                             right: 'vert-divider'
                         });
                     }
