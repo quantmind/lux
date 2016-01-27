@@ -1,4 +1,4 @@
-'''Views for managing user-related actions such as
+"""Views for managing user-related actions such as
 
 * login
 * logout
@@ -7,7 +7,7 @@
 
 This user actions are served under the "authorizations" url unless
 the model is overwritten.
-'''
+"""
 from pulsar import MethodNotAllowed, Http404, HttpException
 
 from lux import route
@@ -37,13 +37,13 @@ class SignUpMixin:
 
     @action
     def signup(self, request):
-        '''Handle signup post data
+        """Handle signup post data
 
         If :attr:`.create_user_form` form is None, raise a 404 error.
 
         A succesful response is returned by the backend
         :meth:`.signup_response` method.
-        '''
+        """
         if not self.create_user_form:
             raise Http404
 
@@ -146,8 +146,8 @@ class ResetPasswordMixin:
 
 
 class Authorization(RestRouter, SignUpMixin, ResetPasswordMixin):
-    '''Authentication views.
-    '''
+    """Authentication views for Restful APIs
+    """
     model = RestModel('authorization')
     login_form = LoginForm
     change_password_form = ChangePasswordForm
@@ -165,8 +165,8 @@ class Authorization(RestRouter, SignUpMixin, ResetPasswordMixin):
 
     @route('/<action>', method=('post', 'options'))
     def auth_action(self, request):
-        '''Post actions
-        '''
+        """Post actions
+        """
         action = request.urlargs['action'].replace('-', '_')
         method = getattr(self, action, None)
         if not getattr(method, 'is_action', False):
@@ -180,8 +180,8 @@ class Authorization(RestRouter, SignUpMixin, ResetPasswordMixin):
 
     @action
     def change_password(self, request):
-        '''Change user password
-        '''
+        """Change user password
+        """
         # Set change_password_form to None to remove support
         # for password change
         if not self.change_password_form:

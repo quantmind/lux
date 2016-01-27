@@ -6,7 +6,7 @@ from urllib.parse import urlencode
 from pulsar import ImproperlyConfigured, HttpException
 from pulsar.utils.httpurl import is_absolute_uri
 
-from lux import Parameter, Http401, HttpRedirect
+from lux import Parameter, Http401, Http404, HttpRedirect
 from lux.extensions.angular import add_ng_modules
 
 from .mixins import jwt, SessionBackendMixin
@@ -205,20 +205,23 @@ class ApiSessionBackend(SessionBackendMixin,
         return session
 
     def get_session(self, request, key):
+        """Get the session at key from the cache server
+        """
         app = request.app
         session = app.cache_server.get_json(self._key(key))
         if session:
             session = Session(session)
             if session.user:
+                user = User(session.user)
                 # Check if the token is still a valid one
                 api = request.app.api(request)
                 try:
-                    api.head('authorizations')
-                except Http401:  # 401, redirect to login
-                    url = request.config['LOGIN_URL']
-                    request.cache.session = self.create_session(request)
-                    raise HttpRedirect(url)
-                session.user = User(session.user)
+                    if not session.encoded:
+                        raise Http401
+                    api.head('authorizations', token=session.encoded)
+                except Http401:
+                    handle_401(request, user)
+                session.user = user
             return session
 
     def session_save(self, request, session):
@@ -241,7 +244,7 @@ class ApiSessionBackend(SessionBackendMixin,
     def _key(self, id):
         return 'session:%s' % id
 
-    def _get_permissions(self, request, resources, actions=None, tried=0):
+    def _get_permissions(self, request, resources, actions=None):
         assert self.permissions_url, "permission url not available"
         if not isinstance(resources, (list, tuple)):
             resources = (resources,)
@@ -251,25 +254,21 @@ class ApiSessionBackend(SessionBackendMixin,
                 actions = (actions,)
             query.extend((('action', action) for action in actions))
         query = urlencode(query)
-        again = False
-        tried += 1
         api = request.app.api(request)
         try:
-            try:
-                response = api.get('%s?%s' % (self.permissions_url, query))
-            except Http401:
-                if tried == 1:
-                    again = True
-                else:
-                    raise
-        except Exception as exc:
-            # This should not really happen
-            request.logger.error('Could not load permissions from API server:'
-                                 ' %s', exc)
-            return {}
+            response = api.get('%s?%s' % (self.permissions_url, query))
+        except Http401:
+            handle_401(request)
 
-        if again:
-            request.cache.auth_backend.logout(request)
-            return self._get_permissions(request, resources, actions, tried)
-        else:
-            return response.json()
+        return response.json()
+
+
+def handle_401(request, user=None):
+    """When the API respond with a 401 logout and redirect to login
+    """
+    user = user or request.session.user
+    if user.is_authenticated():
+        request.cache.auth_backend.logout(request)
+        raise HttpRedirect(request.config['LOGIN_URL'])
+    else:
+        raise Http404

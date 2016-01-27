@@ -389,3 +389,10 @@ class WebApiTestCase(AppTestCase):
         api._http = http
         assert api.http(cls.web) == http
         cls.webclient = TestClient(cls.web)
+
+    def check_html_token(self, doc, token):
+        value = doc.find('meta', attrs={'name': 'user-token'})
+        if value:
+            self.assertEqual(value.attrs['content'], token)
+        else:
+            raise ValueError('user-token meta tag not available')

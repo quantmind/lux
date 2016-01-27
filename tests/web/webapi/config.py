@@ -15,3 +15,5 @@ DEFAULT_PERMISSION_LEVEL = 'none'
 DEFAULT_PERMISSION_LEVELS = {'user': 'read',
                              'site': 'read',
                              'articles': 'read'}
+
+SESSION_EXPIRY = 5
