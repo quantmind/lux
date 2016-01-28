@@ -5,7 +5,7 @@ from pulsar import ImproperlyConfigured
 from pulsar.utils.pep import to_string
 from pulsar.apps.wsgi import Json
 
-from lux import Parameter, wsgi_request, Http401, BadRequest
+from lux import Parameter, wsgi_request, Http401
 
 from ..authviews import Authorization
 
@@ -48,11 +48,10 @@ class TokenBackendMixin:
             return jwt.decode(token, request.config['SECRET_KEY'])
         except jwt.ExpiredSignature:
             request.app.logger.warning('JWT token has expired')
-            # In this case we want the client to perform
-            # a new authentication. Raise 401
             raise Http401('Token')
         except jwt.DecodeError as exc:
-            raise BadRequest(str(exc))
+            request.app.logger.warning(str(exc))
+            raise Http401('Token')
 
     def create_token(self, request, user, **kwargs):  # pragma    nocover
         """Create a new token and store it

@@ -2,7 +2,7 @@ from pulsar import ImproperlyConfigured
 from pulsar.utils.pep import to_string
 from pulsar.apps.wsgi import Json
 
-from lux import Parameter, Http401, BadRequest
+from lux import Parameter, Http401
 
 from .. import AuthBackend
 from .mixins import jwt, TokenBackendMixin
@@ -50,11 +50,6 @@ class TokenBackend(TokenBackendMixin, RegistrationMixin, AuthBackend):
                     token = self.decode_token(request, key)
                 except Http401:
                     raise
-                except BadRequest as exc:
-                    request.app.logger.error('Could not load user: %s' %
-                                             str(exc))
-            # In this case we want the client to perform
-            # a new authentication. Raise 401
                 except Exception:
                     request.app.logger.exception('Could not load user')
                 else:
