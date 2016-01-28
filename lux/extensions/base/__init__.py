@@ -28,7 +28,7 @@ __all__ = ['FileRouter', 'MediaRouter']
 
 class Extension(lux.Extension):
     _config = [
-        Parameter('GZIP_MIN_LENGTH', 200,
+        Parameter('GZIP_MIN_LENGTH', None,
                   'If a positive integer, a response middleware is added so '
                   'that it encodes the response via the gzip algorithm.'),
         Parameter('USE_ETAGS', False, ''),

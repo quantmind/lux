@@ -145,7 +145,7 @@ class AdminModel(rest.RestMixin, AdminRouter):
     def get_html(self, request):
         app = request.app
         model = self.model
-        options = dict(target=model.get_target())
+        options = dict(target=model.get_target(request))
         if self.permissions is not None:
             options['permissions'] = self.permissions
         context = {'grid': grid(options)}
@@ -181,7 +181,7 @@ class CRUDAdmin(AdminModel):
         model = self.model
 
         if backend.has_permission(request, model.name, action):
-            target = model.get_target(path=id, get=True)
+            target = model.get_target(request, path=id, get=True)
             html = form(request).as_form(action=target, actionType=action)
             context = {'html_form': html.render()}
             html = request.app.render_template(self.addtemplate, context)
