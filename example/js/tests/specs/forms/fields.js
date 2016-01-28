@@ -82,9 +82,9 @@ define(['angular',
                 name: 'date'
             }]);
             var element = tests.compile('<div><lux-form data-options="lux.formFieldTests.date"></lux-form></div>'),
-                scope = element.scope();
+                form = element.find('form'),
+                scope = form.scope();
             //
-            var form = element.find('form');
             var field = form.find('input').eq(0);
 
             scope.form.date.$setViewValue('2011-04-02');

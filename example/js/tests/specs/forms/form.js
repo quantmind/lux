@@ -29,6 +29,7 @@ define(['angular',
                 scope = form.scope();
 
             scope.form.login.$setViewValue('user@example.com');
+            scope.$digest();
             expect(scope.form.login.$valid).toBe(true);
             expect(scope.form.login.$invalid).toBe(false);
         });
@@ -45,6 +46,7 @@ define(['angular',
                 scope = form.scope();
 
             scope.form.login.$setViewValue('example.com');
+            scope.$digest();
             expect(scope.form.login.$valid).toBe(false);
             expect(scope.form.login.$invalid).toBe(true);
         });

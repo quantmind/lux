@@ -185,7 +185,7 @@ define(['angular',
             //
             function navbar (scope, element, attrs) {
 
-                var opts = angular.extend({}, scope.navbar, lux.getOptions(attrs));
+                var opts = angular.extend({}, scope.navbar, lux.getOptions(attrs, 'navbar'));
 
                 scope.navbar = luxNavbar(opts);
                 scope.links = navLinks;

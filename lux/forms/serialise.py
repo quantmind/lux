@@ -6,11 +6,10 @@ from lux import Html
 from lux.utils.crypt import get_random_string
 
 
-__all__ = ['Fieldset', 'Submit', 'Layout', 'Row', 'Col',
-           'as_angular_dict']
+__all__ = ['Fieldset', 'Submit', 'Layout', 'Row', 'Col', 'as_serialised_field']
 
 
-def angular_fields(form_class, fields, missings):
+def serialised_fields(form_class, fields, missings):
     '''Utility function for checking fields in layouts'''
     for field in fields:
         if field in missings:
@@ -18,15 +17,15 @@ def angular_fields(form_class, fields, missings):
             if field:
                 missings.remove(field.name)
                 yield field
-        elif isinstance(field, AngularFormElement):
+        elif isinstance(field, FormElement):
             field.setup(form_class, missings)
             yield field
         else:
             raise ValueError(field)
 
 
-def as_angular_dict(field, form):
-    if isinstance(field, AngularFormElement):
+def as_serialised_field(field, form):
+    if isinstance(field, FormElement):
         return field.as_dict(form)
     else:
         data = field.getattrs(form)
@@ -42,7 +41,7 @@ def as_angular_dict(field, form):
         return {'field': data}
 
 
-class AngularFormElement(object):
+class FormElement:
     '''Base class for all serialization elements
     '''
     type = None
@@ -54,7 +53,7 @@ class AngularFormElement(object):
         pass
 
 
-class Submit(AngularFormElement):
+class Submit(FormElement):
     type = 'button'
 
     def __init__(self, label, name=None, **attrs):
@@ -68,7 +67,7 @@ class Submit(AngularFormElement):
         return {'field': self.attrs}
 
 
-class Fieldset(AngularFormElement):
+class Fieldset(FormElement):
     '''A :class:`.Fieldset` is a collection of form fields
     '''
     type = 'fieldset'
@@ -82,10 +81,14 @@ class Fieldset(AngularFormElement):
             self.attrs['type'] = self.type
         self.type = self.attrs['type']
 
+    def __repr__(self):
+        return '%s %s' % (self.type, self.children)
+    __str__ = __repr__
+
     def as_dict(self, form=None):
         return {
             'field': self.attrs.copy(),
-            'children': [as_angular_dict(c, form) for c in self.children]
+            'children': [as_serialised_field(c, form) for c in self.children]
             }
 
     def setup(self, form_class, missings):
@@ -93,7 +96,7 @@ class Fieldset(AngularFormElement):
         self.children = []
         if self.all:
             children = missings[:]
-        for field in angular_fields(form_class, children, missings):
+        for field in serialised_fields(form_class, children, missings):
             self.children.append(field)
 
 
@@ -117,14 +120,14 @@ class Layout(Fieldset):
 
     def __call__(self, *args, **kwargs):
         form = self.form_class(*args, **kwargs)
-        return AngularForm(self, form)
+        return SerialisedForm(self, form)
 
     def setup(self, instance_type):
         self.form_class = instance_type
         missings = list(self.form_class.base_fields)
         children = self.children
         self.children = []
-        for field in angular_fields(self.form_class, children, missings):
+        for field in serialised_fields(self.form_class, children, missings):
             self.children.append(field)
         if missings and self.all:
             field = self.default_element(*missings)
@@ -132,7 +135,7 @@ class Layout(Fieldset):
             self.children.append(field)
 
 
-class AngularForm(object):
+class SerialisedForm(object):
 
     def __init__(self, layout, form):
         self.layout = layout

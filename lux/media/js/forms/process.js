@@ -98,13 +98,13 @@ define(['angular',
     formProcessors.default = function ($lux, p) {
 
         if (p.api) {
-            return p.api.request(p.attrs.method, p.target, p.model);
+            return p.api.request(p.method, p.target, p.model);
         } else if (p.target) {
             var enctype = p.attrs.enctype || 'application/json',
                 ct = enctype.split(';')[0],
                 options = {
                     url: p.target,
-                    method: p.attrs.method || 'POST',
+                    method: p.method,
                     data: p.model,
                     transformRequest: $lux.formData(ct)
                 };

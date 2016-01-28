@@ -142,7 +142,7 @@ define(['angular',
                     };
 
                     function sidebar(scope, element, attrs) {
-                        var options = lux.getOptions(attrs),
+                        var options = lux.getOptions(attrs, 'sidebar'),
                             sidebars = angular.extend({}, scope.sidebar, options),
                             navbar = angular.extend({}, scope.navbar, options.navbar),
                             template;
@@ -159,12 +159,15 @@ define(['angular',
                         scope.links = navLinks;
 
                         element.append($compile(template)(scope));
-                        inner = $compile(inner)(scope);
 
-                        if (sidebars.length)
-                            lux.querySelector(element, '.content-wrapper').append(inner);
-                        else
-                            element.after(inner);
+                        if (inner) {
+                            inner = $compile(inner)(scope);
+
+                            if (sidebars.length)
+                                lux.querySelector(element, '.content-wrapper').append(inner);
+                            else
+                                element.after(inner);
+                        }
                     }
 
                     function finalise(scope, element) {
