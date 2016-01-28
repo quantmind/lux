@@ -122,11 +122,12 @@ class TestClient:
             heads.append(('Cookie', cookie))
 
         # Encode body
-        if (method in ENCODE_BODY_METHODS and body and
+        if (method in ENCODE_BODY_METHODS and body is not None and
                 not isinstance(body, bytes)):
             content_type = Headers(heads).get('content-type')
             if content_type is None:
                 body, content_type = encode_multipart_formdata(body)
+                heads.append(('content-type', content_type))
             elif content_type == 'application/json':
                 body = json.dumps(body).encode('utf-8')
 

@@ -16,6 +16,7 @@ class PasswordMixin:
                                               body={},
                                               content_type='application/json',
                                               token=token)
+        # user is authenticated, method not allowed
         self.json(request.response, 405)
         request = yield from self.client.post('/authorizations/reset-password',
                                               body={},
@@ -52,4 +53,4 @@ class PasswordMixin:
         badtoken = token[:-1]
         self.assertNotEqual(token, badtoken)
         request = yield from self.client.get('/secrets', token=badtoken)
-        self.assertEqual(request.response.status_code, 403)
+        self.assertEqual(request.response.status_code, 401)

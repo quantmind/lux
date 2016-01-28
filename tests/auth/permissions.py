@@ -93,21 +93,15 @@ class PermissionsMixin:
         self.assertTrue('id' in data)
         self.assertFalse('subject' in data)
 
-        request = yield from self.client.get(
-            '/objectives')
-        response = request.response
-        self.assertEqual(response.status_code, 200)
-        data = self.json(response)
+        request = yield from self.client.get('/objectives')
+        data = self.json(request.response, 200)
         self.assertTrue('result' in data)
         for item in data['result']:
             self.assertTrue('id' in item)
             self.assertFalse('subject' in item)
 
-        request = yield from self.client.get(
-            '/objectives/metadata')
-        response = request.response
-        self.assertEqual(response.status_code, 200)
-        data = self.json(response)
+        request = yield from self.client.get('/objectives/metadata')
+        data = self.json(request.response, 200)
         self.assertFalse(
             any(field['name'] == 'subject' for field in data['columns']))
 
@@ -153,14 +147,12 @@ class PermissionsMixin:
 
         request = yield from self.client.post(
             '/objectives/{}'.format(objective['id']),
+            content_type='application/json',
             body={
                 'deadline': 'end of May',
                 'outcome': 'exceeded'
             })
-
-        response = request.response
-        self.assertEqual(response.status_code, 200)
-        data = self.json(response)
+        data = self.json(request.response, 200)
         self.assertTrue('id' in data)
         self.assertTrue('outcome' in data)
         self.assertEqual(data['outcome'], "under achieved")
@@ -169,9 +161,7 @@ class PermissionsMixin:
 
         request = yield from self.client.get(
             '/objectives/{}'.format(objective['id']), token=su_token)
-        response = request.response
-        self.assertEqual(response.status_code, 200)
-        data = self.json(response)
+        data = self.json(request.response, 200)
         self.assertTrue('id' in data)
         self.assertTrue('subject' in data)
         self.assertTrue('outcome' in data)
@@ -216,6 +206,7 @@ class PermissionsMixin:
 
         request = yield from self.client.post(
             '/objectives/{}'.format(objective['id']),
+            content_type='application/json',
             token=user_token,
             body={
                 'subject': 'subject changed'

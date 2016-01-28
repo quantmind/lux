@@ -29,12 +29,13 @@ before_script:
   - psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE luxtests to lux;"
 
 script:
-  - grunt jasmine
   - flake8
   - rm -rf lux
   - rm -rf build
   - python -m runtests --coverage --log-level error
   - if [[ $TRAVIS_PYTHON_VERSION == '3.4.3' ]]; then python -m runtests --coveralls; fi
+  - cd example
+  - grunt build test
 
 # after_script:
 #   - killall rethinkdb

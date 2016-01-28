@@ -6,7 +6,7 @@ from urllib.parse import urlencode
 from pulsar import ImproperlyConfigured, HttpException
 from pulsar.utils.httpurl import is_absolute_uri
 
-from lux import Parameter, Http401, Http404, HttpRedirect
+from lux import Parameter, Http401, PermissionDenied, Http404, HttpRedirect
 from lux.extensions.angular import add_ng_modules
 
 from .mixins import jwt, SessionBackendMixin
@@ -14,6 +14,9 @@ from .registration import RegistrationMixin
 from .. import (AuthenticationError, AuthBackend, luxrest,
                 User, Session, ModelMixin)
 from ..htmlviews import ForgotPassword, Login, Logout, SignUp
+
+
+NotAuthorised = (Http401, PermissionDenied)
 
 
 def auth_router(api_url, url, Router, path=None):
@@ -219,7 +222,7 @@ class ApiSessionBackend(SessionBackendMixin,
                     if not session.encoded:
                         raise Http401
                     api.head('authorizations', token=session.encoded)
-                except Http401:
+                except NotAuthorised:
                     handle_401(request, user)
                 session.user = user
             return session
@@ -257,7 +260,7 @@ class ApiSessionBackend(SessionBackendMixin,
         api = request.app.api(request)
         try:
             response = api.get('%s?%s' % (self.permissions_url, query))
-        except Http401:
+        except NotAuthorised:
             handle_401(request)
 
         return response.json()
