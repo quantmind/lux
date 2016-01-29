@@ -1,6 +1,6 @@
-'''
+"""
 Websocket handler for SockJS clients.
-'''
+"""
 import lux
 
 from lux import Parameter
@@ -26,9 +26,9 @@ class Extension(lux.Extension):
         app.add_events(('on_websocket_open', 'on_websocket_close'))
 
     def middleware(self, app):
-        '''Add middleware to edit content
-        '''
+        """Add middleware to edit content
+        """
         handler = app.config['WS_HANDLER']
-        if handler:
-            socketio = SocketIO(app.config['WS_URL'], handler(app))
-            return [socketio]
+        url = app.config['WS_URL']
+        if handler and url:
+            return [SocketIO(url, handler(app))]

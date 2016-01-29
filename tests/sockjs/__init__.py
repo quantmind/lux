@@ -20,6 +20,10 @@ class AddWsRpc(RpcWsMethod):
 class Extension(lux.Extension):
 
     ws_add = AddWsRpc
+    """An rpc method class
+    """
 
     def ws_echo(self, ws, msg):
+        """A simple callable
+        """
         ws.write(msg)

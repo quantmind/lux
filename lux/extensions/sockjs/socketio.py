@@ -11,8 +11,8 @@ from .utils import IFRAME_TEXT
 
 
 class SocketIO(Router):
-    '''A Router for sockjs requests
-    '''
+    """A Router for sockjs requests
+    """
     info_cache = CacheControl(nostore=True)
     home_cache = CacheControl(maxage=60*60*24*30)
 
@@ -58,7 +58,8 @@ class SocketIO(Router):
         return response
 
     def origin(self, request):
-        """Handles request authentication"""
+        """Handles request authentication
+        """
         response = request.response
         origin = request.get('HTTP_ORIGIN', '*')
 

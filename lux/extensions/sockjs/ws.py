@@ -1,25 +1,32 @@
+"""Module implementing Lux websocket handler and websocket
+remote procedure call framework
+"""
 import time
 import json
 import hashlib
 import logging
 from inspect import isclass
 
+from pulsar import is_async, ensure_future
 from pulsar.apps import ws, rpc
-from pulsar import maybe_async
 
-LUX_CONNECTION = 'lux:connection_established'
-LUX_MESSAGE = 'lux:message'
-LUX_ERROR = 'lux:error'
+LUX_CONNECTION = 'connection_established'
+LUX_MESSAGE = 'message'
+LUX_ERROR = 'error'
+LUX_RPC_CHANNEL = 'rpc'
 
 
 class WsClient:
-    '''Server side of a websocket client.
+    """Server side of a websocket client.
+
+    Instances of this class are passes around in the same way as the
+    WSGI request object is for standard HTTP views
 
     .. attr: transport
 
         The websocket protocol with the connection to the client
 
-    '''
+    """
     logger = logging.getLogger('lux.sockjs')
 
     def __init__(self, transport):
@@ -33,18 +40,31 @@ class WsClient:
             key = '%s - %s' % (self.address, self.started)
             session_id = hashlib.sha224(key.encode('utf-8')).hexdigest()
         self.session_id = session_id
+        self.cache.ws_rpc_methods = {}
 
     @property
     def cache(self):
-        '''A cache object to store session persistent data
-        '''
+        """A cache object to store session persistent data
+        """
         return self.transport.cache
 
     @property
+    def handler(self):
+        """Websocket handler
+        """
+        return self.transport.handler
+
+    @property
+    def wsgi_request(self):
+        """Original WSGI request which obtained the websocket upgrade
+        """
+        return self.transport.handshake
+
+    @property
     def rpc_methods(self):
-        '''A cache object to store session persistent data
-        '''
-        return self.transport.handler.rpc_methods
+        """A cache object to store session persistent data
+        """
+        return self.handler.rpc_methods
 
     def __str__(self):
         return '%s - %s' % (self.address, self.session_id)
@@ -57,17 +77,58 @@ class WsClient:
                    time=self.started)
 
     def on_message(self, message):
+        """Handle a new message in the websocket
+        """
+        request_id = None
         try:
-            data = self._load(message)
-            self._response(data)
+            msg = self._load(message)
+            request_id = msg.get('id')
+            if 'method' in msg:
+                method = msg['method']
+                handler = self.rpc_methods.get(method)
+                if not handler:
+                    raise rpc.NoSuchFunction(method)
+                handler(self, request_id, msg.get('data'))
+            else:
+                raise rpc.InvalidRequest('Method not available')
+        except rpc.InvalidRequest as exc:
+            self.error_message(exc, request_id=request_id)
         except Exception as exc:
             self.logger.exception('While loading websocket message')
-            self.error_message(exc)
+            self.error_message(exc, request_id=request_id)
             self.transport.connection.close()
 
     def on_close(self):
         self.app.fire('on_websocket_close', self)
         self.logger.info('closing socket %s', self)
+
+    def pubsub(self, key=None):
+        """Convenience method for a pubsub handler
+        """
+        return self.app.pubsub(key)
+
+    def write_rpc(self, request_id, method=None, channel=None,
+                  rpc_complete=True, data=None, json_encoder=None,
+                  message_type=None, code=None):
+        """Write a response to an RPC message
+        """
+        message_type = message_type or LUX_MESSAGE
+        channel = channel or LUX_RPC_CHANNEL
+        response = {'id': request_id,
+                    'rpcComplete': rpc_complete}
+        if method:
+            response['method'] = method
+        if data:
+            response['data'] = data
+        if code:
+            response['code'] = code
+        if json_encoder:
+            response = json_encoder(response)
+        self.write(message_type, channel, response)
+
+    def error_rpc(self, request_id, message_type=None, **kw):
+        message_type = message_type or LUX_ERROR
+        self.write_rpc(request_id, message_type=message_type, **kw)
 
     def write(self, event, channel=None, data=None, **kw):
         msg = {'event': event}
@@ -83,17 +144,19 @@ class WsClient:
                 data = json.dumps(data)
             msg['data'] = data
         array = [json.dumps(msg)]
-        self.transport.write('a%s' % json.dumps(array))
+        try:
+            self.transport.write('a%s' % json.dumps(array))
+        except RuntimeError:
+            # TODO: is this the best way to avoid spamming exception
+            #       when the websocket is closed by the client?
+            pass
 
-    def error_message(self, exc, code=None):
-        '''Write an error message back to the client
-        '''
-        data = {}
+    def error_message(self, exc, code=None, request_id=None):
+        """Write an error message back to the client
+        """
         code = getattr(exc, 'fault_code', code)
-        if code:
-            data['code'] = code
-        data['message'] = str(exc)
-        self.write(LUX_ERROR, data=data)
+        data = str(exc)
+        self.error_rpc(request_id, code=code, data=data)
 
     # INTERNALS
     def _load(self, message):
@@ -119,8 +182,9 @@ class WsClient:
 
 
 class RpcWsMethodResponder:
-    """Used to respond to RPC requests"""
-    def __init__(self, method, request_id):
+    """Internal class for responding to RPC requests
+    """
+    def __init__(self, method, request_id, data):
         """
         Initialises the responder
 
@@ -128,32 +192,25 @@ class RpcWsMethodResponder:
         :param request_id:      RPC request ID
         """
         self.method = method
-        self.request_id = request_id
+        self.id = request_id
+        self.data = data
 
-    def send_response(self, data, rpc_complete=True,
-                      message_type=LUX_MESSAGE, json_encoder=None):
+    def send_response(self, **kw):
         """
         Sends a response to the client
 
-        :param data:            data to send
-        :param rpc_complete:    True if this is the last message being sent
-                                in response to the message received
-        :param message_type:    LUX_MESSAGE or LUX_ERROR
-        :return:
+        Inputs are the same as :meth:`~WsClient.write_rpc` method
         """
-        response = {
-            'method': self.method.name,
-            'id': self.request_id,
-            'rpcComplete': rpc_complete,
-            'data': data
-        }
-        if json_encoder:
-            response = json_encoder(response)
-        self.method.ws.write(message_type, 'rpc', response)
+        method = self.method
+        kw['method'] = method.name
+        method.ws.write_rpc(self.id, **kw)
 
-    def send_error(self, data, rpc_complete=True):
-        """Calls send_response with message_type=LUX_ERROR"""
-        self.send_response(data, rpc_complete, LUX_ERROR)
+    def send_error(self, **kw):
+        """Calls send_response with message_type=LUX_ERROR
+        """
+        method = self.method
+        kw['method'] = method.name
+        method.ws.error_rpc(self.id, **kw)
 
 
 class RpcWsMethod:
@@ -161,24 +218,25 @@ class RpcWsMethod:
     def __init__(self, name, ws):
         self.name = name
         self.ws = ws
-        maybe_async(self.on_init())
+        self.first = True
 
     @property
     def app(self):
         return self.ws.app
 
-    def on_init(self):
-        '''Called the first time this method is invoked within a given
+    @property
+    def cache(self):
+        return self.ws.cache
+
+    def on_init(self, request):
+        """Called the first time this method is invoked within a given
         websocket connection.
 
-        It can returns an asynchronous component
-        '''
+        It can return an asynchronous component
+        """
         pass
 
-    def handle_request(self, request_id, data):
-        self.on_request(RpcWsMethodResponder(self, request_id), data)
-
-    def on_request(self, responder, data):
+    def on_request(self, request):
         """
         To be overridden by subclasses
 
@@ -187,64 +245,90 @@ class RpcWsMethod:
         """
         pass
 
-    def pubsub(self, key=None):
+    def pubsub(self, ws, key=None):
         """Convenience method for a pubsub handler
         """
-        return self.app.pubsub(key or self.name)
+        return ws.app.pubsub(key or self.name)
 
 
 class RpcWsCall:
-    '''A wrapper for a :class:`.RpcWsMethod`
-    '''
+    """A wrapper for a :class:`.RpcWsMethod`
+
+    Instances of this class are called at every rpc request
+
+    .. attribute:: method
+
+        The name of rpc method (obtained from lux :class:`.Extension
+        ws_<method> methods or :class:`RpcWsMethod` classes)
+
+    .. attribute:: rpc
+
+        The callable handling rpc requests
+    """
     def __init__(self, method, rpc):
         self.method = method
         self.rpc = rpc
 
     def __repr__(self):
         return self.method
+    __str__ = __repr__
 
-    def __call__(self, ws, id, data):
-        if self.method not in ws.cache:
-            ws.cache[self.method] = self.rpc(self.method, ws)
-        ws.cache[self.method].handle_request(id, data)
+    def __call__(self, ws, request_id, data):
+        """Called by :meth:`.WsClient.on_message` method
+
+        :param ws: the :class:`.WsClient` invoking this response
+        :param id: the rpc id which identify this request
+        :param data: data sent from the client
+        """
+        pool = ws.app.green_pool
+        rpc_handle = ws.cache.ws_rpc_methods[self.method]
+        request = RpcWsMethodResponder(ws, request_id, data)
+        if rpc is None:
+            # if the rpc method is not in cache create a new one
+            rpc_handle = self.rpc(self.method, ws)
+            ws.cache.ws_rpc_methods[self.method] = rpc_handle
+        if pool:
+            if request.first:
+                pool.wait(rpc_handle.on_init(request), True)
+            pool.wait(rpc_handle.on_request(request), True)
+            request.first = False
+        else:
+            ensure_future(_async_call(rpc_handle, request))
 
 
 class LuxWs(ws.WS):
     """Lux websocket
 
-    .. attribute: methods
+    .. attribute: rpc_methods
 
         Dictionary of RPC web-socket handlers. Each handler is accessed by
         its name defined at extension level as ``ws_<method>``.
 
+    If the application uses greenio concurrency, all websockets callbacks
+    (on_open, on_message and on_close) are run in the application
+    green pool.
     """
     def __init__(self, app):
         self.rpc_methods = dict(self._ws_methods(app))
 
     def on_open(self, websocket):
-        '''When the websocket opens, register a lux client
-        '''
+        """When the websocket opens, register a lux client
+        """
         websocket.cache.wsclient = WsClient(websocket)
-        return self._green(websocket.app, websocket.cache.wsclient.on_open)
+        return _green(websocket.app, websocket.cache.wsclient.on_open)
 
     def on_message(self, websocket, message):
-        return self._green(websocket.app, websocket.cache.wsclient.on_message,
-                           message)
+        return _green(websocket.app, websocket.cache.wsclient.on_message,
+                      message)
 
     def on_close(self, websocket):
-        return self._green(websocket.app, websocket.cache.wsclient.on_close)
-
-    def _green(self, app, callable, *args, **kwargs):
-        if app.green_pool:
-            return app.green_pool.submit(callable, *args, **kwargs)
-        else:
-            return callable()
+        return _green(websocket.app, websocket.cache.wsclient.on_close)
 
     def _ws_methods(self, app):
-        '''Search for web-socket rpc-handlers in all registered extensions.
+        """Search for web-socket rpc-handlers in all registered extensions.
 
         A websocket handler is a method prefixed by ``ws_``.
-        '''
+        """
         for ext in app.extensions.values():
             for name in dir(ext):
                 if name.startswith('ws_'):
@@ -254,3 +338,21 @@ class LuxWs(ws.WS):
                         handler = RpcWsCall(name, handler)
                     if hasattr(handler, '__call__'):
                         yield name, handler
+
+
+def _green(app, callable, *args, **kwargs):
+    if app.green_pool:
+        return app.green_pool.submit(callable, *args, **kwargs)
+    else:
+        return callable()
+
+
+def _async_call(rpc_handle, request):
+    if request.first:
+        result = rpc_handle.on_init(request)
+        if is_async(result):
+            yield from result
+    result = rpc_handle.on_request(request)
+    if is_async(result):
+        yield from result
+    request.first = False

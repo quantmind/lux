@@ -5,7 +5,7 @@ define(['angular',
     //
     // Websocket handler for RPC and pub/sub messages
     function sockJs($lux, url, websockets, websocketChannels) {
-        var handler = {},
+        var self = {},
             log = $lux.log,
             context = websockets[url];
 
@@ -18,29 +18,36 @@ define(['angular',
             websockets[url] = context;
         }
 
-        handler.getUrl = function () {
+        self.getUrl = function () {
             return url;
         };
 
+        // Check if a result is a good one, otherwise log the error
+        self.ok = function (result) {
+            if (message.event === 'error')
+                $lux.messages.error(result.data);
+            else if (message.event === 'message')
+                return true;
+            return false;
+        };
         // RPC call
         //
         //  method: rpc method to call
         //  data: optional object with rpc parameters
         //  callback: optional callback invoked when a response is received
-        handler.rpc = function (method, data, callback) {
+        self.rpc = function (method, data, callback) {
             data = {
                 method: method,
                 id: ++context.id,
                 data: data
             };
             var msg = angular.toJson(data);
-            if (callback) {
+            if (callback)
                 context.executed[data.id] = callback;
-            }
-            return handler.sendMessage(msg);
+            return self.sendMessage(msg);
         };
 
-        handler.connect = function (onopen) {
+        self.connect = function (onopen) {
             var sock = context.sock;
 
             if (angular.isArray(sock)) {
@@ -78,9 +85,8 @@ define(['angular',
                             if (angular.isDefined(msg.data.id)) {
                                 if (context.executed[msg.data.id]) {
                                     context.executed[msg.data.id](msg.data.data, sock);
-                                    if (msg.data.rpcComplete) {
+                                    if (msg.data.rpcComplete)
                                         delete context.executed[msg.data.id];
-                                    }
                                 }
                             }
                         } else {
@@ -97,11 +103,11 @@ define(['angular',
                     };
                 });
             }
-            return handler;
+            return self;
         };
 
-        handler.sendMessage = function (msg, forceEncode) {
-            return handler.connect(function (sock) {
+        self.sendMessage = function (msg, forceEncode) {
+            return self.connect(function (sock) {
                 if (!angular.isString(msg) || forceEncode) {
                     msg = angular.fromJson(msg);
                 }
@@ -109,7 +115,7 @@ define(['angular',
             });
         };
 
-        handler.disconnect = function () {
+        self.disconnect = function () {
             var sock = context.sock;
 
             if (angular.isArray(sock))
@@ -118,10 +124,10 @@ define(['angular',
                 });
             else if (sock)
                 sock.close();
-            return handler;
+            return self;
         };
 
-        handler.addListener = function (channel, callback) {
+        self.addListener = function (channel, callback) {
             var callbacks = websocketChannels[channel];
             if (!callbacks) {
                 callbacks = [];
@@ -130,7 +136,26 @@ define(['angular',
             callbacks.push(callback);
         };
 
-        return handler;
+        // Authenticate with backend
+        //
+        // If authentication is successful, the self instance will
+        // contain the user attribute
+        self.authenticate = function (callback) {
+            var token = $lux.user_token;
+            if (token)
+                self.rpc('authenticate', {token: token}, _authentication_done);
+            else
+                callback(self);
+
+            function _authentication_done (result) {
+                if (self.ok(result))
+                    self.user = result.data;
+                if (callback)
+                    callback(self);
+            }
+        };
+
+        return self;
     }
 
     //

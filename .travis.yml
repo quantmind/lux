@@ -7,12 +7,12 @@ python:
 
 before_install:
   - npm install -g grunt-cli
-  - npm install -g bower
 
 install:
   - pip install -r requirements-dev.txt
   - pip install -r requirements-soft.txt
   - python setup.py install
+  - cd example
   - npm install
 
 services:

@@ -89,6 +89,12 @@ class MultiAuthBackend(AuthBase):
 class AuthenticationResponses:
 
     @auth_backend
+    def authorize(self, request, auth):
+        """Authorize an ``auth`` claim
+        """
+        pass
+
+    @auth_backend
     def logout(self, request):  # pragma    nocover
         """Logout a user
         """

@@ -43,20 +43,27 @@ class TokenBackend(TokenBackendMixin, RegistrationMixin, AuthBackend):
         auth = request.get('HTTP_AUTHORIZATION')
         user = request.cache.user
         if auth and user.is_anonymous():
-            auth_type, key = auth.split(None, 1)
-            auth_type = auth_type.lower()
-            if auth_type == 'bearer':
-                try:
-                    token = self.decode_token(request, key)
-                except Http401:
-                    raise
-                except Exception:
-                    request.app.logger.exception('Could not load user')
-                else:
-                    request.cache.session = token
-                    user = self.get_user(request, **token)
-                    if user:
-                        request.cache.user = user
+            self.authorize(request, auth)
+
+    def authorize(self, request, auth):
+        """Authorize claim
+
+        :param auth: a string containing the authorization information
+        """
+        auth_type, key = auth.split(None, 1)
+        auth_type = auth_type.lower()
+        if auth_type == 'bearer':
+            try:
+                token = self.decode_token(request, key)
+            except Http401:
+                raise
+            except Exception:
+                request.app.logger.exception('Could not load user')
+            else:
+                request.cache.session = token
+                user = self.get_user(request, **token)
+                if user:
+                    request.cache.user = user
 
     def response(self, environ, response):
         name = 'Access-Control-Allow-Origin'

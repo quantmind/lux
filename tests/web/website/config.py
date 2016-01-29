@@ -11,3 +11,7 @@ EXTENSIONS = ['lux.extensions.base',
 API_URL = 'http://webapi.com'
 AUTHENTICATION_BACKENDS = ['tests.web.website.ApiSessionBackend',
                            'lux.extensions.rest.backends.CsrfBackend']
+
+SERVE_STATIC_FILES = True
+CLEAN_URL = True
+REDIRECTS = {'/tos': '/articles/terms-conditions'}

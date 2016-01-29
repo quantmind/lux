@@ -7,7 +7,6 @@ from pulsar import ImproperlyConfigured, HttpException
 from pulsar.utils.httpurl import is_absolute_uri
 
 from lux import Parameter, Http401, PermissionDenied, Http404, HttpRedirect
-from lux.extensions.angular import add_ng_modules
 
 from .mixins import jwt, SessionBackendMixin
 from .registration import RegistrationMixin
@@ -85,12 +84,6 @@ class BrowserBackend(RegistrationMixin,
                                           self.ForgotPasswordRouter))
 
         return middleware
-
-    def on_html_document(self, app, request, doc):
-        if is_absolute_uri(app.config['API_URL']):
-            add_ng_modules(doc, ('lux.restapi',))
-        else:
-            add_ng_modules(doc, ('lux.webapi',))
 
 
 class ApiSessionBackend(SessionBackendMixin,
