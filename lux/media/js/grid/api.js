@@ -39,6 +39,7 @@ define(['angular',
             //
             gridFilters: {},
             //
+            enablePagination: true,
             template: 'lux/grid/templates/grid.tpl.html'
         })
         .constant('luxGridColumnProcessors', {
@@ -394,6 +395,9 @@ define(['angular',
             options = grid.options,
             uiGridConstants = grid.uiGridConstants,
             _ = lux._;
+
+        if (!grid.options.enablePagination)
+            return;
 
         // Pagination
         if (grid.state)
