@@ -128,7 +128,6 @@ define(['angular',
                 grid.api = gridApi;
                 gridApi.lux = grid;
                 gridApi.$lux = $lux;
-                scope.grid = gridApi;
                 angular.forEach(luxGridApi.gridApiCallbacks, function (callback) {
                     callback(gridApi);
                 });
@@ -305,7 +304,7 @@ define(['angular',
             length = grid.totalItems,
             element = grid.element(),
         //element = angular.element($document[0].getElementsByClassName('grid')[0]),
-            totalPages = scope.grid.pagination.getTotalPages(),
+            totalPages = scope.grid.api.pagination.getTotalPages(),
             currentPage = grid.state.page(),
             limit = grid.state.limit(),
             lastPage = length % limit,
