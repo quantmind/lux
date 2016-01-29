@@ -150,7 +150,42 @@ class ColumnPermissionsMixin:
         return tuple((col for col in columns if not perms.get(col['name'])))
 
 
-class RestModel(lux.LuxModel, ColumnPermissionsMixin):
+class RestClient:
+    """Implemets method accessed by clients to Rest Models
+    """
+    def get_target(self, request, **extra_data):
+        '''Get a target object for this model
+
+        Used by HTML Router to get information about the LUX REST API
+        of this Rest Model
+        '''
+        app = request.app
+        api_url = self.api_url or app.config.get('API_URL')
+        if not api_url:
+            return
+        target = {'url': api_url, 'name': self.api_name}
+        target.update(**extra_data)
+        return target
+
+    def field_options(self, request, **extra_data):
+        '''Return a generator of options for a html serializer
+        '''
+        if not request:
+            logger.error('%s cannot get remote target. No request', self)
+            return
+        target = self.get_target(request, **extra_data)
+        yield 'data-remote-options', json.dumps(target)
+        yield 'data-remote-options-id', self.id_field
+        yield 'data-remote-options-value', json.dumps({
+            'type': 'field',
+            'source': self.repr_field})
+        yield 'data-ng-options', self.remote_options_str.format(
+            options=self.api_name)
+        yield 'data-ng-options-ui-select', \
+            self.remote_options_str_ui_select.format(options=self.api_name)
+
+
+class RestModel(lux.LuxModel, RestClient, ColumnPermissionsMixin):
     '''Hold information about a model used for REST views
 
     .. attribute:: name
@@ -215,33 +250,6 @@ class RestModel(lux.LuxModel, ColumnPermissionsMixin):
         '''Returns a dictionary of names/columns objects
         '''
         return dict(((c['name'], c) for c in self.columns()))
-
-    def get_target(self, **extra_data):
-        '''Get a target object for this model
-
-        Used by HTML Router to get information about the LUX REST API
-        of this Rest Model
-        '''
-        api_url = self.api_url or self.app.config.get('API_URL')
-        if not api_url:
-            return
-        target = {'url': api_url, 'name': self.api_name}
-        target.update(**extra_data)
-        return target
-
-    def field_options(self):
-        '''Return a generator of options for a html serializer
-        '''
-        target = self.get_target()
-        yield 'data-remote-options', json.dumps(target)
-        yield 'data-remote-options-id', self.id_field
-        yield 'data-remote-options-value', json.dumps({
-            'type': 'field',
-            'source': self.repr_field})
-        yield 'data-ng-options', self.remote_options_str.format(
-            options=self.api_name)
-        yield 'data-ng-options-ui-select', \
-            self.remote_options_str_ui_select.format(options=self.api_name)
 
     def limit(self, request, limit=None, max_limit=None):
         '''The maximum number of items to return when fetching list

@@ -170,6 +170,8 @@ class Field:
         attrs['label'] = self.label or nicename(self.name)
         if self.required_error != standard_required_error:
             attrs['required_error'] = self.required_error
+        if self.validation_error != standard_validation_error:
+            attrs['validation_error'] = self.validation_error
         return attrs
 
 
@@ -249,7 +251,7 @@ class FloatField(IntegerField):
 
 class DateField(IntegerField):
     attrs = {'type': 'date'}
-    validation_error = '"{0}" is not a valid date'
+    validation_error = 'Not a valid date'
 
     def _clean(self, value, instance):
         if not isinstance(value, date):
@@ -358,7 +360,6 @@ class ChoiceField(MultipleMixin, Field):
 
 
 class EnumField(ChoiceField):
-    validation_error = '{} is not a valid value'
 
     def handle_params(self, enum_class=None, **kwargs):
         if enum_class is None:
@@ -397,6 +398,7 @@ class PasswordField(HiddenField):
 
 class UrlField(CharField):
     attrs = {'type': 'url'}
+    validation_error = 'Not a valid url'
 
 
 class FileField(MultipleMixin, Field):

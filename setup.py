@@ -1,9 +1,23 @@
 import os
-import json
 
 from setuptools import setup, find_packages
 
 package_name = 'lux'
+
+try:
+    import pulsar  # noqa
+except ImportError:
+    os.environ['lux_install_running'] = 'yes'
+    params = {}
+else:
+    import lux
+    params = dict(version=lux.__version__,
+                  author=lux.__author__,
+                  author_email=lux.__contact__,
+                  maintainer_email=lux.__contact__,
+                  url=lux.__homepage__,
+                  license=lux.__license__,
+                  description=lux.__doc__)
 
 
 def read(name):
@@ -16,7 +30,6 @@ def read(name):
 def run():
     install_requires = []
     dependency_links = []
-    pkg = json.loads(read('package.json'))
 
     for line in read('requirements.txt').split('\n'):
         if line.startswith('-e '):
@@ -32,12 +45,6 @@ def run():
     packages = find_packages(exclude=['tests', 'tests.*'])
 
     setup(name=package_name,
-          version=pkg['version'],
-          author=pkg['author']['name'],
-          author_email=pkg['author']['email'],
-          url=pkg['homepage'],
-          license=pkg['licenses'][0]['type'],
-          description=pkg['description'],
           long_description=read('README.rst'),
           packages=packages,
           include_package_data=True,
@@ -54,7 +61,8 @@ def run():
                        'Programming Language :: Python',
                        'Programming Language :: Python :: 3.4',
                        'Programming Language :: Python :: 3.5',
-                       'Topic :: Utilities'])
+                       'Topic :: Utilities'],
+          **params)
 
 
 if __name__ == '__main__':

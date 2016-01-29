@@ -92,13 +92,13 @@ define(['angular',
                 options = getAttribute(root, options);
             if (angular.isFunction(options))
                 options = options();
-            if (lux.isObject(options))
-                angular.forEach(attrs, function (value, name) {
-                    if (name.substring(0, 1) !== '$' && name !== optionName)
-                        options[name] = value;
-                });
         }
         if (!options) options = {};
+        if (lux.isObject(options))
+            angular.forEach(attrs, function (value, name) {
+                if (name.substring(0, 1) !== '$' && name !== optionName)
+                    options[name] = value;
+            });
 
         return options;
     };

@@ -15,7 +15,7 @@ Layout2 = Layout(TestAForm1,
 
 
 class PageForm(forms.Form):
-    url = forms.CharField()
+    url = forms.UrlField()
     markup = forms.ChoiceField(options=('bla', 'foo'))
     body = forms.CharField(type='textarea', required=False)
 
@@ -24,6 +24,12 @@ PageForm1 = Layout(PageForm)
 
 
 class FormAngularLayoutTests(test.TestCase):
+
+    def _field(self, data, idx):
+        self.assertEqual(len(data['children']), 1)
+        data = data['children'][0]
+        self.assertEqual(data['field']['type'], 'fieldset')
+        return data['children'][idx]['field']
 
     def test_layout_class(self):
         self.assertTrue(Layout1.form_class)
@@ -72,3 +78,9 @@ class FormAngularLayoutTests(test.TestCase):
         options = markup['field']['options']
         self.assertEqual(len(options), 2)
         self.assertTrue(markup['field']['required'])
+
+    def test_validation_attribute(self):
+        form = PageForm1()
+        data = form.as_dict()
+        url = self._field(data, 0)
+        self.assertEqual(url['validation_error'], 'Not a valid url')
