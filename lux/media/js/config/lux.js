@@ -2,12 +2,14 @@
 define([], function () {
     'use strict';
 
-    var root = window,
+    var root = this,
         lux = root.lux || {},
         ostring = Object.prototype.toString;
 
     if (isString(lux))
         lux = {context: urlBase64DecodeToJSON(lux)};
+    else if (lux.root)
+        return lux;
 
     root.lux = lux;
 

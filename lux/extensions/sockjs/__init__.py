@@ -1,18 +1,19 @@
 """
 Websocket handler for SockJS clients.
 """
+import json
+
 import lux
 
 from lux import Parameter
 
 from .socketio import SocketIO
-from .ws import LuxWs, RpcWsMethod
+from .ws import LuxWs
+from .pubsub import PubSub
+from .rpc import WsAuthentication
 
 
-__all__ = ['RpcWsMethod']
-
-
-class Extension(lux.Extension):
+class Extension(lux.Extension, PubSub, WsAuthentication):
 
     _config = [
         Parameter('WS_URL', '/ws', 'Websocket base url'),
@@ -20,6 +21,9 @@ class Extension(lux.Extension):
         Parameter('WEBSOCKET_HARTBEAT', 25, 'Hartbeat in seconds'),
         Parameter('WEBSOCKET_AVAILABLE', True,
                   'Server handle websocket'),
+        Parameter('WEBSOCKET_PROTOCOL', 'lux.extensions.sockjs.Json',
+                  'Encoder and decoder for websocket messages. '
+                  'Default is json.')
     ]
 
     def on_config(self, app):
@@ -32,3 +36,15 @@ class Extension(lux.Extension):
         url = app.config['WS_URL']
         if handler and url:
             return [SocketIO(url, handler(app))]
+
+
+class Json:
+
+    def __init__(self, ws):
+        self.ws = ws
+
+    def encode(self, msg):
+        return json.dumps(msg)
+
+    def decode(self, msg):
+        return json.loads(msg)
