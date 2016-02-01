@@ -148,4 +148,4 @@ class TestSockJSRestApp(test.AppTestCase):
                               params=dict(channel='foo', event='myevent'))
         yield from websocket.handler.on_message(websocket, msg)
         msg = self.get_ws_message(websocket)
-        self.assertTrue(msg['result'])
+        self.assertEqual(msg['result'], 0)

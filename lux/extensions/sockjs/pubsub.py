@@ -26,8 +26,7 @@ class PubSub:
         msg = self.get_publish_message(request, event, params.get('data'))
         channels = Channels.get(request.ws)
         pubsub = channels.pubsub()
-        pubsub.publish(channel, msg)
-        return True
+        return pubsub.publish(channel, msg)
 
     def ws_subscribe(self, request):
         """Subscribe to an event on a channel
