@@ -126,6 +126,8 @@ class WsAuthentication:
             backend.authorize(wsgi, auth)
         except Http401 as exc:
             raise rpc.InvalidParams('bad authToken') from exc
-        user_info = model.serialise(wsgi, wsgi.cache.user)
+        args = {model.id_field: getattr(wsgi.cache.user, model.id_field)}
+        user = model.get_instance(wsgi, **args)
+        user_info = model.serialise(wsgi, user)
         request.cache.user_info = user_info
         return user_info

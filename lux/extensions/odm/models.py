@@ -7,7 +7,10 @@ import pytz
 from sqlalchemy import Column, desc, String
 from sqlalchemy.orm import class_mapper, load_only
 from sqlalchemy.sql.expression import func, cast
+from sqlalchemy.exc import DataError
+from sqlalchemy.orm.exc import NoResultFound
 
+from pulsar import Http404
 from pulsar.utils.html import nicename
 from pulsar.utils.log import lazymethod
 
@@ -56,6 +59,17 @@ class RestModel(rest.RestModel):
         if filters:
             query = query.filter(*filters)
         return query
+
+    def get_instance(self, request, session=None, **args):
+        if not args:  # pragma    nocover
+            raise Http404
+        odm = request.app.odm()
+        with odm.begin(session=session) as session:
+            query = self.query(request, session)
+            try:
+                return query.filter_by(**args).one()
+            except (DataError, NoResultFound):
+                raise Http404
 
     def serialise_model(self, request, data, **kw):
         """

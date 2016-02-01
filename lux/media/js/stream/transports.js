@@ -1,5 +1,5 @@
 /* eslint-plugin-disable angular */
-define([], function () {
+define(['lux/stream/events'], function (createEvents) {
     'use strict';
 
     var states = {
@@ -18,13 +18,14 @@ define([], function () {
         var sock = null,
             status = states.initialised,
             pending = [],
-            events = {};
+            events = createEvents();
 
         return {
             connect: connect,
             write: write,
             close: close,
-            bind: bind,
+            bind: events.bind,
+            unbind: events.unbind,
             status: function () {
                 return status;
             },
@@ -32,24 +33,6 @@ define([], function () {
                 return status === states.connected;
             }
         };
-
-        function bind (event, callback) {
-            var callbacks = events[event];
-            if (!callbacks) {
-                callbacks = [];
-                events[event] = callbacks;
-            }
-            callbacks.push(callback);
-            return self;
-        }
-
-        function fire (event) {
-            var callbacks = events[event];
-            if (callbacks)
-                callbacks.forEach(function (cbk) {
-                    cbk(self);
-                });
-        }
 
         function reconnect () {
             if (status === states.unavailable) {
@@ -62,14 +45,14 @@ define([], function () {
         }
 
         function connect (onOpen) {
-            if (!self.open()) return fire_disconnected();
+            if (!self.opened()) return fire_disconnected();
 
             if (onOpen)
                 pending.push(onOpen);
 
             if (status === states.initialised) {
                 status = states.connecting;
-                fire(status);
+                events.fire(status);
                 require(['sockjs'], function (SockJs) {
                     initialise(SockJs);
                 });
@@ -99,14 +82,14 @@ define([], function () {
         function fire_connected (user) {
             self.user = user;
             status = states.connected;
-            fire(status);
+            events.fire(status);
             setTimeout(connect, 100);
         }
 
         function fire_disconnected () {
             status = states.disconnected;
             self.log.warn('Connection with ' + self.getUrl() + ' CLOSED');
-            fire(status);
+            events.fire(status);
         }
 
         function initialise (SockJs) {
@@ -117,13 +100,16 @@ define([], function () {
                 self.log.info('New web socket connection with ' + self.getUrl());
                 self.reconnectTime.reset();
 
-                if (config.authToken)
-                    self.rpc('authenticate', {token: config.authToken}, function (response) {
+                if (config.authToken) {
+                    status = states.connected;
+                    self.rpc('authenticate', {authToken: config.authToken}, function (response) {
                         fire_connected(response.result);
                     }, function (response) {
                         self.log.error('Could not authenticate: ' + response.error.message);
                         fire_connected();
                     });
+                    status = states.connecting;
+                }
                 else
                     fire_connected();
             };

@@ -21,12 +21,13 @@ define([], function () {
 
         function reset () {
             backOffDelay = config.minReconnectTime;
-            return self;
         }
 
         next.reset = reset;
 
-        return reset();
+        reset();
+
+        return next;
     }
 
     exponentialBackOff.defaultFactor = 2;

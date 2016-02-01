@@ -1,8 +1,6 @@
 import json
 from lux.utils import test
 
-from pulsar import ProtocolError
-
 
 class TestSockJSRestApp(test.AppTestCase):
     config_file = 'tests.sockjs'
@@ -70,22 +68,22 @@ class TestSockJSRestApp(test.AppTestCase):
         msg = json.dumps(dict(method='add', params=dict(a=4, b=6)))
         yield from websocket.handler.on_message(websocket, msg)
         logger.error.assert_called_with(
-                'Protocol error: %s',
-                'Malformed message; expected list, got dict')
+            'Protocol error: %s',
+            'Malformed message; expected list, got dict')
         #
         logger.reset_mock()
         msg = json.dumps(['?'])
         yield from websocket.handler.on_message(websocket, msg)
         logger.error.assert_called_with(
-                'Protocol error: %s',
-                'Invalid JSON')
+            'Protocol error: %s',
+            'Invalid JSON')
         #
         logger.reset_mock()
         msg = json.dumps([json.dumps('?')])
         yield from websocket.handler.on_message(websocket, msg)
         logger.error.assert_called_with(
-                'Protocol error: %s',
-                'Malformed data; expected dict, got str')
+            'Protocol error: %s',
+            'Malformed data; expected dict, got str')
 
     def test_ws_add_error(self):
         websocket = yield from self.ws()

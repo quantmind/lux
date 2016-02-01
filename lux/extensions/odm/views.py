@@ -1,7 +1,5 @@
+from pulsar import PermissionDenied, MethodNotAllowed
 from sqlalchemy.exc import DataError
-from sqlalchemy.orm.exc import NoResultFound
-
-from pulsar import PermissionDenied, MethodNotAllowed, Http404
 
 import odm
 
@@ -15,23 +13,6 @@ class RestRouter(rest.RestRouter):
     '''A REST Router based on database models
     '''
     RestModel = RestModel
-
-    def urlargs(self, request):
-        return request.urlargs
-
-    # RestView implementation
-    def get_instance(self, request, session=None, **args):
-        odm = request.app.odm()
-        args = args or self.urlargs(request)
-        if not args:  # pragma    nocover
-            raise Http404
-        model = self.model
-        with odm.begin(session=session) as session:
-            query = model.query(request, session)
-            try:
-                return query.filter_by(**args).one()
-            except (DataError, NoResultFound):
-                raise Http404
 
 
 class CRUD(RestRouter):

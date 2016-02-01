@@ -4,7 +4,7 @@ from sqlalchemy import Column, Integer, String, Boolean, DateTime
 
 import lux
 
-from lux import route, forms, HtmlRouter, Http401
+from lux import route, forms, HtmlRouter
 from lux.extensions import odm, rest
 from lux.utils.auth import ensure_authenticated
 from lux.extensions.auth.forms import UserModel, UserForm

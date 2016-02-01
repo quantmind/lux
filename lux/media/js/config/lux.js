@@ -2,7 +2,7 @@
 define([], function () {
     'use strict';
 
-    var root = this,
+    var root = window,
         lux = root.lux || {},
         ostring = Object.prototype.toString;
 
@@ -24,15 +24,22 @@ define([], function () {
 
     return lux;
 
-    function extend (o1, o2) {
-        if (!o1) o1 = {};
-        if (o2) {
-            for (var key in o2) {
-                if (o2.hasOwnProperty(key))
-                    o1[key] = o2[key];
-            }
+    function extend () {
+        var length = arguments.length,
+            object = arguments[0],
+            index = 0,
+            obj;
+
+        if (!object) object = {};
+        while (++index < length) {
+            obj = arguments[index];
+            if (isObject(obj))
+                for (var key in obj) {
+                    if (obj.hasOwnProperty(key))
+                        object[key] = obj[key];
+                }
         }
-        return o1;
+        return object;
     }
 
     function isString (value) {

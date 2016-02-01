@@ -4,10 +4,10 @@
 //	provides data to a lux.grid using websockets
 define(['angular',
         'lux/grid',
-        'lux/services'], function (angular) {
+        'lux/services/stream'], function (angular) {
     'use strict';
 
-    angular.module('lux.grid.websocket', ['lux.grid', 'lux.sockjs'])
+    angular.module('lux.grid.stream', ['lux.grid', 'lux.stream'])
 
         .run(['$lux', 'luxGridDataProviders', function ($lux, dataProvider) {
 
@@ -60,21 +60,21 @@ define(['angular',
                 }
             }
 
-            this._sockJs = $lux.sockJs(this._websocketUrl);
+            this._stream = $lux.stream(this._websocketUrl);
 
-            this._sockJs.addListener(this._channel, onMessage.bind(this));
+            this._stream.addListener(this._channel, onMessage.bind(this));
 
-            this._sockJs.connect(onConnect.bind(this));
+            this._stream.connect(onConnect.bind(this));
 
         };
 
         GridDataProviderWebsocket.prototype.getPage = function (options) {
-            this._sockJs.rpc(this._channel, options);
+            this._stream.rpc(this._channel, options);
         };
 
         GridDataProviderWebsocket.prototype.deleteItem = function(identifier, onSuccess, onFailure) {
             var options = {id: identifier};
-            this._sockJs.rpc(this._channel, options).then(onSuccess, onFailure);
+            this._stream.rpc(this._channel, options).then(onSuccess, onFailure);
         };
 
         return GridDataProviderWebsocket;

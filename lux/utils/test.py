@@ -257,7 +257,6 @@ class TestMixin:
         msg = json.loads(frame._body[1:])[0]
         return wsclient.protocol.decode(msg)
 
-
     def assertValidationError(self, response, field=None, text=None):
         """Assert a Form validation error
         """
