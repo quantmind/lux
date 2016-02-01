@@ -1,5 +1,4 @@
 import lux
-from lux.extensions.sockjs import RpcWsMethod
 
 from tests.config import *  # noqa
 
@@ -9,21 +8,16 @@ EXTENSIONS = ['lux.extensions.base',
 WS_URL = '/testws'
 
 
-class AddWsRpc(RpcWsMethod):
-
-    def on_response(self, data):
-        a = data.get('a', 1)
-        b = data.get('b', 2)
-        self.write(a+b)
-
-
 class Extension(lux.Extension):
 
-    ws_add = AddWsRpc
-    """An rpc method class
-    """
-
-    def ws_echo(self, ws, msg):
-        """A simple callable
+    def ws_add(self, request):
+        """Add two numbers
         """
-        ws.write(msg)
+        a = request.params.get('a', 0)
+        b = request.params.get('b', 0)
+        request.send_result(a+b)
+
+    def ws_echo(self, request):
+        """Echo parameters
+        """
+        request.send_result(request.params)

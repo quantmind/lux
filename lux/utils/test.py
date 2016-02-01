@@ -224,6 +224,18 @@ class TestMixin:
                          'application/json; charset=utf-8')
         return json.loads(self._content(response).decode('utf-8'))
 
+    def ws_upgrade(self, response):
+        from lux.extensions.sockjs import LuxWs
+        self.assertEqual(response.status_code, 101)
+        upgrade = response.connection.upgrade
+        self.assertTrue(upgrade.called)
+        websocket = upgrade.call_args[0][0](get_event_loop())
+        self.assertIsInstance(websocket.handler, LuxWs)
+        websocket._connection = response.connection
+        websocket.connection_made(response.connection)
+        self.assertTrue(websocket.cache.wsclient)
+        return websocket
+
     def assertValidationError(self, response, field=None, text=None):
         """Assert a Form validation error
         """
