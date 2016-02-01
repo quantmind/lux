@@ -37,7 +37,10 @@ define(['angular',
             },
             paginationPageSize: 25,
             //
-            gridFilters: {}
+            gridFilters: {},
+            //
+            enablePagination: true,
+            template: 'lux/grid/templates/grid.tpl.html'
         })
         .constant('luxGridColumnProcessors', {
             date: dateSorting,
@@ -113,7 +116,7 @@ define(['angular',
                     callback(grid, metadata);
                 });
                 scope.gridOptions = grid.options;
-                $lux.renderTemplate('lux/grid/templates/grid.tpl.html', element, scope);
+                $lux.renderTemplate(options.template, element, scope);
             }
 
             function onRegisterApi(gridApi) {
@@ -126,7 +129,6 @@ define(['angular',
                 grid.api = gridApi;
                 gridApi.lux = grid;
                 gridApi.$lux = $lux;
-                scope.grid = gridApi;
                 angular.forEach(luxGridApi.gridApiCallbacks, function (callback) {
                     callback(gridApi);
                 });
@@ -303,7 +305,7 @@ define(['angular',
             length = grid.totalItems,
             element = grid.element(),
         //element = angular.element($document[0].getElementsByClassName('grid')[0]),
-            totalPages = scope.grid.pagination.getTotalPages(),
+            totalPages = scope.grid.api.pagination.getTotalPages(),
             currentPage = grid.state.page(),
             limit = grid.state.limit(),
             lastPage = length % limit,
@@ -393,6 +395,9 @@ define(['angular',
             options = grid.options,
             uiGridConstants = grid.uiGridConstants,
             _ = lux._;
+
+        if (!grid.options.enablePagination)
+            return;
 
         // Pagination
         if (grid.state)
