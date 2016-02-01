@@ -290,7 +290,7 @@ class RestModel(lux.LuxModel, RestClient, ColumnPermissionsMixin):
         else:
             return self.serialise_model(request, data)
 
-    def collection_response(self, request, *filters, **params):
+    def collection_data(self, request, *filters, **params):
         '''Handle a response for a list of models
         '''
         cfg = request.config
@@ -299,11 +299,11 @@ class RestModel(lux.LuxModel, RestClient, ColumnPermissionsMixin):
         offset = params.pop(cfg['API_OFFSET_KEY'], None)
         with self.session(request) as session:
             query = self.query(request, session, *filters)
-            return self.query_response(request, query, limit=limit,
-                                       offset=offset, **params)
+            return self.query_data(request, query, limit=limit,
+                                   offset=offset, **params)
 
-    def query_response(self, request, query, limit=None, offset=None,
-                       text=None, sortby=None, max_limit=None, **params):
+    def query_data(self, request, query, limit=None, offset=None,
+                   text=None, sortby=None, max_limit=None, **params):
         limit = self.limit(request, limit, max_limit)
         offset = self.offset(request, offset)
         text = self.search_text(request, text)
@@ -313,7 +313,10 @@ class RestModel(lux.LuxModel, RestClient, ColumnPermissionsMixin):
         query = self.sortby(request, query, sortby)
         data = query.limit(limit).offset(offset).all()
         data = self.serialise(request, data, **params)
-        data = request.app.pagination(request, data, total, limit, offset)
+        return request.app.pagination(request, data, total, limit, offset)
+
+    def collection_response(self, request, *filters, **params):
+        data = self.collection_data(request, *filters, **params)
         return Json(data).http_response(request)
 
     def filter(self, request, query, text, params):

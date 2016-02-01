@@ -28,7 +28,7 @@ class WsModelRpc:
         """
         model = get_model(wsrequest)
         request = wsrequest.wsgi_request
-        return model.collection(request, **wsrequest.params)
+        return model.collection_data(request, **wsrequest.params)
 
 
 def get_model(request):

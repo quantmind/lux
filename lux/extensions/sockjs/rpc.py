@@ -94,8 +94,16 @@ class RpcWsMethodRequest:
         return self.ws.logger
 
     @property
+    def app(self):
+        return self.ws.app
+
+    @property
     def cache(self):
         return self.ws.cache
+
+    @property
+    def wsgi_request(self):
+        return self.ws.wsgi_request
 
 
 class WsAuthentication:

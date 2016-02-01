@@ -178,3 +178,40 @@ class TestSockJSRestApp(test.AppTestCase):
         yield from websocket.handler.on_message(websocket, msg)
         msg = self.get_ws_message(websocket)
         self.assertEqual(msg['result'], ['pizza', 'foo'])
+
+    def test_ws_model_metadata_fails(self):
+        websocket = yield from self.ws()
+        #
+        msg = self.ws_message(method='model_metadata', id=456)
+        yield from websocket.handler.on_message(websocket, msg)
+        msg = self.get_ws_message(websocket)
+        self.assertEqual(msg['error']['message'], 'missing model')
+        #
+        msg = self.ws_message(method='model_metadata', id=456,
+                              params=dict(model='foo'))
+        yield from websocket.handler.on_message(websocket, msg)
+        msg = self.get_ws_message(websocket)
+        self.assertEqual(msg['error']['message'], 'bad model')
+
+    def test_ws_model_metadata(self):
+        websocket = yield from self.ws()
+        #
+        msg = self.ws_message(method='model_metadata', id=456,
+                              params=dict(model='user'))
+        yield from websocket.handler.on_message(websocket, msg)
+        msg = self.get_ws_message(websocket)
+        self.assertTrue(msg['result'])
+        self.assertTrue(msg['result']['columns'])
+        self.assertTrue(msg['result']['permissions'])
+
+    def test_ws_model_data(self):
+        websocket = yield from self.ws()
+        #
+        msg = self.ws_message(method='model_data', id=456,
+                              params=dict(model='user'))
+        yield from websocket.handler.on_message(websocket, msg)
+        msg = self.get_ws_message(websocket)
+        data = msg['result']
+        self.assertTrue(data)
+        self.assertTrue(data['total'])
+        self.assertTrue(data['result'])
