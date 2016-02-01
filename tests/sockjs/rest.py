@@ -60,7 +60,7 @@ class TestSockJSRestApp(test.AppTestCase):
     def test_websocket_handler(self):
         websocket = yield from self.ws()
         handler = websocket.handler
-        self.assertEqual(len(handler.rpc_methods), 5)
+        self.assertEqual(len(handler.rpc_methods), 7)
         self.assertTrue(handler.rpc_methods.get('add'))
 
     def test_ws_protocol_error(self):
@@ -149,3 +149,32 @@ class TestSockJSRestApp(test.AppTestCase):
         yield from websocket.handler.on_message(websocket, msg)
         msg = self.get_ws_message(websocket)
         self.assertEqual(msg['result'], 0)
+
+    def test_ws_subscribe_fails(self):
+        websocket = yield from self.ws()
+        #
+        msg = self.ws_message(method='subscribe', id=456)
+        yield from websocket.handler.on_message(websocket, msg)
+        msg = self.get_ws_message(websocket)
+        self.assertEqual(msg['error']['message'], 'missing channel')
+        #
+        msg = self.ws_message(method='subscribe', id=456,
+                              params=dict(channel='foo'))
+        yield from websocket.handler.on_message(websocket, msg)
+        msg = self.get_ws_message(websocket)
+        self.assertEqual(msg['error']['message'], 'missing event')
+
+    def test_ws_subscribe(self):
+        websocket = yield from self.ws()
+        #
+        msg = self.ws_message(method='subscribe', id=456,
+                              params=dict(channel='pizza', event='myevent'))
+        yield from websocket.handler.on_message(websocket, msg)
+        msg = self.get_ws_message(websocket)
+        self.assertEqual(msg['result'], ['pizza'])
+        #
+        msg = self.ws_message(method='subscribe', id=4556,
+                              params=dict(channel='foo', event='myevent'))
+        yield from websocket.handler.on_message(websocket, msg)
+        msg = self.get_ws_message(websocket)
+        self.assertEqual(msg['result'], ['pizza', 'foo'])

@@ -7,8 +7,7 @@ define([], function () {
 
     function rpcProtocol (self) {
 
-        var protocol = 'rpc',
-            executed = {},
+        var executed = {},
             idCounter = 0,
             empty = {};
 
@@ -22,12 +21,11 @@ define([], function () {
         //  callback: optional callback invoked when a response is received
         function rpc(method, data, callBack, errorBack) {
             var msg = {
-                protocol: protocol,
                 method: method,
                 appId: self.id(),
                 id: newId(),
                 version: self.version(),
-                data: data
+                params: data
             };
             if (callBack || errorBack) {
                 executed[msg.id] = {
@@ -73,13 +71,12 @@ define([], function () {
 
         rpc.onMessage = onMessage;
         rpc.authenticate = authenticate;
-        rpc.protocol = protocol;
 
         return rpc;
 
         function newId() {
             var id = ++idCounter;
-            return protocol + id;
+            return 'rpc' + id;
         }
     }
 

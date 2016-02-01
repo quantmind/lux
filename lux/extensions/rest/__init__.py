@@ -29,6 +29,7 @@ from .pagination import *       # noqa
 from .client import ApiClient
 from .views import *            # noqa
 from .authviews import *        # noqa
+from .ws import WsModelRpc
 
 
 def luxrest(url, **rest):
@@ -48,7 +49,7 @@ def website_url(request, location=None):
     return url
 
 
-class Extension(MultiAuthBackend):
+class Extension(MultiAuthBackend, WsModelRpc):
 
     _config = [
         Parameter('AUTHENTICATION_BACKENDS', [],

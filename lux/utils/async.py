@@ -35,5 +35,8 @@ class GreenPubSub:
     def subscribe(self, channel, *channels):
         return self.pool.wait(self._pubsub.subscribe(channel, *channels))
 
+    def channels(self, pattern=None):
+        return self.pool.wait(self._pubsub.channels(pattern=pattern))
+
     def add_client(self, client):
         self._pubsub.add_client(client)
