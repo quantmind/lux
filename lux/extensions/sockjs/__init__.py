@@ -3,6 +3,8 @@ Websocket handler for SockJS clients.
 """
 import json
 
+from pulsar import ProtocolError
+
 import lux
 
 from lux import Parameter
@@ -47,4 +49,7 @@ class Json:
         return json.dumps(msg)
 
     def decode(self, msg):
-        return json.loads(msg)
+        try:
+            return json.loads(msg)
+        except Exception as exc:
+            raise ProtocolError('Invalid JSON') from exc

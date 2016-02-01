@@ -10,6 +10,8 @@ from pulsar import ProtocolError
 from pulsar.apps import ws
 from pulsar.utils.importer import module_attribute
 
+from lux.utils.async import maybe_green
+
 from .rpc import WsRpc
 
 LUX_CONNECTION = 'connection_established'
@@ -92,13 +94,15 @@ class WsClient:
             # Therefore JSON is double-encoded!
             msg = json.loads(message)
             if not isinstance(msg, list):
-                raise ProtocolError('Malformed message; expected array')
+                raise ProtocolError('Malformed message; expected list, '
+                                    'got %s' % type(msg).__name__)
             data = self.protocol.decode(msg[0])
             if not isinstance(data, dict):
-                raise ProtocolError('Expected data dictionary')
+                raise ProtocolError('Malformed data; expected dict, '
+                                    'got %s' % type(data).__name__)
             return self.rpc(data)
         except ProtocolError as exc:
-            self.logger.error('Protocol error: %s', exc)
+            self.logger.error('Protocol error: %s', str(exc))
         except Exception:
             self.logger.exception('While loading websocket message')
             self.transport.connection.close()
@@ -140,14 +144,14 @@ class LuxWs(ws.WS):
         """When the websocket opens, register a lux client
         """
         websocket.cache.wsclient = WsClient(websocket)
-        return _green(websocket.app, websocket.cache.wsclient.on_open)
+        return maybe_green(websocket.app, websocket.cache.wsclient.on_open)
 
     def on_message(self, websocket, message):
-        return _green(websocket.app, websocket.cache.wsclient.on_message,
-                      message)
+        return maybe_green(websocket.app, websocket.cache.wsclient.on_message,
+                           message)
 
     def on_close(self, websocket):
-        return _green(websocket.app, websocket.cache.wsclient.on_close)
+        return maybe_green(websocket.app, websocket.cache.wsclient.on_close)
 
     def _ws_methods(self, app):
         """Search for web-socket rpc-handlers in all registered extensions.
@@ -161,10 +165,3 @@ class LuxWs(ws.WS):
                     name = '_'.join(name.split('_')[1:])
                     if hasattr(handler, '__call__'):
                         yield name, handler
-
-
-def _green(app, callable, *args, **kwargs):
-    if app.green_pool:
-        return app.green_pool.submit(callable, *args, **kwargs)
-    else:
-        return callable()

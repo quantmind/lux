@@ -6,6 +6,7 @@ import lux
 
 from lux import route, forms, HtmlRouter, Http401
 from lux.extensions import odm, rest
+from lux.utils.auth import ensure_authenticated
 from lux.extensions.auth.forms import UserModel, UserForm
 from lux.extensions.auth.views import (UserCRUD, GroupCRUD, PermissionCRUD,
                                        RegistrationCRUD)
@@ -105,18 +106,6 @@ def user_model():
                      repr_field='username',
                      url='user',
                      exclude=('password',))
-
-
-def ensure_authenticated(request):
-    """
-    Ensures the request is by an authenticated user; raises a 401 otherwise
-    :param request:     request object
-    :return:            user object
-    """
-    user = request.cache.user
-    if not user.is_authenticated():
-        raise Http401
-    return user
 
 
 class UserRest(odm.RestRouter):

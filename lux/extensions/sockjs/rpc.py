@@ -21,8 +21,7 @@ class WsRpc:
         """
         return self.ws.handler.rpc_methods
 
-    def write(self, request_id, result=None, error=None,
-              encoder=None, complete=True):
+    def write(self, request_id, result=None, error=None, complete=True):
         """Write a response to an RPC message
         """
         response = {'id': request_id,
@@ -35,19 +34,16 @@ class WsRpc:
             response['error'] = error
         else:
             assert 'result' in response, 'error or result must be given'
-        self.ws.write(response, encoder=encoder)
+        self.ws.write(response)
 
     def write_error(self, request_id, message, code=None, data=None,
-                    encoder=None, complete=True):
+                    complete=True):
         if code is None:
             code = getattr(message, 'fault_code', rpc.InternalError.fault_code)
-        error = {
-            message: str(message),
-            code: code
-        }
+        error = dict(message=str(message), code=code)
         if data:
             error['data'] = data
-        self.write(request_id, error=error, encoder=encoder, complete=complete)
+        self.write(request_id, error=error, complete=complete)
 
     def __call__(self, data):
         request_id = data.get('id')
@@ -94,7 +90,9 @@ class RpcWsMethodRequest:
         """
         self.rpc = rpc
         self.id = request_id
-        self.params = params
+        self.params = params if params is not None else {}
+        if not isinstance(self.params, dict):
+            raise rpc.InvalidRequest('params entry must be a dictionary')
 
     @property
     def ws(self):
@@ -128,19 +126,19 @@ class WsAuthentication:
         """
         if request.cache.user_info:
             raise rpc.InvalidRequest('Already authenticated')
-        token = request.data.get("authToken")
+        token = request.params.get("authToken")
         if not token:
             raise rpc.InvalidParams('authToken missing')
-        model = self.ws.app.models.get('user')
+        model = request.ws.app.models.get('user')
         if not model:
             raise rpc.InternalError('user model missing')
-        wsgi_request = request.ws.wsgi_request
-        backend = wsgi_request.backend
+        wsgi = request.ws.wsgi_request
+        backend = wsgi.cache.auth_backend
         auth = 'bearer %s' % token
         try:
-            backend.authorize(auth)
-        except Http401:
-            raise rpc.InvalidParams('authToken')
-        user_info = model.serialize(wsgi_request, self.cache.user)
+            backend.authorize(wsgi, auth)
+        except Http401 as exc:
+            raise rpc.InvalidParams('bad authToken') from exc
+        user_info = model.serialise(wsgi, wsgi.cache.user)
         request.cache.user_info = user_info
         request.send_result(user_info)
