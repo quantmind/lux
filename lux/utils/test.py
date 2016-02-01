@@ -250,11 +250,14 @@ class TestMixin:
         mock = websocket.connection.write
         self.assertTrue(mock.called)
         frame = mock.call_args[0][0]
+        return self.parse_frame(websocket, frame)
+
+    def parse_frame(self, websocket, frame):
         parser = frame_parser(kind=1)
         frame = parser.decode(frame)
         wsclient = websocket.cache.wsclient
         websocket.connection.reset_mock()
-        msg = json.loads(frame._body[1:])[0]
+        msg = json.loads(frame.body[1:])[0]
         return wsclient.protocol.decode(msg)
 
     def assertValidationError(self, response, field=None, text=None):

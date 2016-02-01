@@ -1,6 +1,5 @@
 from pulsar.apps import rpc
 
-from lux import Http401
 from lux.utils.async import maybe_green
 
 
@@ -38,6 +37,8 @@ class WsRpc:
     def write_error(self, request_id, message, code=None, data=None):
         if code is None:
             code = getattr(message, 'fault_code', rpc.InternalError.fault_code)
+        if data is None:
+            data = getattr(message, 'data', None)
         error = dict(message=str(message), code=code)
         if data:
             error['data'] = data
@@ -105,29 +106,8 @@ class RpcWsMethodRequest:
     def wsgi_request(self):
         return self.ws.wsgi_request
 
-
-class WsAuthentication:
-
-    def ws_authenticate(self, request):
-        """Websocket RPC method for authenticating a user
-        """
-        if request.cache.user_info:
-            raise rpc.InvalidRequest('Already authenticated')
-        token = request.params.get("authToken")
-        if not token:
-            raise rpc.InvalidParams('authToken missing')
-        model = request.ws.app.models.get('user')
-        if not model:
-            raise rpc.InternalError('user model missing')
-        wsgi = request.ws.wsgi_request
-        backend = wsgi.cache.auth_backend
-        auth = 'bearer %s' % token
-        try:
-            backend.authorize(wsgi, auth)
-        except Http401 as exc:
-            raise rpc.InvalidParams('bad authToken') from exc
-        args = {model.id_field: getattr(wsgi.cache.user, model.id_field)}
-        user = model.get_instance(wsgi, **args)
-        user_info = model.serialise(wsgi, user)
-        request.cache.user_info = user_info
-        return user_info
+    def required_param(self, name):
+        value = self.params.get(name)
+        if not value:
+            raise rpc.InvalidParams('missing %s' % name)
+        return value

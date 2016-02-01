@@ -1,4 +1,6 @@
 import json
+import asyncio
+
 from lux.utils import test
 
 
@@ -58,7 +60,7 @@ class TestSockJSRestApp(test.AppTestCase):
     def test_websocket_handler(self):
         websocket = yield from self.ws()
         handler = websocket.handler
-        self.assertEqual(len(handler.rpc_methods), 7)
+        self.assertEqual(len(handler.rpc_methods), 8)
         self.assertTrue(handler.rpc_methods.get('add'))
 
     def test_ws_protocol_error(self):
@@ -104,7 +106,7 @@ class TestSockJSRestApp(test.AppTestCase):
         msg = self.ws_message(method='authenticate', id=5)
         yield from websocket.handler.on_message(websocket, msg)
         msg = self.get_ws_message(websocket)
-        self.assertEqual(msg['error']['message'], 'authToken missing')
+        self.assertEqual(msg['error']['message'], 'missing authToken')
         self.assertEqual(msg['id'], 5)
 
     def test_ws_authenticate_fails(self):
@@ -124,6 +126,7 @@ class TestSockJSRestApp(test.AppTestCase):
         msg = self.get_ws_message(websocket)
         self.assertTrue(msg['result'])
         self.assertEqual(msg['result']['username'], 'bigpippo')
+        return websocket
 
     def test_ws_publish_fails(self):
         websocket = yield from self.ws()
@@ -169,13 +172,14 @@ class TestSockJSRestApp(test.AppTestCase):
                               params=dict(channel='pizza', event='myevent'))
         yield from websocket.handler.on_message(websocket, msg)
         msg = self.get_ws_message(websocket)
-        self.assertEqual(msg['result'], ['pizza'])
+        self.assertTrue('pizza' in msg['result'])
         #
         msg = self.ws_message(method='subscribe', id=4556,
                               params=dict(channel='foo', event='myevent'))
         yield from websocket.handler.on_message(websocket, msg)
         msg = self.get_ws_message(websocket)
-        self.assertEqual(msg['result'], ['pizza', 'foo'])
+        self.assertTrue('pizza' in msg['result'])
+        self.assertTrue('foo' in msg['result'])
 
     def test_ws_model_metadata_fails(self):
         websocket = yield from self.ws()
@@ -213,3 +217,34 @@ class TestSockJSRestApp(test.AppTestCase):
         self.assertTrue(data)
         self.assertTrue(data['total'])
         self.assertTrue(data['result'])
+
+    def test_model_create(self):
+        #
+        # Subscribe to create event
+        ws = yield from self.ws()
+        msg = self.ws_message(method='subscribe', id=456,
+                              params=dict(channel='lux-tasks',
+                                          event='create'))
+        yield from ws.handler.on_message(ws, msg)
+        msg = self.get_ws_message(ws)
+        self.assertTrue('lux-tasks' in msg['result'])
+        future = asyncio.Future()
+        ws.connection.write = future.set_result
+        #
+        websocket = yield from self.test_ws_authenticate()
+        msg = self.ws_message(method='model_create', id=456,
+                              params=dict(model='tasks',
+                                          subject='just a test'))
+        yield from websocket.handler.on_message(websocket, msg)
+        msg = self.get_ws_message(websocket)
+        data = msg['result']
+        self.assertTrue(data)
+        self.assertEqual(data['subject'], 'just a test')
+        #
+        frame = yield from asyncio.wait_for(future, 1.5)
+        self.assertTrue(frame)
+        msg = self.parse_frame(ws, frame)
+        self.assertTrue(msg)
+        self.assertEqual(msg['event'], 'create')
+        self.assertEqual(msg['channel'], 'lux-tasks')
+        self.assertEqual(msg['data'], data)

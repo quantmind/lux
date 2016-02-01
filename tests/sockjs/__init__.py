@@ -2,6 +2,7 @@ import lux
 
 from tests.config import *  # noqa
 from tests.auth import UserRest
+from tests.odm import Task, Person, CRUDTask, CRUDPerson    # noqa
 
 EXTENSIONS = ['lux.extensions.base',
               'lux.extensions.rest',
@@ -14,12 +15,15 @@ API_URL = ''
 AUTHENTICATION_BACKENDS = ['lux.extensions.auth.TokenBackend']
 DATASTORE = 'sqlite://'
 CACHE_SERVER = PUBSUB_STORE = redis_cache_server
+BROADCAST_CHANNELS = set(['tasks'])
 
 
 class Extension(lux.Extension):
 
     def api_sections(self, app):
-        return [UserRest()]
+        return [UserRest(),
+                CRUDTask(),
+                CRUDPerson()]
 
     def ws_add(self, request):
         """Add two numbers

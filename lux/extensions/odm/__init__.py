@@ -19,13 +19,14 @@ from .mapper import Mapper, model_base
 from .views import CRUD, RestRouter
 from .models import RestModel, RestColumn, ModelColumn
 from .forms import RelationshipField, UniqueField
+from .ws import WsModelRpc
 
 
 __all__ = ['model_base', 'CRUD', 'RestRouter', 'RestModel', 'RestColumn',
            'ModelColumn', 'RelationshipField', 'UniqueField']
 
 
-class Extension(lux.Extension):
+class Extension(lux.Extension, WsModelRpc):
     '''Object data mapper extension
 
     Uses pulsar-odm for sychronous & asynchronous data mappers

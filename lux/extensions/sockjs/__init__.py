@@ -4,6 +4,7 @@ Websocket handler for SockJS clients.
 import json
 
 from pulsar import ProtocolError
+from pulsar.utils.string import to_string
 
 import lux
 
@@ -11,11 +12,13 @@ from lux import Parameter
 
 from .socketio import SocketIO
 from .ws import LuxWs
-from .pubsub import PubSub
-from .rpc import WsAuthentication
+from .pubsub import PubSub, Channels, broadcast
 
 
-class Extension(lux.Extension, PubSub, WsAuthentication):
+__all__ = ['Channels', 'broadcast']
+
+
+class Extension(lux.Extension, PubSub):
 
     _config = [
         Parameter('WS_URL', '/ws', 'Websocket base url'),
@@ -50,6 +53,6 @@ class Json:
 
     def decode(self, msg):
         try:
-            return json.loads(msg)
+            return json.loads(to_string(msg))
         except Exception as exc:
             raise ProtocolError('Invalid JSON') from exc

@@ -256,7 +256,9 @@ class Application(ConsoleParser, Extension, EventMixin):
         Parameter('CMS_PARTIALS_PATH', None,
                   'Path to CMS Partials snippets'),
         Parameter('PUBSUB_STORE', None,
-                  'Connection string for a Publish/Subscribe data-store')
+                  'Connection string for a Publish/Subscribe data-store'),
+        Parameter('BROADCAST_CHANNELS', None,
+                  'Set of channels to broadcast events')
         ]
 
     def __init__(self, callable, handler=True):
@@ -667,7 +669,7 @@ class Application(ConsoleParser, Extension, EventMixin):
                 else:
                     yield mod
 
-    def pubsub(self, key=None):
+    def pubsub(self, key=None, **kw):
         '''Get a pub-sub handler for a given key
 
         A key is used to group together pub-subs so that bandwidths is reduced
@@ -684,7 +686,7 @@ class Application(ConsoleParser, Extension, EventMixin):
         if key:
             pubsub = self._pubsubs.get(key)
             if not pubsub:
-                pubsub = self._pubsub_store.pubsub()
+                pubsub = self._pubsub_store.pubsub(**kw)
                 if pubsub:
                     if self.app.green_pool:
                         pubsub = GreenPubSub(self.app.green_pool, pubsub)

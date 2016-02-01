@@ -112,7 +112,7 @@ class WsClient:
     def pubsub(self, key=None):
         """Convenience method for a pubsub handler
         """
-        return self.app.pubsub(key or WS_KEY)
+        return self.app.pubsub(key or WS_KEY, protocol=self.protocol)
 
     def write_message(self, event, channel=None, data=None):
         msg = {'event': event}
