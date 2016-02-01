@@ -1,4 +1,6 @@
 __test__ = False
 
-CACHE_SERVER = 'redis://127.0.0.1:6379/13'
+from tests.config import redis_cache_server
+
+CACHE_SERVER = redis_cache_server
 GREEN_POOL = 100

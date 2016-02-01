@@ -10,8 +10,6 @@ from pulsar import ProtocolError
 from pulsar.apps import ws
 from pulsar.utils.importer import module_attribute
 
-from lux.utils.async import maybe_green
-
 from .rpc import WsRpc
 
 LUX_CONNECTION = 'connection_established'
@@ -100,7 +98,7 @@ class WsClient:
             if not isinstance(data, dict):
                 raise ProtocolError('Malformed data; expected dict, '
                                     'got %s' % type(data).__name__)
-            return self.rpc(data)
+            yield from self.rpc(data)
         except ProtocolError as exc:
             self.logger.error('Protocol error: %s', str(exc))
         except Exception:
@@ -144,14 +142,13 @@ class LuxWs(ws.WS):
         """When the websocket opens, register a lux client
         """
         websocket.cache.wsclient = WsClient(websocket)
-        return maybe_green(websocket.app, websocket.cache.wsclient.on_open)
+        websocket.cache.wsclient.on_open()
 
     def on_message(self, websocket, message):
-        return maybe_green(websocket.app, websocket.cache.wsclient.on_message,
-                           message)
+        return websocket.cache.wsclient.on_message(message)
 
     def on_close(self, websocket):
-        return maybe_green(websocket.app, websocket.cache.wsclient.on_close)
+        websocket.cache.wsclient.on_close()
 
     def _ws_methods(self, app):
         """Search for web-socket rpc-handlers in all registered extensions.

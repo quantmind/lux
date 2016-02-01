@@ -17,6 +17,8 @@ from pulsar.utils.log import lazyproperty
 from pulsar.utils.importer import module_attribute
 from pulsar.apps.data import create_store
 
+from lux.utils.async import GreenPubSub
+
 from .commands import ConsoleParser, CommandError
 from .extension import Extension, Parameter, EventMixin
 from .wrappers import wsgi_request, HeadMeta, error_handler, as_async_wsgi
@@ -683,6 +685,9 @@ class Application(ConsoleParser, Extension, EventMixin):
             pubsub = self._pubsubs.get(key)
             if not pubsub:
                 pubsub = self._pubsub_store.pubsub()
+                if pubsub:
+                    if self.app.green_pool:
+                        pubsub = GreenPubSub(self.app.green_pool, pubsub)
                 self._pubsubs[key] = pubsub
         else:
             pubsub = self._pubsub_store.pubsub()

@@ -57,13 +57,13 @@ class TestSockJSRestApp(test.AppTestCase):
         response = request.response
         self.assertEqual(response.status_code, 400)
 
-    def test_websocket(self):
+    def test_websocket_handler(self):
         websocket = yield from self.ws()
         handler = websocket.handler
         self.assertEqual(len(handler.rpc_methods), 5)
         self.assertTrue(handler.rpc_methods.get('add'))
 
-    def test_protocol_error(self):
+    def test_ws_protocol_error(self):
         websocket = yield from self.ws()
         logger = websocket.cache.wsclient.logger
 
@@ -87,21 +87,21 @@ class TestSockJSRestApp(test.AppTestCase):
                 'Protocol error: %s',
                 'Malformed data; expected dict, got str')
 
-    def test_add_error(self):
+    def test_ws_add_error(self):
         websocket = yield from self.ws()
         msg = self.ws_message(method='add', params=dict(a=4, b=6))
         yield from websocket.handler.on_message(websocket, msg)
         msg = self.get_ws_message(websocket)
         self.assertEqual(msg['error']['message'], 'Request ID not available')
 
-    def test_add(self):
+    def test_ws_add(self):
         websocket = yield from self.ws()
         msg = self.ws_message(method='add', params=dict(a=4, b=6), id="57")
         yield from websocket.handler.on_message(websocket, msg)
         msg = self.get_ws_message(websocket)
         self.assertEqual(msg['result'], 10)
 
-    def test_authenticate_error(self):
+    def test_ws_authenticate_error(self):
         websocket = yield from self.ws()
         msg = self.ws_message(method='authenticate', id=5)
         yield from websocket.handler.on_message(websocket, msg)
@@ -109,7 +109,7 @@ class TestSockJSRestApp(test.AppTestCase):
         self.assertEqual(msg['error']['message'], 'authToken missing')
         self.assertEqual(msg['id'], 5)
 
-    def test_authenticate_fails(self):
+    def test_ws_authenticate_fails(self):
         websocket = yield from self.ws()
         msg = self.ws_message(method='authenticate', id="dfg",
                               params=dict(authToken='dsd'))
@@ -117,7 +117,7 @@ class TestSockJSRestApp(test.AppTestCase):
         msg = self.get_ws_message(websocket)
         self.assertEqual(msg['error']['message'], 'bad authToken')
 
-    def test_authenticate(self):
+    def test_ws_authenticate(self):
         token = yield from self._token()
         websocket = yield from self.ws()
         msg = self.ws_message(method='authenticate', id="dfg",
@@ -126,3 +126,26 @@ class TestSockJSRestApp(test.AppTestCase):
         msg = self.get_ws_message(websocket)
         self.assertTrue(msg['result'])
         self.assertEqual(msg['result']['username'], 'bigpippo')
+
+    def test_ws_publish_fails(self):
+        websocket = yield from self.ws()
+        #
+        msg = self.ws_message(method='publish', id=456)
+        yield from websocket.handler.on_message(websocket, msg)
+        msg = self.get_ws_message(websocket)
+        self.assertEqual(msg['error']['message'], 'missing channel')
+        #
+        msg = self.ws_message(method='publish', id=456,
+                              params=dict(channel='foo'))
+        yield from websocket.handler.on_message(websocket, msg)
+        msg = self.get_ws_message(websocket)
+        self.assertEqual(msg['error']['message'], 'missing event')
+
+    def test_ws_publish(self):
+        websocket = yield from self.ws()
+        #
+        msg = self.ws_message(method='publish', id=456,
+                              params=dict(channel='foo', event='myevent'))
+        yield from websocket.handler.on_message(websocket, msg)
+        msg = self.get_ws_message(websocket)
+        self.assertTrue(msg['result'])

@@ -1,7 +1,7 @@
 from pulsar.apps import rpc
-from pulsar import ensure_future, is_async
 
 from lux import Http401
+from lux.utils.async import maybe_green
 
 
 rpc_version = '1.0'
@@ -21,11 +21,10 @@ class WsRpc:
         """
         return self.ws.handler.rpc_methods
 
-    def write(self, request_id, result=None, error=None, complete=True):
+    def write(self, request_id, result=None, error=None):
         """Write a response to an RPC message
         """
         response = {'id': request_id,
-                    'complete': complete,
                     'version': rpc_version}
         if result is not None:
             response['result'] = result
@@ -36,14 +35,13 @@ class WsRpc:
             assert 'result' in response, 'error or result must be given'
         self.ws.write(response)
 
-    def write_error(self, request_id, message, code=None, data=None,
-                    complete=True):
+    def write_error(self, request_id, message, code=None, data=None):
         if code is None:
             code = getattr(message, 'fault_code', rpc.InternalError.fault_code)
         error = dict(message=str(message), code=code)
         if data:
             error['data'] = data
-        self.write(request_id, error=error, complete=complete)
+        self.write(request_id, error=error)
 
     def __call__(self, data):
         request_id = data.get('id')
@@ -56,7 +54,10 @@ class WsRpc:
                 if not handler:
                     raise rpc.NoSuchFunction(method)
                 #
-                self.response(handler, request_id, data.get('params'))
+                request = RpcWsMethodRequest(self, request_id,
+                                             data.get('params'))
+                result = yield from maybe_green(self.ws.app, handler, request)
+                self.write(request_id, result)
             else:
                 raise rpc.InvalidRequest('Method not available')
         except rpc.InvalidRequest as exc:
@@ -64,16 +65,6 @@ class WsRpc:
         except Exception as exc:
             self.ws.logger.exception('While loading websocket message')
             self.write_error(request_id, exc)
-
-    def response(self, handler, request_id, params):
-        request = RpcWsMethodRequest(self, request_id, params)
-        result = handler(request)
-        pool = self.ws.app.green_pool
-        #
-        if pool:
-            pool.wait(result, True)
-        elif is_async(result):
-            ensure_future(result)
 
 
 class RpcWsMethodRequest:
@@ -106,18 +97,6 @@ class RpcWsMethodRequest:
     def cache(self):
         return self.ws.cache
 
-    def send_result(self, result, **kw):
-        """Sends a result to the client
-
-        Inputs are the same as :meth:`~WsRpc.write` method
-        """
-        self.rpc.write(self.id, result, **kw)
-
-    def send_error(self, error, **kw):
-        """Sends an error to the client
-        """
-        self.ws.write_error(self.id, error, **kw)
-
 
 class WsAuthentication:
 
@@ -141,4 +120,4 @@ class WsAuthentication:
             raise rpc.InvalidParams('bad authToken') from exc
         user_info = model.serialise(wsgi, wsgi.cache.user)
         request.cache.user_info = user_info
-        request.send_result(user_info)
+        return user_info
