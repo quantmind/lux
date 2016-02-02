@@ -29,6 +29,10 @@ class GreenPubSub:
         return repr(self._pubsub)
     __str__ = __repr__
 
+    @property
+    def _protocol(self):
+        return self._pubsub._protocol
+
     def publish(self, channel, message):
         return self.pool.wait(self._pubsub.publish(channel, message))
 

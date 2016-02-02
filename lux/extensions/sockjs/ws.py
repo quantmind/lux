@@ -8,14 +8,12 @@ import logging
 
 from pulsar import ProtocolError
 from pulsar.apps import ws
-from pulsar.utils.importer import module_attribute
 
 from .rpc import WsRpc
+from .pubsub import PubSub, Channels
 
-LUX_CONNECTION = 'connection_established'
-LUX_MESSAGE = 'message'
-LUX_ERROR = 'error'
-WS_KEY = 'sockjs'
+CONNECTION_ESTABLISHED = 'connection_established'
+CONNECTION = 'connection'
 
 
 class WsClient:
@@ -44,8 +42,8 @@ class WsClient:
         self.session_id = session_id
         self.cache.ws_rpc_methods = {}
         self.rpc = WsRpc(self)
-        protocol = request.config['WEBSOCKET_PROTOCOL']
-        self.protocol = module_attribute(protocol)(self)
+        self.pubsub = PubSub.pubsub(self.app)
+        self.channels = Channels(self)
 
     @property
     def cache(self):
@@ -65,6 +63,10 @@ class WsClient:
         """
         return self.transport.handshake
 
+    @property
+    def protocol(self):
+        return self.pubsub._protocol
+
     def __str__(self):
         return '%s - %s' % (self.address, self.session_id)
 
@@ -80,7 +82,7 @@ class WsClient:
     def on_open(self):
         self.transport.on_open(self)
         self.app.fire('on_websocket_open', self)
-        self.write_message(LUX_CONNECTION,
+        self.write_message(CONNECTION, CONNECTION_ESTABLISHED,
                            data=dict(socket_id=self.session_id,
                                      time=self.started))
 
@@ -109,15 +111,8 @@ class WsClient:
         self.app.fire('on_websocket_close', self)
         self.logger.info('closing socket %s', self)
 
-    def pubsub(self, key=None):
-        """Convenience method for a pubsub handler
-        """
-        return self.app.pubsub(key or WS_KEY, protocol=self.protocol)
-
-    def write_message(self, event, channel=None, data=None):
-        msg = {'event': event}
-        if channel:
-            msg['channel'] = channel
+    def write_message(self, channel, event, data):
+        msg = {'event': event, 'channel': channel}
         if data:
             msg['data'] = data
         self.write(msg)

@@ -45,9 +45,6 @@ class Extension(lux.Extension, PubSub):
 
 class Json:
 
-    def __init__(self, ws):
-        self.ws = ws
-
     def encode(self, msg):
         return json.dumps(msg)
 

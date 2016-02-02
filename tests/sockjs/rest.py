@@ -242,6 +242,7 @@ class TestSockJSRestApp(test.AppTestCase):
         self.assertEqual(data['subject'], 'just a test')
         #
         frame = yield from asyncio.wait_for(future, 1.5)
+        ws.connection.reset_mock()
         self.assertTrue(frame)
         msg = self.parse_frame(ws, frame)
         self.assertTrue(msg)

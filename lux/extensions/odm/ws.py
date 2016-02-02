@@ -1,6 +1,5 @@
 from pulsar.apps import rpc
 
-from lux.extensions.sockjs import broadcast
 from lux.extensions.rest.ws import check_ws_permission, get_model
 
 
@@ -19,8 +18,8 @@ class WsModelRpc:
         model = get_model(wsrequest)
         if not model.form:
             raise rpc.InvalidRequest('cannot create model')
+        check_ws_permission(wsrequest, model.name, 'create')
         request = wsrequest.wsgi_request
-        check_ws_permission(request, model.name, 'create')
         columns = model.columns_with_permission(request, 'create')
         columns = model.column_fields(columns, 'name')
         form = model.form(request, data=wsrequest.params)
@@ -31,9 +30,7 @@ class WsModelRpc:
             with odm.begin() as session:
                 instance = model.create_model(request, filtered_data,
                                               session=session)
-                data = model.serialise(request, instance)
-                broadcast(wsrequest, model.identifier, 'create', data)
-                return data
+                return model.serialise(request, instance)
         else:
             data = form.tojson()
             raise rpc.InvalidParams(data=data)

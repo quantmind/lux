@@ -1,10 +1,21 @@
 from pulsar.apps.data import PubSubClient
 from pulsar.utils.string import to_string
+from pulsar.utils.importer import module_attribute
+
+from lux.extensions.rest.ws import check_ws_permission
+
+
+WS_KEY = 'sockjs'
 
 
 class PubSub:
     """Implement the publish and subscribe websocket RPC calls
     """
+    @classmethod
+    def pubsub(cls, app):
+        protocol = module_attribute(app.config['WEBSOCKET_PROTOCOL'])()
+        return app.pubsub(WS_KEY, protocol=protocol)
+
     def ws_publish(self, wsrequest):
         """Publish an event on a channel
 
@@ -16,9 +27,8 @@ class PubSub:
         """
         channel = wsrequest.required_param('channel')
         event = wsrequest.required_param('event')
-        channels = Channels.get(wsrequest)
+        pubsub = wsrequest.ws.pubsub
         msg = get_publish_message(wsrequest, event)
-        pubsub = channels.pubsub()
         return pubsub.publish(channel, msg)
 
     def ws_subscribe(self, wsrequest):
@@ -31,7 +41,8 @@ class PubSub:
         """
         channel = wsrequest.required_param('channel')
         event = wsrequest.required_param('event')
-        channels = Channels.get(wsrequest)
+        check_ws_permission(wsrequest, channel, 'read')
+        channels = wsrequest.ws.channels
         return channels.register(channel, event)
 
 
@@ -41,21 +52,15 @@ class Channels(PubSubClient):
     def __init__(self, ws):
         self.ws = ws
         self.channels = {}
-        pubsub = self.pubsub()
-        pubsub.add_client(self)
+        self.pubsub.add_client(self)
 
     def __repr__(self):
         return repr(self.channels)
     __str__ = __repr__
 
-    @classmethod
-    def get(cls, wsrequest):
-        cache = wsrequest.cache
-        channels = cache.ws_pubsub_channels
-        if channels is None:
-            channels = cls(wsrequest.ws)
-            cache.ws_pubsub_channels = channels
-        return channels
+    @property
+    def pubsub(self):
+        return self.ws.pubsub
 
     def __call__(self, channel, message):
         events = self.channels.get(channel)
@@ -63,10 +68,7 @@ class Channels(PubSubClient):
             event = message.pop('event', None)
             if event and event in events:
                 data = message.get('data')
-                self.ws.write_message(event, channel, data)
-
-    def pubsub(self):
-        return self.ws.pubsub()
+                self.ws.write_message(channel, event, data)
 
     def register(self, channel, event):
         """Register a channel event
@@ -81,7 +83,7 @@ class Channels(PubSubClient):
             events = set()
             self.channels[channel] = events
         events.add(event)
-        pubsub = self.pubsub()
+        pubsub = self.pubsub
         pubsub.subscribe(channel)
         channels = pubsub.channels()
         return [to_string(c) for c in channels]
@@ -93,8 +95,7 @@ def broadcast(request, channel, event, data):
     if channels and channel in channels:
         name = app.config['APP_NAME']
         channel = ('%s-%s' % (name, channel)).lower()
-        channels = Channels.get(request)
-        pubsub = channels.pubsub()
+        pubsub = PubSub.pubsub(app)
         msg = {'event': event, 'data': data}
         pubsub.publish(channel, msg)
 

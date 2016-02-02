@@ -4,8 +4,12 @@ from lux import Http401
 from lux.utils.auth import check_permission, PermissionDenied
 
 
-def check_ws_permission(request, resource, action):
+def check_ws_permission(wsrequest, resource, action):
     try:
+        request = wsrequest.wsgi_request
+        appname = '%s-' % request.config['APP_NAME'].lower()
+        if resource.startswith(appname):
+            resource = resource[len(appname):]
         return check_permission(request, resource, action)
     except PermissionDenied:
         raise rpc.InvalidRequest('permission denied')
@@ -24,8 +28,7 @@ class WsModelRpc:
         :return: object with metadata information
         """
         model = get_model(wsrequest)
-        request = wsrequest.wsgi_request
-        check_ws_permission(request, model.name, 'read')
+        check_ws_permission(wsrequest, model.name, 'read')
         return model.meta(wsrequest.wsgi_request)
 
     def ws_model_data(self, wsrequest):
@@ -39,8 +42,8 @@ class WsModelRpc:
         :return: object with metadata information
         """
         model = get_model(wsrequest)
+        check_ws_permission(wsrequest, model.name, 'read')
         request = wsrequest.wsgi_request
-        check_ws_permission(request, model.name, 'read')
         return model.collection_data(request, **wsrequest.params)
 
     def ws_authenticate(self, wsrequest):
