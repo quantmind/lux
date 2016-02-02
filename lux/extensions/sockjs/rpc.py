@@ -25,13 +25,11 @@ class WsRpc:
         """
         response = {'id': request_id,
                     'version': rpc_version}
-        if result is not None:
-            response['result'] = result
         if error:
-            assert 'result' not in response, 'result and error not possible'
+            assert result is None, 'result and error not possible'
             response['error'] = error
         else:
-            assert 'result' in response, 'error or result must be given'
+            response['result'] = result
         self.ws.write(response)
 
     def write_error(self, request_id, message, code=None, data=None):
