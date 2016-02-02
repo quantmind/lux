@@ -47,7 +47,7 @@ define(['angular',
             datetime: dateSorting,
             // Font-awesome icon by default
             boolean: function (column, col, grid) {
-                column.cellTemplate = grid.wrapCell('<i ng-class="grid.lux.getBooleanIconField(COL_FIELD)"></i>');
+                column.cellTemplate = grid.wrapCell('<i ng-class="grid.api.lux.getBooleanIconField(COL_FIELD)"></i>');
 
                 if (col.hasOwnProperty('filter')) {
                     column.filter = {
