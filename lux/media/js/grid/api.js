@@ -331,12 +331,14 @@ define(['angular',
         var _page = 1,
             _offset = 0,
             _total = 0,
+            _sortby = undefined,
             state = {
                 limit: limit,
                 page: page,
                 offset: offset,
                 total: total,
                 update: update,
+                sortby: sortby,
                 query: query
             };
 
@@ -381,11 +383,20 @@ define(['angular',
             return _total;
         }
 
+        function sortby (_) {
+            if (arguments.length === 1) {
+                _sortby = _;
+                return state;
+            }
+            return _sortby;
+        }
+
         function query () {
             return {
                 page: page(),
                 limit: limit(),
-                offset: offset()
+                offset: offset(),
+                sortby: sortby()
             };
         }
     }
@@ -411,23 +422,23 @@ define(['angular',
         // Sorting
         gridApi.core.on.sortChanged(scope, _.debounce(function (grid, sortColumns) {
             if (sortColumns.length === 0) {
-                delete scope.gridState.sortby;
+                scope.grid.state.sortby(undefined);
                 grid.refreshPage();
             } else {
                 // Build query string for sorting
                 angular.forEach(sortColumns, function (column) {
-                    scope.gridState.sortby = column.name + ':' + column.sort.direction;
+                    scope.grid.state.sortby(column.name + ':' + column.sort.direction);
                 });
 
                 switch (sortColumns[0].sort.direction) {
                     case uiGridConstants.ASC:
-                        grid.refreshPage();
+                        scope.grid.refreshPage();
                         break;
                     case uiGridConstants.DESC:
-                        grid.refreshPage();
+                        scope.grid.refreshPage();
                         break;
                     case undefined:
-                        grid.refreshPage();
+                        scope.grid.refreshPage();
                         break;
                 }
             }
