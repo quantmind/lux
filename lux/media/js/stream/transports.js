@@ -3,12 +3,12 @@ define([], function () {
     'use strict';
 
     var states = {
-        initialised: 0,
-        connecting: 1,
-        connected: 2,
-        ready: 3,
-        unavailable: 4,
-        disconnected: 5
+        initialised: 'initialised',
+        connecting: 'connecting',
+        connected: 'connected',
+        ready: 'ready',
+        unavailable: 'unavailable',
+        disconnected: 'disconnected'
     };
 
     return {
@@ -43,41 +43,42 @@ define([], function () {
             return status === states.connected || status === states.ready;
         }
 
+        function can_connect () {
+            return status === states.initialised || status === states.unavailable;
+        }
+
         function reconnect () {
             if (status === states.unavailable) {
                 if (self.opened()) {
-                    status = states.initialised;
                     execute();
                 } else
                     fire_disconnected();
             }
         }
 
-        function execute (onOpen) {
+        function execute () {
             if (!self.opened()) return fire_disconnected();
 
-            if (onOpen)
-                pending.push(onOpen);
-
-            if (status === states.initialised) {
+            if (can_connect()) {
                 status = states.connecting;
                 channel.fire(status);
                 require(['sockjs'], function (SockJs) {
                     initialise(SockJs);
                 });
             } else if (can_execute()) {
-                var execute = pending;
+                var toExecute = pending;
                 pending = [];
-                execute.forEach(function (cbk) {
-                    cbk(self);
+                toExecute.forEach(function (cbk) {
+                    cbk.call(self);
                 });
             }
         }
 
         function write (msg) {
-            return execute(function () {
+            pending.push(function () {
                 sock.send(self.encode(msg));
             });
+            execute();
         }
 
         function close () {
@@ -99,7 +100,7 @@ define([], function () {
 
             _sock.onopen = function () {
                 sock = _sock;
-                self.log.info('New web socket connection with ' + self.getUrl());
+                self.log.debug('New web socket connection with ' + self.getUrl());
                 self.reconnectTime.reset();
                 status = states.connected;
                 channel.fire(status);
@@ -130,13 +131,14 @@ define([], function () {
         function authenticate () {
             if (config.authToken) {
                 self.rpc('authenticate', {authToken: config.authToken}, function (response) {
+                    self.log.debug('Streaming authentication successful with ' + self.getUrl());
                     fire_ready(response.result);
                 }, function (response) {
                     self.log.error('Could not authenticate: ' + response.error.message);
                     fire_ready();
                 });
-            }
-            fire_ready();
+            } else
+                fire_ready();
         }
 
         function fire_ready (user) {

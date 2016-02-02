@@ -33,6 +33,7 @@ define([], function () {
                     error: errorBack || callBack
                 };
             }
+            self.log.debug('Execute streaming RPC method "' + method + '"');
             return self.transport.write(msg);
         }
 
@@ -43,7 +44,7 @@ define([], function () {
                 var callback = executed[response.id] || empty;
                 // Check if an rpc response is a good one, otherwise log the error
                 if (response.error) {
-                    self.log.error(response.error.message);
+                    self.log.error('RPC error ' + response.error.code + ': ' + response.error.message);
                     if (callback.error) callback.error(response);
                 } else if (callback.success) {
                     callback.success(response);

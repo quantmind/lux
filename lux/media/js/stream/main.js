@@ -86,7 +86,6 @@ define(['lux/config',
             rpc: luxStream.rpcProtocol(self),
             publish: luxStream.pubsub.publish(self),
             subscribe: luxStream.pubsub.subscribe(self),
-            transport: luxStream.transports[config.transport](self, config),
             reconnectTime: luxStream.backOffs[config.backOff](self, config),
             opened: function () {
                 return open;
@@ -100,6 +99,7 @@ define(['lux/config',
             }
         });
 
+        self.transport = luxStream.transports[config.transport](self, config);
         self.transport.connect();
     }
 

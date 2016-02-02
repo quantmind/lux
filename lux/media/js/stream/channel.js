@@ -13,7 +13,6 @@ define([], function () {
             return name;
         };
 
-        this.message = message;
         this.bind = bind;
         this.unbind = unbind;
         this.fire = fire;
@@ -59,19 +58,11 @@ define([], function () {
             }
         }
 
-        function fire (event) {
+        function fire (event, message) {
             var callbacks = events[event];
             if (callbacks)
                 callbacks.forEach(function (cbk) {
-                    cbk(channel);
-                });
-        }
-
-        function message(event, message) {
-            var callbacks = events[event];
-            if (callbacks)
-                callbacks.forEach(function (cbk) {
-                    cbk(event, message, channel);
+                    cbk.call(channel, event, message);
                 });
         }
     }

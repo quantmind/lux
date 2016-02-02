@@ -62,7 +62,7 @@ define(['lux/stream/channel'], function (Channel) {
         function onMessage(channel, event, data) {
             var c = channels[channel];
             if (c)
-                c.message(event, data);
+                c.fire(event, data);
             else
                 self.log.error('Got message without channel');
         }
