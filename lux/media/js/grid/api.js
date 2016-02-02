@@ -263,7 +263,7 @@ define(['angular',
             if (!angular.isArray(result))
                 return $lux.messages.error('Grid got bad data from provider');
 
-            grid.totalItems = data.total || result.length;
+            options.totalItems = data.total || result.length;
 
             if (data.type === 'update') {
                 grid.state.limit(data.total);
@@ -305,7 +305,7 @@ define(['angular',
     function updateGridHeight(grid) {
         var options = grid.options,
             scope = grid.scope,
-            length = grid.totalItems,
+            length = grid.options.totalItems,
             element = grid.api.grid.element,
             totalPages = scope.grid.api.pagination.getTotalPages(),
             currentPage = grid.state.page(),
