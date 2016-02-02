@@ -39,6 +39,9 @@ define(['angular',
             //
             gridFilters: {},
             //
+            enableGridMenu: true,
+            gridMenuShowHideColumns: false,
+            //
             enablePagination: true,
             template: 'lux/grid/templates/grid.tpl.html'
         })
