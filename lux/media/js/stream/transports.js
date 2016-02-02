@@ -1,13 +1,14 @@
 /* eslint-plugin-disable angular */
-define(['lux/stream/events'], function (createEvents) {
+define([], function () {
     'use strict';
 
     var states = {
-        initialised: 'initialised',
-        connecting: 'connecting',
-        connected: 'connected',
-        unavailable: 'unavailable',
-        disconnected: 'disconnected'
+        initialised: 0,
+        connecting: 1,
+        connected: 2,
+        ready: 3,
+        unavailable: 4,
+        disconnected: 5
     };
 
     return {
@@ -18,14 +19,18 @@ define(['lux/stream/events'], function (createEvents) {
         var sock = null,
             status = states.initialised,
             pending = [],
-            events = createEvents();
+            // Channel for connection events
+            channel = self.subscribe('connection');
+
+        channel.bind('connection_established', authenticate);
+        channel.bind('ready', execute);
 
         return {
-            connect: connect,
+            connect: execute,
             write: write,
             close: close,
-            bind: events.bind,
-            unbind: events.unbind,
+            bind: channel.bind,
+            unbind: channel.unbind,
             status: function () {
                 return status;
             },
@@ -34,17 +39,21 @@ define(['lux/stream/events'], function (createEvents) {
             }
         };
 
+        function can_execute () {
+            return status === states.connected || status === states.ready;
+        }
+
         function reconnect () {
             if (status === states.unavailable) {
                 if (self.opened()) {
                     status = states.initialised;
-                    connect();
+                    execute();
                 } else
                     fire_disconnected();
             }
         }
 
-        function connect (onOpen) {
+        function execute (onOpen) {
             if (!self.opened()) return fire_disconnected();
 
             if (onOpen)
@@ -52,11 +61,11 @@ define(['lux/stream/events'], function (createEvents) {
 
             if (status === states.initialised) {
                 status = states.connecting;
-                events.fire(status);
+                channel.fire(status);
                 require(['sockjs'], function (SockJs) {
                     initialise(SockJs);
                 });
-            } else if (status === states.connected) {
+            } else if (can_execute()) {
                 var execute = pending;
                 pending = [];
                 execute.forEach(function (cbk) {
@@ -66,7 +75,7 @@ define(['lux/stream/events'], function (createEvents) {
         }
 
         function write (msg) {
-            return connect(function () {
+            return execute(function () {
                 sock.send(self.encode(msg));
             });
         }
@@ -79,17 +88,10 @@ define(['lux/stream/events'], function (createEvents) {
             }
         }
 
-        function fire_connected (user) {
-            self.user = user;
-            status = states.connected;
-            events.fire(status);
-            setTimeout(connect, 100);
-        }
-
         function fire_disconnected () {
             status = states.disconnected;
             self.log.warn('Connection with ' + self.getUrl() + ' CLOSED');
-            events.fire(status);
+            channel.fire(status);
         }
 
         function initialise (SockJs) {
@@ -99,19 +101,8 @@ define(['lux/stream/events'], function (createEvents) {
                 sock = _sock;
                 self.log.info('New web socket connection with ' + self.getUrl());
                 self.reconnectTime.reset();
-
-                if (config.authToken) {
-                    status = states.connected;
-                    self.rpc('authenticate', {authToken: config.authToken}, function (response) {
-                        fire_connected(response.result);
-                    }, function (response) {
-                        self.log.error('Could not authenticate: ' + response.error.message);
-                        fire_connected();
-                    });
-                    status = states.connecting;
-                }
-                else
-                    fire_connected();
+                status = states.connected;
+                channel.fire(status);
             };
 
             _sock.onmessage = function (e) {
@@ -134,6 +125,24 @@ define(['lux/stream/events'], function (createEvents) {
                 } else
                     fire_disconnected();
             };
+        }
+
+        function authenticate () {
+            if (config.authToken) {
+                self.rpc('authenticate', {authToken: config.authToken}, function (response) {
+                    fire_ready(response.result);
+                }, function (response) {
+                    self.log.error('Could not authenticate: ' + response.error.message);
+                    fire_ready();
+                });
+            }
+            fire_ready();
+        }
+
+        function fire_ready (user) {
+            self.user = user;
+            status = states.ready;
+            channel.fire(status);
         }
     }
 
