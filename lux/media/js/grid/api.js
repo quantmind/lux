@@ -37,14 +37,20 @@ define(['angular',
             },
             paginationPageSize: 25,
             //
-            gridFilters: {}
+            gridFilters: {},
+            //
+            enableGridMenu: true,
+            gridMenuShowHideColumns: false,
+            //
+            enablePagination: true,
+            template: 'lux/grid/templates/grid.tpl.html'
         })
         .constant('luxGridColumnProcessors', {
             date: dateSorting,
             datetime: dateSorting,
             // Font-awesome icon by default
             boolean: function (column, col, grid) {
-                column.cellTemplate = grid.wrapCell('<i ng-class="grid.lux.getBooleanIconField(COL_FIELD)"></i>');
+                column.cellTemplate = grid.wrapCell('<i ng-class="grid.api.lux.getBooleanIconField(COL_FIELD)"></i>');
 
                 if (col.hasOwnProperty('filter')) {
                     column.filter = {
@@ -58,7 +64,7 @@ define(['angular',
             },
             // If value is in JSON format then return repr or id attribute
             string: function (column, col, grid) {
-                column.cellTemplate = grid.wrapCell('{{grid.lux.getStringOrJsonField(COL_FIELD)}}');
+                column.cellTemplate = grid.wrapCell('{{grid.api.lux.getStringOrJsonField(COL_FIELD)}}');
             },
             // Renders a link for the fields of url type
             url: function (column, col, grid) {
@@ -113,7 +119,7 @@ define(['angular',
                     callback(grid, metadata);
                 });
                 scope.gridOptions = grid.options;
-                $lux.renderTemplate('lux/grid/templates/grid.tpl.html', element, scope);
+                $lux.renderTemplate(options.template, element, scope);
             }
 
             function onRegisterApi(gridApi) {
@@ -126,7 +132,6 @@ define(['angular',
                 grid.api = gridApi;
                 gridApi.lux = grid;
                 gridApi.$lux = $lux;
-                scope.grid = gridApi;
                 angular.forEach(luxGridApi.gridApiCallbacks, function (callback) {
                     callback(gridApi);
                 });
@@ -147,7 +152,7 @@ define(['angular',
                 if (grid.options.gridFilters)
                     query = angular.extend(query, options.gridFilters);
 
-                grid.dataProvider.refreshPage(query);
+                grid.dataProvider.getPage(query);
             }
         }
 
@@ -230,7 +235,7 @@ define(['angular',
                 if (angular.isDefined(column.field) && column.field === metaFields.repr) {
                     if (permissions.update) {
                         // If there is an update permission then display link
-                        column.cellTemplate = grid.wrapCell('<a ng-href="{{grid.lux.getObjectIdField(row.entity)}}">{{COL_FIELD}}</a>');
+                        column.cellTemplate = grid.wrapCell('<a ng-href="{{grid.api.lux.getObjectIdField(row.entity)}}">{{COL_FIELD}}</a>');
                     }
                     // Set repr column as the first column
                     columnDefs.splice(0, 0, column);
@@ -258,7 +263,7 @@ define(['angular',
             if (!angular.isArray(result))
                 return $lux.messages.error('Grid got bad data from provider');
 
-            grid.totalItems = data.total || result.length;
+            options.totalItems = data.total || result.length;
 
             if (data.type === 'update') {
                 grid.state.limit(data.total);
@@ -300,10 +305,9 @@ define(['angular',
     function updateGridHeight(grid) {
         var options = grid.options,
             scope = grid.scope,
-            length = grid.totalItems,
-            element = grid.element(),
-        //element = angular.element($document[0].getElementsByClassName('grid')[0]),
-            totalPages = scope.grid.pagination.getTotalPages(),
+            length = grid.options.totalItems,
+            element = grid.api.grid.element,
+            totalPages = scope.grid.api.pagination.getTotalPages(),
             currentPage = grid.state.page(),
             limit = grid.state.limit(),
             lastPage = length % limit,
@@ -327,12 +331,14 @@ define(['angular',
         var _page = 1,
             _offset = 0,
             _total = 0,
+            _sortby = undefined,
             state = {
                 limit: limit,
                 page: page,
                 offset: offset,
                 total: total,
                 update: update,
+                sortby: sortby,
                 query: query
             };
 
@@ -377,11 +383,20 @@ define(['angular',
             return _total;
         }
 
+        function sortby (_) {
+            if (arguments.length === 1) {
+                _sortby = _;
+                return state;
+            }
+            return _sortby;
+        }
+
         function query () {
             return {
                 page: page(),
                 limit: limit(),
-                offset: offset()
+                offset: offset(),
+                sortby: sortby()
             };
         }
     }
@@ -394,6 +409,9 @@ define(['angular',
             uiGridConstants = grid.uiGridConstants,
             _ = lux._;
 
+        if (!grid.options.enablePagination)
+            return;
+
         // Pagination
         if (grid.state)
             gridApi.pagination.on.paginationChanged(
@@ -404,23 +422,23 @@ define(['angular',
         // Sorting
         gridApi.core.on.sortChanged(scope, _.debounce(function (grid, sortColumns) {
             if (sortColumns.length === 0) {
-                delete scope.gridState.sortby;
+                scope.grid.state.sortby(undefined);
                 grid.refreshPage();
             } else {
                 // Build query string for sorting
                 angular.forEach(sortColumns, function (column) {
-                    scope.gridState.sortby = column.name + ':' + column.sort.direction;
+                    scope.grid.state.sortby(column.name + ':' + column.sort.direction);
                 });
 
                 switch (sortColumns[0].sort.direction) {
                     case uiGridConstants.ASC:
-                        grid.refreshPage();
+                        scope.grid.refreshPage();
                         break;
                     case uiGridConstants.DESC:
-                        grid.refreshPage();
+                        scope.grid.refreshPage();
                         break;
                     case undefined:
-                        grid.refreshPage();
+                        scope.grid.refreshPage();
                         break;
                 }
             }

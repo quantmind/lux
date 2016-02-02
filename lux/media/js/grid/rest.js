@@ -19,6 +19,7 @@ define(['angular',
         function GridDataProviderREST (grid) {
             var target = grid.options.target;
             this._api = $lux.api(target);
+            this._subPath = target.path || '';
             this._grid = grid;
         }
 
@@ -47,7 +48,7 @@ define(['angular',
 
         function getMetadata(self) {
             self._api.get({
-                path: 'metadata'
+                path: self._subPath + '/metadata'
             }).success(function (metadata) {
                 self._grid.onMetadataReceived(metadata);
             });
