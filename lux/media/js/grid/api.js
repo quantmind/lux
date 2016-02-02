@@ -232,7 +232,7 @@ define(['angular',
                 if (angular.isDefined(column.field) && column.field === metaFields.repr) {
                     if (permissions.update) {
                         // If there is an update permission then display link
-                        column.cellTemplate = grid.wrapCell('<a ng-href="{{grid.lux.getObjectIdField(row.entity)}}">{{COL_FIELD}}</a>');
+                        column.cellTemplate = grid.wrapCell('<a ng-href="{{grid.api.lux.getObjectIdField(row.entity)}}">{{COL_FIELD}}</a>');
                     }
                     // Set repr column as the first column
                     columnDefs.splice(0, 0, column);
