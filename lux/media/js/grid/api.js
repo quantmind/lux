@@ -39,6 +39,9 @@ define(['angular',
             //
             gridFilters: {},
             //
+            enableGridMenu: true,
+            gridMenuShowHideColumns: false,
+            //
             enablePagination: true,
             template: 'lux/grid/templates/grid.tpl.html'
         })
@@ -47,7 +50,7 @@ define(['angular',
             datetime: dateSorting,
             // Font-awesome icon by default
             boolean: function (column, col, grid) {
-                column.cellTemplate = grid.wrapCell('<i ng-class="grid.getBooleanIconField(COL_FIELD)"></i>');
+                column.cellTemplate = grid.wrapCell('<i ng-class="grid.api.lux.getBooleanIconField(COL_FIELD)"></i>');
 
                 if (col.hasOwnProperty('filter')) {
                     column.filter = {
@@ -61,7 +64,7 @@ define(['angular',
             },
             // If value is in JSON format then return repr or id attribute
             string: function (column, col, grid) {
-                column.cellTemplate = grid.wrapCell('{{grid.getStringOrJsonField(COL_FIELD)}}');
+                column.cellTemplate = grid.wrapCell('{{grid.api.lux.getStringOrJsonField(COL_FIELD)}}');
             },
             // Renders a link for the fields of url type
             url: function (column, col, grid) {
@@ -232,7 +235,7 @@ define(['angular',
                 if (angular.isDefined(column.field) && column.field === metaFields.repr) {
                     if (permissions.update) {
                         // If there is an update permission then display link
-                        column.cellTemplate = grid.wrapCell('<a ng-href="{{grid.getObjectIdField(row.entity)}}">{{COL_FIELD}}</a>');
+                        column.cellTemplate = grid.wrapCell('<a ng-href="{{grid.api.lux.getObjectIdField(row.entity)}}">{{COL_FIELD}}</a>');
                     }
                     // Set repr column as the first column
                     columnDefs.splice(0, 0, column);
