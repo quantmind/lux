@@ -61,7 +61,7 @@ define(['angular',
             },
             // If value is in JSON format then return repr or id attribute
             string: function (column, col, grid) {
-                column.cellTemplate = grid.wrapCell('{{grid.lux.getStringOrJsonField(COL_FIELD)}}');
+                column.cellTemplate = grid.wrapCell('{{grid.api.lux.getStringOrJsonField(COL_FIELD)}}');
             },
             // Renders a link for the fields of url type
             url: function (column, col, grid) {
