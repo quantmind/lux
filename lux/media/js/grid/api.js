@@ -152,7 +152,7 @@ define(['angular',
                 if (grid.options.gridFilters)
                     query = angular.extend(query, options.gridFilters);
 
-                grid.dataProvider.refreshPage(query);
+                grid.dataProvider.getPage(query);
             }
         }
 
