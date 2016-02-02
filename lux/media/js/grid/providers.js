@@ -3,7 +3,7 @@ define(['angular'], function (angular) {
 
     // Dictionaries of data providers
     var dataProviders = {},
-        deafaultProvider;
+        defaultProvider;
 
     angular.module('lux.grid.providers', [])
         //
@@ -19,12 +19,12 @@ define(['angular'], function (angular) {
 
     function registerProvider (type, providerFactory) {
         dataProviders[type] = providerFactory;
-        if (!deafaultProvider) deafaultProvider = type;
+        if (!defaultProvider) defaultProvider = type;
     }
 
     function createProvider (grid) {
         var provider = grid.options.dataProvider;
-        if (!provider) provider = deafaultProvider;
+        if (!provider) provider = defaultProvider;
         var Provider = dataProviders[provider];
         if (Provider) return new Provider(grid);
     }
