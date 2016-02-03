@@ -59,7 +59,7 @@ define(['angular',
                 query = grid.state.query();
 
             if (options) {
-                angular.extend(query, options)
+                angular.extend(query, options);
             }
 
             self._api.get({params: query}).success(function (data) {
