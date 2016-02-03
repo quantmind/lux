@@ -70,7 +70,12 @@ For testing postgreSQL create a new role::
     GRANT ALL PRIVILEGES ON DATABASE luxtests to lux;
 
 
-
+Bulk removal of test databases:
+```
+psql
+copy(select 'drop database ' || datname || ';'  from pg_database where datname ilike 'luxtest%') to '/tmp/drop_db.sql';
+\i /tmp/drop_db.sql
+```
 .. _pulsar: https://github.com/quantmind/pulsar
 .. _pytz: http://pytz.sourceforge.net/
 .. _dateutil: https://pypi.python.org/pypi/python-dateutil

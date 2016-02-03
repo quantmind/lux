@@ -26,4 +26,5 @@ define(['angular',
 
         }]);
 
+    return luxStream;
 });
