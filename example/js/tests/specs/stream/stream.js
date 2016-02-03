@@ -12,7 +12,7 @@ define(['angular',
             .value('luxStreamAppId', 'jasmine');
 
         beforeEach(function () {
-            module('lux.restapi.test');
+            module('lux.stream.test');
 
             inject(function (_$lux_) {
                 $lux = _$lux_;
@@ -21,6 +21,7 @@ define(['angular',
 
         it('Test luxStream function', function () {
             expect(angular.isFunction(luxStream)).toBe(true);
+            expect(angular.isFunction($lux.stream)).toBe(true);
         });
 
     });
