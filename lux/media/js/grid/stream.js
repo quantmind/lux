@@ -21,6 +21,7 @@ define(['angular',
             this._grid = grid;
             this._websocketUrl = grid.options.target.url;
             this._channel = grid.options.target.channel;
+            this._model = grid.options.target.model;
         }
 
         GridDataProviderWebsocket.prototype.destroy = function() {
@@ -62,10 +63,12 @@ define(['angular',
 
             this._stream = $lux.stream(this._websocketUrl);
 
-            this._stream.addListener(this._channel, onMessage.bind(this));
-
-            this._stream.connect(onConnect.bind(this));
-
+            this._stream.rpc(
+                'model_metadata',
+                { 'model': this._model },
+                onMessage.bind(this),
+                function() { console.log('rpc error', arguments); }
+            );
         };
 
         GridDataProviderWebsocket.prototype.getPage = function (options) {
