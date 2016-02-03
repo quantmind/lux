@@ -31,14 +31,6 @@ define(['angular',
         GridDataProviderWebsocket.prototype.connect = function() {
             dataProvider.check(this);
 
-            function onConnect () {
-                this.getPage();
-            }
-
-            function onMetadataReceived(msg) {
-                this._grid.onMetadataReceived(msg.result);
-            }
-
             function onMessage (msg) {
                 var tasks;
 
@@ -76,12 +68,26 @@ define(['angular',
         };
 
         GridDataProviderWebsocket.prototype.getPage = function (options) {
+            this._stream.rpc(
+                'model_data',
+                { 'model': this._model },
+                onDataReceived.bind(this),
+                function() { console.log('rpc error', arguments); }
+            );
         };
 
         GridDataProviderWebsocket.prototype.deleteItem = function(identifier, onSuccess, onFailure) {
             var options = {id: identifier};
             this._stream.rpc(this._channel, options).then(onSuccess, onFailure);
         };
+
+        function onMetadataReceived(msg) {
+            this._grid.onMetadataReceived(msg.result);
+        }
+
+        function onDataReceived(msg) {
+            this._grid.onDataReceived(msg.result);
+        }
 
         return GridDataProviderWebsocket;
     }
