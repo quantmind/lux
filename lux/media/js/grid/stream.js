@@ -35,7 +35,11 @@ define(['angular',
                 this.getPage();
             }
 
-            function onMessage (sock, msg) {
+            function onMetadataReceived(msg) {
+                this._grid.onMetadataReceived(msg.result);
+            }
+
+            function onMessage (msg) {
                 var tasks;
 
                 if (msg.data.event === 'record-update') {
@@ -57,7 +61,7 @@ define(['angular',
                     });
 
                 } else if (msg.data.event === 'columns-metadata') {
-                    this._grid.onMetadataReceived(msg.data.data);
+                    this._grid.onMetadataReceived(msg.result);
                 }
             }
 
@@ -66,13 +70,12 @@ define(['angular',
             this._stream.rpc(
                 'model_metadata',
                 { 'model': this._model },
-                onMessage.bind(this),
-                function() { console.log('rpc error', arguments); }
+                onMetadataReceived.bind(this),
+                function() { console.log('rpc error', arguments); } // TODO display error on grid?
             );
         };
 
         GridDataProviderWebsocket.prototype.getPage = function (options) {
-            this._stream.rpc(this._channel, options);
         };
 
         GridDataProviderWebsocket.prototype.deleteItem = function(identifier, onSuccess, onFailure) {
