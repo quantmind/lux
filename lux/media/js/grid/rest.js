@@ -30,7 +30,7 @@ define(['angular',
 
         GridDataProviderREST.prototype.getPage = function (options) {
             dataProvider.check(this);
-            getData(this, {}, options);
+            getData(this, options);
         };
 
         GridDataProviderREST.prototype.deleteItem = function (identifier, onSuccess, onFailure) {
@@ -54,9 +54,14 @@ define(['angular',
             });
         }
 
-        function getData(self) {
+        function getData(self, options) {
             var grid = self._grid,
                 query = grid.state.query();
+
+            if (options) {
+                angular.extend(query, options)
+            }
+
             self._api.get({params: query}).success(function (data) {
                 grid.onDataReceived(data);
             });

@@ -447,7 +447,7 @@ define(['angular',
         // Filtering
         gridApi.core.on.filterChanged(scope, _.debounce(function () {
             var grid = this.grid, operator;
-            scope.gridFilters = {};
+            scope.grid.options.gridFilters = {};
 
             // Add filters
             angular.forEach(grid.columns, function (value) {
@@ -461,12 +461,12 @@ define(['angular',
                     } else {
                         operator = 'eq';
                     }
-                    scope.gridFilters[value.colDef.name + ':' + operator] = value.filters[0].term;
+                    scope.grid.options.gridFilters[value.colDef.name + ':' + operator] = value.filters[0].term;
                 }
             });
 
             // Get results
-            grid.refreshPage();
+            scope.grid.refreshPage();
 
         }, options.requestDelay));
     }
