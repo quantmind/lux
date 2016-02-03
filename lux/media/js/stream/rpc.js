@@ -2,6 +2,13 @@
 define([], function () {
     'use strict';
 
+    var errors = {};
+    errors[-32700] = 'protocol error';
+    errors[-32600] = 'invalid request';
+    errors[-32601] = 'no such function';
+    errors[-32602] = 'invalid parameters';
+    errors[-32603] = 'internal error';
+
     return rpcProtocol;
 
 
@@ -33,7 +40,7 @@ define([], function () {
                     error: errorBack || callBack
                 };
             }
-            self.log.debug('Execute streaming RPC method "' + method + '"');
+            self.log.debug('luxStream: execute rpc.' + method);
             return self.transport.write(msg);
         }
 
@@ -44,7 +51,9 @@ define([], function () {
                 var callback = executed[response.id] || empty;
                 // Check if an rpc response is a good one, otherwise log the error
                 if (response.error) {
-                    self.log.error('RPC error ' + response.error.code + ': ' + response.error.message);
+                    self.log.error('luxStream: rpc ' + errors[response.error.code] +
+                        ' (' + response.error.code + ') - ' +
+                        response.error.message);
                     if (callback.error) callback.error(response);
                 } else if (callback.success) {
                     callback.success(response);
@@ -52,7 +61,7 @@ define([], function () {
                 if (response.complete)
                     delete executed[response.id];
             } else
-                self.log.error('Received an RPC message without id');
+                self.log.error('luxStream: received an rpc message without id');
         }
 
         //  authenticate
