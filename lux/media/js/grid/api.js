@@ -423,7 +423,7 @@ define(['angular',
         gridApi.core.on.sortChanged(scope, _.debounce(function (grid, sortColumns) {
             if (sortColumns.length === 0) {
                 scope.grid.state.sortby(undefined);
-                grid.refreshPage();
+                scope.grid.refreshPage();
             } else {
                 // Build query string for sorting
                 angular.forEach(sortColumns, function (column) {
