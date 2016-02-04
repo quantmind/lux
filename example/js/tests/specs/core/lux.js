@@ -83,7 +83,7 @@ define(['lux'], function (lux) {
             expect(body.length).toBe(1);
             expect(body[0]).toBe(document);
 
-            body = lux.querySelector(document, 'body');
+            body = lux.querySelector('body');
             expect(body.length).toBe(1);
             expect(body[0].tagName).toBe('BODY');
         });

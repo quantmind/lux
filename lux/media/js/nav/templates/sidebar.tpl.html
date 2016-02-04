@@ -1,6 +1,8 @@
 <navbar class="sidebar-navbar"></navbar>
-<aside ng-repeat="sidebar in sidebars" class="sidebar sidebar-{{ sidebar.position }}"
-ng-class="{'sidebar-fixed':sidebar.fixed}" bs-collapse>
+<aside ng-repeat="sidebar in sidebars"
+       class="sidebar sidebar-{{ sidebar.position }}"
+       ng-attr-id="{{ sidebar.id }}"
+       ng-class="{'sidebar-fixed':sidebar.fixed}" bs-collapse>
     <div class="nav-panel">
         <div ng-if="sidebar.user">
             <div ng-if="sidebar.user.avatar_url" class="pull-{{ sidebar.position }} image">

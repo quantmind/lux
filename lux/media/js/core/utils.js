@@ -129,6 +129,10 @@ define(['angular',
     //
     //  Simple wrapper for a querySelector
     lux.querySelector = function (elem, query) {
+        if (arguments.length === 1 && lux.isString(elem)) {
+            query = elem;
+            elem = document;
+        }
         elem = angular.element(elem);
         if (elem.length && query)
             return angular.element(elem[0].querySelector(query));

@@ -4,7 +4,6 @@ sudo: false
 
 python:
   - 3.4.3
-  - 3.5.1
 
 before_install:
   - npm install -g grunt-cli
@@ -13,8 +12,9 @@ install:
   - pip install -r requirements-dev.txt
   - pip install -r requirements-soft.txt
   - python setup.py install
-#  - cd example
-#  - npm install
+  - cd example
+  - npm install
+  - cd ..
 
 services:
   - redis-server
@@ -34,7 +34,7 @@ script:
   - rm -rf lux
   - rm -rf build
   - python -m runtests --coverage --log-level error
-  - if [[ $TRAVIS_PYTHON_VERSION == '3.5.1' ]]; then python -m runtests --coveralls; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == '3.4.3' ]]; then python -m runtests --coveralls; fi
 
 notifications:
   email: false

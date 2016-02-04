@@ -41,7 +41,7 @@ define(['angular',
             var template = '<sidebar data-position="left" data-id="sidebar1"></navbar>',
                 element = tests.compile(template),
                 scope = element.scope(),
-                body = angular.element('body');
+                body = lux.querySelector('body');
             //
             if (scope.user) {
                 var sidebar = angular.element(element.children()[1]);
@@ -78,20 +78,13 @@ define(['angular',
             };
             var template = '<sidebar data-options="lux._sidebarTests.sidebar1"></sidebar>',
                 element = tests.compile(template),
-                scope = element.scope(),
-                body = angular.element('body');
-            //
-            if (scope.user) {
-                var sidebar = angular.element(element.children()[1]);
+                sidebar = angular.element(element.children()[1]);
 
-                expect(element.children().length).toBe(2);
-                expect(sidebar[0].tagName).toBe('ASIDE');
-                expect(sidebar.hasClass('main-sidebar')).toBe(true);
-                expect(sidebar.attr('id')).toBe('sidebar1');
-                expect(body.hasClass('right-sidebar')).toBe(true);
-            } else {
-                expect(element.children().length).toBe(1);
-            }
+            expect(sidebar[0].tagName).toBe('ASIDE');
+            expect(sidebar.children().length).toBe(2);
+            expect(sidebar.hasClass('sidebar')).toBe(true);
+            expect(sidebar.hasClass('sidebar-right')).toBe(true);
+            expect(sidebar.attr('id')).toBe('sidebar1');
         });
 
     });

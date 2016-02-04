@@ -1,6 +1,6 @@
 define(['angular',
         'lux',
-        'lux/grid/websocket'], function (angular) {
+        'lux/grid/stream'], function (angular) {
     'use strict';
 
     describe('Test lux.grid.dataProviderWebsocket module', function() {
