@@ -12,8 +12,8 @@ install:
   - pip install -r requirements-dev.txt
   - pip install -r requirements-soft.txt
   - python setup.py install
-  - cd example
-  - npm install
+#  - cd example
+#  - npm install
 
 services:
   - redis-server
@@ -36,9 +36,6 @@ script:
   - if [[ $TRAVIS_PYTHON_VERSION == '3.4.3' ]]; then python -m runtests --coveralls; fi
   - cd example
   - grunt build test
-
-# after_script:
-#   - killall rethinkdb
 
 notifications:
   email: false

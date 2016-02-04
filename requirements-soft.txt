@@ -6,7 +6,5 @@ sphinx
 pyyaml
 pyjwt
 beautifulsoup4
-rethinkdb
 redis
-dulwich
 pulsar-odm==0.3.0
