@@ -17,9 +17,9 @@ __all__ = ['RestModel', 'RestColumn', 'ModelMixin']
 
 
 class RestColumn:
-    '''A class for specifying attributes of a REST column/field
+    """A class for specifying attributes of a REST column/field
     for a model
-    '''
+    """
 
     def __init__(self, name, sortable=None, filter=None, type=None,
                  displayName=None, field=None, hidden=None):
@@ -62,13 +62,13 @@ class RestColumn:
 
 
 class ColumnPermissionsMixin:
-    '''Mixin for managing model permissions at column (field) level
+    """Mixin for managing model permissions at column (field) level
 
     This mixin can be used by any class.
-    '''
+    """
     def column_fields(self, columns, field=None):
-        '''Return a list column fields from the list of columns object
-        '''
+        """Return a list column fields from the list of columns object
+        """
         field = field or 'field'
         fields = set()
         for c in columns:
@@ -154,11 +154,11 @@ class RestClient:
     """Implemets method accessed by clients to Rest Models
     """
     def get_target(self, request, **extra_data):
-        '''Get a target object for this model
+        """Get a target object for this model
 
         Used by HTML Router to get information about the LUX REST API
         of this Rest Model
-        '''
+        """
         app = request.app
         api_url = self.api_url or app.config.get('API_URL')
         if not api_url:
@@ -168,8 +168,8 @@ class RestClient:
         return target
 
     def field_options(self, request, **extra_data):
-        '''Return a generator of options for a html serializer
-        '''
+        """Return a generator of options for a html serializer
+        """
         if not request:
             logger.error('%s cannot get remote target. No request', self)
             return
@@ -186,7 +186,7 @@ class RestClient:
 
 
 class RestModel(lux.LuxModel, RestClient, ColumnPermissionsMixin):
-    '''Hold information about a model used for REST views
+    """Hold information about a model used for REST views
 
     .. attribute:: name
 
@@ -215,7 +215,7 @@ class RestModel(lux.LuxModel, RestClient, ColumnPermissionsMixin):
 
         Optional list of column names which will have the hidden attribute
         set to True in the :class:`.RestColumn` metadata
-    '''
+    """
     remote_options_str = 'item.id as item.name for item in {options}'
     remote_options_str_ui_select = 'item.id as item in {options}'
 
@@ -247,13 +247,13 @@ class RestModel(lux.LuxModel, RestClient, ColumnPermissionsMixin):
 
     @lazymethod
     def columnsMapping(self):
-        '''Returns a dictionary of names/columns objects
-        '''
+        """Returns a dictionary of names/columns objects
+        """
         return dict(((c['name'], c) for c in self.columns()))
 
     def limit(self, request, limit=None, max_limit=None):
-        '''The maximum number of items to return when fetching list
-        of data'''
+        """The maximum number of items to return when fetching list of data
+        """
         cfg = request.config
         user = request.cache.user
         if not max_limit:
@@ -270,8 +270,8 @@ class RestModel(lux.LuxModel, RestClient, ColumnPermissionsMixin):
         return min(limit, max_limit)
 
     def offset(self, request, offset=None):
-        '''Retrieve the offset value from the url when fetching list of data
-        '''
+        """Retrieve the offset value from the url when fetching list of data
+        """
         try:
             offset = int(offset)
         except Exception:
@@ -290,20 +290,20 @@ class RestModel(lux.LuxModel, RestClient, ColumnPermissionsMixin):
         else:
             return self.serialise_model(request, data)
 
-    def collection_response(self, request, *filters, **params):
-        '''Handle a response for a list of models
-        '''
+    def collection_data(self, request, *filters, **params):
+        """Handle a response for a list of models
+        """
         cfg = request.config
         params.update(request.url_data)
         limit = params.pop(cfg['API_LIMIT_KEY'], None)
         offset = params.pop(cfg['API_OFFSET_KEY'], None)
         with self.session(request) as session:
             query = self.query(request, session, *filters)
-            return self.query_response(request, query, limit=limit,
-                                       offset=offset, **params)
+            return self.query_data(request, query, limit=limit,
+                                   offset=offset, **params)
 
-    def query_response(self, request, query, limit=None, offset=None,
-                       text=None, sortby=None, max_limit=None, **params):
+    def query_data(self, request, query, limit=None, offset=None,
+                   text=None, sortby=None, max_limit=None, **params):
         limit = self.limit(request, limit, max_limit)
         offset = self.offset(request, offset)
         text = self.search_text(request, text)
@@ -313,7 +313,14 @@ class RestModel(lux.LuxModel, RestClient, ColumnPermissionsMixin):
         query = self.sortby(request, query, sortby)
         data = query.limit(limit).offset(offset).all()
         data = self.serialise(request, data, **params)
-        data = request.app.pagination(request, data, total, limit, offset)
+        return request.app.pagination(request, data, total, limit, offset)
+
+    def collection_response(self, request, *filters, **params):
+        data = self.collection_data(request, *filters, **params)
+        return Json(data).http_response(request)
+
+    def query_response(self, request, query, **kwargs):
+        data = self.query_data(request, query, **kwargs)
         return Json(data).http_response(request)
 
     def filter(self, request, query, text, params):
@@ -342,9 +349,9 @@ class RestModel(lux.LuxModel, RestClient, ColumnPermissionsMixin):
         return query
 
     def meta(self, request, exclude=None):
-        '''Return an object representing the metadata for the model
+        """Return an object representing the metadata for the model
         served by this router
-        '''
+        """
         columns = self.columns_with_permission(request, 'read')
         #
         # Don't include columns which are excluded from meta
@@ -369,9 +376,12 @@ class RestModel(lux.LuxModel, RestClient, ColumnPermissionsMixin):
             meta['permissions'] = permissions
         return meta
 
+    def get_instance(self, request, **args):
+        raise NotImplementedError
+
     def serialise_model(self, request, data, **kw):
-        '''Serialise on model
-        '''
+        """Serialise on model
+        """
         return self.tojson(request, data)
 
     def get_url(self, request, path):
@@ -389,8 +399,8 @@ class RestModel(lux.LuxModel, RestClient, ColumnPermissionsMixin):
         raise NotImplementedError
 
     def _load_columns(self):
-        '''List of column definitions
-        '''
+        """List of column definitions
+        """
         input_columns = self._columns or []
         columns = []
 
@@ -416,14 +426,14 @@ class RestModel(lux.LuxModel, RestClient, ColumnPermissionsMixin):
 
 
 class ModelMixin:
-    '''Mixin for accessing Rest models from the application object
-    '''
+    """Mixin for accessing Rest models from the application object
+    """
     RestModel = RestModel
     model = None
 
     def set_model(self, model):
-        '''Set the default model for this mixin
-        '''
+        """Set the default model for this mixin
+        """
         assert model
         if isinstance(model, str):
             model = self.RestModel(model)

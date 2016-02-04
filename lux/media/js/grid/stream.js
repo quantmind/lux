@@ -4,10 +4,10 @@
 //	provides data to a lux.grid using websockets
 define(['angular',
         'lux/grid',
-        'lux/services'], function (angular) {
+        'lux/services/stream'], function (angular) {
     'use strict';
 
-    angular.module('lux.grid.websocket', ['lux.grid', 'lux.sockjs'])
+    angular.module('lux.grid.stream', ['lux.grid', 'lux.stream'])
 
         .run(['$lux', 'luxGridDataProviders', function ($lux, dataProvider) {
 
@@ -19,6 +19,8 @@ define(['angular',
 
         function GridDataProviderWebsocket (grid) {
             this._grid = grid;
+            this._websocketUrl = grid.options.target.url;
+            this._channel = grid.options.target.channel;
         }
 
         GridDataProviderWebsocket.prototype.destroy = function() {
@@ -26,12 +28,10 @@ define(['angular',
         };
 
         GridDataProviderWebsocket.prototype.connect = function() {
-            var self = this;
-
-            dataProvider.check(self);
+            dataProvider.check(this);
 
             function onConnect () {
-                self.getPage();
+                this.getPage();
             }
 
             function onMessage (sock, msg) {
@@ -40,7 +40,7 @@ define(['angular',
                 if (msg.data.event === 'record-update') {
                     tasks = msg.data.data;
 
-                    self._grid.onDataReceived({
+                    this._grid.onDataReceived({
                         total: msg.data.total,
                         result: tasks,
                         type: 'update'
@@ -49,32 +49,32 @@ define(['angular',
                 } else if (msg.data.event === 'records') {
                     tasks = msg.data.data;
 
-                    self._grid.onDataReceived({
+                    this._grid.onDataReceived({
                         total: msg.data.total,
                         result: tasks,
                         type: 'update'
                     });
 
                 } else if (msg.data.event === 'columns-metadata') {
-                    self._grid.onMetadataReceived(msg.data.data);
+                    this._grid.onMetadataReceived(msg.data.data);
                 }
             }
 
-            this._sockJs = $lux.sockJs(this._websocketUrl);
+            this._stream = $lux.stream(this._websocketUrl);
 
-            this._sockJs.addListener(this._channel, onMessage.bind(this));
+            this._stream.addListener(this._channel, onMessage.bind(this));
 
-            this._sockJs.connect(onConnect.bind(this));
+            this._stream.connect(onConnect.bind(this));
 
         };
 
         GridDataProviderWebsocket.prototype.getPage = function (options) {
-            this._sockJs.rpc(this._channel, options);
+            this._stream.rpc(this._channel, options);
         };
 
         GridDataProviderWebsocket.prototype.deleteItem = function(identifier, onSuccess, onFailure) {
             var options = {id: identifier};
-            this._sockJs.rpc(this._channel, options).then(onSuccess, onFailure);
+            this._stream.rpc(this._channel, options).then(onSuccess, onFailure);
         };
 
         return GridDataProviderWebsocket;

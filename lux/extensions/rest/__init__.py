@@ -29,6 +29,8 @@ from .pagination import *       # noqa
 from .client import ApiClient
 from .views import *            # noqa
 from .authviews import *        # noqa
+from .ws import WsModelRpc
+from .policy import has_permission
 
 
 def luxrest(url, **rest):
@@ -48,7 +50,7 @@ def website_url(request, location=None):
     return url
 
 
-class Extension(MultiAuthBackend):
+class Extension(MultiAuthBackend, WsModelRpc):
 
     _config = [
         Parameter('AUTHENTICATION_BACKENDS', [],
@@ -198,3 +200,9 @@ class Extension(MultiAuthBackend):
 
     def __call__(self, environ, start_response):
         return self.request(wsgi_request(environ))
+
+
+class SimpleBackend(AuthBackend):
+
+    def has_permission(self, request, resource, action):
+        return has_permission(request, {}, resource, action)

@@ -50,17 +50,17 @@ define(['lux/config',
     //  var stream = new LuxStream({appId: <appId>, token: <token>});
     //
     function luxStream (config) {
-        config = lux.extend({}, LuxStream.defaults, config);
+        config = lux.extend({}, luxStream.defaults, config);
         if (!config.appId)
-            throw new LuxStreamException('appId is required');
+            throw new LuxStreamException('luxStream: appId is required');
 
         var self = streamApps[config.appId];
 
         if (!self) {
             if (!config.url)
-                throw new LuxStreamException('url is required');
+                throw new LuxStreamException('luxStream: url is required');
             self = new luxStream.LuxStream(config);
-            streamApps[self.appId()] = self;
+            streamApps[self.id()] = self;
         }
 
         return self;
@@ -82,10 +82,10 @@ define(['lux/config',
             version: function () {
                 return version;
             },
+            log: luxStream.log,
             rpc: luxStream.rpcProtocol(self),
             publish: luxStream.pubsub.publish(self),
             subscribe: luxStream.pubsub.subscribe(self),
-            transport: luxStream.transports[config.transport](self, config),
             reconnectTime: luxStream.backOffs[config.backOff](self, config),
             opened: function () {
                 return open;
@@ -99,6 +99,7 @@ define(['lux/config',
             }
         });
 
+        self.transport = luxStream.transports[config.transport](self, config);
         self.transport.connect();
     }
 
@@ -109,6 +110,7 @@ define(['lux/config',
     luxStream.transports = transports;
     luxStream.parsers = parsers;
     luxStream.backOffs = backOffs;
+    luxStream.log = {};
 
     return luxStream;
 });

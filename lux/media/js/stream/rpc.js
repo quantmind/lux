@@ -2,13 +2,19 @@
 define([], function () {
     'use strict';
 
+    var errors = {};
+    errors[-32700] = 'protocol error';
+    errors[-32600] = 'invalid request';
+    errors[-32601] = 'no such function';
+    errors[-32602] = 'invalid parameters';
+    errors[-32603] = 'internal error';
+
     return rpcProtocol;
 
 
     function rpcProtocol (self) {
 
-        var protocol = 'rpc',
-            executed = {},
+        var executed = {},
             idCounter = 0,
             empty = {};
 
@@ -22,12 +28,11 @@ define([], function () {
         //  callback: optional callback invoked when a response is received
         function rpc(method, data, callBack, errorBack) {
             var msg = {
-                protocol: protocol,
                 method: method,
                 appId: self.id(),
                 id: newId(),
                 version: self.version(),
-                data: data
+                params: data
             };
             if (callBack || errorBack) {
                 executed[msg.id] = {
@@ -35,6 +40,7 @@ define([], function () {
                     error: errorBack || callBack
                 };
             }
+            self.log.debug('luxStream: execute rpc.' + method);
             return self.transport.write(msg);
         }
 
@@ -45,7 +51,9 @@ define([], function () {
                 var callback = executed[response.id] || empty;
                 // Check if an rpc response is a good one, otherwise log the error
                 if (response.error) {
-                    self.log.error(response.error.message);
+                    self.log.error('luxStream: rpc ' + errors[response.error.code] +
+                        ' (' + response.error.code + ') - ' +
+                        response.error.message);
                     if (callback.error) callback.error(response);
                 } else if (callback.success) {
                     callback.success(response);
@@ -53,7 +61,7 @@ define([], function () {
                 if (response.complete)
                     delete executed[response.id];
             } else
-                self.log.error('Received an RPC message without id');
+                self.log.error('luxStream: received an rpc message without id');
         }
 
         //  authenticate
@@ -73,13 +81,12 @@ define([], function () {
 
         rpc.onMessage = onMessage;
         rpc.authenticate = authenticate;
-        rpc.protocol = protocol;
 
         return rpc;
 
         function newId() {
             var id = ++idCounter;
-            return protocol + id;
+            return 'rpc' + id;
         }
     }
 

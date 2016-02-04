@@ -1,7 +1,49 @@
-import json
-
-from pulsar.apps import rpc
 from pulsar.apps.data import PubSubClient
+from pulsar.utils.string import to_string
+from pulsar.utils.importer import module_attribute
+
+from lux.extensions.rest.ws import check_ws_permission
+
+
+WS_KEY = 'sockjs'
+
+
+class PubSub:
+    """Implement the publish and subscribe websocket RPC calls
+    """
+    @classmethod
+    def pubsub(cls, app):
+        protocol = module_attribute(app.config['WEBSOCKET_PROTOCOL'])()
+        return app.pubsub(WS_KEY, protocol=protocol)
+
+    def ws_publish(self, wsrequest):
+        """Publish an event on a channel
+
+        From the client::
+
+            client.rpc('publish', {'channel': 'mychannel',
+                                   'event': 'myevent',
+                                   'data': data})
+        """
+        channel = wsrequest.required_param('channel')
+        event = wsrequest.required_param('event')
+        pubsub = wsrequest.ws.pubsub
+        msg = get_publish_message(wsrequest, event)
+        return pubsub.publish(channel, msg)
+
+    def ws_subscribe(self, wsrequest):
+        """Subscribe to an event on a channel
+
+        From the client::
+
+            client.rpc('subscribe', {'channel': 'mychannel',
+                                     'event': 'myevent'})
+        """
+        channel = wsrequest.required_param('channel')
+        event = wsrequest.required_param('event')
+        check_ws_permission(wsrequest, channel, 'read')
+        channels = wsrequest.ws.channels
+        return channels.register(channel, event)
 
 
 class Channels(PubSubClient):
@@ -10,28 +52,23 @@ class Channels(PubSubClient):
     def __init__(self, ws):
         self.ws = ws
         self.channels = {}
-        pubsub = self.pubsub()
-        pubsub.add_client(self)
+        self.pubsub.add_client(self)
 
-    @classmethod
-    def get(cls, ws):
-        cache = ws.cache
-        channels = cache.ws_pubsub_channels
-        if channels is None:
-            channels = cls(ws)
-            cache.ws_pubsub_channels = channels
-        return channels
+    def __repr__(self):
+        return repr(self.channels)
+    __str__ = __repr__
+
+    @property
+    def pubsub(self):
+        return self.ws.pubsub
 
     def __call__(self, channel, message):
         events = self.channels.get(channel)
         if events:
-            message = json.loads(message.decode('utf-8'))
             event = message.pop('event', None)
             if event and event in events:
-                self.ws.write_message(event, channel, message)
-
-    def pubsub(self):
-        return self.ws.pubsub()
+                data = message.get('data')
+                self.ws.write_message(channel, event, data)
 
     def register(self, channel, event):
         """Register a channel event
@@ -45,47 +82,30 @@ class Channels(PubSubClient):
         if events is None:
             events = set()
             self.channels[channel] = events
-            pubsub = self.pubsub()
-            yield from pubsub.subscribe(channel)
-        channel.add(event)
+        events.add(event)
+        pubsub = self.pubsub
+        pubsub.subscribe(channel)
+        channels = pubsub.channels()
+        return [to_string(c) for c in channels]
 
 
-class PubSub:
-
-    def ws_publish(self, request):
-        """Publish a message
-        """
-        params = request.params
-        channel = params.get('channel')
-        if not channel:
-            raise rpc.InvalidParams('Cannot publish, no channel given')
-        event = params.get('event')
-        if not event:
-            raise rpc.InvalidParams('Cannot publish, no event given '
-                                    'for channel "%s"' % channel)
-        msg = self.get_publish_message(request, event, params.get('data'))
-        channels = Channels.get(request.ws)
-        pubsub = channels.pubsub()
-        yield from pubsub.publish(channel, msg)
-        return True
-
-    def ws_subscribe(self, request):
-        """Subscribe to an event on a channel
-        """
-        params = request.params
-        channel = params.get('channel')
-        if not channel:
-            raise rpc.InvalidParams('Cannot subscribe, no channel given')
-        event = params.get('event')
-        if not event:
-            raise rpc.InvalidParams('Cannot subscribe, no event given '
-                                    'for channel "%s"' % channel)
-        channels = Channels.get(request.ws)
-        return channels.register(channel, event)
-
-    def get_publish_message(self, request, event, data):
-        user = request.cache.user_info
+def broadcast(request, channel, event, data):
+    app = request.app
+    channels = app.config['BROADCAST_CHANNELS']
+    if channels and channel in channels:
+        name = app.config['APP_NAME']
+        channel = ('%s-%s' % (name, channel)).lower()
+        pubsub = PubSub.pubsub(app)
         msg = {'event': event, 'data': data}
-        if user:
-            msg['user'] = user
-        return json.dumps(msg)
+        pubsub.publish(channel, msg)
+
+
+def get_publish_message(wsrequest, event):
+    data = wsrequest.params.get('data')
+    user = wsrequest.cache.user_info
+    msg = {'event': event}
+    if data:
+        data['data'] = data
+    if user:
+        msg['user'] = user
+    return msg

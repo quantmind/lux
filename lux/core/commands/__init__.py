@@ -6,13 +6,13 @@
 '''
 import argparse
 import logging
-from functools import partial
 
 from pulsar import (Setting, get_event_loop, Application, ImproperlyConfigured,
                     asyncio, Config, get_actor, is_async)
 from pulsar.utils.config import Loglevel, Debug, LogHandlers
 
 from lux import __version__
+from lux.utils.async import maybe_green
 
 
 __all__ = ['ConsoleParser',
@@ -113,16 +113,7 @@ class Command(ConsoleParser):
         app()
         # make sure the handler is created
         self.app.get_handler()
-        run = partial(self.run, app.cfg, **params)
-        pool = self.app.green_pool
-        if pool:
-            if pool.in_green_worker:
-                return pool.wait(run())
-            else:
-                result = pool.submit(run)
-        else:
-            result = run()
-        #
+        result = maybe_green(self.app, self.run, app.cfg, **params)
         loop = get_event_loop()
         if is_async(result) and not loop.is_running():
             result = loop.run_until_complete(result)

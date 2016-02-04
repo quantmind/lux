@@ -13,7 +13,8 @@ from pulsar import get_event_loop
 from pulsar.utils.httpurl import (Headers, encode_multipart_formdata,
                                   ENCODE_BODY_METHODS)
 from pulsar.utils.string import random_string
-from pulsar.utils.websocket import SUPPORTED_VERSIONS, websocket_key
+from pulsar.utils.websocket import (SUPPORTED_VERSIONS, websocket_key,
+                                    frame_parser)
 from pulsar.apps.wsgi import WsgiResponse
 from pulsar.apps.test import test_timeout, sequential   # noqa
 
@@ -223,6 +224,41 @@ class TestMixin:
         self.assertEqual(response.content_type,
                          'application/json; charset=utf-8')
         return json.loads(self._content(response).decode('utf-8'))
+
+    def ws_upgrade(self, response):
+        from lux.extensions.sockjs import LuxWs
+        self.assertEqual(response.status_code, 101)
+        #
+        connection = response.connection
+        upgrade = connection.upgrade
+        self.assertTrue(upgrade.called)
+        websocket = upgrade.call_args[0][0](get_event_loop())
+        connection.reset_mock()
+        #
+        self.assertIsInstance(websocket.handler, LuxWs)
+        websocket._connection = response.connection
+        websocket.connection_made(response.connection)
+        self.assertTrue(websocket.cache.wsclient)
+        websocket.cache.wsclient.logger = mock.MagicMock()
+        return websocket
+
+    def ws_message(self, **params):
+        msg = json.dumps(params)
+        return json.dumps([msg])
+
+    def get_ws_message(self, websocket):
+        mock = websocket.connection.write
+        self.assertTrue(mock.called)
+        frame = mock.call_args[0][0]
+        return self.parse_frame(websocket, frame)
+
+    def parse_frame(self, websocket, frame):
+        parser = frame_parser(kind=1)
+        frame = parser.decode(frame)
+        wsclient = websocket.cache.wsclient
+        websocket.connection.reset_mock()
+        msg = json.loads(frame.body[1:])[0]
+        return wsclient.protocol.decode(msg)
 
     def assertValidationError(self, response, field=None, text=None):
         """Assert a Form validation error

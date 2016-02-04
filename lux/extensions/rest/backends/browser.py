@@ -231,7 +231,6 @@ class ApiSessionBackend(SessionBackendMixin,
         store.set_json(self._key(session.id), data)
 
     def on_html_document(self, app, request, doc):
-        BrowserBackend.on_html_document(self, app, request, doc)
         if request.method == 'GET':
             session = request.cache.session
             if session and session.user:

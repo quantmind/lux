@@ -3,17 +3,22 @@ Websocket handler for SockJS clients.
 """
 import json
 
+from pulsar import ProtocolError
+from pulsar.utils.string import to_string
+
 import lux
 
 from lux import Parameter
 
 from .socketio import SocketIO
 from .ws import LuxWs
-from .pubsub import PubSub
-from .rpc import WsAuthentication
+from .pubsub import PubSub, Channels, broadcast
 
 
-class Extension(lux.Extension, PubSub, WsAuthentication):
+__all__ = ['Channels', 'broadcast']
+
+
+class Extension(lux.Extension, PubSub):
 
     _config = [
         Parameter('WS_URL', '/ws', 'Websocket base url'),
@@ -40,11 +45,11 @@ class Extension(lux.Extension, PubSub, WsAuthentication):
 
 class Json:
 
-    def __init__(self, ws):
-        self.ws = ws
-
     def encode(self, msg):
         return json.dumps(msg)
 
     def decode(self, msg):
-        return json.loads(msg)
+        try:
+            return json.loads(to_string(msg))
+        except Exception as exc:
+            raise ProtocolError('Invalid JSON') from exc

@@ -6,6 +6,7 @@ define([], function () {
         initialised: 'initialised',
         connecting: 'connecting',
         connected: 'connected',
+        ready: 'ready',
         unavailable: 'unavailable',
         disconnected: 'disconnected'
     };
@@ -18,13 +19,18 @@ define([], function () {
         var sock = null,
             status = states.initialised,
             pending = [],
-            events = {};
+            // Channel for connection events
+            channel = self.subscribe('connection');
+
+        channel.bind('connection_established', authenticate);
+        channel.bind('ready', execute);
 
         return {
-            connect: connect,
+            connect: execute,
             write: write,
             close: close,
-            bind: bind,
+            bind: channel.bind,
+            unbind: channel.unbind,
             status: function () {
                 return status;
             },
@@ -33,59 +39,46 @@ define([], function () {
             }
         };
 
-        function bind (event, callback) {
-            var callbacks = events[event];
-            if (!callbacks) {
-                callbacks = [];
-                events[event] = callbacks;
-            }
-            callbacks.push(callback);
-            return self;
+        function can_execute () {
+            return status === states.connected || status === states.ready;
         }
 
-        function fire (event) {
-            var callbacks = events[event];
-            if (callbacks)
-                callbacks.forEach(function (cbk) {
-                    cbk(self);
-                });
+        function can_connect () {
+            return status === states.initialised || status === states.unavailable;
         }
 
         function reconnect () {
             if (status === states.unavailable) {
                 if (self.opened()) {
-                    status = states.initialised;
-                    connect();
+                    execute();
                 } else
                     fire_disconnected();
             }
         }
 
-        function connect (onOpen) {
-            if (!self.open()) return fire_disconnected();
+        function execute () {
+            if (!self.opened()) return fire_disconnected();
 
-            if (onOpen)
-                pending.push(onOpen);
-
-            if (status === states.initialised) {
+            if (can_connect()) {
                 status = states.connecting;
-                fire(status);
+                channel.fire(status);
                 require(['sockjs'], function (SockJs) {
                     initialise(SockJs);
                 });
-            } else if (status === states.connected) {
-                var execute = pending;
+            } else if (can_execute()) {
+                var toExecute = pending;
                 pending = [];
-                execute.forEach(function (cbk) {
-                    cbk(self);
+                toExecute.forEach(function (cbk) {
+                    cbk.call(self);
                 });
             }
         }
 
         function write (msg) {
-            return connect(function () {
+            pending.push(function () {
                 sock.send(self.encode(msg));
             });
+            execute();
         }
 
         function close () {
@@ -96,17 +89,10 @@ define([], function () {
             }
         }
 
-        function fire_connected (user) {
-            self.user = user;
-            status = states.connected;
-            fire(status);
-            setTimeout(connect, 100);
-        }
-
         function fire_disconnected () {
             status = states.disconnected;
-            self.log.warn('Connection with ' + self.getUrl() + ' CLOSED');
-            fire(status);
+            self.log.warn('luxStream: connection with ' + self.getUrl() + ' CLOSED');
+            channel.fire(status);
         }
 
         function initialise (SockJs) {
@@ -114,18 +100,10 @@ define([], function () {
 
             _sock.onopen = function () {
                 sock = _sock;
-                self.log.info('New web socket connection with ' + self.getUrl());
+                self.log.debug('luxStream: new connection with ' + self.getUrl());
                 self.reconnectTime.reset();
-
-                if (config.authToken)
-                    self.rpc('authenticate', {token: config.authToken}, function (response) {
-                        fire_connected(response.result);
-                    }, function (response) {
-                        self.log.error('Could not authenticate: ' + response.error.message);
-                        fire_connected();
-                    });
-                else
-                    fire_connected();
+                status = states.connected;
+                channel.fire(status);
             };
 
             _sock.onmessage = function (e) {
@@ -143,11 +121,30 @@ define([], function () {
                 if (self.opened()) {
                     status = states.unavailable;
                     var next = self.reconnectTime();
-                    self.log.warn('Lost connection. Trying again in ' + 0.001*next + ' seconds.');
+                    self.log.warn('luxStream: lost connection - trying again in ' + 0.001*next + ' seconds.');
                     setTimeout(reconnect, next);
                 } else
                     fire_disconnected();
             };
+        }
+
+        function authenticate () {
+            if (config.authToken) {
+                self.rpc('authenticate', {authToken: config.authToken}, function (response) {
+                    self.log.debug('luxStream: authentication successful with ' + self.getUrl());
+                    fire_ready(response.result);
+                }, function (response) {
+                    self.log.error('luxStream: could not authenticate: ' + response.error.message);
+                    fire_ready();
+                });
+            } else
+                fire_ready();
+        }
+
+        function fire_ready (user) {
+            self.user = user;
+            status = states.ready;
+            channel.fire(status);
         }
     }
 
