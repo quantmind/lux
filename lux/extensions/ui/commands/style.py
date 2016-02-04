@@ -75,6 +75,6 @@ class Command(lux.Command):
                              encode_multipart=False,
                              data={'input': data})
         if response.status_code == 200:
-            return native_str(response.get_content())
+            return native_str(response.content)
         else:
             response.raise_for_status()

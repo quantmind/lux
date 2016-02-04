@@ -10,6 +10,7 @@ __all__ = ['HttpException',
            'Http404',
            'MethodNotAllowed',
            'Http401',
+           'UnprocessableEntity',
            'raise_http_error']
 
 
@@ -21,21 +22,29 @@ class Http401(HttpException):
         super().__init__(msg=msg, headers=headers)
 
 
+class UnprocessableEntity(HttpException):
+    status = 422
+
+
 errors = {HttpRedirect.status: HttpRedirect,
           BadRequest.status: BadRequest,
           PermissionDenied.status: PermissionDenied,
           Http404.status: Http404,
           MethodNotAllowed.status: MethodNotAllowed,
-          Http401.status: Http401}
+          Http401.status: Http401,
+          UnprocessableEntity.status: UnprocessableEntity}
 
 
 def raise_http_error(response):
     if not is_succesful(response.status_code):
-        content = response.decode_content()
-        if isinstance(content, dict):
-            content = content.get('message', '')
-        ErrorClass = errors.get(response.status_code)
-        if ErrorClass:
-            raise ErrorClass(content)
+        if response.status_code:
+            content = response.decode_content()
+            if isinstance(content, dict):
+                content = content.get('message', '')
+            ErrorClass = errors.get(response.status_code)
+            if ErrorClass:
+                raise ErrorClass(content)
+            else:
+                raise HttpException(content, status=response.status_code)
         else:
-            raise HttpException(content, status=response.status_code)
+            raise HttpException

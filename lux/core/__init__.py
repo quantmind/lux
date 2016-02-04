@@ -18,6 +18,7 @@
 '''
 from .commands import *     # noqa
 from .extension import *    # noqa
+from .models import *       # noqa
 from .app import *          # noqa
 from .wrappers import *     # noqa
 from .engines import *      # noqa

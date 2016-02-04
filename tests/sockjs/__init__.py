@@ -1,25 +1,38 @@
 import lux
-from lux.extensions.sockjs import RpcWsMethod
 
 from tests.config import *  # noqa
+from tests.auth import UserRest
+from tests.odm import Task, Person, CRUDTask, CRUDPerson    # noqa
 
 EXTENSIONS = ['lux.extensions.base',
+              'lux.extensions.rest',
+              'lux.extensions.odm',
+              'lux.extensions.auth',
               'lux.extensions.sockjs']
 
 WS_URL = '/testws'
-
-
-class AddWsRpc(RpcWsMethod):
-
-    def on_response(self, data):
-        a = data.get('a', 1)
-        b = data.get('b', 2)
-        self.write(a+b)
+API_URL = ''
+AUTHENTICATION_BACKENDS = ['lux.extensions.auth.TokenBackend']
+DATASTORE = 'sqlite://'
+CACHE_SERVER = PUBSUB_STORE = redis_cache_server
+BROADCAST_CHANNELS = set(['tasks'])
 
 
 class Extension(lux.Extension):
 
-    ws_add = AddWsRpc
+    def api_sections(self, app):
+        return [UserRest(),
+                CRUDTask(),
+                CRUDPerson()]
 
-    def ws_echo(self, ws, msg):
-        ws.write(msg)
+    def ws_add(self, request):
+        """Add two numbers
+        """
+        a = request.params.get('a', 0)
+        b = request.params.get('b', 0)
+        return a + b
+
+    def ws_echo(self, request):
+        """Echo parameters
+        """
+        return request.params

@@ -5,7 +5,7 @@ from pulsar import ImproperlyConfigured
 from pulsar.utils.pep import to_string
 from pulsar.apps.wsgi import Json
 
-from lux import Parameter, wsgi_request, Http401, BadRequest
+from lux import Parameter, wsgi_request, Http401
 
 from ..authviews import Authorization
 
@@ -19,20 +19,20 @@ class TokenBackendMixin:
     """Mixin for token and session based authentication back-ends
     """
     def session_expiry(self, request):
-        '''Expiry for a session or a token
-        '''
+        """Expiry for a session or a token
+        """
         session_expiry = request.config['SESSION_EXPIRY']
         if session_expiry:
             return datetime.now() + timedelta(seconds=session_expiry)
 
     def api_sections(self, app):
-        '''At the authorization router to the api
-        '''
+        """At the authorization router to the api
+        """
         yield Authorization()
 
     def encode_token(self, request, user=None, expiry=None, **token):
-        '''Encode a JWT
-        '''
+        """Encode a JWT
+        """
         if not jwt:     # pragma    nocover
             raise ImproperlyConfigured('JWT library not available')
 
@@ -48,28 +48,31 @@ class TokenBackendMixin:
             return jwt.decode(token, request.config['SECRET_KEY'])
         except jwt.ExpiredSignature:
             request.app.logger.warning('JWT token has expired')
-            # In this case we want the client to perform
-            # a new authentication. Raise 401
             raise Http401('Token')
         except jwt.DecodeError as exc:
-            raise BadRequest(str(exc))
+            request.app.logger.warning(str(exc))
+            raise Http401('Token')
 
     def create_token(self, request, user, **kwargs):  # pragma    nocover
-        '''Create a new token and store it
-        '''
+        """Create a new token and store it
+        """
         raise NotImplementedError
 
 
 class SessionBackendMixin(TokenBackendMixin):
-    '''Mixin for :class:`.AuthBackend` via sessions.
+    """Mixin for :class:`.AuthBackend` via sessions.
 
     This mixin implement the request and response middleware and introduce
     three abstract method for session CRUD operations
-    '''
+    """
     _config = [
         Parameter('SESSION_COOKIE_NAME', 'LUX',
                   'Name of the cookie which stores session id')
     ]
+
+    def logout(self, request):
+        request.cache.user = self.anonymous()
+        request.cache.session = self.create_session(request)
 
     def login_response(self, request, user):
         session = self.create_session(request, user)
@@ -78,14 +81,6 @@ class SessionBackendMixin(TokenBackendMixin):
         request.response.status_code = 201
         return Json({'success': True,
                      'token': token}).http_response(request)
-
-    def logout_response(self, request, user):
-        '''Logout and create a new session
-        '''
-        if user.is_authenticated():
-            request.cache.user = self.anonymous()
-            request.cache.session = self.create_session(request)
-        return Json({'success': True}).http_response(request)
 
     # MIDDLEWARE
     def request(self, request):
@@ -122,16 +117,16 @@ class SessionBackendMixin(TokenBackendMixin):
 
     # ABSTRACT METHODS WHICH MUST BE IMPLEMENTED
     def get_session(self, request, key):
-        '''Retrieve a session from its key
-        '''
+        """Retrieve a session from its key
+        """
         raise NotImplementedError
 
     def create_session(self, request, user=None):
-        '''Create a new session
-        '''
+        """Create a new session
+        """
         raise NotImplementedError
 
     def session_save(self, request, session):
-        '''Save an existing session
-        '''
+        """Save an existing session
+        """
         raise NotImplementedError

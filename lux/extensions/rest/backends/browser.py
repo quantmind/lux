@@ -1,19 +1,21 @@
-'''Backends for Browser based Authentication
-'''
+"""Backends for Browser based Authentication
+"""
 import uuid
+from urllib.parse import urlencode
 
 from pulsar import ImproperlyConfigured, HttpException
 from pulsar.utils.httpurl import is_absolute_uri
 
-from lux import Parameter, raise_http_error, Http401, HttpRedirect
-from lux.extensions.angular import add_ng_modules
+from lux import Parameter, Http401, PermissionDenied, Http404, HttpRedirect
 
 from .mixins import jwt, SessionBackendMixin
 from .registration import RegistrationMixin
 from .. import (AuthenticationError, AuthBackend, luxrest,
                 User, Session, ModelMixin)
-from ..policy import has_permission
 from ..htmlviews import ForgotPassword, Login, Logout, SignUp
+
+
+NotAuthorised = (Http401, PermissionDenied)
 
 
 def auth_router(api_url, url, Router, path=None):
@@ -34,11 +36,11 @@ def auth_router(api_url, url, Router, path=None):
 
 class BrowserBackend(RegistrationMixin,
                      AuthBackend):
-    '''Authentication backend for rendering Forms in the Browser
+    """Authentication backend for rendering Forms in the Browser
 
     It can be used by web servers delegating authentication to a backend API
     or handling authentication on the same site.
-    '''
+    """
     _config = [
         Parameter('LOGIN_URL', '/login', 'Url to login page', True),
         Parameter('LOGOUT_URL', '/logout', 'Url to logout', True),
@@ -83,17 +85,14 @@ class BrowserBackend(RegistrationMixin,
 
         return middleware
 
-    def on_html_document(self, app, request, doc):
-        if is_absolute_uri(app.config['API_URL']):
-            add_ng_modules(doc, ('lux.restapi', 'lux.users'))
-        else:
-            add_ng_modules(doc, ('lux.webapi', 'lux.users'))
-
 
 class ApiSessionBackend(SessionBackendMixin,
                         ModelMixin,
                         BrowserBackend):
-    '''Authenticating against a RESTful HTTP API.
+    """Authenticating against a RESTful HTTP API.
+
+    THis backend requires a real cache backend, it cannot work with dummy
+    cache and will raise an error.
 
     The workflow for authentication is the following:
 
@@ -103,20 +102,26 @@ class ApiSessionBackend(SessionBackendMixin,
     * create the session with same id as the token id and set the user as
       session key
     * Save the session in cache and return the original encoded token
-    '''
+    """
+    permissions_url = None
+    """url for user permissions.
+    """
+    signup_url = 'authorizations/signup'
+    """url for signup a user.
+    """
     users_url = {'id': 'users',
                  'username': 'users',
                  'email': 'users',
                  'auth_key': 'users/authkey'}
 
     def api_sections(self, app):
-        '''Does not provide any view to the api
-        '''
+        """Does not provide any view to the api. Important!
+        """
         return ()
 
     def get_user(self, request, **kw):
-        '''Get User from username, id or email or authentication key.
-        '''
+        """Get User from username, id or email or authentication key.
+        """
         api = request.app.api(request)
         for name, url in self.users_url.items():
             value = kw.get(name)
@@ -134,9 +139,7 @@ class ApiSessionBackend(SessionBackendMixin,
         api = request.app.api(request)
         try:
             # TODO: add address from request
-            # client = request.get_client_address()
             response = api.post('authorizations', data=data)
-            raise_http_error(response)
             token = response.json().get('token')
             payload = jwt.decode(token, verify=False)
             user = User(payload)
@@ -154,17 +157,15 @@ class ApiSessionBackend(SessionBackendMixin,
                 raise AuthenticationError('Invalid credentials')
 
     def create_user(self, request, **data):
-        '''Create a new user from the api
-        '''
+        """Create a new user from the api
+        """
         api = request.app.api(request)
         try:
             # TODO: add address from request
             # client = request.get_client_address()
-            response = api.post('authorizations/signup', data=data)
+            response = api.post(self.signup_url, data=data)
             if response.status_code == 201:
                 return User(response.json())
-            else:
-                response.raise_for_status()
 
         except Exception:
             if data.get('username'):
@@ -174,17 +175,21 @@ class ApiSessionBackend(SessionBackendMixin,
             else:
                 raise AuthenticationError('Invalid credentials')
 
-    def has_permission(self, request, name, level):
-        user = request.cache.user
-        if user.is_superuser():
-            return True
-        else:
-            permissions = getattr(user, 'permissions', None)
-            return has_permission(request, permissions, name, level)
+    def get_permissions(self, request, resources, actions=None):
+        return self._get_permissions(request, resources, actions)
+
+    def has_permission(self, request, resource, action):
+        """Implement :class:`~AuthBackend.has_permission` method
+        """
+        data = self._get_permissions(request, resource, action)
+        resource = data.get(resource)
+        if resource:
+            return resource.get(action, False)
+        return False
 
     def create_session(self, request, user=None):
-        '''Login and return response
-        '''
+        """Login and return response
+        """
         if user:
             user = User(user)
             session = Session(id=user.pop('token_id'),
@@ -196,31 +201,36 @@ class ApiSessionBackend(SessionBackendMixin,
         return session
 
     def get_session(self, request, key):
+        """Get the session at key from the cache server
+        """
         app = request.app
         session = app.cache_server.get_json(self._key(key))
         if session:
             session = Session(session)
             if session.user:
+                user = User(session.user)
                 # Check if the token is still a valid one
                 api = request.app.api(request)
-                response = api.head('authorizations')
                 try:
-                    raise_http_error(response)
-                except Http401:  # 401, redirect to login
-                    url = request.config['LOGIN_URL']
-                    request.cache.session = self.create_session(request)
-                    raise HttpRedirect(url)
-                session.user = User(session.user)
+                    if not session.encoded:
+                        raise Http401
+                    api.head('authorizations', token=session.encoded)
+                except NotAuthorised:
+                    handle_401(request, user)
+                session.user = user
             return session
 
     def session_save(self, request, session):
         data = session.all()
         if session.user:
             data['user'] = session.user.all()
-        request.app.cache_server.set_json(self._key(session.id), data)
+        store = request.app.cache_server
+        if store.name == 'dummy':
+            request.logger.error('Cannot use dummy cache with %s backend',
+                                 self.__class__.__name__)
+        store.set_json(self._key(session.id), data)
 
     def on_html_document(self, app, request, doc):
-        BrowserBackend.on_html_document(self, app, request, doc)
         if request.method == 'GET':
             session = request.cache.session
             if session and session.user:
@@ -228,3 +238,32 @@ class ApiSessionBackend(SessionBackendMixin,
 
     def _key(self, id):
         return 'session:%s' % id
+
+    def _get_permissions(self, request, resources, actions=None):
+        assert self.permissions_url, "permission url not available"
+        if not isinstance(resources, (list, tuple)):
+            resources = (resources,)
+        query = [('resource', resource) for resource in resources]
+        if actions:
+            if not isinstance(actions, (list, tuple)):
+                actions = (actions,)
+            query.extend((('action', action) for action in actions))
+        query = urlencode(query)
+        api = request.app.api(request)
+        try:
+            response = api.get('%s?%s' % (self.permissions_url, query))
+        except NotAuthorised:
+            handle_401(request)
+
+        return response.json()
+
+
+def handle_401(request, user=None):
+    """When the API respond with a 401 logout and redirect to login
+    """
+    user = user or request.session.user
+    if user.is_authenticated():
+        request.cache.auth_backend.logout(request)
+        raise HttpRedirect(request.config['LOGIN_URL'])
+    else:
+        raise Http404

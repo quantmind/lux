@@ -1,18 +1,24 @@
-'''
+"""
 Websocket handler for SockJS clients.
-'''
+"""
+import json
+
+from pulsar import ProtocolError
+from pulsar.utils.string import to_string
+
 import lux
 
 from lux import Parameter
 
 from .socketio import SocketIO
-from .ws import LuxWs, RpcWsMethod
+from .ws import LuxWs
+from .pubsub import PubSub, Channels, broadcast
 
 
-__all__ = ['RpcWsMethod']
+__all__ = ['Channels', 'broadcast']
 
 
-class Extension(lux.Extension):
+class Extension(lux.Extension, PubSub):
 
     _config = [
         Parameter('WS_URL', '/ws', 'Websocket base url'),
@@ -20,15 +26,30 @@ class Extension(lux.Extension):
         Parameter('WEBSOCKET_HARTBEAT', 25, 'Hartbeat in seconds'),
         Parameter('WEBSOCKET_AVAILABLE', True,
                   'Server handle websocket'),
+        Parameter('WEBSOCKET_PROTOCOL', 'lux.extensions.sockjs.Json',
+                  'Encoder and decoder for websocket messages. '
+                  'Default is json.')
     ]
 
     def on_config(self, app):
         app.add_events(('on_websocket_open', 'on_websocket_close'))
 
     def middleware(self, app):
-        '''Add middleware to edit content
-        '''
+        """Add middleware to edit content
+        """
         handler = app.config['WS_HANDLER']
-        if handler:
-            socketio = SocketIO(app.config['WS_URL'], handler(app))
-            return [socketio]
+        url = app.config['WS_URL']
+        if handler and url:
+            return [SocketIO(url, handler(app))]
+
+
+class Json:
+
+    def encode(self, msg):
+        return json.dumps(msg)
+
+    def decode(self, msg):
+        try:
+            return json.loads(to_string(msg))
+        except Exception as exc:
+            raise ProtocolError('Invalid JSON') from exc

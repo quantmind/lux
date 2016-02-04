@@ -20,6 +20,7 @@ class Login(WebFormRouter):
     default_form = Layout(LoginForm,
                           Fieldset(all=True),
                           Submit('Login', disabled="form.$invalid"),
+                          model='login',
                           showLabels=False,
                           resultHandler='login')
 

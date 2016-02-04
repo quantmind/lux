@@ -6,13 +6,13 @@
 '''
 import argparse
 import logging
-from functools import partial
 
 from pulsar import (Setting, get_event_loop, Application, ImproperlyConfigured,
-                    asyncio, Config, get_actor)
+                    asyncio, Config, get_actor, is_async)
 from pulsar.utils.config import Loglevel, Debug, LogHandlers
 
 from lux import __version__
+from lux.utils.async import maybe_green
 
 
 __all__ = ['ConsoleParser',
@@ -113,7 +113,11 @@ class Command(ConsoleParser):
         app()
         # make sure the handler is created
         self.app.get_handler()
-        return self.run_until_complete(app.cfg, **params)
+        result = maybe_green(self.app, self.run, app.cfg, **params)
+        loop = get_event_loop()
+        if is_async(result) and not loop.is_running():
+            result = loop.run_until_complete(result)
+        return result
 
     def get_version(self):
         """Return the :class:`.Command` version.
@@ -132,20 +136,6 @@ class Command(ConsoleParser):
         This is the only method which needs implementing by subclasses.
         '''
         raise NotImplementedError
-
-    def run_until_complete(self, options, **params):
-        '''Execute the :meth:`run` method using pulsar asynchronous engine.
-
-        Most commands are run using this method.
-        '''
-        pool = self.app.green_pool
-        loop = get_event_loop()
-        run = partial(self.run, options, **params)
-        if pool:
-            result = pool.submit(run)
-        else:
-            result = loop.run_in_executor(None, run)
-        return result if loop.is_running() else loop.run_until_complete(result)
 
     @property
     def logger(self):

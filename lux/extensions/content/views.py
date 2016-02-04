@@ -3,7 +3,6 @@ import logging
 
 from pulsar import PermissionDenied, Http404, HttpRedirect
 from pulsar.apps.wsgi import route, Json, RouterParam
-from pulsar.utils.slugify import slugify
 from pulsar.utils.structures import AttributeDictionary
 from pulsar.utils.httpurl import remove_double_slash
 
@@ -29,24 +28,12 @@ class TextForm(forms.Form):
     published = forms.DateTimeField(required=False)
 
 
-class TextCRUDBase(rest.RestMixin, HtmlRouter):
-    response_content_types = None
-    render_file = RouterParam()
-    uimodules = ('lux.blog',)
-
-
-class TextCRUD(TextCRUDBase):
-    '''CRUD views for the text APIs
-    '''
-    def get_html(self, request):
-        '''Return a div for pagination
-        '''
-        return self.render_file(request, 'index')
+class ContentCRUD(rest.RestRouter):
 
     def post(self, request):
         '''Create a new model
         '''
-        model = self.model(request.app)
+        model = self.model
         if not model.form:
             raise Http404
         backend = request.cache.auth_backend
@@ -68,18 +55,6 @@ class TextCRUD(TextCRUDBase):
             return Json(data).http_response(request)
         raise PermissionDenied
 
-    @route('_all', response_content_types=('application/json',))
-    def all(self, request):
-        model = self.model(request)
-        return model.collection_response(request, sortby='date:desc')
-
-    @route('_links', response_content_types=('application/json',))
-    def links(self, request):
-        model = self.model(request)
-        return model.collection_response(request,
-                                         sortby=['order:desc', 'title:asc'],
-                                         **{'order:gt': 0})
-
     @route('<path:path>', method=('get', 'head', 'post'))
     def read_update(self, request):
         path = request.urlargs['path']
@@ -95,7 +70,7 @@ class TextCRUD(TextCRUDBase):
                         raise HttpRedirect('%s/' % path)
                 raise
 
-        content = self.get_content(request, path)
+        content = get_content(request, model, path)
         if request.method == 'HEAD':
             if backend.has_permission(request, model.name, 'read'):
                 return request.response
@@ -103,34 +78,45 @@ class TextCRUD(TextCRUDBase):
         if request.method == 'POST':
             content.bla = None
 
-        raise PermissionDenied
 
-    def get_content(self, request, path, sha=None):
-        model = self.model(request.app)
-        try:
-            return model.read(request, path)
-        except DataError:
-            raise Http404
+class TextRouterBase(rest.RestMixin, HtmlRouter):
+    render_file = RouterParam()
 
-    def create_model(self, request, data):
-        '''Create a new document
+
+class TextRouter(TextRouterBase):
+    '''CRUD views for the text APIs
+    '''
+    def get_html(self, request):
+        '''Return a div for pagination
         '''
-        model = self.model(request.app)
-        name = data.get('name') or data['title']
-        data['name'] = slugify(name, max_length=SLUG_LENGTH)
-        return model.write(request, request.cache.user, data, new=True)
+        return self.render_file(request, 'index')
 
-    def update_model(self, request, instance, data):
-        pass
+    @route('_all', response_content_types=('application/json',))
+    def all(self, request):
+        return self.model.collection_response(request, sortby='date:desc')
+
+    @route('_links', response_content_types=('application/json',))
+    def links(self, request):
+        return self.model.collection_response(
+            request, sortby=['order:desc', 'title:asc'], **{'order:gt': 0})
+
+    @route('<path:path>')
+    def read(self, request):
+        path = request.urlargs['path']
+        try:
+            return self.render_file(request, path, True)
+        except Http404:
+            if not path.endswith('/'):
+                if self.model.exist(request, '%s/index' % path):
+                    raise HttpRedirect('%s/' % path)
+            raise
 
     def render_file(self, request, path='', as_response=False):
-        if path.endswith('/'):
-            path = '%sindex' % path
-        model = self.model(request.app)
-        content = self.get_content(request, path)
+        model = self.model
         backend = request.cache.auth_backend
 
         if backend.has_permission(request, model.name, 'read'):
+            content = get_content(request, model, path)
             response = request.response
             response.content_type = content.content_type
             if content.content_type == 'text/html':
@@ -160,7 +146,7 @@ class TextCRUD(TextCRUDBase):
         raise PermissionDenied
 
 
-class TextCMS(TextCRUD):
+class TextCMS(TextRouter):
     '''A Text CRUD Router which can be used as CMS Router
     '''
     def response_wrapper(self, callable, request):
@@ -187,7 +173,7 @@ class RouterMap(Sitemap):
     content_router = None
 
     def items(self, request):
-        model = self.content_router.model(request)
+        model = self.content_router.model
         for item in model.all(request):
             yield AttributeDictionary(loc=item['url'],
                                       lastmod=item['modified'],
@@ -206,7 +192,8 @@ class CMS(lux.CMS):
 
     def add_router(self, router, sitemap=True):
         if isinstance(router, Content):
-            router = TextCMS(router)
+            router = TextCMS(router, html=True)
+        router.model = self.app.models.register(router.model)
 
         if sitemap:
             path = str(router.route)
@@ -243,3 +230,10 @@ class CMS(lux.CMS):
             return html
         finally:
             request.cache.pop('html_main')
+
+
+def get_content(request, model, path):
+    try:
+        return model.read(request, path)
+    except DataError:
+        raise Http404

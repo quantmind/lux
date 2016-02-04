@@ -7,13 +7,14 @@ python:
 
 before_install:
   - npm install -g grunt-cli
-  - npm install -g bower
 
 install:
   - pip install -r requirements-dev.txt
   - pip install -r requirements-soft.txt
   - python setup.py install
+  - cd example
   - npm install
+  - cd ..
 
 services:
   - redis-server
@@ -29,15 +30,14 @@ before_script:
   - psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE luxtests to lux;"
 
 script:
-  - grunt jasmine
   - flake8
   - rm -rf lux
   - rm -rf build
   - python -m runtests --coverage --log-level error
+#  - cd example
+#  - grunt
+#  - cd ..
   - if [[ $TRAVIS_PYTHON_VERSION == '3.4.3' ]]; then python -m runtests --coveralls; fi
-
-# after_script:
-#   - killall rethinkdb
 
 notifications:
   email: false

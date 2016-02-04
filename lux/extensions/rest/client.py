@@ -1,14 +1,32 @@
 import json
 from urllib.parse import urljoin
 
-from pulsar import new_event_loop
+from pulsar import new_event_loop, is_async
 from pulsar.apps.http import HttpClient, JSON_CONTENT_TYPES
 from pulsar.utils.httpurl import is_absolute_uri
 
+from lux import raise_http_error
+
+
+class GreenHttp:
+
+    def __init__(self, http, pool):
+        self._http = http
+        self._pool = pool
+
+    @property
+    def headers(self):
+        return self._http.headers
+
+    def request(self, method, url, **kw):
+        return self._pool.wait(self._http.request(method, url, **kw), True)
+
 
 class ApiClient:
-    '''A python client for a Lux Api which can be used by other lux
-    applications
+    '''A python client for a Lux REST Api
+
+    The api can be remote (API_URL is an absolute url) or local (served by
+    the same application this client is part of)
     '''
     _http = None
 
@@ -24,7 +42,8 @@ class ApiClient:
             # Remote API
             if is_absolute_uri(api_url):
                 if app.green_pool:
-                    self._http = HttpClient(headers=headers)
+                    self._http = GreenHttp(HttpClient(headers=headers),
+                                           app.green_pool)
                 else:
                     self._http = HttpClient(loop=new_event_loop())
             # Local API
@@ -57,23 +76,25 @@ class ApiClientRequest:
     def post(self, path, **kw):
         return self.request('POST', path, **kw)
 
+    def put(self, path, **kw):
+        return self.request('PUT', path, **kw)
+
     def head(self, path, **kw):
         return self.request('HEAD', path, **kw)
 
     def request(self, method, path=None, token=None, headers=None, **kw):
         request = self._request
         url = urljoin(self.url, path or '')
-        headers = headers or []
-        headers.append(('user-agent', request.get('HTTP_USER_AGENT')))
+        req_headers = headers[:] if headers else []
+        agent = request.get('HTTP_USER_AGENT', request.config['APP_NAME'])
+        req_headers.append(('user-agent', agent))
         if not token and request.cache.session:
             token = request.cache.session.encoded
         if token:
-            headers.append(('Authorization', 'Bearer %s' % token))
-        response = self._http.request(method, url, headers=headers, **kw)
-        if request.app.green_pool:
-            return request.app.green_pool.wait(response)
-        else:
-            return response
+            req_headers.append(('Authorization', 'Bearer %s' % token))
+        response = self._http.request(method, url, headers=req_headers, **kw)
+        raise_http_error(response)
+        return response
 
 
 class LocalClient:
@@ -82,12 +103,24 @@ class LocalClient:
         self.app = app
         self.headers = headers or []
 
-    def request(self, method, path, **params):
-        extra = dict(REQUEST_METHOD=method)
+    def request(self, method, path, headers=None, **params):
+        params['REQUEST_METHOD'] = method.upper()
+        heads = self.headers[:]
+        if headers:
+            heads.extend(headers)
         request = self.app.wsgi_request(path=path,
-                                        headers=self.headers,
-                                        extra=extra)
-        response = yield from self.app(request.environ, self)
+                                        headers=heads,
+                                        extra=params)
+        response = self.app(request.environ, self)
+        if self.app.green_pool:
+            response = self.app.green_pool.wait(response)
+        if is_async(response):
+            return self._async_response(response)
+        else:
+            return Response(response)
+
+    def _async_response(self, response):
+        response = yield from response
         return Response(response)
 
     def __call__(self, status, response_headers, exc_info=None):
@@ -106,16 +139,17 @@ class Response:
     def __getattr__(self, name):
         return getattr(self.response, name)
 
-    def get_content(self):
+    @property
+    def content(self):
         '''Retrieve the body without flushing'''
         return b''.join(self.response.content)
 
-    def content_string(self, charset=None, errors=None):
+    def text(self, charset=None, errors=None):
         charset = charset or self.response.encoding or 'utf-8'
-        return self.get_content().decode(charset, errors or 'strict')
+        return self.content.decode(charset, errors or 'strict')
 
-    def json(self):
-        return json.loads(self.content_string())
+    def json(self, charset=None, errors=None):
+        return json.loads(self.text(charset, errors))
 
     def decode_content(self):
         '''Return the best possible representation of the response body.
@@ -125,5 +159,5 @@ class Response:
             if ct in JSON_CONTENT_TYPES:
                 return self.json()
             elif ct.startswith('text/'):
-                return self.content_string()
-        return self.get_content()
+                return self.text()
+        return self.content

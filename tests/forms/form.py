@@ -176,7 +176,7 @@ class FormTests(test.TestCase):
         form = SimpleForm(data=dict(name='luca', dt='xyz'))
         self.assertFalse(form.is_valid())
         self.assertValidationError(form.tojson(), 'dt',
-                                   '"xyz" is not a valid date')
+                                   'Not a valid date')
 
     def test_datetime_field(self):
         dt = datetime.now()
@@ -189,7 +189,7 @@ class FormTests(test.TestCase):
         form = SimpleForm(data=dict(name='luca', timestamp='xyz'))
         self.assertFalse(form.is_valid())
         self.assertValidationError(form.tojson(), 'timestamp',
-                                   '"xyz" is not a valid date')
+                                   'Not a valid date')
 
     def test_enum_field(self):
         form = SimpleForm(data=dict(name='luca', enum_field='opt1'))

@@ -11,6 +11,8 @@ _ ..pulsar-odm: https://github.com/quantmind/pulsar-odm
 '''
 import lux
 from lux import Parameter
+from lux.extensions.sockjs import broadcast
+from lux.extensions.rest import SimpleBackend
 
 from pulsar.utils.log import LocalMixin
 
@@ -19,13 +21,17 @@ from .mapper import Mapper, model_base
 from .views import CRUD, RestRouter
 from .models import RestModel, RestColumn, ModelColumn
 from .forms import RelationshipField, UniqueField
+from .ws import WsModelRpc
 
 
 __all__ = ['model_base', 'CRUD', 'RestRouter', 'RestModel', 'RestColumn',
            'ModelColumn', 'RelationshipField', 'UniqueField']
 
 
-class Extension(lux.Extension):
+sql_to_broadcast = {'insert': 'create'}
+
+
+class Extension(lux.Extension, WsModelRpc):
     '''Object data mapper extension
 
     Uses pulsar-odm for sychronous & asynchronous data mappers
@@ -47,6 +53,44 @@ class Extension(lux.Extension):
         app.require('lux.extensions.rest')
         app.odm = Odm(app, app.config['DATASTORE'])
         app.add_events(('on_before_commit', 'on_after_commit'))
+
+    def on_after_commit(self, app, session, changes):
+        """
+        Called before SQLAlchemy commit.
+
+        :param app:         Lux app object
+        :param session:     SQLAlchemy session
+        :param changes:     dict of model changes
+        """
+        broadcast_models = self.broadcast_models(app)
+        if not broadcast_models:
+            return
+        request = app.wsgi_request()
+        request.cache.auth_backend = SimpleBackend()
+        for instance, event in changes.values():
+            name = instance.__class__.__name__.lower()
+            models = broadcast_models.get(name)
+            if not models:
+                continue
+            event = sql_to_broadcast.get(event, event)
+            for model in models:
+                data = model.serialise(request, instance)
+                broadcast(app, model.identifier, event, data)
+
+    def broadcast_models(self, app):
+        models = getattr(app, '_broadcast_models', None)
+        if models is None:
+            channels = app.config['BROADCAST_CHANNELS']
+            models = {}
+            if channels:
+                for model in app.models.values():
+                    if model.identifier in channels:
+                        if model.name not in models:
+                            models[model.name] = [model]
+                        else:
+                            models[model.name].append(model)
+            app._broadcast_models = models
+        return models
 
 
 class Odm(LocalMixin):

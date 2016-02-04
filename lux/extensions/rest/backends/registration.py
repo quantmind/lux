@@ -11,8 +11,6 @@ class RegistrationMixin:
     THis Mixin is used by HTML-based authentication backends
     '''
     _config = [
-        Parameter('WEB_SITE_URL', None,
-                  'Url of the website registering to'),
         Parameter('REGISTER_URL', '/signup',
                   'Url to register with site', True),
         Parameter('RESET_PASSWORD_URL', '/reset-password',

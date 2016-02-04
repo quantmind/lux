@@ -28,8 +28,7 @@ def runtests():
     #
     TestSuite(description='Lux Asynchronous test suite',
               modules=['tests'],
-              test_timeout=30,
-              thread_workers=2,
+              test_timeout=60,
               plugins=(bench.BenchMark(),
                        profile.Profile())).start()
 

@@ -8,7 +8,7 @@ from importlib import import_module
 from base64 import b64encode
 
 import pulsar
-from pulsar import ImproperlyConfigured
+from pulsar import ImproperlyConfigured, HttpException
 from pulsar.utils.httpurl import remove_double_slash
 from pulsar.apps.wsgi import (WsgiHandler, HtmlDocument, test_wsgi_environ,
                               LazyWsgi, wait_for_body_middleware,
@@ -17,11 +17,14 @@ from pulsar.utils.log import lazyproperty
 from pulsar.utils.importer import module_attribute
 from pulsar.apps.data import create_store
 
+from lux.utils.async import GreenPubSub
+
 from .commands import ConsoleParser, CommandError
 from .extension import Extension, Parameter, EventMixin
 from .wrappers import wsgi_request, HeadMeta, error_handler, as_async_wsgi
 from .engines import template_engine
 from .cms import CMS
+from .models import ModelContainer
 from .cache import create_cache
 
 
@@ -164,6 +167,7 @@ class Application(ConsoleParser, Extension, EventMixin):
     handler = None
     auth_backend = None
     cms = None
+    '''CMS handler'''
     _worker = None
     _WsgiHandler = WsgiHandler
     _pubsub_store = None
@@ -244,7 +248,7 @@ class Application(ConsoleParser, Extension, EventMixin):
                   'List/tuple of markdown extensions'),
         Parameter('GREEN_POOL', 0,
                   'Run the WSGI handle in a pool of greenlet'),
-        Parameter('THREAD_POOL', True,
+        Parameter('THREAD_POOL', False,
                   'Run the WSGI handle in the event loop executor'),
         Parameter('SECURE_PROXY_SSL_HEADER', None,
                   'A tuple representing a HTTP header/value combination that '
@@ -252,7 +256,9 @@ class Application(ConsoleParser, Extension, EventMixin):
         Parameter('CMS_PARTIALS_PATH', None,
                   'Path to CMS Partials snippets'),
         Parameter('PUBSUB_STORE', None,
-                  'Connection string for a Publish/Subscribe data-store')
+                  'Connection string for a Publish/Subscribe data-store'),
+        Parameter('BROADCAST_CHANNELS', None,
+                  'Set of channels to broadcast events')
         ]
 
     def __init__(self, callable, handler=True):
@@ -260,6 +266,7 @@ class Application(ConsoleParser, Extension, EventMixin):
         self.meta.argv = callable._argv
         self.meta.script = callable._script
         self.auth_backend = self
+        self.models = ModelContainer(self)
         self.config = self._build_config(callable._config_file)
         self.fire('on_config')
         if handler:
@@ -609,6 +616,7 @@ class Application(ConsoleParser, Extension, EventMixin):
             body = self.cms.render(page, context)
             doc.body.append(body)
             return doc.http_response(request)
+        raise HttpException(status=415)
 
     def site_url(self, path=None):
         '''Build the site url from an optional ``path``
@@ -661,7 +669,7 @@ class Application(ConsoleParser, Extension, EventMixin):
                 else:
                     yield mod
 
-    def pubsub(self, key=None):
+    def pubsub(self, key=None, **kw):
         '''Get a pub-sub handler for a given key
 
         A key is used to group together pub-subs so that bandwidths is reduced
@@ -678,7 +686,10 @@ class Application(ConsoleParser, Extension, EventMixin):
         if key:
             pubsub = self._pubsubs.get(key)
             if not pubsub:
-                pubsub = self._pubsub_store.pubsub()
+                pubsub = self._pubsub_store.pubsub(**kw)
+                if pubsub:
+                    if self.app.green_pool:
+                        pubsub = GreenPubSub(self.app.green_pool, pubsub)
                 self._pubsubs[key] = pubsub
         else:
             pubsub = self._pubsub_store.pubsub()

@@ -1,22 +1,40 @@
 import lux
-from lux.extensions.angular import add_ng_modules
+from lux import Parameter
 
 from .models import Content
-from .views import TextCRUD, TextCMS, TextForm, CMS
-from .ui import add_css
+from .views import TextRouter, TextCMS, ContentCRUD, TextForm, CMS
 from .github import GithubHook, EventHandler, PullRepo
 
 
-__all__ = ['Content', 'TextCRUD', 'TextCMS', 'CMS', 'TextForm', 'add_css',
-           'GithubHook', 'EventHandler', 'PullRepo']
+__all__ = ['Content',
+           'TextRouter',
+           'TextCMS',
+           'ContentCRUD',
+           'CMS',
+           'TextForm',
+           'GithubHook',
+           'EventHandler',
+           'PullRepo',
+           'html_contents']
 
 
 class Extension(lux.Extension):
+    _config = [
+        Parameter('STATIC_LOCATION', 'build',
+                  'Directory where the static site is created')
+        ]
+
+    def on_config(self, app):
+        app.require('lux.extensions.rest')
 
     def context(self, request, context):
         if request.cache.html_main:
             context['html_main'] = request.cache.html_main
         return context
 
-    def on_html_document(self, app, request, doc):
-        add_ng_modules(doc, 'lux.cms')
+
+def html_contents(app):
+    contents = sorted(app.models.values(), key=lambda c: c.html_url or '')
+    for content in reversed(contents):
+        if content.html_url is not None and isinstance(content, Content):
+            yield content

@@ -1,0 +1,32 @@
+#page-error {
+    @include bg-image($error-page-background, cover, left top);
+    color: $error-page-color;
+
+    a, a:hover {
+        color: $error-page-color;
+        text-decoration: underline;
+    }
+}
+
+.error-message-container {
+    @include box-sizing('border-box');
+    height: 100%;
+    padding: 40px 120px;
+    background: rgba(0, 0, 0, 0.4);
+}
+
+.error-message {
+    p {
+        font-size: 50px;
+    }
+}
+
+@media (max-width: $screen-sm-min) {
+    .error-message p {
+        font-size: 32px;
+    }
+    .error-message-container {
+        text-align: center;
+        padding: 40px 0;
+    }
+}

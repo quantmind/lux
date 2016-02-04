@@ -1,8 +1,0 @@
-<div ng-repeat="message in messages" class="alert alert-dismissible"
-ng-class="messageClass[message.level]">
-<button type="button" class="close" data-dismiss="alert" ng-click="dismiss($event, message)">
-    <span aria-hidden="true">&times;</span>
-    <span class="sr-only">Close</span>
-</button>
-<span ng-bind-html="message.html"></span>
-</div>

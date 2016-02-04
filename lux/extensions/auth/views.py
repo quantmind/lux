@@ -18,22 +18,22 @@ from .forms import (permission_model, group_model, user_model,
 
 
 class PermissionCRUD(CRUD):
-    _model = permission_model()
+    model = permission_model()
 
 
 class GroupCRUD(CRUD):
-    _model = group_model()
+    model = group_model()
 
 
 class MailingListCRUD(CRUD):
-    _model = mailing_list_model()
+    model = mailing_list_model()
 
 
 class RegistrationCRUD(RestRouter):
     get_user = None
     '''Function to retrieve user from url
     '''
-    _model = registration_model()
+    model = registration_model()
 
     def get(self, request):
         '''Get a list of models
@@ -41,12 +41,12 @@ class RegistrationCRUD(RestRouter):
         self.check_model_permission(request, 'read')
         # Columns the user doesn't have access to are dropped by
         # serialise_model
-        return self.model(request).collection_response(request)
+        return self.model.collection_response(request)
 
     def post(self, request):
         '''Create a new authentication key
         '''
-        model = self.model(request)
+        model = self.model
         if not model.form or not self.get_user:
             raise MethodNotAllowed
         data, _ = request.data_and_files()
@@ -77,7 +77,7 @@ class RegistrationCRUD(RestRouter):
             return request.response
 
         backend = request.cache.auth_backend
-        model = self.model(request)
+        model = self.model
 
         if backend.has_permission(request, model.name, 'read'):
             meta = model.meta(request)
@@ -88,7 +88,7 @@ class RegistrationCRUD(RestRouter):
 class UserCRUD(CRUD):
     """CRUD views for users
     """
-    _model = user_model()
+    model = user_model()
 
     def __init__(self, *args, **kw):
         super().__init__(*args, **kw)
@@ -106,8 +106,7 @@ class UserCRUD(CRUD):
             backend = request.cache.auth_backend
             user = backend.get_user(request, auth_key=auth_key)
             if user:
-                model = self.model(request)
-                return model.collection_response(request, id=user.id)
+                return self.model.collection_response(request, id=user.id)
 
         raise Http404
 

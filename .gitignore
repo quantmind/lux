@@ -1,4 +1,4 @@
-# eclipse
+# IDE
 .project
 .pydevproject
 .settings
@@ -14,16 +14,21 @@ htmlprof
 dist
 build
 src
+deps
 lux.egg-info
-docs/build
 example/luxweb/settings.py
 
-# javascript
-luxjs/templates
+# javascript/css
+coverage
+junit
+.grunt
+*.map
+lux/media/js/templates
+example/luxsite/media/luxsite/*.js
+example/luxsite/media/luxsite/*.css
 
 *.log
 npm*
 node_modules
-bower_components
 MANIFEST
 .DS_Store

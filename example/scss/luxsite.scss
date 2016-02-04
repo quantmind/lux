@@ -1,0 +1,30 @@
+// Imports
+//  * Bootswatch variables
+//  * Bootstrap sass
+//  * Boostwatch scss
+//  * Lux legacy python css
+@import 'bootswatch/variables';
+@import 'bootstrap-sass/assets/stylesheets/bootstrap';
+@import 'bootswatch/bootswatch';
+// TOTO: Remove this
+// Legacy python generated css
+@import 'deps/py.lux';
+
+// Variables
+@import 'deps/lux/variables/all';
+@import 'variables';
+
+// Mixins
+@import 'deps/lux/mixins/all';
+
+// Lux Imports
+@import 'deps/lux/components/content';
+@import 'deps/lux/components/datepicker';
+@import 'deps/lux/components/fileupload';
+@import 'deps/lux/components/grid';
+@import 'deps/lux/components/navbar';
+@import 'deps/lux/components/pagination';
+@import 'deps/lux/components/sidebar';
+//
+// Site css
+@import 'components/helpers';

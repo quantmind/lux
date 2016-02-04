@@ -1,4 +1,4 @@
-'''
+"""
 Extension for Restful web services.
 
 This extension should be added before any other extensions
@@ -11,7 +11,7 @@ just after the :mod:`lux.extensions.base`::
                   ...
                   ]
 
-'''
+"""
 from importlib import import_module
 from urllib.parse import urljoin
 
@@ -29,18 +29,20 @@ from .pagination import *       # noqa
 from .client import ApiClient
 from .views import *            # noqa
 from .authviews import *        # noqa
+from .ws import WsModelRpc
+from .policy import has_permission
 
 
 def luxrest(url, **rest):
-    '''Dictionary containing the api type and the api url name
-    '''
+    """Dictionary containing the api type and the api url name
+    """
     rest['url'] = url
     return rest
 
 
 def website_url(request, location=None):
-    '''A website url
-    '''
+    """A website url
+    """
     url = request.config.get('WEB_SITE_URL')
     url = url or request.absolute_uri('/')
     if location:
@@ -48,7 +50,7 @@ def website_url(request, location=None):
     return url
 
 
-class Extension(MultiAuthBackend):
+class Extension(MultiAuthBackend, WsModelRpc):
 
     _config = [
         Parameter('AUTHENTICATION_BACKENDS', [],
@@ -105,7 +107,9 @@ class Extension(MultiAuthBackend):
                   jscontext=True),
         Parameter('POST_LOGOUT_URL', None,
                   'URL users are redirected to after logged out',
-                  jscontext=True)]
+                  jscontext=True),
+        Parameter('WEB_SITE_URL', None,
+                  'Url of the website registering to')]
 
     def on_config(self, app):
         self.backends = []
@@ -167,6 +171,12 @@ class Extension(MultiAuthBackend):
                     api_sections = getattr(extension, 'api_sections', None)
                     if api_sections:
                         for router in api_sections(app):
+                            if not isinstance(router, ModelMixin):
+                                raise ImproperlyConfigured('Router must be a '
+                                                           'ModelMixin')
+                            # Register model
+                            router.model = app.models.register(router.model)
+                            # Add router
                             api.add_child(router)
 
             app.api = ApiClient()
@@ -180,7 +190,8 @@ class Extension(MultiAuthBackend):
         return middleware
 
     def api_sections(self, app):
-        '''Called by the api extension'''
+        """Called by this extension to build API middleware
+        """
         for backend in self.backends:
             api_sections = getattr(backend, 'api_sections', None)
             if api_sections:
@@ -189,3 +200,9 @@ class Extension(MultiAuthBackend):
 
     def __call__(self, environ, start_response):
         return self.request(wsgi_request(environ))
+
+
+class SimpleBackend(AuthBackend):
+
+    def has_permission(self, request, resource, action):
+        return has_permission(request, {}, resource, action)

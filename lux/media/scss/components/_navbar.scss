@@ -1,0 +1,174 @@
+.navbar {
+    width: 100%;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    background-color: $navbar-background;
+    background-image: none;
+    transition: $navbar-animation;
+    line-height: $navbar-height;
+    text-shadow: none;
+    .navbar-brand {
+        transition: $navbar-animation;
+        padding: 0 4px;
+        height: 100%;
+        &:hover, &:focus {
+            background-color: $navbar-hover-background;
+        }
+    }
+    .navbar-nav {
+        transition: $navbar-animation;
+        > li {
+            height: $navbar-height;
+            transition: $navbar-animation;
+            &:hover, &.active {
+                background-color: $navbar-hover-background;
+                &:focus {
+                    background-color: $navbar-hover-background;
+                    outline: none;
+                }
+            }
+            > a {
+                color: $navbar-text-color;
+                line-height: $navbar-height;
+                transition: $navbar-animation;
+                padding: 0 18px;
+                .sidebar-toggle {
+                    padding-top: 0;
+                    padding-bottom: 0;
+                }
+                &:focus, &:hover {
+                    color: $navbar-active-text-color;
+                    outline: none;
+                    background-color: $navbar-hover-background;
+                }
+            }
+        }
+    }
+}
+
+.nav {
+    > li {
+        > a, a:hover {
+            height: 100%;
+            padding-left: $navbar-text-padding;
+            padding-right: $navbar-text-padding;
+        }
+    }
+    &.navbar-nav > li > a:focus {
+        width: 100%;
+    }
+}
+
+.navbar-collapse {
+    padding-left: 0;
+    padding-right: 0;
+    &.collapse {
+        .navbar-left, .navbar-right {
+            height: $navbar_height;
+            padding-top: 0;
+        }
+    }
+}
+
+@media (min-width: $screen-sm-min) {
+    .navbar {
+        position: fixed;
+        min-height: $navbar-height;
+        height: $navbar-height;
+        border: 1px solid darken(nth($navbar-background, 1), 5%);
+        border-top: 0;
+        .navbar-nav {
+            height: auto;
+            > li > a.sidebar-toggle {
+                line-height: 60px;
+                padding-top: 0;
+            }
+        }
+        > .container-fluid,
+        > .container .navbar-brand,
+        .navbar-brand
+         {
+            margin-left: 0;
+            height: 100%;
+        }
+        .navbar-brand img {
+            height: $navbar_height;
+            transition: $navbar-animation;
+        }
+    }
+
+    .right-divider {
+        height: $navbar-height;
+        transition: $navbar-animation;
+    }
+
+    .navbar--small {
+        background-color: $navbar-animated-bg-color;
+        border: 1px solid darken(nth($navbar-animated-bg-color, 1), 5%);
+        border-top: 0;
+        min-height: $navbar-animated-height;
+        height: $navbar-animated-height;
+        &.navbar {
+            .navbar-brand {
+                img {
+                    height: $navbar-animated-height;
+                    width: auto;
+                }
+                &:hover {
+                    background-color: $navbar-animated-active-bg;
+                }
+            }
+            .navbar-nav > li {
+                height: $navbar-animated-height;
+                &:hover, &.active {
+                    background-color: $navbar-animated-active-bg;
+                    color: $navbar-animated-text-color;
+                    &:hover {
+                        color: $navbar-animated-text-color;
+                    }
+                }
+                > a {
+                    line-height: $navbar-animated-height;
+                    padding-top: 0;
+                    color: $navbar-animated-text-color;
+                    &:focus {
+                        background-color: $navbar-animated-active-bg;
+
+                    }
+                }
+            }
+        }
+
+        .navbar-collapse.collapse {
+            .navbar-left, .navbar-right {
+                height: $navbar-animated-height;
+            }
+            &.in {
+                border: none;
+            }
+        }
+
+        .right-divider {
+            height: $navbar-animated-height;
+        }
+    }
+
+}
+
+@media (max-width: $screen-lg-min) {
+    .navbar-collapse.collapse {
+        .navbar-left, .navbar-right {
+            height: auto !important;
+        }
+    }
+}
+
+.nav-center {
+  > li, > li {
+    float: none;
+    display: inline-block;
+  }
+
+  text-align: center;
+}

@@ -2,7 +2,7 @@ from pulsar import ImproperlyConfigured
 from pulsar.utils.pep import to_string
 from pulsar.apps.wsgi import Json
 
-from lux import Parameter, Http401, BadRequest
+from lux import Parameter, Http401
 
 from .. import AuthBackend
 from .mixins import jwt, TokenBackendMixin
@@ -33,11 +33,6 @@ class TokenBackend(TokenBackendMixin, RegistrationMixin, AuthBackend):
         return Json({'success': True,
                      'token': token}).http_response(request)
 
-    def logout_response(self, request, user):
-        '''TODO: do we set the token as expired!? Or we simply do nothing?
-        '''
-        return Json({'success': True}).http_response(request)
-
     def request(self, request):
         '''Check for ``HTTP_AUTHORIZATION`` header and if it is available
         and the authentication type if ``bearer`` try to perform
@@ -48,25 +43,27 @@ class TokenBackend(TokenBackendMixin, RegistrationMixin, AuthBackend):
         auth = request.get('HTTP_AUTHORIZATION')
         user = request.cache.user
         if auth and user.is_anonymous():
-            auth_type, key = auth.split(None, 1)
-            auth_type = auth_type.lower()
-            if auth_type == 'bearer':
-                try:
-                    token = self.decode_token(request, key)
-                except Http401:
-                    raise
-                except BadRequest as exc:
-                    request.app.logger.error('Could not load user: %s' %
-                                             str(exc))
-            # In this case we want the client to perform
-            # a new authentication. Raise 401
-                except Exception:
-                    request.app.logger.exception('Could not load user')
-                else:
-                    request.cache.session = token
-                    user = self.get_user(request, **token)
-                    if user:
-                        request.cache.user = user
+            self.authorize(request, auth)
+
+    def authorize(self, request, auth):
+        """Authorize claim
+
+        :param auth: a string containing the authorization information
+        """
+        auth_type, key = auth.split(None, 1)
+        auth_type = auth_type.lower()
+        if auth_type == 'bearer':
+            try:
+                token = self.decode_token(request, key)
+            except Http401:
+                raise
+            except Exception:
+                request.app.logger.exception('Could not load user')
+            else:
+                request.cache.session = token
+                user = self.get_user(request, **token)
+                if user:
+                    request.cache.user = user
 
     def response(self, environ, response):
         name = 'Access-Control-Allow-Origin'

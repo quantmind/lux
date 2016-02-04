@@ -13,7 +13,9 @@ __all__ = ['AuthenticationError', 'MessageMixin',
            'UserMixin', 'SessionMixin',
            'normalise_email', 'PasswordMixin',
            'logout', 'User', 'Session',
-           'check_username', 'PERMISSION_LEVELS']
+           'check_username',
+           'user_permissions',
+           'PERMISSION_LEVELS']
 
 
 UNUSABLE_PASSWORD = '!'
@@ -247,9 +249,8 @@ def logout(request):
     form = Form(request, data=request.body_data() or {})
 
     if form.is_valid():
-        user = request.cache.user
-        auth_backend = request.cache.auth_backend
-        return auth_backend.logout_response(request, user)
+        request.cache.auth_backend.logout(request)
+        return Json({'success': True}).http_response(request)
     else:
         return Json(form.tojson()).http_response(request)
 
@@ -272,3 +273,14 @@ def check_username(request, username):
                               'alphanumeric characters or single hyphens, '
                               'and cannot begin or end with a hyphen')
     return username
+
+
+def user_permissions(request):
+    """Return a dictionary of permissions for the current user
+
+    :request: a WSGI request with url data ``resource`` and ``action``.
+    """
+    backend = request.cache.auth_backend
+    resources = request.url_data.get('resource', ())
+    actions = request.url_data.get('action')
+    return backend.get_permissions(request, resources, actions=actions)

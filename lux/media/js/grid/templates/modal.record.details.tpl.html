@@ -1,0 +1,12 @@
+<div class="modal-header" ng-show="title">
+    <button type="button" class="close" aria-label="Close" ng-click="$dismiss()">
+        <span aria-hidden="true">&times;</span>
+    </button>
+    <h4 class="modal-title" ng-bind="title"></h4>
+</div>
+<div class="modal-body">
+    <pre ng-bind="content"></pre>
+</div>
+<div class="modal-footer">
+    <button type="button" class="btn btn-default" ng-click="$dismiss()">Close</button>
+</div>

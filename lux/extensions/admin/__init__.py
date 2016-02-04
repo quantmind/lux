@@ -32,9 +32,10 @@ class Extension(lux.Extension):
             middleware = []
             all = app.module_iterator('admin', is_admin, '__admins__')
             for AdminRouterCls in all:
-                if not AdminRouterCls._model:
+                if not AdminRouterCls.model:
                     continue
                 route = AdminRouterCls()
+                route.model = app.models.register(route.model)
                 admin.add_child(route)
                 path = route.path()
                 if not path.endswith('/'):

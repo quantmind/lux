@@ -23,10 +23,8 @@ class RestRoot(lux.Router):
 
     def apis(self, request):
         routes = {}
-        app = request.app
         for router in self.routes:
-            model = router.model(app)
-            routes[model.api_name] = request.absolute_uri(router.path())
+            routes[router.model.api_name] = request.absolute_uri(router.path())
         return routes
 
     def get(self, request):
@@ -34,16 +32,20 @@ class RestRoot(lux.Router):
 
 
 class RestMixin(ModelMixin):
-
-    def __init__(self, *args, **kwargs):
-        if self._model is None and args:
+    '''A mixin to be used in conjunction with Routers, usually
+    as the first class in the multi-inheritance declaration
+    '''
+    def __init__(self, *args, html=False, **kwargs):
+        if self.model is None and args:
             model, args = args[0], args[1:]
             self.set_model(model)
 
-        if not isinstance(self._model, RestModel):
+        if not isinstance(self.model, RestModel):
             raise NotImplementedError('REST model not available')
 
-        super().__init__(self._model.url, *args, **kwargs)
+        url = self.model.html_url if html else self.model.url
+        assert url is not None, "Model %s has no valid url" % self.model
+        super().__init__(url, *args, **kwargs)
 
     def json(self, request, data):
         '''Return a response as application/json
@@ -63,6 +65,14 @@ class RestMixin(ModelMixin):
 
 class RestRouter(RestMixin, lux.Router):
     response_content_types = REST_CONTENT_TYPES
+
+    def urlargs(self, request):
+        return request.urlargs
+
+    # RestView implementation
+    def get_instance(self, request, session=None, **args):
+        args = args or self.urlargs(request)
+        return self.model.get_instance(request, session=session, **args)
 
     def options(self, request):
         '''Handle the CORS preflight request

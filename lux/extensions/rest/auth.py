@@ -89,27 +89,33 @@ class MultiAuthBackend(AuthBase):
 class AuthenticationResponses:
 
     @auth_backend
-    def login_response(self, request, user):  # pragma    nocover
-        '''Login a user and return a JSON response
-        '''
+    def authorize(self, request, auth):
+        """Authorize an ``auth`` claim
+        """
         pass
 
     @auth_backend
-    def logout_response(self, request, user):  # pragma    nocover
-        '''Logout a user and return a JSON response
-        '''
+    def logout(self, request):  # pragma    nocover
+        """Logout a user
+        """
+        pass
+
+    @auth_backend
+    def login_response(self, request, user):  # pragma    nocover
+        """Login a user and return a JSON response
+        """
         pass
 
     @auth_backend
     def signup_response(self, request, user):   # pragma    nocover
-        '''After a new ``user`` has signed up, return the response.
-        '''
+        """After a new ``user`` has signed up, return the response.
+        """
         pass
 
     @auth_backend
     def inactive_user_login_response(self, request, user):
-        '''JSON response when a non active user logs in
-        '''
+        """JSON response when a non active user logs in
+        """
         request.response.status_code = 403
         raise AuthenticationError('Cannot login - not active user')
 

@@ -1,0 +1,18 @@
+.pagination {
+    text-align: center;
+
+    &.infinite {
+        display: block;
+
+        .loading {
+            margin: 10px;
+            font-size: 15px;
+        }
+        .show-more {
+            margin: 10px;
+        }
+    }
+    &.pagination-sm > li > a {
+        cursor: pointer;
+    }
+}

@@ -36,17 +36,15 @@ Python Requirements
 **Soft requirements**
 
 * sqlalchemy_ and pulsar-odm_ used by ``lux.extensions.odm``
-* markdown_ used by ``lux.extensions.static``
-* sphinx_ used by ``lux.extensions.static``
 * pyjwt_ used by some authentication backends in ``lux.extensions.rest``
+* markdown_
 
 Developing with lux.js
 ==========================
 
-First you need to install nodejs_,  grunt_ cli and bower_::
+First you need to install nodejs_ and  grunt_ cli::
 
     npm install -g grunt-cli
-    npm install -g bower
 
 Subsequently install the development packages via::
 
@@ -65,13 +63,19 @@ Testing
 
 For testing postgreSQL create a new role::
 
+    psql
     CREATE ROLE lux WITH PASSWORD 'luxtest';
     ALTER ROLE lux CREATEDB LOGIN;
     CREATE DATABASE luxtests;
     GRANT ALL PRIVILEGES ON DATABASE luxtests to lux;
 
 
-
+Bulk removal of test databases:
+```
+psql
+copy(select 'drop database ' || datname || ';'  from pg_database where datname ilike 'luxtest%') to '/tmp/drop_db.sql';
+\i /tmp/drop_db.sql
+```
 .. _pulsar: https://github.com/quantmind/pulsar
 .. _pytz: http://pytz.sourceforge.net/
 .. _dateutil: https://pypi.python.org/pypi/python-dateutil
@@ -82,7 +86,6 @@ For testing postgreSQL create a new role::
 .. _gruntjs: http://gruntjs.com/
 .. _nodejs: http://nodejs.org/
 .. _grunt: http://gruntjs.com/
-.. _bower: http://bower.io/
 .. _markdown: https://pypi.python.org/pypi/Markdown
 .. _sphinx: http://sphinx-doc.org/
 .. _`grunt-html2js`: https://github.com/karlgoldstein/grunt-html2js

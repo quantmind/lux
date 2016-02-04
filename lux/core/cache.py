@@ -22,9 +22,9 @@ data_caches = {}
 
 
 def cached(*args, **kw):
-    '''Decorator to apply to Router's methods for
+    """Decorator to apply to Router's methods for
     caching the return value
-    '''
+    """
     if len(args) == 1 and not kw and isfunction(args[0]):
         cache = CacheObject()
         return cache(args[0])
@@ -37,6 +37,11 @@ class Cache:
     def __init__(self, app, name, url):
         self.app = app
         self.name = name
+        self.url = url
+
+    def __repr__(self):
+        return self.url
+    __str__ = __repr__
 
     def ping(self):
         return True
@@ -48,7 +53,8 @@ class Cache:
         pass
 
     def delete(self, key):
-        '''Delete a key from the cache'''
+        """Delete a key from the cache
+        """
         pass
 
     def hmset(self, key, iterable):
@@ -138,7 +144,10 @@ class AsyncLock:
 
 
 class DummyCache(Cache):
+    """A dummy cache to get you started
 
+    Not useful to anything really!
+    """
     def __init__(self, app, name, url):
         super().__init__(app, name, url)
         if app.green_pool:
@@ -210,17 +219,17 @@ class RedisCache(Cache):
 
 
 class Cacheable:
-    '''An class which can create its how cache key
-    '''
+    """An class which can create its how cache key
+    """
     def cache_key(self, app):
         return ''
 
 
 class CacheObject:
-    '''Object which implement cache functionality on callables.
+    """Object which implement cache functionality on callables.
 
     A callable can be either a method or a function
-    '''
+    """
     instance = None
     callable = None
 
@@ -317,9 +326,9 @@ def create_cache(app, url):
 
 
 def register_cache(name, dotted_path):
-    '''Register a new :class:`.Cache` with ``name`` which
+    """Register a new :class:`.Cache` with ``name`` which
     can be found at the python ``dotted_path``.
-    '''
+    """
     data_caches[name] = dotted_path
 
 

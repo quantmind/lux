@@ -25,15 +25,19 @@ class RelationshipField(MultipleMixin, forms.Field, ModelMixin):
         self.format_string = format_string
         self.get_field = get_field
 
+    def get_model(self):
+        if hasattr(self.model, '__call__'):
+            self.model = self.model()
+        return self.model
+
     def getattrs(self, form=None):
         attrs = super().getattrs(form)
         if not form:
             logger.error('%s %s cannot get remote target. No form available',
                          self.__class__.__name__, self.name)
         else:
-            request = form.request
-            model = self.model(request)
-            attrs.update(model.field_options(request))
+            model = self.get_model()
+            attrs.update(model.field_options(form.request))
             if self.format_string:
                 attrs['data-remote-options-value'] = json.dumps({
                     'type': 'formatString',
@@ -47,10 +51,8 @@ class RelationshipField(MultipleMixin, forms.Field, ModelMixin):
         app = bfield.request.app
         # Get a reference to the object data mapper
         odm = app.odm()
-        model = self.model(app)
+        model = app.models.register(self.get_model())
         db_model = model.db_model()
-        # TODO: this works but it is not general
-        # pkname = db_model.__mapper__.primary_key[0].key
         if not self.multiple:
             value = (value,)
         idcolumn = getattr(db_model, model.id_field)

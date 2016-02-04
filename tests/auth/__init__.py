@@ -4,8 +4,9 @@ from sqlalchemy import Column, Integer, String, Boolean, DateTime
 
 import lux
 
-from lux import route, forms, HtmlRouter, Http401
+from lux import route, forms, HtmlRouter
 from lux.extensions import odm, rest
+from lux.utils.auth import ensure_authenticated
 from lux.extensions.auth.forms import UserModel, UserForm
 from lux.extensions.auth.views import (UserCRUD, GroupCRUD, PermissionCRUD,
                                        RegistrationCRUD)
@@ -90,11 +91,11 @@ class SecretForm(forms.Form):
 
 
 class ObjectiveCRUD(odm.CRUD):
-    _model = odm.RestModel('objective', ObjectiveForm, ObjectiveForm)
+    model = odm.RestModel('objective', ObjectiveForm, ObjectiveForm)
 
 
 class SecretCRUD(odm.CRUD):
-    _model = odm.RestModel('secret', SecretForm, SecretForm)
+    model = odm.RestModel('secret', SecretForm, SecretForm)
 
 
 def user_model():
@@ -107,23 +108,11 @@ def user_model():
                      exclude=('password',))
 
 
-def ensure_authenticated(request):
-    """
-    Ensures the request is by an authenticated user; raises a 401 otherwise
-    :param request:     request object
-    :return:            user object
-    """
-    user = request.cache.user
-    if not user.is_authenticated():
-        raise Http401
-    return user
-
-
 class UserRest(odm.RestRouter):
     """Rest view for the authenticated user
     No CREATE, simple read, updates and other update-type operations
     """
-    _model = user_model()
+    model = user_model()
 
     def get_instance(self, request, session=None):
         user = ensure_authenticated(request)

@@ -254,8 +254,7 @@ class TokenBackend(AuthMixin, backends.TokenBackend):
 
 
 class SessionBackend(AuthMixin, backends.SessionBackend):
-    '''An authentication backend based on sessions stored in the
-    cache server and user on the ODM
+    '''An authentication backend based on sessions stored in the ODM
     '''
     def get_session(self, request, key):
         '''Retrieve a session from its key

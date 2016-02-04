@@ -1,10 +1,15 @@
 import json
 import logging
-from copy import copy
+from urllib.parse import urljoin
 
 from pulsar import PermissionDenied
 from pulsar.utils.html import nicename
 from pulsar.apps.wsgi import Json
+from pulsar.utils.httpurl import is_absolute_uri
+from pulsar.utils.log import lazymethod
+
+import lux
+
 
 logger = logging.getLogger('lux.extensions.rest')
 
@@ -12,9 +17,9 @@ __all__ = ['RestModel', 'RestColumn', 'ModelMixin']
 
 
 class RestColumn:
-    '''A class for specifying attributes of a REST column/field
+    """A class for specifying attributes of a REST column/field
     for a model
-    '''
+    """
 
     def __init__(self, name, sortable=None, filter=None, type=None,
                  displayName=None, field=None, hidden=None):
@@ -57,13 +62,13 @@ class RestColumn:
 
 
 class ColumnPermissionsMixin:
-    '''Mixin for managing model permissions at column (field) level
+    """Mixin for managing model permissions at column (field) level
 
     This mixin can be used by any class.
-    '''
+    """
     def column_fields(self, columns, field=None):
-        '''Return a list column fields from the list of columns object
-        '''
+        """Return a list column fields from the list of columns object
+        """
         field = field or 'field'
         fields = set()
         for c in columns:
@@ -110,7 +115,7 @@ class ColumnPermissionsMixin:
 
         if not ret:
             perm = self.has_permission_for_column
-            columns = self.columns(request)
+            columns = self.columns()
             ret = {
                 col['name']: perm(request, col, level) for
                 col in columns
@@ -127,7 +132,7 @@ class ColumnPermissionsMixin:
         :param level:       access level
         :return:            frozenset of column names
         """
-        columns = self.columns(request)
+        columns = self.columns()
         perms = self.column_permissions(request, level)
         return tuple((col for col in columns if perms.get(col['name'])))
 
@@ -140,13 +145,48 @@ class ColumnPermissionsMixin:
         :param level:       access level
         :return:            frozenset of column names
         """
-        columns = self.columns(request)
+        columns = self.columns()
         perms = self.column_permissions(request, level)
         return tuple((col for col in columns if not perms.get(col['name'])))
 
 
-class RestModel(ColumnPermissionsMixin):
-    '''Hold information about a model used for REST views
+class RestClient:
+    """Implemets method accessed by clients to Rest Models
+    """
+    def get_target(self, request, **extra_data):
+        """Get a target object for this model
+
+        Used by HTML Router to get information about the LUX REST API
+        of this Rest Model
+        """
+        app = request.app
+        api_url = self.api_url or app.config.get('API_URL')
+        if not api_url:
+            return
+        target = {'url': api_url, 'name': self.api_name}
+        target.update(**extra_data)
+        return target
+
+    def field_options(self, request, **extra_data):
+        """Return a generator of options for a html serializer
+        """
+        if not request:
+            logger.error('%s cannot get remote target. No request', self)
+            return
+        target = self.get_target(request, **extra_data)
+        yield 'data-remote-options', json.dumps(target)
+        yield 'data-remote-options-id', self.id_field
+        yield 'data-remote-options-value', json.dumps({
+            'type': 'field',
+            'source': self.repr_field})
+        yield 'data-ng-options', self.remote_options_str.format(
+            options=self.api_name)
+        yield 'data-ng-options-ui-select', \
+            self.remote_options_str_ui_select.format(options=self.api_name)
+
+
+class RestModel(lux.LuxModel, RestClient, ColumnPermissionsMixin):
+    """Hold information about a model used for REST views
 
     .. attribute:: name
 
@@ -175,12 +215,9 @@ class RestModel(ColumnPermissionsMixin):
 
         Optional list of column names which will have the hidden attribute
         set to True in the :class:`.RestColumn` metadata
-    '''
+    """
     remote_options_str = 'item.id as item.name for item in {options}'
     remote_options_str_ui_select = 'item.id as item in {options}'
-    _app = None
-    _loaded = False
-    _col_mapping = None
 
     def __init__(self, name, form=None, updateform=None, columns=None,
                  url=None, api_name=None, exclude=None,
@@ -191,92 +228,32 @@ class RestModel(ColumnPermissionsMixin):
         self.form = form
         self.updateform = updateform
         self.url = url if url is not None else '%ss' % name
-        self.api_name = '%s_url' % (self.url or self.name)
+        self.api_name = '%s_url' % self.url.replace('/', '_')
         self.id_field = id_field or 'id'
         self.repr_field = repr_field or 'id'
-        self._api_url = api_url
-        self._html_url = html_url
+        self.html_url = html_url
+        self.api_url = api_url
         self._columns = columns
         self._exclude = set(exclude or ())
         self._hidden = set(hidden or ())
 
     def __repr__(self):
         return self.name
-
     __str__ = __repr__
 
-    def set_model_attribute(self, instance, name, value):
-        '''Set the the attribute ``name`` to ``value`` in a model ``instance``
-        '''
-        setattr(instance, name, value)
+    @property
+    def identifier(self):
+        return self.url
 
-    def tojson(self, request, object, exclude=None, decoder=None):
-        '''Convert a model ``object`` into a JSON serializable
-        dictionary
-        '''
-        raise NotImplementedError
-
-    def session(self, request):
-        '''Return a session for aggregating a query.
-        The retunred object should be context manager and support the query
-        method.
-        '''
-        raise NotImplementedError
-
-    def query(self, request, session, *filters):
-        '''Manipulate a query if needed
-        '''
-        raise NotImplementedError
-
-    def columns(self, request):
-        '''Return a list fields describing the entries for a given model
-        instance'''
-        if not self._loaded:
-            self._columns = self._load_columns(request.app)
-            self._loaded = True
-        return self._columns
-
-    def columnsMapping(self, request):
-        '''Returns a dictionary of names/columns objects
-        '''
-        if self._col_mapping is None:
-            self._col_mapping = dict(((c['name'], c) for c in
-                                      self.columns(request)))
-        return self._col_mapping
-
-    def get_target(self, request, **extra_data):
-        '''Get a target for a form
-
-        Used by HTML Router to get information about the LUX REST API
-        of this Rest Model
-        '''
-        url = self._api_url or request.app.config.get('API_URL')
-        if not url:
-            return
-        target = {'url': url, 'name': self.api_name}
-        target.update(**extra_data)
-        return target
-
-    def field_options(self, request):
-        '''Return a generator of options for a html serializer
-        '''
-        if not request:
-            logger.error('%s cannot get remote target. No request', self)
-        else:
-            target = self.get_target(request)
-            yield 'data-remote-options', json.dumps(target)
-            yield 'data-remote-options-id', self.id_field
-            yield 'data-remote-options-value', json.dumps({
-                'type': 'field',
-                'source': self.repr_field})
-            yield 'data-ng-options', self.remote_options_str.format(
-                options=self.api_name)
-            yield 'data-ng-options-ui-select', \
-                self.remote_options_str_ui_select.format(options=self.api_name)
+    @lazymethod
+    def columnsMapping(self):
+        """Returns a dictionary of names/columns objects
+        """
+        return dict(((c['name'], c) for c in self.columns()))
 
     def limit(self, request, limit=None, max_limit=None):
-        '''The maximum number of items to return when fetching list
-        of data'''
+        """The maximum number of items to return when fetching list of data
+        """
         cfg = request.config
         user = request.cache.user
         if not max_limit:
@@ -293,8 +270,8 @@ class RestModel(ColumnPermissionsMixin):
         return min(limit, max_limit)
 
     def offset(self, request, offset=None):
-        '''Retrieve the offset value from the url when fetching list of data
-        '''
+        """Retrieve the offset value from the url when fetching list of data
+        """
         try:
             offset = int(offset)
         except Exception:
@@ -313,20 +290,20 @@ class RestModel(ColumnPermissionsMixin):
         else:
             return self.serialise_model(request, data)
 
-    def collection_response(self, request, *filters, **params):
-        '''Handle a response for a list of models
-        '''
+    def collection_data(self, request, *filters, **params):
+        """Handle a response for a list of models
+        """
         cfg = request.config
         params.update(request.url_data)
         limit = params.pop(cfg['API_LIMIT_KEY'], None)
         offset = params.pop(cfg['API_OFFSET_KEY'], None)
         with self.session(request) as session:
             query = self.query(request, session, *filters)
-            return self.query_response(request, query, limit=limit,
-                                       offset=offset, **params)
+            return self.query_data(request, query, limit=limit,
+                                   offset=offset, **params)
 
-    def query_response(self, request, query, limit=None, offset=None,
-                       text=None, sortby=None, max_limit=None, **params):
+    def query_data(self, request, query, limit=None, offset=None,
+                   text=None, sortby=None, max_limit=None, **params):
         limit = self.limit(request, limit, max_limit)
         offset = self.offset(request, offset)
         text = self.search_text(request, text)
@@ -336,11 +313,18 @@ class RestModel(ColumnPermissionsMixin):
         query = self.sortby(request, query, sortby)
         data = query.limit(limit).offset(offset).all()
         data = self.serialise(request, data, **params)
-        data = request.app.pagination(request, data, total, limit, offset)
+        return request.app.pagination(request, data, total, limit, offset)
+
+    def collection_response(self, request, *filters, **params):
+        data = self.collection_data(request, *filters, **params)
+        return Json(data).http_response(request)
+
+    def query_response(self, request, query, **kwargs):
+        data = self.query_data(request, query, **kwargs)
         return Json(data).http_response(request)
 
     def filter(self, request, query, text, params):
-        columns = self.columnsMapping(request.app)
+        columns = self.columnsMapping()
 
         for key, value in params.items():
             bits = key.split(':')
@@ -365,9 +349,9 @@ class RestModel(ColumnPermissionsMixin):
         return query
 
     def meta(self, request, exclude=None):
-        '''Return an object representing the metadata for the model
+        """Return an object representing the metadata for the model
         served by this router
-        '''
+        """
         columns = self.columns_with_permission(request, 'read')
         #
         # Don't include columns which are excluded from meta
@@ -392,10 +376,21 @@ class RestModel(ColumnPermissionsMixin):
             meta['permissions'] = permissions
         return meta
 
+    def get_instance(self, request, **args):
+        raise NotImplementedError
+
     def serialise_model(self, request, data, **kw):
-        '''Serialise on model
-        '''
+        """Serialise on model
+        """
         return self.tojson(request, data)
+
+    def get_url(self, request, path):
+        return self._build_url(request, path, self.url,
+                               request.config.get('API_URL'))
+
+    def get_html_url(self, request, path):
+        return self._build_url(request, path, self.html_url,
+                               request.config.get('WEB_SITE_URL'))
 
     def _do_sortby(self, request, query, entry, direction):
         raise NotImplementedError
@@ -403,14 +398,9 @@ class RestModel(ColumnPermissionsMixin):
     def _do_filter(self, request, query, field, op, value):
         raise NotImplementedError
 
-    def _add_to_app(self, app):
-        model = copy(self)
-        model._app = app
-        return model
-
-    def _load_columns(self, app):
-        '''List of column definitions
-        '''
+    def _load_columns(self):
+        """List of column definitions
+        """
         input_columns = self._columns or []
         columns = []
 
@@ -422,51 +412,32 @@ class RestModel(ColumnPermissionsMixin):
 
         return columns
 
+    def _build_url(self, request, path, url, base):
+        if url is None:
+            return
+        if not is_absolute_uri(url):
+            base = base or request.absolute_uri()
+            url = urljoin(base, url)
+        if path:
+            if not url.endswith('/'):
+                url = '%s/' % url
+            url = urljoin(url, path)
+        return url
+
 
 class ModelMixin:
-    '''Mixin for accessing Rest models from the application object
-    '''
+    """Mixin for accessing Rest models from the application object
+    """
     RestModel = RestModel
-    _model = None
+    model = None
 
     def set_model(self, model):
-        '''Set the default model for this mixin
-        '''
+        """Set the default model for this mixin
+        """
         assert model
         if isinstance(model, str):
             model = self.RestModel(model)
-        self._model = model
-
-    def model(self, app, model=None):
-        '''Return a :class:`.RestModel` model registered with ``app``.
-
-        If ``model`` is not available, uses the :attr:`._model`
-        attribute.
-        '''
-        app = app.app
-        rest_models = getattr(app, '_rest_models', None)
-        if rest_models is None:
-            rest_models = {}
-            app._rest_models = rest_models
-
-        if not model:
-            if hasattr(self._model, '__call__'):
-                self._model = self._model()
-            model = self._model
-
-        assert model, 'No model specified'
-
-        if isinstance(model, RestModel):
-            url = model.url
-            if url not in rest_models:
-                rest_models[url] = model._add_to_app(app)
-        else:
-            url = model
-
-        if url in rest_models:
-            return rest_models[url]
-        else:
-            raise RuntimeError('model url "%s" not available' % url)
+        self.model = model
 
     def check_model_permission(self, request, level, model=None):
         """
@@ -477,7 +448,7 @@ class ModelMixin:
         :param level:       access level
         :raise:             PermissionDenied
         """
-        model = self.model(request, model)
+        model = self.model
         backend = request.cache.auth_backend
         if not backend.has_permission(request, model.name, level):
             raise PermissionDenied

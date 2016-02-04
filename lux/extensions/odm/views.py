@@ -1,7 +1,5 @@
+from pulsar import PermissionDenied, MethodNotAllowed
 from sqlalchemy.exc import DataError
-from sqlalchemy.orm.exc import NoResultFound
-
-from pulsar import PermissionDenied, MethodNotAllowed, Http404
 
 import odm
 
@@ -16,23 +14,6 @@ class RestRouter(rest.RestRouter):
     '''
     RestModel = RestModel
 
-    def urlargs(self, request):
-        return request.urlargs
-
-    # RestView implementation
-    def get_instance(self, request, session=None, **args):
-        odm = request.app.odm()
-        args = args or self.urlargs(request)
-        if not args:  # pragma    nocover
-            raise Http404
-        model = self.model(request)
-        with odm.begin(session=session) as session:
-            query = model.query(request, session)
-            try:
-                return query.filter_by(**args).one()
-            except (DataError, NoResultFound):
-                raise Http404
-
 
 class CRUD(RestRouter):
     '''A Router for handling CRUD JSON requests for a database model
@@ -40,8 +21,7 @@ class CRUD(RestRouter):
     This class adds routes to the :class:`.RestRouter`
     '''
     def urlargs(self, request):
-        model = self.model(request)
-        return {model.id_field: request.urlargs['id']}
+        return {self.model.id_field: request.urlargs['id']}
 
     def get(self, request):
         '''Get a list of models
@@ -49,12 +29,12 @@ class CRUD(RestRouter):
         self.check_model_permission(request, 'read')
         # Columns the user doesn't have access to are dropped by
         # serialise_model
-        return self.model(request).collection_response(request)
+        return self.model.collection_response(request)
 
     def post(self, request):
         '''Create a new model
         '''
-        model = self.model(request.app)
+        model = self.model
         if not model.form:
             raise MethodNotAllowed
 
@@ -97,7 +77,7 @@ class CRUD(RestRouter):
             return request.response
 
         backend = request.cache.auth_backend
-        model = self.model(request.app)
+        model = self.model
         if backend.has_permission(request, model.name, 'read'):
             meta = model.meta(request)
             return self.json(request, meta)
@@ -110,7 +90,7 @@ class CRUD(RestRouter):
             request.app.fire('on_preflight', request)
             return request.response
 
-        model = self.model(request.app)
+        model = self.model
         odm = request.app.odm()
         with odm.begin() as session:
             instance = self.get_instance(request, session=session)
