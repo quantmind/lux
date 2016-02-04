@@ -253,7 +253,7 @@ module.exports = function(grunt) {
     grunt.registerTask('build', 'Compile and lint javascript and css libraries', buildTasks);
     grunt.registerTask('coverage', 'Test coverage using Jasmine and Istanbul', ['clean:test', 'karma:ci']);
     grunt.registerTask('all', 'Compile lint and test all libraries', ['build', 'test']);
-    grunt.registerTask('default', ['build', 'karma:phantomjs']);
+    grunt.registerTask('default', ['build', 'karma:ci']);
     //
     grunt.initConfig(cfg);
 
