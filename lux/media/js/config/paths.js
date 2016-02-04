@@ -3,14 +3,12 @@ define([], function () {
 
     return function () {
         return {
-            'angular': '//ajax.googleapis.com/ajax/libs/angularjs/1.4.7/angular',
-            'angular-animate': '//ajax.googleapis.com/ajax/libs/angularjs/1.4.7/angular-animate',
-            'angular-mocks': '//ajax.googleapis.com/ajax/libs/angularjs/1.4.7/angular-mocks.js',
-            'angular-sanitize': '//ajax.googleapis.com/ajax/libs/angularjs/1.4.7/angular-sanitize',
-            'angular-touch': '//cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.7/angular-touch',
+            'angular': '//ajax.googleapis.com/ajax/libs/angularjs/1.4.9/angular',
+            'angular-animate': '//ajax.googleapis.com/ajax/libs/angularjs/1.4.9/angular-animate',
+            'angular-mocks': '//ajax.googleapis.com/ajax/libs/angularjs/1.4.9/angular-mocks.js',
+            'angular-sanitize': '//ajax.googleapis.com/ajax/libs/angularjs/1.4.9/angular-sanitize',
+            'angular-touch': '//cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.9/angular-touch',
             'angular-ui-bootstrap': 'https://cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/1.0.3/ui-bootstrap-tpls',
-            'angular-strap': '//cdnjs.cloudflare.com/ajax/libs/angular-strap/2.2.1/angular-strap',
-            'angular-strap-tpl': '//cdnjs.cloudflare.com/ajax/libs/angular-strap/2.2.4/angular-strap.tpl',
             'angular-ui-router': '//cdnjs.cloudflare.com/ajax/libs/angular-ui-router/0.2.14/angular-ui-router',
             'angular-ui-select': '//cdnjs.cloudflare.com/ajax/libs/angular-ui-select/0.13.2/select',
             'angular-cookies': '//cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.4/angular-cookies',
@@ -36,7 +34,7 @@ define([], function () {
             'gridster': '//cdnjs.cloudflare.com/ajax/libs/jquery.gridster/0.5.6/jquery.gridster',
             'holder': '//cdnjs.cloudflare.com/ajax/libs/holder/2.3.1/holder',
             'highlight': '//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.3/highlight.min.js',
-            'katex': '//cdnjs.cloudflare.com/ajax/libs/KaTeX/0.3.0/katex.min.js',
+            'katex': '//cdnjs.cloudflare.com/ajax/libs/KaTeX/0.5.1/katex.min.js',
             'leaflet': '//cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.js',
             'lodash': '//cdnjs.cloudflare.com/ajax/libs/lodash.js/3.10.1/lodash',
             'marked': '//cdnjs.cloudflare.com/ajax/libs/marked/0.3.2/marked',

@@ -34,9 +34,9 @@ script:
   - rm -rf lux
   - rm -rf build
   - python -m runtests --coverage --log-level error
-  - cd example
-  - grunt
-  - cd ..
+#  - cd example
+#  - grunt
+#  - cd ..
   - if [[ $TRAVIS_PYTHON_VERSION == '3.4.3' ]]; then python -m runtests --coveralls; fi
 
 notifications:
