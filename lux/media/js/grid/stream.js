@@ -31,48 +31,30 @@ define(['angular',
         GridDataProviderWebsocket.prototype.connect = function() {
             dataProvider.check(this);
 
-            function onMessage (msg) {
-                var tasks;
-
-                if (msg.data.event === 'record-update') {
-                    tasks = msg.data.data;
-
-                    this._grid.onDataReceived({
-                        total: msg.data.total,
-                        result: tasks,
-                        type: 'update'
-                    });
-
-                } else if (msg.data.event === 'records') {
-                    tasks = msg.data.data;
-
-                    this._grid.onDataReceived({
-                        total: msg.data.total,
-                        result: tasks,
-                        type: 'update'
-                    });
-
-                } else if (msg.data.event === 'columns-metadata') {
-                    this._grid.onMetadataReceived(msg.result);
-                }
-            }
-
             this._stream = $lux.stream(this._websocketUrl);
 
             this._stream.rpc(
                 'model_metadata',
                 { 'model': this._model },
                 onMetadataReceived.bind(this),
-                function() { console.log('rpc error', arguments); } // TODO display error on grid?
+                function() { console.log('rpc model_metadata error', arguments); } // TODO display error on grid?
             );
         };
 
         GridDataProviderWebsocket.prototype.getPage = function (options) {
+            var query = this._grid.state.query();
+
+            if (typeof options === 'object') {
+                angular.extend(query, options);
+            }
+
+            query.model = this._model;
+
             this._stream.rpc(
                 'model_data',
-                { 'model': this._model },
+                query,
                 onDataReceived.bind(this),
-                function() { console.log('rpc error', arguments); }
+                function() { console.log('rpc model_data error', arguments); }
             );
         };
 
