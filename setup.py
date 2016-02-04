@@ -6,6 +6,8 @@ package_name = 'lux'
 
 try:
     import pulsar  # noqa
+    import dateutil  # noqa
+    import pytz     # noqa
 except ImportError:
     os.environ['lux_install_running'] = 'yes'
     params = {}

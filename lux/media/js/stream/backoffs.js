@@ -11,7 +11,7 @@ define([], function () {
             backOffDelay;
 
         if (factor <= 1)
-            throw new self.Exception('Exponential factor should be greater than 1 but got ' + factor);
+            throw new self.Exception('luxStream: exponential factor should be greater than 1 but got ' + factor);
 
         function next () {
             var delay = Math.min(backOffDelay, config.maxReconnectTime);

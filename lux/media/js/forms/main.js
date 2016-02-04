@@ -429,17 +429,30 @@ define(['angular',
                     //
                     // Standard select widget
                     selectWidget: function (scope, element, field, groupList, options) {
-                        var select = _select(scope.info.element, element);
+                        var grp,
+                            placeholder,
+                            select = _select(scope.info.element, element);
+
+                        if (!field.multiple && angular.isUndefined(field['data-remote-options'])) {
+                            placeholder = angular.element($document[0].createElement('option'))
+                                .attr('value', '').text(field.placeholder || formDefaults.defaultSelectPlaceholder);
+
+                            if (field.required) {
+                                placeholder.prop('disabled', true);
+                            }
+
+                            select.append(placeholder);
+                            if (angular.isUndefined(field.value)) {
+                                field.value = '';
+                            }
+                        }
 
                         if (groupList.length) {
                             if (options.length)
-                                groupList.push({
-                                    name: 'other',
-                                    options: options
-                                });
+                                groupList.push({name: 'other', options: options});
 
                             forEach(groupList, function (group) {
-                                var grp = angular.element($document[0].createElement('optgroup'))
+                                grp = angular.element($document[0].createElement('optgroup'))
                                     .attr('label', group.name);
                                 select.append(grp);
                                 forEach(group.options, function (opt) {
@@ -544,14 +557,14 @@ define(['angular',
                         if (errors)
                             nameError += ' && !' + joinField(scope.formName, field.name, '$error.required');
                         // Show only if server side errors don't exist
-                        nameError += ' && !formErrors.' + field.name;
+                        nameError += ' && !formErrors["' + field.name + '"]';
                         p.append(this.fieldErrorElement(scope, nameError, self.errorMessage(scope, 'invalid')));
 
                         // Add the invalid handler for server side errors
                         var name = '$invalid';
                         name += ' && !' + joinField(scope.formName, field.name, '$error.required');
                         // Show only if server side errors exists
-                        name += ' && formErrors.' + field.name;
+                        name += ' && formErrors["' + field.name + '"]';
                         p.append(
                             this.fieldErrorElement(scope, name, self.errorMessage(scope, 'invalid'))
                                 .html('{{formErrors["' + field.name + '"]}}')

@@ -19,6 +19,7 @@ define(['angular',
         function GridDataProviderREST (grid) {
             var target = grid.options.target;
             this._api = $lux.api(target);
+            this._subPath = target.path || '';
             this._grid = grid;
         }
 
@@ -29,7 +30,7 @@ define(['angular',
 
         GridDataProviderREST.prototype.getPage = function (options) {
             dataProvider.check(this);
-            getData(this, {}, options);
+            getData(this, options);
         };
 
         GridDataProviderREST.prototype.deleteItem = function (identifier, onSuccess, onFailure) {
@@ -47,15 +48,20 @@ define(['angular',
 
         function getMetadata(self) {
             self._api.get({
-                path: 'metadata'
+                path: self._subPath + '/metadata'
             }).success(function (metadata) {
                 self._grid.onMetadataReceived(metadata);
             });
         }
 
-        function getData(self) {
+        function getData(self, options) {
             var grid = self._grid,
                 query = grid.state.query();
+
+            if (options) {
+                angular.extend(query, options);
+            }
+
             self._api.get({params: query}).success(function (data) {
                 grid.onDataReceived(data);
             });

@@ -82,17 +82,17 @@ define(['angular',
             };
 
             actions.delete = function () {
-                modalScope.selected = scope.gridApi.selection.getSelectedRows();
+                modalScope.selected = scope.grid.api.selection.getSelectedRows();
 
-                var firstField = grid.columnDefs[0].field;
+                var firstField = options.columnDefs[0].field;
 
                 // Modal settings
                 angular.extend(modalScope, {
                     'stateName': stateName,
                     'repr_field': grid.metaFields.repr || firstField,
-                    'infoMessage': grid.modal.delete.messages.info + ' ' + stateName + ':',
-                    'dangerMessage': grid.modal.delete.messages.danger,
-                    'emptyMessage': grid.modal.delete.messages.empty + ' ' + stateName + '.'
+                    'infoMessage': options.modal.delete.messages.info + ' ' + stateName + ':',
+                    'dangerMessage': options.modal.delete.messages.danger,
+                    'emptyMessage': options.modal.delete.messages.empty + ' ' + stateName + '.'
                 });
 
                 if (modalScope.selected.length > 0)
@@ -100,14 +100,12 @@ define(['angular',
                 else
                     template = options.modal.delete.templates.empty;
 
-                modal = $uibModal({
+                modal = $uibModal.open({
                     scope: modalScope,
-                    template: template,
-                    show: true
+                    templateUrl: template
                 });
 
-                modalScope.ok = function () {
-
+                modal.result.then(function() {
                     function deleteItem(item) {
                         var defer = $lux.q.defer(),
                             pk = item[grid.metaFields.id];
@@ -133,17 +131,17 @@ define(['angular',
 
                     $lux.q.all(promises).then(function (results) {
                         grid.refreshPage();
-                        modal.hide();
                         $lux.messages.success(results[0] + ' ' + results.length + ' ' + stateName);
                     }, function (results) {
-                        modal.hide();
                         $lux.messages.error(results + ' ' + stateName);
                     });
-                };
+
+                });
+
             };
 
             actions.columnsVisibility = function () {
-                modalScope.columns = scope.gridOptions.columnDefs;
+                modalScope.columns = options.columnDefs;
                 modalScope.infoMessage = options.modal.columnsVisibility.messages.info;
 
                 modalScope.toggleVisible = function (column) {
@@ -152,7 +150,7 @@ define(['angular',
                     else
                         column.visible = false;
 
-                    scope.gridApi.core.refresh();
+                    scope.grid.api.core.refresh();
                 };
 
                 modalScope.activeClass = function (column) {
@@ -164,10 +162,9 @@ define(['angular',
                 };
                 //
                 template = options.modal.columnsVisibility.templates.default;
-                modal = $uibModal({
+                modal = $uibModal.open({
                     scope: modalScope,
-                    template: template,
-                    show: true
+                    templateUrl: template
                 });
             };
 

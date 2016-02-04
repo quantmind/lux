@@ -91,7 +91,7 @@ define([], function () {
 
         function fire_disconnected () {
             status = states.disconnected;
-            self.log.warn('Connection with ' + self.getUrl() + ' CLOSED');
+            self.log.warn('luxStream: connection with ' + self.getUrl() + ' CLOSED');
             channel.fire(status);
         }
 
@@ -100,7 +100,7 @@ define([], function () {
 
             _sock.onopen = function () {
                 sock = _sock;
-                self.log.debug('New web socket connection with ' + self.getUrl());
+                self.log.debug('luxStream: new connection with ' + self.getUrl());
                 self.reconnectTime.reset();
                 status = states.connected;
                 channel.fire(status);
@@ -121,7 +121,7 @@ define([], function () {
                 if (self.opened()) {
                     status = states.unavailable;
                     var next = self.reconnectTime();
-                    self.log.warn('Lost connection. Trying again in ' + 0.001*next + ' seconds.');
+                    self.log.warn('luxStream: lost connection - trying again in ' + 0.001*next + ' seconds.');
                     setTimeout(reconnect, next);
                 } else
                     fire_disconnected();
@@ -131,10 +131,10 @@ define([], function () {
         function authenticate () {
             if (config.authToken) {
                 self.rpc('authenticate', {authToken: config.authToken}, function (response) {
-                    self.log.debug('Streaming authentication successful with ' + self.getUrl());
+                    self.log.debug('luxStream: authentication successful with ' + self.getUrl());
                     fire_ready(response.result);
                 }, function (response) {
-                    self.log.error('Could not authenticate: ' + response.error.message);
+                    self.log.error('luxStream: could not authenticate: ' + response.error.message);
                     fire_ready();
                 });
             } else

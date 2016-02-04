@@ -64,7 +64,7 @@ define(['lux/stream/channel'], function (Channel) {
             if (c)
                 c.fire(event, data);
             else
-                self.log.error('Got message without channel');
+                self.log.error('luxStream: got message without channel');
         }
 
         subscribe.onMessage = onMessage;

@@ -10,6 +10,7 @@ __all__ = ['HttpException',
            'Http404',
            'MethodNotAllowed',
            'Http401',
+           'UnprocessableEntity',
            'raise_http_error']
 
 
@@ -21,12 +22,17 @@ class Http401(HttpException):
         super().__init__(msg=msg, headers=headers)
 
 
+class UnprocessableEntity(HttpException):
+    status = 422
+
+
 errors = {HttpRedirect.status: HttpRedirect,
           BadRequest.status: BadRequest,
           PermissionDenied.status: PermissionDenied,
           Http404.status: Http404,
           MethodNotAllowed.status: MethodNotAllowed,
-          Http401.status: Http401}
+          Http401.status: Http401,
+          UnprocessableEntity.status: UnprocessableEntity}
 
 
 def raise_http_error(response):

@@ -152,7 +152,7 @@ define(['angular',
                 if (grid.options.gridFilters)
                     query = angular.extend(query, options.gridFilters);
 
-                grid.dataProvider.refreshPage(query);
+                grid.dataProvider.getPage(query);
             }
         }
 
@@ -263,7 +263,7 @@ define(['angular',
             if (!angular.isArray(result))
                 return $lux.messages.error('Grid got bad data from provider');
 
-            grid.totalItems = data.total || result.length;
+            options.totalItems = data.total || result.length;
 
             if (data.type === 'update') {
                 grid.state.limit(data.total);
@@ -305,9 +305,8 @@ define(['angular',
     function updateGridHeight(grid) {
         var options = grid.options,
             scope = grid.scope,
-            length = grid.totalItems,
-            element = grid.element(),
-        //element = angular.element($document[0].getElementsByClassName('grid')[0]),
+            length = grid.options.totalItems,
+            element = grid.api.grid.element,
             totalPages = scope.grid.api.pagination.getTotalPages(),
             currentPage = grid.state.page(),
             limit = grid.state.limit(),
@@ -332,12 +331,14 @@ define(['angular',
         var _page = 1,
             _offset = 0,
             _total = 0,
+            _sortby = undefined,
             state = {
                 limit: limit,
                 page: page,
                 offset: offset,
                 total: total,
                 update: update,
+                sortby: sortby,
                 query: query
             };
 
@@ -382,11 +383,20 @@ define(['angular',
             return _total;
         }
 
+        function sortby (_) {
+            if (arguments.length === 1) {
+                _sortby = _;
+                return state;
+            }
+            return _sortby;
+        }
+
         function query () {
             return {
                 page: page(),
                 limit: limit(),
-                offset: offset()
+                offset: offset(),
+                sortby: sortby()
             };
         }
     }
@@ -412,23 +422,23 @@ define(['angular',
         // Sorting
         gridApi.core.on.sortChanged(scope, _.debounce(function (grid, sortColumns) {
             if (sortColumns.length === 0) {
-                delete scope.gridState.sortby;
-                grid.refreshPage();
+                scope.grid.state.sortby(undefined);
+                scope.grid.refreshPage();
             } else {
                 // Build query string for sorting
                 angular.forEach(sortColumns, function (column) {
-                    scope.gridState.sortby = column.name + ':' + column.sort.direction;
+                    scope.grid.state.sortby(column.name + ':' + column.sort.direction);
                 });
 
                 switch (sortColumns[0].sort.direction) {
                     case uiGridConstants.ASC:
-                        grid.refreshPage();
+                        scope.grid.refreshPage();
                         break;
                     case uiGridConstants.DESC:
-                        grid.refreshPage();
+                        scope.grid.refreshPage();
                         break;
                     case undefined:
-                        grid.refreshPage();
+                        scope.grid.refreshPage();
                         break;
                 }
             }
@@ -437,7 +447,7 @@ define(['angular',
         // Filtering
         gridApi.core.on.filterChanged(scope, _.debounce(function () {
             var grid = this.grid, operator;
-            scope.gridFilters = {};
+            scope.grid.options.gridFilters = {};
 
             // Add filters
             angular.forEach(grid.columns, function (value) {
@@ -451,12 +461,12 @@ define(['angular',
                     } else {
                         operator = 'eq';
                     }
-                    scope.gridFilters[value.colDef.name + ':' + operator] = value.filters[0].term;
+                    scope.grid.options.gridFilters[value.colDef.name + ':' + operator] = value.filters[0].term;
                 }
             });
 
             // Get results
-            grid.refreshPage();
+            scope.grid.refreshPage();
 
         }, options.requestDelay));
     }

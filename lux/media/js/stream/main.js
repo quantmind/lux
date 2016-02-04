@@ -52,13 +52,13 @@ define(['lux/config',
     function luxStream (config) {
         config = lux.extend({}, luxStream.defaults, config);
         if (!config.appId)
-            throw new LuxStreamException('appId is required');
+            throw new LuxStreamException('luxStream: appId is required');
 
         var self = streamApps[config.appId];
 
         if (!self) {
             if (!config.url)
-                throw new LuxStreamException('url is required');
+                throw new LuxStreamException('luxStream: url is required');
             self = new luxStream.LuxStream(config);
             streamApps[self.id()] = self;
         }

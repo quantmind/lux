@@ -70,6 +70,11 @@ class WsModelRpc:
 
 
 def get_model(wsrequest):
+    """Get a Rest model from a websocket rpc request
+
+    :param wsrequest:
+    :return: a :class:`~RestModel`
+    """
     model = wsrequest.required_param('model')
     restmodel = wsrequest.app.models.get(model)
     if not restmodel:

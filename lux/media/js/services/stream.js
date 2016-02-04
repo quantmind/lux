@@ -14,7 +14,7 @@ define(['angular',
         .value('luxStreamAppId', lux.context.LUX_STREAM_APPID || 'test')
 
         .run(['$lux', 'luxStreamAppId', function ($lux, luxStreamAppId) {
-            luxStream.log = $lux.messages;
+            luxStream.log = $lux.log;
 
             $lux.stream = function (url) {
                 return luxStream({
@@ -26,4 +26,5 @@ define(['angular',
 
         }]);
 
+    return luxStream;
 });
