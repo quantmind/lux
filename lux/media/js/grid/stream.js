@@ -21,6 +21,7 @@ define(['angular',
             this._grid = grid;
             this._websocketUrl = grid.options.target.url;
             this._channel = grid.options.target.channel;
+            this._model = grid.options.target.model;
         }
 
         GridDataProviderWebsocket.prototype.destroy = function() {
@@ -30,11 +31,7 @@ define(['angular',
         GridDataProviderWebsocket.prototype.connect = function() {
             dataProvider.check(this);
 
-            function onConnect () {
-                this.getPage();
-            }
-
-            function onMessage (sock, msg) {
+            function onMessage (msg) {
                 var tasks;
 
                 if (msg.data.event === 'record-update') {
@@ -56,26 +53,41 @@ define(['angular',
                     });
 
                 } else if (msg.data.event === 'columns-metadata') {
-                    this._grid.onMetadataReceived(msg.data.data);
+                    this._grid.onMetadataReceived(msg.result);
                 }
             }
 
             this._stream = $lux.stream(this._websocketUrl);
 
-            this._stream.addListener(this._channel, onMessage.bind(this));
-
-            this._stream.connect(onConnect.bind(this));
-
+            this._stream.rpc(
+                'model_metadata',
+                { 'model': this._model },
+                onMetadataReceived.bind(this),
+                function() { console.log('rpc error', arguments); } // TODO display error on grid?
+            );
         };
 
         GridDataProviderWebsocket.prototype.getPage = function (options) {
-            this._stream.rpc(this._channel, options);
+            this._stream.rpc(
+                'model_data',
+                { 'model': this._model },
+                onDataReceived.bind(this),
+                function() { console.log('rpc error', arguments); }
+            );
         };
 
         GridDataProviderWebsocket.prototype.deleteItem = function(identifier, onSuccess, onFailure) {
             var options = {id: identifier};
             this._stream.rpc(this._channel, options).then(onSuccess, onFailure);
         };
+
+        function onMetadataReceived(msg) {
+            this._grid.onMetadataReceived(msg.result);
+        }
+
+        function onDataReceived(msg) {
+            this._grid.onDataReceived(msg.result);
+        }
 
         return GridDataProviderWebsocket;
     }
