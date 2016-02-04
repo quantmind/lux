@@ -105,7 +105,24 @@ class RpcWsMethodRequest:
         return self.ws.wsgi_request
 
     def required_param(self, name):
+        """Retrieve a parameter by name
+
+        :param name: the parameter name
+        :return: the parameter value or raise ``InvalidParams`` if missing
+        """
         value = self.params.get(name)
         if not value:
             raise rpc.InvalidParams('missing %s' % name)
         return value
+
+    def pop_param(self, name, *default):
+        """Pop a parameter by name
+
+        :param name: the parameter name
+        :return: the parameter value or raise ``InvalidParams`` if missing
+            and no default given
+        """
+        try:
+            return self.params.pop(name, *default)
+        except KeyError as exc:
+            raise rpc.InvalidParams('missing %s' % name) from exc

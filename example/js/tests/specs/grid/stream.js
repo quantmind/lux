@@ -7,12 +7,11 @@ define(['angular',
 
         var luxGridDataProviders;
 
-        angular.module('lux.grid.websocket.test', ['lux.loader',
-            'lux.mocks.http', 'lux.grid.websocket'])
+        angular.module('lux.grid.stream.test', ['lux.loader', 'lux.mocks.http', 'lux.grid.stream'])
             .value('context', {API_URL: '/api'});
 
         beforeEach(function () {
-            module('lux.grid.websocket.test');
+            module('lux.grid.stream.test');
 
             inject(function (_luxGridDataProviders_) {
                 luxGridDataProviders = _luxGridDataProviders_;

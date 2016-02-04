@@ -78,7 +78,8 @@ define(['angular',
             'luxGridDataProviders', 'luxGridColumnProcessors', createApi]);
 
 
-    function createApi ($window, $lux, uiGridConstants, luxGridDefaults, luxGridDataProviders, luxGridColumnProcessors) {
+    function createApi ($window, $lux, uiGridConstants, luxGridDefaults,
+                        luxGridDataProviders, luxGridColumnProcessors) {
         //
         //  Lux grid factory function
         function luxGridApi(scope, element, options) {
@@ -99,6 +100,7 @@ define(['angular',
                 },
                 onMetadataReceived: onMetadataReceived,
                 onDataReceived: onDataReceived,
+                onDataError: onDataError,
                 refreshPage: refreshPage,
                 // Return state name (last part of the URL)
                 getStateName: getStateName,
@@ -144,6 +146,12 @@ define(['angular',
                 });
             }
 
+            function onDataError (error) {
+                angular.forEach(luxGridApi.onDataErrorCallbacks, function (callback) {
+                    callback(grid, error);
+                });
+            }
+
             // Get specified page using params
             function refreshPage() {
                 var query = grid.state.query();
@@ -159,6 +167,7 @@ define(['angular',
         luxGridApi.onMetadataCallbacks = [];
         luxGridApi.gridApiCallbacks = [];
         luxGridApi.onDataCallbacks = [];
+        luxGridApi.onDataErrorCallbacks = [];
         luxGridApi.gridApiCallbacks.push(luxGridPagination);
         luxGridApi.onMetadataCallbacks.push(modelMeta);
         luxGridApi.onMetadataCallbacks.push(parseColumns);

@@ -1,8 +1,18 @@
-## Forms
+## Python
 
-* Select field changes [[#249](https://github.com/quantmind/lux/pull/249)]
-    * Stop pre-selecting the first option in select fields
-        * For ui-select selects, this uses the placeholder functionality. For standard selects, this uses a 'Please select...' option.
-    * Allows the value of non-required select field to be cleared
-    * Correctly sets the required attribute for ui-select selects
-    * Makes the display value for ui-select fields use the repr value if available
+* Rest models registration during wsgi middleware creation
+* Models are accessible via the ``app.models`` dictionary
+* Refactored the ``sockjs`` extension
+* Several bug fixes in authentication backends
+* Removed dulwich dependency
+
+## Media
+
+* Javascript source moved into the ``lux/media/js`` directory
+* SCSS source located in the ``lux/media/scss`` directory
+* Use of ``require.js`` to include modules
+* Started using ``scss``
+
+## Docs
+
+* documentation in the top level ``docs`` folder

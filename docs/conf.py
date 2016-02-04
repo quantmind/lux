@@ -4,10 +4,10 @@ import sys, os
 os.environ['BUILDING-LUX-DOCS'] = 'yes'
 p = lambda x : os.path.split(x)[0]
 source_dir = p(os.path.abspath(__file__))
-ext_dir = os.path.join(source_dir,'_ext')
-docs_dir   = p(source_dir)
-base_dir   = p(docs_dir)
-#sys.path.append(os.path.join(source_dir, "_ext"))
+ext_dir = os.path.join(source_dir, '_ext')
+docs_dir = p(source_dir)
+base_dir = p(docs_dir)
+
 sys.path.insert(0, base_dir)
 sys.path.insert(0, ext_dir)
 #
