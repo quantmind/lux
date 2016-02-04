@@ -2,11 +2,14 @@ include CHANGELOG.rst
 include MANIFEST.in
 include README.rst
 include runtests.py
-include Gruntfile.js
-include package.json
+include release.py
 include requirements.txt
 include requirements_dev.txt
-recursive-include luxjs *
-recursive-include tests *
-recursive-include lux *.html *.txt *.js *.json *.rst *.mako *.scss
-recursive-include examples *
+recursive-exclude * __pycache__
+recursive-exclude * *.pyc
+recursive-exclude * *.pyo
+recursive-exclude * *.orig
+recursive-include tests *.py *.js *.html *.scss *.md *.json *.txt *.rst *.mako *.json *.jpg *.png *.svg *.ico
+recursive-include lux *.js *.html *.scss *.md *.json *.txt *.rst *.mako *.json *.jpg *.png *.svg *.ico
+recursive-include example *.py *.js *.html *.scss *.md *.json *.txt *.rst *.mako *.json *.jpg *.png *.svg *.ico
+prune example/node_modules
