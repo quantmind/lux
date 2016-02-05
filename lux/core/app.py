@@ -1,6 +1,7 @@
 import sys
 import os
 import json
+import asyncio
 from copy import copy
 from inspect import isclass, getfile
 from collections import OrderedDict
@@ -694,6 +695,22 @@ class Application(ConsoleParser, Extension, EventMixin):
         else:
             pubsub = self._pubsub_store.pubsub()
         return pubsub
+
+    def run_in_executor(self, callable, *args):
+        """Run a ``callable`` in the event loop executor
+
+        It make sure to wait for result if on a green worker
+
+        :param callable: function to execute in the executor
+        :param args: parameters
+        :return: a future or a synchronous result if on a green worker
+        """
+        loop = self._loop or asyncio.get_event_loop()
+        future = loop.run_in_executor(None, callable, *args)
+        if self.green_pool and self.green_pool.in_green_worker:
+            return self.green_pool.wait(future, True)
+        else:
+            return future
 
     # INTERNALS
     def _build_config(self, module_name):
