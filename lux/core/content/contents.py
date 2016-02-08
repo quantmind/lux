@@ -12,7 +12,6 @@ from pulsar.utils.pep import to_string
 
 from lux.utils import iso8601, absolute_uri
 
-from ..cache import Cacheable, cached
 from .urlwrappers import (URLWrapper, Processor, MultiValue, Tag, Author,
                           Category)
 
@@ -106,7 +105,7 @@ def get_reader(app, src):
     return Reader(app, ext)
 
 
-class Content(Cacheable):
+class Content:
     '''A class for managing a file-based content
     '''
     template = None
@@ -175,9 +174,6 @@ class Content(Cacheable):
         if self.is_html:
             return '%s.json' % self._path
 
-    def cache_key(self, app):
-        return self._meta.name
-
     def __repr__(self):
         return self._path
     __str__ = __repr__
@@ -231,8 +227,7 @@ class Content(Cacheable):
     def raw(self, request):
         return self._content
 
-    @cached
-    def json(self, request):
+    def json(self, request, compile=True):
         '''Convert the content into a Json dictionary for the API
         '''
         if self.is_html:
@@ -242,7 +237,8 @@ class Content(Cacheable):
             data = self._to_json(request, self._meta)
             text = data.get(self.suffix) or {}
             data[self.suffix] = text
-            text['main'] = self.render(context)
+            if compile:
+                text['main'] = self.render(context)
             #
             head = {}
             for key in HEAD_META:
@@ -255,7 +251,6 @@ class Content(Cacheable):
 
             data['ext'] = self.suffix
             data['path'] = self._path
-            data['url'] = request.absolute_uri(self._path)
             data['head'] = head
             return data
 

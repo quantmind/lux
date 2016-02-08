@@ -63,8 +63,8 @@ class Content(rest.RestModel):
     def query(self, request, session, *filters):
         return session
 
-    def tojson(self, request, obj, exclude=None, **kw):
-        data = obj.json(request)
+    def tojson(self, request, obj, compile=True, exclude=None, **kw):
+        data = obj.json(request, compile=compile)
         data['url'] = self.get_url(request, data['path'])
         data['html_url'] = self.get_html_url(request, data['path'])
         return data
@@ -107,7 +107,7 @@ class Content(rest.RestModel):
         files = glob.glob(os.path.join(directory, '*.%s' % self.ext))
         for file in files:
             filename = get_rel_dir(file, directory)
-            yield self.read(request, filename).json(request)
+            yield self.tojson(request, self.read(request, filename))
 
     def serialise_model(self, request, data, in_list=False, **kw):
         if in_list:
@@ -171,6 +171,13 @@ class Query:
 
     def __enter__(self):
         return self
+
+    def __repr__(self):
+        if self._data is None:
+            return self.__class__.__name__
+        else:
+            return repr(self._data)
+    __str__ = __repr__
 
     def __exit__(self, type, value, traceback):
         pass

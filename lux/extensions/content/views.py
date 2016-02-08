@@ -58,7 +58,7 @@ class ContentCRUD(rest.RestRouter):
     @route('<path:path>', method=('get', 'head', 'post'))
     def read_update(self, request):
         path = request.urlargs['path']
-        model = self.model(request.app)
+        model = self.model
         backend = request.cache.auth_backend
 
         if request.method == 'GET':

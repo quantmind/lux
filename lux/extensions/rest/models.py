@@ -389,7 +389,9 @@ class RestModel(lux.LuxModel, RestClient, ColumnPermissionsMixin):
                                request.config.get('API_URL'))
 
     def get_html_url(self, request, path):
-        return self._build_url(request, path, self.html_url,
+        return self._build_url(request,
+                               path,
+                               self.html_url,
                                request.config.get('WEB_SITE_URL'))
 
     def _do_sortby(self, request, query, entry, direction):
@@ -416,7 +418,7 @@ class RestModel(lux.LuxModel, RestClient, ColumnPermissionsMixin):
         if url is None:
             return
         if not is_absolute_uri(url):
-            base = base or request.absolute_uri()
+            base = base or request.absolute_uri('/')
             url = urljoin(base, url)
         if path:
             if not url.endswith('/'):
