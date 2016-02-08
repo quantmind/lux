@@ -1,8 +1,10 @@
-import os
 import json
 
-from agile.release import ReleaseManager
-version_file = os.path.join(os.path.dirname(__file__), 'lux', '__init__.py')
+from agile import AgileManager
+
+app_module = 'lux'
+note_file = 'docs/notes.md'
+docs_bucket = 'quantmind-docs'
 
 
 def before_commit(manager, release):
@@ -12,15 +14,15 @@ def before_commit(manager, release):
 
     manager.logger.info('Update package.json')
 
-    with open('package.json', 'r') as f:
+    with open('example/package.json', 'r') as f:
         pkg = json.loads(f.read())
 
     pkg['version'] = lux.__version__
     pkg['description'] = lux.__doc__
 
-    with open('package.json', 'w') as f:
+    with open('example/package.json', 'w') as f:
         f.write(json.dumps(pkg, indent=4))
 
 
 if __name__ == '__main__':
-    ReleaseManager(config='release.py').start()
+    AgileManager(config='release.py').start()

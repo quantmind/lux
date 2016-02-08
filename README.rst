@@ -39,24 +39,6 @@ Python Requirements
 * pyjwt_ used by some authentication backends in ``lux.extensions.rest``
 * markdown_
 
-Developing with lux.js
-==========================
-
-First you need to install nodejs_ and  grunt_ cli::
-
-    npm install -g grunt-cli
-
-Subsequently install the development packages via::
-
-    npm install
-
-To build lux.js_ use grunt::
-
-    grunt build
-
-
-Angular templates are compiled into javascript via the `grunt-html2js`_ package.
-
 
 Testing
 ==========

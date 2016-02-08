@@ -49,6 +49,7 @@ master_doc = 'index'
 project = 'lux'
 pygments_style = 'sphinx'
 exclude_trees = []
+exclude_patterns = ['notes.md']
 
 def linkcode_resolve(domain, info):
     if domain != 'py':

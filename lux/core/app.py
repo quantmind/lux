@@ -19,6 +19,7 @@ from pulsar.utils.importer import module_attribute
 from pulsar.apps.data import create_store
 
 from lux.utils.async import GreenPubSub
+from lux import __version__
 
 from .commands import ConsoleParser, CommandError
 from .extension import Extension, Parameter, EventMixin
@@ -397,6 +398,7 @@ class Application(ConsoleParser, Extension, EventMixin):
         doc.jscontext = dict(((p.name, cfg[p.name])
                               for p in cfg['_parameters'].values()
                               if p.jscontext))
+        doc.jscontext['lux_version'] = __version__
         # Locale
         lang = cfg['LOCALE'][:2]
         doc.attr('lang', lang)

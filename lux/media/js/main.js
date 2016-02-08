@@ -12,9 +12,9 @@ define(['angular',
         };
 
     //
-    lux.version = '0.1.0';
     lux.forEach = angular.forEach;
     lux.context = extend({}, defaults, lux.context);
+    lux.version = lux.context.lux_version;
 
     lux.media = function (url, ctx) {
         if (!ctx)
