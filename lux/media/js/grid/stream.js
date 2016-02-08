@@ -29,35 +29,7 @@ define(['angular',
         };
 
         GridDataProviderWebsocket.prototype.connect = function() {
-            var grid = this._grid;
-
             dataProvider.check(this);
-
-            function onMessage (msg) {
-                var tasks;
-
-                if (msg.data.event === 'record-update') {
-                    tasks = msg.data.data;
-
-                    grid.onDataReceived({
-                        total: msg.data.total,
-                        result: tasks,
-                        type: 'update'
-                    });
-
-                } else if (msg.data.event === 'records') {
-                    tasks = msg.data.data;
-
-                    grid.onDataReceived({
-                        total: msg.data.total,
-                        result: tasks,
-                        type: 'update'
-                    });
-
-                } else if (msg.data.event === 'columns-metadata') {
-                    grid.onMetadataReceived(msg.result);
-                }
-            }
 
             this._stream = $lux.stream(this._websocketUrl);
 
@@ -70,8 +42,16 @@ define(['angular',
         };
 
         GridDataProviderWebsocket.prototype.getPage = function (params) {
-            params = angular.extend({}, params, {model: this._model});
-            this._stream.rpc('model_data', params,
+            params = angular.extend(
+                {},
+                params,
+                {model: this._model},
+                this._grid.state.query()
+            );
+
+            this._stream.rpc(
+                'model_data',
+                params,
                 onDataReceived.bind(this),
                 onError.bind(this)
             );
