@@ -211,9 +211,16 @@ class CharField(Field):
 
     def _clean(self, value, instance):
         try:
-            return to_string(value)
-        except Exception:
-            raise ValidationError
+            value =  to_string(value)
+        except Exception as exc:
+            raise ValidationError from exc
+        minlength = self.attrs.get('minlength')
+        if minlength and len(value) < minlength:
+            raise ValidationError('too short')
+        maxlength = self.attrs.get('maxlength')
+        if maxlength and len(value) > maxlength:
+            raise ValidationError('too long')
+        return value
 
 
 class TextField(Field):

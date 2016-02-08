@@ -263,6 +263,7 @@ module.exports = function(grunt) {
         var src = obj[name],
             watch = src ? src.watch : null;
         if (watch) {
+            grunt.log.debug('Adding watch configuration for ' + name);
             delete src.watch;
             if (!cfg.watch) cfg.watch = {
                 options: {
@@ -271,6 +272,8 @@ module.exports = function(grunt) {
                     livereload: true
                 }
             };
+            if (!watch.files)
+                watch = {files: watch};
             cfg.watch[name] = watch;
             if (!watch.tasks) {
                 watch.tasks = tasks;
