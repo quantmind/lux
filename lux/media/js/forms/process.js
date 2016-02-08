@@ -33,8 +33,7 @@ define(['angular',
                 e.stopPropagation();
 
                 var scope = this,
-                    process = formProcessor($lux, scope),
-                    api;
+                    process = formProcessor($lux, scope);
 
                 // Flag the form as submitted
                 process.form.$setSubmitted();
@@ -61,7 +60,7 @@ define(['angular',
                             hook(response, scope);
                         } else if (data.messages) {
                             scope.addMessages(data.messages);
-                        } else if (api) {
+                        } else if (process.api) {
                             // Created
                             var message = data.message;
                             if (!message) {
