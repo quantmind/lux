@@ -211,7 +211,7 @@ class CharField(Field):
 
     def _clean(self, value, instance):
         try:
-            value =  to_string(value)
+            value = to_string(value)
         except Exception as exc:
             raise ValidationError from exc
         minlength = self.attrs.get('minlength')
