@@ -75,9 +75,8 @@ def get_model(wsrequest):
     :param wsrequest:
     :return: a :class:`~RestModel`
     """
-    model = wsrequest.required_param('model')
+    model = wsrequest.pop_param('model')
     restmodel = wsrequest.app.models.get(model)
     if not restmodel:
         raise rpc.InvalidParams('bad model')
-    wsrequest.params.pop('model')
     return restmodel

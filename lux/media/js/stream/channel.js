@@ -3,6 +3,16 @@ define([], function () {
 
     return Channel;
 
+    //
+    //  Channel
+    //  ----------
+    //
+    //  A channel maintains a given set of events which an application can
+    //  bind to (un unbind).
+    //
+    //  The ``connection`` channel is special, when we bind to an event on
+    //  this channel, we don't subscribe to server events, but simply subscribe
+    //  to events occurring on the connection
     function Channel(self, channelName) {
 
         var events = {},
@@ -25,6 +35,7 @@ define([], function () {
         function bind(event, callback) {
             event = '' + event;
             if (event) {
+                self.log.debug('luxStream: binding with ' + channelName + '.' + event);
                 var callbacks = events[event];
                 if (!callbacks) {
                     callbacks = [];
@@ -50,6 +61,7 @@ define([], function () {
             if (callbacks) {
                 var index = callbacks.indexOf(callback);
                 if (index >= 0) {
+                    self.log.debug('luxStream: unbinding with ' + channelName + '.' + event);
                     var result = callbacks.splice(index, 1)[0];
                     if (callbacks.length === 0)
                         delete events[event];

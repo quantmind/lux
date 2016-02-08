@@ -35,26 +35,25 @@ define(['angular',
 
             this._stream.rpc(
                 'model_metadata',
-                { 'model': this._model },
+                {model: this._model},
                 onMetadataReceived.bind(this),
-                function() { console.log('rpc model_metadata error', arguments); } // TODO display error on grid?
+                onError.bind(this)
             );
         };
 
-        GridDataProviderWebsocket.prototype.getPage = function (options) {
-            var query = this._grid.state.query();
-
-            if (typeof options === 'object') {
-                angular.extend(query, options);
-            }
-
-            query.model = this._model;
+        GridDataProviderWebsocket.prototype.getPage = function (params) {
+            params = angular.extend(
+                {},
+                params,
+                {model: this._model},
+                this._grid.state.query()
+            );
 
             this._stream.rpc(
                 'model_data',
-                query,
+                params,
                 onDataReceived.bind(this),
-                function() { console.log('rpc model_data error', arguments); }
+                onError.bind(this)
             );
         };
 
@@ -63,12 +62,16 @@ define(['angular',
             this._stream.rpc(this._channel, options).then(onSuccess, onFailure);
         };
 
-        function onMetadataReceived(msg) {
-            this._grid.onMetadataReceived(msg.result);
+        function onMetadataReceived(response) {
+            this._grid.onMetadataReceived(response.result);
         }
 
-        function onDataReceived(msg) {
-            this._grid.onDataReceived(msg.result);
+        function onDataReceived(response) {
+            this._grid.onDataReceived(response.result);
+        }
+
+        function onError (response) {
+            this._grid.onDataError(response.error);
         }
 
         return GridDataProviderWebsocket;
