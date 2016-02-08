@@ -9,6 +9,15 @@ define(['angular',
     //  Design to work with the ``lux.extension.angular``
     angular.module('lux.page', ['lux.page.templates'])
         //
+        .run(['context', function (context) {
+
+            if (!context.linksTemplate)
+                context.linksTemplate = 'lux/page/templates/list-group.tpl.html';
+
+            if (!context.breadcrumbsTemplate)
+                context.breadcrumbsTemplate = 'lux/page/templates/breadcrumbs.tpl.html';
+        }])
+        //
         .factory('pageInfo', ['$window', '$lux', '$document', 'dateFilter',
             function ($window, $lux, $document, dateFilter) {
 
@@ -86,26 +95,28 @@ define(['angular',
         }])
         //
         //  Directive for displaying breadcrumbs navigation
-        .directive('breadcrumbs', ['$rootScope', 'luxBreadcrumbs', function ($rootScope, luxBreadcrumbs) {
-            return {
-                restrict: 'AE',
-                replace: true,
-                templateUrl: 'lux/page/templates/breadcrumbs.tpl.html',
-                link: {
-                    post: function (scope) {
+        .directive('breadcrumbs', ['$rootScope', 'luxBreadcrumbs', 'context',
+            function ($rootScope, luxBreadcrumbs, context) {
+                return {
+                    restrict: 'AE',
+                    replace: true,
+                    templateUrl: context.breadcrumbsTemplate,
+                    link: {
+                        post: function (scope) {
 
-                        var regCrumbs = $rootScope.$on('$viewContentLoaded', crumbs);
-                        scope.$on('$destroy', regCrumbs);
+                            var regCrumbs = $rootScope.$on('$viewContentLoaded', crumbs);
+                            scope.$on('$destroy', regCrumbs);
 
-                        crumbs();
+                            crumbs();
 
-                        function crumbs () {
-                            scope.steps = luxBreadcrumbs();
+                            function crumbs () {
+                                scope.steps = luxBreadcrumbs();
+                            }
                         }
                     }
-                }
-            };
-        }])
+                };
+            }]
+        )
         //
         //  Simply display the current year
         .directive('year', [function () {
@@ -116,6 +127,36 @@ define(['angular',
                     element.html(dt.getFullYear() + '');
                 }
             };
-        }]);
+        }])
+        //
+        //
+        // Display a div with links to content
+        .directive('cmsLinks', ['$lux', 'context',
+            function ($lux, context) {
+
+                return {
+                    restrict: 'AE',
+                    link: function (scope, element, attrs) {
+                        var config = lux.getObject(attrs, 'config', scope),
+                            http = $lux.http;
+
+                        if (config.url) {
+                            http.get(config.url).then(function (response) {
+                                scope.links = response.data.result;
+                                $lux.renderTemplate(context.linksTemplate, element, scope, scrollspy);
+                            }, function () {
+                                $lux.messages.error('Could not load links');
+                            });
+                        }
+
+                        function scrollspy () {
+                            // if (config.hasOwnProperty('scrollspy'))
+                            //    $scrollspy(element);
+                        }
+                    }
+                };
+
+            }]
+        );
 
 });
