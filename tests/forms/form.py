@@ -14,7 +14,7 @@ class TestEnum(Enum):
 
 
 class SimpleForm(forms.Form):
-    name = forms.CharField()
+    name = forms.CharField(minlength=2, maxlength=30)
     email = forms.CharField(required=False)
     rank = forms.IntegerField(required=False)
     dt = forms.DateField(required=False)
@@ -218,3 +218,15 @@ class FormTests(test.TestCase):
                                   layout=json.dumps({'foo': 5})))
         self.assertTrue(form.is_valid(True))
         self.assertEqual(form.cleaned_data['layout'], {})
+
+    def test_minlength(self):
+        form = SimpleForm(data=dict(name='l'))
+        self.assertFalse(form.is_valid())
+        self.assertValidationError(form.tojson(), 'name',
+                                   'too short')
+
+    def test_maxlength(self):
+        form = SimpleForm(data=dict(name=50*'l'))
+        self.assertFalse(form.is_valid())
+        self.assertValidationError(form.tojson(), 'name',
+                                   'too long')

@@ -22,6 +22,8 @@ define(['angular',
         it('Test luxStream function', function () {
             expect(angular.isFunction(luxStream)).toBe(true);
             expect(angular.isFunction($lux.stream)).toBe(true);
+            expect(angular.isFunction(luxStream.LuxStream)).toBe(true);
+            expect(angular.isFunction(luxStream.rpcProtocol)).toBe(true);
         });
 
     });

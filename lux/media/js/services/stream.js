@@ -13,13 +13,15 @@ define(['angular',
     angular.module('lux.stream', ['lux.services'])
         .value('luxStreamAppId', lux.context.LUX_STREAM_APPID || 'test')
 
-        .run(['$lux', 'luxStreamAppId', function ($lux, luxStreamAppId) {
+        .value('luxStreamUrl', null)
+
+        .run(['$lux', 'luxStreamAppId', 'luxStreamUrl', function ($lux, luxStreamAppId, luxStreamUrl) {
             luxStream.log = $lux.log;
 
             $lux.stream = function (url) {
                 return luxStream({
                     appId: luxStreamAppId,
-                    url: url,
+                    url: url || luxStreamUrl,
                     authToken: $lux.user_token
                 });
             };

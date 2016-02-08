@@ -55,8 +55,7 @@ class Extension(lux.Extension):
         Parameter('HTML5_NAVIGATION', False,
                   'Enable Html5 navigation', True),
         Parameter('ANGULAR_VIEW_ANIMATE', False,
-                  'Enable Animation of ui-router views.'),
-        Parameter('NGMODULES', [], 'Angular module to load')
+                  'Enable Animation of ui-router views.')
     ]
 
     def on_html_document(self, app, request, doc):
@@ -65,8 +64,6 @@ class Extension(lux.Extension):
         if not router:
             return
         #
-        add_ng_modules(doc, app.config['NGMODULES'])
-
         # Use HTML5 navigation and angular router
         if app.config['HTML5_NAVIGATION']:
             add_ng_modules(doc, LUX_UI_ROUTER)
