@@ -72,11 +72,12 @@ define(['angular',
                 return sidebarDefaults.template;
             };
 
-            // Initialise top navigation bar
+            // Initialise top navigation bar for sidebars
             luxSidebars.navBar = function (navbar, sidebars) {
                 navbar || (navbar = {});
                 navbar.fixed = false;
                 navbar.top = true;
+                navbar.url || (navbar.url = sidebarDefaults.url);
                 //
                 // Add toggle to the navbar
                 lux.forEach(sidebars, function (sidebar) {
