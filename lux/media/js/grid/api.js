@@ -31,10 +31,9 @@ define(['angular',
             // request delay in ms
             requestDelay: 100,
             //
-            // Pagination
-            paginationPageSizes: {
-                sizes: [25, 50, 100]
-            },
+            // Grid pagination
+            enablePagination: true,
+            paginationPageSizes: [25, 50, 100],
             paginationPageSize: 25,
             //
             gridFilters: {},
@@ -42,7 +41,6 @@ define(['angular',
             enableGridMenu: true,
             gridMenuShowHideColumns: false,
             //
-            enablePagination: true,
             template: 'lux/grid/templates/grid.tpl.html'
         })
         .constant('luxGridColumnProcessors', {
