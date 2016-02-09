@@ -11,7 +11,7 @@ define([], function () {
             'angular-ui-bootstrap': 'https://cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/1.0.3/ui-bootstrap-tpls',
             'angular-ui-router': '//cdnjs.cloudflare.com/ajax/libs/angular-ui-router/0.2.14/angular-ui-router',
             'angular-ui-select': '//cdnjs.cloudflare.com/ajax/libs/angular-ui-select/0.13.2/select',
-            'angular-cookies': '//cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.4/angular-cookies',
+            'angular-cookies': '//cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.9/angular-cookies',
             'angular-ui-grid': '//cdnjs.cloudflare.com/ajax/libs/angular-ui-grid/3.0.7/ui-grid',
             'angular-scroll': '//cdnjs.cloudflare.com/ajax/libs/angular-scroll/0.7.2/angular-scroll',
             'angular-file-upload': '//cdnjs.cloudflare.com/ajax/libs/danialfarid-angular-file-upload/10.0.2/ng-file-upload',
