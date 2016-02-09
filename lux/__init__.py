@@ -1,7 +1,7 @@
 '''python web toolkit'''
 import os
 
-VERSION = (0, 6, 0, 'alpha', 0)
+VERSION = (0, 6, 0, 'final', 0)
 __author__ = 'Luca Sbardella'
 __contact__ = "luca@quantmind.com"
 __homepage__ = "https://github.com/quantmind/lux"
