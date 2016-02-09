@@ -1,60 +1,60 @@
 {
-    "scripts": {
-        "test": "grunt karma:ci && grunt coveralls"
-    },
-    "version": "0.6.0",
-    "description": "python web toolkit",
     "author": {
         "name": "quantmind.com",
         "email": "message@quantmind.com"
     },
-    "keywords": [],
-    "dependencies": {
-        "bootstrap-sass": "",
-        "ngImgCrop": "git://github.com/iblank/ngImgCrop.git#39649fad4ee310cff71aca2c581fcb02fc872328"
+    "devDependencies": {
+        "karma-junit-reporter": "^0.3.8",
+        "eslint": "^1.10.3",
+        "grunt-contrib-concat": "",
+        "karma-coverage": "^0.5.3",
+        "grunt-contrib-clean": "",
+        "grunt-html2js": "",
+        "grunt-contrib-requirejs": "^0.4.4",
+        "eslint-plugin-disable": "^0.2.0",
+        "grunt-eslint": "^17.3.1",
+        "karma-jasmine": "^0.3.6",
+        "karma-phantomjs-launcher": "^0.2.1",
+        "grunt-karma": "^0.12.1",
+        "karma-firefox-launcher": "^0.1.6",
+        "lodash": "",
+        "karma-requirejs": "^0.2.2",
+        "requirejs": "^2.1.20",
+        "eslint-config-angular": "^0.4.0",
+        "grunt": "",
+        "karma-es5-shim": "0.0.4",
+        "grunt-contrib-cssmin": "",
+        "grunt-coveralls": "",
+        "grunt-shell": "",
+        "eslint-plugin-angular": "^0.15.0",
+        "grunt-contrib-jshint": "",
+        "jasmine-core": "^2.3.4",
+        "phantomjs": "^2.1",
+        "grunt-sass": "",
+        "grunt-contrib-watch": "",
+        "karma": "^0.13.14",
+        "grunt-contrib-copy": "",
+        "grunt-http": "",
+        "grunt-contrib-uglify": "",
+        "karma-chrome-launcher": "^0.2.1"
     },
     "repository": {
         "type": "git",
         "url": ""
     },
+    "scripts": {
+        "test": "grunt karma:ci && grunt coveralls"
+    },
+    "dependencies": {
+        "ngImgCrop": "git://github.com/iblank/ngImgCrop.git#39649fad4ee310cff71aca2c581fcb02fc872328",
+        "bootstrap-sass": ""
+    },
+    "keywords": [],
+    "description": "python web toolkit",
     "name": "luxsite",
-    "title": "luxsite",
     "licenses": [
         {}
     ],
-    "devDependencies": {
-        "eslint-config-angular": "^0.4.0",
-        "grunt-contrib-cssmin": "",
-        "karma-junit-reporter": "^0.3.8",
-        "eslint-plugin-disable": "^0.2.0",
-        "grunt-eslint": "^17.3.1",
-        "karma-jasmine": "^0.3.6",
-        "phantomjs": "^2.1",
-        "eslint-plugin-angular": "^0.15.0",
-        "karma-requirejs": "^0.2.2",
-        "grunt-contrib-requirejs": "^0.4.4",
-        "lodash": "",
-        "grunt-coveralls": "",
-        "grunt-contrib-watch": "",
-        "grunt-contrib-uglify": "",
-        "eslint": "^1.10.3",
-        "karma-es5-shim": "0.0.4",
-        "grunt-sass": "",
-        "karma": "^0.13.14",
-        "grunt": "",
-        "grunt-http": "",
-        "grunt-shell": "",
-        "karma-firefox-launcher": "^0.1.6",
-        "grunt-contrib-jshint": "",
-        "karma-coverage": "^0.5.3",
-        "jasmine-core": "^2.3.4",
-        "karma-chrome-launcher": "^0.2.1",
-        "grunt-contrib-clean": "",
-        "grunt-contrib-concat": "",
-        "grunt-contrib-copy": "",
-        "requirejs": "^2.1.20",
-        "karma-phantomjs-launcher": "^0.2.1",
-        "grunt-html2js": "",
-        "grunt-karma": "^0.12.1"
-    }
+    "version": "0.6.0",
+    "title": "luxsite"
 }
