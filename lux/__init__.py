@@ -1,4 +1,5 @@
-'''python web toolkit'''
+"""Asynchronous web framework for python
+"""
 import os
 
 VERSION = (0, 6, 0, 'final', 0)

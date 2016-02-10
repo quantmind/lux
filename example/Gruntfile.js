@@ -2,7 +2,8 @@
 module.exports = function(grunt) {
     'use strict';
     // bmll configuration.
-    var config_file = 'js/config.json',
+    var srcPath = 'js',
+        config_file = srcPath +'/config.json',
         cfg = grunt.file.readJSON(config_file),
         jslibs = cfg.js,
         path = require('path'),
@@ -18,11 +19,11 @@ module.exports = function(grunt) {
             }
         },
         requireOptions = {
-            baseUrl: 'js/',
+            baseUrl: srcPath + '/',
             generateSourceMaps: false, // TODO change to true when Chrome sourcemaps bug is fixed
             optimize: 'none',
             name: 'app',
-            out: 'js/build/bundle.js',
+            out: srcPath + '/build/bundle.js',
             paths: _.reduce(cfg.thirdParty, function (obj, el) {
                 obj[el] = 'empty:';
                 return obj;
@@ -45,7 +46,7 @@ module.exports = function(grunt) {
         tests: {
             options: _.extend({}, requireOptions, {
                 name: 'tests/runner',
-                out: 'js/build/tests.runner.js'
+                out: srcPath + '/build/tests.runner.js'
             })
         }
     };
@@ -76,7 +77,7 @@ module.exports = function(grunt) {
     // Extend clean tasks with standard cleanup duties
     cfg.clean = _.extend({
         js: {
-            src: ['js/build']
+            src: [srcPath + '/build']
         },
         css: {
             src: ['scss/deps']
@@ -231,7 +232,7 @@ module.exports = function(grunt) {
     //
     grunt.registerTask('luxbuild', 'Load lux configuration', function() {
         var paths = cfg.requirejs.compile.options.paths,
-            filename = 'js/build/lux.json',
+            filename = srcPath + '/build/lux.json',
             obj = grunt.file.readJSON(filename);
         _.extend(paths, obj.paths);
     });

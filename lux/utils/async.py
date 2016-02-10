@@ -1,3 +1,4 @@
+import asyncio
 
 
 def maybe_green(app, callable, *args, **kwargs):
@@ -13,10 +14,9 @@ def maybe_green(app, callable, *args, **kwargs):
     if pool:
         if pool.in_green_worker:
             return pool.wait(callable(*args, **kwargs))
-        else:
+        elif not asyncio.iscoroutinefunction(callable):
             return pool.submit(callable, *args, **kwargs)
-    else:
-        return callable(*args, **kwargs)
+    return callable(*args, **kwargs)
 
 
 class GreenPubSub:

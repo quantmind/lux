@@ -1,28 +1,6 @@
-This release is backward incompatible with previous ones and brings a host of
-new features, bug fixes and improved API.
-
 ## Python
 
-* Rest models registration during wsgi middleware creation
-* Models are accessible via the ``app.models`` dictionary
-* Refactored the ``sockjs`` extension with ``rpc`` and ``pubsub`` protocols
-* Several bug fixes in authentication backends
-* Much better ``api`` client for lux Rest APIs
-* Removed dulwich dependency
-
-## Media
-
-* Javascript source moved into the ``lux/media/js`` directory
-* SCSS source located in the ``lux/media/scss`` directory
-* Use of ``require.js`` to include modules
-* Started using ``scss``
-
-## Docs
-
-* Documentation in the top level ``docs`` folder
-
-## Tests
-
-* Added websocket tests
-* Added web-api interaction tests with a new test class from ``lux.utils.tests``
-* Increased test coverage to 81%
+* Changed description, mainly for pypi.
+* Added the ``exec`` command for executing external command from lux
+* The ``maybe_green`` utility function check if the callable is a coroutine before
+  sending it into the green pool
