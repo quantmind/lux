@@ -47,7 +47,7 @@ define(['angular',
                     text = '\\displaystyle {' + text + '}';
                     element.addClass('katex-outer');
                 }
-                if (angular.isUnDefined($window.katex)) {
+                if (angular.isUndefined($window.katex)) {
                     // Load Katex css file first
                     lux.loadCss(blogDefaults.katexCss);
                     require(['katex'], function (katex) {
