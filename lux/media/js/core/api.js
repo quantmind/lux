@@ -1,4 +1,5 @@
-define(['angular', 'lux/config'], function (angular, lux) {
+define(['angular',
+        'lux/config/main'], function (angular, lux) {
     'use strict';
 
     var extend = angular.extend;

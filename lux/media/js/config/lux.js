@@ -1,5 +1,5 @@
 /* eslint-plugin-disable angular */
-define([], function () {
+define(function () {
     'use strict';
 
     var root = window,

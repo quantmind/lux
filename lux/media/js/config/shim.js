@@ -1,4 +1,4 @@
-define([], function () {
+define(function () {
     'use strict';
     // Default shim
     return function (root) {

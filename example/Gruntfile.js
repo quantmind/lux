@@ -1,7 +1,6 @@
 /*eslint-env node */
 module.exports = function(grunt) {
     'use strict';
-    // bmll configuration.
     var srcPath = 'js',
         config_file = srcPath +'/config.json',
         cfg = grunt.file.readJSON(config_file),

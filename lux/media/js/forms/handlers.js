@@ -1,4 +1,5 @@
-define(['angular', 'lux'], function (angular) {
+define(['angular',
+        'lux/main'], function (angular) {
     'use strict';
 
     angular.module('lux.form.handlers', ['lux.services'])

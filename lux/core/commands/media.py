@@ -5,6 +5,8 @@ import distutils.core
 from string import Template
 from pathlib import PurePath
 
+from pulsar import Setting
+
 import lux
 from lux.utils.files import skipfile
 
@@ -13,15 +15,35 @@ SKIPDIRS = set(('templates', 'build'))
 
 
 class Command(lux.Command):
+    option_list = (
+        Setting('js_src', ('--js-src',),
+                default='js/build',
+                desc=('Javascript source directory')),
+        Setting('scss_src', ('--scss-src',),
+                default='scss/deps',
+                desc=('SASS CSS source directory')),
+    )
 
     help = ('Creates a lux project configuration files for javascript and '
             'scss compilation')
-    src = 'js'
-    copy = True
-    clean = False
 
     def run(self, options):
         #
+        build = MediaBuilder(self, options.js_src, options.scss_src)
+        build()
+
+
+class MediaBuilder:
+    copy = True
+    clean = False
+
+    def __init__(self, cmd, js_src, scss_src):
+        self.write = cmd.write
+        self.app = cmd.app
+        self.js_src = js_src
+        self.scss_src = scss_src
+
+    def __call__(self):
         # SCSS first
         self.media('scss', self.scss_target)
         #
@@ -48,7 +70,7 @@ class Command(lux.Command):
                 shutil.rmtree(target)
         sources = [('lux', os.path.join(lux.PACKAGE_DIR, 'media', media))]
         for ext in self.app.extensions.values():
-            if ext.meta.media_dir:
+            if ext.meta.name != self.app.meta.name and ext.meta.media_dir:
                 src = os.path.join(ext.meta.media_dir, media)
                 if os.path.isdir(src):
                     name = ext.meta.name.split('.')[-1]
@@ -185,7 +207,7 @@ class Command(lux.Command):
         test_cfg = self.js_target('tests.config.js')
         media_dir = os.path.relpath(
             self.app.meta.media_dir,
-            self.js_target_base()
+            self.js_target()
         )
         media_dir = PurePath(media_dir).as_posix() + '/'
         test_file = test_template.safe_substitute(
@@ -201,15 +223,12 @@ class Command(lux.Command):
         return os.path.dirname(self.app.meta.path)
 
     def scss_target(self, *args):
-        base = os.path.join(self.app_base(), 'scss', 'deps')
+        base = os.path.join(self.app_base(), self.scss_src)
         return self._join_paths(base, *args)
 
     def js_target(self, *args):
-        dir = os.path.join(self.js_target_base(), 'build')
-        return self._join_paths(dir, *args)
-
-    def js_target_base(self):
-        return os.path.join(self.app_base(), 'js')
+        base = os.path.join(self.app_base(), self.js_src)
+        return self._join_paths(base, *args)
 
     def template(self, name):
         filename = os.path.join(lux.PACKAGE_DIR, 'media', 'templates', name)
@@ -230,7 +249,7 @@ class Command(lux.Command):
 
     def _add_to_paths(self, paths, path, loc):
         if self.copy:
-            base = self.js_target_base()
+            base = self.js_target()
             loc = os.path.relpath(loc, base)
             loc = PurePath(loc).as_posix()
         if path in paths:

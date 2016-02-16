@@ -20,6 +20,12 @@ __all__ = ['ConsoleParser',
            'Command']
 
 
+class ConfigError(Exception):
+
+    def __init__(self, config_file):
+        self.config_file = config_file
+
+
 class CommandError(ImproperlyConfigured):
     pass
 

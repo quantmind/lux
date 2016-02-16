@@ -1,5 +1,5 @@
 define(['angular',
-        'lux/core'], function(angular, lux) {
+        'lux/core/main'], function(angular, lux) {
     'use strict';
 
     var extend = angular.extend,

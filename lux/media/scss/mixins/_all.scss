@@ -7,7 +7,7 @@
   -o-border-radius: $radius;
 }
 
-// Mixin for BMLL background-image
+// Mixin for background-image
 @mixin bg-image($path, $size, $position) {
     $url: "#{$media-url}/#{$path}";
     background-image: url($url);

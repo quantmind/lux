@@ -1,6 +1,6 @@
 define(['angular',
-        'lux',
-        'lux/stream'], function (angular, lux, luxStream) {
+        'lux/main',
+        'lux/stream/main'], function (angular, lux, luxStream) {
     'use strict';
     //
     //  lux.sockjs module

@@ -1,4 +1,4 @@
-define(['lux/config'], function (lux) {
+define(['lux/config/main'], function (lux) {
     'use strict';
 
     function asMessage(level, message) {

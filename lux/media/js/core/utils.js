@@ -1,6 +1,6 @@
 /* eslint-plugin-disable angular */
 define(['angular',
-        'lux/config'], function (angular, lux) {
+        'lux/config/main'], function (angular, lux) {
     'use strict';
 
     var root = lux.root,

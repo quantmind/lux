@@ -3,7 +3,7 @@
 // It can return all data at an end point or offer
 // the next page on request for the relevant component
 define(['angular',
-        'lux/services'], function (angular) {
+        'lux/services/main'], function (angular) {
     'use strict';
 
     angular.module('lux.pagination', ['lux.services'])

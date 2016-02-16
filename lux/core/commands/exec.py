@@ -16,8 +16,11 @@ class Command(lux.Command):
 
     @asyncio.coroutine
     def run(self, options):
+        commands = []
+        commands.extend(options.commands)
+        print(commands)
         proc = yield from asyncio.create_subprocess_exec(
-            *options.commands, stdout=asyncio.subprocess.PIPE,
+            *commands, stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.STDOUT)
         yield from proc.wait()
         data = yield from proc.stdout.read()

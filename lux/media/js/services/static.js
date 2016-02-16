@@ -1,4 +1,4 @@
-define(['angular', 'lux'], function (angular, lux) {
+define(['angular', 'lux/main'], function (angular, lux) {
     'use strict';
 
     var pageCache = {};

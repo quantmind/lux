@@ -1,13 +1,11 @@
 {
+    "useLux": true,
     "js": {
         "luxsite": {
             "options": {
                 "banner": "js/banner.js"
             },
-            "src": [
-                "js/require.config.js",
-                "js/build/bundle.js"
-            ],
+            "src": ["js/build/bundle.js"],
             "dest": "luxsite/media/luxsite/luxsite.js"
         },
         "watch": {

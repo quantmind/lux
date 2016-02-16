@@ -1,5 +1,5 @@
 define(['angular',
-        'lux',
+        'lux/main',
         'lux/services/pagination'], function (angular, lux) {
     'use strict';
 

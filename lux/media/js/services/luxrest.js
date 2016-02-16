@@ -1,5 +1,5 @@
 define(['angular',
-        'lux',
+        'lux/main',
         'lux/services/luxweb'], function (angular, lux, luxWebApi) {
     'use strict';
     //

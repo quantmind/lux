@@ -1,5 +1,5 @@
 define(['angular',
-        'lux',
+        'lux/main',
         'lux/forms/process',
         'lux/forms/utils',
         'lux/forms/handlers'], function (angular, lux, formProcessors) {

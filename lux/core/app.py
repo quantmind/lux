@@ -21,7 +21,7 @@ from pulsar.apps.data import create_store
 from lux.utils.async import GreenPubSub
 from lux import __version__
 
-from .commands import ConsoleParser, CommandError
+from .commands import ConsoleParser, CommandError, ConfigError
 from .extension import Extension, Parameter, EventMixin
 from .wrappers import wsgi_request, HeadMeta, error_handler, as_async_wsgi
 from .engines import template_engine
@@ -88,7 +88,6 @@ def execute_app(app, argv=None, **params):  # pragma    nocover
         except CommandError as e:
             print('\n'.join(('%s.' % e, 'Pass -h for list of commands')))
             exit(1)
-        # Make sure the loop exists
         argv = list(argv)
         argv.remove(command.name)
         try:
@@ -118,6 +117,10 @@ class App(LazyWsgi):
         return Application(self)
 
     def commands(self):
+        try:
+            return Application(self, handler=False)
+        except ConfigError as exc:
+            self._config_file = exc.config_file
         return Application(self, handler=False)
 
     def clone(self, **kw):
@@ -728,9 +731,9 @@ class Application(ConsoleParser, Extension, EventMixin):
         parser = self.get_parser(with_commands=False, add_help=False)
         opts, _ = parser.parse_known_args(self.meta.argv)
         config_module = import_module(opts.config)
+
         if opts.config != self.config_module:
-            # Different config file, configure again
-            return self._build_config(config_module.__file__)
+            raise ConfigError(opts.config)
         #
         # setup application
         config = {}

@@ -1,5 +1,5 @@
 /* eslint-plugin-disable angular */
-define(['lux/config',
+define(['lux/config/main',
         'lux/stream/transports',
         'lux/stream/backoffs',
         'lux/stream/rpc',

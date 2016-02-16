@@ -1,5 +1,5 @@
 define(['angular',
-        'lux',
+        'lux/main',
         'lux/forms/handlers'], function (angular, lux) {
     'use strict';
 
