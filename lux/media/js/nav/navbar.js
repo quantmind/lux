@@ -1,5 +1,5 @@
 define(['angular',
-        'lux',
+        'lux/main',
         'angular-animate',
         'angular-ui-bootstrap',
         'lux/nav/templates'], function (angular, lux) {

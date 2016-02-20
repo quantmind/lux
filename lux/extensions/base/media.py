@@ -18,13 +18,6 @@ def filesystem_path(app, base, bits):
         return os.path.join(*bits)
 
 
-class FileRouter(wsgi.FileRouter):
-    request_class = lux.WsgiRequest
-
-    def filesystem_path(self, request):
-        return filesystem_path(request.app, None, self._file_path.split('/'))
-
-
 class MediaRouter(wsgi.MediaRouter):
     '''A simple application for handling static files
     '''

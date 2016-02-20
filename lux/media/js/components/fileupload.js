@@ -1,5 +1,5 @@
 define(['angular',
-        'lux/forms',
+        'lux/forms/main',
         'angular-file-upload'], function (angular, lux) {
     'use strict';
 

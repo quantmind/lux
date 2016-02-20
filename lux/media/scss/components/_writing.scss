@@ -1,0 +1,30 @@
+.lux-content {
+    table {
+        @extend .table;
+        @extend .table-striped;
+    }
+}
+
+.katex-outer {
+    display: block;
+    margin_left: auto;
+    margin_right: auto;
+    margin_bottom: 10px;
+}
+
+code.hljs.inline {
+    display: inline;
+    padding: 2px 4px;
+}
+
+/*sphinx docs
+*/
+dl dd {
+    margin-left: 30px;
+}
+
+dl.class {
+    dl.method {
+        color: $sphinx-method-color;
+    }
+}

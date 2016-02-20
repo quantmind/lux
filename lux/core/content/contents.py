@@ -130,6 +130,14 @@ class Content:
         return self._app
 
     @property
+    def text(self):
+        return to_string(self._content)
+
+    @property
+    def meta(self):
+        return self._meta
+
+    @property
     def content_type(self):
         return self._meta.content_type
 

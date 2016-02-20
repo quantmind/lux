@@ -1,5 +1,5 @@
 define(['angular',
-        'lux/forms',
+        'lux/forms/main',
         'angular-ui-select'], function (angular, lux) {
     'use strict';
 

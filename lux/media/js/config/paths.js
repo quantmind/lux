@@ -33,7 +33,7 @@ define(function () {
             'google-analytics': '//www.google-analytics.com/analytics.js',
             'gridster': '//cdnjs.cloudflare.com/ajax/libs/jquery.gridster/0.5.6/jquery.gridster',
             'holder': '//cdnjs.cloudflare.com/ajax/libs/holder/2.3.1/holder',
-            'highlight': '//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.3/highlight.min.js',
+            'highlight': '//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.1.0/highlight.min.js',
             'katex': '//cdnjs.cloudflare.com/ajax/libs/KaTeX/0.5.1/katex.min.js',
             'leaflet': '//cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.js',
             'lodash': '//cdnjs.cloudflare.com/ajax/libs/lodash.js/3.10.1/lodash',

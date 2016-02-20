@@ -51,8 +51,6 @@ you do not need to access user data::
 '''
 from string import Template
 
-from lux.extensions.angular import add_ng_modules
-
 from ..oauth import OAuth2, register_oauth
 
 
@@ -71,7 +69,6 @@ class Google(OAuth2):
             doc.jscontext['googlemaps'] = google_map_url % (key, sensor)
 
     def google_context(self, doc):
-        add_ng_modules(doc, 'lux.google')
         google = doc.jscontext.get('google')
         if google is None:
             doc.jscontext['google'] = {}

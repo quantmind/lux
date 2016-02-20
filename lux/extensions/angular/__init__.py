@@ -33,16 +33,7 @@ from .ui import add_css
 from .components import grid
 
 
-__all__ = ['add_css', 'grid', 'add_ng_modules']
-
-
-def add_ng_modules(doc, modules):
-    if modules:
-        if not isinstance(modules, (list, tuple)):
-            modules = (modules,)
-        ngmodules = set(doc.jscontext.get('ngModules', ()))
-        ngmodules.update(modules)
-        doc.jscontext['ngModules'] = tuple(ngmodules)
+__all__ = ['add_css', 'grid']
 
 
 LUX_ROUTER = ('lux.router',)
@@ -66,20 +57,10 @@ class Extension(lux.Extension):
         #
         # Use HTML5 navigation and angular router
         if app.config['HTML5_NAVIGATION']:
-            add_ng_modules(doc, LUX_UI_ROUTER)
-
-            doc.body.data({'ng-model': 'page',
-                           'ng-controller': 'Page',
-                           'page': ''})
-
             doc.head.meta.append(Html('base', href="/"))
             sitemap = angular_sitemap(request, router)
-            add_ng_modules(doc, sitemap.pop('modules'))
             doc.jscontext.update(sitemap)
             doc.jscontext['page'] = router.state
-        else:
-            add_ng_modules(doc, LUX_ROUTER)
-            add_ng_modules(doc, router.uimodules)
 
     def context(self, request, context):
         router = html_router(request.app_handler)
@@ -92,15 +73,10 @@ class Extension(lux.Extension):
         '''Wrap the ``main`` html with a ``ui-view`` container.
         Add animation class if specified in :setting:`ANGULAR_VIEW_ANIMATE`.
         '''
-        app = request.app
         main = context.get('html_main', '')
         if 'templateUrl' in page or 'template' in page:
             main = Html('div', main, cn='hidden', id="seo-view")
         div = Html('div', main, cn='angular-view')
-        animate = app.config['ANGULAR_VIEW_ANIMATE']
-        if animate:
-            add_ng_modules(request.html_document, ('ngAnimate',))
-            div.addClass(animate)
         div.data('ui-view', '')
         return div.render()
 

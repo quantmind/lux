@@ -1,5 +1,5 @@
 define(['angular',
-        'lux',
+        'lux/main',
         'lux/nav/navbar'], function (angular, lux) {
     'use strict';
     //

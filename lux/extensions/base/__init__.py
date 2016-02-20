@@ -20,10 +20,10 @@ from pulsar.utils.httpurl import remove_double_slash
 import lux
 from lux import Parameter, RedirectRouter
 
-from .media import FileRouter, MediaRouter
+from .media import MediaRouter
 
 
-__all__ = ['FileRouter', 'MediaRouter']
+__all__ = ['MediaRouter']
 
 
 class Extension(lux.Extension):

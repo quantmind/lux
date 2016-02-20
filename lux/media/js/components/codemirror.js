@@ -1,5 +1,5 @@
 define(['angular',
-        'lux/forms'], function (angular, lux) {
+        'lux/forms/main'], function (angular, lux) {
     'use strict';
     //
     //  Lux Codemirror module
