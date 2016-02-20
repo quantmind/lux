@@ -340,6 +340,7 @@ class Application(ConsoleParser, Extension, EventMixin):
             async_middleware, wsgi = self._build_handler()
             self.handler = wsgi
             self.fire('on_loaded')
+            wsgi = self.handler
             #
             # Using a green pool
             if self.green_pool:

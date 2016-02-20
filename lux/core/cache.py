@@ -5,6 +5,7 @@ import asyncio
 from copy import copy
 from inspect import isfunction
 
+from pulsar.utils.slugify import slugify
 from pulsar.apps.data import parse_store_url, create_store, LockError
 from pulsar.utils.importer import module_attribute
 from pulsar.utils.string import to_string
@@ -21,6 +22,10 @@ logger = logging.getLogger('lux.cache')
 data_caches = {}
 
 
+def passthrough(value):
+    return value
+
+
 def cached(*args, **kw):
     """Decorator to apply to Router's methods for
     caching the return value
@@ -33,11 +38,13 @@ def cached(*args, **kw):
 
 
 class Cache:
-
+    """Cache base class
+    """
     def __init__(self, app, name, url):
         self.app = app
         self.name = name
         self.url = url
+        self._wait = app.green_pool.wait if app.green_pool else passthrough
 
     def __repr__(self):
         return self.url
@@ -81,7 +88,8 @@ class Cache:
 
 
 class AsyncLock:
-
+    """An asynchronous lock for the local cache
+    """
     def __init__(self, name, loop=None, timeout=None, blocking=0, sleep=0.2):
         self._timeout = timeout
         self._blocking = blocking
@@ -99,11 +107,10 @@ class AsyncLock:
             self._loop._locks = {}
         return self._loop._locks
 
-    @asyncio.coroutine
-    def acquire(self):
+    async def acquire(self):
         try:
-            yield from asyncio.wait_for(self._lock.acquire(),
-                                        timeout=self._blocking)
+            await asyncio.wait_for(self._lock.acquire(),
+                                   timeout=self._blocking)
             self._acquired = True
             self._schedule_timeout()
             return True
@@ -112,7 +119,7 @@ class AsyncLock:
 
     def release(self):
         if not self._acquired:
-            raise LockError('Trying to release an unacquired lock')
+            raise LockError('Trying to release an un-acquired lock')
         try:
             self._lock.release()
             self._cancel_timeout()
@@ -185,12 +192,12 @@ class GreenLock:
 
 
 class RedisCache(Cache):
-
+    """A cache with redis backend
+    """
     def __init__(self, app, name, url):
         super().__init__(app, name, url)
         if app.green_pool:
-            from pulsar.apps.greenio import wait
-            self._wait = wait
+            self._wait = app.green_pool.wait
             self.client = create_store(url).client()
         else:
             import redis
@@ -253,8 +260,7 @@ class CacheObject:
             base = '%s:%s' % (type(self.instance).__name__, base)
 
         base = '%s:%s' % (app.config['APP_NAME'], base)
-        key = '%s:%s' % (base, key) if key else base
-        return key.lower()
+        return slugify('%s:%s' % (base, key) if key else base)
 
     def __call__(self, callable, *args, **kw):
         if self.callable is None:

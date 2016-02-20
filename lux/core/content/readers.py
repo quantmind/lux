@@ -1,12 +1,9 @@
-import os
-import imp
-import mimetypes
 from itertools import chain
 
-from pulsar.apps.wsgi import String
+from pulsar.utils.slugify import slugify
 
-from .contents import (Content, METADATA_PROCESSORS, slugify, is_html,
-                       SkipBuild, register_reader)
+from .contents import (ContentFile, HtmlContentFile, METADATA_PROCESSORS,
+                       register_reader)
 from .urlwrappers import MultiValue
 
 try:
@@ -42,7 +39,7 @@ class BaseReader(object):
     enabled = True
     file_extensions = ['']
     extensions = None
-    content = Content
+    content = ContentFile
 
     def __init__(self, app, ext=None):
         self.app = app
@@ -53,36 +50,24 @@ class BaseReader(object):
     def __str__(self):
         return self.__class__.__name__
 
-    def read(self, src, path, **params):
+    def content(self, src, **kwargs):
+        self.content(src, **kwargs)
+
+    def read(self, src):
         """Parse content and metadata of markdown files"""
-        with open(src, 'rb') as text:
-            raw = text.read()
-        return self.process(raw, path, src=src, **params)
+        with open(src, 'r') as text:
+            body = text.read()
+        return self.process(body, src)
 
-    def process(self, raw, path, src=None, **params):
-        ct, encoding = None, None
-        if src:
-            ct, encoding = mimetypes.guess_type(src)
-        body = raw
-        if is_html(ct):
-            if isinstance(raw, bytes):
-                body = raw.decode(encoding=encoding or 'utf-8')
-        else:
-            ct = ct or 'application/octet-stream'
-            if self.ext and not path.endswith('.%s' % self.ext):
-                path = '%s.%s' % (path, self.ext)
-        metadata = {'content_type': ct}
-        return self.post_process(body, metadata, path, src=src, **params)
-
-    def post_process(self, body, meta_input, path, content=None,
-                     meta=None, **params):
+    def process(self, body, src, meta=None):
         """Return the dict containing document metadata
         """
+        if meta is None:
+            meta = {}
         cfg = self.config
         head_meta = {}
-        meta_input = meta_input.items()
         meta = meta.items() if meta else ()
-        meta_input = chain(DEFAULTS, meta, meta_input)
+        meta_input = chain(DEFAULTS, meta)
         meta = {}
         as_list = MultiValue()
         for key, values in meta_input:
@@ -103,44 +88,42 @@ class BaseReader(object):
                         k = ':'.join(bits)
                         head_meta[k] = guess(as_list(values, cfg))
                         continue
-                self.logger.warning("Unknown meta '%s' in '%s'", key, path)
+                self.logger.warning("Unknown meta '%s' in '%s'", key, src)
             #
             elif values:
                 # Remove default values if any
                 proc = METADATA_PROCESSORS[key]
                 meta[key] = proc(values, cfg)
-        content = content or self.content
         if meta.get('priority') == '0':
-            content = content.as_draft()
             head_meta['robots'] = ['noindex', 'nofollow']
         meta['head'] = head_meta
-        if params:
-            pass
-        return content(self.app, body, meta, path, **params)
+        return body, meta
 
 
 @register_reader
 class MarkdownReader(BaseReader):
     """Reader for Markdown files"""
-
     enabled = bool(Markdown)
+    content = HtmlContentFile
     file_extensions = ['md', 'markdown', 'mkd', 'mdown']
 
-    def __init__(self, *args, **kwargs):
-        super(MarkdownReader, self).__init__(*args, **kwargs)
-        self.extensions = list(self.config['MD_EXTENSIONS'])
-        if 'meta' not in self.extensions:
-            self.extensions.append('meta')
+    @property
+    def md(self):
+        md = getattr(self.app, '_markdown', None)
+        if md is None:
+            extensions = list(self.config['MD_EXTENSIONS'])
+            if 'meta' not in extensions:
+                extensions.append('meta')
+            self.app._markdown = Markdown(extensions=extensions)
+        return self.app._markdown
 
-    def process(self, raw, path, src=None, **params):
-        if isinstance(raw, bytes):
-            raw = raw.decode('utf-8')
-        self._md = md = Markdown(extensions=self.extensions)
+    def process(self, raw, src, meta=None):
         raw = '%s\n\n%s' % (raw, self.links())
+        md = self.md
         body = md.convert(raw)
-        meta = self._md.Meta
-        meta['content_type'] = 'text/html'
-        return self.post_process(body, meta, path, src=src, **params)
+        meta = meta if meta is not None else {}
+        meta.update(md.Meta)
+        return super().process(body, src, meta=meta)
 
     def links(self):
         links = self.app.config.get('_MARKDOWN_LINKS_')
@@ -159,32 +142,9 @@ class MarkdownReader(BaseReader):
 
 
 @register_reader
-class PythonReader(BaseReader):
-    '''Reader for Python template generator files
-    '''
-    file_extensions = ['py']
-
-    def read(self, src, path, **params):
-        name = os.path.basename(src).split('.')[0]
-        mod = imp.load_source(name, src)
-        if not hasattr(mod, 'template'):
-            raise SkipBuild
-        return self.process(mod.template(), path, src=src, **params)
-
-    def process(self, raw, path, **params):
-        if isinstance(raw, String):
-            ct = raw._content_type
-            body = raw.render()
-        else:
-            body = raw
-            ct = 'text/plain'
-        metadata = {'content_type': [ct]}
-        return self.post_process(body, metadata, path, **params)
-
-
-@register_reader
 class RestructuredReader(BaseReader):
     enabled = bool(Restructured)
+    content = HtmlContentFile
     file_extensions = ['rst']
 
     def process(self, raw, path, **params):

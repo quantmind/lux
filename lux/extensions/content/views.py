@@ -120,9 +120,6 @@ class TextRouter(TextRouterBase):
             response = request.response
             response.content_type = content.content_type
             if content.content_type == 'text/html':
-                #
-                # Update with context from this router
-                content._meta.update(self.context(request) or ())
 
                 if response.content_type == 'application/json':
                     data = content.json(request)
@@ -175,9 +172,9 @@ class RouterMap(Sitemap):
     def items(self, request):
         model = self.content_router.model
         for item in model.all(request):
-            yield AttributeDictionary(loc=item['url'],
+            yield AttributeDictionary(loc=item['html_url'],
                                       lastmod=item['modified'],
-                                      priority=item['priority'])
+                                      priority=item.get('priority', 1))
 
 
 class CMS(lux.CMS):

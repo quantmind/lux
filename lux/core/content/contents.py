@@ -1,12 +1,11 @@
 import os
 import stat
+import mimetypes
 from datetime import datetime, date
 from collections import Mapping
 
 from dateutil.parser import parse as parse_date
 
-from pulsar import HttpException, Http404
-from pulsar.utils.slugify import slugify
 from pulsar.utils.structures import AttributeDictionary, mapping_iterator
 from pulsar.utils.pep import to_string
 
@@ -14,18 +13,8 @@ from lux.utils import iso8601, absolute_uri
 
 from .urlwrappers import (URLWrapper, Processor, MultiValue, Tag, Author,
                           Category)
-
-
-class SkipBuild(Http404):
-    pass
-
-
-class BuildError(Http404):
-    pass
-
-
-class Unsupported(HttpException):
-    status = 415
+from ..exceptions import Unsupported
+from ..cache import Cacheable, cached
 
 
 no_draft_field = ('date', 'category')
@@ -101,174 +90,104 @@ def get_reader(app, src):
     ext = bits[-1] if len(bits) > 1 else None
     Reader = READERS.get(ext) or READERS['']
     if not Reader.enabled:
-        raise BuildError('Missing dependencies for %s' % Reader.__name__)
+        raise Unsupported('Missing dependencies for %s' % Reader.__name__)
     return Reader(app, ext)
 
 
-class Content:
+class ContentFile(Cacheable):
     '''A class for managing a file-based content
     '''
-    template = None
-    template_engine = None
+    suffix = None
 
-    def __init__(self, app, content, metadata, path, src=None, **params):
-        self._app = app
-        self._content = content
-        self._path = path
-        self._src = src
-        self._meta = AttributeDictionary(params)
-        self._update_meta(metadata)
-        if not self._meta.modified:
-            if src:
-                self._meta.modified = modified_datetime(src)
-            else:
-                self._meta.modified = datetime.now()
-        self._meta.name = slugify(self._path, separator='_')
+    def __init__(self, src, path=None, model=None, **params):
+        self.src = src
+        self.path = path
+        self.model = model
+        self.meta = AttributeDictionary(params)
 
-    @property
-    def app(self):
-        return self._app
-
-    @property
-    def text(self):
-        return to_string(self._content)
-
-    @property
-    def meta(self):
-        return self._meta
+    def __repr__(self):
+        return self.src
+    __str__ = __repr__
 
     @property
     def content_type(self):
-        return self._meta.content_type
+        ct, _ = mimetypes.guess_type(self.src)
+        return ct
 
-    @property
-    def is_text(self):
-        return self._meta.content_type in CONTENT_EXTENSIONS
+    def cache_key(self, app):
+        return self.src
 
-    @property
-    def is_html(self):
-        return is_html(self._meta.content_type)
 
-    @property
-    def suffix(self):
-        return CONTENT_EXTENSIONS.get(self._meta.content_type)
-
-    @property
-    def path(self):
-        return self._path
-
-    @property
-    def reldate(self):
-        return self._meta.date or self._meta.modified
-
-    @property
-    def year(self):
-        return self.reldate.year
-
-    @property
-    def month(self):
-        return self.reldate.month
-
-    @property
-    def month2(self):
-        return self.reldate.strftime('%m')
-
-    @property
-    def month3(self):
-        return self.reldate.strftime('%b').lower()
-
-    @property
-    def id(self):
-        if self.is_html:
-            return '%s.json' % self._path
+class HtmlContentFile(ContentFile):
+    suffix = 'html'
+    template = None
 
     def __repr__(self):
-        return self._path
+        return self.src
     __str__ = __repr__
 
-    def key(self, name=None):
-        '''The key for a context dictionary
-        '''
-        name = name or self.name
-        suffix = self.suffix
-        return '%s_%s' % (suffix, name) if suffix else name
+    @property
+    def content_type(self):
+        return 'text/html'
 
-    def context(self, context=None):
-        '''Extract the context dictionary for server side template rendering
-        '''
-        ctx = dict(self._flatten(self._meta))
-        if context:
-            ctx.update(context)
-        return ctx
+    @cached
+    def json(self, request):
+        """Convert the content into a Json dictionary for the API
+        """
+        app = request.app
+        context = app.context(request)
+        if self.model:
+            self.model.context(request, self, context)
+        #
+        self.meta.modified = modified_datetime(self.src)
+        data = self._to_json(request, self.meta)
+        text = data.get(self.suffix) or {}
+        data[self.suffix] = text
+        text['main'] = self.render(app, context)
+        #
+        head = {}
+        for key in HEAD_META:
+            value = data.get(key)
+            if value:
+                head[key] = value
+        #
+        if 'head' in data:
+            head.update(data['head'])
 
-    def urlparams(self, names=None):
-        urlparams = {}
-        if names:
-            for name in names:
-                value = self._meta.get(name) or getattr(self, name, None)
-                if value in (None, ''):
-                    if name == 'id':
-                        raise SkipBuild
-                    elif names:
-                        raise KeyError("%s could not obtain url variable '%s'"
-                                       % (self, name))
-                urlparams[name] = value
-        return urlparams
+        data['ext'] = self.suffix
+        data['path'] = self.path
+        data['head'] = head
+        if self.model:
+            self.model.json(request, self, data)
+        return data
 
-    def render(self, context=None):
-        '''Render the content
-        '''
-        if self.is_html:
-            context = self.context(context)
-            content = self._engine(self._content, context)
-            if self.template:
-                template = self._app.template_full_path(self.template)
-                if template:
-                    context[self.key('main')] = content
-                    with open(template, 'r') as file:
-                        template_str = file.read()
-                    content = self._engine(template_str, context)
-            return content
-        else:
-            return self._content
+    def render(self, app, context):
+        """Render this content with a context dictionary
 
-    def raw(self, request):
-        return self._content
-
-    def json(self, request, compile=True):
-        '''Convert the content into a Json dictionary for the API
-        '''
-        if self.is_html:
-            context = self._app.context(request)
-            context = self.context(context)
-            #
-            data = self._to_json(request, self._meta)
-            text = data.get(self.suffix) or {}
-            data[self.suffix] = text
-            if compile:
-                text['main'] = self.render(context)
-            #
-            head = {}
-            for key in HEAD_META:
-                value = data.get(key)
-                if value:
-                    head[key] = value
-            #
-            if 'head' in data:
-                head.update(data['head'])
-
-            data['ext'] = self.suffix
-            data['path'] = self._path
-            data['head'] = head
-            return data
+        :param app: lux application
+        :param context: context dictionary
+        :return: an HTML string
+        """
+        content, meta = get_reader(app, self.src).read(self.src)
+        self.meta.update(meta)
+        context = context if context is not None else {}
+        context.update(self._flatten(self.meta))
+        render = app.template_engine(self.meta.template_engine)
+        content = render(content, context)
+        if self.meta.template:
+            template = app.template_full_path(self.meta.template)
+            if template:
+                context['%s_main' % self.suffix] = content
+                with open(template, 'r') as file:
+                    template_str = file.read()
+                content = render(template_str, context)
+        return content
 
     def html(self, request):
         '''Build the ``html_main`` key for this content and set
         content specific values to the ``head`` tag of the
         HTML5 document.
         '''
-        if not self.is_html:
-            raise Unsupported
         # The JSON data for this page
         data = self.json(request)
         doc = request.html_document
@@ -325,7 +244,7 @@ class Content:
 
     def _to_string(self, value):
         if isinstance(value, Mapping):
-            raise BuildError('A dictionary found when coverting to string')
+            raise ValueError('A dictionary found when converting to string')
         elif isinstance(value, (list, tuple)):
             return ', '.join(self._to_string(v) for v in value)
         elif isinstance(value, date):

@@ -1,5 +1,4 @@
 import os
-import glob
 import mimetypes
 
 from pulsar.utils.httpurl import remove_double_slash
@@ -7,7 +6,7 @@ from pulsar.utils.httpurl import remove_double_slash
 from lux import cached, get_reader
 from lux.extensions import rest
 from lux.extensions.rest import RestColumn
-from lux.utils.files import get_rel_dir
+from lux.utils.files import skipfile
 
 
 __all__ = ('_b', 'DataError', 'Content')
@@ -88,26 +87,65 @@ class Content(rest.RestModel):
         except IOError:
             return False
 
-    def read(self, request, name):
+    def json(self, request, instance, json_data):
+        """Json representation of content
+        """
+        json_data['url'] = self.get_url(request, json_data['path'])
+        json_data['html_url'] = self.get_html_url(request, json_data['path'])
+
+    def read(self, request, path):
         '''Read content from file in the repository
         '''
-        try:
-            src, name, content = self._content(request, name)
-            reader = get_reader(request.app, src)
-            # path = self._path(request, name)
-            return reader.process(content, name, src=src,
-                                  meta=self.content_meta)
-        except IOError:
-            raise DataError('%s not available' % name)
+        src = os.path.join(self.directory, path)
+        if os.path.isdir(src):
+            src = os.path.join(src, 'index')
+        content_type, _ = mimetypes.guess_type(src)
+        if not content_type:
+            ext = '.%s' % self.ext
+            if not src.endswith(ext):
+                src = '%s%s' % (src, ext)
+        ext = '.%s' % src.split('.')[-1]
+        if self.html_url:
+            path = '%s/%s' % (self.html_url, path) if path else self.html_url
+        if path.endswith(ext):
+            path = path[:-len(ext)]
+        if path.endswith('index'):
+            path = path[:-5]
+        if path.endswith('/'):
+            path = path[:-1]
+        if not os.path.isfile(src):
+            raise DataError('%s not available' % path)
+        return get_reader(request.app, src).content(src, path, model=self)
 
-    def all(self, request):
-        '''Return list of all files stored in repo
-        '''
+    def asset(self, filename):
+        if self.html_url:
+            path = '%s/%s' % (self.html_url, filename)
+        else:
+            path = filename
+        src = os.path.join(self.directory, filename)
+        return dict(src=src, path=path)
+
+    def all(self, request, force=False):
+        """Generator of contents in this model
+
+        :param force: if true all content is yielded, otherwise only content
+            matching the extension
+        """
         directory = self.directory
-        files = glob.glob(os.path.join(directory, '*.%s' % self.ext))
-        for file in files:
-            filename = get_rel_dir(file, directory)
-            yield self.tojson(request, self.read(request, filename))
+        ext = '.%s' % self.ext
+        for dirpath, dirnames, filenames in os.walk(directory):
+            for filename in filenames:
+                if skipfile(filename):
+                    continue
+                if dirpath != directory:
+                    path = os.path.relpath(dirpath, directory)
+                    filename = os.path.join(path, filename)
+
+                if not filename.endswith(ext):
+                    if force:
+                        yield self.asset(filename)
+                else:
+                    yield self.read(request, filename).json(request)
 
     def serialise_model(self, request, data, in_list=False, **kw):
         if in_list:
@@ -116,34 +154,6 @@ class Content(rest.RestModel):
         return data
 
     # INTERNALS
-    def _content(self, request, name):
-        '''Read content from file in the repository
-        '''
-        src = os.path.join(self.directory, name)
-        if os.path.isdir(src):
-            name = os.path.join(src, 'index')
-        file_name = self._format_filename(name)
-        src = os.path.join(self.directory, file_name)
-
-        with open(src, 'rb') as f:
-            content = f.read()
-
-        ext = '.%s' % self.ext
-        if name.endswith(ext):
-            name = name[:-len(ext)]
-
-        return src, name, content
-
-    def _format_filename(self, filename):
-        '''Append extension to file name
-        '''
-        content_type, _ = mimetypes.guess_type(filename)
-        if not content_type:
-            ext = '.%s' % self.ext
-            if not filename.endswith(ext):
-                filename = '%s%s' % (filename, ext)
-        return filename
-
     def _path(self, request, path):
         '''relative pathof content
         '''

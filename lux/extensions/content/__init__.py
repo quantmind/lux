@@ -1,3 +1,5 @@
+from pulsar.apps.wsgi import MediaRouter
+
 import lux
 from lux import Parameter
 
@@ -20,7 +22,7 @@ __all__ = ['Content',
 
 class Extension(lux.Extension):
     _config = [
-        Parameter('STATIC_LOCATION', 'build',
+        Parameter('STATIC_LOCATION', None,
                   'Directory where the static site is created')
         ]
 
@@ -31,6 +33,11 @@ class Extension(lux.Extension):
         if request.cache.html_main:
             context['html_main'] = request.cache.html_main
         return context
+
+    def on_loaded(self, app):
+        if app.callable.command == 'serve_static':
+            location = app.config['STATIC_LOCATION']
+            app.handler = MediaRouter('', location, default_suffix='html')
 
 
 def html_contents(app):

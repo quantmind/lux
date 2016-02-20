@@ -293,6 +293,8 @@ def error_handler(request, exc):
     if not response.content_type:
         content_type = request.get('default.content_type')
         if content_type:
+            if isinstance(content_type, str):
+                content_type = (content_type,)
             response.content_type = request.content_types.best_match(
                 content_type)
     content_type = None

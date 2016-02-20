@@ -1,11 +1,37 @@
+"""Utilities for static site generator
+"""
 import os
 import shutil
 from unittest import mock
 
+import lux
 from lux.extensions.base import MediaRouter
+from lux.extensions.sitemap import BaseSitemap
 from lux.utils.files import skipfile
 
-from .views import TextCRUD
+from .views import TextRouter
+
+
+class StaticCache(lux.Cache):
+    """Static cache for building static sites
+    """
+    def __init__(self, app, name, url):
+        super().__init__(app, name, url)
+        self._cache = {}
+
+    def set(self, key, value, **params):
+        self._cache[key] = value
+
+    def get(self, key):
+        return self._cache.get(key)
+
+    def delete(self, key):
+        """Delete a key from the cache
+        """
+        return self._cache.pop(key, None)
+
+
+lux.register_cache('static', 'lux.extensions.content.static.StaticCache')
 
 
 def dst_path(dirpath, filename, src, dst):
@@ -17,37 +43,65 @@ def dst_path(dirpath, filename, src, dst):
     return os.path.join(dst, filename)
 
 
-def build(cms):
+async def build(cms):
     app = cms.app
+    app.config['CACHE_SERVER'] = 'static://'
     for middleware in cms.middleware():
-        if isinstance(middleware, TextCRUD):
-            yield from build_content(middleware, app)
+        if isinstance(middleware, TextRouter):
+            await build_content(middleware, app)
+        elif isinstance(middleware, BaseSitemap):
+            await build_sitemap(middleware, app)
 
-    if app.config.get('SERVE_STATIC_FILES'):
-        copy_assets(app)
+    copy_assets(app)
 
 
-def build_content(middleware, app):
-    location = app.config['STATIC_LOCATION']
+async def build_content(middleware, app):
     request = app.wsgi_request()
-    model = middleware.model(app)
+    model = middleware.model
     start_response = mock.MagicMock()
-    for content in model.all(request):
+    for content in model.all(request, True):
+        if not content.get('html_url'):
+            copy_file(app, content)
+            continue
         path = content['path']
         extra = {'HTTP_ACCEPT': '*/*'}
-        request = app.wsgi_request(path=path, extra=extra)
-        response = yield from app(request.environ, start_response)
+        request = app.wsgi_request(path='/%s' % path, extra=extra)
+        response = await app(request.environ, start_response)
         if response.status_code == 200:
-            if content['ext']:
-                path = '%s.%s' % (path, content['ext'])
-            loc = os.path.join(location, path[1:])
-            dir = os.path.dirname(loc)
-            if not os.path.isdir(dir):
-                os.makedirs(dir)
-            if content['content_type'] == 'text/html':
-                html = (b''.join(response.content)).decode(response.encoding)
-                with open(loc, 'w') as fp:
-                    fp.write(html)
+            path = '%s.html' % path
+            loc = location(app, path)
+            app.logger.info('Created %s in %s', path, loc)
+            html = (b''.join(response.content)).decode(response.encoding)
+            with open(loc, 'w') as fp:
+                fp.write(html)
+        else:
+            app.logger.error('Got %s from "%s"', response.status, path)
+
+
+async def build_sitemap(sitemap, app):
+    path = sitemap.full_route.path[1:]
+    request = app.wsgi_request(path=path, extra={'HTTP_ACCEPT': '*/*'})
+    start_response = mock.MagicMock()
+    response = await app(request.environ, start_response)
+    if response.status_code == 200:
+        loc = location(app, path)
+        with open(loc, 'wb') as fp:
+            for chunk in response.content:
+                fp.write(chunk)
+    else:
+        app.logger.error('Got %s from "%s"', response.status, path)
+
+
+def location(app, path):
+    folder = app.config['STATIC_LOCATION']
+    loc = os.path.join(folder, path)
+    dirname, filename = os.path.split(loc)
+    if filename == 'index.html' and dirname != folder:
+        loc = '%s.html' % dirname
+        dirname = os.path.dirname(loc)
+    if not os.path.isdir(dirname):
+        os.makedirs(dirname)
+    return loc
 
 
 def copy_assets(app):
@@ -59,7 +113,13 @@ def copy_assets(app):
     router = MediaRouter(path, app.meta.media_dir)
     for name, path in router.extension_paths(app):
         dst = os.path.join(location, name)
+        app.logger.info('Copy static files from %s to %s', path, dst)
         copy_files(path, dst)
+
+
+def copy_file(app, content):
+    dst = location(app, content['path'])
+    shutil.copyfile(content['src'], dst)
 
 
 def copy_files(src, dst):

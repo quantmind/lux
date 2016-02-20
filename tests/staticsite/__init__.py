@@ -13,7 +13,7 @@ EXTENSIONS = ['lux.extensions.base',
               'lux.extensions.sitemap',
               'lux.extensions.oauth',
               'lux.extensions.angular',
-              'lux.extensions.static']
+              'lux.extensions.content']
 
 
 base = os.path.dirname(__file__)

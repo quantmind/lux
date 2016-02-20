@@ -6,13 +6,16 @@ from pulsar.utils.log import clear_logger
 import lux
 
 
+nominify = Setting('nominify',
+                   ['--nominify'],
+                   action="store_true",
+                   default=False,
+                   desc="Don't use minified media files")
+
+
 class Command(lux.Command):
     help = "Starts a fully-functional Web server using pulsar"
-    option_list = (Setting('nominify',
-                           ['--nominify'],
-                           action="store_true",
-                           default=False,
-                           desc="Don't use minified media files"),)
+    option_list = (nominify,)
 
     def __call__(self, argv, start=True):
         app = self.app
