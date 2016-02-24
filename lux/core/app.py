@@ -572,12 +572,14 @@ class Application(ConsoleParser, Extension, EventMixin):
         if not request.cache._in_application_context:
             request.cache._in_application_context = True
             try:
-                context = context if context is not None else {}
-                context.update(self.config)
-                context.update(self.cms.context(context))
+                ctx = {}
+                ctx.update(self.config)
+                ctx.update(self.cms.context(ctx))
+                ctx.update(context or ())
                 for ext in self.extensions.values():
                     if hasattr(ext, 'context'):
-                        context = ext.context(request, context) or context
+                        ext.context(request, ctx)
+                return ctx
             finally:
                 request.cache._in_application_context = False
         return context

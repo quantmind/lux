@@ -50,9 +50,6 @@ class BaseReader(object):
     def __str__(self):
         return self.__class__.__name__
 
-    def content(self, src, **kwargs):
-        self.content(src, **kwargs)
-
     def read(self, src):
         """Parse content and metadata of markdown files"""
         with open(src, 'r') as text:

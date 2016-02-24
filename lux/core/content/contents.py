@@ -33,13 +33,8 @@ CONTENT_EXTENSIONS = {'text/html': 'html',
 HEAD_META = ('title', 'description', 'author', 'keywords')
 
 METADATA_PROCESSORS = dict(((p.name, p) for p in (
-    Processor('name'),
-    Processor('slug'),
     Processor('title'),
-    # Description, if not head_description available it will also be used as
-    # description in head meta.
     Processor('description'),
-    # An optional image url which can be used to identify the page
     Processor('image'),
     Processor('date', lambda x, cfg: parse_date(x)),
     Processor('status'),
@@ -50,8 +45,6 @@ METADATA_PROCESSORS = dict(((p.name, p) for p in (
     MultiValue('author', Author),
     MultiValue('require_css'),
     MultiValue('require_js'),
-    MultiValue('require_context'),
-    Processor('content_type'),
     Processor('template'),
     Processor('template-engine')
 )))
@@ -68,15 +61,6 @@ def is_html(content_type):
 
 def is_text(content_type):
     return content_type in CONTENT_EXTENSIONS
-
-
-def page_info(data, *include_keys):
-    '''Yield only keys which are not associated with a dictionary
-    unless they are included in ``included_keys``
-    '''
-    for key, value in data.items():
-        if not isinstance(value, dict) or key in include_keys:
-            yield key, value
 
 
 def register_reader(cls):
@@ -99,10 +83,9 @@ class ContentFile(Cacheable):
     '''
     suffix = None
 
-    def __init__(self, src, path=None, model=None, **params):
+    def __init__(self, src, **params):
         self.src = src
-        self.path = path
-        self.model = model
+        self.model = params.pop('model', None)
         self.meta = AttributeDictionary(params)
 
     def __repr__(self):
@@ -132,34 +115,51 @@ class HtmlContentFile(ContentFile):
 
     @cached
     def json(self, request):
-        """Convert the content into a Json dictionary for the API
+        """Convert the content into a JSON dictionary for the API
         """
+        self.meta.modified = modified_datetime(self.src)
         app = request.app
+        #
+        # Get context dictionary from application and model if available
         context = app.context(request)
         if self.model:
             self.model.context(request, self, context)
         #
-        self.meta.modified = modified_datetime(self.src)
-        data = self._to_json(request, self.meta)
-        text = data.get(self.suffix) or {}
-        data[self.suffix] = text
-        text['main'] = self.render(app, context)
-        #
-        head = {}
-        for key in HEAD_META:
-            value = data.get(key)
-            if value:
-                head[key] = value
-        #
-        if 'head' in data:
-            head.update(data['head'])
+        self.meta['html_main'] = self.render(app, context)
+        return dict(self.meta)
 
-        data['ext'] = self.suffix
-        data['path'] = self.path
-        data['head'] = head
-        if self.model:
-            self.model.json(request, self, data)
-        return data
+    def html(self, request):
+        '''Build the ``html_main`` key for this content and set
+        content specific values to the ``head`` tag of the
+        HTML5 document.
+        '''
+        # The JSON data for this page
+        data = self.json(request)
+        doc = request.html_document
+        #
+        image = absolute_uri(request, data.get('image'))
+        doc.meta.update({'og:image': image,
+                         'og:published_time': data.get('date'),
+                         'og:modified_time': data.get('modified')})
+        head = {}
+        page = {}
+        for key, value in data.items():
+            bits = key.split('_')
+            N = len(bits)
+            if N > 1 and bits[0] == 'head':
+                key = '_'.join(bits[1:])
+                head[key] = value
+                doc.meta.set('_'.join(bits[1:]), value)
+            elif N == 1:
+                page[key] = value
+
+        # Add head keys if needed
+        for key in HEAD_META:
+            if key not in head and key in data:
+                doc.meta.set(key, data[key])
+
+        doc.jscontext['page'] = page
+        return data['html_main']
 
     def render(self, app, context):
         """Render this content with a context dictionary
@@ -168,11 +168,16 @@ class HtmlContentFile(ContentFile):
         :param context: context dictionary
         :return: an HTML string
         """
+        context = context if context is not None else {}
+        render = app.template_engine(self.meta.template_engine)
         content, meta = get_reader(app, self.src).read(self.src)
         self.meta.update(meta)
-        context = context if context is not None else {}
-        context.update(self._flatten(self.meta))
-        render = app.template_engine(self.meta.template_engine)
+        meta = dict(self._flatten(self.meta))
+        context.update(meta)
+        self.meta = AttributeDictionary(self._render_data(app, meta, render,
+                                                          context))
+        context.update(self.meta)
+        #
         content = render(content, context)
         if self.meta.template:
             template = app.template_full_path(self.meta.template)
@@ -183,57 +188,7 @@ class HtmlContentFile(ContentFile):
                 content = render(template_str, context)
         return content
 
-    def html(self, request):
-        '''Build the ``html_main`` key for this content and set
-        content specific values to the ``head`` tag of the
-        HTML5 document.
-        '''
-        # The JSON data for this page
-        data = self.json(request)
-        doc = request.html_document
-        doc.jscontext['page'] = dict(page_info(data))
-        #
-        image = absolute_uri(request, data.get('image'))
-        doc.meta.update({'og:image': image,
-                         'og:published_time': data.get('date'),
-                         'og:modified_time': data.get('modified')})
-        doc.meta.update(data['head'])
-        #
-        if not request.config.get('HTML5_NAVIGATION'):
-            for css in data.get('require_css') or ():
-                doc.head.links.append(css)
-            doc.head.scripts.require.extend(data.get('require_js') or ())
-        #
-        if request.cache.uirouter is False:
-            doc.head.scripts.require.extend(data.get('require_js') or ())
-
-        self.on_html(doc)
-        return data[self.suffix]['main']
-
-    def on_html(self, doc):
-        pass
-
-    @classmethod
-    def as_draft(cls):
-        mp = tuple((a for a in cls.mandatory_properties
-                    if a not in no_draft_field))
-        return cls.__class__('Draft', (cls,), {'mandatory_properties': mp})
-
     # INTERNALS
-    def _update_meta(self, metadata):
-        meta = self._meta
-        meta.site = {}
-        for name in ('template_engine', 'template'):
-            default = getattr(self, name)
-            value = metadata.pop(name, default)
-            meta.site[name] = value
-            setattr(self, name, value)
-
-        context = self.context(self.app.config)
-        self._engine = self._app.template_engine(self.template_engine)
-        meta.update(((key, self._render_meta(value, context))
-                    for key, value in metadata.items()))
-
     def _flatten(self, meta):
         for key, value in mapping_iterator(meta):
             if isinstance(value, Mapping):
@@ -252,26 +207,18 @@ class HtmlContentFile(ContentFile):
         else:
             return to_string(value)
 
-    def _render_meta(self, value, context):
+    def _render_data(self, request, value, render, context):
         if isinstance(value, Mapping):
-            return dict(((k, self._render_meta(v, context))
+            return dict(((k, self._render_data(request, v, render, context))
                          for k, v in value.items()))
         elif isinstance(value, (list, tuple)):
-            return [self._render_meta(v, context) for v in value]
-        elif isinstance(value, str):
-            return self._engine(to_string(value), context)
-        else:
-            return value
-
-    def _to_json(self, request, value):
-        if isinstance(value, Mapping):
-            return dict(((k, self._to_json(request, v))
-                         for k, v in value.items()))
-        elif isinstance(value, (list, tuple)):
-            return [self._to_json(request, v) for v in value]
+            return [self._render_data(request, v, render, context)
+                    for v in value]
         elif isinstance(value, date):
             return iso8601(value)
         elif isinstance(value, URLWrapper):
             return value.to_json(request)
+        elif isinstance(value, str):
+            return render(value, context)
         else:
             return value

@@ -80,14 +80,5 @@ class LuxModel:
         :return:
         """
 
-    def json(self, request, instance, json_data):
-        """Add context to an instance ``json_data``
-
-        :param request: WSGI request
-        :param instance: an instance of this model
-        :param json_data: json representation of ``instance``
-        :return:
-        """
-
     def _load_columns(self):
         raise NotImplementedError

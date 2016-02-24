@@ -89,7 +89,8 @@ class TextRouter(TextRouterBase):
     def get_html(self, request):
         '''Return a div for pagination
         '''
-        return self.render_file(request, 'index')
+        request.cache.text_router = True
+        return self.render_file(request)
 
     @route('_all', response_content_types=('application/json',))
     def all(self, request):
@@ -102,14 +103,8 @@ class TextRouter(TextRouterBase):
 
     @route('<path:path>')
     def read(self, request):
-        path = request.urlargs['path']
-        try:
-            return self.render_file(request, path, True)
-        except Http404:
-            if not path.endswith('/'):
-                if self.model.exist(request, '%s/index' % path):
-                    raise HttpRedirect('%s/' % path)
-            raise
+        request.cache.text_router = True
+        return self.render_file(request, request.urlargs['path'], True)
 
     def render_file(self, request, path='', as_response=False):
         model = self.model
@@ -118,6 +113,10 @@ class TextRouter(TextRouterBase):
         if backend.has_permission(request, model.name, 'read'):
             content = get_content(request, model, path)
             response = request.response
+            if content is response:
+                assert as_response
+                return content
+
             response.content_type = content.content_type
             if content.content_type == 'text/html':
 
@@ -210,23 +209,22 @@ class CMS(lux.CMS):
 
     def inner_html(self, request, page, self_comp=''):
         html = super().inner_html(request, page, self_comp)
-        request.cache.html_main = html
-        path = request.path[1:]
-
-        try:
-            for router in self._middleware:
-                router_args = router.resolve(path)
-                if router_args:
-                    router, args = router_args
-                    path = tuple(args.values())[0] if args else 'index'
-                    try:
-                        return router.render_file(request, path)
-                    except Http404:
-                        return html
-
-            return html
-        finally:
-            request.cache.pop('html_main')
+        if not request.cache.text_router:
+            request.cache.html_main = html
+            path = request.path[1:]
+            try:
+                for router in self._middleware:
+                    router_args = router.resolve(path)
+                    if router_args:
+                        router, args = router_args
+                        path = tuple(args.values())[0] if args else 'index'
+                        try:
+                            html = router.render_file(request, path)
+                        except Http404:
+                            pass
+            finally:
+                request.cache.pop('html_main')
+        return html
 
 
 def get_content(request, model, path):

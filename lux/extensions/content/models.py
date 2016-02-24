@@ -2,6 +2,7 @@ import os
 import mimetypes
 
 from pulsar.utils.httpurl import remove_double_slash
+from pulsar.apps.wsgi import file_response
 
 from lux import cached, get_reader
 from lux.extensions import rest
@@ -38,9 +39,9 @@ OPERATORS = {
 
 
 class Content(rest.RestModel):
-    '''A Rest model with file-system backend
+    '''A Content model with file-system backend
 
-    This model provide basic CRUD operations for a RestFul web API.
+    This model provide read-only operations
     '''
     def __init__(self, name, repo, path=None, ext='md', content_meta=None,
                  columns=None, api_prefix='content'):
@@ -50,6 +51,7 @@ class Content(rest.RestModel):
         self.directory = directory
         self.ext = ext
         self.content_meta = content_meta or {}
+        self.content_meta['model'] = self
         if path is None:
             path = name
         columns = columns or COLUMNS[:]
@@ -62,11 +64,8 @@ class Content(rest.RestModel):
     def query(self, request, session, *filters):
         return session
 
-    def tojson(self, request, obj, compile=True, exclude=None, **kw):
-        data = obj.json(request, compile=compile)
-        data['url'] = self.get_url(request, data['path'])
-        data['html_url'] = self.get_html_url(request, data['path'])
-        return data
+    def tojson(self, request, obj, exclude=None, **kw):
+        return obj.json(request)
 
     def get_target(self, request, **extra_data):
         '''Get a target for a form
@@ -78,20 +77,14 @@ class Content(rest.RestModel):
         target.update(**extra_data)
         return target
 
-    def exist(self, request, name):
-        '''Check if a resource ``name`` exists
-        '''
-        try:
-            self._content(request, name)
-            return True
-        except IOError:
-            return False
-
-    def json(self, request, instance, json_data):
+    def context(self, request, instance, context):
         """Json representation of content
         """
-        json_data['url'] = self.get_url(request, json_data['path'])
-        json_data['html_url'] = self.get_html_url(request, json_data['path'])
+        meta = instance.meta
+        path = meta.get('path')
+        if path is not None:
+            meta['url'] = self.get_url(request, path)
+            meta['html_url'] = self.get_html_url(request, path)
 
     def read(self, request, path):
         '''Read content from file in the repository
@@ -99,23 +92,35 @@ class Content(rest.RestModel):
         src = os.path.join(self.directory, path)
         if os.path.isdir(src):
             src = os.path.join(src, 'index')
+        if src.endswith('.html'):
+            src = src[:-5]
+
+        # Handle files which are not html
         content_type, _ = mimetypes.guess_type(src)
-        if not content_type:
-            ext = '.%s' % self.ext
-            if not src.endswith(ext):
-                src = '%s%s' % (src, ext)
-        ext = '.%s' % src.split('.')[-1]
+        if content_type and os.path.isfile(src):
+            return file_response(request, src, content_type=content_type)
+
+        # Add extension
+        ext = '.%s' % self.ext
+        src = '%s%s' % (src, ext)
+        if not os.path.isfile(src):
+            raise DataError('%s not available' % path)
+
+        path = os.path.relpath(src, self.directory)
+        #
+        # Add html_url if available
         if self.html_url:
-            path = '%s/%s' % (self.html_url, path) if path else self.html_url
-        if path.endswith(ext):
-            path = path[:-len(ext)]
+            path = '%s/%s' % (self.html_url, path)
+        #
+        # Remove extension
+        path = path[:-len(ext)]
         if path.endswith('index'):
             path = path[:-5]
         if path.endswith('/'):
             path = path[:-1]
-        if not os.path.isfile(src):
-            raise DataError('%s not available' % path)
-        return get_reader(request.app, src).content(src, path, model=self)
+        path = '/%s' % path
+        return get_reader(request.app, src).content(src, path=path,
+                                                    **self.content_meta)
 
     def asset(self, filename):
         if self.html_url:
