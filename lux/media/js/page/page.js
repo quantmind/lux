@@ -1,5 +1,5 @@
 define(['angular',
-        'lux',
+        'lux/main',
         'lux/page/templates'], function (angular, lux) {
     'use strict';
     //
@@ -131,8 +131,8 @@ define(['angular',
         //
         //
         // Display a div with links to content
-        .directive('cmsLinks', ['$lux', 'context',
-            function ($lux, context) {
+        .directive('cmsLinks', ['$lux', '$location', 'context',
+            function ($lux, $location, context) {
 
                 return {
                     restrict: 'AE',
@@ -140,6 +140,7 @@ define(['angular',
                         var config = lux.getObject(attrs, 'config', scope),
                             http = $lux.http;
 
+                        scope.$location = $location;
                         if (config.url) {
                             http.get(config.url).then(function (response) {
                                 scope.links = response.data.result;

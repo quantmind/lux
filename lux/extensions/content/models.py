@@ -3,6 +3,7 @@ import mimetypes
 
 from pulsar.utils.httpurl import remove_double_slash
 from pulsar.apps.wsgi import file_response
+from pulsar.utils.slugify import slugify
 
 from lux import cached, get_reader
 from lux.extensions import rest
@@ -83,6 +84,7 @@ class Content(rest.RestModel):
         meta = instance.meta
         path = meta.get('path')
         if path is not None:
+            meta['slug'] = slugify(path) or 'index'
             meta['url'] = self.get_url(request, path)
             meta['html_url'] = self.get_html_url(request, path)
 
@@ -150,6 +152,7 @@ class Content(rest.RestModel):
                     if force:
                         yield self.asset(filename)
                 else:
+                    filename = filename[:-len(ext)]
                     yield self.read(request, filename).json(request)
 
     def serialise_model(self, request, data, in_list=False, **kw):

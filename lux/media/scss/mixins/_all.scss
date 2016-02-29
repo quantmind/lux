@@ -21,3 +21,17 @@
     -webkit-transform: $transforms;
             transform: $transforms;
 }
+
+@mixin clearfix {
+  &:after {
+    content: "";
+    display: table;
+    clear: both;
+  }
+}
+
+@mixin setLinkSelectorStyle {
+    &:hover, &:active, &:visited {
+        @content;
+    }
+}

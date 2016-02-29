@@ -7,7 +7,6 @@ from collections import Mapping
 from dateutil.parser import parse as parse_date
 
 from pulsar.utils.structures import AttributeDictionary, mapping_iterator
-from pulsar.utils.pep import to_string
 
 from lux.utils import iso8601, absolute_uri
 
@@ -99,6 +98,16 @@ class ContentFile(Cacheable):
 
     def cache_key(self, app):
         return self.src
+
+    def render(self, app, context):
+        render = app.template_engine(self.meta.template_engine)
+        with open(self.src, 'r') as file:
+            template_str = file.read()
+        return render(template_str, context)
+
+
+class HtmlFile(ContentFile):
+    suffix = 'html'
 
 
 class HtmlContentFile(ContentFile):
@@ -195,17 +204,19 @@ class HtmlContentFile(ContentFile):
                 for child, value in self._flatten(value):
                     yield '%s_%s' % (key, child), value
             else:
-                yield key, self._to_string(value)
+                yield key, self._flatten_value(value)
 
-    def _to_string(self, value):
+    def _flatten_value(self, value):
         if isinstance(value, Mapping):
             raise ValueError('A dictionary found when converting to string')
         elif isinstance(value, (list, tuple)):
-            return ', '.join(self._to_string(v) for v in value)
+            return ', '.join(str(self._flatten_value(v)) for v in value)
         elif isinstance(value, date):
             return iso8601(value)
+        elif isinstance(value, URLWrapper):
+            return str(value)
         else:
-            return to_string(value)
+            return value
 
     def _render_data(self, request, value, render, context):
         if isinstance(value, Mapping):

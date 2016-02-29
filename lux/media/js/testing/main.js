@@ -62,7 +62,7 @@ define(['angular',
     function digest ($compile, $rootScope, template) {
         var scope = $rootScope.$new(),
             element = $compile(template)(scope);
-        scope.$digest();
+        scope.$apply();
         return element;
     }
 

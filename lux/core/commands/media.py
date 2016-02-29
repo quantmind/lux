@@ -59,7 +59,7 @@ class MediaBuilder:
                 paths.update(self.required_paths(name, src))
             paths.update(self.required_paths('', self.app_base()))
 
-            self.save_config_paths(paths)
+            # self.save_config_paths(paths)
         finally:
             os.chdir(current)
 

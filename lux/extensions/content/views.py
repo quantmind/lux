@@ -99,7 +99,7 @@ class TextRouter(TextRouterBase):
     @route('_links', response_content_types=('application/json',))
     def links(self, request):
         return self.model.collection_response(
-            request, sortby=['order:desc', 'title:asc'], **{'order:gt': 0})
+            request, sortby=['title:asc', 'order:desc'], **{'order:gt': 0})
 
     @route('<path:path>')
     def read(self, request):

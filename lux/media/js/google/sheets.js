@@ -1,5 +1,5 @@
 define(['angular',
-        'lux',
+        'lux/main',
         'lux/google/models'], function (angular, lux) {
     'use strict';
 

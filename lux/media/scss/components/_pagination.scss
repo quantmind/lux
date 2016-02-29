@@ -16,3 +16,25 @@
         cursor: pointer;
     }
 }
+
+.features {
+    article {
+        float:left;
+        padding: 30px;
+        width: 33.33%;
+        @include clearfix;
+    }
+}
+
+@media (max-width: $screen-sm-min) {
+    .features article {
+        width: 50%;
+    }
+}
+
+@media (max-width: $screen-xs-wide) {
+    .features article {
+        width: auto;
+        float: none;
+    }
+}

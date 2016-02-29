@@ -3,7 +3,7 @@ from itertools import chain
 from pulsar.utils.slugify import slugify
 
 from .contents import (ContentFile, HtmlContentFile, METADATA_PROCESSORS,
-                       register_reader)
+                       HtmlFile, register_reader)
 from .urlwrappers import MultiValue
 
 try:
@@ -95,6 +95,12 @@ class BaseReader(object):
             head_meta['robots'] = ['noindex', 'nofollow']
         meta['head'] = head_meta
         return body, meta
+
+
+@register_reader
+class HtmlReader(BaseReader):
+    content = HtmlFile
+    file_extensions = ['html']
 
 
 @register_reader

@@ -1,5 +1,5 @@
 define(['angular',
-        'lux',
+        'lux/main',
         'lux/page/page'], function (angular, lux) {
     'use strict';
     //
@@ -17,7 +17,7 @@ define(['angular',
                 enabled: true,
                 requireBase: false,
                 rewriteLinks: false
-            }).hashPrefix(lux.context.hashPrefix);
+            }).hashPrefix("#");
         }]);
 
     return lux;

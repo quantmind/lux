@@ -1,5 +1,5 @@
 define(['angular',
-        'lux',
+        'lux/main',
         'angular-ui-router'], function (angular, lux) {
     'use strict';
     //

@@ -1,6 +1,6 @@
 /* eslint angular/no-private-call: [2,{"allow":["$$hashKey"]}] */
 define(['angular',
-        'lux',
+        'lux/main',
         'lux/message/templates',
         'angular-sanitize'], function (angular, lux) {
     'use strict';

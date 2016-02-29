@@ -1,15 +1,13 @@
-define(['angular'], function (angular) {
+define(['angular',
+        'lux/components/scroll.change'], function (angular) {
     'use strict';
     //
     //  Hash scrolling service
-    angular.module('lux.scroll', [])
-        //
-        // Switch off scrolling managed by angular
-        //.value('$anchorScroll', angular.noop)
+    angular.module('lux.scroll', ['lux.scroll.change'])
         //
         .constant('scrollDefaults', {
-            // Time to complete the scrolling (seconds)
-            time: 1,
+            // Animation time
+            time: 500,
             // Offset relative to hash links
             offset: 0,
             // Number of frames to use in the scroll transition
@@ -23,12 +21,12 @@ define(['angular'], function (angular) {
         })
         //
         // Switch off scrolling managed by angular
-        .config(['$anchorScrollProvider', function ($anchorScrollProvider) {
-            $anchorScrollProvider.disableAutoScrolling();
-        }])
+        //.config(['$anchorScrollProvider', function ($anchorScrollProvider) {
+        //    $anchorScrollProvider.disableAutoScrolling();
+        //}])
         //
         .factory('luxScroll', ['$timeout', 'scrollDefaults', '$document',
-            '$location', '$window', '$log', scrollFactory])
+            '$location', '$window', '$log', 'currentYPosition', scrollFactory])
         //
         .run(['$rootScope', 'luxScroll', function (scope, luxScroll) {
             //
@@ -36,105 +34,75 @@ define(['angular'], function (angular) {
         }]);
 
     //
-    function scrollFactory (timer, defaults, $document, location, $window, log) {
+    function scrollFactory (timer, defaults, $document, location, $window, log, currentYPosition) {
 
         function scrollService (scope) {
             var target = null,
+                currentPosition = null,
                 scroll = angular.extend({}, defaults, scope.scroll);
 
             scroll.browser = true;
-            scroll.path = false;
-            scope.scroll = scroll;
+            scroll.path = location.path();
+            scroll.hash = location.hash();
             //
             // This is the first event triggered when the path location changes
-            scope.$on('$locationChangeSuccess', function () {
-                if (!scroll.path) {
-                    scroll.browser = true;
-                    _clear();
+            scope.$on('$locationChangeSuccess', function (e) {
+                if (scroll.path !== location.path())
+                    return;
+                var hash = location.hash();
+                if (hash !== scroll.hash) {
+                    e.preventDefault();
+                    currentPosition = currentYPosition();
+                    timer(function () {
+                        _toTarget(hash);
+                    });
                 }
             });
 
-            // Watch for path changes and check if back browser button was used
-            scope.$watch(function () {
-                return location.path();
-            }, function (newLocation, oldLocation) {
-                if (!scroll.browser) {
-                    scroll.path = newLocation !== oldLocation;
-                    if (!scroll.path)
-                        scroll.browser = true;
-                } else
-                    scroll.path = false;
+            angular.element($window).bind('scroll', function () {
+                if (currentPosition !== null) {
+                    $window.scrollTo(0, currentPosition);
+                    currentPosition = null;
+                }
             });
 
-            // Watch for hash changes
-            scope.$watch(function () {
-                return location.hash();
-            }, function (hash) {
-                if (!(scroll.path || scroll.browser))
-                    toHash(hash);
-            });
-
-            scope.$on('$viewContentLoaded', function () {
-                var hash = location.hash();
-                if (!scroll.browser)
-                    toHash(hash, 0);
-            });
-
-            return scroll;
-
-            function _finished () {
+            function _finished (stopY) {
                 // Done with it - set the hash in the location
                 // location.hash(target.attr('id'));
-                if (target.hasClass(scroll.scrollTargetClass))
-                    target.addClass(scroll.scrollTargetClassFinish);
-                target = null;
-                _clear();
+                if (target) {
+                    if (target.hasClass(scroll.scrollTargetClass))
+                        target.addClass(scroll.scrollTargetClassFinish);
+                    currentPosition = stopY;
+                    scroll.hash = target.attr('id');
+                    target = null;
+                    location.hash(scroll.hash);
+                }
             }
-
-            function _clear (delay) {
-                if (angular.isUndefined(delay)) delay = 0;
-                timer(function () {
-                    log.info('Reset scrolling');
-                    scroll.browser = false;
-                    scroll.path = false;
-                }, delay);
-            }
-
             //
-            function toHash(hash, delay) {
-                timer(function () {
-                    _toHash(hash, delay);
-                });
-            }
-
-            //
-            function _toHash(hash, delay) {
-                if (target)
-                    return;
+            function _toTarget(hash) {
                 if (!hash && !scroll.topPage)
-                    return;
+                    return _finished(null);
+
                 // set the location.hash to the id of
                 // the element you wish to scroll to.
-                if (angular.isString(hash)) {
-                    var highlight = true;
-                    if (hash.substring(0, 1) === '#')
-                        hash = hash.substring(1);
-                    if (hash)
-                        target = $document[0].getElementById(hash);
-                    else {
-                        highlight = false;
-                        target = $document[0].getElementsByTagName('body');
-                        target = target.length ? target[0] : null;
-                    }
-                    if (target) {
-                        _clearTargets();
-                        target = angular.element(target);
-                        if (highlight)
-                            target.addClass(scroll.scrollTargetClass)
-                                .removeClass(scroll.scrollTargetClassFinish);
-                        log.info('Scrolling to target #' + hash);
-                        _scrollTo(delay);
-                    }
+                var highlight = true;
+                if (hash.substring(0, 1) === '#')
+                    hash = hash.substring(1);
+                if (hash)
+                    target = $document[0].getElementById(hash);
+                else {
+                    highlight = false;
+                    target = $document[0].getElementsByTagName('body');
+                    target = target.length ? target[0] : null;
+                }
+                if (target) {
+                    _clearTargets();
+                    target = angular.element(target);
+                    if (highlight)
+                        target.addClass(scroll.scrollTargetClass)
+                            .removeClass(scroll.scrollTargetClassFinish);
+                    log.info('Scrolling to target #' + hash);
+                    _scrollTo();
                 }
             }
 
@@ -145,21 +113,18 @@ define(['angular'], function (angular) {
             }
 
             function _scrollTo(delay) {
-                var stopY = elmYPosition(target[0]) - scroll.offset;
+                var stopY = Math.max(elmYPosition(target[0]) - scroll.offset, 0);
 
                 if (delay === 0) {
-                    $window.scrollTo(0, stopY);
-                    _finished();
+                    _finished(stopY);
                 } else {
                     var startY = currentYPosition(),
-                        distance = stopY > startY ? stopY - startY : startY - stopY,
+                        distance = Math.abs(stopY - startY),
                         step = Math.round(distance / scroll.frames);
 
-                    if (delay === null || angular.isUndefined(delay)) {
-                        delay = 1000 * scroll.time / scroll.frames;
-                        if (distance < 200)
-                            delay = 0;
-                    }
+                    if (delay === null || angular.isUndefined(delay))
+                        delay = distance > 200 ? scroll.time / scroll.frames : 0;
+
                     _nextScroll(startY, delay, step, stopY);
                 }
             }
@@ -185,26 +150,9 @@ define(['angular'], function (angular) {
                     if (more)
                         _nextScroll(y2, delay, stepY, stopY);
                     else {
-                        _finished();
+                        _finished(y2);
                     }
                 }, delay);
-            }
-
-
-            function currentYPosition() {
-                // Firefox, Chrome, Opera, Safari
-                if ($window.pageYOffset) {
-                    return $window.pageYOffset;
-                }
-                // Internet Explorer 6 - standards mode
-                if ($document[0].documentElement && $document[0].documentElement.scrollTop) {
-                    return $document[0].documentElement.scrollTop;
-                }
-                // Internet Explorer 6, 7 and 8
-                if ($document[0].body.scrollTop) {
-                    return $document[0].body.scrollTop;
-                }
-                return 0;
             }
 
             /* scrollTo -
