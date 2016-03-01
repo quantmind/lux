@@ -51,14 +51,26 @@ you do not need to access user data::
 '''
 from string import Template
 
-from ..oauth import OAuth2, register_oauth
+from ..oauth import OAuth2, OAuth2Api
 
 
-@register_oauth
+class Api(OAuth2Api):
+    url = 'https://www.googleapis.com/adexchangebuyer/v1.3'
+    headers = [('content-type', 'application/json'),
+               ('x-li-format', 'json')]
+
+    def user(self):
+        url = '%s/~' % self.url
+        response = self.http.get(url, headers=self.headers)
+        response.raise_for_status()
+        return response.json()
+
+
 class Google(OAuth2):
     auth_uri = "https://accounts.google.com/o/oauth2/auth"
     token_uri = "https://accounts.google.com/o/oauth2/token"
     default_scope = ['profile', 'email']
+    fa = 'google'
 
     def on_html_document(self, request, doc):
         self.google_context(doc)

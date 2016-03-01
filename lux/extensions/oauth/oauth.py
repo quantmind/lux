@@ -1,19 +1,39 @@
 '''OAuth account handling
 '''
+from pulsar.apps import http
+from pulsar.apps.http import HttpClient
 
-__all__ = ['OAuth1', 'OAuth2', 'register_oauth']
+
+__all__ = ['OAuth1', 'OAuth2']
 
 
-class OAuth1(object):
-    '''OAuth version 1
-    '''
+Accounts = {}
+
+
+class OAuthMeta(type):
+
+    def __new__(cls, name, bases, attrs):
+        abstract = attrs.pop('abstract', False)
+        attrs['name'] = attrs.pop('name', name).lower()
+        klass = super().__new__(cls, name, bases, attrs)
+        if not abstract:
+            Accounts[klass.name] = klass
+        return klass
+
+
+class OAuth1(metaclass=OAuthMeta):
+    """Web handler for OAuth version 1
+    """
     version = 1
     auth_uri = None
     token_uri = None
-    config = []
+    fa = None
+    abstract = True
 
     def __init__(self, config):
         self.config = config or {}
+        if self.fa and 'fa' not in self.config:
+            self.config['fa'] = self.fa
 
     def available(self):
         '''Check if this Oauth handler has the correct configuration parameters
@@ -21,6 +41,9 @@ class OAuth1(object):
         return (self.config.get('key') and
                 self.config.get('secret') and
                 self.config.get('login'))
+
+    def oauth(self, **kwargs):
+        return http.OAuth1(self.config['key'], **kwargs)
 
     def on_html_document(self, request, doc):
         pass
@@ -39,7 +62,8 @@ class OAuth1(object):
         cache.add(key=owner_key, value=owner_secret, time=600)
         return oauth.authorization_url(self.auth_uri)
 
-    def access_token(self, request, data, redirect_uri=None):
+    def access_token(self, request, redirect_uri=None):
+        data = request.url_data
         oauth_token = data['oauth_token']
         cache = request.cache_server
         oauth_secret = cache.get(oauth_token)
@@ -49,10 +73,10 @@ class OAuth1(object):
                            verifier=verifier)
         return oauth.fetch_access_token(self.token_uri)
 
-    def oauth(self, **kw):
-        from requests_oauthlib import OAuth1Session
-        p = self.config
-        return OAuth1Session(p['key'], client_secret=p['secret'], **kw)
+    def check_redirect_data(self, request):
+        data = request.url_data
+        if 'error' in data:
+            raise ValueError(data.get('error_description', data['error']))
 
     def create_user(self, token, user=None):
         raise NotImplementedError
@@ -63,39 +87,80 @@ class OAuth2(OAuth1):
     '''
     version = 2
     default_scope = None
+    abstract = True
 
     def available(self):
-        if super(OAuth2, self).available():
+        if super().available():
             scope = self.config.get('scope') or self.default_scope
-            self.config['scope'] = scope
-            return bool(scope)
+            if scope:
+                self.config['scope'] = scope
+            return True
         return False
 
-    def authorization_url(self, request, redirect_uri):
+    def oauth(self, **kwargs):
+        return http.OAuth2(self.config['key'], **kwargs)
+
+    def state_key(self, request):
+        if request.cache.session:
+            return '%s:%s:state' % (request.cache.session.id, self.name)
+
+    def authorization_url(self, request, redirect_uri, state=None, **kwargs):
+        oauth = self.oauth()
+        url, state = oauth.prepare_request_uri(
+            self.auth_uri,
+            redirect_uri=redirect_uri,
+            scope=self.config.get('scope'),
+            state=state,
+            **kwargs)
+        key = self.state_key(request)
+        if key:
+            request.cache_server.set_json(key, state)
+        return url
+
+    def access_token(self, request, redirect_uri=None):
+        """Fetch the access_token
+        :param request: WSGI request
+        :param redirect_uri:
+        :return:
+        """
         oauth = self.oauth(redirect_uri=redirect_uri)
-        return oauth.authorization_url(self.auth_uri)[0]
+        key = self.state_key(request)
+        state = request.cache_server.get_json(key) if key else None
+        path = request.get('RAW_URI')
+        oauth.client.parse_request_uri_response(request.absolute_uri(path),
+                                                state=state)
+        body = oauth.client.prepare_request_body(
+            redirect_uri=redirect_uri,
+            client_secret=self.config['secret'])
+        response = request.http.post(
+            self.token_uri, data=body,
+            headers=[('content-type', 'application/x-www-form-urlencoded')])
+        response.raise_for_status()
+        return response.decode_content()
 
-    def access_token(self, request, data, redirect_uri=None):
-        oauth = self.oauth(redirect_uri=redirect_uri)
-        return oauth.fetch_token(self.token_uri,
-                                 client_secret=self.config['secret'],
-                                 code=data.get('code'))
 
-    def oauth(self, **kw):
-        from requests_oauthlib import OAuth2Session
-        p = self.config
-        return OAuth2Session(p['key'], scope=p['scope'], **kw)
+class OAuth2Api:
+    """Base class for OAuth2 Apis
+    """
+    headers = None
+    url = None
 
-
-def register_oauth(cls):
-    global Accounts
-    name = getattr(cls, 'name', None) or cls.__name__.lower()
-    Accounts[name] = cls
+    def __init__(self, http=None, access_token=None, token_type=None,
+                 expire_in=None, **kw):
+        self.http = http or HttpClient()
+        self.token = access_token
+        self.headers = self.headers.copy() if self.headers else {}
+        self.token_type = token_type or 'Bearer'
+        self.expire_in = expire_in
+        self.params = kw
+        if self.token:
+            value = '%s %s' % (self.token_type, self.token)
+            self.headers.append(('Authorization', value))
 
 
 def oauths(config):
-    '''Return a dictionary of OAuth handlers with configuration
-    '''
+    """Return a dictionary of OAuth handlers with configuration
+    """
     global Accounts
     oauths = {}
     for name, cls in Accounts.items():
@@ -103,15 +168,17 @@ def oauths(config):
     return oauths
 
 
-def get_oauths(request):
+def get_oauths(app):
+    cfg = app.config.get('OAUTH_PROVIDERS')
+    o = None
+    if isinstance(cfg, dict):
+        o = oauths(cfg)
+    return o or {}
+
+
+def request_oauths(request):
     o = request.cache.oauths
     if o is None:
-        cfg = request.config.get('OAUTH_PROVIDERS')
-        if isinstance(cfg, dict):
-            o = oauths(cfg)
-        o = o or {}
+        o = get_oauths(request.app)
         request.cache.oauths = o
     return o
-
-
-Accounts = {}

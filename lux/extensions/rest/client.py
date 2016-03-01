@@ -5,21 +5,7 @@ from pulsar import new_event_loop, isawaitable
 from pulsar.apps.http import HttpClient, JSON_CONTENT_TYPES
 from pulsar.utils.httpurl import is_absolute_uri
 
-from lux import raise_http_error
-
-
-class GreenHttp:
-
-    def __init__(self, http, pool):
-        self._http = http
-        self._pool = pool
-
-    @property
-    def headers(self):
-        return self._http.headers
-
-    def request(self, method, url, **kw):
-        return self._pool.wait(self._http.request(method, url, **kw), True)
+from lux import raise_http_error, GreenHttp
 
 
 class ApiClient:

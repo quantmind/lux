@@ -1,6 +1,7 @@
 from pulsar.apps.wsgi import Router, Json, route
+from pulsar import HttpRedirect
 
-from .oauth import get_oauths
+from .oauth import request_oauths
 
 
 def oauth_context(request, path='/oauth/'):
@@ -8,7 +9,7 @@ def oauth_context(request, path='/oauth/'):
     if user:
         oauths = []
         current = user.get_oauths()
-        for name, o in get_oauths(request).items():
+        for name, o in request_oauths(request).items():
             if o.available():
                 data = {'href': path + name,
                         'name': name,
@@ -23,7 +24,7 @@ class OAuthRouter(Router):
     '''A :class:`.Router` for the oauth authentication flow
     '''
     def _oauth(self, request):
-        return dict(((name, o) for name, o in get_oauths(request).items()
+        return dict(((name, o) for name, o in request_oauths(request).items()
                      if o.available()))
 
     @route('<name>')
@@ -32,17 +33,25 @@ class OAuthRouter(Router):
         redirect_uri = request.absolute_uri('redirect')
         p = self._oauth(request).get(name)
         authorization_url = p.authorization_url(request, redirect_uri)
-        return request.redirect(authorization_url)
+        raise HttpRedirect(authorization_url)
 
     @route('<name>/redirect')
     def oauth_redirect(self, request):
         user = request.cache.user
         name = request.urlargs['name']
         p = self._oauth(request).get(name)
-        token = p.access_token(request, request.url_data,
-                               redirect_uri=request.uri)
+        try:
+            p.check_redirect_data(request)
+            token = p.access_token(request, redirect_uri=request.uri)
+            token = dict(token)
+        except Exception as exc:
+            request.logger.exception('Could not obtain access_token')
+            url = request.config.get('LOGIN_URL', '/')
+            raise HttpRedirect(url) from exc
+
         if not user.is_authenticated():
-            user = p.create_user(token)
+            api = p.api(request.http, **token)
+            user = api.user()
             user = request.app.auth_backend.login(request, user)
         else:
             user = p.create_user(token, user)

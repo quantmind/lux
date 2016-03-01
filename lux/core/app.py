@@ -18,6 +18,7 @@ from pulsar.utils.log import lazyproperty
 from pulsar.utils.importer import module_attribute
 from pulsar.apps.data import create_store
 
+from pulsar.apps.http import HttpClient
 from lux.utils.async import GreenPubSub
 from lux import __version__
 
@@ -28,6 +29,7 @@ from .engines import template_engine
 from .cms import CMS
 from .models import ModelContainer
 from .cache import create_cache
+from .http import GreenHttp
 
 
 __all__ = ['App',
@@ -176,6 +178,7 @@ class Application(ConsoleParser, Extension, EventMixin):
     _worker = None
     _WsgiHandler = WsgiHandler
     _pubsub_store = None
+    _http = None
     _config = [
         Parameter('EXTENSIONS', [],
                   'List of extension names to use in your application. '
@@ -703,6 +706,19 @@ class Application(ConsoleParser, Extension, EventMixin):
         else:
             pubsub = self._pubsub_store.pubsub()
         return pubsub
+
+    def http(self):
+        """Get an http client for a given key
+
+        A key is used to group together clients so that bandwidths is reduced
+        If no key is provided the handler is not included in the http cache.
+        """
+        if not self._http:
+            http = HttpClient()
+            if self.green_pool:
+                http = GreenHttp(http, self.green_pool)
+            self._http = http
+        return self._http
 
     def run_in_executor(self, callable, *args):
         """Run a ``callable`` in the event loop executor

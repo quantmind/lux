@@ -1,6 +1,6 @@
 '''
 '''
-from ..oauth import OAuth1, register_oauth
+from ..oauth import OAuth1
 
 
 twitter_cards = {}
@@ -12,11 +12,11 @@ def twitter_card(cls):
     return cls
 
 
-@register_oauth
 class Twitter(OAuth1):
     auth_uri = 'https://api.twitter.com/oauth/authorize'
     request_token_uri = 'https://api.twitter.com/oauth/request_token'
     token_uri = 'https://api.twitter.com/oauth/access_token'
+    fa = 'twitter-square'
 
     def on_html_document(self, request, doc):
         card = 'summary'

@@ -1,7 +1,17 @@
-from ..oauth import OAuth2, register_oauth
+from ..oauth import OAuth2, OAuth2Api
 
 
-@register_oauth
+class Api(OAuth2Api):
+    url = 'https://api.github.com'
+    headers = [('content-type', 'application/json')]
+
+    def user(self):
+        url = '%s/user' % self.url
+        response = self.http.get(url, headers=self.headers)
+        response.raise_for_status()
+        return response.json()
+
+
 class Github(OAuth2):
     '''Github api
 
@@ -9,3 +19,6 @@ class Github(OAuth2):
     '''
     auth_uri = 'https://github.com/login/oauth/authorize'
     token_uri = 'https://github.com/login/oauth/access_token'
+    fa = 'github-square'
+
+    api = Api

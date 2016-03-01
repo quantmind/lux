@@ -27,3 +27,4 @@ from .mail import *         # noqa
 from .cache import *        # noqa
 from .exceptions import *   # noqa
 from .content import *      # noqa
+from .http import *         # noqa

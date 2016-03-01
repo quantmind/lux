@@ -73,229 +73,228 @@ define(['angular',
         })
         //
         .factory('luxGridApi', ['$window', '$lux', 'uiGridConstants', 'luxGridDefaults',
-            'luxGridDataProviders', 'luxGridColumnProcessors', createApi]);
+            'luxGridDataProviders', 'luxGridColumnProcessors',
+            function ($window, $lux, uiGridConstants, luxGridDefaults,
+                      luxGridDataProviders, luxGridColumnProcessors) {
+                //
+                //  Lux grid factory function
+                function luxGridApi(scope, element, options) {
+                    options = angular.extend({}, luxGridDefaults, options);
+                    options.onRegisterApi = onRegisterApi;
+                    options.permissions = angular.extend({
+                        create: false,
+                        update: false,
+                        delete: false
+                    }, options.permissions);
+                    //
+                    var grid = {
+                        scope: scope,
+                        options: options,
+                        uiGridConstants: uiGridConstants,
+                        element: function () {
+                            return element;
+                        },
+                        onMetadataReceived: onMetadataReceived,
+                        onDataReceived: onDataReceived,
+                        onDataError: onDataError,
+                        refreshPage: refreshPage,
+                        // Return state name (last part of the URL)
+                        getStateName: getStateName,
+                        getModelName: getModelName,
+                        wrapCell: luxGridColumnProcessors.wrapCell,
+                        getBooleanIconField: getBooleanIconField,
+                        getStringOrJsonField: getStringOrJsonField
+                    };
+                    scope.grid = grid;
+                    //
+                    grid.state = gridState(grid);
+                    grid.dataProvider = luxGridDataProviders.create(grid);
+                    grid.dataProvider.connect();
 
-
-    function createApi ($window, $lux, uiGridConstants, luxGridDefaults,
-                        luxGridDataProviders, luxGridColumnProcessors) {
-        //
-        //  Lux grid factory function
-        function luxGridApi(scope, element, options) {
-            options = angular.extend({}, luxGridDefaults, options);
-            options.onRegisterApi = onRegisterApi;
-            options.permissions = angular.extend({
-                create: false,
-                update: false,
-                delete: false
-            }, options.permissions);
-            //
-            var grid = {
-                scope: scope,
-                options: options,
-                uiGridConstants: uiGridConstants,
-                element: function () {
-                    return element;
-                },
-                onMetadataReceived: onMetadataReceived,
-                onDataReceived: onDataReceived,
-                onDataError: onDataError,
-                refreshPage: refreshPage,
-                // Return state name (last part of the URL)
-                getStateName: getStateName,
-                getModelName: getModelName,
-                wrapCell: luxGridColumnProcessors.wrapCell,
-                getBooleanIconField: getBooleanIconField,
-                getStringOrJsonField: getStringOrJsonField
-            };
-            scope.grid = grid;
-            //
-            grid.state = gridState(grid);
-            grid.dataProvider = luxGridDataProviders.create(grid);
-            grid.dataProvider.connect();
-
-            // Once metadata arrived, execute callbacks and render the grid
-            function onMetadataReceived(metadata) {
-                angular.forEach(luxGridApi.onMetadataCallbacks, function (callback) {
-                    callback(grid, metadata);
-                });
-                scope.gridOptions = grid.options;
-                $lux.renderTemplate(options.template, element, scope);
-            }
-
-            function onRegisterApi(gridApi) {
-                if (!lux._)
-                    return require(['lodash'], function (_) {
-                        lux._ = _;
-                        onRegisterApi(gridApi);
-                    });
-                grid.options = gridApi.grid.options;
-                grid.api = gridApi;
-                gridApi.lux = grid;
-                gridApi.$lux = $lux;
-                angular.forEach(luxGridApi.gridApiCallbacks, function (callback) {
-                    callback(gridApi);
-                });
-                grid.dataProvider.getPage();
-            }
-
-            function onDataReceived (data) {
-                angular.forEach(luxGridApi.onDataCallbacks, function (callback) {
-                    callback(grid, data);
-                });
-            }
-
-            function onDataError (error) {
-                angular.forEach(luxGridApi.onDataErrorCallbacks, function (callback) {
-                    callback(grid, error);
-                });
-            }
-
-            // Get specified page using params
-            function refreshPage() {
-                var query = grid.state.query();
-
-                // Add filter if available
-                if (grid.options.gridFilters)
-                    query = angular.extend(query, options.gridFilters);
-
-                grid.dataProvider.getPage(query);
-            }
-        }
-
-        luxGridApi.onMetadataCallbacks = [];
-        luxGridApi.gridApiCallbacks = [];
-        luxGridApi.onDataCallbacks = [];
-        luxGridApi.onDataErrorCallbacks = [];
-        luxGridApi.gridApiCallbacks.push(luxGridPagination);
-        luxGridApi.onMetadataCallbacks.push(modelMeta);
-        luxGridApi.onMetadataCallbacks.push(parseColumns);
-        luxGridApi.onDataCallbacks.push(parseData);
-
-        return luxGridApi;
-
-        function getStateName() {
-            return $window.location.href.split('/').pop(-1);
-        }
-
-        function getModelName() {
-            var stateName = getStateName();
-            return stateName.slice(0, -1);
-        }
-
-        // Callback for adding model metadata information
-        function modelMeta(grid, metadata) {
-            var options = grid.options;
-            if (metadata['default-limit'])
-                options.paginationPageSize = metadata['default-limit'];
-            grid.metaFields = {
-                id: metadata.id,
-                repr: metadata.repr
-            };
-            // Overwrite current permissions with permissions from metadata
-            angular.extend(grid.options.permissions, metadata.permissions);
-
-            grid.getObjectIdField = getObjectIdField;
-
-            function getObjectIdField(entity) {
-                var reprPath = grid.options.reprPath || $window.location;
-                return reprPath + '/' + entity[grid.metaFields.id];
-            }
-        }
-
-        function parseColumns(grid, metadata) {
-            var options = grid.options,
-                metaFields = grid.metaFields,
-                permissions = options.permissions,
-                columnDefs = [],
-                callback,
-                column;
-
-            angular.forEach(metadata.columns, function (col) {
-                column = {
-                    luxRemoteType: col.remoteType,
-                    field: col.name,
-                    displayName: col.displayName,
-                    type: getColumnType(col.type) || 'string',
-                    name: col.name
-                };
-
-                if (col.hasOwnProperty('hidden') && col.hidden)
-                    column.visible = false;
-
-                if (!col.hasOwnProperty('sortable'))
-                    column.enableSorting = false;
-
-                if (!col.hasOwnProperty('filter'))
-                    column.enableFiltering = false;
-
-                callback = luxGridColumnProcessors[col.type];
-                if (callback) callback(column, col, grid);
-
-                if (angular.isString(col.cellFilter)) {
-                    column.cellFilter = col.cellFilter;
-                }
-
-                if (angular.isString(col.cellTemplateName)) {
-                    column.cellTemplate = grid.wrapCell($lux.templateCache.get(col.cellTemplateName));
-                }
-
-                if (angular.isDefined(column.field) && column.field === metaFields.repr) {
-                    if (permissions.update) {
-                        // If there is an update permission then display link
-                        column.cellTemplate = grid.wrapCell('<a ng-href="{{grid.api.lux.getObjectIdField(row.entity)}}">{{COL_FIELD}}</a>');
+                    // Once metadata arrived, execute callbacks and render the grid
+                    function onMetadataReceived(metadata) {
+                        angular.forEach(luxGridApi.onMetadataCallbacks, function (callback) {
+                            callback(grid, metadata);
+                        });
+                        scope.gridOptions = grid.options;
+                        $lux.renderTemplate(options.template, element, scope);
                     }
-                    // Set repr column as the first column
-                    columnDefs.splice(0, 0, column);
+
+                    function onRegisterApi(gridApi) {
+                        if (!lux._)
+                            return require(['lodash'], function (_) {
+                                lux._ = _;
+                                onRegisterApi(gridApi);
+                            });
+                        grid.options = gridApi.grid.options;
+                        grid.api = gridApi;
+                        gridApi.lux = grid;
+                        gridApi.$lux = $lux;
+                        angular.forEach(luxGridApi.gridApiCallbacks, function (callback) {
+                            callback(gridApi);
+                        });
+                        grid.dataProvider.getPage();
+                    }
+
+                    function onDataReceived (data) {
+                        angular.forEach(luxGridApi.onDataCallbacks, function (callback) {
+                            callback(grid, data);
+                        });
+                    }
+
+                    function onDataError (error) {
+                        angular.forEach(luxGridApi.onDataErrorCallbacks, function (callback) {
+                            callback(grid, error);
+                        });
+                    }
+
+                    // Get specified page using params
+                    function refreshPage() {
+                        var query = grid.state.query();
+
+                        // Add filter if available
+                        if (grid.options.gridFilters)
+                            query = angular.extend(query, options.gridFilters);
+
+                        grid.dataProvider.getPage(query);
+                    }
                 }
-                else
-                    columnDefs.push(column);
-            });
 
+                luxGridApi.onMetadataCallbacks = [];
+                luxGridApi.gridApiCallbacks = [];
+                luxGridApi.onDataCallbacks = [];
+                luxGridApi.onDataErrorCallbacks = [];
+                luxGridApi.gridApiCallbacks.push(luxGridPagination);
+                luxGridApi.onMetadataCallbacks.push(modelMeta);
+                luxGridApi.onMetadataCallbacks.push(parseColumns);
+                luxGridApi.onDataCallbacks.push(parseData);
 
-            options.columnDefs = columnDefs;
-        }
+                return luxGridApi;
 
-        function flashClass(obj, className) {
-            obj[className] = true;
-            $lux.timeout(function() {
-                obj[className] = false;
-            }, 2000);
-        }
-
-        function parseData(grid, data) {
-            var _ = lux._,
-                result = data.result,
-                options = grid.options;
-
-            if (!angular.isArray(result))
-                return $lux.messages.error('Grid got bad data from provider');
-
-            options.totalItems = data.total || result.length;
-
-            if (data.type === 'update') {
-                grid.state.limit(data.total);
-            } else {
-                options.data = [];
-            }
-
-            angular.forEach(result, function (row) {
-                var id = grid.metaFields.id;
-                var lookup = {};
-                lookup[id] = row[id];
-
-                var index = _.findIndex(options.data, lookup);
-                if (index === -1) {
-                    options.data.push(row);
-                } else {
-                    options.data[index] = _.merge(options.data[index], row);
-                    flashClass(options.data[index], 'statusUpdated');
+                function getStateName() {
+                    return $window.location.href.split('/').pop(-1);
                 }
-            });
 
-            // Update grid height
-            updateGridHeight(grid);
-        }
-    }
+                function getModelName() {
+                    var stateName = getStateName();
+                    return stateName.slice(0, -1);
+                }
+
+                // Callback for adding model metadata information
+                function modelMeta(grid, metadata) {
+                    var options = grid.options;
+                    if (metadata['default-limit'])
+                        options.paginationPageSize = metadata['default-limit'];
+                    grid.metaFields = {
+                        id: metadata.id,
+                        repr: metadata.repr
+                    };
+                    // Overwrite current permissions with permissions from metadata
+                    angular.extend(grid.options.permissions, metadata.permissions);
+
+                    grid.getObjectIdField = getObjectIdField;
+
+                    function getObjectIdField(entity) {
+                        var reprPath = grid.options.reprPath || $window.location;
+                        return reprPath + '/' + entity[grid.metaFields.id];
+                    }
+                }
+
+                function parseColumns(grid, metadata) {
+                    var options = grid.options,
+                        metaFields = grid.metaFields,
+                        permissions = options.permissions,
+                        columnDefs = [],
+                        callback,
+                        column;
+
+                    angular.forEach(metadata.columns, function (col) {
+                        column = {
+                            luxRemoteType: col.remoteType,
+                            field: col.name,
+                            displayName: col.displayName,
+                            type: getColumnType(col.type) || 'string',
+                            name: col.name
+                        };
+
+                        if (col.hasOwnProperty('hidden') && col.hidden)
+                            column.visible = false;
+
+                        if (!col.hasOwnProperty('sortable'))
+                            column.enableSorting = false;
+
+                        if (!col.hasOwnProperty('filter'))
+                            column.enableFiltering = false;
+
+                        callback = luxGridColumnProcessors[col.type];
+                        if (callback) callback(column, col, grid);
+
+                        if (angular.isString(col.cellFilter)) {
+                            column.cellFilter = col.cellFilter;
+                        }
+
+                        if (angular.isString(col.cellTemplateName)) {
+                            column.cellTemplate = grid.wrapCell($lux.templateCache.get(col.cellTemplateName));
+                        }
+
+                        if (angular.isDefined(column.field) && column.field === metaFields.repr) {
+                            if (permissions.update) {
+                                // If there is an update permission then display link
+                                column.cellTemplate = grid.wrapCell('<a ng-href="{{grid.api.lux.getObjectIdField(row.entity)}}">{{COL_FIELD}}</a>');
+                            }
+                            // Set repr column as the first column
+                            columnDefs.splice(0, 0, column);
+                        }
+                        else
+                            columnDefs.push(column);
+                    });
+
+
+                    options.columnDefs = columnDefs;
+                }
+
+                function flashClass(obj, className) {
+                    obj[className] = true;
+                    $lux.timeout(function() {
+                        obj[className] = false;
+                    }, 2000);
+                }
+
+                function parseData(grid, data) {
+                    var _ = lux._,
+                        result = data.result,
+                        options = grid.options;
+
+                    if (!angular.isArray(result))
+                        return $lux.messages.error('Grid got bad data from provider');
+
+                    options.totalItems = data.total || result.length;
+
+                    if (data.type === 'update') {
+                        grid.state.limit(data.total);
+                    } else {
+                        options.data = [];
+                    }
+
+                    angular.forEach(result, function (row) {
+                        var id = grid.metaFields.id;
+                        var lookup = {};
+                        lookup[id] = row[id];
+
+                        var index = _.findIndex(options.data, lookup);
+                        if (index === -1) {
+                            options.data.push(row);
+                        } else {
+                            options.data[index] = _.merge(options.data[index], row);
+                            flashClass(options.data[index], 'statusUpdated');
+                        }
+                    });
+
+                    // Update grid height
+                    updateGridHeight(grid);
+                }
+            }]
+        );
 
     // Return column type according to type
     function getColumnType(type) {

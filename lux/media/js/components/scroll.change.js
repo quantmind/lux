@@ -1,6 +1,7 @@
 define(['angular',
         'lux/main'], function (angular, lux) {
     'use strict';
+
     //
     angular.module('lux.scroll.change', [])
         //
@@ -8,7 +9,26 @@ define(['angular',
             distance: 200
         })
         //
-        .factory('currentYPosition', ['$window', '$document', currentYPosition])
+        .factory('currentYPosition', ['$window', '$document',
+            function ($window, $document) {
+
+                return function () {
+                    // Firefox, Chrome, Opera, Safari
+                    if ($window.pageYOffset) {
+                        return $window.pageYOffset;
+                    }
+                    // Internet Explorer 6 - standards mode
+                    if ($document[0].documentElement && $document[0].documentElement.scrollTop) {
+                        return $document[0].documentElement.scrollTop;
+                    }
+                    // Internet Explorer 6, 7 and 8
+                    if ($document[0].body.scrollTop) {
+                        return $document[0].body.scrollTop;
+                    }
+                    return 0;
+                };
+            }]
+        )
         //
         .directive('scrollChange', ['$window', 'currentYPosition', 'scrollChangeDefaults',
             function ($window, currentYPosition, scrollChangeDefaults) {
@@ -38,23 +58,4 @@ define(['angular',
             }]
         );
 
-
-    function currentYPosition($window, $document) {
-
-        return function () {
-            // Firefox, Chrome, Opera, Safari
-            if ($window.pageYOffset) {
-                return $window.pageYOffset;
-            }
-            // Internet Explorer 6 - standards mode
-            if ($document[0].documentElement && $document[0].documentElement.scrollTop) {
-                return $document[0].documentElement.scrollTop;
-            }
-            // Internet Explorer 6, 7 and 8
-            if ($document[0].body.scrollTop) {
-                return $document[0].body.scrollTop;
-            }
-            return 0;
-        };
-    }
 });

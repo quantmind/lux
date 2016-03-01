@@ -43,6 +43,7 @@ class User(Model, UserMixin):
     active = Column(Boolean)
     superuser = Column(Boolean)
     joined = Column(DateTime, default=datetime.utcnow)
+    info = Column(JSONType)
     tokens = relationship('Token', backref='user')
 
     def __repr__(self):

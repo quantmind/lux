@@ -49,8 +49,14 @@ class WsgiRequest(wsgi.WsgiRequest):
     @property
     def logger(self):
         """Shortcut to app logger
+
+        Allow for injection in the cache dictionary (testing)
         """
-        return self.cache.app.logger
+        return self.cache.logger or self.cache.app.logger
+
+    @property
+    def http(self):
+        return self.cache.http or self.cache.app.http()
 
     @property
     def cache_server(self):
@@ -66,16 +72,17 @@ class WsgiRequest(wsgi.WsgiRequest):
     def scheme(self):
         """Protocol scheme, one of ``http`` and ``https``
         """
+        secure = self.environ.get('HTTPS') == 'on'
         HEADER = self.config['SECURE_PROXY_SSL_HEADER']
-        if HEADER:
+        if not secure and HEADER:
             try:
                 header, value = HEADER
             except ValueError:
                 raise ImproperlyConfigured(
                     'The SECURE_PROXY_SSL_HEADER setting must be a tuple '
                     'containing two values.')
-            return 'https' if self.environ.get(header) == value else 'http'
-        return self.environ.get('HTTPS') == 'on'
+            secure = self.environ.get(header) == value
+        return 'https' if secure else 'http'
 
     @property
     def is_secure(self):

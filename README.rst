@@ -38,6 +38,7 @@ Python Requirements
 * sqlalchemy_ and pulsar-odm_ used by ``lux.extensions.odm``
 * pyjwt_ used by some authentication backends in ``lux.extensions.rest``
 * markdown_
+* oauthlib_ for OAuth
 
 
 Testing
@@ -62,6 +63,7 @@ For testing postgreSQL create a new role::
 .. _nodejs: http://nodejs.org/
 .. _grunt: http://gruntjs.com/
 .. _markdown: https://pypi.python.org/pypi/Markdown
+.. _oauthlib: https://oauthlib.readthedocs.org/en/latest/
 .. _sphinx: http://sphinx-doc.org/
 .. _`grunt-html2js`: https://github.com/karlgoldstein/grunt-html2js
 .. _lux.js: https://raw.githubusercontent.com/quantmind/lux/master/lux/media/lux/lux.js

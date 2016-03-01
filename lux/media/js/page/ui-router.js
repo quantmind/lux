@@ -10,78 +10,6 @@ define(['angular',
     //  Python implementation in the lux.extensions.angular Extension
     //
     //
-    //  Lux State Provider
-    //	========================
-    //
-    //	Complements the lux server and angular ui.router
-    function LuxStateProvider($stateProvider, $urlRouterProvider) {
-
-        var states = lux.context.states,
-            pages = lux.context.pages;
-
-        //
-        //  Use this function to add/override the state
-        //  configuration of state ``name``.
-        //  * name, name of the state to add/update
-        //  * config, object or function returning an object.
-        this.state = function (name, config) {
-            if (pages) {
-                var page = pages[name];
-
-                page || (page = {});
-
-                if (angular.isFunction(config))
-                    config = config(page);
-
-                pages[name] = angular.extend(page, config);
-            }
-
-            return this;
-        };
-
-        //
-        //  Setup $stateProvider
-        //  =========================
-        //
-        //  This method should be called by the application, once it has setup
-        //  all the states via the ``state`` method.
-        this.setup = function () {
-            //
-            if (pages) {
-                angular.forEach(states, function (name) {
-                    var page = pages[name];
-                    // Redirection
-                    if (page.redirectTo)
-                        $urlRouterProvider.when(page.url, page.redirectTo);
-                    else {
-                        if (!name) name = 'home';
-
-                        if (page.resolveTemplate) {
-                            delete page.resolveTemplate;
-                            var templateUrl = page.templateUrl;
-
-                            page.templateUrl = function ($stateParams) {
-                                var url = templateUrl;
-                                angular.forEach($stateParams, function (value, name) {
-                                    url = url.replace(':' + name, value);
-                                });
-                                return url;
-                            };
-                        }
-
-                        $stateProvider.state(name, page);
-                    }
-                });
-            }
-        };
-
-        this.$get = function () {
-
-            return {};
-        };
-    }
-
-
     angular.module('lux.ui.router', ['lux.page', 'ui.router'])
         //
         .run(['$rootScope', '$state', '$stateParams', function (scope, $state, $stateParams) {
@@ -91,7 +19,74 @@ define(['angular',
             scope.$stateParams = $stateParams;
         }])
         //
-        .provider('luxState', ['$stateProvider', '$urlRouterProvider', LuxStateProvider])
+        .provider('luxState', ['$stateProvider', '$urlRouterProvider',
+            function ($stateProvider, $urlRouterProvider) {
+
+                var states = lux.context.states,
+                    pages = lux.context.pages;
+
+                //
+                //  Use this function to add/override the state
+                //  configuration of state ``name``.
+                //  * name, name of the state to add/update
+                //  * config, object or function returning an object.
+                this.state = function (name, config) {
+                    if (pages) {
+                        var page = pages[name];
+
+                        page || (page = {});
+
+                        if (angular.isFunction(config))
+                            config = config(page);
+
+                        pages[name] = angular.extend(page, config);
+                    }
+
+                    return this;
+                };
+
+                //
+                //  Setup $stateProvider
+                //  =========================
+                //
+                //  This method should be called by the application, once it has setup
+                //  all the states via the ``state`` method.
+                this.setup = function () {
+                    //
+                    if (pages) {
+                        angular.forEach(states, function (name) {
+                            var page = pages[name];
+                            // Redirection
+                            if (page.redirectTo)
+                                $urlRouterProvider.when(page.url, page.redirectTo);
+                            else {
+                                if (!name) name = 'home';
+
+                                if (page.resolveTemplate) {
+                                    delete page.resolveTemplate;
+                                    var templateUrl = page.templateUrl;
+
+                                    page.templateUrl = function ($stateParams) {
+                                        var url = templateUrl;
+                                        angular.forEach($stateParams, function (value, name) {
+                                            url = url.replace(':' + name, value);
+                                        });
+                                        return url;
+                                    };
+                                }
+
+                                $stateProvider.state(name, page);
+                            }
+                        });
+                    }
+                };
+
+                this.$get = function () {
+
+                    return {};
+                };
+            }]
+        )
         //
         .config(['$document', '$locationProvider', function ($document, $locationProvider) {
             //

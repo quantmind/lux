@@ -133,7 +133,7 @@ class TestClient:
                 body = json.dumps(body).encode('utf-8')
 
         request = self.app.wsgi_request(path=path, headers=heads, body=body,
-                                        extra=extra)
+                                        **extra)
         start_response = mock.MagicMock()
         return request, start_response
 
@@ -329,7 +329,7 @@ class AppTestCase(unittest.TestCase, TestMixin):
         # Create the application
         cls.dbs = {}
         cls.app = cls.create_test_application()
-        cls.client = TestClient(cls.app)
+        cls.client = cls.get_client()
         if hasattr(cls.app, 'odm'):
             # Store the original odm for removing the new databases
             cls.odm = cls.app.odm
@@ -339,6 +339,10 @@ class AppTestCase(unittest.TestCase, TestMixin):
     def tearDownClass(cls):
         if cls.odm:
             return cls.dropdb()
+
+    @classmethod
+    def get_client(cls):
+        return TestClient(cls.app)
 
     @classmethod
     def create_test_application(cls):

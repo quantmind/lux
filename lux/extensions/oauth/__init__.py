@@ -29,7 +29,7 @@ from pulsar.utils.httpurl import is_succesful
 import lux
 from lux import Parameter
 
-from .oauth import get_oauths
+from .oauth import get_oauths, request_oauths
 from .ogp import OGP
 from .views import OAuthRouter, oauth_context
 
@@ -43,9 +43,6 @@ _import('amazon', 'dropbox', 'facebook', 'github', 'google', 'linkedin',
         'twitter')
 
 
-__all__ = ['OAuthRouter', 'OGP', 'get_oauths']
-
-
 class Extension(lux.Extension):
 
     _config = [Parameter('OAUTH_PROVIDERS', None,
@@ -56,6 +53,11 @@ class Extension(lux.Extension):
                Parameter('CANONICAL_URL', True,
                          'Add canonical meta tag to website. '
                          'Can be a function or False')]
+
+    def middleware(self, app):
+        for auth in get_oauths(app).values():
+            if auth.available():
+                return [OAuthRouter('oauth')]
 
     def on_html_document(self, app, request, doc):
         if not is_succesful(request.response.status_code):
@@ -77,7 +79,7 @@ class Extension(lux.Extension):
                 doc.meta['og:url'] = canonical
             doc.meta['og:locale'] = app.config['LOCALE']
             doc.meta['og:site_name'] = app.config['APP_NAME']
-            oauths = get_oauths(request)
+            oauths = request_oauths(request)
             if oauths:
                 for provider in oauths.values():
                     provider.on_html_document(request, doc)
