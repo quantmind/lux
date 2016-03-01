@@ -86,7 +86,7 @@ class WsClient:
                            data=dict(socket_id=self.session_id,
                                      time=self.started))
 
-    def on_message(self, message):
+    async def on_message(self, message):
         """Handle a new message in the websocket
         """
         try:
@@ -100,7 +100,7 @@ class WsClient:
             if not isinstance(data, dict):
                 raise ProtocolError('Malformed data; expected dict, '
                                     'got %s' % type(data).__name__)
-            yield from self.rpc(data)
+            await self.rpc(data)
         except ProtocolError as exc:
             self.logger.error('Protocol error: %s', str(exc))
         except Exception:

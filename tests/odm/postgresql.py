@@ -18,14 +18,14 @@ class TestPostgreSqlBase(test.AppTestCase):
                                  first_name='Pippo',
                                  **cls.su_credentials)
 
-    def _token(self, credentials=None):
+    async def _token(self, credentials=None):
         '''Create an authentication token
         '''
         if credentials is None:
             credentials = self.su_credentials
-        request = yield from self.client.post('/authorizations',
-                                              content_type='application/json',
-                                              body=credentials)
+        request = await self.client.post('/authorizations',
+                                         content_type='application/json',
+                                         body=credentials)
         response = request.response
         self.assertEqual(response.status_code, 201)
         user = request.cache.user
@@ -34,12 +34,12 @@ class TestPostgreSqlBase(test.AppTestCase):
         self.assertTrue('token' in data)
         return data['token']
 
-    def _create_task(self, token, subject='This is a task', person=None,
-                     **data):
+    async def _create_task(self, token, subject='This is a task', person=None,
+                           **data):
         data['subject'] = subject
         if person:
             data['assigned'] = person['id']
-        request = yield from self.client.post(
+        request = await self.client.post(
             '/tasks', body=data, token=token,
             content_type='application/json')
         response = request.response
@@ -51,8 +51,8 @@ class TestPostgreSqlBase(test.AppTestCase):
         self.assertTrue('created' in data)
         return data
 
-    def _get_task(self, token, id):
-        request = yield from self.client.get(
+    async def _get_task(self, token, id):
+        request = await self.client.get(
             '/tasks/{}'.format(id),
             token=token)
         response = request.response
@@ -62,16 +62,16 @@ class TestPostgreSqlBase(test.AppTestCase):
         self.assertTrue('id' in data)
         return data
 
-    def _delete_task(self, token, id):
-        request = yield from self.client.delete(
+    async def _delete_task(self, token, id):
+        request = await self.client.delete(
             '/tasks/{}'.format(id),
             token=token)
         response = request.response
         self.assertEqual(response.status_code, 204)
 
-    def _create_person(self, token, username, name=None):
+    async def _create_person(self, token, username, name=None):
         name = name or username
-        request = yield from self.client.post(
+        request = await self.client.post(
             '/people',
             body={'username': username, 'name': name},
             token=token,
@@ -84,8 +84,8 @@ class TestPostgreSqlBase(test.AppTestCase):
         self.assertEqual(data['name'], name)
         return data
 
-    def _update_person(self, token, id, username=None, name=None):
-        request = yield from self.client.post(
+    async def _update_person(self, token, id, username=None, name=None):
+        request = await self.client.post(
             '/people/{}'.format(id),
             body={'username': username, 'name': name},
             token=token,
@@ -102,8 +102,8 @@ class TestPostgreSqlBase(test.AppTestCase):
 
 class TestPostgreSql(TestPostgreSqlBase):
 
-    def test_odm(self):
-        tables = yield from self.app.odm.tables()
+    async def test_odm(self):
+        tables = await self.app.odm.tables()
         self.assertTrue(tables)
         self.assertEqual(len(tables), 1)
         self.assertEqual(len(tables[0][1]), 10)
@@ -138,8 +138,8 @@ class TestPostgreSql(TestPostgreSqlBase):
         self.assertEqual(user.first_name, 'Luca')
         self.assertFalse(user.is_superuser())
 
-    def test_get_tasks(self):
-        request = yield from self.client.get('/tasks')
+    async def test_get_tasks(self):
+        request = await self.client.get('/tasks')
         response = request.response
         self.assertEqual(response.status_code, 200)
         data = self.json(response)
@@ -147,9 +147,9 @@ class TestPostgreSql(TestPostgreSqlBase):
         result = data['result']
         self.assertIsInstance(result, list)
 
-    def test_get_tasks_multi(self):
+    async def test_get_tasks_multi(self):
         url = '/tasks?id=1&id=2&id=3'
-        request = yield from self.client.get(url)
+        request = await self.client.get(url)
         response = request.response
         self.assertEqual(response.status_code, 200)
         data = self.json(response)
@@ -157,8 +157,8 @@ class TestPostgreSql(TestPostgreSqlBase):
         result = data['result']
         self.assertIsInstance(result, list)
 
-    def test_metadata(self):
-        request = yield from self.client.get('/tasks/metadata')
+    async def test_metadata(self):
+        request = await self.client.get('/tasks/metadata')
         response = request.response
         self.assertEqual(response.status_code, 200)
         data = self.json(response)
@@ -167,15 +167,15 @@ class TestPostgreSql(TestPostgreSqlBase):
         self.assertIsInstance(columns, list)
         self.assertEqual(len(columns), 7)
 
-    def test_create_task(self):
-        token = yield from self._token()
-        yield from self._create_task(token)
+    async def test_create_task(self):
+        token = await self._token()
+        await self._create_task(token)
 
-    def test_update_task(self):
-        token = yield from self._token()
-        task = yield from self._create_task(token, 'This is another task')
+    async def test_update_task(self):
+        token = await self._token()
+        task = await self._create_task(token, 'This is another task')
         # Update task
-        request = yield from self.client.post(
+        request = await self.client.post(
             '/tasks/%d' % task['id'],
             body={'done': True},
             content_type='application/json')
@@ -184,7 +184,7 @@ class TestPostgreSql(TestPostgreSqlBase):
         self.assertEqual(response.status_code, 403)
         #
         # Update task
-        request = yield from self.client.post(
+        request = await self.client.post(
             '/tasks/%d' % task['id'],
             body={'done': True}, token=token,
             content_type='application/json')
@@ -195,34 +195,34 @@ class TestPostgreSql(TestPostgreSqlBase):
         self.assertEqual(data['id'], task['id'])
         self.assertEqual(data['done'], True)
         #
-        request = yield from self.client.get('/tasks/%d' % task['id'])
+        request = await self.client.get('/tasks/%d' % task['id'])
         response = request.response
         self.assertEqual(response.status_code, 200)
         self.assertEqual(data['id'], task['id'])
         self.assertEqual(data['done'], True)
 
-    def test_delete_task(self):
-        token = yield from self._token()
-        task = yield from self._create_task(token, 'A task to be deleted')
+    async def test_delete_task(self):
+        token = await self._token()
+        task = await self._create_task(token, 'A task to be deleted')
         # Delete task
-        request = yield from self.client.delete('/tasks/%d' % task['id'])
+        request = await self.client.delete('/tasks/%d' % task['id'])
         response = request.response
         self.assertEqual(response.status_code, 403)
         # Delete task
-        request = yield from self.client.delete('/tasks/%d' % task['id'],
-                                                token=token)
+        request = await self.client.delete('/tasks/%d' % task['id'],
+                                           token=token)
         response = request.response
         self.assertEqual(response.status_code, 204)
         #
-        request = yield from self.client.get('/tasks/%d' % task['id'])
+        request = await self.client.get('/tasks/%d' % task['id'])
         response = request.response
         self.assertEqual(response.status_code, 404)
 
-    def test_sortby(self):
-        token = yield from self._token()
-        yield from self._create_task(token, 'We want to sort 1')
-        yield from self._create_task(token, 'We want to sort 2')
-        request = yield from self.client.get('/tasks?sortby=created')
+    async def test_sortby(self):
+        token = await self._token()
+        await self._create_task(token, 'We want to sort 1')
+        await self._create_task(token, 'We want to sort 2')
+        request = await self.client.get('/tasks?sortby=created')
         data = self.json(request.response, 200)
         self.assertIsInstance(data, dict)
         result = data['result']
@@ -232,7 +232,7 @@ class TestPostgreSql(TestPostgreSqlBase):
             dt2 = parse(task2['created'])
             self.assertTrue(dt2 > dt1)
         #
-        request = yield from self.client.get('/tasks?sortby=created:desc')
+        request = await self.client.get('/tasks?sortby=created:desc')
         response = request.response
         self.assertEqual(response.status_code, 200)
         data = self.json(response)
@@ -244,52 +244,52 @@ class TestPostgreSql(TestPostgreSqlBase):
             dt2 = parse(task2['created'])
             self.assertTrue(dt2 < dt1)
 
-    def test_sortby_non_existent(self):
-        token = yield from self._token()
-        yield from self._create_task(token, 'a task')
-        yield from self._create_task(token, 'another task')
-        request = yield from self.client.get('/tasks?sortby=fgjsdgj')
+    async def test_sortby_non_existent(self):
+        token = await self._token()
+        await self._create_task(token, 'a task')
+        await self._create_task(token, 'another task')
+        request = await self.client.get('/tasks?sortby=fgjsdgj')
         data = self.json(request.response, 200)
         result = data['result']
         self.assertIsInstance(result, list)
 
-    def test_relationship_field(self):
-        token = yield from self._token()
-        person = yield from self._create_person(token, 'spiderman')
-        task = yield from self._create_task(token, 'climb a wall a day',
-                                            person)
+    async def test_relationship_field(self):
+        token = await self._token()
+        person = await self._create_person(token, 'spiderman')
+        task = await self._create_task(token, 'climb a wall a day',
+                                       person)
         self.assertTrue('assigned' in task)
 
-    def test_relationship_field_failed(self):
-        token = yield from self._token()
+    async def test_relationship_field_failed(self):
+        token = await self._token()
         data = {'subject': 'climb a wall a day',
                 'assigned': 6868897}
-        request = yield from self.client.post('/tasks', body=data,
-                                              token=token,
-                                              content_type='application/json')
+        request = await self.client.post('/tasks', body=data,
+                                         token=token,
+                                         content_type='application/json')
         self.assertValidationError(request.response, 'assigned',
                                    'Invalid person')
 
-    def test_unique_field(self):
-        token = yield from self._token()
-        yield from self._create_person(token, 'spiderman1', 'luca')
+    async def test_unique_field(self):
+        token = await self._token()
+        await self._create_person(token, 'spiderman1', 'luca')
         data = dict(username='spiderman1', name='john')
-        request = yield from self.client.post('/people', body=data,
-                                              token=token,
-                                              content_type='application/json')
+        request = await self.client.post('/people', body=data,
+                                         token=token,
+                                         content_type='application/json')
         self.assertValidationError(request.response, 'username',
                                    'spiderman1 not available')
 
-    def test_unique_field_update_fail(self):
+    async def test_unique_field_update_fail(self):
         """
         Tests that it's not possible to update a unique field of an
         existing record to that of another
         """
-        token = yield from self._token()
-        yield from self._create_person(token, 'spiderfail1', 'luca')
-        data = yield from self._create_person(token, 'spiderfail2', 'luca')
+        token = await self._token()
+        await self._create_person(token, 'spiderfail1', 'luca')
+        data = await self._create_person(token, 'spiderfail2', 'luca')
 
-        request = yield from self.client.post(
+        request = await self.client.post(
             '/people/{}'.format(data['id']),
             body={'username': 'spiderfail1', 'name': 'luca'},
             token=token,
@@ -298,26 +298,26 @@ class TestPostgreSql(TestPostgreSqlBase):
         self.assertValidationError(response, 'username',
                                    'spiderfail1 not available')
 
-    def test_unique_field_update_unchanged(self):
+    async def test_unique_field_update_unchanged(self):
         """
         Tests that an update of an existing model instance works if the the
         unique field hasn't changed
         """
-        token = yield from self._token()
-        data = yield from self._create_person(token, 'spiderstale1', 'luca')
-        yield from self._update_person(token, data['id'], 'spiderstale1',
-                                       'lucachanged')
+        token = await self._token()
+        data = await self._create_person(token, 'spiderstale1', 'luca')
+        await self._update_person(token, data['id'], 'spiderstale1',
+                                  'lucachanged')
 
-    def test_enum_field(self):
-        token = yield from self._token()
-        data = yield from self._create_task(token, enum_field='opt1')
+    async def test_enum_field(self):
+        token = await self._token()
+        data = await self._create_task(token, enum_field='opt1')
         self.assertEqual(data['enum_field'], 'opt1')
-        data = yield from self._get_task(token, id=data['id'])
+        data = await self._get_task(token, id=data['id'])
         self.assertEqual(data['enum_field'], 'opt1')
 
-    def test_enum_field_fail(self):
-        token = yield from self._token()
-        request = yield from self.client.post(
+    async def test_enum_field_fail(self):
+        token = await self._token()
+        request = await self.client.post(
             '/tasks',
             body={'enum_field': 'opt3'},
             token=token,
@@ -326,46 +326,46 @@ class TestPostgreSql(TestPostgreSqlBase):
         self.assertValidationError(response, 'enum_field',
                                    'opt3 is not a valid choice')
 
-    def test_metadata_custom(self):
-        request = yield from self.client.get('/users/metadata',
-                                             content_type='application/json')
+    async def test_metadata_custom(self):
+        request = await self.client.get('/users/metadata',
+                                        content_type='application/json')
         response = request.response
         self.assertEqual(response.status_code, 200)
         data = self.json(response)
         columns = data['columns']
         self.assertEqual(len(columns), 8)
 
-    def test_preflight_request(self):
-        request = yield from self.client.options('/users')
+    async def test_preflight_request(self):
+        request = await self.client.options('/users')
         response = request.response
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response['Access-Control-Allow-Methods'],
                          'GET, POST, DELETE')
-        token = yield from self._token()
-        task = yield from self._create_task(token, 'testing preflight on id')
-        request = yield from self.client.options('/tasks/%s' % task['id'])
+        token = await self._token()
+        task = await self._create_task(token, 'testing preflight on id')
+        request = await self.client.options('/tasks/%s' % task['id'])
         response = request.response
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response['Access-Control-Allow-Methods'],
                          'GET, POST, DELETE')
 
-    def test_head_request(self):
-        request = yield from self.client.head('/tasks/8676097')
+    async def test_head_request(self):
+        request = await self.client.head('/tasks/8676097')
         response = request.response
         self.assertEqual(response.status_code, 404)
         self.assertFalse(response.content)
-        token = yield from self._token()
-        task = yield from self._create_task(token, 'testing head request')
-        request = yield from self.client.head('/tasks/%s' % task['id'])
+        token = await self._token()
+        task = await self._create_task(token, 'testing head request')
+        request = await self.client.head('/tasks/%s' % task['id'])
         response = request.response
         self.assertEqual(response.status_code, 200)
         self.assertFalse(response.content)
 
-    def test_filter(self):
-        token = yield from self._token()
-        yield from self._create_task(token, 'A done task', done=True)
-        yield from self._create_task(token, 'a not done task')
-        request = yield from self.client.get('/tasks?done=1')
+    async def test_filter(self):
+        token = await self._token()
+        await self._create_task(token, 'A done task', done=True)
+        await self._create_task(token, 'a not done task')
+        request = await self.client.get('/tasks?done=1')
         data = self.json(request.response, 200)
         result = data['result']
         self.assertIsInstance(result, list)
@@ -373,7 +373,7 @@ class TestPostgreSql(TestPostgreSqlBase):
         for task in result:
             self.assertEqual(task['done'], True)
 
-        request = yield from self.client.get('/tasks?done=0')
+        request = await self.client.get('/tasks?done=0')
         response = request.response
         self.assertEqual(response.status_code, 200)
         data = self.json(response)
@@ -392,21 +392,21 @@ class TestPostgreSql(TestPostgreSqlBase):
         self.assertEqual(attrs.get('multiple'), True)
         self.assertEqual(attrs.get('label'), 'Test book')
 
-    def test_limit(self):
-        token = yield from self._token()
-        yield from self._create_task(token, 'whatever')
-        yield from self._create_task(token, 'do everything')
-        request = yield from self.client.get('/tasks?limit=-1')
+    async def test_limit(self):
+        token = await self._token()
+        await self._create_task(token, 'whatever')
+        await self._create_task(token, 'do everything')
+        request = await self.client.get('/tasks?limit=-1')
         data = self.json(request.response, 200)
         result = data['result']
         self.assertIsInstance(result, list)
         self.assertTrue(len(result) >= 2)
-        request = yield from self.client.get('/tasks?limit=-1&offset=-89')
+        request = await self.client.get('/tasks?limit=-1&offset=-89')
         data = self.json(request.response, 200)
         result = data['result']
         self.assertIsInstance(result, list)
         self.assertTrue(len(result) >= 2)
-        request = yield from self.client.get('/tasks?limit=sdc&offset=hhh')
+        request = await self.client.get('/tasks?limit=sdc&offset=hhh')
         data = self.json(request.response, 200)
         result = data['result']
         self.assertIsInstance(result, list)

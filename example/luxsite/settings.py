@@ -4,7 +4,6 @@ SITE_URL = 'http://quantmind.github.io/lux'
 EXTENSIONS = ('lux.extensions.base',
               'lux.extensions.angular',
               'lux.extensions.oauth',
-              'lux.extensions.code',
               'lux.extensions.rest',
               'lux.extensions.ui',
               'lux.extensions.content')

@@ -9,7 +9,7 @@ from unittest import mock
 from urllib.parse import urlparse, urlunparse
 from io import StringIO
 
-from pulsar import get_event_loop
+from pulsar import get_event_loop, as_coroutine
 from pulsar.utils.httpurl import (Headers, encode_multipart_formdata,
                                   ENCODE_BODY_METHODS)
 from pulsar.utils.string import random_string
@@ -137,9 +137,9 @@ class TestClient:
         start_response = mock.MagicMock()
         return request, start_response
 
-    def request(self, method, path, **params):
+    async def request(self, method, path, **params):
         request, sr = self.request_start_response(method, path, **params)
-        yield from self.app(request.environ, sr)
+        await self.app(request.environ, sr)
         return request
 
     def get(self, path=None, **extra):
@@ -414,9 +414,9 @@ class WebApiTestCase(AppTestCase):
     web_config_file = None
 
     @classmethod
-    def setUpClass(cls):
+    async def setUpClass(cls):
         assert cls.web_config_file, "no web_config_file specified"
-        yield from super().setUpClass()
+        await as_coroutine(super().setUpClass())
         cls.web = test_app(cls, config_file=cls.web_config_file,
                            config_params=False)
         api = cls.web.api

@@ -11,10 +11,9 @@ from .html import HtmlMixin
 class AuthUtils:
 
     # INTERNALS
-    def _create_objective(self, token, subject='My objective',
-                          **data):
+    async def _create_objective(self, token, subject='My objective', **data):
         data['subject'] = subject
-        request = yield from self.client.post(
+        request = await self.client.post(
             '/objectives', body=data, token=token,
             content_type='application/json')
         response = request.response
@@ -26,7 +25,7 @@ class AuthUtils:
         self.assertTrue('created' in data)
         return data
 
-    def _new_credentials(self):
+    async def _new_credentials(self):
         username = test.randomname()
         password = test.randomname()
 
@@ -36,31 +35,29 @@ class AuthUtils:
         }
 
         email = '%s@%s.com' % (username, test.randomname())
-        user = yield from self.create_superuser(username,
-                                                email,
-                                                password)
+        user = await self.create_superuser(username, email, password)
         self.assertEqual(user.username, username)
         self.assertNotEqual(user.password, password)
         return credentials
 
-    def _token(self, credentials=None):
+    async def _token(self, credentials=None):
         '''Return a token for a new superuser
         '''
         if credentials is None:
-            credentials = yield from self._new_credentials()
+            credentials = await self._new_credentials()
 
         # Get new token
-        request = yield from self.client.post('/authorizations',
-                                              content_type='application/json',
-                                              body=credentials)
+        request = await self.client.post('/authorizations',
+                                         content_type='application/json',
+                                         body=credentials)
         user = request.cache.user
         self.assertFalse(user.is_authenticated())
         data = self.json(request.response, 201)
         self.assertTrue('token' in data)
         return data['token']
 
-    def _signup(self):
-        request = yield from self.client.get('/signup')
+    async def _signup(self):
+        request = await self.client.get('/signup')
         self.html(request.response, 200)
         username = test.randomname(prefix='u-')
         password = test.randomname()
@@ -69,9 +66,9 @@ class AuthUtils:
                 'password': password,
                 'password_repeat': password,
                 'email': email}
-        request = yield from self.client.post('/authorizations/signup',
-                                              body=data,
-                                              content_type='application/json')
+        request = await self.client.post('/authorizations/signup',
+                                         body=data,
+                                         content_type='application/json')
         return self.json(request.response, 201)
 
     def _get_registration(self, email):

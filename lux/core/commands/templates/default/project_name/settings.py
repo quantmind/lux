@@ -16,7 +16,6 @@ SESSION_COOKIE_NAME = '$project_name'
 
 EXTENSIONS = ['lux.extensions.base',
               'lux.extensions.ui',
-              'lux.extensions.code',
               'lux.extensions.rest',
               'lux.extensions.admin',
               'lux.extensions.angular',

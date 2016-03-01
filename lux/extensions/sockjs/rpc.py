@@ -42,7 +42,7 @@ class WsRpc:
             error['data'] = data
         self.write(request_id, error=error)
 
-    def __call__(self, data):
+    async def __call__(self, data):
         request_id = data.get('id')
         try:
             if 'method' in data:
@@ -55,7 +55,7 @@ class WsRpc:
                 #
                 request = RpcWsMethodRequest(self, request_id,
                                              data.get('params'))
-                result = yield from maybe_green(self.ws.app, handler, request)
+                result = await maybe_green(self.ws.app, handler, request)
                 self.write(request_id, result)
             else:
                 raise rpc.InvalidRequest('Method not available')

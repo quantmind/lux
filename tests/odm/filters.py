@@ -25,55 +25,54 @@ class TestFiltersPsql(TestPostgreSqlBase):
             session.add(cls.pluto)
             session.add(cls.earth)
 
-    def test_notequals(self):
-        request = yield from self.client.get('/tasks?desc:ne=abu')
+    async def test_notequals(self):
+        request = await self.client.get('/tasks?desc:ne=abu')
         data = self.json(request.response, 200)
         result = data['result']
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0]['desc'], 'genie')
 
-        request = yield from self.client.get('/tasks?desc:ne=')
+        request = await self.client.get('/tasks?desc:ne=')
         data = self.json(request.response, 200)
         result = data['result']
         self.assertEqual(len(result), 2)
 
-        request = yield from self.client.get(
+        request = await self.client.get(
             '/tasks?desc:ne=abu&desc:ne=genie')
         data = self.json(request.response, 200)
         result = data['result']
         self.assertEqual(len(result), 0)
 
         # multiple values with one empty value should not do odd things
-        request = yield from self.client.get(
+        request = await self.client.get(
             '/tasks?desc:ne=abu&desc:ne=')
         data = self.json(request.response, 200)
         result = data['result']
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0]['desc'], 'genie')
 
-    def test_search(self):
-        request = yield from self.client.get('/tasks?subject:search=rescue to '
-                                             'the')
+    async def test_search(self):
+        request = await self.client.get('/tasks?subject:search=rescue to the')
         data = self.json(request.response, 200)
         result = data['result']
         self.assertIsInstance(result, list)
         self.assertEqual(len(result), 2)
 
-        request = yield from self.client.get('/tasks?subject:search=pippo')
+        request = await self.client.get('/tasks?subject:search=pippo')
         data = self.json(request.response, 200)
         result = data['result']
         self.assertIsInstance(result, list)
         self.assertTrue(len(result) == 1)
         self.assertEqual(result[0]['id'], self.pippo.id)
 
-        request = yield from self.client.get('/tasks?subject:search=thebe')
+        request = await self.client.get('/tasks?subject:search=thebe')
         data = self.json(request.response, 200)
         result = data['result']
         self.assertIsInstance(result, list)
         self.assertEqual(len(result), 0)
 
         # if multiple values are provided, only the first one should be used
-        request = yield from self.client.get(
+        request = await self.client.get(
             '/tasks?subject:search=pippo&subject:search=thebe')
         data = self.json(request.response, 200)
         result = data['result']

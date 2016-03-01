@@ -26,51 +26,51 @@ class TestContentViews(test.AppTestCase):
                         msg=json.dumps(payload).encode('utf-8'),
                         digestmod=hashlib.sha1)
 
-    def test_404(self):
-        request = yield from self.client.get('/blog/bla')
+    async def test_404(self):
+        request = await self.client.get('/blog/bla')
         response = request.response
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.content_type, 'text/html; charset=utf-8')
         handler = request.app_handler
         self.assertTrue(handler)
 
-    def test_read(self):
-        request = yield from self.client.get('/blog/foo')
+    async def test_read(self):
+        request = await self.client.get('/blog/foo')
         bs = self.bs(request.response, 200)
         self.assertEqual(str(bs.title), '<title>This is Foo</title>')
 
-    def test_github_hook_400(self):
+    async def test_github_hook_400(self):
         payload = dict(zen='foo', hook_id='457356234')
         signature = self._github_signature(payload)
         headers = [('X-Hub-Signature', signature.hexdigest()),
                    ('X-GitHub-Event', 'ping')]
-        request = yield from self.client.post('/refresh-content',
-                                              body=payload,
-                                              content_type='application/json',
-                                              headers=headers)
+        request = await self.client.post('/refresh-content',
+                                         body=payload,
+                                         content_type='application/json',
+                                         headers=headers)
         response = request.response
         self.assertEqual(response.status_code, 400)
 
-    def test_github_hook_ping_200(self):
+    async def test_github_hook_ping_200(self):
         payload = dict(zen='foo', hook_id='457356234')
         signature = self._github_signature(payload)
         headers = [('X-Hub-Signature', 'sha1=%s' % signature.hexdigest()),
                    ('X-GitHub-Event', 'ping')]
-        request = yield from self.client.post('/refresh-content',
-                                              body=payload,
-                                              content_type='application/json',
-                                              headers=headers)
+        request = await self.client.post('/refresh-content',
+                                         body=payload,
+                                         content_type='application/json',
+                                         headers=headers)
         response = request.response
         self.assertEqual(response.status_code, 200)
 
-    def test_github_hook_push_200(self):
+    async def test_github_hook_push_200(self):
         payload = dict(zen='foo', hook_id='457356234')
         signature = self._github_signature(payload)
         headers = [('X-Hub-Signature', 'sha1=%s' % signature.hexdigest()),
                    ('X-GitHub-Event', 'push')]
-        request = yield from self.client.post('/refresh-content',
-                                              body=payload,
-                                              content_type='application/json',
-                                              headers=headers)
+        request = await self.client.post('/refresh-content',
+                                         body=payload,
+                                         content_type='application/json',
+                                         headers=headers)
         response = request.response
         self.assertEqual(response.status_code, 200)

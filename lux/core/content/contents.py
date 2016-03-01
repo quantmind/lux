@@ -110,8 +110,7 @@ class HtmlFile(ContentFile):
     suffix = 'html'
 
 
-class HtmlContentFile(ContentFile):
-    suffix = 'html'
+class HtmlContentFile(HtmlFile):
     template = None
 
     def __repr__(self):

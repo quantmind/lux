@@ -36,7 +36,8 @@ class TestContentModel(test.TestCase):
         app = self.application()
         request = app.wsgi_request()
         content = self.model.read(request, 'foo')
-        self.assertEqual(content._content, '<p>Just foo</p>')
+        data = content.json(request)
+        self.assertEqual(data['html_main'], '<p>Just foo</p>')
         # try to read wrong file
         with self.assertRaises(DataError) as e:
             self.model.read(request, 'Not_exist')
@@ -46,7 +47,9 @@ class TestContentModel(test.TestCase):
         app = self.application()
         request = app.wsgi_request()
         content = self.model.read(request, 'foo')
+        self.assertEqual(content.model, self.model)
         data = self.model.tojson(request, content)
         self.assertTrue(data)
         self.assertEqual(data['title'], 'This is Foo')
-        self.assertEqual(data['path'], 'foo')
+        self.assertEqual(data['path'], '/foo')
+        self.assertEqual(data['slug'], 'foo')

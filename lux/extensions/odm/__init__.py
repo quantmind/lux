@@ -115,12 +115,12 @@ class Odm(LocalMixin):
         odm.local.mapper = self().database_create(database, **params)
         return odm
 
-    def tables(self):
+    async def tables(self):
         '''Coroutine returning all tables managed by the mapper
         '''
         odm = self()
         if self.app.green_pool:
-            tables = yield from self.app.green_pool.submit(odm.tables)
+            tables = await self.app.green_pool.submit(odm.tables)
         else:
             tables = odm.tables()
         return tables

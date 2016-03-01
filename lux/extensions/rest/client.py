@@ -1,7 +1,7 @@
 import json
 from urllib.parse import urljoin
 
-from pulsar import new_event_loop, is_async
+from pulsar import new_event_loop, isawaitable
 from pulsar.apps.http import HttpClient, JSON_CONTENT_TYPES
 from pulsar.utils.httpurl import is_absolute_uri
 
@@ -114,14 +114,13 @@ class LocalClient:
         response = self.app(request.environ, self)
         if self.app.green_pool:
             response = self.app.green_pool.wait(response)
-        if is_async(response):
+        if isawaitable(response):
             return self._async_response(response)
         else:
             return Response(response)
 
-    def _async_response(self, response):
-        response = yield from response
-        return Response(response)
+    async def _async_response(self, response):
+        return Response(await response)
 
     def __call__(self, status, response_headers, exc_info=None):
         pass

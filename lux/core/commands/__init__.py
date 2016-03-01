@@ -8,7 +8,7 @@ import argparse
 import logging
 
 from pulsar import (Setting, get_event_loop, Application, ImproperlyConfigured,
-                    asyncio, Config, get_actor, is_async)
+                    asyncio, Config, get_actor, isawaitable)
 from pulsar.utils.config import Loglevel, Debug, LogHandlers
 
 from lux import __version__
@@ -121,7 +121,7 @@ class Command(ConsoleParser):
         self.app.get_handler()
         result = maybe_green(self.app, self.run, app.cfg, **params)
         loop = get_event_loop()
-        if is_async(result) and not loop.is_running():
+        if isawaitable(result) and not loop.is_running():
             result = loop.run_until_complete(result)
         return result
 

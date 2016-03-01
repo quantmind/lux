@@ -35,50 +35,50 @@ class TestMigrationsCommands(test.TestCase):
         self.assertTrue(cmd.help)
         self.assertEqual(len(cmd.option_list), 4)
 
-    def test_no_params(self):
+    async def test_no_params(self):
         cmd = self.cmd()
         msg = 'Pass [--commands] for available commands'
 
         with self.assertRaises(CommandError) as e:
-            yield from cmd([])
+            await cmd([])
         self.assertEqual(str(e.exception), msg)
 
-    def test_wrong_param(self):
+    async def test_wrong_param(self):
         cmd = self.cmd()
         msg = 'Unrecognized command test'
 
         with self.assertRaises(CommandError) as e:
-            yield from cmd(['test'])
+            await cmd(['test'])
         self.assertEqual(str(e.exception), msg)
 
-    def test_list_command(self):
+    async def test_list_command(self):
         cmd = self.cmd()
-        result = yield from cmd(['--commands'])
+        result = await cmd(['--commands'])
         cmd_msg = 'Alembic commands:\n%s' % ', '.join(cmd.commands)
         self.assertEqual(result, cmd_msg)
 
-    def test_missing_m_param(self):
+    async def test_missing_m_param(self):
         cmd = self.cmd()
         msg = 'Missing [-m] parameter for auto'
 
         with self.assertRaises(CommandError) as e:
-            yield from cmd(['auto'])
+            await cmd(['auto'])
         self.assertEqual(str(e.exception), msg)
 
-    def test_missing_revision_id(self):
+    async def test_missing_revision_id(self):
         cmd = self.cmd()
         msg = 'Command show required revision id'
 
         with self.assertRaises(CommandError) as e:
-            yield from cmd(['show'])
+            await cmd(['show'])
         self.assertEqual(str(e.exception), msg)
 
-    def test_missing_two_revisions_in_merge(self):
+    async def test_missing_two_revisions_in_merge(self):
         cmd = self.cmd()
         msg = 'Command merge required revisions id.'
 
         with self.assertRaises(CommandError) as e:
-            yield from cmd(['merge', 'rev_id1', '-m', 'test'])
+            await cmd(['merge', 'rev_id1', '-m', 'test'])
         self.assertEqual(str(e.exception), msg)
 
     def test_config(self):

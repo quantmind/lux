@@ -74,11 +74,11 @@ class EventHandler:
     def _sync_execute(self, command):
         raise NotImplementedError
 
-    def _async_execute(self, command):
-        p = yield from create_subprocess_shell(command,
-                                               stdout=subprocess.PIPE,
-                                               stderr=subprocess.PIPE)
-        b, e = yield from p.communicate()
+    async def _async_execute(self, command):
+        p = await create_subprocess_shell(command,
+                                          stdout=subprocess.PIPE,
+                                          stderr=subprocess.PIPE)
+        b, e = await p.communicate()
         return b.decode('utf-8'), e.decode('utf-8')
 
 
