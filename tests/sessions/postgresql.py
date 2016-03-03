@@ -73,52 +73,52 @@ class TestPostgreSql(test.AppTestCase):
         self.assertTrue(user.is_superuser())
         self.assertTrue(user.is_active())
 
-    def test_get(self):
-        request = yield from self.client.get('/')
+    async def test_get(self):
+        request = await self.client.get('/')
         response = request.response
         self.assertEqual(response.status_code, 200)
         user = request.cache.user
         self.assertFalse(user.is_authenticated())
 
-    def test_login_fail(self):
+    async def test_login_fail(self):
         data = {'username': 'jdshvsjhvcsd',
                 'password': 'dksjhvckjsahdvsf'}
-        request = yield from self.client.post('/api/authorizations',
-                                              content_type='application/json',
-                                              body=data)
+        request = await self.client.post('/api/authorizations',
+                                         content_type='application/json',
+                                         body=data)
         response = request.response
         self.assertEqual(response.status_code, 403)
         user = request.cache.user
         self.assertFalse(user.is_authenticated())
         self.json(response)
         #
-        request = yield from self.client.get('/login')
+        request = await self.client.get('/login')
         response = request.response
         token = self.authenticity_token(self.bs(response, 200))
         self.assertTrue(token)
         data.update(token)
         cookie = self.cookie(response)
         self.assertTrue(cookie)
-        request = yield from self.client.post('/api/authorizations',
-                                              content_type='application/json',
-                                              body=data,
-                                              cookie=cookie)
+        request = await self.client.post('/api/authorizations',
+                                         content_type='application/json',
+                                         body=data,
+                                         cookie=cookie)
         self.assertValidationError(request.response,
                                    text='Invalid username or password')
         user = request.cache.user
         self.assertFalse(user.is_authenticated())
 
-    def test_create_superuser_command_and_login(self):
+    async def test_create_superuser_command_and_login(self):
         username = test.randomname()
         email = '%s@jgjh.com' % username
         password = 'dfbjdhbvdjbhv'
         data = {'username': username,
                 'password': password}
-        user = yield from self.create_superuser(username, email, password)
+        user = await self.create_superuser(username, email, password)
         self.assertEqual(user.username, username)
         self.assertNotEqual(user.password, password)
 
-        request = yield from self.client.get('/login')
+        request = await self.client.get('/login')
         response = request.response
         token = self.authenticity_token(self.bs(response, 200))
         self.assertTrue(token)
@@ -127,10 +127,10 @@ class TestPostgreSql(test.AppTestCase):
         self.assertTrue(cookie)
         #
         # Login with csrf token and cookie, It should work
-        request = yield from self.client.post('/api/authorizations',
-                                              content_type='application/json',
-                                              body=data,
-                                              cookie=cookie)
+        request = await self.client.post('/api/authorizations',
+                                         content_type='application/json',
+                                         body=data,
+                                         cookie=cookie)
         response = request.response
         self.assertEqual(response.status_code, 201)
         data = self.json(response)
@@ -139,7 +139,7 @@ class TestPostgreSql(test.AppTestCase):
         # The cookie has changed
         self.assertNotEqual(cookie, cookie2)
         #
-        request = yield from self.client.get('/', cookie=cookie2)
+        request = await self.client.get('/', cookie=cookie2)
         response = request.response
         self.assertEqual(response.status_code, 200)
         user = request.cache.user
@@ -148,23 +148,23 @@ class TestPostgreSql(test.AppTestCase):
         # The cookie has changed
         self.assertEqual(cookie3, None)
         #
-        request = yield from self.client.get('/login', cookie=cookie2)
+        request = await self.client.get('/login', cookie=cookie2)
         response = request.response
         self.assertEqual(response.status_code, 302)
         return cookie2
 
-    def test_logout(self):
-        cookie = yield from self.test_create_superuser_command_and_login()
+    async def test_logout(self):
+        cookie = await self.test_create_superuser_command_and_login()
         #
         # This wont work, not csrf token
-        request = yield from self.client.post('/api/authorizations/logout',
-                                              content_type='application/json',
-                                              body={},
-                                              cookie=cookie)
+        request = await self.client.post('/api/authorizations/logout',
+                                         content_type='application/json',
+                                         body={},
+                                         cookie=cookie)
         response = request.response
         self.assertEqual(response.status_code, 403)
         #
-        request = yield from self.client.get('/', cookie=cookie)
+        request = await self.client.get('/', cookie=cookie)
         response = request.response
         self.assertEqual(response.status_code, 200)
         user = request.cache.user
@@ -172,10 +172,10 @@ class TestPostgreSql(test.AppTestCase):
         token = self.authenticity_token(self.bs(response))
         self.assertTrue(token)
 
-        request = yield from self.client.post('/api/authorizations/logout',
-                                              content_type='application/json',
-                                              body=token,
-                                              cookie=cookie)
+        request = await self.client.post('/api/authorizations/logout',
+                                         content_type='application/json',
+                                         body=token,
+                                         cookie=cookie)
         response = request.response
         self.assertEqual(response.status_code, 200)
         user = request.cache.user

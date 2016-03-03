@@ -101,8 +101,8 @@ class AuthenticationResponses:
         pass
 
     @auth_backend
-    def login_response(self, request, user):  # pragma    nocover
-        """Login a user and return a JSON response
+    def login(self, request, user):  # pragma    nocover
+        """Login a user
         """
         pass
 

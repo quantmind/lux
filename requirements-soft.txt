@@ -7,4 +7,4 @@ pyyaml
 pyjwt
 beautifulsoup4
 redis
-pulsar-odm==0.3.0
+git@github.com:quantmind/pulsar-odm.git

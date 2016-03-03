@@ -24,6 +24,10 @@ class OAuthRouter(Router):
     '''A :class:`.Router` for the oauth authentication flow
     '''
     def _oauth(self, request):
+        """Dictionary of available OAuth provider
+        :param request: WSGI request
+        :return: a dictionary
+        """
         return dict(((name, o) for name, o in request_oauths(request).items()
                      if o.available()))
 
@@ -37,25 +41,32 @@ class OAuthRouter(Router):
 
     @route('<name>/redirect')
     def oauth_redirect(self, request):
+        """View to handle the redirect from a OAuth provider
+
+        :param request: WSGI request with url parameters to decode
+        :return: response
+        """
         user = request.cache.user
         name = request.urlargs['name']
-        p = self._oauth(request).get(name)
+        oauth = self._oauth(request).get(name)
         try:
-            p.check_redirect_data(request)
-            token = p.access_token(request, redirect_uri=request.uri)
+            oauth.check_redirect_data(request)
+            token = oauth.access_token(request, redirect_uri=request.uri)
             token = dict(token)
         except Exception as exc:
             request.logger.exception('Could not obtain access_token')
             url = request.config.get('LOGIN_URL', '/')
             raise HttpRedirect(url) from exc
 
+        access_token = oauth.save_token(request, token)
+        # User not authenticated
         if not user.is_authenticated():
-            api = p.api(request.http, **token)
+            api = oauth.api(http=request.http, **token)
             user = api.user()
-            user = request.app.auth_backend.login(request, user)
+            oauth.create_or_login_user(request, user, access_token)
         else:
-            user = p.create_user(token, user)
-        return request.redirect('/%s' % user.username)
+            oauth.associate_token(request, user, access_token)
+        return HttpRedirect('/')
 
     @route('<name>/remove', method='post')
     def oauth_remove(self, request):

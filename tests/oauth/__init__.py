@@ -37,6 +37,21 @@ OAUTH_PROVIDERS = {'amazon': {'key': 'fdfvfvfv',
                    }
 
 
+mock_return_values = {
+    'https://api.github.com/user': {
+        "login": "defunkt",
+        "avatar_url": "https://avatars.githubusercontent.com/u/2?v=3",
+        "url": "https://api.github.com/users/defunkt",
+        "html_url": "https://github.com/defunkt",
+        "type": "User",
+        "name": "Chris Wanstrath",
+        "blog": "http://chriswanstrath.com/",
+        "location": "San Francisco",
+        "email": "chris@github.com"
+    }
+}
+
+
 class TestClient(test.TestClient):
 
     def request_start_response(self, method, path, **kwargs):
@@ -46,13 +61,26 @@ class TestClient(test.TestClient):
         oauths = request_oauths(request)
         assert oauths
         request.cache.logger = mock.MagicMock()
-        http = mock.MagicMock()
-        post = mock.MagicMock()
-        post.decode_content = mock.MagicMock(
-            return_value={'access_token': 'fooo'})
-        http.post = mock.MagicMock(return_value=post)
-        request.cache.http = http
+        request.cache.http = self.http_mock()
         return request, start_response
+
+    def http_mock(self):
+        http = mock.MagicMock()
+        http.get = self._get
+        http.post = self._post
+        return http
+
+    def _post(self, url, **kwargs):
+        response = mock.MagicMock()
+        response.decode_content = mock.MagicMock(
+            return_value={'access_token': 'fooo'})
+        return response
+
+    def _get(self, url, **kwargs):
+        response = mock.MagicMock()
+        response.json = mock.MagicMock(
+            return_value=mock_return_values.get(url))
+        return response
 
 
 class OAuthTest(test.AppTestCase):

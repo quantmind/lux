@@ -220,8 +220,8 @@ class Session(AttributeDictionary, SessionMixin):
 
 
 def login(request, login_form):
-    '''Authenticate the user
-    '''
+    """Authenticate the user
+    """
     # user = request.cache.user
     # if user.is_authenticated():
     #     raise MethodNotAllowed
@@ -233,7 +233,8 @@ def login(request, login_form):
         try:
             user = auth_backend.authenticate(request, **form.cleaned_data)
             if user.is_active():
-                return auth_backend.login_response(request, user)
+                result = auth_backend.login(request, user)
+                return Json(result).http_response(request)
             else:
                 return auth_backend.inactive_user_login_response(request,
                                                                  user)

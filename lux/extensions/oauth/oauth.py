@@ -1,10 +1,13 @@
 '''OAuth account handling
 '''
+from datetime import datetime, timedelta
+
+from pulsar import HttpRedirect
 from pulsar.apps import http
 from pulsar.apps.http import HttpClient
 
 
-__all__ = ['OAuth1', 'OAuth2']
+__all__ = ['OAuth1', 'OAuth2', 'OAuthApi', 'OAuth2Api']
 
 
 Accounts = {}
@@ -21,6 +24,35 @@ class OAuthMeta(type):
         return klass
 
 
+class OAuthApi:
+    """Base class for OAuth Apis
+    """
+    headers = None
+    url = None
+
+    def __init__(self, http=None):
+        self.http = http or HttpClient()
+        self.headers = self.headers.copy() if self.headers else {}
+
+    def user(self):
+        raise NotImplementedError
+
+
+class OAuth2Api(OAuthApi):
+    """Base class for OAuth2 Apis
+    """
+    def __init__(self, http=None, access_token=None, token_type=None,
+                 expire_in=None, **kw):
+        super().__init__(http)
+        self.token = access_token
+        self.token_type = token_type or 'Bearer'
+        self.expire_in = expire_in
+        self.params = kw
+        if self.token:
+            value = '%s %s' % (self.token_type, self.token)
+            self.headers.append(('Authorization', value))
+
+
 class OAuth1(metaclass=OAuthMeta):
     """Web handler for OAuth version 1
     """
@@ -29,6 +61,11 @@ class OAuth1(metaclass=OAuthMeta):
     token_uri = None
     fa = None
     abstract = True
+    username_field = 'username'
+    email_field = 'email'
+    firstname_field = 'name'
+    lastname_field = None
+    api = OAuthApi
 
     def __init__(self, config):
         self.config = config or {}
@@ -78,8 +115,39 @@ class OAuth1(metaclass=OAuthMeta):
         if 'error' in data:
             raise ValueError(data.get('error_description', data['error']))
 
-    def create_user(self, token, user=None):
-        raise NotImplementedError
+    @classmethod
+    def associate_token(cls, request, user, access_token):
+        odm = request.app.odm()
+        with odm.begin() as session:
+            session.add(access_token)
+            access_token.user_id = user.id
+        return user
+
+    def create_or_login_user(self, request, oauth_user, access_token):
+        username = oauth_user.get(self.username_field)
+        email = oauth_user.get(self.email_field)
+        if not username and not email:
+            raise ValueError('No username or email')
+        # Check if user exist
+        backend = request.cache.auth_backend
+        user = backend.get_user(request, username=username, email=email)
+        if not user:
+            # The user is not available, if username or email are not available
+            # redirect to a form to add them
+            if not username or not email:
+                raise HttpRedirect()
+
+            # Create the user
+            user = backend.create_user(
+                request,
+                username=username,
+                email=email,
+                first_name=oauth_user.get(self.firstname_field),
+                last_name=oauth_user.get(self.lastname_field),
+                active=True)
+
+        self.associate_token(request, user, access_token)
+        backend.login(request, user)
 
 
 class OAuth2(OAuth1):
@@ -88,6 +156,7 @@ class OAuth2(OAuth1):
     version = 2
     default_scope = None
     abstract = True
+    api = OAuth2Api
 
     def available(self):
         if super().available():
@@ -138,24 +207,19 @@ class OAuth2(OAuth1):
         response.raise_for_status()
         return response.decode_content()
 
-
-class OAuth2Api:
-    """Base class for OAuth2 Apis
-    """
-    headers = None
-    url = None
-
-    def __init__(self, http=None, access_token=None, token_type=None,
-                 expire_in=None, **kw):
-        self.http = http or HttpClient()
-        self.token = access_token
-        self.headers = self.headers.copy() if self.headers else {}
-        self.token_type = token_type or 'Bearer'
-        self.expire_in = expire_in
-        self.params = kw
-        if self.token:
-            value = '%s %s' % (self.token_type, self.token)
-            self.headers.append(('Authorization', value))
+    def save_token(self, request, token):
+        odm = request.app.odm()
+        expire = token.get('expire_in')
+        if expire:
+            expire = datetime.utcnow() + timedelta(seconds=expire)
+        with odm.begin() as session:
+            access_token = odm.accesstoken(
+                token=token['access_token'],
+                provider=self.name,
+                scope=self.config.get('scope') or '',
+                expires=expire)
+            session.add(access_token)
+        return access_token
 
 
 def oauths(config):

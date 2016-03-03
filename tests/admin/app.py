@@ -21,22 +21,22 @@ class AdminTest(test.AppTestCase):
         self.assertEqual(blog['title'], 'Blogs')
         self.assertEqual(blog['href'], '/admin/blogs')
 
-    def test_admin_home_view(self):
-        request = yield from self.client.get('/admin')
+    async def test_admin_home_view(self):
+        request = await self.client.get('/admin')
         response = request.response
         self.assertEqual(response.status_code, 200)
 
-    def test_list_view(self):
-        request = yield from self.client.get('/admin/blogs')
+    async def test_list_view(self):
+        request = await self.client.get('/admin/blogs')
         response = request.response
         self.assertEqual(response.status_code, 200)
 
-    def test_add_view(self):
-        request = yield from self.client.get('/admin/blogs/add')
+    async def test_add_view(self):
+        request = await self.client.get('/admin/blogs/add')
         response = request.response
         self.assertEqual(response.status_code, 200)
 
-    def test_edit_view(self):
-        request = yield from self.client.get('/admin/blogs/1')
+    async def test_edit_view(self):
+        request = await self.client.get('/admin/blogs/1')
         response = request.response
         self.assertEqual(response.status_code, 200)

@@ -4,8 +4,8 @@ from . import app
 class AngularAdminTest(app.AdminTest):
     config_params = {'HTML5_NAVIGATION': True}
 
-    def test_angular_sitemap(self):
-        request = yield from self.client.get('/admin/blogs')
+    async def test_angular_sitemap(self):
+        request = await self.client.get('/admin/blogs')
         jscontext = request.html_document.jscontext
         pages = jscontext.get('pages')
         self.assertTrue(pages)

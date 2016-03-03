@@ -23,8 +23,7 @@ class TestGithub(OAuthTest):
         self.assertEqual(response.status_code, 302)
         self.assertTrue(request.logger.exception.called)
 
-    async def __test_redirect_error(self):
+    async def test_redirect_user_created(self):
         request = await self.client.get('/oauth/github/redirect?code=dcshcvhd')
         response = request.response
-        self.assertEqual(response.status_code, 200)
-        self.assertTrue(request.logger.exception.called)
+        self.assertEqual(response.status_code, 201)

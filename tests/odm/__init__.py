@@ -41,12 +41,11 @@ class Extension(lux.Extension):
 Model = odm.model_base('odmtest')
 
 
-# Models
+# ODM Models
 class Person(Model):
     id = Column(Integer, primary_key=True)
     username = Column(String(250), unique=True)
     name = Column(String(250))
-    tasks = relationship('Task', backref='assigned')
 
 
 class Task(Model):
@@ -54,11 +53,19 @@ class Task(Model):
     subject = Column(String(250))
     done = Column(Boolean, default=False)
     created = Column(DateTime, default=datetime.utcnow)
-    assigned_id = Column(Integer, ForeignKey('person.id'))
     enum_field = Column(ChoiceType(TestEnum), default=TestEnum.opt1)
     desc = Column(String(250))
 
+    @odm.declared_attr
+    def assigned_id(cls):
+        return Column(Integer, ForeignKey('person.id'))
 
+    @odm.declared_attr
+    def assigned(cls):
+        return relationship('Person', backref='tasks')
+
+
+# REST models
 def person_model():
     return odm.RestModel('person', PersonForm, PersonForm, url='people')
 

@@ -2,13 +2,13 @@ import lux
 
 from tests.config import *  # noqa
 from tests.auth import UserRest
-from tests.odm import Task, Person, CRUDTask, CRUDPerson    # noqa
 
 EXTENSIONS = ['lux.extensions.base',
               'lux.extensions.rest',
               'lux.extensions.odm',
               'lux.extensions.auth',
-              'lux.extensions.sockjs']
+              'lux.extensions.sockjs',
+              'tests.odm']
 
 WS_URL = '/testws'
 API_URL = ''
@@ -21,9 +21,7 @@ BROADCAST_CHANNELS = set(['tasks'])
 class Extension(lux.Extension):
 
     def api_sections(self, app):
-        return [UserRest(),
-                CRUDTask(),
-                CRUDPerson()]
+        return [UserRest()]
 
     def ws_add(self, request):
         """Add two numbers

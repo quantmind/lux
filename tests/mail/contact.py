@@ -15,6 +15,7 @@ empty_request = {}
 
 
 class ContactRouterTestCase(unittest.TestCase):
+
     def setUp(self):
         self.cr = views.ContactRouter(dummy_rule)
 

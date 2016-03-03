@@ -1,6 +1,5 @@
 from pulsar import ImproperlyConfigured
 from pulsar.utils.pep import to_string
-from pulsar.apps.wsgi import Json
 
 from lux import Parameter, Http401
 
@@ -25,13 +24,13 @@ class TokenBackend(TokenBackendMixin, RegistrationMixin, AuthBackend):
                   'Access-Control-Allow-Methods for CORS')
     ]
 
-    def login_response(self, request, user):
+    def login(self, request, user):
         expiry = self.session_expiry(request)
         token = self.create_token(request, user, expiry=expiry)
         token = to_string(token.encoded)
         request.response.status_code = 201
-        return Json({'success': True,
-                     'token': token}).http_response(request)
+        return {'success': True,
+                'token': token}
 
     def request(self, request):
         '''Check for ``HTTP_AUTHORIZATION`` header and if it is available

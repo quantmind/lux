@@ -3,7 +3,6 @@ from datetime import datetime, timedelta
 
 from pulsar import ImproperlyConfigured
 from pulsar.utils.pep import to_string
-from pulsar.apps.wsgi import Json
 
 from lux import Parameter, wsgi_request, Http401
 
@@ -74,13 +73,13 @@ class SessionBackendMixin(TokenBackendMixin):
         request.cache.user = self.anonymous()
         request.cache.session = self.create_session(request)
 
-    def login_response(self, request, user):
+    def login(self, request, user):
         session = self.create_session(request, user)
         request.cache.session = session
         token = to_string(session.encoded)
         request.response.status_code = 201
-        return Json({'success': True,
-                     'token': token}).http_response(request)
+        return {'success': True,
+                'token': token}
 
     # MIDDLEWARE
     def request(self, request):

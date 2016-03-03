@@ -14,13 +14,13 @@ class WebsiteTest(test.WebApiTestCase):
     def populatedb(cls):
         testdb(cls.app)
 
-    def _login(self, credentials=None, csrf=None, status=201):
+    async def _login(self, credentials=None, csrf=None, status=201):
         '''Return a token for a new superuser
         '''
         # We need csrf and cookie to successfully login
         cookie = None
         if csrf is None:
-            request = yield from self.webclient.get('/login')
+            request = await self.webclient.get('/login')
             bs = self.bs(request.response, 200)
             csrf = self.authenticity_token(bs)
             cookie = self.cookie(request.response)
@@ -34,7 +34,7 @@ class WebsiteTest(test.WebApiTestCase):
         credentials.update(csrf)
 
         # Get new token
-        request = yield from self.webclient.post(
+        request = await self.webclient.post(
             '/login',
             content_type='application/json',
             body=credentials,

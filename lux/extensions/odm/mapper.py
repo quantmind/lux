@@ -1,17 +1,11 @@
-from sqlalchemy import Table
-from sqlalchemy.ext.declarative import DeclarativeMeta
-
 import odm
 
 from pulsar import ImproperlyConfigured
 
+__all__ = ['Mapper', 'model_base']
+
 
 model_base = odm.model_base
-cache_name = '__odm_models__'
-
-
-def is_model(cls):
-    return isinstance(cls, (Table, DeclarativeMeta))
 
 
 class Mapper(odm.Mapper):
@@ -21,8 +15,8 @@ class Mapper(odm.Mapper):
     def __init__(self, app, binds):
         self.app = app
         super().__init__(binds)
-        for model in self.app.module_iterator('models', is_model, cache_name):
-            self.register(model)
+        for module in self.app.module_iterator('models'):
+            self.register_module(module)
         if self.is_green and not app.config['GREEN_POOL']:
             raise ImproperlyConfigured('ODM requires a greenlet pool but '
                                        'GREEN_POOL is not set to a positive '

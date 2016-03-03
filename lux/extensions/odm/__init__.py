@@ -16,6 +16,8 @@ from lux.extensions.rest import SimpleBackend
 
 from pulsar.utils.log import LocalMixin
 
+from odm import declared_attr
+
 from .exc import *     # noqa
 from .mapper import Mapper, model_base
 from .views import CRUD, RestRouter
@@ -24,7 +26,9 @@ from .forms import RelationshipField, UniqueField
 from .ws import WsModelRpc
 
 
-__all__ = ['model_base', 'CRUD', 'RestRouter', 'RestModel', 'RestColumn',
+__all__ = ['model_base', 'declared_attr',
+           'CRUD', 'RestRouter',
+           'RestModel', 'RestColumn',
            'ModelColumn', 'RelationshipField', 'UniqueField']
 
 

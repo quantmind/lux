@@ -20,5 +20,6 @@ class Github(OAuth2):
     auth_uri = 'https://github.com/login/oauth/authorize'
     token_uri = 'https://github.com/login/oauth/access_token'
     fa = 'github-square'
+    username_field = 'login'
 
     api = Api

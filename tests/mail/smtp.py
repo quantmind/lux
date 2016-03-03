@@ -9,11 +9,11 @@ class SmtpTest(test.AppTestCase):
         backend = self.app.email_backend
         self.assertIsInstance(backend, EmailBackend)
 
-    def test_send_mail_fail(self):
+    async def test_send_mail_fail(self):
         backend = self.app.email_backend
-        sent = yield from backend.send_mail(to='pippo@foo.com',
-                                            subject='Hello!',
-                                            message='This is a test message')
+        sent = await backend.send_mail(to='pippo@foo.com',
+                                       subject='Hello!',
+                                       message='This is a test message')
         self.assertEqual(sent, 0)
 
 
@@ -26,11 +26,11 @@ class SmtpMockTest(test.AppTestCase):
         backend = cls.app.email_backend
         backend._open = cls._backend_open
 
-    def test_send_mail_fail(self):
+    async def test_send_mail_fail(self):
         backend = self.app.email_backend
-        sent = yield from backend.send_mail(to='pippo@foo.com',
-                                            subject='Hello!',
-                                            message='This is a test message')
+        sent = await backend.send_mail(to='pippo@foo.com',
+                                       subject='Hello!',
+                                       message='This is a test message')
         self.assertEqual(sent, 1)
 
     @classmethod

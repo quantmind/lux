@@ -8,7 +8,7 @@ class GreenHttp:
         self._http = http
         self._pool = pool
 
-    def getattr(self, name):
+    def __getattr__(self, name):
         return getattr(self._http, name)
 
     def get(self, url, **kwargs):

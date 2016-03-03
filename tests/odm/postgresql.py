@@ -333,7 +333,7 @@ class TestPostgreSql(TestPostgreSqlBase):
         self.assertEqual(response.status_code, 200)
         data = self.json(response)
         columns = data['columns']
-        self.assertEqual(len(columns), 8)
+        self.assertEqual(len(columns), 9)
 
     async def test_preflight_request(self):
         request = await self.client.options('/users')
