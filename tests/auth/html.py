@@ -63,7 +63,7 @@ class HtmlMixin:
         request = await self.client.get('/login')
         # cookie = self.cookie(request.response)
         # self.assertTrue(cookie)
-        # request = yield from self.client.post('/login',
+        # request = await self.client.post('/login',
         #                                      body=dict(username=username,
         #                                                password=password),
         #                                      content_type='application/json',

@@ -12,6 +12,9 @@ Lux is a library for developing web applications with Python and javascript fram
 :Documentation: http://quantmind.github.io/lux/
 :Downloads: https://pypi.python.org/pypi/lux
 :Source: https://github.com/quantmind/lux
+:Design by: `Quantmind`_
+:Platforms: Linux, OSX, Windows. Python 3.5 and above
+:Keywords: asynchronous, wsgi, websocket, redis, json-rpc, REST, web
 
 .. |master-build| image:: https://img.shields.io/travis/quantmind/lux/master.svg
 .. _master-build: http://travis-ci.org/quantmind/lux
@@ -35,10 +38,10 @@ Python Requirements
 
 **Soft requirements**
 
-* sqlalchemy_ and pulsar-odm_ used by ``lux.extensions.odm``
+* sqlalchemy_, greenlet_ and pulsar-odm_ used by ``lux.extensions.odm``
 * pyjwt_ used by some authentication backends in ``lux.extensions.rest``
 * markdown_
-* oauthlib_ for OAuth
+* oauthlib_ for ``lux.extensions.oauth``
 
 
 Testing
@@ -65,5 +68,7 @@ For testing postgreSQL create a new role::
 .. _markdown: https://pypi.python.org/pypi/Markdown
 .. _oauthlib: https://oauthlib.readthedocs.org/en/latest/
 .. _sphinx: http://sphinx-doc.org/
+.. _greenlet: https://greenlet.readthedocs.org
 .. _`grunt-html2js`: https://github.com/karlgoldstein/grunt-html2js
 .. _lux.js: https://raw.githubusercontent.com/quantmind/lux/master/lux/media/lux/lux.js
+.. _`Quantmind`: http://quantmind.com
