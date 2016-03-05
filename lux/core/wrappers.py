@@ -18,7 +18,7 @@ from lux.utils import unique_tuple
 __all__ = ['Html', 'WsgiRequest', 'Router', 'HtmlRouter',
            'JsonRouter', 'route', 'wsgi_request', 'json_message',
            'cached_property', 'html_factory', 'RedirectRouter',
-           'RouterParam', 'JSON_CONTENT_TYPES',
+           'LuxContext', 'RouterParam', 'JSON_CONTENT_TYPES',
            'DEFAULT_CONTENT_TYPES']
 
 Html = wsgi.Html
@@ -28,6 +28,10 @@ TEXT_CONTENT_TYPES = unique_tuple(('text/html', 'text/plain'))
 
 DEFAULT_CONTENT_TYPES = unique_tuple(('text/html', 'text/plain', 'text/csv'),
                                      JSON_CONTENT_TYPES)
+
+
+class LuxContext(dict):
+    pass
 
 
 class WsgiRequest(wsgi.WsgiRequest):
@@ -140,7 +144,8 @@ class HtmlRouter(Router):
         # render the inner part of the html page
         html = cms.inner_html(request, page, html)
 
-        context = self.context(request) or {}
+        context = app.context(request)
+        context.update(self.context(request) or ())
         context['html_main'] = html
         template = self.get_inner_template(request, inner_template)
 

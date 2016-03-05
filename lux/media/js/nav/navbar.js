@@ -113,7 +113,7 @@ define(['angular',
                     navbar.url = '/';
                 if (!navbar.themeTop)
                     navbar.themeTop = navbar.theme;
-                navbar.container = navbar.fluid ? '' : 'container';
+                navbar.container = navbar.fluid ? 'container-fluid' : 'container';
 
                 luxNavbar.maybeCollapse(navbar);
 

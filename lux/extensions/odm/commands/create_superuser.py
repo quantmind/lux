@@ -8,11 +8,6 @@ from pulsar import Setting
 import lux
 from lux.extensions.rest import normalise_email
 
-try:
-    input = raw_input
-except NameError:
-    pass
-
 
 RE_VALID_USERNAME = re.compile('[\w.@+-]+$')
 

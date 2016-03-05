@@ -61,10 +61,6 @@ class OAuth1(metaclass=OAuthMeta):
     token_uri = None
     fa = None
     abstract = True
-    username_field = 'username'
-    email_field = 'email'
-    firstname_field = 'name'
-    lastname_field = None
     api = OAuthApi
 
     def __init__(self, config):
@@ -116,16 +112,37 @@ class OAuth1(metaclass=OAuthMeta):
             raise ValueError(data.get('error_description', data['error']))
 
     @classmethod
-    def associate_token(cls, request, user, access_token):
+    def associate_token(cls, request, user_data, user, access_token):
+        """Associate a database user with a database access token
+        :param request: WSGI request
+        :param user: user model instance
+        :param access_token: access token model instance
+        :return: the user
+        """
         odm = request.app.odm()
         with odm.begin() as session:
             session.add(access_token)
+            session.add(user)
+            q = session.query(odm.accesstoken).filter_by(provider=cls.name,
+                                                         user_id=user.id)
+            q.delete()
+            oauth = user.oauth
+            if not oauth:
+                oauth = {}
+                user.oauth = oauth
+            oauth[cls.name] = user_data
             access_token.user_id = user.id
         return user
 
-    def create_or_login_user(self, request, oauth_user, access_token):
-        username = oauth_user.get(self.username_field)
-        email = oauth_user.get(self.email_field)
+    def create_or_login_user(self, request, user_data, access_token):
+        """Create a new user or update the token if user already exists
+        :param request: WSGI request
+        :param user_data: dictionary of user data from this OAuth provider
+        :param access_token: access token model instance
+        :return:
+        """
+        username = self.username(user_data)
+        email = self.email(user_data)
         if not username and not email:
             raise ValueError('No username or email')
         # Check if user exist
@@ -142,12 +159,24 @@ class OAuth1(metaclass=OAuthMeta):
                 request,
                 username=username,
                 email=email,
-                first_name=oauth_user.get(self.firstname_field),
-                last_name=oauth_user.get(self.lastname_field),
+                first_name=self.firstname(user_data),
+                last_name=self.lastname(user_data),
                 active=True)
 
-        self.associate_token(request, user, access_token)
+        self.associate_token(request, user_data, user, access_token)
         backend.login(request, user)
+
+    def username(self, user_data):
+        return ''
+
+    def firstname(self, user_data):
+        return ''
+
+    def lastname(self, user_data):
+        return ''
+
+    def email(self, user_data):
+        return ''
 
 
 class OAuth2(OAuth1):

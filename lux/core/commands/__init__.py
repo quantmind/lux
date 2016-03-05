@@ -6,9 +6,10 @@
 '''
 import argparse
 import logging
+import asyncio
 
 from pulsar import (Setting, get_event_loop, Application, ImproperlyConfigured,
-                    asyncio, Config, get_actor, isawaitable)
+                    Config, get_actor, isawaitable)
 from pulsar.utils.config import Loglevel, Debug, LogHandlers
 
 from lux import __version__

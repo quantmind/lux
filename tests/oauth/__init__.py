@@ -8,12 +8,12 @@ from tests.config import *  # noqa
 EXTENSIONS = ['lux.extensions.base',
               'lux.extensions.rest',
               'lux.extensions.odm',
-              'lux.extensions.auth',
               'lux.extensions.oauth']
 
 DATASTORE = 'postgresql+green://lux:luxtest@127.0.0.1:5432/luxtests'
-
-AUTHENTICATION_BACKENDS = ['lux.extensions.auth.TokenBackend']
+SESSION_COOKIE_NAME = 'test-oauth'
+AUTHENTICATION_BACKENDS = ['lux.extensions.auth.SessionBackend',
+                           'lux.extensions.auth.TokenBackend']
 
 # Just some dummy values for testing
 OAUTH_PROVIDERS = {'amazon': {'key': 'fdfvfvfv',
@@ -72,8 +72,7 @@ class TestClient(test.TestClient):
 
     def _post(self, url, **kwargs):
         response = mock.MagicMock()
-        response.decode_content = mock.MagicMock(
-            return_value={'access_token': 'fooo'})
+        response.decode_content = self._random_token
         return response
 
     def _get(self, url, **kwargs):
@@ -81,6 +80,9 @@ class TestClient(test.TestClient):
         response.json = mock.MagicMock(
             return_value=mock_return_values.get(url))
         return response
+
+    def _random_token(self, *args, **kwargs):
+        return {'access_token': test.randomname('', 20)}
 
 
 class OAuthTest(test.AppTestCase):

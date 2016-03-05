@@ -1,12 +1,12 @@
 import json
 import time
 import re
+import asyncio
 from copy import copy
 from importlib import import_module
 from collections import Mapping
 from datetime import datetime
 
-from pulsar import asyncio
 from pulsar.utils.structures import OrderedDict, mapping_iterator
 from pulsar.apps.http import HttpClient
 from pulsar.apps import wsgi

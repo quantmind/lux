@@ -91,7 +91,7 @@ class ApiSessionBackend(SessionBackendMixin,
                         BrowserBackend):
     """Authenticating against a RESTful HTTP API.
 
-    THis backend requires a real cache backend, it cannot work with dummy
+    This backend requires a real cache backend, it cannot work with dummy
     cache and will raise an error.
 
     The workflow for authentication is the following:
@@ -99,7 +99,7 @@ class ApiSessionBackend(SessionBackendMixin,
     * Redirect the authentication to the remote api
     * If successful obtain the JWT token from the response
     * Create the user from decoding the JWT payload
-    * create the session with same id as the token id and set the user as
+    * Create the session with same id as the token id and set the user as
       session key
     * Save the session in cache and return the original encoded token
     """
@@ -229,12 +229,6 @@ class ApiSessionBackend(SessionBackendMixin,
             request.logger.error('Cannot use dummy cache with %s backend',
                                  self.__class__.__name__)
         store.set_json(self._key(session.id), data)
-
-    def on_html_document(self, app, request, doc):
-        if request.method == 'GET':
-            session = request.cache.session
-            if session and session.user:
-                doc.head.add_meta(name="user-token", content=session.encoded)
 
     def _key(self, id):
         return 'session:%s' % id

@@ -12,7 +12,7 @@ __all__ = ['FormType',
            'Form',
            'BoundField',
            'FieldList',
-           'MakeForm',
+           'create_form',
            'FORMKEY']
 
 
@@ -419,7 +419,7 @@ class BoundField(object):
             form._form_message(form._errors, self.name, err)
 
 
-def MakeForm(name, *fields, **params):
+def create_form(name, *fields, **params):
     '''Create a form class from fields
     '''
     params.update(((f.name, f) for f in fields))

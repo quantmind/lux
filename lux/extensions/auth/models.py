@@ -40,7 +40,6 @@ class User(Model, UserMixin):
     active = Column(Boolean)
     superuser = Column(Boolean)
     joined = Column(DateTime, default=datetime.utcnow)
-    info = Column(JSONType)
 
     def __repr__(self):
         return self.username or self.email

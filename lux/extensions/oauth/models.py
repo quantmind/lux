@@ -2,11 +2,21 @@ from sqlalchemy.orm import relationship, backref
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
 
 from odm.types import JSONType
+from odm import declared_attr, copy_models
 
-from lux.extensions.auth.models import Model, declared_attr
+import lux.extensions.auth.models as auth
 
 
-class AccessToken(Model):
+copy_models(auth, __name__)
+
+
+class User(auth.User):
+    """Override user with oauth dictionary
+    """
+    oauth = Column(JSONType)
+
+
+class AccessToken(auth.Model):
     """
     An AccessToken instance represents the actual access token to
     access user's resources, as in :rfc:`5`.

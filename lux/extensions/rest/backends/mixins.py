@@ -37,6 +37,8 @@ class TokenBackendMixin:
 
         if expiry:
             token['exp'] = int(time.mktime(expiry.timetuple()))
+
+        user = user or request.cache.user
         request.app.fire('on_token', request, token, user)
         return jwt.encode(token, request.config['SECRET_KEY'])
 
@@ -61,8 +63,8 @@ class TokenBackendMixin:
 class SessionBackendMixin(TokenBackendMixin):
     """Mixin for :class:`.AuthBackend` via sessions.
 
-    This mixin implement the request and response middleware and introduce
-    three abstract method for session CRUD operations
+    This mixin implements the request and response middleware and introduce
+    three abstract method for session CRUD operations.
     """
     _config = [
         Parameter('SESSION_COOKIE_NAME', 'LUX',
@@ -80,6 +82,14 @@ class SessionBackendMixin(TokenBackendMixin):
         request.response.status_code = 201
         return {'success': True,
                 'token': token}
+
+    def on_html_document(self, app, request, doc):
+        """Add the user-token meta tag
+        """
+        if request.method == 'GET':
+            session = request.cache.session
+            if session and session.user:
+                doc.head.add_meta(name="user-token", content=session.encoded)
 
     # MIDDLEWARE
     def request(self, request):

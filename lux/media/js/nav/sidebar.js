@@ -30,7 +30,7 @@ define(['angular',
             template: 'lux/nav/templates/sidebar.tpl.html'
         })
         //
-        .factory('luxSidebars', ['sidebarDefaults', function (sidebarDefaults) {
+        .factory('luxSidebars', ['sidebarDefaults', 'luxNavbar', function (sidebarDefaults, luxNavbar) {
 
             function luxSidebars (element, opts) {
                 opts || (opts = {});
@@ -74,10 +74,11 @@ define(['angular',
 
             // Initialise top navigation bar for sidebars
             luxSidebars.navBar = function (navbar, sidebars) {
-                navbar || (navbar = {});
-                navbar.fixed = false;
+                (navbar || (navbar={}))
+                // navbar.fixed = false;
                 navbar.top = true;
-                navbar.url || (navbar.url = sidebarDefaults.url);
+                navbar.fluid = true;
+                navbar = luxNavbar(navbar);
                 //
                 // Add toggle to the navbar
                 lux.forEach(sidebars, function (sidebar) {
@@ -144,11 +145,11 @@ define(['angular',
 
                     function sidebar(scope, element, attrs) {
                         var options = lux.getOptions(attrs, 'sidebar'),
-                            sidebars = angular.extend({}, scope.sidebar, options),
-                            navbar = angular.extend({}, scope.navbar, options.navbar),
+                            sidebar = angular.extend({}, scope.sidebar, options),
+                            navbar = angular.extend({}, sidebar.navbar, options.navbar),
                             template;
 
-                        sidebars = luxSidebars(element, sidebars);
+                        var sidebars = luxSidebars(element, sidebar.sidebars);
 
                         if (sidebars.length) {
                             scope.sidebars = sidebars;

@@ -23,3 +23,12 @@ class Github(OAuth2):
     username_field = 'login'
 
     api = Api
+
+    def username(self, user_data):
+        return user_data['login']
+
+    def firstname(self, user_data):
+        return user_data['name']
+
+    def lastname(self, user_data):
+        return user_data['lastName']

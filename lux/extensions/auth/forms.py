@@ -1,12 +1,11 @@
 import json
 
-from sqlalchemy.exc import DataError
-
 from lux import forms
 from lux.extensions import odm
 from lux.extensions.rest import AuthenticationError, RestColumn
 from lux.extensions.rest.forms import PasswordForm
 from lux.extensions.rest.policy import validate_policy
+from lux.utils.auth import ensure_authenticated
 
 __all__ = ['permission_model',
            'group_model',
@@ -73,14 +72,21 @@ class UserModel(odm.RestModel):
 
 
 class TokenModel(odm.RestModel):
+    """REST model for tokens
+    """
+    @classmethod
+    def create(cls, user_model):
+        TokenForm = forms.create_form(
+            'TokenForm',
+            forms.TextField('description', required=True, maxlength=256))
+        model = cls('token', TokenForm)
+        model.add_related_column('user', user_model, 'user_id')
+        return model
 
     def create_model(self, request, data, session=None):
+        user = ensure_authenticated(request)
         auth = request.cache.auth_backend
-        user = data.pop('user', None)
-        if user:
-            return auth.create_token(request, user, **data)
-        else:
-            raise DataError('Missing user')
+        return auth.create_token(request, user, **data)
 
 
 class PermissionForm(forms.Form):

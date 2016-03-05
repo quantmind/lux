@@ -59,14 +59,14 @@ class OAuthRouter(Router):
             raise HttpRedirect(url) from exc
 
         access_token = oauth.save_token(request, token)
+        api = oauth.api(http=request.http, **token)
+        user_data = api.user()
         # User not authenticated
         if not user.is_authenticated():
-            api = oauth.api(http=request.http, **token)
-            user = api.user()
-            oauth.create_or_login_user(request, user, access_token)
+            oauth.create_or_login_user(request, user_data, access_token)
         else:
-            oauth.associate_token(request, user, access_token)
-        return HttpRedirect('/')
+            oauth.associate_token(request, user_data, user, access_token)
+        raise HttpRedirect('/')
 
     @route('<name>/remove', method='post')
     def oauth_remove(self, request):

@@ -39,19 +39,21 @@ def green(test_fun):
 
     In both cases it returns a :class:`~asyncio.Future`.
 
-    This decorator should not be used for functions returning a coroutine
-    or a :class:`~asyncio.Future`.
+    This decorator should not be used for functions returning an
+    awaitable.
     """
-    def _(o):
+    def _(*args, **kwargs):
+        assert len(args) >= 1, ("green decorator should be applied to test "
+                                "functions only")
         try:
-            pool = o.app.green_pool
+            pool = args[0].app.green_pool
         except AttributeError:
             pool = None
         if pool:
-            return pool.submit(test_fun, o)
+            return pool.submit(test_fun, *args, **kwargs)
         else:
             loop = get_event_loop()
-            return loop.run_in_executor(None, test_fun, o)
+            return loop.run_in_executor(None, test_fun, *args, **kwargs)
 
     return _
 
@@ -385,7 +387,33 @@ class AppTestCase(unittest.TestCase, TestMixin):
 
     @classmethod
     def populatedb(cls):
-        pass
+        fixtures = os.path.join(cls.app.meta.path, 'fixtures')
+        if os.path.isdir(fixtures):
+            odm = cls.app.odm()
+            with odm.begin() as session:
+                for filename in os.listdir(fixtures):
+                    if filename.endswith(('.json')):
+                        with open(os.path.join(fixtures, filename), 'r') as fp:
+                            data = json.load(fp)
+
+                    for model, entries in data.items():
+                        create = getattr(cls,
+                                         'db_create_%s' % model,
+                                         cls.db_create_model)
+                        for entry in entries:
+                            create(odm, session, model, entry)
+
+    @classmethod
+    def db_create_model(cls, odm, session, model, entry):
+        session.add(odm[model](**entry))
+
+    @classmethod
+    def db_create_user(cls, odm, session, model, entry):
+        backend = cls.app.auth_backend
+        entry['odm_session'] = session
+        if 'password' not in entry:
+            entry['password'] = entry['username']
+        backend.create_user(cls.app, **entry)
 
     def create_superuser(self, username, email, password):
         """A shortcut for the create_superuser command

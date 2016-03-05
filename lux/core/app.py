@@ -24,7 +24,8 @@ from lux import __version__
 
 from .commands import ConsoleParser, CommandError, ConfigError
 from .extension import Extension, Parameter, EventMixin
-from .wrappers import wsgi_request, HeadMeta, error_handler, as_async_wsgi
+from .wrappers import (wsgi_request, HeadMeta, error_handler, as_async_wsgi,
+                       LuxContext)
 from .engines import template_engine
 from .cms import CMS
 from .models import ModelContainer
@@ -572,10 +573,13 @@ class Application(ConsoleParser, Extension, EventMixin):
         The initial ``context`` is updated with contribution from
         all :setting:`EXTENSIONS` which expose the ``context`` method.
         '''
-        if not request.cache._in_application_context:
+        if (isinstance(context, LuxContext) or
+                request.cache._in_application_context):
+            return context
+        else:
             request.cache._in_application_context = True
             try:
-                ctx = {}
+                ctx = LuxContext()
                 ctx.update(self.config)
                 ctx.update(self.cms.context(ctx))
                 ctx.update(context or ())
@@ -585,7 +589,7 @@ class Application(ConsoleParser, Extension, EventMixin):
                 return ctx
             finally:
                 request.cache._in_application_context = False
-        return context
+            return context
 
     def render_template(self, name, context=None, request=None, engine=None):
         '''Render a template file ``name`` with ``context``

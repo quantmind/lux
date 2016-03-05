@@ -115,9 +115,9 @@ class FormTests(test.TestCase):
         self.assertEqual(form.cleaned_data, data)
 
     def test_make_form(self):
-        form_class = forms.MakeForm('TestForm',
-                                    forms.CharField('name'),
-                                    forms.CharField('surname'))
+        form_class = forms.create_form('TestForm',
+                                       forms.CharField('name'),
+                                       forms.CharField('surname'))
         self.assertEqual(form_class.__name__, 'TestForm')
 
     def test_clean_fail(self):
