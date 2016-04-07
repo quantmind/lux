@@ -3,8 +3,8 @@
 //
 //	provides data to a lux.grid using REST calls
 define(['angular',
-        'lux/grid',
-        'lux/services'], function (angular) {
+        'lux/grid/main',
+        'lux/services/main'], function (angular) {
     'use strict';
 
     angular.module('lux.grid.rest', ['lux.grid', 'lux.restapi'])

@@ -10,7 +10,10 @@ from .registration import RegistrationMixin
 
 
 class SessionBackend(SessionBackendMixin, RegistrationMixin, AuthBackend):
+    """SessionBackend is used when the client is a web browser
 
+    It maintain a session via a cookie key
+    """
     def create_session(self, request, user=None):
         user = user or request.cache.user
         return self.create_token(request, user,
@@ -18,10 +21,11 @@ class SessionBackend(SessionBackendMixin, RegistrationMixin, AuthBackend):
 
 
 class CsrfBackend(AuthBackend):
-    '''A backend for Cross-Site Request Forgery prevention.
+    """A backend for Cross-Site Request Forgery prevention.
 
-    Can be used on a session backend.
-    '''
+    This backend is aimed at html web applications with form sending requests
+    It requires the :class:`.SessionBackend`.
+    """
     _config = [
         Parameter('CSRF_EXPIRY', 60*60,
                   'Cross Site Request Forgery token expiry in seconds.'),
@@ -35,8 +39,8 @@ class CsrfBackend(AuthBackend):
     CSRF_SET = frozenset(('GET', 'HEAD', 'OPTIONS'))
 
     def on_form(self, app, form):
-        '''Handle CSRF on form
-        '''
+        """Handle CSRF on form
+        """
         request = form.request
         param = app.config['CSRF_PARAM']
         if (param and form.is_bound and

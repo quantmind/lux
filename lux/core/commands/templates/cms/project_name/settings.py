@@ -39,4 +39,4 @@ HTML_TEMPLATES = {'/': 'home.html',
                   RESET_PASSWORD_URL: 'small.html'}
 
 # PULSAR config
-loglevel = ['pulsar.info']
+log_level = ['pulsar.info']

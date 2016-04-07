@@ -1,4 +1,5 @@
 from pulsar.apps.wsgi import MediaRouter
+from pulsar.utils.slugify import slugify
 
 import lux
 from lux import Parameter
@@ -32,6 +33,7 @@ class Extension(lux.Extension):
     def context(self, request, context):
         if request.cache.html_main:
             context['html_main'] = request.cache.html_main
+        context['slug']  = slugify(request.path[1:] or 'index')
         return context
 
     def on_loaded(self, app):

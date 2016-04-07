@@ -1,11 +1,11 @@
 from lux.utils import test
 
-from .user import UserMixin
-from .signup import SignupMixin
-from .password import PasswordMixin
-from .odm import OdmMixin
-from .permissions import PermissionsMixin
-from .html import HtmlMixin
+from tests.auth.user import UserMixin
+from tests.auth.signup import SignupMixin
+from tests.auth.password import PasswordMixin
+from tests.auth.odm import OdmMixin
+from tests.auth.permissions import PermissionsMixin
+from tests.auth.html import HtmlMixin
 
 
 class AuthUtils:

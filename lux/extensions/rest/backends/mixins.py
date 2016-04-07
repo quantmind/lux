@@ -1,12 +1,12 @@
 import time
+from functools import wraps
 from datetime import datetime, timedelta
 
 from pulsar import ImproperlyConfigured
 from pulsar.utils.pep import to_string
+from pulsar.apps.wsgi import Route
 
-from lux import Parameter, wsgi_request, Http401
-
-from ..authviews import Authorization
+from lux import Parameter, wsgi_request, Http401, app_attribute
 
 try:
     import jwt
@@ -23,11 +23,6 @@ class TokenBackendMixin:
         session_expiry = request.config['SESSION_EXPIRY']
         if session_expiry:
             return datetime.now() + timedelta(seconds=session_expiry)
-
-    def api_sections(self, app):
-        """At the authorization router to the api
-        """
-        yield Authorization()
 
     def encode_token(self, request, user=None, expiry=None, **token):
         """Encode a JWT
@@ -60,6 +55,28 @@ class TokenBackendMixin:
         raise NotImplementedError
 
 
+@app_attribute
+def exclude_urls(app):
+    urls = []
+    for url in app.config['EXCLUDE_SESSION_URLS']:
+        urls.append(Route(url))
+    return tuple(urls)
+
+
+def skip_on_exclude(method):
+
+    @wraps(method)
+    def _(self, request, *args):
+        path = request.path[1:]
+        for url in exclude_urls(request.app):
+            if url.match(path):
+                return
+
+        return method(self, request, *args)
+
+    return _
+
+
 class SessionBackendMixin(TokenBackendMixin):
     """Mixin for :class:`.AuthBackend` via sessions.
 
@@ -68,13 +85,16 @@ class SessionBackendMixin(TokenBackendMixin):
     """
     _config = [
         Parameter('SESSION_COOKIE_NAME', 'LUX',
-                  'Name of the cookie which stores session id')
+                  'Name of the cookie which stores session id'),
+        Parameter('EXCLUDE_SESSION_URLS', (),
+                  'Tuple of urls where persistent session is not required')
     ]
 
     def logout(self, request):
         request.cache.user = self.anonymous()
         request.cache.session = self.create_session(request)
 
+    @skip_on_exclude
     def login(self, request, user):
         session = self.create_session(request, user)
         request.cache.session = session
@@ -92,6 +112,7 @@ class SessionBackendMixin(TokenBackendMixin):
                 doc.head.add_meta(name="user-token", content=session.encoded)
 
     # MIDDLEWARE
+    @skip_on_exclude
     def request(self, request):
         key = request.config['SESSION_COOKIE_NAME']
         session_key = request.cookies.get(key)
@@ -107,7 +128,10 @@ class SessionBackendMixin(TokenBackendMixin):
             request.cache.user = user
 
     def response_session(self, environ, response):
-        request = wsgi_request(environ)
+        return self._response_session(wsgi_request(environ), response)
+
+    @skip_on_exclude
+    def _response_session(self, request, response):
         session = request.cache.session
         if session:
             if response.can_set_cookies():

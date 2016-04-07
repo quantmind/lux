@@ -1,6 +1,6 @@
-"""Views for managing user-related actions such as
+"""Views for managing user-related actions:
 
-* login
+* POST authorizations
 * logout
 * signup
 * reset_password
@@ -157,6 +157,8 @@ class Authorization(RestRouter, SignUpMixin, ResetPasswordMixin):
         return request.response
 
     def post(self, request):
+        """Post request create a new Authorization token
+        """
         return login(request, self.login_form)
 
     @action

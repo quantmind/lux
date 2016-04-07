@@ -20,11 +20,6 @@ class AuthMixin(PasswordMixin):
     _config = [Parameter('GENERAL_MAILING_LIST_TOPIC', 'general',
                          "topic for general mailing list")]
 
-    def api_sections(self, app):
-        """At the authorization router to the api
-        """
-        yield Authorization()
-
     def get_user(self, request, user_id=None, token_id=None, username=None,
                  email=None, auth_key=None, **kw):
         """Securely fetch a user by id, username, email or auth key
@@ -183,13 +178,14 @@ class AuthMixin(PasswordMixin):
     def add_encoded(self, request, token):
         """Inject the ``encoded`` attribute to the token and return the token
         """
-        odm = request.app.odm()
-        with odm.begin() as session:
-            session.add(token)
-            token.encoded = self.encode_token(request,
-                                              token_id=token.id.hex,
-                                              user=token.user,
-                                              expiry=token.expiry)
+        if token:
+            odm = request.app.odm()
+            with odm.begin() as session:
+                session.add(token)
+                token.encoded = self.encode_token(request,
+                                                  token_id=token.id.hex,
+                                                  user=token.user,
+                                                  expiry=token.expiry)
         return token
 
     def create_auth_key(self, request, user, expiry=None, **kw):
@@ -257,6 +253,10 @@ class AuthMixin(PasswordMixin):
 class TokenBackend(AuthMixin, backends.TokenBackend):
     """Authentication backend based on JSON Web Token
     """
+    def api_sections(self, app):
+        """Add the authorization router to the api
+        """
+        yield Authorization()
 
 
 class SessionBackend(AuthMixin, backends.SessionBackend):

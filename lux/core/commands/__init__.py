@@ -10,7 +10,7 @@ import asyncio
 
 from pulsar import (Setting, get_event_loop, Application, ImproperlyConfigured,
                     Config, get_actor, isawaitable)
-from pulsar.utils.config import Loglevel, Debug, LogHandlers
+from pulsar.utils.config import LogLevel, Debug, LogHandlers
 
 from lux import __version__
 from lux.utils.async import maybe_green
@@ -38,7 +38,7 @@ class ConsoleParser(object):
     '''
     help = None
     option_list = ()
-    default_option_list = (Loglevel(),
+    default_option_list = (LogLevel(),
                            LogHandlers(default=['console']),
                            Debug())
 

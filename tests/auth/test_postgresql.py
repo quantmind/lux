@@ -1,4 +1,4 @@
-from . import sqlite
+import tests.auth.test_sqlite as sqlite
 
 
 class TestPostgreSql(sqlite.TestSqlite):

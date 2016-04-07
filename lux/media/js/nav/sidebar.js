@@ -23,14 +23,14 @@ define(['angular',
     angular.module('lux.sidebar', ['lux.nav'])
         //
         .value('sidebarDefaults', {
-            collapse: true,
+            open: false,
             toggleName: 'Menu',
             url: lux.context.url || '/',
             infoText: 'Signed in as',
             template: 'lux/nav/templates/sidebar.tpl.html'
         })
         //
-        .factory('luxSidebars', ['sidebarDefaults', 'luxNavbar', function (sidebarDefaults, luxNavbar) {
+        .factory('luxSidebars', ['sidebarDefaults', function (sidebarDefaults) {
 
             function luxSidebars (element, opts) {
                 opts || (opts = {});
@@ -43,25 +43,13 @@ define(['angular',
 
                 return sidebars;
 
-                function close () {
-                    element.removeClass('sidebar-open-left sidebar-open-right');
-                }
-
-                function toggle (e, position) {
-                    e.preventDefault();
-                    element.toggleClass('sidebar-open-' + position);
-                }
-
+                // Add a sidebar (left or right position)
                 function add(sidebar, position) {
                     sidebar = angular.extend({
                         position: position,
-                        menuCollapse: menuCollapse,
-                        close: close,
-                        toggle: toggle}, sidebarDefaults, sidebar);
+                        menuCollapse: menuCollapse}, sidebarDefaults, sidebar);
 
                     if (sidebar.sections) {
-                        if (!sidebar.collapse)
-                            element.addClass('sidebar-open-' + sidebar.position);
                         sidebars.push(sidebar);
                         return sidebar;
                     }
@@ -70,34 +58,6 @@ define(['angular',
 
             luxSidebars.template = function () {
                 return sidebarDefaults.template;
-            };
-
-            // Initialise top navigation bar for sidebars
-            luxSidebars.navBar = function (navbar, sidebars) {
-                (navbar || (navbar={}))
-                // navbar.fixed = false;
-                navbar.top = true;
-                navbar.fluid = true;
-                navbar = luxNavbar(navbar);
-                //
-                // Add toggle to the navbar
-                lux.forEach(sidebars, function (sidebar) {
-                    if (sidebar.toggleName) {
-                        if (!navbar.itemsLeft) navbar.itemsLeft = [];
-
-                        navbar.itemsLeft.splice(0, 0, {
-                            href: sidebar.position,
-                            title: sidebar.toggleName,
-                            name: sidebar.toggleName,
-                            klass: 'sidebar-toggle',
-                            icon: 'fa fa-bars',
-                            action: angular.isFunction(sidebar.toggle) ? sidebar.toggle.bind(sidebar) : undefined,
-                            right: 'vert-divider'
-                        });
-                    }
-                });
-
-                return navbar;
             };
 
             return luxSidebars;
@@ -128,73 +88,129 @@ define(['angular',
             function ($compile, luxSidebars, luxNavbar, navLinks,
                       $templateCache, $window, $timeout) {
                 //
+                var inner;
+
                 return {
                     restrict: 'AE',
-                    compile: compile
+                    compile: function (element) {
+                        inner = element.html();
+
+                        element.html('');
+
+                        return {
+                            pre: sidebar,
+                            post: finalise
+                        };
+                    }
                 };
 
-                function compile (element) {
-                    var inner = element.html();
-                    //
-                    element.html('');
+                function sidebar(scope, element, attrs) {
+                    var options = lux.getOptions(attrs, 'sidebar'),
+                        sidebar = angular.extend({}, scope.sidebar, options),
+                        navbar = luxNavbar(angular.extend({}, sidebar.navbar, options.navbar)),
+                        template;
 
-                    return {
-                        pre: sidebar,
-                        post: finalise
-                    };
+                    navbar.top = true;
+                    navbar.fluid = true;
+                    scope.navbar = navbar;
+                    var sidebars = luxSidebars(element, sidebar);
 
-                    function sidebar(scope, element, attrs) {
-                        var options = lux.getOptions(attrs, 'sidebar'),
-                            sidebar = angular.extend({}, scope.sidebar, options),
-                            navbar = angular.extend({}, sidebar.navbar, options.navbar),
-                            template;
+                    if (sidebars.length) {
+                        scope.sidebars = sidebars;
+                        scope.closeSidebars = closeSidebars;
+                        //
+                        // Add toggle to the navbar
+                        lux.forEach(sidebars, function (sidebar) {
+                            addSidebarToggle(sidebar, scope);
+                        });
+                        //
+                        template = $templateCache.get(luxSidebars.template());
+                    } else
+                        template = $templateCache.get(luxNavbar.template());
 
-                        var sidebars = luxSidebars(element, sidebar.sidebars);
+                    scope.links = navLinks;
 
-                        if (sidebars.length) {
-                            scope.sidebars = sidebars;
-                            template = $templateCache.get(luxSidebars.template());
-                        } else
-                            template = $templateCache.get(luxNavbar.template());
+                    element.append($compile(template)(scope));
 
-                        scope.navbar = luxSidebars.navBar(navbar, sidebars);
-                        scope.links = navLinks;
+                    if (inner) {
+                        inner = $compile(inner)(scope);
 
-                        element.append($compile(template)(scope));
-
-                        if (inner) {
-                            inner = $compile(inner)(scope);
-
-                            if (sidebars.length)
-                                lux.querySelector(element, '.content-wrapper').append(inner);
-                            else
-                                element.after(inner);
-                        }
+                        if (sidebars.length)
+                            lux.querySelector(element, '.sidebar-page').append(inner);
+                        else
+                            element.after(inner);
                     }
 
-                    function finalise(scope, element) {
-                        var triggered = false;
-
-                        $timeout(function () {
-                            return element.find('nav');
-                        }).then(function (nav) {
-
-                            angular.element($window).bind('scroll', function () {
-
-                                if ($window.pageYOffset > 150 && triggered === false) {
-                                    nav.addClass('navbar--small');
-                                    triggered = true;
-                                    scope.$apply();
-                                } else if ($window.pageYOffset <= 150 && triggered === true) {
-                                    nav.removeClass('navbar--small');
-                                    triggered = false;
-                                    scope.$apply();
-                                }
-
-                            });
+                    function closeSidebars () {
+                        angular.forEach(sidebars, function (sidebar) {
+                            sidebar.close();
                         });
                     }
                 }
+
+                function finalise(scope, element) {
+                    var triggered = false;
+
+                    $timeout(function () {
+                        return element.find('nav');
+                    }).then(function (nav) {
+
+                        angular.element($window).bind('scroll', function () {
+
+                            if ($window.pageYOffset > 150 && triggered === false) {
+                                nav.addClass('navbar--small');
+                                triggered = true;
+                                scope.$apply();
+                            } else if ($window.pageYOffset <= 150 && triggered === true) {
+                                nav.removeClass('navbar--small');
+                                triggered = false;
+                                scope.$apply();
+                            }
+
+                        });
+                    });
+                }
             }]);
 
+        //
+        //  Add toggle functionality to sidebar
+        function addSidebarToggle (sidebar, scope) {
+            if (!sidebar.toggleName) return;
+
+            sidebar.close = function () {
+                setState(false);
+            };
+
+            function toggle (e) {
+                e.preventDefault();
+                angular.forEach(scope.sidebars, function (s) {
+                    if (s != sidebar) s.close();
+                });
+                setState(!sidebar.open);
+            }
+
+            function setState (value) {
+                sidebar.open = value;
+                sidebar.closed = !value;
+                scope.navbar[sidebar.position] = sidebar.open;
+            }
+
+            var item = {
+                href: sidebar.position,
+                title: sidebar.toggleName,
+                name: sidebar.toggleName,
+                klass: 'sidebar-toggle',
+                icon: 'fa fa-bars',
+                action: toggle,
+                right: 'vert-divider'
+            };
+
+            if (sidebar.position === 'left') {
+                if (!scope.navbar.itemsLeft) scope.navbar.itemsLeft = [];
+                scope.navbar.itemsLeft.splice(0, 0, item);
+            } else {
+                if (!scope.navbar.itemsRight) scope.navbar.itemsRight = [];
+                scope.navbar.itemsRight.push(item);
+            }
+        }
 });

@@ -1,10 +1,9 @@
 define(['angular',
-        'lux/page',
+        'lux/page/main',
         'lux/components/highlight',
         'lux/blog/templates'], function (angular, lux) {
     'use strict';
-    //  Blog Module
-    //  ===============
+
     //
     //  Simple blog pagination directives and code highlight with highlight.js
     angular.module('lux.blog', ['lux.page', 'lux.highlight', 'lux.blog.templates'])

@@ -1,4 +1,4 @@
-from . import app
+import tests.admin.test_app as app
 
 
 class AngularAdminTest(app.AdminTest):

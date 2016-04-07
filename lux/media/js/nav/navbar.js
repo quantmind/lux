@@ -152,11 +152,14 @@ define(['angular',
             return {
                 restrict: 'AE',
 
-                link: function (scope, element) {
-                    element.css('min-height', $window.innerHeight + 'px');
+                link: function (scope, element, attrs) {
+                    var opts = angular.extend({}, scope.fullPage, lux.getOptions(attrs, 'fullPage')),
+                        offset = +(opts.offset || 0),
+                        height = $window.innerHeight - offset;
+                    element.css('min-height', height + 'px');
 
                     scope.$watch(function () {
-                        return $window.innerHeight;
+                        return $window.innerHeight - offset;
                     }, function (value) {
                         element.css('min-height', value + 'px');
                     });

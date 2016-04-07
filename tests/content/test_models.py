@@ -4,7 +4,7 @@ from lux.utils import test
 from lux.extensions.rest import UserMixin
 from lux.extensions.content.models import Content, DataError
 
-from . import PWD, remove_repo, create_content
+from tests.content import PWD, remove_repo, create_content
 
 
 class User(UserMixin):

@@ -4,7 +4,7 @@ import json
 
 from lux.utils import test
 
-from . import remove_repo, create_content
+from tests.content import remove_repo, create_content
 
 
 class TestContentViews(test.AppTestCase):

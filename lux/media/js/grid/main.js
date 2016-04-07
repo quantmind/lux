@@ -1,5 +1,5 @@
 define(['angular',
-        'lux',
+        'lux/main',
         'lux/grid/providers',
         'lux/grid/api',
         'lux/grid/menu'], function (angular, lux) {

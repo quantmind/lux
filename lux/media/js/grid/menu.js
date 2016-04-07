@@ -1,5 +1,5 @@
 define(['angular',
-        'lux',
+        'lux/main',
         'lux/grid/api',
         'angular-ui-bootstrap'], function (angular, lux) {
     'use strict';

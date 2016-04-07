@@ -22,6 +22,14 @@
             transform: $transforms;
 }
 
+@mixin transition($args) {
+  -webkit-transition: $args;
+  -moz-transition: $args;
+  -ms-transition: $args;
+  -o-transition: $args;
+  transition: $args;
+}
+
 @mixin clearfix {
   &:after {
     content: "";
@@ -29,6 +37,7 @@
     clear: both;
   }
 }
+
 
 @mixin setLinkSelectorStyle {
     &:hover, &:active, &:visited {

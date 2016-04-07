@@ -29,9 +29,9 @@ define(['angular',
         beforeEach(function () {
             module('lux.pagination.test');
 
-            inject(function (_luxPaginationFactory_, _$lux_) {
+            inject(function (_luxPagination_, _$lux_) {
                 $lux = _$lux_;
-                LuxPagination = _luxPaginationFactory_;
+                LuxPagination = _luxPagination_;
             });
 
         });

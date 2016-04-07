@@ -1,11 +1,12 @@
-from .postgresql import TestPostgreSqlBase
-from .sqlite import TestSqliteMixin
+import tests.odm.test_postgresql as postgresql
+from tests.odm.test_sqlite import TestSqliteMixin
 
 
-class TestFiltersPsql(TestPostgreSqlBase):
+class TestFiltersPsql(postgresql.TestPostgreSqlBase):
+
     @classmethod
     def populatedb(cls):
-        super(TestPostgreSqlBase, cls).populatedb()
+        super().populatedb()
         odm = cls.app.odm()
 
         with odm.begin() as session:
@@ -82,6 +83,7 @@ class TestFiltersPsql(TestPostgreSqlBase):
 
 
 class TestFiltersSqlite(TestSqliteMixin, TestFiltersPsql):
+
     def test_search(self):
         # MATCH is not implemented in SQLite
         pass

@@ -5,7 +5,7 @@ define(['angular',
     'use strict';
 
     describe('Test lux.form.utils module', function () {
-        var LuxPagination;
+        var luxPagination;
         var scope;
         var compile;
 
@@ -26,18 +26,18 @@ define(['angular',
 
             angular.mock.module('lux.form.utils', function ($provide) {
 
-                $provide.factory('luxPaginationFactory', function () {
-                    LuxPagination = jasmine.createSpy('luxPag').and.callThrough();
-                    LuxPagination.prototype.getData = jasmine.createSpy('luxPagGetData');
-                    LuxPagination.prototype.loadMore = jasmine.createSpy('luxPagLoadMore');
-                    LuxPagination.prototype.search = jasmine.createSpy('luxPagSearch');
-                    return LuxPagination;
+                $provide.factory('luxPagination', function () {
+                    luxPagination = jasmine.createSpy('luxPag').and.callThrough();
+                    luxPagination.prototype.getData = jasmine.createSpy('luxPagGetData');
+                    luxPagination.prototype.loadMore = jasmine.createSpy('luxPagLoadMore');
+                    luxPagination.prototype.search = jasmine.createSpy('luxPagSearch');
+                    return luxPagination;
                 });
 
             });
 
-            angular.mock.inject(function (_$compile_, _$rootScope_, _luxPaginationFactory_) {
-                LuxPagination = _luxPaginationFactory_;
+            angular.mock.inject(function (_$compile_, _$rootScope_, _luxPagination_) {
+                luxPagination = _luxPagination_;
                 scope = _$rootScope_.$new();
                 compile = _$compile_;
             });
@@ -47,7 +47,7 @@ define(['angular',
         afterEach(function () {
         });
 
-        it('remote options are parsed and an instance of LuxPagination is created and the getData method is called', function () {
+        it('remote options are parsed and an instance of luxPagination is created and the getData method is called', function () {
             var remoteOptions = '{"url": "http://127.0.0.1:6050", "name": "groups_url"}';
             var markup = '<div data-remote-options=\'' + remoteOptions + '\' data-remote-options-id="" name="groups[]"><input type="text"></input></div>';
             var params = {sortby: 'id:asc'};
@@ -56,8 +56,8 @@ define(['angular',
             getCompiledElem(markup);
 
             expect(angular.fromJson).toHaveBeenCalled();
-            expect(LuxPagination).toHaveBeenCalledWith(scope, angular.fromJson(remoteOptions), false);
-            expect(LuxPagination.prototype.getData).toHaveBeenCalledWith(params, jasmine.any(Function));
+            expect(luxPagination).toHaveBeenCalledWith(scope, angular.fromJson(remoteOptions), false);
+            expect(luxPagination.prototype.getData).toHaveBeenCalledWith(params, jasmine.any(Function));
         });
 
         it('if multiple attr is present instance of LuxPag is recursive and getData called with raised limit', function () {
@@ -66,8 +66,8 @@ define(['angular',
             var params = {limit: 200, sortby: 'id:asc'};
             getCompiledElem(markup);
 
-            expect(LuxPagination).toHaveBeenCalledWith(scope, angular.fromJson(remoteOptions), true);
-            expect(LuxPagination.prototype.getData).toHaveBeenCalledWith(params, jasmine.any(Function));
+            expect(luxPagination).toHaveBeenCalledWith(scope, angular.fromJson(remoteOptions), true);
+            expect(luxPagination.prototype.getData).toHaveBeenCalledWith(params, jasmine.any(Function));
         });
 
         it('scope.$on is called when "more Data" event is emitted', function () {
@@ -95,7 +95,7 @@ define(['angular',
             expect(searchInput.data().onKeyUp).toBe(true);
 
             searchInput.triggerHandler(mockEvent);
-            expect(LuxPagination.prototype.search).toHaveBeenCalledWith(mockEvent.srcElement.value, jasmine.any(String));
+            expect(luxPagination.prototype.search).toHaveBeenCalledWith(mockEvent.srcElement.value, jasmine.any(String));
         });
 
         it('enableSearch doesn\'t call luxPag.search if query is less than three chars', function () {
@@ -112,7 +112,7 @@ define(['angular',
             scope.$emit('moreData');
 
             searchInput.triggerHandler(mockEvent);
-            expect(LuxPagination.prototype.search).not.toHaveBeenCalled();
+            expect(luxPagination.prototype.search).not.toHaveBeenCalled();
         });
 
         it('enableSearch returns if data().onKeyUp is true', function () {
@@ -139,7 +139,7 @@ define(['angular',
             scope.$emit('moreData');
             uiSelect.triggerHandler('scroll');
 
-            expect(LuxPagination.prototype.loadMore).toHaveBeenCalled();
+            expect(luxPagination.prototype.loadMore).toHaveBeenCalled();
         });
 
         it('buildSelect calls angular.forEach on data returned from luxPag.getData', function () {
@@ -168,7 +168,7 @@ define(['angular',
                 }
             };
 
-            LuxPagination.prototype.getData = function (params, cb) {
+            luxPagination.prototype.getData = function (params, cb) {
                 cb(fakeData);
             };
             spyOn(angular, 'forEach').and.callThrough();

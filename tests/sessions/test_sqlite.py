@@ -1,4 +1,4 @@
-from . import postgresql
+import tests.sessions.test_postgresql as postgresql
 
 
 class TestSqlite(postgresql.TestPostgreSql):

@@ -9,6 +9,8 @@ import lux.extensions.auth.models as auth
 
 copy_models(auth, __name__)
 
+Model = auth.Model
+
 
 class User(auth.User):
     """Override user with oauth dictionary
@@ -16,7 +18,7 @@ class User(auth.User):
     oauth = Column(JSONType)
 
 
-class AccessToken(auth.Model):
+class AccessToken(Model):
     """
     An AccessToken instance represents the actual access token to
     access user's resources, as in :rfc:`5`.

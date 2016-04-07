@@ -20,14 +20,14 @@ class Command(lux.Command):
     def run(self, options, **params):
         app = self.app
         pid = 0
-        pidfile = options.pidfile
-        if pidfile:
-            if os.path.isfile(pidfile):
-                pid = Pidfile(pidfile).read()
+        pid_file = options.pid_file
+        if pid_file:
+            if os.path.isfile(pid_file):
+                pid = Pidfile(pid_file).read()
             else:
-                app.write_err('Could not located pidfile %s' % pidfile)
+                app.write_err('Could not located pid file %s' % pid_file)
         else:
-            app.write_err('Pidfile not available')
+            app.write_err('Pid file not available')
 
         if not pid:
             return 1
@@ -35,7 +35,7 @@ class Command(lux.Command):
         self.kill(pid, signal.SIGTERM)
         start = time.time()
         while time.time() - start < options.timeout:
-            if os.path.isfile(pidfile):
+            if os.path.isfile(pid_file):
                 time.sleep(0.2)
             else:
                 app.write('Process %d terminated' % pid)

@@ -1,7 +1,5 @@
 from lux.utils import test
 
-__test__ = False
-
 
 class OdmMixin:
 

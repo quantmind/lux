@@ -11,7 +11,7 @@ from io import StringIO
 
 from pulsar import get_event_loop, as_coroutine
 from pulsar.utils.httpurl import (Headers, encode_multipart_formdata,
-                                  ENCODE_BODY_METHODS)
+                                  ENCODE_BODY_METHODS, remove_double_slash)
 from pulsar.utils.string import random_string
 from pulsar.utils.websocket import (SUPPORTED_VERSIONS, websocket_key,
                                     frame_parser)
@@ -75,7 +75,7 @@ def test_app(test, config_file=None, config_params=True, argv=None, **params):
         argv = []
     if '--log-level' not in argv:
         argv.append('--log-level')
-        levels = test.cfg.loglevel if hasattr(test, 'cfg') else ['none']
+        levels = test.cfg.log_level if hasattr(test, 'cfg') else ['none']
         argv.extend(levels)
     app = lux.App(config_file, argv=argv, **kwargs).setup()
     app.stdout = StringIO()
@@ -414,6 +414,10 @@ class AppTestCase(unittest.TestCase, TestMixin):
         if 'password' not in entry:
             entry['password'] = entry['username']
         backend.create_user(cls.app, **entry)
+
+    @classmethod
+    def api_url(cls, path):
+        return remove_double_slash('%s/%s' % (cls.app.config['API_URL'], path))
 
     def create_superuser(self, username, email, password):
         """A shortcut for the create_superuser command

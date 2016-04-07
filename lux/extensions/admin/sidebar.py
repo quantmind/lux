@@ -44,33 +44,12 @@ def add_css(all):
             padding_top=sidebar.toggle.padding,
             padding_bottom=sidebar.toggle.padding))
 
-    css('html, .fullwidth',
-        width=pc(100),
-        overflow_x='hidden')
-
     css('.sidebar-body',
         position='relative')
-
-    css('.sidebar-page',
-        position='relative',
-        top=0,
-        bottom=0,
-        left=0,
-        right=0)
 
     css('.sidebar-page, .sidebar-navbar > nav',
         Transform(0, 0),
         Transition('all', trans.duration, trans.easing))
-
-    css('.overlay',
-        position='absolute',
-        background_color=sidebar.overlay.color,
-        display='none',
-        width='100%',
-        bottom=0,
-        left=0,
-        top=0,
-        z_index=800)
 
     css('.sidebar',
         Transition('all', trans.duration, trans.easing),
@@ -86,15 +65,7 @@ def add_css(all):
             outline='none',
             text_decoration='none',
             color=sidebar.color),
-        background=sidebar.background,
-        position='fixed',
-        top=px(0),
-        min_height='100%',
-        max_height='100%',
-        width=sidebar.width,
-        overflow_y='auto',
-        overflow_x='hidden',
-        z_index=810)
+        background=sidebar.background)
 
     # LEFT SIDEBAR OPEN
     css('.sidebar-open-left',
@@ -115,7 +86,6 @@ def add_css(all):
     # IMAGE in the navbar-panel
     css('.sidebar',
         css(' .nav-panel',
-            Clearfix(),
             css(' .image > img',
                 height=navbar.small_height-px(20),
                 margin=spacing(10, 5)),
@@ -142,7 +112,6 @@ def add_css(all):
                 padding=spacing(5, 5, 5, 15),
                 line_height=1.2),
             padding=spacing(3, 10),
-            height=navbar.small_height,
             background=sidebar.info.background),
         css(' .sidebar-menu',
             css(' > li',

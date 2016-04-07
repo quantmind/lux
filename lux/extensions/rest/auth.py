@@ -186,9 +186,9 @@ class AuthBackend(AuthBase,
         pass
 
     @auth_backend
-    def has_permission(self, request, resorce, action):  # pragma    nocover
-        '''Check if the given request has permission over ``target``
-        element with permission ``level``
+    def has_permission(self, request, resource, action):  # pragma    nocover
+        '''Check if the given request has permission over ``resource``
+        element with permission ``action``
         '''
         pass
 

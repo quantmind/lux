@@ -147,11 +147,10 @@ class HtmlRouter(Router):
         context = app.context(request)
         context.update(self.context(request) or ())
         context['html_main'] = html
-        template = self.get_inner_template(request, inner_template)
-
-        if template:
-            html = app.render_template(template, context, request)
-            context['html_main'] = html
+        #template = self.get_inner_template(request, inner_template)
+        #if template:
+        #    html = app.render_template(template, context, request)
+        #    context['html_main'] = html
 
         # This request is for the inner template only
         if request.url_data.get('template') == 'ui':

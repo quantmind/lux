@@ -1,3 +1,5 @@
+"""Lux Application class
+"""
 import sys
 import os
 import json
@@ -23,7 +25,7 @@ from lux.utils.async import GreenPubSub
 from lux import __version__
 
 from .commands import ConsoleParser, CommandError, ConfigError
-from .extension import Extension, Parameter, EventMixin
+from .extension import Extension, Parameter, EventMixin, app_attribute
 from .wrappers import (wsgi_request, HeadMeta, error_handler, as_async_wsgi,
                        LuxContext)
 from .engines import template_engine
@@ -42,7 +44,7 @@ LUX_CORE = os.path.dirname(__file__)
 
 
 def execute_from_config(config_file, **params):     # pragma    nocover
-    '''Create and run an :class:`.Application` from a ``config_file``.
+    """Create and run an :class:`.Application` from a ``config_file``.
 
     This is the function to use when creating the script which runs your
     web applications::
@@ -56,19 +58,19 @@ def execute_from_config(config_file, **params):     # pragma    nocover
         up a new :class:`App`. The config file should be located in the
         python module which implements the main application
         of the web site.
-    '''
+    """
     return execute_app(App(config_file, **params))
 
 
 def execute_app(app, argv=None, **params):  # pragma    nocover
-    '''Execute a given ``app``.
+    """Execute a given ``app``.
 
     :parameter app: the :class:`.App` to execute
     :parameter argv: optional list of parameters, if not given ``sys.argv``
         is used instead.
     :parameter params: additional key-valued parameters to pass to the
         :class:`.Command` executing the ``app``.
-    '''
+    """
     if argv is None:
         argv = app._argv
     if argv is None:
@@ -136,7 +138,7 @@ class App(LazyWsgi):
 
 
 class Application(ConsoleParser, Extension, EventMixin):
-    '''The :class:`.Application` is the WSGI callable for serving
+    """The :class:`.Application` is the WSGI callable for serving
     lux applications.
 
     It is a specialised :class:`~.Extension` which collects
@@ -167,7 +169,7 @@ class Application(ConsoleParser, Extension, EventMixin):
 
         Used by the sessions extension
 
-    '''
+    """
     cfg = None
     debug = False
     logger = None
@@ -175,7 +177,7 @@ class Application(ConsoleParser, Extension, EventMixin):
     handler = None
     auth_backend = None
     cms = None
-    '''CMS handler'''
+    """CMS handler"""
     _worker = None
     _WsgiHandler = WsgiHandler
     _pubsub_store = None
@@ -267,7 +269,9 @@ class Application(ConsoleParser, Extension, EventMixin):
         Parameter('PUBSUB_STORE', None,
                   'Connection string for a Publish/Subscribe data-store'),
         Parameter('BROADCAST_CHANNELS', None,
-                  'Set of channels to broadcast events')
+                  'Set of channels to broadcast events'),
+        Parameter('HTTP_CLIENT_PARAMETERS', None,
+                  'A dictionary of parameters to pass to the Http Client')
         ]
 
     def __init__(self, callable, handler=True):
@@ -282,7 +286,7 @@ class Application(ConsoleParser, Extension, EventMixin):
             self.get_handler()
 
     def __call__(self, environ, start_response):
-        '''The WSGI thing.'''
+        """The WSGI thing."""
         request = self.wsgi_request(environ)
         if self.debug:
             self.logger.debug('Serving request %s' % request.path)
@@ -296,18 +300,18 @@ class Application(ConsoleParser, Extension, EventMixin):
 
     @property
     def config_module(self):
-        '''The :ref:`configuration file <parameters>` used by this
+        """The :ref:`configuration file <parameters>` used by this
         :class:`.App`.
-        '''
+        """
         return self.meta.module_name
 
     @property
     def extensions(self):
-        '''Ordered dictionary of :class:`.Extension` available.
+        """Ordered dictionary of :class:`.Extension` available.
 
         The order is the same as in the
         :setting:`EXTENSIONS` config parameter.
-        '''
+        """
         return self.config['EXTENSION_HANDLERS']
 
     @property
@@ -321,8 +325,8 @@ class Application(ConsoleParser, Extension, EventMixin):
 
     @lazyproperty
     def cache_server(self):
-        '''Return the Cache handler
-        '''
+        """Return the Cache handler
+        """
         return create_cache(self, self.config['CACHE_SERVER'])
 
     @lazyproperty
@@ -363,16 +367,16 @@ class Application(ConsoleParser, Extension, EventMixin):
         return self.handler
 
     def get_version(self):
-        '''Get version of this :class:`App`. Required by
-        :class:`.ConsoleParser`.'''
+        """Get version of this :class:`App`. Required by
+        :class:`.ConsoleParser`."""
         return self.meta.version
 
     def wsgi_request(self, environ=None, loop=None, path=None,
                      app_handler=None, urlargs=None, **kw):
-        '''Create a :class:`.WsgiRequest` from a wsgi ``environ`` and set the
+        """Create a :class:`.WsgiRequest` from a wsgi ``environ`` and set the
         ``app`` attribute in the cache.
         Additional keyed-valued parameters can be inserted.
-        '''
+        """
         if not environ:
             # No WSGI environment, build a test one
             environ = test_wsgi_environ(path=path, loop=loop, **kw)
@@ -390,11 +394,11 @@ class Application(ConsoleParser, Extension, EventMixin):
         return request
 
     def html_document(self, request):
-        '''Build the HTML document.
+        """Build the HTML document.
 
         Usually there is no need to call directly this method.
         Instead one can use the :attr:`.WsgiRequest.html_document`.
-        '''
+        """
         cfg = self.config
         doc = HtmlDocument(title=cfg['HTML_TITLE'],
                            media_path=cfg['MEDIA_URL'],
@@ -403,9 +407,7 @@ class Application(ConsoleParser, Extension, EventMixin):
                            charset=cfg['ENCODING'],
                            asset_protocol=cfg['ASSET_PROTOCOL'])
         doc.meta = HeadMeta(doc.head)
-        doc.jscontext = dict(((p.name, cfg[p.name])
-                              for p in cfg['_parameters'].values()
-                              if p.jscontext))
+        doc.jscontext = dict(self._config_context())
         doc.jscontext['lux_version'] = __version__
         # Locale
         lang = cfg['LOCALE'][:2]
@@ -437,7 +439,7 @@ class Application(ConsoleParser, Extension, EventMixin):
 
     @lazyproperty
     def commands(self):
-        '''Load all commands from installed applications'''
+        """Load all commands from installed applications"""
         cmnds = OrderedDict()
         for e in self.config['EXTENSIONS']:
             try:
@@ -459,14 +461,14 @@ class Application(ConsoleParser, Extension, EventMixin):
 
     @lazyproperty
     def email_backend(self):
-        '''Email backend for this application
-        '''
+        """Email backend for this application
+        """
         dotted_path = self.config['EMAIL_BACKEND']
         return module_attribute(dotted_path)(self)
 
     def get_command(self, name):
-        '''Construct and return a :class:`.Command` for this application
-        '''
+        """Construct and return a :class:`.Command` for this application
+        """
         for e, cmnds in self.commands.items():
             for cmnd in cmnds:
                 if name == cmnd:
@@ -476,7 +478,7 @@ class Application(ConsoleParser, Extension, EventMixin):
         raise CommandError("Unknown command '%s'" % name)
 
     def get_usage(self):
-        '''Returns the script's main help text, as a string.'''
+        """Returns the script's main help text, as a string."""
         description = self.config['DESCRIPTION'] or 'Lux toolkit'
         usage = ['', '', description, '',
                  "Type '%s <command> --help' for help on a specific command." %
@@ -490,13 +492,13 @@ class Application(ConsoleParser, Extension, EventMixin):
         return text
 
     def get_parser(self, with_commands=True, nargs='?', **params):
-        '''Return a python :class:`argparse.ArgumentParser` for parsing
+        """Return a python :class:`argparse.ArgumentParser` for parsing
         the command line.
 
         :param with_commands: Include parsing of all commands (default True).
         :param params: parameters to pass to the
             :class:`argparse.ArgumentParser` constructor.
-        '''
+        """
         if with_commands:
             params['usage'] = self.get_usage()
         parser = super().get_parser(**params)
@@ -507,14 +509,14 @@ class Application(ConsoleParser, Extension, EventMixin):
         self.fire('on_start', server)
 
     def load_extension(self, dotted_path):
-        '''Load an :class:`.Extension` class into this :class:`App`.
+        """Load an :class:`.Extension` class into this :class:`App`.
 
         :param dotted_path: python dotted path to the extension.
         :return: an :class:`.Extension` class or ``None``
 
         If the module contains an :class:`.Extension` class named
         ``Extension``, it will be added to the :attr:`extension` dictionary.
-        '''
+        """
         try:
             module = import_module(dotted_path)
         except ImportError:
@@ -530,11 +532,11 @@ class Application(ConsoleParser, Extension, EventMixin):
 
     # Template redering
     def template_full_path(self, names):
-        '''Return the template full path or None.
+        """Return the template full path or None.
 
         Loops through all :attr:`extensions` in reversed order and
         check for ``name`` within the ``templates`` directory
-        '''
+        """
         if not isinstance(names, (list, tuple)):
             names = (names,)
         for name in names:
@@ -548,7 +550,7 @@ class Application(ConsoleParser, Extension, EventMixin):
         self.logger.error('Template %s not found' % name)
 
     def template(self, name):
-        '''Load a template from the file system.
+        """Load a template from the file system.
 
         The template is must be located in a ``templates`` directory
         of at least one of the extensions included in the :setting:EXTENSIONS`
@@ -556,7 +558,7 @@ class Application(ConsoleParser, Extension, EventMixin):
         the :meth:`template_full_path` method.
 
         If the file is not found an empty string is returned.
-        '''
+        """
         filename = self.template_full_path(name)
         if filename:
             with open(filename, 'r') as file:
@@ -564,7 +566,7 @@ class Application(ConsoleParser, Extension, EventMixin):
         return ''
 
     def context(self, request, context=None):
-        '''Load the ``context`` dictionary for a ``request``.
+        """Load the ``context`` dictionary for a ``request``.
 
         This function is called every time a template is rendered via the
         :meth:`render_template` method is used and a the wsgi ``request``
@@ -572,7 +574,7 @@ class Application(ConsoleParser, Extension, EventMixin):
 
         The initial ``context`` is updated with contribution from
         all :setting:`EXTENSIONS` which expose the ``context`` method.
-        '''
+        """
         if (isinstance(context, LuxContext) or
                 request.cache._in_application_context):
             return context
@@ -580,7 +582,7 @@ class Application(ConsoleParser, Extension, EventMixin):
             request.cache._in_application_context = True
             try:
                 ctx = LuxContext()
-                ctx.update(self.config)
+                ctx.update(self._config_context())
                 ctx.update(self.cms.context(ctx))
                 ctx.update(context or ())
                 for ext in self.extensions.values():
@@ -592,8 +594,8 @@ class Application(ConsoleParser, Extension, EventMixin):
             return context
 
     def render_template(self, name, context=None, request=None, engine=None):
-        '''Render a template file ``name`` with ``context``
-        '''
+        """Render a template file ``name`` with ``context``
+        """
         if request:  # get application context only when request available
             context = self.context(request, context)
         template = self.template(name)
@@ -606,13 +608,13 @@ class Application(ConsoleParser, Extension, EventMixin):
 
     def html_response(self, request, page, context=None,
                       jscontext=None, title=None, status_code=None):
-        '''Html response via a template.
+        """Html response via a template.
 
         :param request: the :class:`.WsgiRequest`
         :param page: A :class:`Page`, template file name or a list of
             template filenames
         :param context: optional context dictionary
-        '''
+        """
         if 'text/html' in request.content_types:
             request.response.content_type = 'text/html'
             doc = request.html_document
@@ -635,8 +637,8 @@ class Application(ConsoleParser, Extension, EventMixin):
         raise HttpException(status=415)
 
     def site_url(self, path=None):
-        '''Build the site url from an optional ``path``
-        '''
+        """Build the site url from an optional ``path``
+        """
         base = self.config['SITE_URL']
         path = path or '/'
         if base:
@@ -645,8 +647,8 @@ class Application(ConsoleParser, Extension, EventMixin):
             return path
 
     def media_url(self, path=None):
-        '''Build the media url from an optional ``path``
-        '''
+        """Build the media url from an optional ``path``
+        """
         base = self.config['SITE_URL'] + self.config['MEDIA_URL']
         path = path or '/'
         if base:
@@ -654,20 +656,15 @@ class Application(ConsoleParser, Extension, EventMixin):
         else:
             return path or '/'
 
-    def require(self, *extensions):
-        for ext in extensions:
-            if ext not in self.config['EXTENSIONS']:
-                raise ImproperlyConfigured('Requires "%s" extension' % ext)
-
     def add_events(self, event_names):
-        '''Add additional event names to the event dictionary
-        '''
+        """Add additional event names to the event dictionary
+        """
         for ext in self.extensions.values():
             self.bind_events(ext, event_names)
 
     def module_iterator(self, submodule=None, filter=None, cache=None):
-        '''Iterate over applications modules
-        '''
+        """Iterate over applications modules
+        """
         for extension in self.config['EXTENSIONS']:
             try:
                 mod = import_module(extension)
@@ -686,11 +683,11 @@ class Application(ConsoleParser, Extension, EventMixin):
                     yield mod
 
     def pubsub(self, key=None, **kw):
-        '''Get a pub-sub handler for a given key
+        """Get a pub-sub handler for a given key
 
         A key is used to group together pub-subs so that bandwidths is reduced
         If no key is provided the handler is not included in the pubsub cache.
-        '''
+        """
         if not self._pubsub_store:
             if self.config['PUBSUB_STORE']:
                 self._pubsub_store = create_store(self.config['PUBSUB_STORE'])
@@ -711,18 +708,18 @@ class Application(ConsoleParser, Extension, EventMixin):
             pubsub = self._pubsub_store.pubsub()
         return pubsub
 
+    @app_attribute
     def http(self):
         """Get an http client for a given key
 
         A key is used to group together clients so that bandwidths is reduced
         If no key is provided the handler is not included in the http cache.
         """
-        if not self._http:
-            http = HttpClient()
-            if self.green_pool:
-                http = GreenHttp(http, self.green_pool)
-            self._http = http
-        return self._http
+        params = self.config['HTTP_CLIENT_PARAMETERS'] or {}
+        http = HttpClient(**params)
+        if self.green_pool:
+            http = GreenHttp(http, self.green_pool)
+        return http
 
     def run_in_executor(self, callable, *args):
         """Run a ``callable`` in the event loop executor
@@ -782,11 +779,11 @@ class Application(ConsoleParser, Extension, EventMixin):
         return config
 
     def _build_handler(self):
-        '''The WSGI application handler for this :class:`App`.
+        """The WSGI application handler for this :class:`App`.
 
         It is lazily loaded the first time it is accessed so that
         this :class:`App` can be used by pulsar in a multiprocessing setup.
-        '''
+        """
         # do this here so that the config is already loaded before fire signal
         extensions = list(self.extensions.values())
         async_middleware = []
@@ -811,13 +808,18 @@ class Application(ConsoleParser, Extension, EventMixin):
         debug = opts.debug or self.params.get('debug', False)
         cfg = pulsar.Config()
         cfg.set('debug', debug)
-        cfg.set('loglevel', opts.loglevel)
-        cfg.set('loghandlers', opts.loghandlers)
+        cfg.set('log_level', opts.log_level)
+        cfg.set('log_handlers', opts.log_handlers)
         self.debug = cfg.debug
         if self.params.get('SETUP_LOGGER', True):
             self.logger = cfg.configured_logger('lux')
         else:
             super()._setup_logger(config, module, opts)
+
+    def _config_context(self):
+        cfg = self.config
+        return ((p.name, cfg[p.name]) for p in cfg['_parameters'].values()
+                if p.jscontext)
 
 
 def add_app(apps, name, pos=None):

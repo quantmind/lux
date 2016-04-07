@@ -113,10 +113,13 @@ class Extension(MultiAuthBackend, WsModelRpc):
 
     def on_config(self, app):
         self.backends = []
-
+        app.rest_api_client = False
         url = app.config['API_URL']
-        if url is not None and not is_absolute_uri(url):
-            app.config['API_URL'] = str(RestRoot(url))
+        if url is not None:
+            if is_absolute_uri(url):
+                app.rest_api_client = True
+            else:
+                app.config['API_URL'] = str(RestRoot(url))
 
         module = import_module(app.meta.module_name)
 

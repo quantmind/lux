@@ -1,5 +1,5 @@
-'''HTML views for authenticating users
-'''
+"""HTML views for authenticating users
+"""
 from pulsar import Http404, HttpRedirect
 from pulsar.apps.wsgi import route
 
@@ -12,8 +12,8 @@ from .forms import LoginForm, PasswordForm, EmailForm
 
 
 class Login(WebFormRouter):
-    '''Adds login get ("text/html") and post handlers
-    '''
+    """Web login view with post handler
+    """
     template = 'login.html'
     response_content_types = ['text/html',
                               'application/json']
@@ -40,8 +40,8 @@ class Logout(lux.Router):
 
 
 class SignUp(WebFormRouter):
-    '''Display a signup form
-    '''
+    """Display a signup form
+    """
     template = 'signup.html'
     confirmation_template = 'registration/confirmation.html'
 
@@ -69,8 +69,8 @@ class SignUp(WebFormRouter):
 
 
 class ForgotPassword(WebFormRouter):
-    '''Manage forget passwords routes
-    '''
+    """Manage forget passwords routes
+    """
     default_form = Layout(EmailForm,
                           Fieldset(all=True),
                           Submit('Submit'),

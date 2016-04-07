@@ -15,38 +15,37 @@ class ApiClient:
     the same application this client is part of)
     '''
     _http = None
+    _headers = None
 
     def __call__(self, request):
-        return ApiClientRequest(request, self.http(request.app))
+        return ApiClientRequest(request, self.http(request.app),
+                                self._headers)
 
     def http(self, app):
         '''Get the HTTP client
         '''
         if self._http is None:
             api_url = app.config['API_URL']
-            headers = [('content-type', 'application/json')]
+            self._headers = [('content-type', 'application/json')]
             # Remote API
             if is_absolute_uri(api_url):
-                if app.green_pool:
-                    self._http = GreenHttp(HttpClient(headers=headers),
-                                           app.green_pool)
-                else:
-                    self._http = HttpClient(loop=new_event_loop())
+                self._http = app.http()
             # Local API
             else:
-                self._http = LocalClient(app, headers)
+                self._http = LocalClient(app)
             token = app.config['API_AUTHENTICATION_TOKEN']
             if token:
-                self._http.headers['Athentication'] = 'Bearer %s' % token
+                self._headers.append(('Athentication', 'Bearer %s' % token))
 
         return self._http
 
 
 class ApiClientRequest:
 
-    def __init__(self, request, http):
+    def __init__(self, request, http, headers):
         self._request = request
         self._http = http
+        self._headers = headers
 
     @property
     def url(self):
@@ -71,7 +70,8 @@ class ApiClientRequest:
     def request(self, method, path=None, token=None, headers=None, **kw):
         request = self._request
         url = urljoin(self.url, path or '')
-        req_headers = headers[:] if headers else []
+        req_headers = self._headers[:]
+        req_headers.extend(headers or ())
         agent = request.get('HTTP_USER_AGENT', request.config['APP_NAME'])
         req_headers.append(('user-agent', agent))
         if not token and request.cache.session:
@@ -85,17 +85,13 @@ class ApiClientRequest:
 
 class LocalClient:
 
-    def __init__(self, app, headers=None):
+    def __init__(self, app):
         self.app = app
-        self.headers = headers or []
 
     def request(self, method, path, headers=None, **params):
         params['REQUEST_METHOD'] = method.upper()
-        heads = self.headers[:]
-        if headers:
-            heads.extend(headers)
         request = self.app.wsgi_request(path=path,
-                                        headers=heads,
+                                        headers=headers,
                                         extra=params)
         response = self.app(request.environ, self)
         if self.app.green_pool:

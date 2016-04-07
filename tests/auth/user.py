@@ -1,4 +1,3 @@
-__test__ = False
 
 
 class UserMixin:

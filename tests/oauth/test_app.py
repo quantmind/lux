@@ -1,6 +1,6 @@
 from urllib.parse import urlparse
 
-from . import OAuthTest, test
+from tests.oauth import OAuthTest, test
 
 
 class TestGithub(OAuthTest):

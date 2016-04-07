@@ -3,9 +3,10 @@ from pulsar.utils.pep import to_string
 
 from lux import Parameter, Http401
 
-from .. import AuthBackend
 from .mixins import jwt, TokenBackendMixin
 from .registration import RegistrationMixin
+from .. import AuthBackend
+from ..authviews import Authorization
 
 
 class TokenBackend(TokenBackendMixin, RegistrationMixin, AuthBackend):
@@ -23,6 +24,11 @@ class TokenBackend(TokenBackendMixin, RegistrationMixin, AuthBackend):
         Parameter('CORS_ALLOWED_METHODS', 'GET, PUT, POST, DELETE, HEAD',
                   'Access-Control-Allow-Methods for CORS')
     ]
+
+    def api_sections(self, app):
+        """This backend add the authorization router to the Rest API
+        """
+        yield Authorization()
 
     def login(self, request, user):
         expiry = self.session_expiry(request)

@@ -86,6 +86,7 @@ class TokenModel(odm.RestModel):
     def create_model(self, request, data, session=None):
         user = ensure_authenticated(request)
         auth = request.cache.auth_backend
+        data['session'] = False
         return auth.create_token(request, user, **data)
 
 

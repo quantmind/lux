@@ -3,8 +3,10 @@
 // update the @import in components/_sidebar.scss
 // Sidebar
 $sidebar-width: 250px;
+$sidebar-zindex: 810;
+$sidebar-overlay-bg: rgba(0, 0, 0, 0.1);
 
-$sidebar-background-color: rgb(29, 29, 29);
+$sidebar-background-color: $navbar-default-bg;
 $sidebar-panel-bg-color: lighten($sidebar-background-color, 5%);
 
 $sidebar-active-link-bg-color: lighten($sidebar-background-color, 10%);

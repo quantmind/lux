@@ -96,14 +96,14 @@ class ApiSessionBackend(SessionBackendMixin,
 
     The workflow for authentication is the following:
 
-    * Redirect the authentication to the remote api
-    * If successful obtain the JWT token from the response
+    * Redirect the authentication to the Rest API
+    * If successful obtain the ``token`` from the response
     * Create the user from decoding the JWT payload
     * Create the session with same id as the token id and set the user as
       session key
     * Save the session in cache and return the original encoded token
     """
-    permissions_url = None
+    permissions_url = 'user/permissions'
     """url for user permissions.
     """
     signup_url = 'authorizations/signup'
@@ -113,11 +113,6 @@ class ApiSessionBackend(SessionBackendMixin,
                  'username': 'users',
                  'email': 'users',
                  'auth_key': 'users/authkey'}
-
-    def api_sections(self, app):
-        """Does not provide any view to the api. Important!
-        """
-        return ()
 
     def get_user(self, request, **kw):
         """Get User from username, id or email or authentication key.

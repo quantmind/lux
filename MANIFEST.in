@@ -1,15 +1,9 @@
 include MANIFEST.in
 include README.rst
-include runtests.py
-include release.py
 include requirements.txt
 include requirements-dev.txt
 include requirements-soft.txt
-recursive-exclude * __pycache__
-recursive-exclude * *.pyc
-recursive-exclude * *.pyo
-recursive-exclude * *.orig
-recursive-include tests *.py *.js *.html *.scss *.md *.json *.txt *.rst *.mako *.json *.jpg *.png *.svg *.ico
-recursive-include lux *.js *.html *.scss *.md *.json *.txt *.rst *.mako *.json *.jpg *.png *.svg *.ico
-recursive-include example *.py *.js *.html *.scss *.md *.json *.txt *.rst *.mako *.json *.jpg *.png *.svg *.ico
+recursive-include tests *.py *.js *.html *.scss *.md *.json *.txt *.rst *.json
+recursive-include lux *.js *.html *.scss *.json *.txt *.rst *.mako *.json *.jpg
+recursive-include example *.py *.js *.html *.scss *.md *.json *.txt *.json *.jpg *.png *.svg *.ico
 prune example/node_modules

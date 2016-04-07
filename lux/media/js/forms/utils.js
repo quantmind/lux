@@ -3,7 +3,7 @@ define(['angular',
         'lux/services/pagination'], function (angular, lux) {
     'use strict';
 
-    angular.module('lux.form.utils', ['lux.pagination'])
+    angular.module('lux.form.utils', ['lux.services.pagination'])
 
         .constant('lazyLoadOffset', 40) // API will be called this number of pixels
                                         // before bottom of UIselect list

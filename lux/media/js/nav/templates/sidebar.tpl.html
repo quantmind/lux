@@ -1,8 +1,8 @@
-<navbar class="sidebar-navbar"></navbar>
+<navbar class="sidebar-navbar" ng-class="{'sidebar-open-left': navbar.left, 'sidebar-open-right': navbar.right}"></navbar>
 <aside ng-repeat="sidebar in sidebars"
        class="sidebar sidebar-{{ sidebar.position }}"
        ng-attr-id="{{ sidebar.id }}"
-       ng-class="{'sidebar-fixed':sidebar.fixed}" bs-collapse>
+       ng-class="{'sidebar-fixed': sidebar.fixed, 'sidebar-open': sidebar.open, 'sidebar-close': sidebar.closed}" bs-collapse>
     <div class="nav-panel">
         <div ng-if="sidebar.user">
             <div ng-if="sidebar.user.avatar_url" class="pull-{{ sidebar.position }} image">
@@ -22,8 +22,7 @@
         ng-class="{active:links.activeLink(link)}" ng-include="'subnav'"></li>
     </ul>
 </aside>
-<div class="sidebar-page clearfix" ng-click="sidebar.close()" full-page>
-    <div class="content-wrapper"></div>
+<div class="sidebar-page" ng-class="{'sidebar-open-left': navbar.left, 'sidebar-open-right': navbar.right}" ng-click="closeSidebars()">
     <div class="overlay"></div>
 </div>
 

@@ -1,13 +1,17 @@
 import os
 import sys
 import logging
+from functools import wraps
 from copy import copy
 from inspect import getfile, getmodule
+
+from pulsar import ImproperlyConfigured
 
 from lux import __version__
 
 
-__all__ = ['Extension', 'Parameter']
+__all__ = ['Extension', 'Parameter', 'app_attribute']
+
 
 # All events are fired with app as first positional argument
 ALL_EVENTS = ('on_config',  # Config ready.
@@ -182,6 +186,12 @@ class Extension(metaclass=ExtensionType):
         middleware'''
         pass
 
+    def require(self, app, *extensions):
+        for ext in extensions:
+            if ext not in app.config['EXTENSIONS']:
+                raise ImproperlyConfigured(
+                    '"%s" extension requires "%s" extension' % (self, ext))
+
     def setup(self, config, module, params, opts=None):
         '''Internal method which prepare the extension for usage.
         '''
@@ -292,3 +302,15 @@ class EventMixin:
                                               '%s', event, exc)
                     else:
                         raise
+
+
+def app_attribute(func):
+    name = '_cache_%s' % func.__name__
+
+    @wraps(func)
+    def _(app):
+        if not hasattr(app, name):
+            setattr(app, name, func(app))
+        return getattr(app, name)
+
+    return _

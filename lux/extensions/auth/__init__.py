@@ -26,7 +26,7 @@ class Extension(lux.Extension):
     ]
 
     def on_config(self, app):
-        app.require('lux.extensions.odm')
+        self.require(app, 'lux.extensions.rest')
 
     def on_token(self, app, request, token, user):
         if user.is_authenticated():

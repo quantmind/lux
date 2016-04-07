@@ -1,6 +1,6 @@
 from lux.utils import test
 
-from . import postgresql
+import tests.odm.test_postgresql as postgresql
 
 
 class TestSqliteMixin:
