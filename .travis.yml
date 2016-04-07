@@ -11,7 +11,6 @@ before_install:
 install:
   - pip install -r requirements-dev.txt
   - pip install -r requirements-soft.txt
-  - python setup.py install
   - cd example
   - npm install
   - cd ..
@@ -31,13 +30,11 @@ before_script:
 
 script:
   - flake8
-  - rm -rf lux
-  - rm -rf build
-  - python -m runtests --coverage --log-level error
+  - python setup.py test --coverage --log-level error
 #  - cd example
 #  - grunt
 #  - cd ..
-  - if [[ $TRAVIS_PYTHON_VERSION == '3.4.3' ]]; then python -m runtests --coveralls; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == '3.5.1' ]]; then python setup.py test --coveralls; fi
 
 notifications:
   email: false

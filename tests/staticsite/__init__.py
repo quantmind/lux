@@ -6,7 +6,7 @@ from lux import Parameter
 from lux.utils import test
 from lux.extensions.content import Content
 
-__test__ = False
+
 SITE_URL = 'http://example.com'
 
 EXTENSIONS = ['lux.extensions.base',

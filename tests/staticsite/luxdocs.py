@@ -1,7 +1,5 @@
 import os
 
-from lux.extensions.static import HtmlContent
-
 from . import TestStaticSite, base
 
 

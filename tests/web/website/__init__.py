@@ -4,9 +4,6 @@ from lux.extensions.auth.forms import user_model
 from lux.extensions.content import CMS, html_contents
 
 
-__test__ = False
-
-
 class Extension(lux.Extension):
 
     def middleware(self, app):

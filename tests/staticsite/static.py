@@ -1,7 +1,5 @@
 from pulsar.apps.wsgi import WsgiHandler
 
-from lux.extensions.static import HtmlContent
-
 from . import TestStaticSite
 
 

@@ -4,8 +4,6 @@ from lux.extensions import odm, rest
 from lux.extensions.auth.forms import UserModel, group_model
 from lux.utils.auth import ensure_authenticated
 
-__test__ = False
-
 
 class Extension(lux.Extension):
 
