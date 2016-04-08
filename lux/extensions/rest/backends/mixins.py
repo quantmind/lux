@@ -6,7 +6,7 @@ from pulsar import ImproperlyConfigured
 from pulsar.utils.pep import to_string
 from pulsar.apps.wsgi import Route
 
-from lux import Parameter, wsgi_request, Http401, app_attribute
+from lux.core import Parameter, wsgi_request, Http401, app_attribute
 
 try:
     import jwt

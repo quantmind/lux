@@ -5,7 +5,7 @@ from pulsar.utils.httpurl import remove_double_slash
 from pulsar.apps.wsgi import file_response
 from pulsar.utils.slugify import slugify
 
-from lux import cached, get_reader
+from lux.core import cached, get_reader
 from lux.extensions import rest
 from lux.extensions.rest import RestColumn
 from lux.utils.files import skipfile

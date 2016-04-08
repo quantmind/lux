@@ -6,7 +6,8 @@ from urllib.parse import urlencode
 from pulsar import ImproperlyConfigured, HttpException
 from pulsar.utils.httpurl import is_absolute_uri
 
-from lux import Parameter, Http401, PermissionDenied, Http404, HttpRedirect
+from lux.core import (Parameter, Http401, PermissionDenied, Http404,
+                      HttpRedirect)
 
 from .mixins import jwt, SessionBackendMixin
 from .registration import RegistrationMixin

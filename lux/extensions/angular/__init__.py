@@ -24,8 +24,7 @@ Include ``lux.extensions.angular`` into the :setting:`EXTENSIONS` list in your
 .. _AngularJS: https://angularjs.org/
 .. _`ui-router`: https://github.com/angular-ui/ui-router
 '''
-import lux
-from lux import Parameter, cached
+from lux.core import Parameter, cached, LuxExtension, HtmlRouter
 
 from pulsar.apps.wsgi import Html
 
@@ -39,7 +38,7 @@ LUX_ROUTER = ('lux.router',)
 LUX_UI_ROUTER = ('lux.ui.router',)
 
 
-class Extension(lux.Extension):
+class Extension(LuxExtension):
 
     _config = [
         Parameter('HTML5_NAVIGATION', False,
@@ -81,7 +80,7 @@ class Extension(lux.Extension):
 
 
 def html_router(router):
-    if isinstance(router, lux.HtmlRouter):
+    if isinstance(router, HtmlRouter):
         return router
 
 

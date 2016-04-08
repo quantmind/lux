@@ -1,7 +1,7 @@
 from urllib.parse import urljoin
 from datetime import datetime, timedelta
 
-from lux import Parameter
+from lux.core import Parameter
 from lux.extensions.rest import AuthenticationError, website_url
 
 

@@ -6,9 +6,7 @@ import json
 from pulsar import ProtocolError
 from pulsar.utils.string import to_string
 
-import lux
-
-from lux import Parameter
+from lux.core import Parameter, LuxExtension
 
 from .socketio import SocketIO
 from .ws import LuxWs
@@ -18,7 +16,7 @@ from .pubsub import PubSub, Channels, broadcast
 __all__ = ['Channels', 'broadcast']
 
 
-class Extension(lux.Extension, PubSub):
+class Extension(LuxExtension, PubSub):
 
     _config = [
         Parameter('WS_URL', '/ws', 'Websocket base url'),

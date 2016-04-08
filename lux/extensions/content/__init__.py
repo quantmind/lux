@@ -1,8 +1,7 @@
 from pulsar.apps.wsgi import MediaRouter
 from pulsar.utils.slugify import slugify
 
-import lux
-from lux import Parameter
+from lux.core import Parameter, LuxExtension
 
 from .models import Content
 from .views import TextRouter, TextCMS, ContentCRUD, TextForm, CMS
@@ -21,7 +20,7 @@ __all__ = ['Content',
            'html_contents']
 
 
-class Extension(lux.Extension):
+class Extension(LuxExtension):
     _config = [
         Parameter('STATIC_LOCATION', None,
                   'Directory where the static site is created')
@@ -33,7 +32,7 @@ class Extension(lux.Extension):
     def context(self, request, context):
         if request.cache.html_main:
             context['html_main'] = request.cache.html_main
-        context['slug']  = slugify(request.path[1:] or 'index')
+        context['slug'] = slugify(request.path[1:] or 'index')
         return context
 
     def on_loaded(self, app):

@@ -4,9 +4,7 @@ from os import path
 from importlib import import_module
 from string import Template
 
-from pulsar import Setting
-
-import lux
+from lux.core import LuxCommand, Setting, CommandError
 
 from .generate_secret_key import generate_secret
 
@@ -19,11 +17,11 @@ def validate_name(name):
             message = 'make sure the name begins with a letter or underscore'
         else:
             message = 'use only numbers, letters and underscores'
-        raise lux.CommandError("%r is not a valid project name. Please %s." %
-                               (name, message))
+        raise CommandError("%r is not a valid project name. Please %s." %
+                           (name, message))
 
 
-class Command(lux.Command):
+class Command(LuxCommand):
     option_list = (Setting('luxname',
                            nargs='?',
                            desc='Name of the project.'),
@@ -50,16 +48,15 @@ class Command(lux.Command):
             template = options.template
             template_dir = path.join(self.template_dir, template)
             if not os.path.isdir(template_dir):
-                raise lux.CommandError('Unknown template project "%s"'
-                                       % template)
+                raise CommandError('Unknown template project "%s"' % template)
             if not options.luxname:
-                raise lux.CommandError("A project name is required")
+                raise CommandError("A project name is required")
             name = options.luxname
             validate_name(name)
             self.target = path.join(os.getcwd(), '%s-project' % name)
             if path.exists(self.target):
-                raise lux.CommandError("%r conflicts with an existing path"
-                                       % self.target)
+                raise CommandError("%r conflicts with an existing path"
+                                   % self.target)
 
             # Check that the name cannot be imported.
             try:
@@ -67,17 +64,17 @@ class Command(lux.Command):
             except ImportError:
                 pass
             else:
-                raise lux.CommandError("%r conflicts with the name of an "
-                                       "existing Python module and cannot be "
-                                       "used as a %s name.\n"
-                                       "Please try another name." %
-                                       (name, self.template_type))
+                raise CommandError("%r conflicts with the name of an "
+                                   "existing Python module and cannot be "
+                                   "used as a %s name.\n"
+                                   "Please try another name." %
+                                   (name, self.template_type))
             #
             # if some directory is given, make sure it's nicely expanded
             try:
                 os.makedirs(self.target)
             except OSError as e:
-                raise lux.CommandError(str(e))
+                raise CommandError(str(e))
 
             self.build(options.template, name)
             self.write('Project "%s" created' % name)

@@ -1,11 +1,11 @@
 import json
 from urllib.parse import urljoin
 
-from pulsar import new_event_loop, isawaitable
-from pulsar.apps.http import HttpClient, JSON_CONTENT_TYPES
+from pulsar import isawaitable
+from pulsar.apps.http import JSON_CONTENT_TYPES
 from pulsar.utils.httpurl import is_absolute_uri
 
-from lux import raise_http_error, GreenHttp
+from lux.core import raise_http_error
 
 
 class ApiClient:

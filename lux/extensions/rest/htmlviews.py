@@ -3,8 +3,7 @@
 from pulsar import Http404, HttpRedirect
 from pulsar.apps.wsgi import route
 
-import lux
-from lux import raise_http_error
+from lux.core import Router, raise_http_error
 from lux.forms import WebFormRouter, Layout, Fieldset, Submit
 
 from .user import AuthenticationError, login, logout
@@ -33,7 +32,7 @@ class Login(WebFormRouter):
         return login(request, self.default_form.form_class)
 
 
-class Logout(lux.Router):
+class Logout(Router):
 
     def post(self, request):
         return logout(request)

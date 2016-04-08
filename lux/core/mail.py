@@ -1,8 +1,6 @@
 
-__all__ = ['EmailBackend']
 
-
-class EmailBackend(object):
+class EmailBackend:
 
     def __init__(self, app):
         self.app = app

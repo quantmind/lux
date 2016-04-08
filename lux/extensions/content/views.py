@@ -6,8 +6,7 @@ from pulsar.apps.wsgi import route, Json, RouterParam
 from pulsar.utils.structures import AttributeDictionary
 from pulsar.utils.httpurl import remove_double_slash
 
-import lux
-from lux import forms, HtmlRouter
+from lux import core, forms
 from lux.extensions import rest
 from lux.extensions.sitemap import Sitemap, SitemapIndex
 
@@ -79,7 +78,7 @@ class ContentCRUD(rest.RestRouter):
             content.bla = None
 
 
-class TextRouterBase(rest.RestMixin, HtmlRouter):
+class TextRouterBase(rest.RestMixin, core.HtmlRouter):
     render_file = RouterParam()
 
 
@@ -176,7 +175,7 @@ class RouterMap(Sitemap):
                                       priority=item.get('priority', 1))
 
 
-class CMS(lux.CMS):
+class CMS(core.CMS):
     '''Override default lux :class:`.CMS` handler
 
     This CMS handler reads page information from the database and

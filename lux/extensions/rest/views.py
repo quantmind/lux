@@ -1,4 +1,4 @@
-import lux
+from lux.core import Router
 
 from pulsar import BadRequest
 from pulsar.apps.wsgi import Json
@@ -13,7 +13,7 @@ REST_CONTENT_TYPES = ['application/json']
 DIRECTIONS = ('asc', 'desc')
 
 
-class RestRoot(lux.Router):
+class RestRoot(Router):
     '''Api Root
 
     Provide a get method for displaying a dictionary of api names - api urls
@@ -63,7 +63,7 @@ class RestMixin(ModelMixin):
             raise BadRequest('Problems parsing JSON')
 
 
-class RestRouter(RestMixin, lux.Router):
+class RestRouter(RestMixin, Router):
     response_content_types = REST_CONTENT_TYPES
 
     def urlargs(self, request):

@@ -10,7 +10,6 @@ class StaticSiteTests(TestStaticSite):
     def test_build_site(self):
         app = self.app
         site = app.handler.middleware[-1]
-        self.assertIsInstance(site, HtmlContent)
         items = site.build(app)
         self.assertTrue(items)
         self.assertTrue(len(items) > 40)

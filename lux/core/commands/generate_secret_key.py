@@ -1,9 +1,8 @@
 from random import randint
 
-from pulsar import Setting
 from pulsar.utils.string import random_string
 
-import lux
+from lux.core import LuxCommand, Setting
 
 
 def generate_secret(length=50, hexadecimal=False):
@@ -15,7 +14,7 @@ def generate_secret(length=50, hexadecimal=False):
                              char=chars)
 
 
-class Command(lux.Command):
+class Command(LuxCommand):
     help = "Generate a secret key."
     option_list = (
         Setting('length', ('--length',),

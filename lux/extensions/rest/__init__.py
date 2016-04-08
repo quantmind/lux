@@ -19,7 +19,7 @@ from pulsar import ImproperlyConfigured
 from pulsar.utils.importer import module_attribute
 from pulsar.utils.httpurl import is_absolute_uri
 
-from lux import Parameter
+from lux.core import Parameter
 from lux.core.wrappers import wsgi_request
 
 from .user import *             # noqa

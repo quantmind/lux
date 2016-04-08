@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from lux import route, json_message
+from lux.core import route, json_message
 from lux.extensions import rest
 from lux.extensions.rest.htmlviews import (SignUp as SignUpView,
                                            ComingSoon as ComingSoonView)

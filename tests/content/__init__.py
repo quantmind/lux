@@ -3,7 +3,7 @@ import shutil
 
 from tests.config import *  # noqa
 
-import lux
+from lux.core import LuxExtension
 from lux.extensions.content import Content, GithubHook, CMS
 
 
@@ -29,7 +29,7 @@ def create_content(name, path=None):
         fp.write('\n'.join(('title: This is Foo', '', 'Just foo')))
 
 
-class Extension(lux.Extension):
+class Extension(LuxExtension):
 
     def middleware(self, app):
         app.cms = CMS(app)

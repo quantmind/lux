@@ -1,7 +1,6 @@
 import logging
 
-import lux
-from lux import Parameter
+from lux.core import Parameter, LuxExtension
 
 from .backend import EmailBackend
 from .views import ContactRouter
@@ -11,7 +10,7 @@ from .log import SMTPHandler, SlackHandler
 __all__ = ['EmailBackend', 'ContactRouter']
 
 
-class Extension(lux.Extension):
+class Extension(LuxExtension):
 
     _config = [
         # Override default email backend

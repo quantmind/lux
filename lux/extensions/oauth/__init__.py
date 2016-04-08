@@ -26,8 +26,7 @@ from importlib import import_module
 
 from pulsar.utils.httpurl import is_succesful
 
-import lux
-from lux import Parameter
+from lux.core import Parameter, LuxExtension
 
 from .oauth import get_oauths, request_oauths
 from .ogp import OGP
@@ -43,7 +42,7 @@ _import('amazon', 'dropbox', 'facebook', 'github', 'google', 'linkedin',
         'twitter')
 
 
-class Extension(lux.Extension):
+class Extension(LuxExtension):
 
     _config = [Parameter('OAUTH_PROVIDERS', None,
                          'Dictionary of dictionary of OAuth providers'),

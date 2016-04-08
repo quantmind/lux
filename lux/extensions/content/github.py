@@ -7,10 +7,10 @@ from pulsar.apps.wsgi import Json
 from pulsar.utils.string import to_bytes
 from pulsar import HttpException, PermissionDenied, BadRequest
 
-import lux
+from lux.core import Router
 
 
-class GithubHook(lux.Router):
+class GithubHook(Router):
     '''A Router for handling Github webhooks
     '''
     response_content_types = ['application/json']

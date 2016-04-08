@@ -1,10 +1,10 @@
 from pulsar.apps.wsgi import Router
 
-import lux
+from lux.core import LuxCommand
 from .. import Sitemap, ping_google
 
 
-class Command(lux.Command):
+class Command(LuxCommand):
 
     help = "Alerts Google that the sitemap at has been updated"
 

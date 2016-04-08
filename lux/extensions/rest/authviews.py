@@ -10,7 +10,7 @@ the model is overwritten.
 """
 from pulsar import MethodNotAllowed, Http404, HttpException
 
-from lux import route
+from lux.core import route
 
 from .models import RestModel
 from .views import RestRouter

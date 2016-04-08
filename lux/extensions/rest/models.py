@@ -8,7 +8,7 @@ from pulsar.apps.wsgi import Json
 from pulsar.utils.httpurl import is_absolute_uri
 from pulsar.utils.log import lazymethod
 
-import lux
+from lux.core import LuxModel
 
 
 logger = logging.getLogger('lux.extensions.rest')
@@ -185,7 +185,7 @@ class RestClient:
             self.remote_options_str_ui_select.format(options=self.api_name)
 
 
-class RestModel(lux.LuxModel, RestClient, ColumnPermissionsMixin):
+class RestModel(LuxModel, RestClient, ColumnPermissionsMixin):
     """Hold information about a model used for REST views
 
     .. attribute:: name

@@ -3,7 +3,7 @@ from sqlalchemy.exc import DataError
 
 import odm
 
-from lux import route
+from lux.core import route
 from lux.extensions import rest
 
 from .models import RestModel

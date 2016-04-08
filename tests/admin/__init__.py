@@ -1,5 +1,5 @@
-import lux
 from lux import forms
+from lux.core import LuxExtension
 from lux.extensions.admin import register, CRUDAdmin
 
 
@@ -20,7 +20,7 @@ DEFAULT_PERMISSION_LEVELS = {}
 DEFAULT_PERMISSION_LEVEL = '*'
 
 
-class Extension(lux.Extension):
+class Extension(LuxExtension):
     pass
 
 

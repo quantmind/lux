@@ -6,8 +6,7 @@ It provides models for User, Groups and Permissions.
 If you need something different you can use this extension as a guide on
 how to write authentication backends and models in lux.
 '''
-import lux
-from lux import Parameter
+from lux.core import Parameter, LuxExtension
 
 from .backends import (TokenBackend, SessionBackend, BrowserBackend,
                        ApiSessionBackend)
@@ -19,7 +18,7 @@ __all__ = ['TokenBackend', 'SessionBackend',
            'Authorization', 'ComingSoon']
 
 
-class Extension(lux.Extension):
+class Extension(LuxExtension):
     _config = [
         Parameter('ANONYMOUS_GROUP', 'anonymous',
                   'Name of the group for all anonymous users')

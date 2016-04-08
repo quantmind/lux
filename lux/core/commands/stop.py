@@ -2,13 +2,12 @@ import os
 import time
 import signal
 
-from pulsar import Setting
 from pulsar.utils.tools import Pidfile
 
-import lux
+from lux.core import LuxCommand, Setting
 
 
-class Command(lux.Command):
+class Command(LuxCommand):
     help = "Stop a running server"
 
     option_list = (

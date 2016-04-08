@@ -5,7 +5,7 @@ from pulsar.utils.pep import to_bytes
 from pulsar.apps.wsgi import Json
 from pulsar.utils.slugify import slugify
 
-from lux import HttpException
+from lux.core import HttpException
 from lux.forms import Form, ValidationError
 
 

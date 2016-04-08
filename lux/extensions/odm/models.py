@@ -4,7 +4,7 @@ from enum import Enum
 
 import pytz
 
-from sqlalchemy import Column, desc, String, inspect
+from sqlalchemy import Column, desc, String
 from sqlalchemy.orm import class_mapper, load_only
 from sqlalchemy.sql.expression import func, cast
 from sqlalchemy.exc import DataError

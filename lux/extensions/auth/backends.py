@@ -4,7 +4,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.orm import joinedload
 from datetime import datetime
 
-from lux import cached, Parameter
+from lux.core import cached, Parameter
 from lux.utils.crypt import digest
 from lux.extensions.rest import (PasswordMixin, backends, normalise_email,
                                  AuthenticationError)

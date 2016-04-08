@@ -4,8 +4,7 @@ Extension for an Admin Web inteface.
 In order to use the Admin interface, the :setting:`ADMIN_URL`
 needs to be specified.
 '''
-import lux
-from lux import Parameter, RedirectRouter
+from lux.core import Parameter, RedirectRouter, LuxExtension
 
 from .admin import Admin, AdminModel, CRUDAdmin, adminMap, register, is_admin
 
@@ -13,7 +12,7 @@ from .admin import Admin, AdminModel, CRUDAdmin, adminMap, register, is_admin
 __all__ = ['Admin', 'AdminModel', 'CRUDAdmin', 'register', 'adminMap']
 
 
-class Extension(lux.Extension):
+class Extension(LuxExtension):
     '''Admin site for database data
     '''
     _config = [

@@ -10,7 +10,7 @@ from pulsar import ImproperlyConfigured
 from lux import __version__
 
 
-__all__ = ['Extension', 'Parameter', 'app_attribute']
+__all__ = ['LuxExtension', 'Parameter', 'app_attribute']
 
 
 # All events are fired with app as first positional argument
@@ -149,7 +149,7 @@ class ExtensionType(type):
         return klass
 
 
-class Extension(metaclass=ExtensionType):
+class LuxExtension(metaclass=ExtensionType):
     '''Base class for extensions including the :class:`.Application` class.
 
     .. attribute:: meta

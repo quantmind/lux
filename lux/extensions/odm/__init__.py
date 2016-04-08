@@ -9,8 +9,7 @@ built on top of sqlalchemy, pulsar and greenlet.
 
 _ ..pulsar-odm: https://github.com/quantmind/pulsar-odm
 '''
-import lux
-from lux import Parameter
+from lux.core import Parameter, LuxExtension
 from lux.extensions.sockjs import broadcast
 from lux.extensions.rest import SimpleBackend
 
@@ -35,7 +34,7 @@ __all__ = ['model_base', 'declared_attr',
 sql_to_broadcast = {'insert': 'create'}
 
 
-class Extension(lux.Extension, WsModelRpc):
+class Extension(LuxExtension, WsModelRpc):
     '''Object data mapper extension
 
     Uses pulsar-odm for sychronous & asynchronous data mappers

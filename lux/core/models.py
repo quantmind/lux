@@ -4,9 +4,6 @@ from pulsar import ImproperlyConfigured
 from pulsar.utils.log import lazymethod
 
 
-__all__ = ['LuxModel']
-
-
 class ModelContainer(dict):
 
     def __init__(self, app):

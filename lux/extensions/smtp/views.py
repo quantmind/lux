@@ -1,6 +1,6 @@
-import lux
 from lux import forms
 from lux.forms import Layout, Fieldset, Submit
+from lux.core import HtmlRouter
 
 from pulsar.apps.wsgi import Json
 
@@ -21,7 +21,7 @@ HtmlContactForm = Layout(ContactForm,
                          resultHandler='enquiry')
 
 
-class ContactRouter(lux.HtmlRouter):
+class ContactRouter(HtmlRouter):
     def get_html(self, request):
         url = str(self.full_route)
         return HtmlContactForm(request).as_form(action=url)

@@ -1,11 +1,9 @@
 from itertools import chain
 
-from pulsar import Setting
-
-import lux
+from lux.core import LuxCommand, Setting
 
 
-class Command(lux.Command):
+class Command(LuxCommand):
     help = "Show parameters."
     option_list = (
         Setting('extensions',

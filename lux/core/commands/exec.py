@@ -1,11 +1,9 @@
 import asyncio
 
-from pulsar import Setting
-
-import lux
+from lux.core import LuxCommand, Setting
 
 
-class Command(lux.Command):
+class Command(LuxCommand):
     help = "Execute an external command"
 
     option_list = (

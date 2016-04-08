@@ -25,19 +25,13 @@ from lux.utils.async import GreenPubSub
 from lux import __version__
 
 from .commands import ConsoleParser, CommandError, ConfigError
-from .extension import Extension, Parameter, EventMixin, app_attribute
-from .wrappers import (wsgi_request, HeadMeta, error_handler, as_async_wsgi,
-                       LuxContext)
+from .extension import LuxExtension, Parameter, EventMixin, app_attribute
+from .wrappers import wsgi_request, HeadMeta, error_handler, LuxContext
 from .engines import template_engine
 from .cms import CMS
 from .models import ModelContainer
 from .cache import create_cache
 from .http import GreenHttp
-
-
-__all__ = ['App',
-           'Application',
-           'execute_from_config']
 
 
 LUX_CORE = os.path.dirname(__file__)
@@ -137,11 +131,11 @@ class App(LazyWsgi):
         return app
 
 
-class Application(ConsoleParser, Extension, EventMixin):
+class Application(ConsoleParser, LuxExtension, EventMixin):
     """The :class:`.Application` is the WSGI callable for serving
     lux applications.
 
-    It is a specialised :class:`~.Extension` which collects
+    It is a specialised :class:`~.LuxExtension` which collects
     all extensions of your application and setup the wsgi middleware used by
     the web server.
     An :class:`App` is not usually initialised directly, the higher level
@@ -307,7 +301,7 @@ class Application(ConsoleParser, Extension, EventMixin):
 
     @property
     def extensions(self):
-        """Ordered dictionary of :class:`.Extension` available.
+        """Ordered dictionary of :class:`.LuxExtension` available.
 
         The order is the same as in the
         :setting:`EXTENSIONS` config parameter.
@@ -358,12 +352,10 @@ class Application(ConsoleParser, Extension, EventMixin):
             else:
                 if self.config['THREAD_POOL']:
                     wsgi = middleware_in_executor(wsgi)
-                else:
-                    wsgi = as_async_wsgi(wsgi)
                 async_middleware.append(wait_for_body_middleware)
                 async_middleware.append(wsgi)
 
-            self.handler = WsgiHandler(async_middleware, async=True)
+            self.handler = WsgiHandler(async_middleware)
         return self.handler
 
     def get_version(self):
@@ -509,13 +501,13 @@ class Application(ConsoleParser, Extension, EventMixin):
         self.fire('on_start', server)
 
     def load_extension(self, dotted_path):
-        """Load an :class:`.Extension` class into this :class:`App`.
+        """Load an :class:`.LuxExtension` class into this :class:`App`.
 
         :param dotted_path: python dotted path to the extension.
-        :return: an :class:`.Extension` class or ``None``
+        :return: an :class:`.LuxExtension` class or ``None``
 
-        If the module contains an :class:`.Extension` class named
-        ``Extension``, it will be added to the :attr:`extension` dictionary.
+        If the module contains an :class:`.LuxExtension` class named
+        ``LuxExtension``, it will be added to the :attr:`extension` dictionary.
         """
         try:
             module = import_module(dotted_path)
@@ -527,7 +519,7 @@ class Application(ConsoleParser, Extension, EventMixin):
                                   self, dotted_path)
             return
         Ext = getattr(module, 'Extension', None)
-        if Ext and isclass(Ext) and issubclass(Ext, Extension):
+        if Ext and isclass(Ext) and issubclass(Ext, LuxExtension):
             return Ext
 
     # Template redering

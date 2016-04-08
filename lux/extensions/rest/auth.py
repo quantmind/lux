@@ -1,6 +1,6 @@
 from functools import partial
 
-import lux
+from lux.core import LuxExtension
 
 from .user import UserMixin, AuthenticationError
 
@@ -33,7 +33,7 @@ class Anonymous(UserMixin):
         return 0
 
 
-class AuthBase(lux.Extension):
+class AuthBase(LuxExtension):
     abstract = True
 
     def request(self, request):  # pragma    nocover

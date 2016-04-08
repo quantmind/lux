@@ -7,6 +7,7 @@
 # python
 *.pyc
 .coverage
+.eggs
 _doc_build
 __pycache__
 htmlcov
@@ -15,7 +16,7 @@ dist
 build
 src
 deps
-lux.egg-info
+*.egg-info
 example/luxweb/settings.py
 
 # javascript/css

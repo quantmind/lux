@@ -1,4 +1,12 @@
+psycopg2
+alembic
+unidecode
+markdown
+sphinx
+pyyaml
+pyjwt
+beautifulsoup4
+redis
 coverage
 flake8
-cython
-git@github.com:quantmind/pulsar.git@master#egg=pulsar
+pulsar-odm

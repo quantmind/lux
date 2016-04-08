@@ -5,16 +5,15 @@ import distutils.core
 from string import Template
 from pathlib import PurePath
 
-from pulsar import Setting
-
 import lux
+from lux.core import LuxCommand, Setting
 from lux.utils.files import skipfile
 
 
 SKIPDIRS = set(('templates', 'build'))
 
 
-class Command(lux.Command):
+class Command(LuxCommand):
     option_list = (
         Setting('js_src', ('--js-src',),
                 default='js/build',

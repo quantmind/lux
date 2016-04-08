@@ -2,7 +2,7 @@ import json
 
 from pulsar.utils.slugify import slugify
 
-from lux import Html
+from lux.core import Html
 from lux.utils.crypt import get_random_string
 
 

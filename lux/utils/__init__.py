@@ -1,17 +1,8 @@
-from itertools import chain, zip_longest
 from collections import Hashable
 from functools import partial
 from urllib.parse import urlsplit
 
 from pulsar.utils.httpurl import is_absolute_uri
-
-
-def unique_tuple(*iterables):
-    vals = []
-    for v in chain(*[it for it in iterables if it]):
-        if v not in vals:
-            vals.append(v)
-    return tuple(vals)
 
 
 class memoized(object):
@@ -61,18 +52,6 @@ def version_tuple(version):
 def is_url(url):
     p = urlsplit(url)
     return p.scheme and p.netloc
-
-
-def update_dict(d1, d2):
-    d = d1.copy()
-    d.update(d2)
-    return d
-
-
-def grouper(n, iterable, padvalue=None):
-    '''grouper(3, 'abcdefg', 'x') --> ('a','b','c'), ('d','e','f'),
-    ('g','x','x')'''
-    return zip_longest(*[iter(iterable)]*n, fillvalue=padvalue)
 
 
 def iso8601(dt):

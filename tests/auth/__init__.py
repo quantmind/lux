@@ -2,9 +2,8 @@ from datetime import datetime
 
 from sqlalchemy import Column, Integer, String, Boolean, DateTime
 
-import lux
-
-from lux import route, forms, HtmlRouter
+from lux import forms
+from lux.core import LuxExtension, route, HtmlRouter
 from lux.extensions import odm, rest
 from lux.utils.auth import ensure_authenticated
 from lux.extensions.auth.forms import UserModel, UserForm
@@ -36,7 +35,7 @@ DEFAULT_PERMISSION_LEVELS = {
 Model = odm.model_base('odmtest')
 
 
-class Extension(lux.Extension):
+class Extension(LuxExtension):
 
     def middleware(self, app):
         return [HtmlRouter('/test')]

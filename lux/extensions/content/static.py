@@ -4,7 +4,7 @@ import os
 import shutil
 from unittest import mock
 
-import lux
+from lux.core import Cache, register_cache
 from lux.extensions.base import MediaRouter
 from lux.extensions.sitemap import BaseSitemap
 from lux.utils.files import skipfile
@@ -12,7 +12,7 @@ from lux.utils.files import skipfile
 from .views import TextRouter
 
 
-class StaticCache(lux.Cache):
+class StaticCache(Cache):
     """Static cache for building static sites
     """
     def __init__(self, app, name, url):
@@ -31,7 +31,7 @@ class StaticCache(lux.Cache):
         return self._cache.pop(key, None)
 
 
-lux.register_cache('static', 'lux.extensions.content.static.StaticCache')
+register_cache('static', 'lux.extensions.content.static.StaticCache')
 
 
 def dst_path(dirpath, filename, src, dst):

@@ -1,9 +1,8 @@
 import pulsar
-from pulsar import Setting
 from pulsar.apps import wsgi
 from pulsar.utils.log import clear_logger
 
-import lux
+from lux.core import LuxCommand, Setting
 
 
 nominify = Setting('nominify',
@@ -13,7 +12,7 @@ nominify = Setting('nominify',
                    desc="Don't use minified media files")
 
 
-class Command(lux.Command):
+class Command(LuxCommand):
     help = "Starts a fully-functional Web server using pulsar"
     option_list = (nominify,)
 

@@ -1,8 +1,7 @@
 import json
-import asyncio
 from collections import Mapping
 
-from pulsar import ImproperlyConfigured, is_async
+from pulsar import ImproperlyConfigured
 from pulsar.apps.wsgi import (route, wsgi_request, cached_property,
                               html_factory)
 from pulsar.apps import wsgi
@@ -12,7 +11,7 @@ from pulsar.apps.wsgi.utils import error_messages
 from pulsar.utils.httpurl import JSON_CONTENT_TYPES
 from pulsar.utils.structures import mapping_iterator
 
-from lux.utils import unique_tuple
+from lux.utils.data import unique_tuple
 
 
 __all__ = ['Html', 'WsgiRequest', 'Router', 'HtmlRouter',
@@ -147,10 +146,10 @@ class HtmlRouter(Router):
         context = app.context(request)
         context.update(self.context(request) or ())
         context['html_main'] = html
-        #template = self.get_inner_template(request, inner_template)
-        #if template:
-        #    html = app.render_template(template, context, request)
-        #    context['html_main'] = html
+        # template = self.get_inner_template(request, inner_template)
+        # if template:
+        #     html = app.render_template(template, context, request)
+        #     context['html_main'] = html
 
         # This request is for the inner template only
         if request.url_data.get('template') == 'ui':
@@ -335,17 +334,3 @@ def error_handler(request, exc):
                                        error=True))
     else:
         return '\n'.join(msg) if isinstance(msg, (list, tuple)) else msg
-
-
-def as_async_wsgi(wsgi):
-
-    def _(environ, start_response):
-        result = wsgi(environ, start_response)
-        if is_async(result):
-            return asyncio.async(result)
-        else:
-            future = asyncio.Future()
-            future.set_result(result)
-            return future
-
-    return _

@@ -1,12 +1,12 @@
 import smtplib
 import ssl
 
-import lux
+from lux import core
 
 from .message import EmailMultiAlternatives, sanitize_address, DNS_NAME
 
 
-class EmailBackend(lux.EmailBackend):
+class EmailBackend(core.EmailBackend):
 
     def message(self, sender, to, subject, message, html_message):
         if not isinstance(to, (list, tuple)):

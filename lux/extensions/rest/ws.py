@@ -1,6 +1,6 @@
 from pulsar.apps import rpc
 
-from lux import Http401
+from lux.core import Http401
 from lux.utils.auth import check_permission, PermissionDenied
 
 

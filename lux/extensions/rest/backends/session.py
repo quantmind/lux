@@ -2,7 +2,7 @@ import time
 
 from pulsar import PermissionDenied, ImproperlyConfigured
 
-from lux import Parameter
+from lux.core import Parameter
 
 from .. import AuthBackend
 from .mixins import jwt, SessionBackendMixin

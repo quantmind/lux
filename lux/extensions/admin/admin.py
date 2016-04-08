@@ -4,8 +4,7 @@ from pulsar import Http404, PermissionDenied
 from pulsar.apps.wsgi.routers import RouterType
 from pulsar.utils.html import nicename
 
-import lux
-from lux import route, cached
+from lux.core import route, cached, HtmlRouter
 from lux.extensions import rest
 from lux.extensions.angular import grid
 
@@ -39,7 +38,7 @@ class register:
         return cls
 
 
-class AdminRouter(lux.HtmlRouter):
+class AdminRouter(HtmlRouter):
     '''Base class for all Admin Routers
     '''
     def response_wrapper(self, callable, request):

@@ -16,11 +16,6 @@ from lux import __version__
 from lux.utils.async import maybe_green
 
 
-__all__ = ['ConsoleParser',
-           'CommandError',
-           'Command']
-
-
 class ConfigError(Exception):
 
     def __init__(self, config_file):
@@ -84,10 +79,10 @@ class LuxApp(Application):
         return False
 
 
-class Command(ConsoleParser):
+class LuxCommand(ConsoleParser):
     '''Signature class for lux commands.
 
-    A :class:`.Command` is never initialised directly, instead,
+    A :class:`.LuxCommand` is never initialised directly, instead,
     the :meth:`.Application.get_command` method is used to retrieve it and
     executed by its callable method.
 

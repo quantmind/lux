@@ -14,9 +14,6 @@ from pulsar import ImproperlyConfigured
 from .wrappers import WsgiRequest
 
 
-__all__ = ['cached', 'Cacheable', 'Cache', 'register_cache']
-
-
 logger = logging.getLogger('lux.cache')
 
 data_caches = {}

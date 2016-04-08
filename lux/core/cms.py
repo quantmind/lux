@@ -5,9 +5,6 @@ from .content import static_context
 from .cache import cached
 
 
-__all__ = ['CMS']
-
-
 class Page(AttributeDictionary):
     '''An object representing an HTML page
 

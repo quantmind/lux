@@ -1,7 +1,7 @@
-import lux
+from lux.core import LuxCommand
 
 
-class Command(lux.Command):
+class Command(LuxCommand):
     help = "Simply return the application."
 
     def __call__(self, options, **params):

@@ -4,8 +4,8 @@ from enum import Enum
 from sqlalchemy.orm import relationship
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
 
-import lux
 from lux import forms
+from lux.core import LuxExtension
 from lux.extensions import odm
 from lux.extensions.auth.views import PermissionCRUD, GroupCRUD
 
@@ -28,7 +28,7 @@ class TestEnum(Enum):
     opt2 = '2'
 
 
-class Extension(lux.Extension):
+class Extension(LuxExtension):
 
     def api_sections(self, app):
         return [CRUDTask(),

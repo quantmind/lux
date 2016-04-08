@@ -11,15 +11,14 @@ from dateutil.parser import parse as parse_date
 from pulsar.apps.wsgi import Router
 from pulsar.utils.httpurl import urllibr
 
-import lux
-from lux import Parameter, cached
+from lux.core import Parameter, cached, LuxExtension
 from lux.utils import iso8601
 
 
 PING_URL = "http://www.google.com/webmasters/tools/ping"
 
 
-class Extension(lux.Extension):
+class Extension(LuxExtension):
 
     _config = [Parameter('SITEMAP_CACHE_TIMEOUT', None,
                          ('Sitemap cache timeout, if not set it defaults to '
