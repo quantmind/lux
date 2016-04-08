@@ -1,7 +1,5 @@
 language: python
 
-sudo: false
-
 python:
   - 3.5.1
 
@@ -9,8 +7,8 @@ before_install:
   - npm install -g grunt-cli
 
 install:
-  - pip install -r requirements-dev.txt
-  - pip install -r requirements-soft.txt
+  - pip install cython
+  - pip install https://github.com/quantmind/pulsar.git@dev
   - cd example
   - npm install
   - cd ..
@@ -29,8 +27,8 @@ before_script:
   - psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE luxtests to lux;"
 
 script:
+  - python setup.py test --coverage
   - flake8
-  - python setup.py test --coverage --log-level error
 #  - cd example
 #  - grunt
 #  - cd ..
