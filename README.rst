@@ -7,6 +7,7 @@
 
 Lux is a library for developing web applications with Python and javascript frameworks such as AngularJS.
 
+:Badges: |license|  |pyversions| |status| |downloads|
 :Master CI: |master-build|_ |coverage-master|
 :Dev CI: |dev-build|_ |coverage-dev|
 :Documentation: http://quantmind.github.io/lux/
@@ -16,6 +17,14 @@ Lux is a library for developing web applications with Python and javascript fram
 :Platforms: Linux, OSX, Windows. Python 3.5 and above
 :Keywords: asynchronous, wsgi, websocket, redis, json-rpc, REST, web
 
+.. |pyversions| image:: https://img.shields.io/pypi/pyversions/lux.svg
+  :target: https://pypi.python.org/pypi/lux
+.. |license| image:: https://img.shields.io/pypi/l/lux.svg
+  :target: https://pypi.python.org/pypi/lux
+.. |status| image:: https://img.shields.io/pypi/status/lux.svg
+  :target: https://pypi.python.org/pypi/v
+.. |downloads| image:: https://img.shields.io/pypi/dd/lux.svg
+  :target: https://pypi.python.org/pypi/lux
 .. |master-build| image:: https://img.shields.io/travis/quantmind/lux/master.svg
 .. _master-build: http://travis-ci.org/quantmind/lux
 .. |dev-build| image:: https://img.shields.io/travis/quantmind/lux/dev.svg
@@ -55,6 +64,20 @@ For testing postgreSQL create a new role::
     CREATE DATABASE luxtests;
     GRANT ALL PRIVILEGES ON DATABASE luxtests to lux;
 
+
+To run tests::
+
+    python setup.py test
+
+For options and help type::
+
+    python setup.py test --help
+
+flake8_ check (requires flake8 package)::
+
+    flake8
+
+
 .. _pulsar: https://github.com/quantmind/pulsar
 .. _pytz: http://pytz.sourceforge.net/
 .. _dateutil: https://pypi.python.org/pypi/python-dateutil
@@ -72,3 +95,4 @@ For testing postgreSQL create a new role::
 .. _`grunt-html2js`: https://github.com/karlgoldstein/grunt-html2js
 .. _lux.js: https://raw.githubusercontent.com/quantmind/lux/master/lux/media/lux/lux.js
 .. _`Quantmind`: http://quantmind.com
+.. _flake8: https://pypi.python.org/pypi/flake8

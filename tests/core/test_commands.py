@@ -80,4 +80,4 @@ class CommandTests(test.TestCase):
         self.assertTrue(command.help)
         command([])
         self.assertEqual(command.app.stderr.getvalue(),
-                         'Pidfile not available\n')
+                         'Pid file not available\n')

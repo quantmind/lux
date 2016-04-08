@@ -3,9 +3,7 @@ import getpass
 import re
 import sys
 
-from pulsar import Setting
-
-import lux
+from lux.core import LuxCommand, Setting
 from lux.extensions.rest import normalise_email
 
 
@@ -30,7 +28,7 @@ def get_def_username(request, auth):
     return def_username
 
 
-class Command(lux.Command):
+class Command(LuxCommand):
     help = 'Create a superuser.'
     option_list = (
         Setting('username', ('--username',), desc='Username'),

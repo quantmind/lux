@@ -1,5 +1,4 @@
-import lux
-
+from lux.core import LuxExtension
 
 EXTENSIONS = ['lux.extensions.smtp']
 
@@ -12,5 +11,5 @@ DEFAULT_FROM_EMAIL = 'admin@luxtest.com'
 SMTP_LOG_LEVEL = 'ERROR'
 
 
-class Extension(lux.Extension):
+class Extension(LuxExtension):
     pass

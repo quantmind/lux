@@ -1,6 +1,6 @@
 import os
 
-import lux
+from lux.core import LuxExtension
 from lux.extensions.content import Content
 from lux.utils.data import update_dict
 
@@ -14,7 +14,7 @@ articles_meta = update_dict(meta, {})
 site_meta = update_dict(meta, {})
 
 
-class Extension(lux.Extension):
+class Extension(LuxExtension):
 
     def on_config(self, app):
         '''Register Content models

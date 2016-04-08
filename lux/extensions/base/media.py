@@ -4,6 +4,7 @@ from itertools import chain
 from pulsar.apps import wsgi
 
 import lux
+from lux import core
 
 
 def filesystem_path(app, base, bits):
@@ -21,7 +22,7 @@ def filesystem_path(app, base, bits):
 class MediaRouter(wsgi.MediaRouter):
     '''A simple application for handling static files
     '''
-    request_class = lux.WsgiRequest
+    request_class = core.WsgiRequest
     lux = True
 
     def filesystem_path(self, request):

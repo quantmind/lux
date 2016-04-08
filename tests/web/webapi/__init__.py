@@ -1,11 +1,10 @@
-import lux
-from lux import route
+from lux.core import LuxExtension, route
 from lux.extensions import odm, rest
 from lux.extensions.auth.forms import UserModel, group_model
 from lux.utils.auth import ensure_authenticated
 
 
-class Extension(lux.Extension):
+class Extension(LuxExtension):
 
     def api_sections(self, app):
         return [UserRest()]

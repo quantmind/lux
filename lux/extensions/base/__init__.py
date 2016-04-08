@@ -18,16 +18,12 @@ from pulsar import ImproperlyConfigured
 from pulsar.apps import wsgi
 from pulsar.utils.httpurl import remove_double_slash
 
-import lux
-from lux import Parameter, RedirectRouter
+from lux.core import LuxExtension, Parameter, RedirectRouter
 
 from .media import MediaRouter
 
 
-__all__ = ['MediaRouter']
-
-
-class Extension(lux.Extension):
+class Extension(LuxExtension):
     _config = [
         Parameter('GZIP_MIN_LENGTH', None,
                   'If a positive integer, a response middleware is added so '

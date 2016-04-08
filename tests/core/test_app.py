@@ -62,7 +62,6 @@ class CommandTests(test.TestCase):
         app.logger.warning.assert_called_once_with(mock.ANY)
 
     def test_pubsub(self):
-
         app = self.application(
             PUBSUB_STORE='redis://%s' % self.cfg.redis_server)
         pubsub1 = app.pubsub()

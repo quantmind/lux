@@ -1,4 +1,4 @@
-import lux
+from lux.core import LuxExtension
 
 from tests.config import *  # noqa
 from tests.auth import UserRest
@@ -18,7 +18,7 @@ CACHE_SERVER = PUBSUB_STORE = redis_cache_server
 BROADCAST_CHANNELS = set(['tasks'])
 
 
-class Extension(lux.Extension):
+class Extension(LuxExtension):
 
     def api_sections(self, app):
         return [UserRest()]

@@ -18,9 +18,10 @@ from pulsar.utils.websocket import (SUPPORTED_VERSIONS, websocket_key,
 from pulsar.apps.wsgi import WsgiResponse
 from pulsar.apps.test import test_timeout, sequential   # noqa
 
-import lux
+from lux.core import App
 from lux.extensions.rest.client import LocalClient, Response
 from lux.core.commands.generate_secret_key import generate_secret
+
 logger = logging.getLogger('lux.test')
 
 
@@ -77,7 +78,7 @@ def test_app(test, config_file=None, config_params=True, argv=None, **params):
         argv.append('--log-level')
         levels = test.cfg.log_level if hasattr(test, 'cfg') else ['none']
         argv.extend(levels)
-    app = lux.App(config_file, argv=argv, **kwargs).setup()
+    app = App(config_file, argv=argv, **kwargs).setup()
     app.stdout = StringIO()
     app.stderr = StringIO()
     return app
