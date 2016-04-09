@@ -28,7 +28,7 @@ before_script:
   - psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE luxtests to lux;"
 
 script:
-  - python setup.py test --coverage
+  - python setup.py test --coverage -q
   - flake8
 #  - cd example
 #  - grunt
