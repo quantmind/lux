@@ -1,3 +1,4 @@
+cython
 psycopg2
 alembic
 unidecode

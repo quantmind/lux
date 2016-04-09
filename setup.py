@@ -16,8 +16,9 @@ def run():
         packages=find_packages(exclude=['tests', 'tests.*']),
         include_package_data=True,
         zip_safe=False,
+        setup_requires=['pulsar'],
         install_requires=config.requirements('requirements.txt')[0],
-        tests_require=config.requirements('requirements-dev.txt')[0],
+        # tests_require=config.requirements('requirements-dev.txt')[0],
         scripts=['bin/luxmake.py'],
         classifiers=[
             'Development Status :: 3 - Alpha',
@@ -32,7 +33,7 @@ def run():
             'Topic :: Utilities'
         ]
     )
-    setup(**config.extend(meta, 'lux'))
+    setup(**config.setup(meta, 'lux'))
 
 
 if __name__ == '__main__':

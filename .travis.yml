@@ -8,10 +8,11 @@ before_install:
 
 install:
   - pip install cython
-  - pip install git+https://github.com/quantmind/pulsar.git@dev
-  - cd example
-  - npm install
-  - cd ..
+  - pip install git+https://github.com/quantmind/pulsar.git
+  - pip install -r requirements-dev.txt
+  # - cd example
+  # - npm install
+  # - cd ..
 
 services:
   - redis-server
