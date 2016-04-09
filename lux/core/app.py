@@ -19,8 +19,9 @@ from pulsar.apps.wsgi import (WsgiHandler, HtmlDocument, test_wsgi_environ,
 from pulsar.utils.log import lazyproperty
 from pulsar.utils.importer import module_attribute
 from pulsar.apps.data import create_store
-
+from pulsar.apps.greenio.wsgi import GreenWSGI
 from pulsar.apps.http import HttpClient
+
 from lux.utils.async import GreenPubSub
 from lux import __version__
 
@@ -339,23 +340,44 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
             if not self.cms:
                 self.cms = CMS(self)
 
-            async_middleware, wsgi = self._build_handler()
-            self.handler = wsgi
-            self.fire('on_loaded')
-            wsgi = self.handler
-            #
-            # Using a green pool
-            if self.green_pool:
-                from pulsar.apps.greenio.wsgi import GreenWSGI
-                wsgi = GreenWSGI(wsgi, self.green_pool)
-                async_middleware.append(wsgi)
-            else:
-                if self.config['THREAD_POOL']:
-                    wsgi = middleware_in_executor(wsgi)
-                async_middleware.append(wait_for_body_middleware)
-                async_middleware.append(wsgi)
+            extensions = list(self.extensions.values())
+            async_middleware = []
+            middleware = []
+            response_middleware = []
+            for extension in extensions:
+                _middleware = extension.middleware(self)
+                if _middleware:
+                    middleware.extend(_middleware)
+                _middleware = extension.async_middleware(self)
+                if _middleware:
+                    async_middleware.extend(_middleware)
+                _middleware = extension.response_middleware(self)
+                if _middleware:
+                    response_middleware.extend(_middleware)
+            # Response middleware executed in reversed order
+            response_middleware = list(reversed(response_middleware))
 
-            self.handler = WsgiHandler(async_middleware)
+            if middleware:
+                wsgi = WsgiHandler(middleware, response_middleware, sync=True)
+                response_middleware = None
+                #
+                # Use a green pool
+                if self.green_pool and wsgi:
+                    async_middleware.append(GreenWSGI(wsgi, self.green_pool))
+                #
+                # Use thread pool
+                elif self.config['THREAD_POOL'] and wsgi:
+                    async_middleware.append(wait_for_body_middleware)
+                    async_middleware.append(middleware_in_executor(wsgi))
+                #
+                # No pools
+                else:
+                    async_middleware.extend(wsgi.middleware)
+                    response_middleware = wsgi.response_middleware
+
+            self.handler = WsgiHandler(async_middleware, response_middleware)
+            self.fire('on_loaded')
+
         return self.handler
 
     def get_version(self):
@@ -769,32 +791,6 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
                 self.bind_events(extension)
                 extension.setup(config, config_module, self.params)
         return config
-
-    def _build_handler(self):
-        """The WSGI application handler for this :class:`App`.
-
-        It is lazily loaded the first time it is accessed so that
-        this :class:`App` can be used by pulsar in a multiprocessing setup.
-        """
-        # do this here so that the config is already loaded before fire signal
-        extensions = list(self.extensions.values())
-        async_middleware = []
-        middleware = []
-        rmiddleware = []
-        for extension in extensions:
-            _middleware = extension.middleware(self)
-            if _middleware:
-                middleware.extend(_middleware)
-            _middleware = extension.async_middleware(self)
-            if _middleware:
-                async_middleware.extend(_middleware)
-            _middleware = extension.response_middleware(self)
-            if _middleware:
-                rmiddleware.extend(_middleware)
-        # Response middleware executed in reversed order
-        rmiddleware = list(reversed(rmiddleware))
-        hnd = self._WsgiHandler(middleware, response_middleware=rmiddleware)
-        return async_middleware, hnd
 
     def _setup_logger(self, config, module, opts):
         debug = opts.debug or self.params.get('debug', False)

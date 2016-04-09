@@ -1,23 +1,9 @@
 {
     "github": {
-        "pulsar": {
+        "lux": {
             "python_module": "lux",
             "version": "lux.__version__",
-            "release_notes": "docs/history",
-            "dist": {
-                "shell": [
-                    "rm -rf dist",
-                    "{{ python }} setup.py sdist upload"
-                ]
-            }
-        }
-    },
-    "shell": {
-        "lux": {
-            "command": [
-                "rm -rf dist",
-                "{{ python }} setup.py sdist"
-            ]
+            "release_notes": "docs/history"
         }
     },
     "tasks": {
