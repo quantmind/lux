@@ -358,22 +358,22 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
             response_middleware = list(reversed(response_middleware))
 
             if middleware:
-                wsgi = WsgiHandler(middleware, response_middleware, sync=True)
+                hnd = WsgiHandler(middleware, response_middleware, async=False)
                 response_middleware = None
                 #
                 # Use a green pool
-                if self.green_pool and wsgi:
-                    async_middleware.append(GreenWSGI(wsgi, self.green_pool))
+                if self.green_pool:
+                    async_middleware.append(GreenWSGI(hnd, self.green_pool))
                 #
                 # Use thread pool
-                elif self.config['THREAD_POOL'] and wsgi:
+                elif self.config['THREAD_POOL']:
                     async_middleware.append(wait_for_body_middleware)
-                    async_middleware.append(middleware_in_executor(wsgi))
+                    async_middleware.append(middleware_in_executor(hnd))
                 #
                 # No pools
                 else:
-                    async_middleware.extend(wsgi.middleware)
-                    response_middleware = wsgi.response_middleware
+                    async_middleware.extend(hnd.middleware)
+                    response_middleware = hnd.response_middleware
 
             self.handler = WsgiHandler(async_middleware, response_middleware)
             self.fire('on_loaded')
