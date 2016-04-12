@@ -32,7 +32,7 @@ from .engines import template_engine
 from .cms import CMS
 from .models import ModelContainer
 from .cache import create_cache
-from .http import GreenHttp
+from .greenio import GreenHttp
 
 
 LUX_CORE = os.path.dirname(__file__)

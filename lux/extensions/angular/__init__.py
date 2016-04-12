@@ -31,7 +31,7 @@ from pulsar.apps.wsgi import Html
 from .components import grid
 
 
-__all__ = ['add_css', 'grid']
+__all__ = ['grid']
 
 
 LUX_ROUTER = ('lux.router',)

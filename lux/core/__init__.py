@@ -30,7 +30,7 @@ from .exceptions import (HttpException, HttpRedirect, BadRequest,
                          Http401, Unsupported, UnprocessableEntity,
                          raise_http_error)
 from .content import *      # noqa
-from .http import GreenHttp
+from .greenio import GreenHttp, green
 
 
 __all__ = ['ConsoleParser',
@@ -62,4 +62,5 @@ __all__ = ['ConsoleParser',
            'Unsupported',
            'UnprocessableEntity',
            'raise_http_error',
-           'GreenHttp']
+           'GreenHttp',
+           'green']

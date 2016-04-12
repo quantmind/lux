@@ -1,4 +1,14 @@
-__all__ = ['GreenHttp']
+from functools import wraps
+from pulsar.apps.greenio import wait
+
+
+def green(f):
+
+    @wraps(f)
+    def _(*args, **kwargs):
+        return wait(f(*args, **kwargs))
+
+    return _
 
 
 class GreenHttp:
