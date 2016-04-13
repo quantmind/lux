@@ -16,10 +16,10 @@ from pulsar.utils.string import random_string
 from pulsar.utils.websocket import (SUPPORTED_VERSIONS, websocket_key,
                                     frame_parser)
 from pulsar.apps.wsgi import WsgiResponse
+from pulsar.apps.http import JSON_CONTENT_TYPES
 from pulsar.apps.test import test_timeout, sequential   # noqa
 
 from lux.core import App
-from lux.extensions.rest.client import LocalClient, Response
 from lux.core.commands.generate_secret_key import generate_secret
 
 logger = logging.getLogger('lux.test')
@@ -457,11 +457,10 @@ class WebApiTestCase(AppTestCase):
         cls.web = test_app(cls, config_file=cls.web_config_file,
                            config_params=False)
         api = cls.web.api
-        http = api.http(cls.web)
-        assert not isinstance(http, LocalClient), "API_URL not an absolute url"
-        http = TestApiClient(cls.app, list(http.headers))
-        api._http = http
-        assert api.http(cls.web) == http
+        http = TestApiClient(cls.app, list(api.http.headers))
+        # Override http client for the api handler
+        api.http = http
+        assert api.http == http
         cls.webclient = TestClient(cls.web)
 
     def check_html_token(self, doc, token):
@@ -470,3 +469,39 @@ class WebApiTestCase(AppTestCase):
             self.assertEqual(value.attrs['content'], token)
         else:
             raise ValueError('user-token meta tag not available')
+
+
+class Response:
+    __slots__ = ('response',)
+
+    def __init__(self, response):
+        self.response = response
+
+    def _repr__(self):
+        return repr(self.response)
+
+    def __getattr__(self, name):
+        return getattr(self.response, name)
+
+    @property
+    def content(self):
+        '''Retrieve the body without flushing'''
+        return b''.join(self.response.content)
+
+    def text(self, charset=None, errors=None):
+        charset = charset or self.response.encoding or 'utf-8'
+        return self.content.decode(charset, errors or 'strict')
+
+    def json(self, charset=None, errors=None):
+        return json.loads(self.text(charset, errors))
+
+    def decode_content(self):
+        '''Return the best possible representation of the response body.
+        '''
+        ct = self.response.content_type
+        if ct:
+            if ct in JSON_CONTENT_TYPES:
+                return self.json()
+            elif ct.startswith('text/'):
+                return self.text()
+        return self.content

@@ -5,7 +5,6 @@ from tests.auth.signup import SignupMixin
 from tests.auth.password import PasswordMixin
 from tests.auth.odm import OdmMixin
 from tests.auth.permissions import PermissionsMixin
-from tests.auth.html import HtmlMixin
 
 
 class AuthUtils:
@@ -85,7 +84,6 @@ class TestSqlite(test.AppTestCase,
                  SignupMixin,
                  PasswordMixin,
                  PermissionsMixin,
-                 HtmlMixin,
                  AuthUtils):
     config_file = 'tests.auth'
     config_params = {'DATASTORE': 'sqlite://'}

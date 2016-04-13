@@ -4,7 +4,6 @@ from lux.core import LuxExtension
 from lux.extensions.content import Content
 from lux.utils.data import update_dict
 
-__test__ = False
 
 PATH = os.path.dirname(__file__)
 

@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlalchemy import Column, Integer, String, Boolean, DateTime
 
 from lux import forms
-from lux.core import LuxExtension, route, HtmlRouter
+from lux.core import LuxExtension, route
 from lux.extensions import odm, rest
 from lux.utils.auth import ensure_authenticated
 from lux.extensions.auth.forms import UserModel, UserForm
@@ -19,8 +19,7 @@ EXTENSIONS = ['lux.extensions.base',
               'lux.extensions.auth']
 
 API_URL = ''
-AUTHENTICATION_BACKENDS = ['lux.extensions.auth.TokenBackend',
-                           'lux.extensions.auth.BrowserBackend']
+AUTHENTICATION_BACKENDS = ['lux.extensions.auth.TokenBackend']
 DEFAULT_PERMISSION_LEVELS = {
     'group': 'none',
     'registration': 'none',
@@ -37,9 +36,6 @@ Model = odm.model_base('odmtest')
 
 class Extension(LuxExtension):
 
-    def middleware(self, app):
-        return [HtmlRouter('/test')]
-
     def api_sections(self, app):
         return [UserRest(),
                 UserCRUD(),
@@ -48,19 +44,6 @@ class Extension(LuxExtension):
                 RegistrationCRUD(),
                 ObjectiveCRUD(),
                 SecretCRUD()]
-
-    def on_html_document(self, app, request, doc):
-        api = app.api(request)
-        response = api.get('/user/permissions?resource=secret')
-        data = response.json()
-        secret = data.get('secret')
-        if secret:
-            if secret['read']:
-                doc.heaq.add_meta(name='permission', content='secret:read')
-            if secret['update']:
-                doc.heaq.add_meta(name='permission', content='secret:update')
-            if secret['create']:
-                doc.heaq.add_meta(name='permission', content='secret:create')
 
 
 class Objective(Model):

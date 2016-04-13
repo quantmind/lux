@@ -161,7 +161,9 @@ class Extension(MultiAuthBackend, WsModelRpc):
         url = app.config['API_URL']
         # If the api url is not absolute, add the api middleware
         if url is not None:
-            if not is_absolute_uri(url):
+            if is_absolute_uri(url):
+                app.api = ApiClient(app)
+            else:
                 # Add the preflight and token events
                 events = ('on_preflight', 'on_token')
                 app.add_events(events)
@@ -181,8 +183,6 @@ class Extension(MultiAuthBackend, WsModelRpc):
                             router.model = app.models.register(router.model)
                             # Add router
                             api.add_child(router)
-
-            app.api = ApiClient()
 
         return middleware
 

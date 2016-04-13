@@ -11,7 +11,6 @@ AUTHENTICATION_BACKENDS = ['lux.extensions.auth.SessionBackend',
                            'lux.extensions.rest.backends.CsrfBackend',
                            'lux.extensions.auth.BrowserBackend']
 
-API_URL = 'api'
 SESSION_COOKIE_NAME = 'test-sessions'
 CACHE_SERVER = 'redis://127.0.0.1:6'
 

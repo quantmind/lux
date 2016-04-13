@@ -14,10 +14,6 @@ class AuthTest(web.WebsiteTest):
         bs = self.bs(request.response, 200)
         self.assertEqual(str(bs.title), '<title>website.com</title>')
 
-    async def __test_login_403(self):
-        response = await self._login(csrf={}, status=403)
-        self.assertEqual(response, None)
-
     async def test_login(self):
         cookie, token = await self._login()
         self.assertTrue(cookie)
