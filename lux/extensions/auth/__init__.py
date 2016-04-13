@@ -8,13 +8,11 @@ how to write authentication backends and models in lux.
 '''
 from lux.core import Parameter, LuxExtension
 
-from .backends import (TokenBackend, SessionBackend, BrowserBackend,
-                       ApiSessionBackend)
+from .backends import TokenBackend, SessionBackend
 from .views import Authorization, ComingSoon
 
 
 __all__ = ['TokenBackend', 'SessionBackend',
-           'BrowserBackend', 'ApiSessionBackend',
            'Authorization', 'ComingSoon']
 
 

@@ -1,9 +1,6 @@
 from pulsar.utils.httpurl import iri_to_uri
 
 
-__all__ = ['Pagination', 'GithubPagination']
-
-
 class Pagination:
 
     def first_link(self, request, total, limit, offset):

@@ -1,12 +1,6 @@
 from lux import forms
 
 
-__all__ = ['LoginForm',
-           'CreateUserForm',
-           'ChangePasswordForm',
-           'EmailForm']
-
-
 class LoginForm(forms.Form):
     '''The Standard login form'''
     error_message = 'Incorrect username or password'

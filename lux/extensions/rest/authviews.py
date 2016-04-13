@@ -14,11 +14,8 @@ from lux.core import route
 
 from .models import RestModel
 from .views import RestRouter
-from .user import AuthenticationError, login, logout
+from .user import AuthenticationError, login, logout, signup
 from .forms import LoginForm, EmailForm, CreateUserForm, ChangePasswordForm
-
-
-__all__ = ['Authorization']
 
 
 class HttpGone(HttpException):
@@ -38,35 +35,8 @@ class SignUpMixin:
     @action
     def signup(self, request):
         """Handle signup post data
-
-        If :attr:`.create_user_form` form is None, raise a 404 error.
-
-        A succesful response is returned by the backend
-        :meth:`.signup_response` method.
         """
-        if not self.create_user_form:
-            raise Http404
-
-        user = request.cache.user
-        if user.is_authenticated():
-            raise MethodNotAllowed
-
-        form = self.create_user_form(request, data=request.body_data())
-
-        if form.is_valid():
-            data = form.cleaned_data
-            auth_backend = request.cache.auth_backend
-            try:
-                user = auth_backend.create_user(request, **data)
-                email = auth_backend.signup_response(request, user)
-                request.response.status_code = 201
-                data = dict(email=email)
-            except AuthenticationError as e:
-                form.add_error_message(str(e))
-                data = form.tojson()
-        else:
-            data = form.tojson()
-        return self.json(request, data)
+        return signup(request, self.create_user_form)
 
     @route('/signup/<key>', method=('post', 'options'))
     def signup_confirmation(self, request):

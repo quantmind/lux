@@ -10,7 +10,7 @@ SESSION_COOKIE_NAME = APP_NAME.lower()
 
 AUTHENTICATION_BACKENDS = ['lux.extensions.auth.SessionBackend',
                            'lux.extensions.rest.backends.CsrfBackend',
-                           'lux.extensions.auth.BrowserBackend']
+                           'lux.extensions.rest.backends.BrowserBackend']
 
 
 EXTENSIONS = ['lux.extensions.base',

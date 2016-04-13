@@ -10,7 +10,7 @@ from lux.extensions.rest import (PasswordMixin, backends, normalise_email,
                                  AuthenticationError)
 from lux.extensions.rest.policy import has_permission
 
-from .views import Authorization, SignUp
+from .views import Authorization
 
 
 class AuthMixin(PasswordMixin):
@@ -138,10 +138,19 @@ class AuthMixin(PasswordMixin):
 
         email = normalise_email(email)
         assert username or email
+        if username:
+            self.validate_username(request, username)
 
         with odm.begin(session=odm_session) as session:
             if not username:
                 username = email
+
+            if session.query(odm.user).filter_by(username=username).count():
+                raise ValueError('Username not available')
+
+            if (email and
+                    session.query(odm.user).filter_by(email=email).count()):
+                raise ValueError('Email not available')
 
             user = odm.user(username=username,
                             password=self.password(password),
@@ -261,6 +270,9 @@ class TokenBackend(AuthMixin, backends.TokenBackend):
 
 class SessionBackend(AuthMixin, backends.SessionBackend):
     """An authentication backend based on sessions stored in the ODM
+
+    This backend should be used with web sites not using a Rest API, in other
+    words, the API_URL should not be set.
     """
     def get_session(self, request, key):
         """Retrieve a session from its key
@@ -277,11 +289,3 @@ class SessionBackend(AuthMixin, backends.SessionBackend):
         with odm.begin() as s:
             s.add(session)
         return session
-
-
-class BrowserBackend(backends.BrowserBackend):
-    SignUpRouter = SignUp
-
-
-class ApiSessionBackend(backends.ApiSessionBackend):
-    SignUpRouter = SignUp

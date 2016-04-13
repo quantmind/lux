@@ -9,7 +9,7 @@ EXTENSIONS = ['lux.extensions.base',
               'tests.web.content']
 
 API_URL = 'http://webapi.com'
-AUTHENTICATION_BACKENDS = ['tests.web.website.ApiSessionBackend',
+AUTHENTICATION_BACKENDS = ['lux.extensions.rest.backends.ApiSessionBackend',
                            'lux.extensions.rest.backends.CsrfBackend']
 
 SERVE_STATIC_FILES = True

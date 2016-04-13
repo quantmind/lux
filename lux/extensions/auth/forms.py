@@ -3,20 +3,9 @@ import json
 from lux import forms
 from lux.extensions import odm
 from lux.extensions.rest import AuthenticationError, RestColumn
-from lux.extensions.rest.forms import PasswordForm
+from lux.extensions.rest.forms import PasswordForm, CreateUserForm
 from lux.extensions.rest.policy import validate_policy
 from lux.utils.auth import ensure_authenticated
-
-__all__ = ['permission_model',
-           'group_model',
-           'user_model',
-           'TokenModel',
-           'PermissionForm',
-           'GroupForm',
-           'UserForm',
-           'UserModel',
-           'CreateUserForm',
-           'ChangePasswordForm']
 
 
 full_name = RestColumn('full_name', displayName='name',
@@ -123,24 +112,6 @@ class UserForm(forms.Form):
     groups = odm.RelationshipField(group_model,
                                    multiple=True,
                                    required=False)
-
-
-class CreateUserForm(PasswordForm):
-    '''Form for creating a new user form username, email and password
-    '''
-    model = 'user'
-    username = forms.SlugField(required=True,
-                               validator=odm.UniqueField(),
-                               maxlength=30)
-    email = forms.EmailField(required=True,
-                             validator=odm.UniqueField())
-
-    def clean_username(self, value):
-        request = self.request
-        if request.config['CHECK_USERNAME'](request, value):
-            return value
-        else:
-            raise forms.ValidationError('Username not available')
 
 
 class ChangePasswordForm(PasswordForm):

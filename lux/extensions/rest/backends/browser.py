@@ -21,7 +21,8 @@ NotAuthorised = (Http401, PermissionDenied)
 
 def auth_router(api_url, url, Router, path=None):
     params = {'form_enctype': 'application/json'}
-    if is_absolute_uri(api_url) and hasattr(Router, 'post'):
+
+    if api_url is None or is_absolute_uri(api_url):
         action = luxrest('', path=url)
     else:
         params['post'] = None
@@ -152,17 +153,14 @@ class ApiSessionBackend(SessionBackendMixin,
             else:
                 raise AuthenticationError('Invalid credentials')
 
-    def create_user(self, request, **data):
+    def signup(self, request, **data):
         """Create a new user from the api
         """
         api = request.app.api(request)
         try:
-            # TODO: add address from request
-            # client = request.get_client_address()
             response = api.post(self.signup_url, data=data)
             if response.status_code == 201:
-                return User(response.json())
-
+                return response.json()
         except Exception:
             if data.get('username'):
                 raise AuthenticationError('Invalid username or password')

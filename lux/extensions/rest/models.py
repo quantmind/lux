@@ -13,8 +13,6 @@ from lux.core import LuxModel
 
 logger = logging.getLogger('lux.extensions.rest')
 
-__all__ = ['RestModel', 'RestColumn', 'ModelMixin']
-
 
 class RestColumn:
     """A class for specifying attributes of a REST column/field

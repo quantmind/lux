@@ -1,11 +1,9 @@
 from functools import partial
 
 from lux.core import LuxExtension
+from lux.forms import ValidationError
 
 from .user import UserMixin, AuthenticationError
-
-
-__all__ = ['AuthBackend', 'auth_backend', 'MultiAuthBackend']
 
 
 auth_backend_methods = []
@@ -49,6 +47,13 @@ class AuthBase(LuxExtension):
     def user_agent(self, request, max_len=80):
         agent = request.get('HTTP_USER_AGENT')
         return agent[:max_len] if agent else ''
+
+    def validate_username(self, request, username):
+        request = request
+        if request.config['CHECK_USERNAME'](request, username):
+            return username
+        else:
+            raise ValidationError('Username not available')
 
 
 class MultiAuthBackend(AuthBase):
@@ -107,12 +112,6 @@ class AuthenticationResponses:
         pass
 
     @auth_backend
-    def signup_response(self, request, user):   # pragma    nocover
-        """After a new ``user`` has signed up, return the response.
-        """
-        pass
-
-    @auth_backend
     def inactive_user_login_response(self, request, user):
         """JSON response when a non active user logs in
         """
@@ -131,6 +130,12 @@ class AuthUserMixin:
     @auth_backend
     def create_user(self, request, **kwargs):  # pragma    nocover
         '''Create a standard user.'''
+        pass
+
+    @auth_backend
+    def signup(self, request, **params):   # pragma    nocover
+        """After a new ``user`` has signed up, return the response.
+        """
         pass
 
     @auth_backend

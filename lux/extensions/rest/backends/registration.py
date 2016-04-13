@@ -24,18 +24,21 @@ class RegistrationMixin:
         days = request.config['ACCOUNT_ACTIVATION_DAYS']
         return datetime.now() + timedelta(days=days)
 
-    def signup_response(self, request, user):
-        '''handle the response to a signup request.
-        Return the user email if successful
-        '''
+    def signup(self, request, **params):
+        """Handle a signup request.
+
+        Return a dictionary containing the user email if successful
+        """
         auth_backend = request.cache.auth_backend
+        user = auth_backend.create_user(request, **params)
         auth_key = auth_backend.create_auth_key(request, user)
         if not auth_key:
             raise AuthenticationError("Cannot create authentication key")
         if not user.email:
             raise AuthenticationError("Cannot create authentication key, "
                                       "no email")
-        return self.send_email_confirmation(request, user, auth_key)
+        self.send_email_confirmation(request, user, auth_key)
+        return {'email': user.email}
 
     def password_recovery(self, request, email):
         '''Recovery password email

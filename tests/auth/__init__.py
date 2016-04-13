@@ -13,9 +13,8 @@ from lux.extensions.auth.views import (UserCRUD, GroupCRUD, PermissionCRUD,
 from tests.config import *  # noqa
 
 EXTENSIONS = ['lux.extensions.base',
-              'lux.extensions.odm',
               'lux.extensions.rest',
-              'lux.extensions.admin',
+              'lux.extensions.odm',
               'lux.extensions.auth']
 
 API_URL = ''

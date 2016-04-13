@@ -5,7 +5,7 @@ from pulsar.utils.pep import to_bytes
 from pulsar.apps.wsgi import Json
 from pulsar.utils.slugify import slugify
 
-from lux.core import HttpException
+from lux.core import HttpException, Http404, MethodNotAllowed
 from lux.forms import Form, ValidationError
 
 
@@ -219,14 +219,10 @@ class Session(AttributeDictionary, SessionMixin):
     pass
 
 
-def login(request, login_form):
+def login(request, form):
     """Authenticate the user
     """
-    # user = request.cache.user
-    # if user.is_authenticated():
-    #     raise MethodNotAllowed
-
-    form = login_form(request, data=request.body_data())
+    form = _login_form(request, form)
 
     if form.is_valid():
         auth_backend = request.cache.auth_backend
@@ -242,6 +238,25 @@ def login(request, login_form):
             raise HttpException(str(exc), 422) from exc
 
     return Json(form.tojson()).http_response(request)
+
+
+def signup(request, form):
+    """Signup a user
+    """
+    form = _login_form(request, form)
+
+    if form.is_valid():
+        auth_backend = request.cache.auth_backend
+        try:
+            data = auth_backend.signup(request, **form.cleaned_data)
+            request.response.status_code = 201
+        except (AuthenticationError, ValidationError) as exc:
+            form.add_error_message(str(exc))
+            data = form.tojson()
+    else:
+        data = form.tojson()
+
+    return Json(data).http_response(request)
 
 
 def logout(request):
@@ -285,3 +300,15 @@ def user_permissions(request):
     resources = request.url_data.get('resource', ())
     actions = request.url_data.get('action')
     return backend.get_permissions(request, resources, actions=actions)
+
+
+def _login_form(request, form):
+    if not form:
+        raise Http404
+
+    request.set_response_content_type(['application/json'])
+    user = request.cache.user
+    if user.is_authenticated():
+        raise MethodNotAllowed
+
+    return form(request, data=request.body_data())

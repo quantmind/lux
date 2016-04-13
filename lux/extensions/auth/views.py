@@ -2,10 +2,8 @@ from datetime import datetime, timedelta
 
 from lux.core import route, json_message
 from lux.extensions import rest
-from lux.extensions.rest.htmlviews import (SignUp as SignUpView,
-                                           ComingSoon as ComingSoonView)
+from lux.extensions.rest.htmlviews import ComingSoon as ComingSoonView
 from lux.extensions.odm import CRUD, RestRouter
-from lux.forms import Layout, Fieldset, Submit
 from lux.extensions.rest.forms import EmailForm
 from lux.extensions.rest.authviews import action
 
@@ -14,7 +12,7 @@ from pulsar.apps.wsgi import Json
 
 from .forms import (permission_model, group_model, user_model,
                     registration_model, mailing_list_model,
-                    CreateUserForm, ChangePasswordForm)
+                    ChangePasswordForm)
 
 
 class PermissionCRUD(CRUD):
@@ -114,7 +112,6 @@ class UserCRUD(CRUD):
 class Authorization(rest.Authorization):
     '''Override Authorization router with a new create_user_form
     '''
-    create_user_form = CreateUserForm
     change_password_form = ChangePasswordForm
 
     @action
@@ -145,19 +142,6 @@ class Authorization(rest.Authorization):
         else:
             result = form.tojson()
         return Json(result).http_response(request)
-
-
-class SignUp(SignUpView):
-    '''Handle sign up on Html pages
-    '''
-    default_form = Layout(CreateUserForm,
-                          Fieldset('username', 'email', 'password',
-                                   'password_repeat'),
-                          Submit('Sign up',
-                                 disabled="form.$invalid"),
-                          showLabels=False,
-                          directive='user-form',
-                          resultHandler='signUp')
 
 
 class ComingSoon(ComingSoonView):

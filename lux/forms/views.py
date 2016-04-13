@@ -20,6 +20,8 @@ class WebFormRouter(HtmlRouter):
     form_action = None
     default_form = Form
     form = None
+    response_content_types = ['text/html',
+                              'application/json']
 
     @property
     def fclass(self):

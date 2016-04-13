@@ -1,6 +1,4 @@
 from lux.core import LuxExtension
-from lux.extensions.auth import backends
-from lux.extensions.auth.forms import user_model
 from lux.extensions.content import CMS, html_contents
 
 
@@ -17,8 +15,3 @@ class Extension(LuxExtension):
         cms = app.cms.middleware()
         middleware.extend(cms)
         return middleware
-
-
-class ApiSessionBackend(backends.ApiSessionBackend):
-    model = user_model()
-    permissions_url = '/user/permissions'

@@ -6,17 +6,15 @@ from pulsar.apps.wsgi import route
 from lux.core import Router, raise_http_error
 from lux.forms import WebFormRouter, Layout, Fieldset, Submit
 
-from .user import AuthenticationError, login, logout
-from .forms import LoginForm, PasswordForm, EmailForm
+from .user import AuthenticationError, login, logout, signup
+from . import forms
 
 
 class Login(WebFormRouter):
     """Web login view with post handler
     """
     template = 'login.html'
-    response_content_types = ['text/html',
-                              'application/json']
-    default_form = Layout(LoginForm,
+    default_form = Layout(forms.LoginForm,
                           Fieldset(all=True),
                           Submit('Login', disabled="form.$invalid"),
                           model='login',
@@ -29,25 +27,37 @@ class Login(WebFormRouter):
         return super().get(request)
 
     def post(self, request):
-        return login(request, self.default_form.form_class)
+        return login(request, self.fclass)
 
 
 class Logout(Router):
+    response_content_types = ['application/json']
 
     def post(self, request):
         return logout(request)
 
 
 class SignUp(WebFormRouter):
-    """Display a signup form
+    """Display a signup form anf handle signup
     """
     template = 'signup.html'
     confirmation_template = 'registration/confirmation.html'
+    default_form = Layout(forms.CreateUserForm,
+                          Fieldset('username', 'email', 'password',
+                                   'password_repeat'),
+                          Submit('Sign up',
+                                 disabled="form.$invalid"),
+                          showLabels=False,
+                          directive='user-form',
+                          resultHandler='signUp')
 
     def get(self, request):
         if request.cache.user.is_authenticated():
             raise HttpRedirect('/')
         return super().get(request)
+
+    def post(self, request):
+        return signup(request, self.fclass)
 
     @route('<key>')
     def confirmation(self, request):
@@ -70,13 +80,13 @@ class SignUp(WebFormRouter):
 class ForgotPassword(WebFormRouter):
     """Manage forget passwords routes
     """
-    default_form = Layout(EmailForm,
+    default_form = Layout(forms.EmailForm,
                           Fieldset(all=True),
                           Submit('Submit'),
                           showLabels=False,
                           resultHandler='passwordRecovery')
 
-    reset_form = Layout(PasswordForm,
+    reset_form = Layout(forms.PasswordForm,
                         Fieldset(all=True),
                         Submit('Change Password'),
                         showLabels=False,
@@ -90,9 +100,9 @@ class ForgotPassword(WebFormRouter):
         key = request.urlargs['key']
         try:
             user = request.cache.auth_backend.get_user(request, auth_key=key)
-        except AuthenticationError as e:
+        except AuthenticationError as exc:
             session = request.cache.session
-            session.error('The link is no longer valid, %s' % e)
+            session.error('The link is no longer valid, %s' % exc)
             return request.redirect('/')
         if not user:
             raise Http404
@@ -111,7 +121,7 @@ class ForgotPassword(WebFormRouter):
 class ComingSoon(WebFormRouter):
     release = 'release'
     template = 'comingsoon.html'
-    default_form = Layout(EmailForm,
+    default_form = Layout(forms.EmailForm,
                           Fieldset(all=True),
                           Submit('Get notified'),
                           showLabels=False)

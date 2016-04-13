@@ -66,12 +66,12 @@ def testdb(app):
     for staff in SUPERSTAFF:
         backend.create_superuser(request,
                                  username=staff,
-                                 email='%s@bmlltech.com' % staff,
+                                 email='%s@foo.com' % staff,
                                  password=staff)
     for staff in STAFF:
         backend.create_user(request,
                             username=staff,
-                            email='%s@bmlltech.com' % staff,
+                            email='%s@foo.com' % staff,
                             password=staff,
                             active=True)
 

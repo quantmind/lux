@@ -1,7 +1,6 @@
 from lux.utils import test
 
 from tests.auth.user import UserMixin
-from tests.auth.signup import SignupMixin
 from tests.auth.password import PasswordMixin
 from tests.auth.odm import OdmMixin
 from tests.auth.permissions import PermissionsMixin
@@ -55,21 +54,6 @@ class AuthUtils:
         self.assertTrue('token' in data)
         return data['token']
 
-    async def _signup(self):
-        request = await self.client.get('/signup')
-        self.html(request.response, 200)
-        username = test.randomname(prefix='u-')
-        password = test.randomname()
-        email = '%s@%s.com' % (username, test.randomname())
-        data = {'username': username,
-                'password': password,
-                'password_repeat': password,
-                'email': email}
-        request = await self.client.post('/authorizations/signup',
-                                         body=data,
-                                         content_type='application/json')
-        return self.json(request.response, 201)
-
     def _get_registration(self, email):
         odm = self.app.odm()
         with odm.begin() as session:
@@ -81,7 +65,6 @@ class AuthUtils:
 class TestSqlite(test.AppTestCase,
                  UserMixin,
                  OdmMixin,
-                 SignupMixin,
                  PasswordMixin,
                  PermissionsMixin,
                  AuthUtils):
