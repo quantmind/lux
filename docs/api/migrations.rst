@@ -139,7 +139,7 @@ revision.
 
 5. If, for any reasons, you want revert database to previous state use: ::
 
-    python manage.py downgrade <revision_id>
+    python manage.py alembic downgrade <revision_id>
 
 For more information visit `Alembic docs site
 <https://alembic.readthedocs.org/en/latest/>`_
