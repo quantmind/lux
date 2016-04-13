@@ -4,6 +4,8 @@ import sys
 import os
 import json
 import asyncio
+import threading
+
 from copy import copy
 from inspect import isclass, getfile
 from collections import OrderedDict
@@ -19,7 +21,7 @@ from pulsar.apps.wsgi import (WsgiHandler, HtmlDocument, test_wsgi_environ,
 from pulsar.utils.log import lazyproperty
 from pulsar.utils.importer import module_attribute
 from pulsar.apps.data import create_store
-from pulsar.apps.greenio.wsgi import GreenWSGI
+from pulsar.apps.greenio import GreenWSGI, GreenHttp
 from pulsar.apps.http import HttpClient
 
 from lux.utils.async import GreenPubSub
@@ -32,7 +34,6 @@ from .engines import template_engine
 from .cms import CMS
 from .models import ModelContainer
 from .cache import create_cache
-from .greenio import GreenHttp
 
 
 LUX_CORE = os.path.dirname(__file__)
@@ -73,7 +74,7 @@ def execute_app(app, argv=None, **params):  # pragma    nocover
         app._argv = argv = list(argv)
         app._script = argv.pop(0)
     try:
-        application = app.commands()
+        application = app.setup()
     except ImproperlyConfigured as e:
         print('IMPROPERLY CONFUGURED: %s' % e)
         exit(1)
@@ -115,13 +116,6 @@ class App(LazyWsgi):
 
     def setup(self, environ=None):
         return Application(self)
-
-    def commands(self):
-        try:
-            return Application(self, handler=False)
-        except ConfigError as exc:
-            self._config_file = exc.config_file
-        return Application(self, handler=False)
 
     def clone(self, **kw):
         params = self._params.copy()
@@ -252,7 +246,7 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
                   'Default locale'),
         Parameter('MD_EXTENSIONS', ['extra', 'meta', 'toc'],
                   'List/tuple of markdown extensions'),
-        Parameter('GREEN_POOL', 0,
+        Parameter('GREEN_POOL', 100,
                   'Run the WSGI handle in a pool of greenlet'),
         Parameter('THREAD_POOL', False,
                   'Run the WSGI handle in the event loop executor'),
@@ -274,11 +268,11 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
         self.meta.argv = callable._argv
         self.meta.script = callable._script
         self.auth_backend = self
+        self.threads = threading.local()
         self.models = ModelContainer(self)
         self.config = self._build_config(callable._config_file)
         self.fire('on_config')
-        if handler:
-            self.get_handler()
+        _build_handler(self)
 
     def __call__(self, environ, start_response):
         """The WSGI thing."""
@@ -331,54 +325,11 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
             from pulsar.apps.greenio import GreenPool
             return GreenPool(self.config['GREEN_POOL'])
 
+    def require(self, *extensions):
+        return super().require(self, *extensions)
+
     def clone_callable(self, **params):
         return self.callable.clone(**params)
-
-    def get_handler(self):
-        if self.handler is None:
-            self._worker = pulsar.get_actor()
-            if not self.cms:
-                self.cms = CMS(self)
-
-            extensions = list(self.extensions.values())
-            async_middleware = []
-            middleware = []
-            response_middleware = []
-            for extension in extensions:
-                _middleware = extension.middleware(self)
-                if _middleware:
-                    middleware.extend(_middleware)
-                _middleware = extension.async_middleware(self)
-                if _middleware:
-                    async_middleware.extend(_middleware)
-                _middleware = extension.response_middleware(self)
-                if _middleware:
-                    response_middleware.extend(_middleware)
-            # Response middleware executed in reversed order
-            response_middleware = list(reversed(response_middleware))
-
-            if middleware:
-                hnd = WsgiHandler(middleware, response_middleware, async=False)
-                response_middleware = None
-                #
-                # Use a green pool
-                if self.green_pool:
-                    async_middleware.append(GreenWSGI(hnd, self.green_pool))
-                #
-                # Use thread pool
-                elif self.config['THREAD_POOL']:
-                    async_middleware.append(wait_for_body_middleware)
-                    async_middleware.append(middleware_in_executor(hnd))
-                #
-                # No pools
-                else:
-                    async_middleware.extend(hnd.middleware)
-                    response_middleware = hnd.response_middleware
-
-            self.handler = WsgiHandler(async_middleware, response_middleware)
-            self.fire('on_loaded')
-
-        return self.handler
 
     def get_version(self):
         """Get version of this :class:`App`. Required by
@@ -730,10 +681,11 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
         If no key is provided the handler is not included in the http cache.
         """
         params = self.config['HTTP_CLIENT_PARAMETERS'] or {}
+        green = self.green_pool
+        if not green:
+            params['loop'] = pulsar.new_event_loop()
         http = HttpClient(**params)
-        if self.green_pool:
-            http = GreenHttp(http, self.green_pool)
-        return http
+        return GreenHttp(http) if green else http
 
     def run_in_executor(self, callable, *args):
         """Run a ``callable`` in the event loop executor
@@ -835,3 +787,40 @@ def module_types(mod, filter, cache=None):
             if filter(value):
                 all.append(value)
                 yield value
+
+
+def _build_handler(self):
+    self._worker = pulsar.get_actor()
+    if not self.cms:
+        self.cms = CMS(self)
+
+    extensions = list(self.extensions.values())
+    middleware = []
+    rmiddleware = []
+    for extension in extensions:
+        middle = extension.middleware(self)
+        if middle:
+            middleware.extend(middle)
+        middle = extension.response_middleware(self)
+        if middle:
+            rmiddleware.extend(middle)
+    # Response middleware executed in reversed order
+    rmiddleware = list(reversed(rmiddleware))
+    #
+    # Use a green pool
+    if self.green_pool:
+        handler = GreenWSGI(middleware, self.green_pool, rmiddleware)
+    #
+    # Use thread pool
+    elif self.config['THREAD_POOL']:
+        hnd = WsgiHandler(middleware, rmiddleware, async=False)
+        handler = WsgiHandler([wait_for_body_middleware,
+                               middleware_in_executor(hnd)])
+    #
+    else:
+        raise ImproperlyConfigured(
+            'Green or thread concurrency required. Please specify '
+            'either GREEN_POOL or THREAD_POOL size')
+
+    self.handler = handler
+    self.fire('on_loaded')

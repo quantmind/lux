@@ -151,7 +151,7 @@ class MediaBuilder:
 
     def _copy(self, src, target):
         self.write('Copy files from "%s" to "%s"' % (src, target))
-        distutils.dir_util.copy_tree(src, target)
+        distutils.dir_util.copy_tree(src, target, verbose=0)
 
 
 def escape_quote(text):

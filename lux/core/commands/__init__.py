@@ -113,8 +113,6 @@ class LuxCommand(ConsoleParser):
     def __call__(self, argv, **params):
         app = self.pulsar_app(argv)
         app()
-        # make sure the handler is created
-        self.app.get_handler()
         result = maybe_green(self.app, self.run, app.cfg, **params)
         loop = get_event_loop()
         if isawaitable(result) and not loop.is_running():

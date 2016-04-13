@@ -14,7 +14,6 @@ In addition, a :setting:`FAVICON` location can also be specified.
 import hashlib
 from urllib.parse import urlparse
 
-from pulsar import ImproperlyConfigured
 from pulsar.apps import wsgi
 from pulsar.utils.httpurl import remove_double_slash
 
@@ -51,11 +50,8 @@ class Extension(LuxExtension):
             if path.endswith('/'):
                 path = path[:-1]
             d = app.meta.media_dir
-            if d is None:
-                raise ImproperlyConfigured('"media" directory does not exist '
-                                           'in "%s". Cannot serve media files '
-                                           % app.meta.path)
-            middleware.append(MediaRouter(path, d, show_indexes=app.debug))
+            if d is not None:
+                middleware.append(MediaRouter(path, d, show_indexes=app.debug))
         if app.config['REDIRECTS']:
             for url, to in app.config['REDIRECTS'].items():
                 middleware.append(RedirectRouter(url, to))

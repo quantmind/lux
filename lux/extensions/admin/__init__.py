@@ -24,7 +24,7 @@ class Extension(LuxExtension):
     def middleware(self, app):
         admin = app.config['ADMIN_URL']
         if admin:
-            app.require('lux.extensions.rest')
+            self.require(app, 'lux.extensions.rest')
             self.admin = admin = Admin(admin)
             middleware = []
             all = app.module_iterator('admin', is_admin, '__admins__')

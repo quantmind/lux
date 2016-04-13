@@ -27,7 +27,7 @@ class Extension(LuxExtension):
         ]
 
     def on_config(self, app):
-        app.require('lux.extensions.rest')
+        self.require(app, 'lux.extensions.rest')
 
     def context(self, request, context):
         if request.cache.html_main:
