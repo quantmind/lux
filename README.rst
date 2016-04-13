@@ -42,6 +42,7 @@ Python Requirements
 **Hard requirements**
 
 * pulsar_
+* greenlet_
 * pytz_
 * dateutil_
 
