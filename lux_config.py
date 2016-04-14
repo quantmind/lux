@@ -5,13 +5,9 @@ import json
 import subprocess
 
 
-test_modules = ['tests']
-test_timeout = 30
-
-
 def setup(params, package=None):
     if package:
-        path = os.path.abspath(os.getcwd())
+        path = os.path.dirname(__file__)
         meta = sh('%s %s package_info %s %s'
                   % (sys.executable, __file__, package, path))
         params.update(json.loads(meta))

@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-import config
+import lux_config as config
 
 
 def run():
