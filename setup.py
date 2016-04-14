@@ -4,6 +4,7 @@ import lux_config as config
 
 
 def run():
+    requires, links = config.requirements('requirements.txt')
 
     meta = dict(
         name='lux',
@@ -17,8 +18,8 @@ def run():
         include_package_data=True,
         zip_safe=False,
         setup_requires=['pulsar'],
-        install_requires=config.requirements('requirements.txt')[0],
-        # tests_require=config.requirements('requirements-dev.txt')[0],
+        install_requires=requires,
+        dependency_links=links,
         scripts=['bin/luxmake.py'],
         classifiers=[
             'Development Status :: 3 - Alpha',

@@ -10,4 +10,4 @@ beautifulsoup4
 redis
 coverage
 flake8
-pulsar-odm
+-e git+https://github.com/quantmind/pulsar-odm.git@master#egg=pulsar-odm
