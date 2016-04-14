@@ -167,7 +167,6 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
     auth_backend = None
     cms = None
     """CMS handler"""
-    _worker = None
     _WsgiHandler = WsgiHandler
     _pubsub_store = None
     _http = None
@@ -309,8 +308,8 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
 
     @property
     def _loop(self):
-        if self._worker:
-            return self._worker._loop
+        pool = self.green_pool
+        return pool._loop if pool else asyncio.get_event_loop()
 
     @lazyproperty
     def cache_server(self):
@@ -696,7 +695,7 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
         :param args: parameters
         :return: a future or a synchronous result if on a green worker
         """
-        loop = self._loop or asyncio.get_event_loop()
+        loop = self._loop
         future = loop.run_in_executor(None, callable, *args)
         if self.green_pool and self.green_pool.in_green_worker:
             return self.green_pool.wait(future, True)
@@ -790,7 +789,6 @@ def module_types(mod, filter, cache=None):
 
 
 def _build_handler(self):
-    self._worker = pulsar.get_actor()
     if not self.cms:
         self.cms = CMS(self)
 

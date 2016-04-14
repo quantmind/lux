@@ -6,11 +6,9 @@
 '''
 import argparse
 import logging
-import asyncio
 
-from pulsar import (Setting, get_event_loop, Application, ImproperlyConfigured,
-                    Config, get_actor, isawaitable)
-from pulsar.utils.config import LogLevel, Debug, LogHandlers
+from pulsar import Setting, Application, ImproperlyConfigured, isawaitable
+from pulsar.utils.config import Config, LogLevel, Debug, LogHandlers
 
 from lux import __version__
 from lux.utils.async import maybe_green
@@ -67,17 +65,6 @@ class LuxApp(Application):
     name = 'lux'
     cfg = Config(include=('loglevel', 'loghandlers', 'debug', 'config'))
 
-    def __call__(self, actor=None):
-        try:
-            return super(LuxApp, self).__call__(actor)
-        except ImproperlyConfigured:
-            actor = actor or get_actor()
-            return self.on_config(actor)
-
-    def on_config(self, actor):
-        asyncio.set_event_loop(actor._loop)
-        return False
-
 
 class LuxCommand(ConsoleParser):
     '''Signature class for lux commands.
@@ -114,9 +101,8 @@ class LuxCommand(ConsoleParser):
         app = self.pulsar_app(argv)
         app()
         result = maybe_green(self.app, self.run, app.cfg, **params)
-        loop = get_event_loop()
-        if isawaitable(result) and not loop.is_running():
-            result = loop.run_until_complete(result)
+        if isawaitable(result) and not self.app._loop.is_running():
+            result = self.app._loop.run_until_complete(result)
         return result
 
     def get_version(self):
