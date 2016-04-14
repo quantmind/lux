@@ -7,7 +7,8 @@
 import argparse
 import logging
 
-from pulsar import Setting, Application, ImproperlyConfigured, isawaitable
+from pulsar import (Setting, Application, ImproperlyConfigured, isawaitable,
+                    get_actor)
 from pulsar.utils.config import Config, LogLevel, Debug, LogHandlers
 
 from lux import __version__
@@ -64,6 +65,13 @@ class ConsoleParser(object):
 class LuxApp(Application):
     name = 'lux'
     cfg = Config(include=('loglevel', 'loghandlers', 'debug', 'config'))
+
+    def __call__(self, actor=None):
+        try:
+            return super().__call__(actor)
+        except ImproperlyConfigured:
+            actor = actor or get_actor()
+            return self.on_config(actor)
 
 
 class LuxCommand(ConsoleParser):
