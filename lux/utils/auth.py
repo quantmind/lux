@@ -27,3 +27,14 @@ def check_permission(request, resource, action):
     if backend.has_permission(request, resource, action):
         return True
     raise PermissionDenied
+
+
+def normalise_email(email):
+    """
+    Normalise the address by lowercasing the domain part of the email
+    address.
+    """
+    if email:
+        email_name, domain_part = email.strip().rsplit('@', 1)
+        email = '@'.join([email_name, domain_part.lower()])
+    return email

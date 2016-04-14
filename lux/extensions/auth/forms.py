@@ -3,7 +3,7 @@ import json
 from lux import forms
 from lux.extensions import odm
 from lux.extensions.rest import AuthenticationError, RestColumn
-from lux.extensions.rest.forms import PasswordForm, CreateUserForm
+from lux.extensions.rest.views.forms import PasswordForm, CreateUserForm
 from lux.extensions.rest.policy import validate_policy
 from lux.utils.auth import ensure_authenticated
 

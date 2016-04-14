@@ -2,10 +2,10 @@ from datetime import datetime, timedelta
 
 from lux.core import route, json_message
 from lux.extensions import rest
-from lux.extensions.rest.htmlviews import ComingSoon as ComingSoonView
 from lux.extensions.odm import CRUD, RestRouter
-from lux.extensions.rest.forms import EmailForm
-from lux.extensions.rest.authviews import action
+from lux.extensions.rest.views.browser import ComingSoon as ComingSoonView
+from lux.extensions.rest.views.forms import EmailForm
+from lux.extensions.rest.views.auth import action
 
 from pulsar import MethodNotAllowed, Http404, PermissionDenied
 from pulsar.apps.wsgi import Json

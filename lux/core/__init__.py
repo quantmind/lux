@@ -28,7 +28,7 @@ from .cache import cached, Cacheable, Cache, register_cache
 from .exceptions import (HttpException, HttpRedirect, BadRequest,
                          PermissionDenied, Http404, MethodNotAllowed,
                          Http401, Unsupported, UnprocessableEntity,
-                         raise_http_error)
+                         HttpGone, raise_http_error)
 from .content import *      # noqa
 
 
@@ -51,6 +51,8 @@ __all__ = ['ConsoleParser',
            'Cacheable',
            'Cache',
            'register_cache',
+           #
+           # Errors
            'HttpException',
            'HttpRedirect',
            'BadRequest',
@@ -58,6 +60,7 @@ __all__ = ['ConsoleParser',
            'Http404',
            'MethodNotAllowed',
            'Http401',
+           'HttpGone',
            'Unsupported',
            'UnprocessableEntity',
            'raise_http_error']

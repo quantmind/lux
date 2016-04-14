@@ -12,10 +12,8 @@ from pulsar import MethodNotAllowed, Http404, HttpException
 
 from lux.core import route
 
-from .models import RestModel
-from .views import RestRouter
-from .user import AuthenticationError, login, logout, signup
-from .forms import LoginForm, EmailForm, CreateUserForm, ChangePasswordForm
+from ..models import RestModel
+from . import actions, api, forms
 
 
 class HttpGone(HttpException):
@@ -30,13 +28,13 @@ def action(f):
 class SignUpMixin:
     """Add endpoints for signup and signup confirmation
     """
-    create_user_form = CreateUserForm
+    create_user_form = forms.CreateUserForm
 
     @action
     def signup(self, request):
         """Handle signup post data
         """
-        return signup(request, self.create_user_form)
+        return actions.signup(request, self.create_user_form)
 
     @route('/signup/<key>', method=('post', 'options'))
     def signup_confirmation(self, request):
@@ -47,23 +45,14 @@ class SignUpMixin:
             request.app.fire('on_preflight', request, methods=['POST'])
             return request.response
 
-        key = request.urlargs['key']
         backend = request.cache.auth_backend
-        try:
-            user = backend.get_user(request, auth_key=key)
-            if user and backend.confirm_auth_key(request, key, confirm=True):
-                data = dict(message='Successfully confirmed registration',
-                            success=True)
-            else:
-                raise HttpGone('The link is no longer valid')
-        except AuthenticationError:
-            raise Http404
+        data = backend.signup_confirm(request, request.urlargs['key'])
         return self.json(request, data)
 
 
 class ResetPasswordMixin:
-    request_reset_password_form = EmailForm
-    reset_form = ChangePasswordForm
+    request_reset_password_form = forms.EmailForm
+    reset_form = forms.ChangePasswordForm
 
     @action
     def reset_password(self, request):
@@ -78,7 +67,7 @@ class ResetPasswordMixin:
             email = form.cleaned_data['email']
             try:
                 result = {'email': auth.password_recovery(request, email)}
-            except AuthenticationError as e:
+            except actions.AuthenticationError as e:
                 form.add_error_message(str(e))
                 result = form.tojson()
         else:
@@ -94,7 +83,7 @@ class ResetPasswordMixin:
         key = request.urlargs['key']
         try:
             user = request.cache.auth_backend.get_user(request, auth_key=key)
-        except AuthenticationError:
+        except actions.AuthenticationError:
             user = None
         form = self.reset_form(request, data=request.body_data())
         valid = form.is_valid()
@@ -115,13 +104,13 @@ class ResetPasswordMixin:
         return self.json(request, result)
 
 
-class Authorization(RestRouter, SignUpMixin, ResetPasswordMixin):
+class Authorization(api.RestRouter, SignUpMixin, ResetPasswordMixin):
     """Authentication views for Restful APIs
     """
     model = RestModel('authorization')
-    login_form = LoginForm
-    change_password_form = ChangePasswordForm
-    request_reset_password_form = EmailForm
+    login_form = forms.LoginForm
+    change_password_form = forms.ChangePasswordForm
+    request_reset_password_form = forms.EmailForm
 
     def head(self, request):
         return request.response
@@ -129,11 +118,11 @@ class Authorization(RestRouter, SignUpMixin, ResetPasswordMixin):
     def post(self, request):
         """Post request create a new Authorization token
         """
-        return login(request, self.login_form)
+        return actions.login(request, self.login_form)
 
     @action
     def logout(self, request):
-        return logout(request)
+        return actions.logout(request)
 
     @route('/<action>', method=('post', 'options'))
     def auth_action(self, request):

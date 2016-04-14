@@ -22,15 +22,18 @@ from pulsar.utils.httpurl import is_absolute_uri
 from lux.core import Parameter
 from lux.core.wrappers import wsgi_request
 
-from .user import *             # noqa
 from .auth import AuthBackend, auth_backend, MultiAuthBackend
 from .models import RestModel, RestColumn, ModelMixin
 from .client import ApiClient
-from .views import RestRoot, RestRouter, RestMixin
-from .authviews import Authorization
+from .views.actions import (AuthenticationError, check_username, login,
+                            logout, user_permissions)
+from .views.api import RestRoot, RestRouter, RestMixin
+from .views.auth import Authorization
 from .ws import WsModelRpc
 from .policy import has_permission
 from .pagination import Pagination, GithubPagination
+from .user import (MessageMixin, UserMixin, SessionMixin, PasswordMixin,
+                   User, Session)
 
 
 __all__ = ['RestModel',
@@ -42,7 +45,19 @@ __all__ = ['RestModel',
            'RestRouter',
            'RestMixin',
            'Pagination',
-           'GithubPagination']
+           'GithubPagination',
+           'AuthenticationError',
+           'MessageMixin',
+           'UserMixin',
+           'SessionMixin',
+           'PasswordMixin',
+           'User',
+           'Session',
+           #
+           'login',
+           'logout',
+           'user_permissions',
+           'check_username']
 
 
 def luxrest(url, **rest):

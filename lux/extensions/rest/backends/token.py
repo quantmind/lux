@@ -5,8 +5,7 @@ from lux.core import Parameter, Http401
 
 from .mixins import jwt, TokenBackendMixin
 from .registration import RegistrationMixin
-from .. import AuthBackend
-from ..authviews import Authorization
+from .. import AuthBackend, Authorization
 
 
 class TokenBackend(TokenBackendMixin, RegistrationMixin, AuthBackend):

@@ -4,7 +4,7 @@ import re
 import sys
 
 from lux.core import LuxCommand, Setting
-from lux.extensions.rest import normalise_email
+from lux.utils.auth import normalise_email
 
 
 RE_VALID_USERNAME = re.compile('[\w.@+-]+$')

@@ -1,12 +1,9 @@
 import os
 
-from pulsar import Setting
-
-import lux
-from lux.core.commands import CommandError
+from lux.core import LuxCommand, CommandError, Setting
 
 
-class Command(lux.Command):
+class Command(LuxCommand):
     help = 'Alembic commands for migrating database.'
 
     commands = ['auto', 'branches', 'current', 'downgrade', 'heads', 'history',

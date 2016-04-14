@@ -3,11 +3,10 @@
 from pulsar import Http404, HttpRedirect
 from pulsar.apps.wsgi import route
 
-from lux.core import Router, raise_http_error
+from lux.core import Router
 from lux.forms import WebFormRouter, Layout, Fieldset, Submit
 
-from .user import AuthenticationError, login, logout, signup
-from . import forms
+from . import forms, actions
 
 
 class Login(WebFormRouter):
@@ -27,14 +26,14 @@ class Login(WebFormRouter):
         return super().get(request)
 
     def post(self, request):
-        return login(request, self.fclass)
+        return actions.login(request, self.fclass)
 
 
 class Logout(Router):
     response_content_types = ['application/json']
 
     def post(self, request):
-        return logout(request)
+        return actions.logout(request)
 
 
 class SignUp(WebFormRouter):
@@ -57,23 +56,18 @@ class SignUp(WebFormRouter):
         return super().get(request)
 
     def post(self, request):
-        return signup(request, self.fclass)
+        return actions.signup(request, self.fclass)
 
     @route('<key>')
     def confirmation(self, request):
-        key = request.urlargs['key']
-        url = 'authorizations/signup/%s' % key
-        api = request.app.api(request)
-        response = api.post(url)
-        raise_http_error(response)
+        backend = request.cache.auth_backend
+        backend.signup_confirm(request, request.urlargs['key'])
         return self.html_response(request, '', self.confirmation_template)
 
     @route('confirmation/<username>')
     def new_confirmation(self, request):
-        username = request.urlargs['username']
-        api = request.app.api(request)
-        response = api.post('authorizations/%s' % username)
-        raise_http_error(response)
+        backend = request.cache.auth_backend
+        backend.signup_confirmation(request, request.urlargs['username'])
         return self.html_response(request, '', self.confirmation_template)
 
 
@@ -100,7 +94,7 @@ class ForgotPassword(WebFormRouter):
         key = request.urlargs['key']
         try:
             user = request.cache.auth_backend.get_user(request, auth_key=key)
-        except AuthenticationError as exc:
+        except actions.AuthenticationError as exc:
             session = request.cache.session
             session.error('The link is no longer valid, %s' % exc)
             return request.redirect('/')

@@ -54,13 +54,6 @@ class AuthUtils:
         self.assertTrue('token' in data)
         return data['token']
 
-    def _get_registration(self, email):
-        odm = self.app.odm()
-        with odm.begin() as session:
-            query = session.query(odm.registration).join(odm.user).filter(
-                odm.user.email == email)
-            return query.one()
-
 
 class TestSqlite(test.AppTestCase,
                  UserMixin,

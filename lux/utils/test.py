@@ -498,6 +498,18 @@ class WebApiTestCase(AppTestCase):
                                             content_type='application/json')
         return self.json(request.response, 201)
 
+    @green
+    def _get_registration(self, email):
+        """Retrieve the registration object from email
+
+        Useful for testing signup process
+        """
+        odm = self.app.odm()
+        with odm.begin() as session:
+            query = session.query(odm.registration).join(odm.user).filter(
+                odm.user.email == email)
+            return query.one()
+
 
 class Response:
     __slots__ = ('response',)

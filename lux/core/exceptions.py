@@ -11,6 +11,10 @@ class Http401(HttpException):
         super().__init__(msg=msg, headers=headers)
 
 
+class HttpGone(HttpException):
+    status = 410
+
+
 class Unsupported(HttpException):
     status = 415
 
@@ -25,6 +29,7 @@ errors = {HttpRedirect.status: HttpRedirect,
           Http404.status: Http404,
           MethodNotAllowed.status: MethodNotAllowed,
           Http401.status: Http401,
+          HttpGone.status: HttpGone,
           Unsupported.status: Unsupported,
           UnprocessableEntity.status: UnprocessableEntity}
 

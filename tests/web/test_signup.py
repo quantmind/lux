@@ -26,13 +26,17 @@ class AuthTest(web.WebsiteTest):
                                          content_type='application/json')
         self.assertValidationError(request.response)
 
-    async def __test_signup_confirmation(self):
+    async def test_signup_confirmation(self):
         data = await self._signup()
-        reg = await self.app.green_pool.submit(self._get_registration,
-                                               data['email'])
-        request = await self.client.get('/signup/%s' % reg.id)
+        reg = await self._get_registration(data['email'])
+        self.assertTrue(reg.id)
+        request = await self.webclient.get('/signup/%s' % reg.id)
         doc = self.bs(request.response, 200)
         body = doc.find('body')
+        self.assertTrue(body)
+        # await self._check_body(reg, body)
+
+    async def _(self, reg, body):
         login = body.find_all('a')
         self.assertEqual(len(login), 1)
         text = login[0].prettify()
@@ -47,11 +51,12 @@ class AuthTest(web.WebsiteTest):
         data = await self._signup()
         reg = await self.app.green_pool.submit(self._get_registration,
                                                data['email'])
-        url = '/authorizations/signup/%s' % reg.id
-        request = await self.client.options(url)
+        api_url = '/authorizations/signup/%s' % reg.id
+        request = await self.client.options(api_url)
         self.assertEqual(request.response.status_code, 200)
-        request = await self.client.post(url)
+        #
+        request = await self.client.post(api_url)
         data = self.json(request.response, 200)
         self.assertTrue(data['success'])
-        request = await self.client.post(url)
+        request = await self.client.post(api_url)
         self.json(request.response, 410)

@@ -1,7 +1,7 @@
 from urllib.parse import urljoin
 from datetime import datetime, timedelta
 
-from lux.core import Parameter
+from lux.core import Parameter, HttpGone, Http404
 from lux.extensions.rest import AuthenticationError, website_url
 
 
@@ -31,6 +31,22 @@ class RegistrationMixin:
         """
         auth_backend = request.cache.auth_backend
         user = auth_backend.create_user(request, **params)
+        return auth_backend.signup_confirmation(request, user)
+
+    def signup_confirm(self, request, key):
+        try:
+            backend = request.cache.auth_backend
+            user = backend.get_user(request, auth_key=key)
+            if user and backend.confirm_auth_key(request, key, confirm=True):
+                return dict(message='Successfully confirmed registration',
+                            success=True)
+            else:
+                raise HttpGone('The link is no longer valid')
+        except AuthenticationError:
+            raise Http404
+
+    def signup_confirmation(self, request, user):
+        auth_backend = request.cache.auth_backend
         auth_key = auth_backend.create_auth_key(request, user)
         if not auth_key:
             raise AuthenticationError("Cannot create authentication key")

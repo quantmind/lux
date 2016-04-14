@@ -3,7 +3,7 @@ from lux.core import Router
 from pulsar import BadRequest
 from pulsar.apps.wsgi import Json
 
-from .models import ModelMixin, RestModel
+from ..models import ModelMixin, RestModel
 
 
 REST_CONTENT_TYPES = ['application/json']

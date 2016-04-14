@@ -3,7 +3,8 @@ from functools import partial
 from lux.core import LuxExtension
 from lux.forms import ValidationError
 
-from .user import UserMixin, AuthenticationError
+from .user import UserMixin
+from .views.actions import AuthenticationError
 
 
 auth_backend_methods = []
@@ -134,7 +135,19 @@ class AuthUserMixin:
 
     @auth_backend
     def signup(self, request, **params):   # pragma    nocover
-        """After a new ``user`` has signed up, return the response.
+        """Signup a new ``user``
+        """
+        pass
+
+    @auth_backend
+    def signup_confirm(self, request, key):
+        """Confirm a new sign up
+        """
+        pass
+
+    @auth_backend
+    def signup_confirmation(self, request, user):
+        """Create a new signup confirmation
         """
         pass
 

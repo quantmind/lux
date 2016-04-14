@@ -1,15 +1,9 @@
-try:
-    input = raw_input
-except NameError:
-    pass
-
-from pulsar import Setting
 from pulsar.utils.html import plural
 
-import lux
+from lux.core import LuxCommand, Setting
 
 
-class Command(lux.Command):
+class Command(LuxCommand):
     option_list = (
         Setting('dryrun', ('--dryrun',),
                 action='store_true',

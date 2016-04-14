@@ -13,7 +13,7 @@ from .mixins import jwt, SessionBackendMixin
 from .registration import RegistrationMixin
 from .. import (AuthenticationError, AuthBackend, luxrest,
                 User, Session, ModelMixin)
-from ..htmlviews import ForgotPassword, Login, Logout, SignUp
+from ..views import browser
 
 
 NotAuthorised = (Http401, PermissionDenied)
@@ -55,10 +55,10 @@ class BrowserBackend(RegistrationMixin,
                   'The url for the privacy policy, required for signups',
                   True)
     ]
-    LoginRouter = Login
-    LogoutRouter = Logout
-    SignUpRouter = SignUp
-    ForgotPasswordRouter = ForgotPassword
+    LoginRouter = browser.Login
+    LogoutRouter = browser.Logout
+    SignUpRouter = browser.SignUp
+    ForgotPasswordRouter = browser.ForgotPassword
 
     def middleware(self, app):
         middleware = []
@@ -168,6 +168,16 @@ class ApiSessionBackend(SessionBackendMixin,
                 raise AuthenticationError('Invalid email or password')
             else:
                 raise AuthenticationError('Invalid credentials')
+
+    def signup_confirm(self, request, key):
+        api = request.app.api(request)
+        response = api.post('%s/%s' % (self.signup_url, key))
+        return response.json()
+
+    def signup_confirmation(self, request, username):
+        api = request.app.api(request)
+        response = api.post('authorizations/%s' % username)
+        return response.json()
 
     def get_permissions(self, request, resources, actions=None):
         return self._get_permissions(request, resources, actions)
