@@ -29,7 +29,6 @@ from .views.actions import (AuthenticationError, check_username, login,
                             logout, user_permissions)
 from .views.api import RestRoot, RestRouter, RestMixin
 from .views.auth import Authorization
-from .ws import WsModelRpc
 from .policy import has_permission
 from .pagination import Pagination, GithubPagination
 from .user import (MessageMixin, UserMixin, SessionMixin, PasswordMixin,
@@ -77,7 +76,7 @@ def website_url(request, location=None):
     return url
 
 
-class Extension(MultiAuthBackend, WsModelRpc):
+class Extension(MultiAuthBackend):
 
     _config = [
         Parameter('AUTHENTICATION_BACKENDS', [],

@@ -1,6 +1,6 @@
 from pulsar.apps import rpc
 
-from lux.extensions.rest.ws import check_ws_permission, get_model
+from lux.extensions.sockjs import check_ws_permission, get_model
 
 
 class WsModelRpc:

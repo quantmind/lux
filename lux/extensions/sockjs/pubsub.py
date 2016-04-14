@@ -2,7 +2,7 @@ from pulsar.apps.data import PubSubClient
 from pulsar.utils.string import to_string
 from pulsar.utils.importer import module_attribute
 
-from lux.extensions.rest.ws import check_ws_permission
+from .auth import check_ws_permission
 
 
 WS_KEY = 'sockjs'

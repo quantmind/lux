@@ -10,13 +10,17 @@ from lux.core import Parameter, LuxExtension
 
 from .socketio import SocketIO
 from .ws import LuxWs
+from .auth import WsModelRpc, check_ws_permission, get_model
 from .pubsub import PubSub, Channels, broadcast
 
 
-__all__ = ['Channels', 'broadcast']
+__all__ = ['Channels',
+           'broadcast',
+           'check_ws_permission',
+           'get_model']
 
 
-class Extension(LuxExtension, PubSub):
+class Extension(LuxExtension, PubSub, WsModelRpc):
 
     _config = [
         Parameter('WS_URL', '/ws', 'Websocket base url'),
