@@ -25,7 +25,7 @@ from .engines import register_template_engine, template_engine
 from .cms import CMS
 from .mail import EmailBackend
 from .cache import cached, Cacheable, Cache, register_cache
-from .exceptions import raise_http_error
+from .exceptions import raise_http_error, ShellError, DeferMiddleware
 
 
 __all__ = ['ConsoleParser',
@@ -47,4 +47,6 @@ __all__ = ['ConsoleParser',
            'Cacheable',
            'Cache',
            'register_cache',
-           'raise_http_error']
+           'raise_http_error',
+           'ShellError',
+           'DeferMiddleware']

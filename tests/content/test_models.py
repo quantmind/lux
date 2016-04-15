@@ -4,7 +4,7 @@ from lux.utils import test
 from lux.extensions.rest import UserMixin
 from lux.extensions.content.models import Content, DataError
 
-from tests.content import PWD, remove_repo, create_content
+from tests.content import CONTENT_LOCATION, remove_repo, create_content
 
 
 class User(UserMixin):
@@ -15,7 +15,7 @@ class TestContentModel(test.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.model = Content('tests', PWD, '')
+        cls.model = Content('tests', CONTENT_LOCATION, '')
         create_content('tests')
 
     @classmethod
@@ -24,11 +24,12 @@ class TestContentModel(test.TestCase):
 
     def test_initialization(self):
         # repo exist
-        self.assertEqual(str(self.model.directory), os.path.join(PWD, 'tests'))
+        self.assertEqual(str(self.model.directory),
+                         os.path.join(CONTENT_LOCATION, 'tests'))
         self.assertIsInstance(self.model, Content)
 
         # repo not exist
-        pwd = os.path.join(PWD, 'repo_test')
+        pwd = os.path.join(CONTENT_LOCATION, 'repo_test')
         Content('Test', pwd)
         self.assertTrue(os.path.exists(pwd))
 

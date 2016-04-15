@@ -17,7 +17,7 @@ class ContactForm(forms.Form):
 
 HtmlContactForm = Layout(ContactForm,
                          Fieldset(all=True, showLabels=False),
-                         Submit('Send'),
+                         Submit('Send', disabled="form.$invalid"),
                          resultHandler='enquiry')
 
 

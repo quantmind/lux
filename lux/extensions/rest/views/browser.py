@@ -12,7 +12,6 @@ from . import forms, actions
 class Login(WebFormRouter):
     """Web login view with post handler
     """
-    template = 'login.html'
     default_form = Layout(forms.LoginForm,
                           Fieldset(all=True),
                           Submit('Login', disabled="form.$invalid"),
@@ -39,8 +38,6 @@ class Logout(Router):
 class SignUp(WebFormRouter):
     """Display a signup form anf handle signup
     """
-    template = 'signup.html'
-    confirmation_template = 'registration/confirmation.html'
     default_form = Layout(forms.CreateUserForm,
                           Fieldset('username', 'email', 'password',
                                    'password_repeat'),
@@ -62,13 +59,13 @@ class SignUp(WebFormRouter):
     def confirmation(self, request):
         backend = request.cache.auth_backend
         backend.signup_confirm(request, request.urlargs['key'])
-        return self.html_response(request, '', self.confirmation_template)
+        return self.html_response(request, '')
 
     @route('confirmation/<username>')
     def new_confirmation(self, request):
         backend = request.cache.auth_backend
         backend.signup_confirmation(request, request.urlargs['username'])
-        return self.html_response(request, '', self.confirmation_template)
+        return self.html_response(request, '')
 
 
 class ForgotPassword(WebFormRouter):
@@ -85,9 +82,6 @@ class ForgotPassword(WebFormRouter):
                         Submit('Change Password'),
                         showLabels=False,
                         resultHandler='passwordChanged')
-
-    template = 'forgot.html'
-    reset_template = 'reset_password.html'
 
     @route('<key>')
     def get_reset_form(self, request):
@@ -109,12 +103,11 @@ class ForgotPassword(WebFormRouter):
         html = form.as_form(action=action,
                             enctype='multipart/form-data',
                             method='post')
-        return self.html_response(request, html, self.reset_template)
+        return self.html_response(request, html)
 
 
 class ComingSoon(WebFormRouter):
     release = 'release'
-    template = 'comingsoon.html'
     default_form = Layout(forms.EmailForm,
                           Fieldset(all=True),
                           Submit('Get notified'),

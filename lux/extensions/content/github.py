@@ -1,45 +1,53 @@
 import os
 import hmac
+import json
 import hashlib
-from asyncio import create_subprocess_shell, subprocess
 
 from pulsar.apps.wsgi import Json
 from pulsar.utils.string import to_bytes
-from pulsar import HttpException, PermissionDenied, BadRequest
+from pulsar import (HttpException, PermissionDenied, BadRequest,
+                    UnprocessableEntity, as_coroutine)
 
-from lux.core import Router
+from lux.core import Router, ShellError
 
 
 class GithubHook(Router):
-    '''A Router for handling Github webhooks
-    '''
+    """A Router for handling Github webhooks
+    """
     response_content_types = ['application/json']
     handle_payload = None
     secret = None
 
-    def post(self, request):
-        data = request.body_data()
+    async def post(self, request):
+        data = await as_coroutine(request.body_data())
 
         if self.secret:
             try:
-                self.validate(request)
+                await self.validate(request)
+            except ShellError as exc:
+                raise UnprocessableEntity(str(exc)) from exc
+            except HttpException:
+                raise
             except Exception as exc:
-                if hasattr(exc, 'status'):
-                    raise
-                else:
-                    exc = str(exc)
-                    request.logger.exception(exc)
-                    raise BadRequest(exc)
+                exc = str(exc)
+                request.logger.exception(exc)
+                raise BadRequest(exc)
 
         event = request.get('HTTP_X_GITHUB_EVENT')
         if self.handle_payload:
-            data = self.handle_payload(request, event, data)
+            try:
+                data = await self.handle_payload(request, event, data)
+            except HttpException:
+                raise
+            except Exception as exc:
+                exc = str(exc)
+                request.logger.exception(exc)
+                raise BadRequest(exc)
         else:
             data = dict(success=True, event=event)
         return Json(data).http_response(request)
 
-    def validate(self, request):
-        secret = to_bytes(self.secret)
+    async def validate(self, request):
         hub_signature = request.get('HTTP_X_HUB_SIGNATURE')
 
         if not hub_signature:
@@ -53,7 +61,7 @@ class GithubHook(Router):
             raise BadRequest('bad signature')
 
         payload = request.get('wsgi.input').read()
-        sig = hmac.new(secret, msg=payload, digestmod=hashlib.sha1)
+        sig = github_signature(self.secret, payload)
 
         if sig.hexdigest() != signature:
             raise PermissionDenied('Bad signature')
@@ -64,42 +72,24 @@ class EventHandler:
     def __call__(self, request, event, data):
         raise NotImplementedError
 
-    def execute(self, request, command):
-        green_pool = request.app.green_pool
-        if green_pool:
-            return green_pool.wait(self._async_execute(command))
-        else:
-            return self._sync_execute(command)
-
-    def _sync_execute(self, command):
-        raise NotImplementedError
-
-    async def _async_execute(self, command):
-        p = await create_subprocess_shell(command,
-                                          stdout=subprocess.PIPE,
-                                          stderr=subprocess.PIPE)
-        b, e = await p.communicate()
-        return b.decode('utf-8'), e.decode('utf-8')
-
 
 class PullRepo(EventHandler):
 
     def __init__(self, repo):
         self.repo = repo
 
-    def __call__(self, request, event, data):
+    async def __call__(self, request, event, data):
+        app = request.app
         response = dict(success=True, event=event)
         if event == 'push':
             if os.path.isdir(self.repo):
                 command = 'cd %s; git symbolic-ref --short HEAD' % self.repo
-                branch, e = self.execute(request, command)
-                if e:
-                    raise HttpException(e, status=412)
+                branch = await app.shell(request, command)
                 branch = branch.split('\n')[0]
                 response['command'] = self.command(branch)
-                result, e = self.execute(request, response['command'])
+                result = await app.shell(request, response['command'])
                 response['result'] = result
-                response['error'] = e
+                app.reload()
             else:
                 raise HttpException('Repo directory not valid', status=412)
         return response
@@ -107,3 +97,11 @@ class PullRepo(EventHandler):
     def command(self, branch):
         # git checkout HEAD path/to/your/dir/or/file
         return 'cd %s; git pull origin %s;' % (self.repo, branch)
+
+
+def github_signature(secret, payload):
+    secret = to_bytes(secret)
+    if isinstance(payload, dict):
+        payload = json.dumps(payload)
+    payload = to_bytes(payload)
+    return hmac.new(secret, msg=payload, digestmod=hashlib.sha1)

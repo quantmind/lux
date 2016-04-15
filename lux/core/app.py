@@ -5,6 +5,7 @@ import os
 import json
 import asyncio
 import threading
+from asyncio import create_subprocess_shell, subprocess
 
 from copy import copy
 from inspect import isclass, getfile
@@ -34,6 +35,7 @@ from .engines import template_engine
 from .cms import CMS
 from .models import ModelContainer
 from .cache import create_cache
+from .exceptions import ShellError, DeferMiddleware
 
 
 LUX_CORE = os.path.dirname(__file__)
@@ -230,6 +232,8 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
                   'Default timeout for data stored in cache'),
         Parameter('DEFAULT_FROM_EMAIL', '',
                   'Default email address to send email from'),
+        Parameter('SUPPORT_EMAIL', '',
+                  'email address for support queries', True),
         Parameter('LOCALE', 'en_GB', 'Default locale', True),
         Parameter('DEFAULT_TIMEZONE', 'GMT',
                   'Default timezone'),
@@ -260,7 +264,7 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
                   'A dictionary of parameters to pass to the Http Client')
         ]
 
-    def __init__(self, callable, handler=True):
+    def __init__(self, callable):
         self.callable = callable
         self.meta.argv = callable._argv
         self.meta.script = callable._script
@@ -268,9 +272,10 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
         self.threads = threading.local()
         self.models = ModelContainer(self)
         self.extensions = OrderedDict()
-        self.config = self._build_config(callable._config_file)
+        self.config = _build_config(self)
         self.fire('on_config')
-        _build_handler(self)
+        self.handler = _build_handler(self)
+        self.fire('on_loaded')
 
     def __call__(self, environ, start_response):
         """The WSGI thing."""
@@ -496,7 +501,7 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
         for name in names:
             for ext in reversed(tuple(self.extensions.values())):
                 filename = ext.get_template_full_path(self, name)
-                if os.path.exists(filename):
+                if filename and os.path.exists(filename):
                     return filename
             filename = os.path.join(LUX_CORE, 'templates', name)
             if os.path.exists(filename):
@@ -632,7 +637,7 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
                     except ImportError:
                         pass
                 if filter:
-                    yield from module_types(mod, filter, cache)
+                    yield from _module_types(mod, filter, cache)
                 else:
                     yield mod
 
@@ -692,47 +697,29 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
         else:
             return future
 
+    async def shell(self, request, command):
+        """Asynchronous execution of a shell command
+        """
+        request.logger.info('Execute shell command: %s', command)
+        proc = await create_subprocess_shell(command,
+                                             stdout=subprocess.PIPE,
+                                             stderr=subprocess.STDOUT)
+        await proc.wait()
+        msg = await proc.stdout.read()
+        msg = msg.decode('utf-8').strip()
+        if proc.returncode:
+            raise ShellError(msg, proc.returncode)
+        return msg
+
+    def reload(self):
+        """Force the reloading of this application
+
+        The reload will occur at the next wsgi request
+        """
+        self.logger.warning('Reload WSGI application')
+        self.callable.clear_local()
+
     # INTERNALS
-    def _build_config(self, module_name):
-        # Check if an extension module is available
-        module = import_module(module_name)
-        self.meta = self.meta.copy(module)
-        if self.meta.name != 'lux':
-            # self.meta.path.add2python(self.meta.name, up=1)
-            extension = self.load_extension(self.meta.name)
-            if extension:   # extension available, get the version from it
-                self.meta.version = extension.meta.version
-        #
-        parser = self.get_parser(with_commands=False, add_help=False)
-        opts, _ = parser.parse_known_args(self.meta.argv)
-        config_module = import_module(opts.config)
-
-        if opts.config != self.config_module:
-            raise ConfigError(opts.config)
-        #
-        # setup application
-        config = {}
-        self.setup(config, config_module, self.params, opts)
-        #
-        # Load extensions
-        self.logger.debug('Setting up extensions')
-        apps = list(config['EXTENSIONS'])
-        add_app(apps, 'lux', 0)
-        add_app(apps, self.meta.name)
-        media_url = config['MEDIA_URL']
-        if media_url:
-            config['MEDIA_URL'] = remove_double_slash('/%s/' % media_url)
-        config['EXTENSIONS'] = tuple(apps)
-        extensions = self.extensions
-        for name in config['EXTENSIONS'][1:]:
-            Ext = self.load_extension(name)
-            if Ext:
-                extension = Ext()
-                extensions[extension.meta.name] = extension
-                self.bind_events(extension)
-                extension.setup(config, config_module, self.params)
-        return config
-
     def _setup_logger(self, config, module, opts):
         debug = opts.debug or self.params.get('debug', False)
         cfg = pulsar.Config()
@@ -751,7 +738,8 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
                 if p.jscontext)
 
 
-def add_app(apps, name, pos=None):
+# INTERNALS
+def _add_app(apps, name, pos=None):
     try:
         apps.remove(name)
     except ValueError:
@@ -762,7 +750,7 @@ def add_app(apps, name, pos=None):
         apps.append(name)
 
 
-def module_types(mod, filter, cache=None):
+def _module_types(mod, filter, cache=None):
     # Loop through attributes in mod_models
     if cache and hasattr(mod, cache):
         for value in getattr(mod, cache):
@@ -778,20 +766,54 @@ def module_types(mod, filter, cache=None):
                 yield value
 
 
+def _build_config(self):
+    module_name = self.callable._config_file
+    # Check if an extension module is available
+    module = import_module(module_name)
+    self.meta = self.meta.copy(module)
+    if self.meta.name != 'lux':
+        # self.meta.path.add2python(self.meta.name, up=1)
+        extension = self.load_extension(self.meta.name)
+        if extension:   # extension available, get the version from it
+            self.meta.version = extension.meta.version
+    #
+    parser = self.get_parser(with_commands=False, add_help=False)
+    opts, _ = parser.parse_known_args(self.meta.argv)
+    config_module = import_module(opts.config)
+
+    if opts.config != self.config_module:
+        raise ConfigError(opts.config)
+    #
+    # setup application
+    config = {}
+    self.setup(config, config_module, self.params, opts)
+    #
+    # Load extensions
+    self.logger.debug('Setting up extensions')
+    apps = list(config['EXTENSIONS'])
+    _add_app(apps, 'lux', 0)
+    _add_app(apps, self.meta.name)
+    media_url = config['MEDIA_URL']
+    if media_url:
+        config['MEDIA_URL'] = remove_double_slash('/%s/' % media_url)
+    config['EXTENSIONS'] = tuple(apps)
+    extensions = self.extensions
+    for name in config['EXTENSIONS'][1:]:
+        Ext = self.load_extension(name)
+        if Ext:
+            extension = Ext()
+            extensions[extension.meta.name] = extension
+            self.bind_events(extension)
+            extension.setup(config, config_module, self.params)
+    return config
+
+
 def _build_handler(self):
     if not self.cms:
         self.cms = CMS(self)
 
     extensions = list(self.extensions.values())
-    middleware = []
-    rmiddleware = []
-    for extension in extensions:
-        middle = extension.middleware(self)
-        if middle:
-            middleware.extend(middle)
-        middle = extension.response_middleware(self)
-        if middle:
-            rmiddleware.extend(middle)
+    middleware, rmiddleware = _build_middleware(self, extensions, [], [])
     # Response middleware executed in reversed order
     rmiddleware = list(reversed(rmiddleware))
     #
@@ -810,5 +832,24 @@ def _build_handler(self):
             'Green or thread concurrency required. Please specify '
             'either GREEN_POOL or THREAD_POOL size')
 
-    self.handler = handler
-    self.fire('on_loaded')
+    return handler
+
+
+def _build_middleware(self, extensions, middleware, rmiddleware):
+    todo = []
+    for extension in extensions:
+        try:
+            middle = extension.middleware(self)
+        except DeferMiddleware:
+            todo.append(extension)
+            continue
+        if middle:
+            middleware.extend(middle)
+        middle = extension.response_middleware(self)
+        if middle:
+            rmiddleware.extend(middle)
+
+    if todo:
+        return _build_middleware(self, todo, middleware, rmiddleware)
+
+    return middleware, rmiddleware

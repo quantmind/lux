@@ -1,8 +1,5 @@
-import hmac
-import hashlib
-import json
-
 from lux.utils import test
+from lux.extensions.content.github import github_signature
 
 from tests.content import remove_repo, create_content
 
@@ -12,19 +9,14 @@ class TestContentViews(test.AppTestCase):
 
     @classmethod
     def setUpClass(cls):
-        super().setUpClass()
         create_content('blog')
         create_content('site')
+        return super().setUpClass()
 
     @classmethod
     def tearDownClass(cls):
         remove_repo()
         return super().tearDownClass()
-
-    def _github_signature(self, payload):
-        return hmac.new(b'test12345',
-                        msg=json.dumps(payload).encode('utf-8'),
-                        digestmod=hashlib.sha1)
 
     async def test_404(self):
         request = await self.client.get('/blog/bla')
@@ -41,7 +33,7 @@ class TestContentViews(test.AppTestCase):
 
     async def test_github_hook_400(self):
         payload = dict(zen='foo', hook_id='457356234')
-        signature = self._github_signature(payload)
+        signature = github_signature('test12345', payload)
         headers = [('X-Hub-Signature', signature.hexdigest()),
                    ('X-GitHub-Event', 'ping')]
         request = await self.client.post('/refresh-content',
@@ -53,7 +45,7 @@ class TestContentViews(test.AppTestCase):
 
     async def test_github_hook_ping_200(self):
         payload = dict(zen='foo', hook_id='457356234')
-        signature = self._github_signature(payload)
+        signature = github_signature('test12345', payload)
         headers = [('X-Hub-Signature', 'sha1=%s' % signature.hexdigest()),
                    ('X-GitHub-Event', 'ping')]
         request = await self.client.post('/refresh-content',
@@ -65,7 +57,7 @@ class TestContentViews(test.AppTestCase):
 
     async def test_github_hook_push_200(self):
         payload = dict(zen='foo', hook_id='457356234')
-        signature = self._github_signature(payload)
+        signature = github_signature('test12345', payload)
         headers = [('X-Hub-Signature', 'sha1=%s' % signature.hexdigest()),
                    ('X-GitHub-Event', 'push')]
         request = await self.client.post('/refresh-content',
