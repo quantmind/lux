@@ -1,8 +1,8 @@
 """Backend actions"""
 from pulsar.apps.wsgi import Json
 from pulsar.utils.slugify import slugify
+from pulsar import HttpException, Http404, MethodNotAllowed
 
-from lux.core import HttpException, Http404, MethodNotAllowed
 from lux.forms import Form, ValidationError
 
 

@@ -2,7 +2,7 @@ include MANIFEST.in
 include README.rst
 include requirements.txt
 include requirements-dev.txt
-include config.py
+include lux_config.py
 recursive-include tests *.py *.js *.html *.scss *.md *.json *.txt *.rst *.json
 recursive-include lux *.js *.html *.scss *.json *.txt *.rst *.mako *.json *.jpg
 recursive-include example *.py *.js *.html *.scss *.md *.json *.json *.png *.svg *.ico

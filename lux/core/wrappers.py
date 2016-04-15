@@ -318,7 +318,8 @@ def error_handler(request, exc):
         else:
             msg = error_messages.get(response.status_code)
     else:
-        msg = str(exc) or error_messages.get(response.status_code)
+        msg = (str(exc) or error_messages.get(response.status_code) or
+               response.response)
 
     if is_html:
         context = {'status_code': response.status_code,

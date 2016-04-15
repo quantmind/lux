@@ -19,3 +19,25 @@ def unique_tuple(*iterables):
         if v not in vals:
             vals.append(v)
     return tuple(vals)
+
+
+def json_dict(value):
+    cfg = {}
+    for key, val in value.items():
+        cfg[key] = json_value(val)
+    return cfg
+
+
+def json_value(value):
+    if isinstance(value, (int, float, str)):
+        return value
+    elif isinstance(value, dict):
+        return json_dict(value)
+    elif isinstance(value, (tuple, list, set)):
+        return json_sequence(value)
+    else:
+        return str(value)
+
+
+def json_sequence(value):
+    return [json_value(v) for v in value]

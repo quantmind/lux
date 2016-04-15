@@ -38,7 +38,18 @@ define(['angular',
                 scope.$timeout = $timeout;
                 scope.$log = $log;
             }
-        ]);
+        ])
+
+        .directive('luxPage', [function () {
+            return {
+                restrict: 'A',
+                link: {
+                    post: function (scope, element) {
+                        element.addClass('lux');
+                    }
+                }
+            };
+        }]);
     //
     //  Bootstrap the document
     //  ============================

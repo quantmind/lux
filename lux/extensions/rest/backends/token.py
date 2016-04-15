@@ -1,7 +1,7 @@
-from pulsar import ImproperlyConfigured
+from pulsar import ImproperlyConfigured, Http401
 from pulsar.utils.pep import to_string
 
-from lux.core import Parameter, Http401
+from lux.core import Parameter
 
 from .mixins import jwt, TokenBackendMixin
 from .registration import RegistrationMixin

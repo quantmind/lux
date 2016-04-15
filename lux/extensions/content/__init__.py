@@ -22,8 +22,12 @@ __all__ = ['Content',
 
 class Extension(LuxExtension):
     _config = [
+        Parameter('CONTENT_LOCATION', None,
+                  'Directory where content files are located'),
         Parameter('STATIC_LOCATION', None,
-                  'Directory where the static site is created')
+                  'Directory where the static site is created'),
+        Parameter('GITHUB_HOOK_KEY', None,
+                  'Secret key for github webhook')
         ]
 
     def on_config(self, app):
@@ -39,6 +43,14 @@ class Extension(LuxExtension):
         if app.callable.command == 'serve_static':
             location = app.config['STATIC_LOCATION']
             app.handler = MediaRouter('', location, default_suffix='html')
+
+    def middleware(self, app):
+        repo = app.config['CONTENT_LOCATION']
+        secret = app.config['GITHUB_HOOK_KEY']
+        if repo and secret:
+            return [GithubHook('/refresh-content',
+                               handle_payload=PullRepo(repo),
+                               secret=secret)]
 
 
 def html_contents(app):

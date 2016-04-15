@@ -2,11 +2,11 @@ import time
 from functools import wraps
 from datetime import datetime, timedelta
 
-from pulsar import ImproperlyConfigured
+from pulsar import ImproperlyConfigured, Http401
 from pulsar.utils.pep import to_string
 from pulsar.apps.wsgi import Route
 
-from lux.core import Parameter, wsgi_request, Http401, app_attribute
+from lux.core import Parameter, wsgi_request, app_attribute
 
 try:
     import jwt

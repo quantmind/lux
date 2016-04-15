@@ -25,11 +25,7 @@ from .engines import register_template_engine, template_engine
 from .cms import CMS
 from .mail import EmailBackend
 from .cache import cached, Cacheable, Cache, register_cache
-from .exceptions import (HttpException, HttpRedirect, BadRequest,
-                         PermissionDenied, Http404, MethodNotAllowed,
-                         Http401, Unsupported, UnprocessableEntity,
-                         HttpGone, raise_http_error)
-from .content import *      # noqa
+from .exceptions import raise_http_error
 
 
 __all__ = ['ConsoleParser',
@@ -51,16 +47,4 @@ __all__ = ['ConsoleParser',
            'Cacheable',
            'Cache',
            'register_cache',
-           #
-           # Errors
-           'HttpException',
-           'HttpRedirect',
-           'BadRequest',
-           'PermissionDenied',
-           'Http404',
-           'MethodNotAllowed',
-           'Http401',
-           'HttpGone',
-           'Unsupported',
-           'UnprocessableEntity',
            'raise_http_error']

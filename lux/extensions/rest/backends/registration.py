@@ -1,7 +1,9 @@
 from urllib.parse import urljoin
 from datetime import datetime, timedelta
 
-from lux.core import Parameter, HttpGone, Http404
+from pulsar import HttpGone, Http404
+
+from lux.core import Parameter
 from lux.extensions.rest import AuthenticationError, website_url
 
 

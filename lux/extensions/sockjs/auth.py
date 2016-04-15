@@ -1,7 +1,7 @@
 """Websocket Authentication"""
 from pulsar.apps import rpc
+from pulsar import Http401, PermissionDenied
 
-from lux.core import Http401, PermissionDenied
 from lux.utils.auth import check_permission
 
 

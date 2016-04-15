@@ -6,13 +6,13 @@ from collections import Mapping
 
 from dateutil.parser import parse as parse_date
 
+from pulsar import Unsupported
 from pulsar.utils.structures import AttributeDictionary, mapping_iterator
 
 from lux.utils import iso8601, absolute_uri
 
 from .urlwrappers import (URLWrapper, Processor, MultiValue, Tag, Author,
                           Category)
-from ..exceptions import Unsupported
 from ..cache import Cacheable, cached
 
 

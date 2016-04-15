@@ -1,0 +1,11 @@
+// Use in conjunction with lux-page directive
+// It hides the page until lux has finished bootstrapping
+
+[lux-page] {
+    opacity: 0;
+}
+
+[lux-page].lux {
+  opacity: 1;
+  @include transition(opacity .3s ease);
+}

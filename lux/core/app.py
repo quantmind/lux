@@ -200,8 +200,6 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
                   "//cdnjs.cloudflare.com/ajax/libs/require.js/2.1.22/require",
                   'Default url for requirejs. Set to None if no requirejs '
                   'is needed by your application'),
-        Parameter('REQUIREJS', (),
-                  'Default Required javascript. Loaded via requirejs.'),
         Parameter('ASSET_PROTOCOL', '',
                   ('Default protocol for scripts and links '
                    '(could be http: or https:)')),
@@ -269,6 +267,7 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
         self.auth_backend = self
         self.threads = threading.local()
         self.models = ModelContainer(self)
+        self.extensions = OrderedDict()
         self.config = self._build_config(callable._config_file)
         self.fire('on_config')
         _build_handler(self)
@@ -292,15 +291,6 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
         :class:`.App`.
         """
         return self.meta.module_name
-
-    @property
-    def extensions(self):
-        """Ordered dictionary of :class:`.LuxExtension` available.
-
-        The order is the same as in the
-        :setting:`EXTENSIONS` config parameter.
-        """
-        return self.config['EXTENSION_HANDLERS']
 
     @property
     def params(self):
@@ -733,7 +723,7 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
         if media_url:
             config['MEDIA_URL'] = remove_double_slash('/%s/' % media_url)
         config['EXTENSIONS'] = tuple(apps)
-        config['EXTENSION_HANDLERS'] = extensions = OrderedDict()
+        extensions = self.extensions
         for name in config['EXTENSIONS'][1:]:
             Ext = self.load_extension(name)
             if Ext:

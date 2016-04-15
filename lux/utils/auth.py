@@ -1,4 +1,4 @@
-from lux.core.exceptions import PermissionDenied, Http401
+from pulsar import PermissionDenied, Http401
 
 
 def ensure_authenticated(request):

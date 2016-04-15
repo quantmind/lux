@@ -1,6 +1,6 @@
-"""Views for managing user-related actions:
+"""Views for managing user-related actions on a REST api server
 
-* POST authorizations
+* login
 * logout
 * signup
 * reset_password
@@ -8,16 +8,12 @@
 This user actions are served under the "authorizations" url unless
 the model is overwritten.
 """
-from pulsar import MethodNotAllowed, Http404, HttpException
+from pulsar import MethodNotAllowed, Http404
 
 from lux.core import route
 
 from ..models import RestModel
 from . import actions, api, forms
-
-
-class HttpGone(HttpException):
-    status = 410
 
 
 def action(f):
