@@ -77,6 +77,22 @@ def get_reader(app, src):
     return Reader(app, ext)
 
 
+def render_data(app, value, render, context):
+    if isinstance(value, Mapping):
+        return dict(((k, render_data(app, v, render, context))
+                     for k, v in value.items()))
+    elif isinstance(value, (list, tuple)):
+        return [render_data(app, v, render, context) for v in value]
+    elif isinstance(value, date):
+        return iso8601(value)
+    elif isinstance(value, URLWrapper):
+        return value.to_json(app)
+    elif isinstance(value, str):
+        return render(value, context)
+    else:
+        return value
+
+
 class ContentFile(Cacheable):
     '''A class for managing a file-based content
     '''
@@ -182,8 +198,8 @@ class HtmlContentFile(HtmlFile):
         self.meta.update(meta)
         meta = dict(self._flatten(self.meta))
         context.update(meta)
-        self.meta = AttributeDictionary(self._render_data(app, meta, render,
-                                                          context))
+        self.meta = AttributeDictionary(
+            render_data(app, meta, render, context))
         context.update(self.meta)
         #
         content = render(content, context)
@@ -214,21 +230,5 @@ class HtmlContentFile(HtmlFile):
             return iso8601(value)
         elif isinstance(value, URLWrapper):
             return str(value)
-        else:
-            return value
-
-    def _render_data(self, request, value, render, context):
-        if isinstance(value, Mapping):
-            return dict(((k, self._render_data(request, v, render, context))
-                         for k, v in value.items()))
-        elif isinstance(value, (list, tuple)):
-            return [self._render_data(request, v, render, context)
-                    for v in value]
-        elif isinstance(value, date):
-            return iso8601(value)
-        elif isinstance(value, URLWrapper):
-            return value.to_json(request)
-        elif isinstance(value, str):
-            return render(value, context)
         else:
             return value

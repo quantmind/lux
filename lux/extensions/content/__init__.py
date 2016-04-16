@@ -4,7 +4,7 @@ import json
 from pulsar.apps.wsgi import MediaRouter
 from pulsar.utils.slugify import slugify
 
-from lux.core import Parameter, LuxExtension, RedirectRouter, DeferMiddleware
+from lux.core import Parameter, LuxExtension, RedirectRouter
 from lux.utils.data import update_dict
 
 from .models import Content
@@ -38,7 +38,6 @@ class Extension(LuxExtension):
 
     def on_config(self, app):
         self.require(app, 'lux.extensions.rest')
-        self._middleware_pass = 0
         setup_content_models(app)
 
     def context(self, request, context):
@@ -53,9 +52,6 @@ class Extension(LuxExtension):
             app.handler = MediaRouter('', location, default_suffix='html')
 
     def middleware(self, app):
-        if not self._middleware_pass:
-            self._middleware_pass = 1
-            raise DeferMiddleware
         repo = app.config['CONTENT_REPO']
         if not repo or not os.path.isdir(repo):
             return
@@ -111,6 +107,11 @@ def setup_content_models(app):
     # content metadata
     meta = config.pop('meta', {})
 
+    if not app.config['CONTENT_PARTIALS']:
+        path = os.path.join(location, 'context')
+        if os.path.isdir(path):
+            app.config['CONTENT_PARTIALS'] = path
+
     for loc, cfg in config.pop('paths', {}).items():
         path = cfg.pop('path', loc)
         cfg = update_dict(meta, cfg)
@@ -129,6 +130,9 @@ def content_location(app):
 
 def content_config(app):
     location = content_location(app)
+    if not location:
+        return
+
     config = os.path.join(location, 'config.json')
     if not os.path.isfile(config):
         return

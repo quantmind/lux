@@ -9,7 +9,7 @@ Media Handling
 When the :setting:`SERVE_STATIC_FILES` parameter is set to ``True``,
 this extension adds middleware for serving static files from
 :setting:`MEDIA_URL`.
-In addition, a :setting:`FAVICON` location can also be specified.
+In addition, a :setting:`HTML_FAVICON` location can also be specified.
 '''
 import hashlib
 from urllib.parse import urlparse
@@ -35,7 +35,7 @@ class Extension(LuxExtension):
                   'Dictionary mapping url to another url to redirect to.'),
         Parameter('SERVE_STATIC_FILES', False,
                   'if ``True`` add middleware to serve static files.'),
-        Parameter('FAVICON', None,
+        Parameter('HTML_FAVICON', None,
                   'Adds tag of type ``image/x-icon`` in the head section of'
                   ' the Html document')]
 
@@ -68,7 +68,7 @@ class Extension(LuxExtension):
         return middleware
 
     def on_html_document(self, app, request, doc):
-        favicon = app.config['FAVICON']
+        favicon = app.config['HTML_FAVICON']
         if favicon:
             parsed = urlparse(favicon)
             if not parsed.scheme and not parsed.netloc:

@@ -9,8 +9,6 @@ EXTENSIONS = ('lux.extensions.base',
               'lux.extensions.content')
 
 STATIC_API = 'jsonapi'
-MD_EXTENSIONS = ['extra', 'meta', 'toc']
-CODE_HIGHLIGHT_THEME = 'zenburn'
 FAVICON = 'luxsite/favicon.ico'
 SCRIPTS = ('luxsite/luxsite',)
 HTML_LINKS = ({'href': 'luxsite/lux-114.png',

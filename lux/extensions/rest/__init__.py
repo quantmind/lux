@@ -18,9 +18,9 @@ from urllib.parse import urljoin
 from pulsar import ImproperlyConfigured
 from pulsar.utils.importer import module_attribute
 from pulsar.utils.httpurl import is_absolute_uri
+from pulsar.apps.wsgi import wsgi_request
 
 from lux.core import Parameter
-from lux.core.wrappers import wsgi_request
 
 from .auth import AuthBackend, auth_backend, MultiAuthBackend
 from .models import RestModel, RestColumn, ModelMixin

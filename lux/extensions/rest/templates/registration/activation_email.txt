@@ -1,4 +1,4 @@
-Congratulation, your registration to $site_uri was successful.
+Congratulation, your registration to {{ site_uri }} was successful.
 
-One last thing to do is to visit $register_url/$auth_key to confirm your email address.
-The confirmation link is valid for $expiration_days days.
+One last thing to do is to visit {{ register_url }}/{{ auth_key }} to confirm your email address.
+The confirmation link is valid for {{ expiration_days }} days.

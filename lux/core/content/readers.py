@@ -132,7 +132,7 @@ class MarkdownReader(BaseReader):
         links = self.app.config.get('_MARKDOWN_LINKS_')
         if links is None:
             links = []
-            for name, href in self.app.config['LINKS'].items():
+            for name, href in self.app.config['CONTENT_LINKS'].items():
                 title = None
                 if isinstance(href, dict):
                     title = href.get('title')

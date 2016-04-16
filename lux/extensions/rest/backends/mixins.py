@@ -4,9 +4,9 @@ from datetime import datetime, timedelta
 
 from pulsar import ImproperlyConfigured, Http401
 from pulsar.utils.pep import to_string
-from pulsar.apps.wsgi import Route
+from pulsar.apps.wsgi import Route, wsgi_request
 
-from lux.core import Parameter, wsgi_request, app_attribute
+from lux.core import Parameter, app_attribute
 
 try:
     import jwt
@@ -135,7 +135,7 @@ class SessionBackendMixin(TokenBackendMixin):
         session = request.cache.session
         if session:
             if response.can_set_cookies():
-                key = request.app.config['SESSION_COOKIE_NAME']
+                key = request.config['SESSION_COOKIE_NAME']
                 session_key = request.cookies.get(key)
                 id = session.get_key()
                 if not session_key or session_key.value != id:

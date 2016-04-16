@@ -104,7 +104,7 @@ class CMS:
     def context(self, context):
         '''Static context dictionary for this cms
         '''
-        path = self.app.config['CMS_PARTIALS_PATH']
+        path = self.app.config['CONTENT_PARTIALS']
         if path:
             return static_context(self.app, path, context)
         else:

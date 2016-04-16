@@ -31,13 +31,22 @@ class ContactRouter(HtmlRouter):
         form = ContactForm(request, data=data)
         if form.is_valid():
             email = request.app.email_backend
+            responses = request.app.config['EMAIL_ENQUIRY_RESPONSE'] or ()
+            context = form.cleaned_data
+            app = request.app
+            engine = app.template_engine()
 
-            for email_settings in request.app.config['ENQUIRY_EMAILS']:
-                email_fields = {
+            for email_settings in responses:
+                kw = {
                     tag: email_settings[tag].format(**form.cleaned_data)
-                    for tag in ['sender', 'to', 'subject', 'message']
+                    for tag in ['sender', 'to', 'subject']
                 }
-                email.send_mail(**email_fields)
+                if 'message-template' in email_settings:
+                    kw['message'] = app.render_template(
+                        email_settings['message-template'], context)
+                else:
+                    kw['message'] = engine(email_settings['message'], context)
+                email.send_mail(**kw)
 
             data = dict(success=True, message="Message sent")
 

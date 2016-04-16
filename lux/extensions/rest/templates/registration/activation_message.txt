@@ -1,2 +1,2 @@
-We have sent an email to <strong>$email</strong>.
+We have sent an email to <strong>{{ email }}</strong>.
 Please follow the instructions to activate your account.

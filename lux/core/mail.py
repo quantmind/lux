@@ -8,8 +8,10 @@ class EmailBackend:
     def send_mail(self, sender=None, to=None, subject=None, message=None,
                   html_message=None):
         if not sender:
-            sender = self.app.config['DEFAULT_FROM_EMAIL']
-        if sender:
+            sender = self.app.config['EMAIL_DEFAULT_FROM']
+        if not to:
+            to = self.app.config['EMAIL_DEFAULT_TO']
+        if sender and to:
             message = self.message(sender, to, subject, message,
                                    html_message)
             return self.send_mails([message])
@@ -17,7 +19,7 @@ class EmailBackend:
             return 0
 
     def message(self, sender, to, subject, message, html_message):
-        return (sender, to, subject, message, html_message)
+        return sender, to, subject, message, html_message
 
     def send_mails(self, messages):
         return len(messages)

@@ -2,8 +2,7 @@ import json
 from collections import Mapping
 
 from pulsar import ImproperlyConfigured
-from pulsar.apps.wsgi import (route, wsgi_request, cached_property,
-                              html_factory)
+from pulsar.apps.wsgi import cached_property
 from pulsar.apps import wsgi
 from pulsar.apps.wsgi import (Json, RouterParam, Router, Route,
                               render_error_debug)
@@ -13,12 +12,6 @@ from pulsar.utils.structures import mapping_iterator
 
 from lux.utils.data import unique_tuple
 
-
-__all__ = ['Html', 'WsgiRequest', 'Router', 'HtmlRouter',
-           'JsonRouter', 'route', 'wsgi_request', 'json_message',
-           'cached_property', 'html_factory', 'RedirectRouter',
-           'LuxContext', 'RouterParam', 'JSON_CONTENT_TYPES',
-           'DEFAULT_CONTENT_TYPES']
 
 Html = wsgi.Html
 
@@ -170,7 +163,7 @@ class HtmlRouter(Router):
         """Must be implemented by subclasses.
 
         This method should return the main part of the html body.
-        It is rendered where the $html_main key is placed.
+        It is rendered where the html_main key is placed.
         """
         return ''
 

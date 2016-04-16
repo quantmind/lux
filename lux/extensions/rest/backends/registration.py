@@ -80,7 +80,7 @@ class RegistrationMixin:
         cfg = request.config
         url = '%s/confirmation/%s' % (cfg['REGISTER_URL'], user.username)
         context = {'email': user.email,
-                   'email_from': cfg['DEFAULT_FROM_EMAIL'],
+                   'email_from': cfg['EMAIL_DEFAULT_FROM'],
                    'confirmation_url': url}
         message = request.app.render_template('registration/inactive_user.txt',
                                               context)

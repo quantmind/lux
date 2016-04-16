@@ -42,9 +42,7 @@ class Extension(LuxExtension):
 
     _config = [
         Parameter('HTML5_NAVIGATION', False,
-                  'Enable Html5 navigation', True),
-        Parameter('ANGULAR_VIEW_ANIMATE', False,
-                  'Enable Animation of ui-router views.')
+                  'Enable Html5 navigation', True)
     ]
 
     def on_html_document(self, app, request, doc):
@@ -69,7 +67,6 @@ class Extension(LuxExtension):
 
     def uiview(self, request, context, page):
         '''Wrap the ``main`` html with a ``ui-view`` container.
-        Add animation class if specified in :setting:`ANGULAR_VIEW_ANIMATE`.
         '''
         main = context.get('html_main', '')
         if 'templateUrl' in page or 'template' in page:

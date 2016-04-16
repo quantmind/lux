@@ -18,7 +18,7 @@ from pulsar import ImproperlyConfigured, HttpException
 from pulsar.utils.httpurl import remove_double_slash
 from pulsar.apps.wsgi import (WsgiHandler, HtmlDocument, test_wsgi_environ,
                               LazyWsgi, wait_for_body_middleware,
-                              middleware_in_executor)
+                              middleware_in_executor, wsgi_request)
 from pulsar.utils.log import lazyproperty
 from pulsar.utils.importer import module_attribute
 from pulsar.apps.data import create_store
@@ -30,12 +30,13 @@ from lux import __version__
 
 from .commands import ConsoleParser, CommandError, ConfigError
 from .extension import LuxExtension, Parameter, EventMixin, app_attribute
-from .wrappers import wsgi_request, HeadMeta, error_handler, LuxContext
+from .wrappers import HeadMeta, error_handler, LuxContext
 from .engines import template_engine
 from .cms import CMS
 from .models import ModelContainer
 from .cache import create_cache
-from .exceptions import ShellError, DeferMiddleware
+from .exceptions import ShellError
+from .content import render_data
 
 
 LUX_CORE = os.path.dirname(__file__)
@@ -180,31 +181,33 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
         Parameter('DESCRIPTION', None,
                   'A description to display before the argument help on the '
                   'command line when running commands'),
+        Parameter('COPYRIGHT', 'Lux',
+                  'Site Copyright', True),
+        Parameter('APP_NAME', 'Lux',
+                  'Application site name', True),
         Parameter('ENCODING', 'utf-8',
                   'Default encoding for text.'),
+        Parameter('EXTRA_SETTINGS_FILE', None,
+                  'Path to a json file with additional settings'),
         Parameter('ERROR_HANDLER', error_handler,
                   'Handler of Http exceptions'),
-        Parameter('HTML_TITLE', 'Lux',
-                  'Default HTML Title'),
         Parameter('MEDIA_URL', '/media/',
                   'the base url for static files', True),
         Parameter('MINIFIED_MEDIA', True,
                   'Use minified media files. All media files will replace '
                   'their extensions with .min.ext. For example, javascript '
                   'links *.js become *.min.js', True),
+        # HTML base parameters
+        Parameter('HTML_TITLE', 'Lux',
+                  'Default HTML Title'),
         Parameter('HTML_LINKS', [],
                   'List of links to include in the html head tag.'),
-        Parameter('SCRIPTS', [],
+        Parameter('HTML_SCRIPTS', [],
                   'List of scripts to load in the head tag'),
-        Parameter('COPYRIGHT', 'Lux',
-                  'Site Copyright', True),
-        Parameter('REQUIREJS_URL',
+        Parameter('HTML_REQUIREJS_URL',
                   "//cdnjs.cloudflare.com/ajax/libs/require.js/2.1.22/require",
                   'Default url for requirejs. Set to None if no requirejs '
                   'is needed by your application'),
-        Parameter('ASSET_PROTOCOL', '',
-                  ('Default protocol for scripts and links '
-                   '(could be http: or https:)')),
         Parameter('HTML_META',
                   [{'http-equiv': 'X-UA-Compatible',
                     'content': 'IE=edge'},
@@ -212,35 +215,42 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
                     'content': 'width=device-width, initial-scale=1'}],
                   'List of default ``meta`` elements to add to the html head'
                   'element'),
-        Parameter('DATE_FORMAT', 'd MMM y',
-                  'Default formatting for dates in JavaScript', True),
-        Parameter('DATETIME_FORMAT', 'd MMM y, h:mm:ss a',
-                  'Default formatting for dates in JavaScript', True),
-        Parameter('DEFAULT_TEMPLATE_ENGINE', 'python',
-                  'Default template engine'),
-        Parameter('APP_NAME', 'Lux', 'Application site name', True),
-        Parameter('LINKS',
+        Parameter('HTML_TEMPLATES', {'/': 'home.html'},
+                  'Dictionary of Html templates to render'),
+        # CONTENT base parameters
+        Parameter('CONTENT_PARTIALS', None,
+                  'Path to CMS Partials snippets'),
+        Parameter('CONTENT_LINKS',
                   {'python': 'https://www.python.org/',
                    'lux': 'https://github.com/quantmind/lux',
                    'pulsar': 'http://pythonhosted.org/pulsar'},
                   'Links used throughout the web site'),
+        # BASE email parameters
+        Parameter('EMAIL_DEFAULT_FROM', '',
+                  'Default email address to send email from'),
+        Parameter('EMAIL_DEFAULT_TO', '',
+                  'Default email address to send email to'),
+        #
+        Parameter('ASSET_PROTOCOL', '',
+                  ('Default protocol for scripts and links '
+                   '(could be http: or https:)')),
+        Parameter('DATE_FORMAT', 'd MMM y',
+                  'Default formatting for dates in JavaScript', True),
+        Parameter('DATETIME_FORMAT', 'd MMM y, h:mm:ss a',
+                  'Default formatting for dates in JavaScript', True),
+        Parameter('DEFAULT_TEMPLATE_ENGINE', 'jinja2',
+                  'Default template engine'),
         Parameter('CACHE_SERVER', 'dummy://',
                   ('Cache server, can be a connection string to a valid '
                    'datastore which support the cache protocol or an object '
                    'supporting the cache protocol')),
         Parameter('DEFAULT_CACHE_TIMEOUT', 60,
                   'Default timeout for data stored in cache'),
-        Parameter('DEFAULT_FROM_EMAIL', '',
-                  'Default email address to send email from'),
-        Parameter('SUPPORT_EMAIL', '',
-                  'email address for support queries', True),
         Parameter('LOCALE', 'en_GB', 'Default locale', True),
         Parameter('DEFAULT_TIMEZONE', 'GMT',
                   'Default timezone'),
         Parameter('DEFAULT_CONTENT_TYPE', None,
                   'Default content type for this application'),
-        Parameter('HTML_TEMPLATES', {'/': 'home.html'},
-                  'Dictionary of Html templates to render'),
         Parameter('SITE_MANAGERS', (),
                   'List of email for site managers'),
         Parameter('EMAIL_BACKEND', 'lux.core.mail.EmailBackend',
@@ -254,8 +264,6 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
         Parameter('SECURE_PROXY_SSL_HEADER', None,
                   'A tuple representing a HTTP header/value combination that '
                   'signifies a request is secure.'),
-        Parameter('CMS_PARTIALS_PATH', None,
-                  'Path to CMS Partials snippets'),
         Parameter('PUBSUB_STORE', None,
                   'Connection string for a Publish/Subscribe data-store'),
         Parameter('BROADCAST_CHANNELS', None,
@@ -375,11 +383,11 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
         # Head
         head = doc.head
         # Add requirejs if url available
-        requirejs = cfg['REQUIREJS_URL']
+        requirejs = cfg['HTML_REQUIREJS_URL']
         if requirejs:
             head.scripts.append(requirejs)
 
-        for script in cfg['SCRIPTS']:
+        for script in cfg['HTML_SCRIPTS']:
             head.scripts.append(script)
         #
         for entry in cfg['HTML_META'] or ():
@@ -552,18 +560,19 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
                 request.cache._in_application_context = False
             return context
 
-    def render_template(self, name, context=None, request=None, engine=None):
+    def render_template(self, name, context=None,
+                        request=None, engine=None, **kw):
         """Render a template file ``name`` with ``context``
         """
         if request:  # get application context only when request available
             context = self.context(request, context)
         template = self.template(name)
         rnd = self.template_engine(engine)
-        return rnd(template, context)
+        return rnd(template, context or (), **kw)
 
     def template_engine(self, engine=None):
         engine = engine or self.config['DEFAULT_TEMPLATE_ENGINE']
-        return template_engine(engine)
+        return template_engine(self, engine)
 
     def html_response(self, request, page, context=None,
                       jscontext=None, title=None, status_code=None):
@@ -772,7 +781,6 @@ def _build_config(self):
     module = import_module(module_name)
     self.meta = self.meta.copy(module)
     if self.meta.name != 'lux':
-        # self.meta.path.add2python(self.meta.name, up=1)
         extension = self.load_extension(self.meta.name)
         if extension:   # extension available, get the version from it
             self.meta.version = extension.meta.version
@@ -805,10 +813,19 @@ def _build_config(self):
             extensions[extension.meta.name] = extension
             self.bind_events(extension)
             extension.setup(config, config_module, self.params)
+
+    if config['EXTRA_SETTINGS_FILE']:
+        _config_from_json(self, config['EXTRA_SETTINGS_FILE'], config)
+
     return config
 
 
 def _build_handler(self):
+    config = self.config
+    if config['DEFAULT_TEMPLATE_ENGINE']:
+        engine = self.template_engine(config['DEFAULT_TEMPLATE_ENGINE'])
+        self.config = config = render_data(self, config, engine, config)
+
     if not self.cms:
         self.cms = CMS(self)
 
@@ -822,7 +839,7 @@ def _build_handler(self):
         handler = GreenWSGI(middleware, self.green_pool, rmiddleware)
     #
     # Use thread pool
-    elif self.config['THREAD_POOL']:
+    elif config['THREAD_POOL']:
         hnd = WsgiHandler(middleware, rmiddleware, async=False)
         handler = WsgiHandler([wait_for_body_middleware,
                                middleware_in_executor(hnd)])
@@ -836,20 +853,36 @@ def _build_handler(self):
 
 
 def _build_middleware(self, extensions, middleware, rmiddleware):
-    todo = []
     for extension in extensions:
-        try:
-            middle = extension.middleware(self)
-        except DeferMiddleware:
-            todo.append(extension)
-            continue
+        middle = extension.middleware(self)
         if middle:
             middleware.extend(middle)
         middle = extension.response_middleware(self)
         if middle:
             rmiddleware.extend(middle)
 
-    if todo:
-        return _build_middleware(self, todo, middleware, rmiddleware)
-
     return middleware, rmiddleware
+
+
+def _config_from_json(self, filename, config):
+    try:
+        with open(filename) as fp:
+            extra = json.load(fp)
+    except FileNotFoundError:
+        self.logger.error('Could not load "%s", no such file', filename)
+        return
+    except json.JSONDecodeError:
+        self.logger.error('Could not json decode "%s", skipping', filename)
+        return
+
+    for namespace, cfg in extra.items():
+        # Allow one nesting
+        if namespace not in config:
+            if not isinstance(cfg, dict):
+                continue
+            for name, value in cfg.items():
+                fullname = '%s_%s' % (namespace, name)
+                if fullname in config:
+                    config[fullname] = value
+        else:
+            config[namespace] = cfg

@@ -7,7 +7,7 @@ EMAIL_HOST = '127.0.0.1'
 EMAIL_PORT = 25
 EMAIL_HOST_USER = 'server@luxtest.com'
 EMAIL_HOST_PASSWORD = 'dummy'
-DEFAULT_FROM_EMAIL = 'admin@luxtest.com'
+EMAIL_DEFAULT_FROM = 'admin@luxtest.com'
 SMTP_LOG_LEVEL = 'ERROR'
 
 
