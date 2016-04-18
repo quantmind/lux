@@ -31,7 +31,7 @@ class Extension(LuxExtension):
         Parameter('CLEAN_URL', False,
                   'When ``True``, requests on urls with consecutive slashes '
                   'are converted to valid url and redirected.'),
-        Parameter('REDIRECTS', None,
+        Parameter('REDIRECTS', {},
                   'Dictionary mapping url to another url to redirect to.'),
         Parameter('SERVE_STATIC_FILES', False,
                   'if ``True`` add middleware to serve static files.'),

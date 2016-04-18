@@ -107,7 +107,6 @@ class ForgotPassword(WebFormRouter):
 
 
 class ComingSoon(WebFormRouter):
-    release = 'release'
     default_form = Layout(forms.EmailForm,
                           Fieldset(all=True),
                           Submit('Get notified'),

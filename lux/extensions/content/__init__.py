@@ -4,7 +4,7 @@ import json
 from pulsar.apps.wsgi import MediaRouter
 from pulsar.utils.slugify import slugify
 
-from lux.core import Parameter, LuxExtension, RedirectRouter
+from lux.core import Parameter, LuxExtension
 from lux.utils.data import update_dict
 
 from .models import Content
@@ -77,11 +77,6 @@ class Extension(LuxExtension):
         if not config:
             return middleware
 
-        site = config.get(app.meta.name)
-        if site:
-            for url, to in site.get('redirects', {}).items():
-                middleware.append(RedirectRouter(url, to))
-
         return middleware
 
     def get_template_full_path(self, app, name):
@@ -102,6 +97,12 @@ def setup_content_models(app):
 
     if not config:
         return
+
+    # Redirects
+    site = config.get(app.meta.name)
+    if site:
+        app.require('lux.extensions.base')
+        app.config['REDIRECTS'].update(site.get('redirects', ()))
 
     location = config.pop('location')
     # content metadata

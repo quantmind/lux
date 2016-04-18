@@ -6,9 +6,9 @@ import hashlib
 from pulsar.apps.wsgi import Json
 from pulsar.utils.string import to_bytes
 from pulsar import (HttpException, PermissionDenied, BadRequest,
-                    UnprocessableEntity, as_coroutine)
+                    as_coroutine)
 
-from lux.core import Router, ShellError
+from lux.core import Router
 
 
 class GithubHook(Router):
@@ -23,9 +23,7 @@ class GithubHook(Router):
 
         if self.secret:
             try:
-                await self.validate(request)
-            except ShellError as exc:
-                raise UnprocessableEntity(str(exc)) from exc
+                self.validate(request)
             except HttpException:
                 raise
             except Exception as exc:
@@ -47,7 +45,7 @@ class GithubHook(Router):
             data = dict(success=True, event=event)
         return Json(data).http_response(request)
 
-    async def validate(self, request):
+    def validate(self, request):
         hub_signature = request.get('HTTP_X_HUB_SIGNATURE')
 
         if not hub_signature:

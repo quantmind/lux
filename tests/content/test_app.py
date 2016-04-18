@@ -18,6 +18,16 @@ class TestContentViews(test.AppTestCase):
         remove_repo()
         return super().tearDownClass()
 
+    @classmethod
+    def create_test_application(cls):
+        app = super().create_test_application()
+        app.shell = cls.shell
+        return app
+
+    @classmethod
+    async def shell(cls, *args):
+        return 'foo\n'
+
     async def test_404(self):
         request = await self.client.get('/blog/bla')
         response = request.response
@@ -64,5 +74,6 @@ class TestContentViews(test.AppTestCase):
                                          body=payload,
                                          content_type='application/json',
                                          headers=headers)
-        response = request.response
-        self.assertEqual(response.status_code, 200)
+
+        data = self.json(request.response, 200)
+        self.assertEqual(data['result'], 'foo')
