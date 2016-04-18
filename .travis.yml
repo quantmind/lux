@@ -21,7 +21,7 @@ before_script:
   - psql -U postgres -f tests/db.sql
 
 script:
-  - python setup.py test --coverage -q
+  - python setup.py test --coverage -q --log-level error
   - flake8
 #  - cd example
 #  - grunt
