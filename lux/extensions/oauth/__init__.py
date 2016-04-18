@@ -83,7 +83,11 @@ class Extension(LuxExtension):
                 for provider in oauths.values():
                     provider.on_html_document(request, doc)
                 doc.before_render(self.meta_add_tags)
-        doc.jscontext['oauths'] = oauth_context(request)
+
+    def context(self, request, ctx):
+        """Add the ``oauth`` callable to the context dictionary
+        """
+        ctx['oauths'] = lambda: oauth_context(request)
 
     def meta_add_tags(self, request, doc):
         '''Add meta tags to the html document just before rendering

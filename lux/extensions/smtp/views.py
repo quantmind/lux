@@ -22,6 +22,7 @@ HtmlContactForm = Layout(ContactForm,
 
 
 class ContactRouter(HtmlRouter):
+
     def get_html(self, request):
         url = str(self.full_route)
         return HtmlContactForm(request).as_form(action=url)
@@ -36,17 +37,18 @@ class ContactRouter(HtmlRouter):
             app = request.app
             engine = app.template_engine()
 
-            for email_settings in responses:
-                kw = {
-                    tag: email_settings[tag].format(**form.cleaned_data)
-                    for tag in ['sender', 'to', 'subject']
-                }
-                if 'message-template' in email_settings:
-                    kw['message'] = app.render_template(
-                        email_settings['message-template'], context)
+            for cfg in responses:
+                sender = engine(cfg.get('sender', ''), context)
+                to = engine(cfg.get('to', ''), context)
+                subject = engine(cfg.get('subject', ''), context)
+                if 'message-template' in cfg:
+                    message = app.render_template(
+                        cfg['message-template'], context)
                 else:
-                    kw['message'] = engine(email_settings['message'], context)
-                email.send_mail(**kw)
+                    message = engine(cfg.get('message', ''), context)
+
+                email.send_mail(sender=sender, to=to, subject=subject,
+                                message=message)
 
             data = dict(success=True, message="Message sent")
 

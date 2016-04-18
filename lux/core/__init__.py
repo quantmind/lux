@@ -26,7 +26,7 @@ from .wrappers import (Html, WsgiRequest, Router, HtmlRouter,
                        JsonRouter, json_message, cached_property,
                        RedirectRouter, LuxContext, RouterParam,
                        JSON_CONTENT_TYPES, DEFAULT_CONTENT_TYPES)
-from .engines import register_template_engine, template_engine
+from .templates import register_template_engine, template_engine
 from .cms import CMS
 from .mail import EmailBackend
 from .cache import cached, Cacheable, Cache, register_cache

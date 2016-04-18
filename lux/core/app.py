@@ -31,7 +31,7 @@ from lux import __version__
 from .commands import ConsoleParser, CommandError, ConfigError
 from .extension import LuxExtension, Parameter, EventMixin, app_attribute
 from .wrappers import HeadMeta, error_handler, LuxContext
-from .engines import template_engine
+from .templates import template_engine
 from .cms import CMS
 from .models import ModelContainer
 from .cache import create_cache
@@ -821,10 +821,8 @@ def _build_config(self):
 
 
 def _build_handler(self):
-    config = self.config
-    if config['DEFAULT_TEMPLATE_ENGINE']:
-        engine = self.template_engine(config['DEFAULT_TEMPLATE_ENGINE'])
-        self.config = config = render_data(self, config, engine, config)
+    engine = self.template_engine('python')
+    self.config = render_data(self, self.config, engine, self.config)
 
     if not self.cms:
         self.cms = CMS(self)
@@ -839,7 +837,7 @@ def _build_handler(self):
         handler = GreenWSGI(middleware, self.green_pool, rmiddleware)
     #
     # Use thread pool
-    elif config['THREAD_POOL']:
+    elif self.config['THREAD_POOL']:
         hnd = WsgiHandler(middleware, rmiddleware, async=False)
         handler = WsgiHandler([wait_for_body_middleware,
                                middleware_in_executor(hnd)])

@@ -1,0 +1,13 @@
+Dear {{ name }},
+
+Thank you for your interest in {{ APP_NAME }}.
+We will address your enquiry as soon as possible
+
+Sincerely,
+
+the {{ APP_NAME }} Team
+
+Received enquiry:
+-----------------------------------------------
+{{ body }}
+-----------------------------------------------

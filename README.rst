@@ -41,10 +41,11 @@ Python Requirements
 
 **Hard requirements**
 
-* pulsar_
-* greenlet_
-* pytz_
-* dateutil_
+* pulsar_ asychronous engine
+* greenlet_ implicit asynchronous code
+* jinja2_ template engine
+* pytz_ timzones and countries
+* dateutil_ date utilities
 
 **Soft requirements**
 
@@ -97,3 +98,4 @@ flake8_ check (requires flake8 package)::
 .. _lux.js: https://raw.githubusercontent.com/quantmind/lux/master/lux/media/lux/lux.js
 .. _`Quantmind`: http://quantmind.com
 .. _flake8: https://pypi.python.org/pypi/flake8
+.. _jinja2: http://jinja.pocoo.org/docs/dev/
