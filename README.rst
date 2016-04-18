@@ -58,14 +58,9 @@ Python Requirements
 Testing
 ==========
 
-For testing postgreSQL create a new role::
+For testing, create the test database first::
 
-    psql
-    CREATE ROLE lux WITH PASSWORD 'luxtest';
-    ALTER ROLE lux CREATEDB LOGIN;
-    CREATE DATABASE luxtests;
-    GRANT ALL PRIVILEGES ON DATABASE luxtests to lux;
-
+    psql -a -f tests/db.sql
 
 To run tests::
 

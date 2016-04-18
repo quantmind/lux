@@ -18,11 +18,7 @@ addons:
   postgresql: "9.4"
 
 before_script:
-  - psql -U postgres -c "CREATE USER lux WITH PASSWORD 'luxtest';"
-  - psql -U postgres -c "ALTER USER lux CREATEDB;"
-  - psql -U postgres -c "ALTER USER lux LOGIN;"
-  - psql -U postgres -c "CREATE DATABASE luxtests;"
-  - psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE luxtests to lux;"
+  - psql -U postgres -f tests/db.sql
 
 script:
   - python setup.py test --coverage -q
