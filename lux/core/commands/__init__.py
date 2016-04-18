@@ -108,6 +108,8 @@ class LuxCommand(ConsoleParser):
     def __call__(self, argv, **params):
         app = self.pulsar_app(argv)
         app()
+        # Make sure the wsgi handler is created
+        assert self.app.wsgi_handler()
         result = maybe_green(self.app, self.run, app.cfg, **params)
         if isawaitable(result) and not self.app._loop.is_running():
             result = self.app._loop.run_until_complete(result)

@@ -76,4 +76,4 @@ class TestContentViews(test.AppTestCase):
                                          headers=headers)
 
         data = self.json(request.response, 200)
-        self.assertEqual(data['result'], 'foo')
+        self.assertEqual(data['result'], 'foo\n')

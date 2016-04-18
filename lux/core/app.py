@@ -77,7 +77,7 @@ def execute_app(app, argv=None, **params):  # pragma    nocover
         app._argv = argv = list(argv)
         app._script = argv.pop(0)
     try:
-        application = app.setup()
+        application = app.setup(handler=False)
     except ImproperlyConfigured as e:
         print('IMPROPERLY CONFUGURED: %s' % e)
         exit(1)
@@ -117,8 +117,11 @@ class App(LazyWsgi):
     def command(self):
         return self._argv[0] if self._argv else None
 
-    def setup(self, environ=None):
-        return Application(self)
+    def setup(self, environ=None, handler=True):
+        app = Application(self)
+        if handler:
+            app.wsgi_handler()
+        return app
 
     def clone(self, **kw):
         params = self._params.copy()
@@ -166,7 +169,7 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
     debug = False
     logger = None
     admin = None
-    handler = None
+    _handler = None
     auth_backend = None
     cms = None
     """CMS handler"""
@@ -282,17 +285,22 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
         self.extensions = OrderedDict()
         self.config = _build_config(self)
         self.fire('on_config')
-        self.handler = _build_handler(self)
-        self.fire('on_loaded')
 
     def __call__(self, environ, start_response):
         """The WSGI thing."""
+        wsgi_handler = self.wsgi_handler()
         request = self.wsgi_request(environ)
         if self.debug:
             self.logger.debug('Serving request %s' % request.path)
         request.cache.auth_backend = self
         self.fire('on_request', request)
-        return self.handler(environ, start_response)
+        return wsgi_handler(environ, start_response)
+
+    def wsgi_handler(self):
+        if self._handler is None:
+            self._handler = _build_handler(self)
+            self.fire('on_loaded')
+        return self._handler
 
     @property
     def app(self):

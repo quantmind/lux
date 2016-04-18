@@ -1,7 +1,6 @@
 """Management utility to create superusers."""
 import getpass
 import re
-import sys
 
 from lux.core import LuxCommand, Setting
 from lux.utils.auth import normalise_email
@@ -102,7 +101,7 @@ class Command(LuxCommand):
                     break
             except KeyboardInterrupt:
                 self.write_err('\nOperation cancelled.')
-                sys.exit(1)
+                return
         user = auth_backend.create_superuser(request,
                                              username=username,
                                              email=normalise_email(email),

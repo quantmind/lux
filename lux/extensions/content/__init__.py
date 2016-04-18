@@ -49,7 +49,7 @@ class Extension(LuxExtension):
     def on_loaded(self, app):
         if app.callable.command == 'serve_static':
             location = app.config['STATIC_LOCATION']
-            app.handler = MediaRouter('', location, default_suffix='html')
+            app._handler = MediaRouter('', location, default_suffix='html')
         #
         # Add middleware if this is a web-site server
         elif app.config['DEFAULT_CONTENT_TYPE'] == 'text/html':
@@ -58,7 +58,7 @@ class Extension(LuxExtension):
             for content in html_contents(app):
                 app.cms.add_router(content)
 
-            app.handler.middleware.extend(app.cms.middleware())
+            app._handler.middleware.extend(app.cms.middleware())
 
     def middleware(self, app):
         repo = app.config['CONTENT_REPO']
