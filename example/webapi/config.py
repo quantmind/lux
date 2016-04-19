@@ -1,4 +1,4 @@
-from tests.web.cfg import *   # noqa
+from example.cfg import *   # noqa
 
 EXTENSIONS = ['lux.extensions.base',
               'lux.extensions.odm',
@@ -15,5 +15,3 @@ DEFAULT_PERMISSION_LEVEL = 'none'
 DEFAULT_PERMISSION_LEVELS = {'user': 'read',
                              'site': 'read',
                              'articles': 'read'}
-
-SESSION_EXPIRY = 5

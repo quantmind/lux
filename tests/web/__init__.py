@@ -7,8 +7,8 @@ STAFF = ('pippo', 'pluto', 'toni')
 
 
 class WebsiteTest(test.WebApiTestCase):
-    config_file = 'tests.web.webapi.config'
-    web_config_file = 'tests.web.website.config'
+    config_file = 'example.webapi.config'
+    web_config_file = 'example.website.config'
 
     @classmethod
     def populatedb(cls):

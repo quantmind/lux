@@ -6,8 +6,8 @@ from tests import web
 class AuthTest(web.WebsiteTest):
 
     def test_apps(self):
-        self.assertEqual(self.web.meta.name, 'tests.web.website')
-        self.assertEqual(self.app.meta.name, 'tests.web.webapi')
+        self.assertEqual(self.web.meta.name, 'example.website')
+        self.assertEqual(self.app.meta.name, 'example.webapi')
 
     async def test_get_login(self):
         request = await self.webclient.get('/login')

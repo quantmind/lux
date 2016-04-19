@@ -10,9 +10,7 @@ REDIS_OK = check_server('redis')
 
 @skipUnless(REDIS_OK, 'Requires a running Redis server')
 class TestPostgreSql(test.AppTestCase):
-    config_file = 'tests.sessions'
-    config_params = {
-        'DATASTORE': 'postgresql+green://lux:luxtest@127.0.0.1:5432/luxtests'}
+    config_file = 'example.webalone.config'
 
     @classmethod
     def setUpClass(cls):
