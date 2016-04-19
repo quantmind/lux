@@ -4,6 +4,7 @@ from tests.auth.user import UserMixin
 from tests.auth.password import PasswordMixin
 from tests.auth.odm import OdmMixin
 from tests.auth.permissions import PermissionsMixin
+from tests.auth.commands import AuthCommands
 
 
 class AuthUtils:
@@ -56,6 +57,7 @@ class AuthUtils:
 
 
 class TestSqlite(test.AppTestCase,
+                 AuthCommands,
                  UserMixin,
                  OdmMixin,
                  PasswordMixin,

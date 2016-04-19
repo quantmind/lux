@@ -65,6 +65,12 @@ class AuthTest(web.WebsiteTest):
         self.assertValidationError(request.response,
                                    text="Can't find user, sorry")
 
+    async def test_reset_password_bad_key(self):
+        cookie, data = await self._cookie_csrf('/reset-password')
+        request = await self.webclient.get('/reset-password/sdhcvshc',
+                                           cookie=cookie)
+        self.assertEqual(request.response.status_code, 404)
+
     async def test_reset_password_success(self):
         cookie, data = await self._cookie_csrf('/reset-password')
         data['email'] = 'toni@foo.com'
@@ -83,6 +89,28 @@ class AuthTest(web.WebsiteTest):
         self.assertEqual(mail.sender, 'admin@lux.com')
         code = self._get_code(mail.message)
         self.assertTrue(code)
+        request = await self.webclient.get('/reset-password/%s' % code,
+                                           cookie=cookie)
+        bs = self.bs(request.response, 200)
+        form = bs.find('lux-form')
+        self.assertTrue(form)
+        #
+        # now lets post
+        password = 'new-pass-for-toni'
+        cookie, data = await self._cookie_csrf('/reset-password/%s' % code,
+                                               cookie=cookie)
+        data.update({'password': password, 'password_repeat': password})
+
+        request = await self.webclient.post('/reset-password/%s' % code,
+                                            body=data,
+                                            cookie=cookie)
+        data = self.json(request.response, 200)
+        self.assertEqual(data['message'], 'password changed')
+        #
+        # the change password link should now raise 404
+        request = await self.webclient.get('/reset-password/%s' % code,
+                                           cookie=cookie)
+        self.assertEqual(request.response.status_code, 404)
 
     async def _(self, reg, body):
         login = body.find_all('a')

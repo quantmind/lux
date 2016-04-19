@@ -4,7 +4,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.orm import joinedload
 from datetime import datetime
 
-from lux.core import cached, Parameter
+from lux.core import cached, Parameter, json_message
 from lux.utils.crypt import digest
 from lux.utils.auth import normalise_email
 from lux.extensions.rest import PasswordMixin, backends, AuthenticationError
@@ -38,13 +38,13 @@ class AuthMixin(PasswordMixin):
                 if not query.count():
                     return
 
-        reg = None
         if auth_key:
             with odm.begin() as session:
                 query = session.query(odm.registration)
                 reg = query.get(auth_key)
-                if reg and not reg.confirmed and reg.expiry > now:
-                    user_id = reg.user_id
+                if reg and reg.expiry > now:
+                    if not reg.confirmed:
+                        user_id = reg.user_id
                 else:
                     return
 
@@ -212,34 +212,37 @@ class AuthMixin(PasswordMixin):
 
         return reg.id
 
-    def set_password(self, request, user, password):
+    def set_password(self, request, password, user=None, auth_key=None):
         """Set a new password for user
         """
+        if not user and auth_key:
+            user = self.confirm_auth_key(request, auth_key, True)
+
+        if not user:
+            raise AuthenticationError('No user')
+
         with request.app.odm().begin() as session:
             user.password = self.password(password)
             session.add(user)
-        return user
+
+        return json_message(request, 'password changed')
 
     def confirm_auth_key(self, request, key, confirm=False):
         odm = request.app.odm()
         with odm.begin() as session:
             reg = session.query(odm.registration).get(key)
             now = datetime.utcnow()
-            if reg:
-                if not reg.confirmed and reg.expiry > now:
+            if reg and not reg.confirmed and reg.expiry > now:
+                if confirm:
                     user = reg.user
                     user.active = True
+                    reg.confirmed = True
+                    reg.expiry = now
                     session.add(user)
-                    if confirm:
-                        reg.confirmed = True
-                        reg.expiry = now
-                        session.add(reg)
-                    else:
-                        session.delete(reg)
-                    return True
-                else:
-                    return False
-        raise AuthenticationError('Could not confirm key')
+                    session.add(reg)
+                    return user
+                return True
+        return False
 
     @cached(user=True)
     def get_permission_objects(self, request):

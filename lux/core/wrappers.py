@@ -125,7 +125,7 @@ class HtmlRouter(Router):
         html = self.get_html(request)
         return self.html_response(request, html)
 
-    def html_response(self, request, html, inner_template=None):
+    def html_response(self, request, html):
         """Render `html` as a full Html document or a partial
         """
         app = request.app
@@ -139,9 +139,6 @@ class HtmlRouter(Router):
         context = app.context(request)
         context.update(self.context(request) or ())
         context['html_main'] = html
-        if inner_template:
-            html = app.render_template(inner_template, context)
-            context['html_main'] = html
 
         # This request is for the inner template only
         if request.url_data.get('template') == 'ui':

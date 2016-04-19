@@ -471,14 +471,14 @@ class WebApiTestCase(AppTestCase):
         else:
             raise ValueError('user-token meta tag not available')
 
-    async def _cookie_csrf(self, url, csrf=None):
+    async def _cookie_csrf(self, url, csrf=None, cookie=None):
         # We need csrf and cookie to post data to the web site
-        cookie = None
         if csrf is None:
-            request = await self.webclient.get(url)
+            request = await self.webclient.get(url, cookie=cookie)
             bs = self.bs(request.response, 200)
             csrf = self.authenticity_token(bs)
-            cookie = self.cookie(request.response)
+            if not cookie:
+                cookie = self.cookie(request.response)
         return cookie, csrf or {}
 
     async def _signup(self, csrf=None):

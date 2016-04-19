@@ -5,9 +5,8 @@ from lux.extensions import rest
 from lux.extensions.odm import CRUD, RestRouter
 from lux.extensions.rest.views.browser import ComingSoon as ComingSoonView
 from lux.extensions.rest.views.forms import EmailForm
-from lux.extensions.rest.views.auth import action
 
-from pulsar import MethodNotAllowed, Http404, PermissionDenied
+from pulsar import MethodNotAllowed, PermissionDenied
 from pulsar.apps.wsgi import Json
 
 from .forms import (permission_model, group_model, user_model,
@@ -93,31 +92,20 @@ class UserCRUD(CRUD):
         route = self.get_route('read_update_delete')
         route.add_child(RegistrationCRUD(get_user=self.get_instance))
 
-    @route('authkey', position=-99, method=('get', 'options'))
-    def get_authkey(self, request):
-        if request.method == 'OPTIONS':
-            request.app.fire('on_preflight', request, methods=['GET'])
-            return request.response
-
-        if 'auth_key' in request.url_data:
-            auth_key = request.url_data['auth_key']
-            backend = request.cache.auth_backend
-            user = backend.get_user(request, auth_key=auth_key)
-            if user:
-                return self.model.collection_response(request, id=user.id)
-
-        raise Http404
-
 
 class Authorization(rest.Authorization):
     '''Override Authorization router with a new create_user_form
     '''
     change_password_form = ChangePasswordForm
 
-    @action
+    @route('mailing-list', metrhod=('post', 'options'))
     def mailing_list(self, request):
         '''Add a given email to a mailing list
         '''
+        if request.method == 'OPTIONS':
+            request.app.fire('on_preflight', request, methods=['POST'])
+            return request.response
+
         user = request.cache.user
         data = request.body_data()
         if user.is_authenticated():

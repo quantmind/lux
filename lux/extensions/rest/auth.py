@@ -199,7 +199,7 @@ class AuthBackend(AuthBase,
         pass
 
     @auth_backend
-    def set_password(self, request, user, password):
+    def set_password(self, request, password, **kwargs):
         '''Set a new password for user'''
         pass
 

@@ -1,4 +1,6 @@
 """HTML views for authenticating users
+
+These views are used by the browser authentication backends
 """
 from pulsar import Http404, HttpRedirect
 from pulsar.apps.wsgi import route
@@ -77,36 +79,35 @@ class ForgotPassword(WebFormRouter):
                           showLabels=False,
                           resultHandler='passwordRecovery')
 
-    reset_form = Layout(forms.PasswordForm,
+    reset_form = Layout(forms.ChangePasswordForm,
                         Fieldset(all=True),
                         Submit('Change Password'),
                         showLabels=False,
                         resultHandler='passwordChanged')
 
     def post(self, request):
-        return actions.reset_password(request, self.fclass)
+        return actions.reset_password_request(request, self.fclass)
 
-    @route('<key>')
-    def get_reset_form(self, request):
+    @route('<key>', method=('get', 'post'))
+    def reset(self, request):
+        """Get reste form and rest password
+        """
         key = request.urlargs['key']
-        try:
-            user = request.cache.auth_backend.get_user(request, auth_key=key)
-        except actions.AuthenticationError as exc:
-            session = request.cache.session
-            session.error('The link is no longer valid, %s' % exc)
-            return request.redirect('/')
-        if not user:
+        backend = request.cache.auth_backend
+
+        if not backend.confirm_auth_key(request, key):
             raise Http404
-        form = self.reset_form(request)
-        if self.form_action:
-            action = self.form_action.copy()
-            action['path'] = '%s/%s' % (action['path'], key)
+
+        if request.method == 'GET':
+            form = self.reset_form(request)
+            html = form.as_form(action=request.full_path(),
+                                enctype='multipart/form-data',
+                                method='post')
+            return self.html_response(request, html)
+
         else:
-            action = request.full_path()
-        html = form.as_form(action=action,
-                            enctype='multipart/form-data',
-                            method='post')
-        return self.html_response(request, html)
+            fclass = self.get_fclass(self.reset_form)
+            return actions.reset_password(request, fclass, key)
 
 
 class ComingSoon(WebFormRouter):

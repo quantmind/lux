@@ -53,6 +53,10 @@ class CMS:
         '''
         if isinstance(html, Html):
             html = html.render(request)
+        if page.inner_template:
+            context = dict(page)
+            context['html_main'] = html
+            html = request.app.render_template(page.inner_template, context)
         return html
 
     def match(self, path, sitemap=None):

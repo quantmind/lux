@@ -112,24 +112,12 @@ class ApiSessionBackend(SessionBackendMixin,
     """url for signup a user.
     """
     reset_password_url = 'authorizations/reset-password'
-    users_url = {'id': 'users',
-                 'username': 'users',
-                 'email': 'users',
-                 'auth_key': 'users/authkey'}
-
-    def get_user(self, request, **kw):
-        """Get User from username, id or email or authentication key.
-        """
-        api = request.app.api(request)
-        for name, url in self.users_url.items():
-            value = kw.get(name)
-            if not value:
-                continue
-            response = api.get(url, data=kw)
-            if response.status_code == 200:
-                data = response.json()
-                if data['total'] == 1:
-                    return User(data['result'][0])
+    """url for resetting password
+    """
+    auth_keys_url = 'authorizations/keys'
+    """url for authorization keys
+    """
+    users_url = 'users'
 
     def authenticate(self, request, **data):
         if not jwt:
@@ -194,8 +182,24 @@ class ApiSessionBackend(SessionBackendMixin,
     def password_recovery(self, request, **params):
         api = request.app.api(request)
         response = api.post(self.reset_password_url, data=params)
-        if response.status_code == 200:
-            return response.json()
+        return response.json()
+
+    def set_password(self, request, password, user=None, auth_key=None):
+        api = request.app.api(request)
+        if not auth_key:
+            raise AuthenticationError('Missing authentication key')
+        url = '%s/%s' % (self.reset_password_url, auth_key)
+        data = {'password': password, 'password_repeat': password}
+        response = api.post(url, data=data)
+        return response.json()
+
+    def confirm_auth_key(self, request, key, **kw):
+        api = request.app.api(request)
+        try:
+            api.head('%s/%s' % (self.auth_keys_url, key))
+        except Http404:
+            return False
+        return True
 
     def create_session(self, request, user=None):
         """Login and return response

@@ -18,12 +18,12 @@ class Command(LuxCommand):
             try:
                 # Get a username
                 username = input('username: ')
-                user = auth_backend.get_user(request, username=username)
-                if not user:
-                    raise CommandError('username "%s" is not available'
-                                       % username)
             except KeyboardInterrupt:
                 raise CommandError("Operation cancelled") from None
+        user = auth_backend.get_user(request, username=username)
+        if not user:
+            raise CommandError('username "%s" is not available'
+                               % username)
         token = auth_backend.create_token(request, user)
         if token:
             self.write("token created successfully.\n")

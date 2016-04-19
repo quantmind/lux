@@ -10,29 +10,23 @@ the model is overwritten.
 """
 from pulsar import MethodNotAllowed, Http404
 
-from lux.core import route
+from lux.core import route, JsonRouter
 
 from ..models import RestModel
 from . import actions, api, forms
 
 
-def action(f):
-    f.is_action = True
-    return f
-
-
-class SignUpMixin:
+class SignUp(JsonRouter):
     """Add endpoints for signup and signup confirmation
     """
     create_user_form = forms.CreateUserForm
 
-    @action
-    def signup(self, request):
+    def post(self, request):
         """Handle signup post data
         """
         return actions.signup(request, self.create_user_form)
 
-    @route('/signup/<key>', method=('post', 'options'))
+    @route('<key>', method=('post', 'options'))
     def signup_confirmation(self, request):
         if not self.create_user_form:
             raise Http404
@@ -46,52 +40,43 @@ class SignUpMixin:
         return self.json(request, data)
 
 
-class ResetPasswordMixin:
-    request_reset_password_form = forms.EmailForm
+class ResetPassword(JsonRouter):
+    reset_password_request_form = forms.EmailForm
     reset_form = forms.ChangePasswordForm
 
-    @action
-    def reset_password(self, request):
-        return actions.reset_password(request,
-                                      self.request_reset_password_form)
+    def post(self, request):
+        return actions.reset_password_request(
+            request, self.reset_password_request_form)
 
-    @route('reset-password/<key>', method=('post', 'options'))
+    @route('<key>', method=('post', 'options'))
     def reset(self, request):
+        #
         if request.method == 'OPTIONS':
             request.app.fire('on_preflight', request, methods=['POST'])
             return request.response
 
         key = request.urlargs['key']
-        try:
-            user = request.cache.auth_backend.get_user(request, auth_key=key)
-        except actions.AuthenticationError:
-            user = None
-        form = self.reset_form(request, data=request.body_data())
-        valid = form.is_valid()
+        backend = request.cache.auth_backend
+        user = backend.get_user(request, auth_key=key)
+
         if not user:
-            form.add_error_message('The link is no longer valid')
-            result = form.tojson()
-        elif valid:
-                auth = request.cache.auth_backend
-                password = form.cleaned_data['password']
-                if auth.set_password(request, user, password):
-                    result = dict(message='Password successfully changed',
-                                  success=True)
-                else:
-                    result = dict(error='Could not change password')
-                auth.confirm_auth_key(request, key)
-        else:
-            result = form.tojson()
-        return self.json(request, result)
+            raise Http404
+
+        return actions.reset_password(request, self.reset_form, key)
 
 
-class Authorization(api.RestRouter, SignUpMixin, ResetPasswordMixin):
+class Authorization(api.RestRouter):
     """Authentication views for Restful APIs
     """
     model = RestModel('authorization')
     login_form = forms.LoginForm
     change_password_form = forms.ChangePasswordForm
     request_reset_password_form = forms.EmailForm
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.add_child(ResetPassword('reset-password'))
+        self.add_child(SignUp('signup'))
 
     def head(self, request):
         return request.response
@@ -101,26 +86,15 @@ class Authorization(api.RestRouter, SignUpMixin, ResetPasswordMixin):
         """
         return actions.login(request, self.login_form)
 
-    @action
+    @route('logout', metrhod=('post', 'options'))
     def logout(self, request):
-        return actions.logout(request)
-
-    @route('/<action>', method=('post', 'options'))
-    def auth_action(self, request):
-        """Post actions
-        """
-        action = request.urlargs['action'].replace('-', '_')
-        method = getattr(self, action, None)
-        if not getattr(method, 'is_action', False):
-            raise Http404
-
         if request.method == 'OPTIONS':
             request.app.fire('on_preflight', request, methods=['POST'])
             return request.response
 
-        return method(request)
+        return actions.logout(request)
 
-    @action
+    @route('change-password', method=('post', 'options'))
     def change_password(self, request):
         """Change user password
         """
@@ -128,6 +102,10 @@ class Authorization(api.RestRouter, SignUpMixin, ResetPasswordMixin):
         # for password change
         if not self.change_password_form:
             raise Http404
+
+        if request.method == 'OPTIONS':
+            request.app.fire('on_preflight', request, methods=['POST'])
+            return request.response
 
         user = request.cache.user
         if not user.is_authenticated():
@@ -144,3 +122,19 @@ class Authorization(api.RestRouter, SignUpMixin, ResetPasswordMixin):
         else:
             result = form.tojson()
         return self.json(request, result)
+
+    @route('keys/<key>', method=('head', 'options'))
+    def key(self, request):
+        """Head method for checking if a given authorization key exists
+        """
+        if request.method == 'OPTIONS':
+            request.app.fire('on_preflight', request, methods=['HEAD'])
+            return request.response
+
+        key = request.urlargs['key']
+        backend = request.cache.auth_backend
+
+        if backend.confirm_auth_key(request, key):
+            return request.response
+        else:
+            raise Http404

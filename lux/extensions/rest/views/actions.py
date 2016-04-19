@@ -83,13 +83,31 @@ def user_permissions(request):
     return backend.get_permissions(request, resources, actions=actions)
 
 
-def reset_password(request, fclass):
+def reset_password_request(request, fclass):
+    """Request a reset password code/email
+    """
     form = _login_form(request, fclass)
     if form.is_valid():
         auth = request.cache.auth_backend
         email = form.cleaned_data['email']
         try:
             data = auth.password_recovery(request, email=email)
+        except AuthenticationError as e:
+            data = json_message(request, str(e), error=True)
+    else:
+        data = form.tojson()
+    return Json(data).http_response(request)
+
+
+def reset_password(request, fclass, key):
+    """Reset password
+    """
+    form = _login_form(request, fclass)
+    if form.is_valid():
+        auth = request.cache.auth_backend
+        password = form.cleaned_data['password']
+        try:
+            data = auth.set_password(request, password, auth_key=key)
         except AuthenticationError as e:
             data = json_message(request, str(e), error=True)
     else:

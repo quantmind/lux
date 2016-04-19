@@ -4,7 +4,7 @@ Extension for an Admin Web inteface.
 In order to use the Admin interface, the :setting:`ADMIN_URL`
 needs to be specified.
 '''
-from lux.core import Parameter, RedirectRouter, LuxExtension
+from lux.core import Parameter, LuxExtension
 
 from .admin import Admin, AdminModel, CRUDAdmin, adminMap, register, is_admin
 
@@ -34,8 +34,8 @@ class Extension(LuxExtension):
                 route = AdminRouterCls()
                 route.model = app.models.register(route.model)
                 admin.add_child(route)
-                path = route.path()
-                if not path.endswith('/'):
-                    middleware.append(RedirectRouter('%s/' % path, path))
+                # path = route.path()
+                # if not path.endswith('/'):
+                #     middleware.append(RedirectRouter('%s/' % path, path))
             middleware.append(admin)
             return middleware
