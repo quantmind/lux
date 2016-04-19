@@ -8,8 +8,9 @@
 Lux is a library for developing web applications with Python and javascript frameworks such as AngularJS.
 
 :Badges: |license|  |pyversions| |status| |downloads|
-:Master CI: |master-build|_ |coverage-master|
-:Dev CI: |dev-build|_ |coverage-dev|
+:Master CI: |master-build| |coverage-master|
+:Dev CI: |dev-build| |coverage-dev|
+;Javascript: |jsdep| |jsdevdep|
 :Documentation: http://quantmind.github.io/lux/
 :Downloads: https://pypi.python.org/pypi/lux
 :Source: https://github.com/quantmind/lux
@@ -26,13 +27,17 @@ Lux is a library for developing web applications with Python and javascript fram
 .. |downloads| image:: https://img.shields.io/pypi/dd/lux.svg
   :target: https://pypi.python.org/pypi/lux
 .. |master-build| image:: https://img.shields.io/travis/quantmind/lux/master.svg
-.. _master-build: http://travis-ci.org/quantmind/lux
+  :target: http://travis-ci.org/quantmind/lux
 .. |dev-build| image:: https://img.shields.io/travis/quantmind/lux/dev.svg
-.. _dev-build: http://travis-ci.org/quantmind/lux
+  :target: http://travis-ci.org/quantmind/lux
 .. |coverage-master| image:: https://img.shields.io/coveralls/quantmind/lux/master.svg
   :target: https://coveralls.io/r/quantmind/lux?branch=master
 .. |coverage-dev| image:: https://img.shields.io/coveralls/quantmind/lux/dev.svg
   :target: https://coveralls.io/r/quantmind/lux?branch=dev
+.. |jsdep| image:: https://david-dm.org/quantmind/lux.svg
+  :target: https://david-dm.org/quantmind/lux
+.. |jsdevdep| image:: https://david-dm.org/quantmind/lux/dev-status.svg
+  :target: https://david-dm.org/quantmind/lux#info=devDependencies
 
 .. _requirements:
 

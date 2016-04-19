@@ -8,16 +8,16 @@ define(['angular',
 
     angular.module('lux.services.pagination', ['lux.services'])
 
-        .factory('luxPagination', ['$lux', function ($lux) {
+        .factory('luxPaginationFactory', ['$lux', function ($lux) {
 
 
-            function luxPagination (scope, target, recursive) {
+            function luxPaginationFactory (scope, target, recursive) {
                 return new LuxPagination($lux, scope, target, recursive);
             }
 
-            luxPagination.prototype = LuxPagination.prototype;
+            luxPaginationFactory.prototype = LuxPagination.prototype;
 
-            return luxPagination;
+            return luxPaginationFactory;
 
         }]);
 

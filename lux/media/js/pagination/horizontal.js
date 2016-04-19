@@ -1,5 +1,6 @@
 define(['angular',
-        'lux/main'], function(angular) {
+        'lux/main',
+        'lux/pagination/templates'], function(angular) {
     'use strict';
 
     /**
@@ -14,10 +15,12 @@ define(['angular',
      *          </ul>
      *      </pagination>
      */
-    angular.module('lux.pagination.horizontal', [])
+    angular.module('lux.pagination.horizontal', ['lux.pagination.templates'])
         /**
          * Default opitons
          */
+        .constant('paginationFactories', {})
+        //
         .constant('horizontalDefaults', {
             'limit': 5,
             'templateUrl': 'lux/pagination/templates/horizontal.tpl.html'
@@ -28,17 +31,20 @@ define(['angular',
          * @param $lux
          * @param horizontalDefaults
          */
-        .factory('HorizontalPagination', ['$lux', 'horizontalDefaults', function($lux, horizontalDefaults) {
-            var HorizontalPagination = function(config) {
+        .config(['paginationFactories', 'horizontalDefaults', function(paginationFactories, horizontalDefaults) {
+
+            var HorizontalPagination = function(pag, config) {
+                this.pag = pag;
                 this.items = [];
                 this.total = 0;
                 this.current = 1;
                 this.last = 1;
                 this.pages = [];
                 this.maxRange = 8;
-                this.luxApi = $lux.api(config.API_URL);
                 angular.extend(this, horizontalDefaults, config);
             };
+
+            paginationFactories['horizontal'] = HorizontalPagination;
 
             /**
              * Given the position in the sequence of pagination links [i], figure out what page number corresponds to that position
@@ -205,7 +211,19 @@ define(['angular',
             HorizontalPagination.prototype.prevPageDisabled = function() {
                 return this.current === 1 ? 'disabled' : '';
             };
+        }])
 
-            return HorizontalPagination;
+        .factory('renderPagination', ['paginationFactories', function (paginationFactories) {
+
+            var renderPagination = function (pag, element, attrs) {
+                var Renderer = paginationFactories[attrs.type || 'horizontal'];
+
+                if (Renderer) {
+                    var renderer = new Renderer(pag, element, attrs);
+                    renderer.init();
+                }
+            };
+
+            return renderPagination;
         }]);
 });

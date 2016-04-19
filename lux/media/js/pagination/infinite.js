@@ -1,5 +1,6 @@
 define(['angular',
-        'lux/main'], function(angular) {
+        'lux/pagination/horizontal',
+        'angular-infinite-scroll'], function(angular) {
     'use strict';
 
     /**
@@ -19,7 +20,7 @@ define(['angular',
      *          </ul>
      *      </pagination>
      */
-    angular.module('lux.pagination.infinite', ['infinite-scroll'])
+    angular.module('lux.pagination.infinite', ['infinite-scroll', 'lux.pagination.horizontal'])
         /**
          * Default options
          */
@@ -34,24 +35,19 @@ define(['angular',
         })
         //
         .value('THROTTLE_MILLISECONDS', 400)
-        /**
-         * Factory to handle infinite pagination
-         *
-         * @param $lux
-         * @param infiniteDefaults
-         */
-        .factory('InfinitePagination', ['$lux', 'infiniteDefaults', function($lux, infiniteDefaults) {
-            var InfinitePagination = function(config) {
+        //
+        .config(['paginationFactories', 'infiniteDefaults', function(paginationFactories, infiniteDefaults) {
+
+            var InfinitePagination = function(pag, config) {
+                this.pag = pag;
                 this.items = [];
                 this.busy = false;
                 this.offset = 0;
                 this.total = null;
-                this.luxApi = $lux.api(config.API_URL);
                 angular.extend(this, infiniteDefaults, config);
-                if (!this.scrollDistance) {
-                    this.scrollDistance = infiniteDefaults.scrollDistance;
-                }
             };
+
+            paginationFactories['infinite'] = InfinitePagination;
 
             /**
              * Called as the first function to fetch initial items from API
@@ -117,7 +113,5 @@ define(['angular',
                     this.busy = false;
                 }.bind(this));
             };
-
-            return InfinitePagination;
         }]);
 });

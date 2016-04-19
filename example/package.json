@@ -4,19 +4,6 @@
         "email": "message@quantmind.com"
     },
     "devDependencies": {
-        "grunt": "",
-        "grunt-contrib-clean": "",
-        "grunt-contrib-concat": "",
-        "grunt-contrib-copy": "",
-        "grunt-contrib-cssmin": "",
-        "grunt-contrib-uglify": "",
-        "grunt-contrib-watch": "",
-        "grunt-coveralls": "",
-        "grunt-html2js": "",
-        "grunt-http": "",
-        "grunt-rollup": "",
-        "grunt-sass": "",
-        "grunt-shell": "",
         "karma-junit-reporter": "^0.3.8",
         "eslint": "^1.10.3",
         "karma-coverage": "^0.5.3",
@@ -46,7 +33,7 @@
         "test": "grunt karma:ci && grunt coveralls"
     },
     "dependencies": {
-        "ngImgCrop": "git://github.com/iblank/ngImgCrop.git#39649fad4ee310cff71aca2c581fcb02fc872328",
+        "angular": "1.5",
         "bootstrap-sass": ""
     },
     "keywords": [],

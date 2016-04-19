@@ -14,7 +14,7 @@ class AuthenticationError(ValueError):
 def login(request, fclass):
     """Authenticate the user
     """
-    form = _login_form(request, fclass)
+    form = _auth_form(request, fclass)
 
     if form.is_valid():
         auth_backend = request.cache.auth_backend
@@ -35,7 +35,7 @@ def login(request, fclass):
 def signup(request, form):
     """Signup a user
     """
-    form = _login_form(request, form)
+    form = _auth_form(request, form)
 
     if form.is_valid():
         auth_backend = request.cache.auth_backend
@@ -86,7 +86,7 @@ def user_permissions(request):
 def reset_password_request(request, fclass):
     """Request a reset password code/email
     """
-    form = _login_form(request, fclass)
+    form = _auth_form(request, fclass)
     if form.is_valid():
         auth = request.cache.auth_backend
         email = form.cleaned_data['email']
@@ -102,7 +102,7 @@ def reset_password_request(request, fclass):
 def reset_password(request, fclass, key):
     """Reset password
     """
-    form = _login_form(request, fclass)
+    form = _auth_form(request, fclass)
     if form.is_valid():
         auth = request.cache.auth_backend
         password = form.cleaned_data['password']
@@ -115,7 +115,7 @@ def reset_password(request, fclass, key):
     return Json(data).http_response(request)
 
 
-def _login_form(request, form):
+def _auth_form(request, form):
     if not form:
         raise Http404
 
