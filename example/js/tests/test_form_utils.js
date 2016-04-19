@@ -1,7 +1,7 @@
 define(['angular',
-        'lux',
-        'lux/testing',
-        'lux/forms'], function (angular) {
+        'lux/main',
+        'lux/testing/main',
+        'lux/forms/main'], function (angular) {
     'use strict';
 
     describe('Test lux.form.utils module', function () {

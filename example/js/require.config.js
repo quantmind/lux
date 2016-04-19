@@ -9,8 +9,6 @@ define(['lux/config/main'], function (lux) {
         'videojs': '//vjs.zencdn.net/4.12/video.js'
     });
 
-    // lux.require.shim = lux.extend(lux.require.shim, {});
-
     lux.config();
 
     return lux;

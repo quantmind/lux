@@ -1,5 +1,5 @@
 define(['angular',
-        'lux',
+        'lux/main',
         'tests/mocks/window',
         'tests/mocks/http'], function(angular) {
     'use strict';

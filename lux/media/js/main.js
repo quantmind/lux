@@ -2,26 +2,7 @@ define(['angular',
         'lux/core/main'], function(angular, lux) {
     'use strict';
 
-    var extend = angular.extend,
-        angular_bootstrapped = false,
-        defaults = {
-            url: '',    // base url for the web site
-            MEDIA_URL: '',  // default url for media content
-            hashPrefix: '',
-            ngModules: []
-        };
-
-    //
-    lux.forEach = angular.forEach;
-    lux.context = extend({}, defaults, lux.context);
-    lux.version = lux.context.lux_version;
-
-    lux.media = function (url, ctx) {
-        if (!ctx)
-            ctx = lux.context;
-        return lux.joinUrl(ctx.url, ctx.MEDIA_URL, url);
-    };
-
+    
     lux.loader = angular.module('lux.loader', [])
 
         .value('context', lux.context)
@@ -34,7 +15,7 @@ define(['angular',
         .run(['$rootScope', '$log', '$timeout', 'context',
             function (scope, $log, $timeout, context) {
                 $log.info('Extend root scope with context');
-                extend(scope, context);
+                angular.extend(scope, context);
                 scope.$timeout = $timeout;
                 scope.$log = $log;
             }
@@ -60,6 +41,8 @@ define(['angular',
     //  These modules are appended to the modules available in the
     //  lux context object and therefore they will be processed afterwards.
     //
+    var angular_bootstrapped = false;
+
     lux.bootstrap = function (name, modules) {
         //
         // actual bootstrapping function

@@ -17,6 +17,26 @@
             ]
         }
     },
+    "watch": {
+        "js": {
+            "files": [
+                "example/js/*.js",
+                "example/js/tests/**/*.js",
+                "lux/media/js/*.js",
+                "lux/media/js/**/*.js"
+            ],
+            "command": "js"
+        },
+        "css": {
+            "files": [
+                "example/scss/*.scss",
+                "example/scss/**/*.scss",
+                "lux/media/scss/*.scss",
+                "lux/media/scss/**/*.scss"
+            ],
+            "command": "css"
+        }
+    },
     "tasks": {
         "release": {
             "description": "make a new release to github",
@@ -28,6 +48,10 @@
                 "shell:lux",
                 "shell:js"
             ]
+        },
+        "dev": {
+            "description": "Start development watch server",
+            "command": ["watch"]
         }
     }
 }

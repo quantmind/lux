@@ -1,10 +1,10 @@
 define(['angular',
-        'lux',
+        'lux/main',
         'tests/mocks/http',
-        'lux/forms'], function (angular, lux, api_mock_data) {
+        'lux/forms/main'], function (angular, lux, api_mock_data) {
     'use strict';
 
-    describe('Remote options', function () {
+    describe('Test lux.form remote options -', function () {
         // Define the tree test module
         angular.module('lux.remote.test', []);
 

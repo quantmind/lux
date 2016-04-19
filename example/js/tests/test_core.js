@@ -5,8 +5,7 @@ define(['lux/main'], function (lux) {
 
         it('Check lux object', function () {
             expect(lux).not.toBe(undefined);
-            expect(typeof(lux.version)).toBe('string');
-            expect(lux.version.split('.').length).toBe(3);
+            expect(typeof(lux.context)).toBe('object');
         });
 
         it('Check lux urls', function () {

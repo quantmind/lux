@@ -1,13 +1,13 @@
 define(['angular',
-        'lux',
-        'lux/testing',
-        'lux/forms'], function (angular, lux, tests) {
+        'lux/main',
+        'lux/testing/main',
+        'lux/forms/main'], function (angular, lux, tests) {
     'use strict';
 
     lux.formFieldTests = {};
 
 
-    describe('Test lux.form fields', function () {
+    describe('Test lux.form fields -', function () {
 
         beforeEach(function () {
             module('lux.form');

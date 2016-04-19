@@ -1,6 +1,6 @@
 define(['angular',
-        'lux/message',
-        'lux/testing'], function (angular, lux, tests) {
+        'lux/message/main',
+        'lux/testing/main'], function (angular, lux, tests) {
     'use strict';
 
     beforeEach(function () {

@@ -1,11 +1,11 @@
 define(['angular',
-        'lux',
-        'lux/testing',
+        'lux/main',
+        'lux/testing/main',
         'tests/mocks/lux',
-        'lux/forms'], function (angular, lux, tests) {
+        'lux/forms/main'], function (angular, lux, tests) {
     'use strict';
 
-    describe('Test lux.form module', function() {
+    describe('Test lux.form -', function() {
 
         lux.formTests = {};
 
@@ -13,7 +13,7 @@ define(['angular',
             module('lux.form');
         });
 
-        it('check lux.forms', function () {
+        it('check lux.forms container', function () {
             expect(angular.isObject(lux.forms)).toBe(true);
         });
 

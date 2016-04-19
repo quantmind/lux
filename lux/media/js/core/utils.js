@@ -4,8 +4,18 @@ define(['angular',
     'use strict';
 
     var root = lux.root,
+
+        defaults = {
+            url: '',    // base url for the web site
+            MEDIA_URL: '',  // default url for media content
+            hashPrefix: '',
+            ngModules: []
+        },
+
         forEach = angular.forEach,
+
         slice = Array.prototype.slice,
+
         generateCallbacks = function () {
             var callbackFunctions = [],
                 callFunctions = function () {
@@ -21,6 +31,16 @@ define(['angular',
             };
             return callFunctions;
         };
+
+    lux.context = angular.extend({}, defaults, lux.context);
+    lux.version = lux.context.lux_version;
+    lux.forEach = forEach;
+    
+    lux.media = function (url, ctx) {
+        if (!ctx)
+            ctx = lux.context;
+        return lux.joinUrl(ctx.url, ctx.MEDIA_URL, url);
+    };
     //
     // Add a callback for an event to an element
     lux.addEvent = function (element, event, callback) {

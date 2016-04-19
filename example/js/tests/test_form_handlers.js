@@ -1,9 +1,9 @@
 define(['angular',
-        'lux/testing',
-        'lux/forms'], function (angular) {
+        'lux/testing/main',
+        'lux/forms/main'], function (angular) {
     'use strict';
 
-    describe('Test lux.form.handlers module', function() {
+    describe('Test lux.form.handlers -', function() {
         var $lux, successMessageSpy, errorMessageSpy;
 
         beforeEach(function () {

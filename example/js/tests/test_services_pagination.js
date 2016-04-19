@@ -4,11 +4,11 @@ define(['angular',
         'lux/services/pagination'], function (angular) {
     'use strict';
 
-    describe('Test lux.pagination module', function () {
-        var LuxPagination;
+    describe('Test lux.services.pagination -', function () {
+        var luxPaginationFactory;
         var $lux;
 
-        angular.module('lux.pagination.test', ['lux.pagination'])
+        angular.module('lux.services.pagination.test', ['lux.services.pagination'])
             .run(['$lux', function ($lux) {
                 spyOn($lux, 'api');
             }]);
@@ -27,21 +27,21 @@ define(['angular',
         }
 
         beforeEach(function () {
-            module('lux.pagination.test');
+            module('lux.services.pagination.test');
 
-            inject(function (_luxPagination_, _$lux_) {
+            inject(function (_luxPaginationFactory_, _$lux_) {
                 $lux = _$lux_;
-                LuxPagination = _luxPagination_;
+                luxPaginationFactory = _luxPaginationFactory_;
             });
 
         });
 
-        it('LuxPagination applies params to itself and set up API', inject(function () {
+        it('luxPaginationFactory applies params to itself and set up API', inject(function () {
             var scope = 'scope';
             var target = {
                 url: 'originalUrl'
             };
-            var luxPag = new LuxPagination(scope, target);
+            var luxPag = luxPaginationFactory(scope, target);
 
             expect(luxPag.scope).toEqual(scope);
             expect(luxPag.target).toEqual(target);
@@ -50,24 +50,22 @@ define(['angular',
             expect(luxPag.api).toEqual($lux.api(target));
         }));
 
-        it('LuxPagination applies this.recursive only if parameter passed', function () {
-            var recursive = true;
-            var luxPag = new LuxPagination('target', 'scope', recursive);
-
+        it('luxPaginationFactory applies this.recursive', function () {
+            var luxPag = luxPaginationFactory('target', 'scope', true);
             expect(luxPag.recursive).toBe(true);
-            luxPag = new LuxPagination('target', 'scope');
-            expect(luxPag.recursive).toBe(undefined);
+            luxPag = luxPaginationFactory('target', 'scope');
+            expect(luxPag.recursive).toBe(false);
         });
 
-        it('LuxPagination.getData applies params to itself and calls API', function () {
+        it('luxPaginationFactory.getData applies params to itself and calls API', function () {
             var params = 'params';
             var cb = jasmine.createSpy('callback');
             var mockData = {data: true};
-            var luxPag = new LuxPagination('scope', 'target');
+            var luxPag = luxPaginationFactory('scope', 'target');
 
             // Fake promise returning good data
             luxPag.api = createMockPromise(mockData);
-            LuxPagination.prototype.updateUrls = jasmine.createSpy('updateUrls');
+            luxPaginationFactory.prototype.updateUrls = jasmine.createSpy('updateUrls');
             luxPag.getData(params, cb);
             expect(luxPag.params).toEqual(params);
             expect(luxPag.cb).toEqual(cb);
@@ -76,63 +74,63 @@ define(['angular',
             expect(luxPag.updateUrls).toHaveBeenCalledWith(mockData);
         });
 
-        it('LuxPagination.updateUrls triggers emitEvent() and updates this.urls', function () {
+        it('luxPaginationFactory.updateUrls triggers emitEvent() and updates this.urls', function () {
             var data = {
                 data: {
                     last: true,
                     next: true
                 }
             };
-            var luxPag = new LuxPagination('scope', 'target');
+            var luxPag = luxPaginationFactory('scope', 'target');
 
-            LuxPagination.prototype.emitEvent = jasmine.createSpy('emittedEvent');
+            luxPaginationFactory.prototype.emitEvent = jasmine.createSpy('emittedEvent');
             luxPag.updateUrls(data);
             expect(luxPag.emitEvent).toHaveBeenCalled();
             expect(luxPag.urls).toEqual(data.data);
         });
 
-        it('LuxPagination.updateUrls triggers loadMore() if this.recursive is true and data correct', function () {
+        it('luxPaginationFactory.updateUrls triggers loadMore() if this.recursive is true and data correct', function () {
             var recursive = true;
             var data = {
                 data: {
                     last: true
                 }
             };
-            var luxPag = new LuxPagination('scope', 'target', recursive);
+            var luxPag = luxPaginationFactory('scope', 'target', recursive);
 
-            LuxPagination.prototype.emitEvent = jasmine.createSpy('emittedEvent');
-            LuxPagination.prototype.loadMore = jasmine.createSpy('loadingMore');
+            luxPaginationFactory.prototype.emitEvent = jasmine.createSpy('emittedEvent');
+            luxPaginationFactory.prototype.loadMore = jasmine.createSpy('loadingMore');
             luxPag.updateUrls(data);
             expect(luxPag.loadMore).toHaveBeenCalled();
 
         });
 
-        it('LuxPagination.updateUrls wont do anything if data is incorrect', function () {
+        it('luxPaginationFactory.updateUrls wont do anything if data is incorrect', function () {
             var data = null;
-            var luxPag = new LuxPagination('scope', 'target');
+            var luxPag = luxPaginationFactory('scope', 'target');
 
-            LuxPagination.prototype.emitEvent = jasmine.createSpy('emittedEvent');
-            LuxPagination.prototype.loadMore = jasmine.createSpy('loadingMore');
+            luxPaginationFactory.prototype.emitEvent = jasmine.createSpy('emittedEvent');
+            luxPaginationFactory.prototype.loadMore = jasmine.createSpy('loadingMore');
             luxPag.updateUrls(data);
             expect(luxPag.urls).toBe(undefined);
             expect(luxPag.loadMore).not.toHaveBeenCalled();
             expect(luxPag.emitEvent).not.toHaveBeenCalled();
         });
 
-        it('LuxPagination.emitEvent emits event moreData on the provided scope', function () {
+        it('luxPaginationFactory.emitEvent emits event moreData on the provided scope', function () {
             var scope = {
                 $emit: jasmine.createSpy('scopeEmit')
             };
-            var luxPag = new LuxPagination(scope, 'target');
+            var luxPag = luxPaginationFactory(scope, 'target');
             luxPag.emitEvent();
             expect(scope.$emit).toHaveBeenCalledWith('moreData');
         });
 
-        it('LuxPagination.loadMore updates this.target.url and calls getData', function () {
+        it('luxPaginationFactory.loadMore updates this.target.url and calls getData', function () {
             var target = {url: 'url'};
-            var luxPag = new LuxPagination('scope', target);
+            var luxPag = luxPaginationFactory('scope', target);
 
-            LuxPagination.prototype.getData = jasmine.createSpy('getData');
+            luxPaginationFactory.prototype.getData = jasmine.createSpy('getData');
             luxPag.urls = {
                 next: 'next',
                 last: 'last'
@@ -149,13 +147,13 @@ define(['angular',
             expect(luxPag.getData).toHaveBeenCalled();
         });
 
-        it('LuxPagination.search applies params to itself and calls getData', function () {
+        it('luxPaginationFactory.search applies params to itself and calls getData', function () {
             var target = {url: 'originalUrl'};
             var query = 'query';
             var searchField = 'searchField';
-            var luxPag = new LuxPagination('scope', target);
+            var luxPag = luxPaginationFactory('scope', target);
 
-            LuxPagination.prototype.getData = jasmine.createSpy('getData');
+            luxPaginationFactory.prototype.getData = jasmine.createSpy('getData');
             luxPag.params = undefined;
             luxPag.target.url = 'another url';
             luxPag.search(query, searchField);
