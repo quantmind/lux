@@ -1,6 +1,6 @@
 /* eslint angular/no-private-call: [2,{"allow":["$$hashKey"]}] */
 define(['angular',
-        'lux',
+        'lux/main',
         'lodash',
         'angular-mocks'], function (angular, lux, _) {
     'use strict';

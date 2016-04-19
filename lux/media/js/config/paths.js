@@ -3,12 +3,12 @@ define(function () {
 
     return function () {
         return {
-            'angular': '//ajax.googleapis.com/ajax/libs/angularjs/1.4.9/angular',
-            'angular-animate': '//ajax.googleapis.com/ajax/libs/angularjs/1.4.9/angular-animate',
-            'angular-mocks': '//ajax.googleapis.com/ajax/libs/angularjs/1.4.9/angular-mocks.js',
-            'angular-sanitize': '//ajax.googleapis.com/ajax/libs/angularjs/1.4.9/angular-sanitize',
-            'angular-touch': '//cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.9/angular-touch',
-            'angular-ui-bootstrap': 'https://cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/1.0.3/ui-bootstrap-tpls',
+            'angular': '//ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular',
+            'angular-animate': '//ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular-animate',
+            'angular-mocks': '//ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular-mocks.js',
+            'angular-sanitize': '//ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular-sanitize',
+            'angular-touch': '//cdnjs.cloudflare.com/ajax/libs/angular.js/1.5.5/angular-touch',
+            'angular-ui-bootstrap': 'https://cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/1.3.2/ui-bootstrap-tpls',
             'angular-ui-router': '//cdnjs.cloudflare.com/ajax/libs/angular-ui-router/0.2.14/angular-ui-router',
             'angular-ui-select': '//cdnjs.cloudflare.com/ajax/libs/angular-ui-select/0.14.9/select',
             'angular-cookies': '//cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.9/angular-cookies',

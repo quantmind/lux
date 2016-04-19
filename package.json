@@ -8,10 +8,10 @@
     },
     "dependencies": {
         "angular": "1.5",
-        "bootstrap-sass": ""
+        "bootstrap-sass": "3.3"
     },
     "devDependencies": {
-        "lodash": "",
+        "lodash": "4.11",
         "eslint": "2.8",
         "eslint-plugin-disable": "0.2",
         "eslint-config-angular": "0.5",
@@ -36,7 +36,7 @@
     },
     "scripts": {
         "test": "eslint lux/media/js example/js && karma start --single-run",
-        "build": "npm test && r -o bundle.js optimize=none",
+        "build": "npm test && r.js -o bundle.js optimize=none",
         "debug": "karma start --browsers Chrome"
     },
     "keywords": [],

@@ -9,8 +9,16 @@ define(['angular',
 
         lux.formTests = {};
 
+        // Remove debounce for testing
+        angular.module('lux.form.test', ['lux.form'])
+
+            .config(['formDefaults', function (defaults) {
+                defaults.debounce = 0;
+            }]);
+
+
         beforeEach(function () {
-            module('lux.form');
+            module('lux.form.test');
         });
 
         it('check lux.forms container', function () {
@@ -35,11 +43,11 @@ define(['angular',
         });
 
         it('on failure, email validate', function () {
-            lux.formTests.vForm3 = tests.createForm({
+            lux.formTests.vForm3 = tests.createForm([{
                 type: 'email',
                 name: 'login',
                 required: true
-            });
+            }]);
 
             var element = tests.compile('<div><lux-form data-options="lux.formTests.vForm3"></lux-form></div>'),
                 form = element.find('form'),
@@ -52,16 +60,16 @@ define(['angular',
         });
 
         it('submit empty email field', function () {
-            lux.formTests.vForm4 = tests.createForm({
+            lux.formTests.vForm4 = tests.createForm([{
                 type: 'email',
                 name: 'login',
                 required: true
-            });
+            }]);
 
-            var element = tests.compile('<div><lux-form data-options="lux.formTests.vForm4"></lux-form></div>');
-            var form = element.find('form');
-            var validators = form.find('span');
-            var scope = element.scope();
+            var element = tests.compile('<div><lux-form data-options="lux.formTests.vForm4"></lux-form></div>'),
+                form = element.find('form'),
+                scope = form.scope(),
+                validators = form.find('span');
 
             // Submit empty field
             scope.form.login.$setViewValue('');

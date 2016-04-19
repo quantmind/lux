@@ -9,7 +9,8 @@ define(['angular',
                                         // before bottom of UIselect list
 
         .directive('remoteOptions', ['$lux', 'luxPaginationFactory', 'lazyLoadOffset',
-            function ($lux, LuxPagination, lazyLoadOffset) {
+
+            function ($lux, luxPagination, lazyLoadOffset) {
 
                 return {
                     link: link
@@ -150,10 +151,10 @@ define(['angular',
                         };
                     }
 
-                    // Use LuxPagination's getData method to call the api
+                    // Use luxPagination's getData method to call the api
                     // with relevant parameters and pass in buildSelect as callback
                     luxPag.getData(params, buildSelect);
-                    // Listen for LuxPagination to emit 'moreData' then run
+                    // Listen for luxPagination to emit 'moreData' then run
                     // lazyLoad and enableSearch
                     scope.$on('moreData', function (e) {
                         lazyLoad(e);
@@ -165,7 +166,7 @@ define(['angular',
 
                     if (attrs.remoteOptions) {
                         var target = angular.fromJson(attrs.remoteOptions);
-                        var luxPag = new LuxPagination(scope, target, attrs.multiple ? true : false);
+                        var luxPag = luxPagination(scope, target, attrs.multiple);
 
                         if (luxPag && target.name)
                             return remoteOptions(luxPag, target, scope, attrs, element);

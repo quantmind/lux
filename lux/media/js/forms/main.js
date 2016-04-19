@@ -73,6 +73,7 @@ define(['angular',
             //
             dateTypes: ['date', 'datetime', 'datetime-local'],
             defaultDatePlaceholder: 'YYYY-MM-DD',
+            defaultSelectPlaceholder: 'select one',
             //
             formErrorClass: 'form-error',
             FORMKEY: 'm__form',
