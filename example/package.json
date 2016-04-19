@@ -1,47 +1,41 @@
 {
+    "version": "0.7.0",
+    "name": "lux",
+    "descriptiomn": "Asynchronous web framework for python",
     "author": {
         "name": "quantmind.com",
         "email": "message@quantmind.com"
-    },
-    "devDependencies": {
-        "karma-junit-reporter": "^0.3.8",
-        "eslint": "^1.10.3",
-        "karma-coverage": "^0.5.3",
-        "grunt-contrib-requirejs": "^0.4.4",
-        "eslint-plugin-disable": "^0.2.0",
-        "grunt-eslint": "^17.3.1",
-        "karma-jasmine": "^0.3.6",
-        "karma-phantomjs-launcher": "^0.2.1",
-        "grunt-karma": "^0.12.1",
-        "karma-firefox-launcher": "^0.1.6",
-        "lodash": "",
-        "karma-requirejs": "^0.2.2",
-        "requirejs": "^2.1.20",
-        "eslint-config-angular": "^0.4.0",
-        "karma-es5-shim": "0.0.4",
-        "eslint-plugin-angular": "^0.15.0",
-        "jasmine-core": "^2.3.4",
-        "phantomjs": "^2.1",
-        "karma": "^0.13.14",
-        "karma-chrome-launcher": "^0.2.1"
-    },
-    "repository": {
-        "type": "git",
-        "url": ""
-    },
-    "scripts": {
-        "test": "grunt karma:ci && grunt coveralls"
     },
     "dependencies": {
         "angular": "1.5",
         "bootstrap-sass": ""
     },
+    "devDependencies": {
+        "lodash": "",
+        "eslint": "2.4",
+        "eslint-plugin-disable": "^0.2.0",
+        "eslint-config-angular": "^0.4.0",
+        "eslint-plugin-angular": "^0.15.0",
+        "angular-mocks": "1.5",
+        "requirejs": "2.2",
+        "karma": "0.13",
+        "karma-coverage": "0.5",
+        "karma-chrome-launcher": "0.2",
+        "karma-firefox-launcher": "0.1",
+        "karma-phantomjs-launcher": "1.0",
+        "karma-requirejs": "0.2",
+        "karma-junit-reporter": "0.4",
+        "karma-es5-shim": "0.0.4",
+        "jasmine-core": "2.4",
+        "phantomjs": "^2.1"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/quantmind/lux"
+    },
+    "scripts": {
+        "test": "grunt karma:ci && grunt coveralls"
+    },
     "keywords": [],
-    "description": "python web toolkit",
-    "name": "luxsite",
-    "licenses": [
-        {}
-    ],
-    "version": "0.6.0",
-    "title": "luxsite"
+    "license": "BSD-3-Clause"
 }
