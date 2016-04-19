@@ -172,45 +172,45 @@ define(['angular',
                 }
             }]);
 
-        //
-        //  Add toggle functionality to sidebar
-        function addSidebarToggle (sidebar, scope) {
-            if (!sidebar.toggleName) return;
+    //
+    //  Add toggle functionality to sidebar
+    function addSidebarToggle (sidebar, scope) {
+        if (!sidebar.toggleName) return;
 
-            sidebar.close = function () {
-                setState(false);
-            };
+        sidebar.close = function () {
+            setState(false);
+        };
 
-            function toggle (e) {
-                e.preventDefault();
-                angular.forEach(scope.sidebars, function (s) {
-                    if (s != sidebar) s.close();
-                });
-                setState(!sidebar.open);
-            }
-
-            function setState (value) {
-                sidebar.open = value;
-                sidebar.closed = !value;
-                scope.navbar[sidebar.position] = sidebar.open;
-            }
-
-            var item = {
-                href: sidebar.position,
-                title: sidebar.toggleName,
-                name: sidebar.toggleName,
-                klass: 'sidebar-toggle',
-                icon: 'fa fa-bars',
-                action: toggle,
-                right: 'vert-divider'
-            };
-
-            if (sidebar.position === 'left') {
-                if (!scope.navbar.itemsLeft) scope.navbar.itemsLeft = [];
-                scope.navbar.itemsLeft.splice(0, 0, item);
-            } else {
-                if (!scope.navbar.itemsRight) scope.navbar.itemsRight = [];
-                scope.navbar.itemsRight.push(item);
-            }
+        function toggle (e) {
+            e.preventDefault();
+            angular.forEach(scope.sidebars, function (s) {
+                if (s != sidebar) s.close();
+            });
+            setState(!sidebar.open);
         }
+
+        function setState (value) {
+            sidebar.open = value;
+            sidebar.closed = !value;
+            scope.navbar[sidebar.position] = sidebar.open;
+        }
+
+        var item = {
+            href: sidebar.position,
+            title: sidebar.toggleName,
+            name: sidebar.toggleName,
+            klass: 'sidebar-toggle',
+            icon: 'fa fa-bars',
+            action: toggle,
+            right: 'vert-divider'
+        };
+
+        if (sidebar.position === 'left') {
+            if (!scope.navbar.itemsLeft) scope.navbar.itemsLeft = [];
+            scope.navbar.itemsLeft.splice(0, 0, item);
+        } else {
+            if (!scope.navbar.itemsRight) scope.navbar.itemsRight = [];
+            scope.navbar.itemsRight.push(item);
+        }
+    }
 });
