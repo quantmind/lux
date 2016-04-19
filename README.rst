@@ -10,7 +10,7 @@ Lux is a library for developing web applications with Python and javascript fram
 :Badges: |license|  |pyversions| |status| |downloads|
 :Master CI: |master-build| |coverage-master|
 :Dev CI: |dev-build| |coverage-dev|
-;Javascript: |jsdep| |jsdevdep|
+:Javascript: |jsdep| |jsdevdep|
 :Documentation: http://quantmind.github.io/lux/
 :Downloads: https://pypi.python.org/pypi/lux
 :Source: https://github.com/quantmind/lux
