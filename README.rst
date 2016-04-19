@@ -35,9 +35,9 @@ Lux is a library for developing web applications with Python and javascript fram
 .. |coverage-dev| image:: https://img.shields.io/coveralls/quantmind/lux/dev.svg
   :target: https://coveralls.io/r/quantmind/lux?branch=dev
 .. |jsdep| image:: https://david-dm.org/quantmind/lux.svg?path=example
-  :target: https://david-dm.org/quantmind/lux
+  :target: https://david-dm.org/quantmind/lux?path=example
 .. |jsdevdep| image:: https://david-dm.org/quantmind/lux/dev-status.svg?path=example
-  :target: https://david-dm.org/quantmind/lux#info=devDependencies
+  :target: https://david-dm.org/quantmind/lux?path=example#info=devDependencies
 
 .. _requirements:
 
