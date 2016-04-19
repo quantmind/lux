@@ -139,10 +139,9 @@ class HtmlRouter(Router):
         context = app.context(request)
         context.update(self.context(request) or ())
         context['html_main'] = html
-        # template = self.get_inner_template(request, inner_template)
-        # if template:
-        #     html = app.render_template(template, context, request)
-        #     context['html_main'] = html
+        if inner_template:
+            html = app.render_template(inner_template, context)
+            context['html_main'] = html
 
         # This request is for the inner template only
         if request.url_data.get('template') == 'ui':
@@ -284,8 +283,14 @@ class HeadMeta(object):
                 yield c
 
 
-def json_message(message, **obj):
+def json_message(request, message, error=False, **obj):
+    """Create a JSON message to return to clients
+    """
     obj['message'] = message
+    if error:
+        status = 422 if error is True else int(error)
+        request.response.status_code = status
+        obj['error'] = True
     return obj
 
 
@@ -324,7 +329,7 @@ def error_handler(request, exc):
                                  title=response.status)
     #
     if content_type in JSON_CONTENT_TYPES:
-        return json.dumps(json_message(msg, status=response.status_code,
-                                       error=True))
+        return json.dumps(json_message(request, msg,
+                                       error=response.status_code))
     else:
         return '\n'.join(msg) if isinstance(msg, (list, tuple)) else msg

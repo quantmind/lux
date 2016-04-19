@@ -3,6 +3,13 @@ from tests import web
 
 class AuthTest(web.WebsiteTest):
 
+    def _get_code(self, message):
+        idx = message.find('/reset-password/')
+        self.assertTrue(idx)
+        msg = message[idx+16:]
+        idx = msg.find(' ')
+        return msg[:idx]
+
     async def test_html_signup(self):
         request = await self.webclient.get('/signup')
         html = self.html(request.response, 200)
@@ -35,6 +42,47 @@ class AuthTest(web.WebsiteTest):
         body = doc.find('body')
         self.assertTrue(body)
         # await self._check_body(reg, body)
+
+    # PASSWORD RESET
+    async def test_reset_password_get(self):
+        request = await self.webclient.get('/reset-password')
+        bs = self.bs(request.response, 200)
+        form = bs.find('lux-form')
+        self.assertTrue(form)
+
+    async def test_reset_password_fail(self):
+        cookie, data = await self._cookie_csrf('/reset-password')
+        request = await self.webclient.post('/reset-password',
+                                            body=data,
+                                            content_type='application/json',
+                                            cookie=cookie)
+        self.assertValidationError(request.response, 'email')
+        data['email'] = 'dvavf@sdvavadf.com'
+        request = await self.webclient.post('/reset-password',
+                                            body=data,
+                                            content_type='application/json',
+                                            cookie=cookie)
+        self.assertValidationError(request.response,
+                                   text="Can't find user, sorry")
+
+    async def test_reset_password_success(self):
+        cookie, data = await self._cookie_csrf('/reset-password')
+        data['email'] = 'toni@foo.com'
+        request = await self.webclient.post('/reset-password',
+                                            body=data,
+                                            content_type='application/json',
+                                            cookie=cookie)
+        data = self.json(request.response, 200)
+        self.assertTrue(data['email'], 'toni@foo.com')
+        mail = None
+        for msg in self.app._outbox:
+            if msg.to == 'toni@foo.com':
+                mail = msg
+                break
+        self.assertTrue(mail)
+        self.assertEqual(mail.sender, 'admin@lux.com')
+        code = self._get_code(mail.message)
+        self.assertTrue(code)
 
     async def _(self, reg, body):
         login = body.find_all('a')

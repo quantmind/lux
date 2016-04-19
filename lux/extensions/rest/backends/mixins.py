@@ -33,9 +33,8 @@ class TokenBackendMixin:
         if expiry:
             token['exp'] = int(time.mktime(expiry.timetuple()))
 
-        user = user or request.cache.user
         request.app.fire('on_token', request, token, user)
-        return jwt.encode(token, request.config['SECRET_KEY'])
+        return to_string(jwt.encode(token, request.config['SECRET_KEY']))
 
     def decode_token(self, request, token):
         if not jwt:     # pragma    nocover
@@ -98,7 +97,7 @@ class SessionBackendMixin(TokenBackendMixin):
     def login(self, request, user):
         session = self.create_session(request, user)
         request.cache.session = session
-        token = to_string(session.encoded)
+        token = session.encoded
         request.response.status_code = 201
         return {'success': True,
                 'token': token}

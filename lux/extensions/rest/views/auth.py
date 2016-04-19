@@ -52,23 +52,8 @@ class ResetPasswordMixin:
 
     @action
     def reset_password(self, request):
-        user = request.cache.user
-        if user.is_authenticated() or not self.request_reset_password_form:
-            raise MethodNotAllowed
-
-        form = self.request_reset_password_form(request,
-                                                data=request.body_data())
-        if form.is_valid():
-            auth = request.cache.auth_backend
-            email = form.cleaned_data['email']
-            try:
-                result = {'email': auth.password_recovery(request, email)}
-            except actions.AuthenticationError as e:
-                form.add_error_message(str(e))
-                result = form.tojson()
-        else:
-            result = form.tojson()
-        return self.json(request, result)
+        return actions.reset_password(request,
+                                      self.request_reset_password_form)
 
     @route('reset-password/<key>', method=('post', 'options'))
     def reset(self, request):

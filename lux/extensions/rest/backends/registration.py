@@ -8,10 +8,8 @@ from lux.extensions.rest import AuthenticationError, website_url
 
 
 class RegistrationMixin:
-    '''Mixin for adding User account registration with email confirmation
-
-    THis Mixin is used by HTML-based authentication backends
-    '''
+    """Mixin for adding User account registration and email confirmation
+    """
     _config = [
         Parameter('REGISTER_URL', '/signup',
                   'Url to register with site', True),
@@ -58,23 +56,6 @@ class RegistrationMixin:
         self.send_email_confirmation(request, user, auth_key)
         return {'email': user.email}
 
-    def password_recovery(self, request, email):
-        '''Recovery password email
-        '''
-        user = self.get_user(request, email=email)
-        if not user or user.is_anonymous():
-            raise AuthenticationError("Can't find that email, sorry")
-
-        auth_key = self.create_auth_key(request, user)
-        if not auth_key:
-            raise AuthenticationError("Cannot create authentication key")
-
-        return self.send_email_confirmation(
-            request, user, auth_key,
-            email_subject='registration/password_email_subject.txt',
-            email_message='registration/password_email.txt',
-            message='registration/password_message.txt')
-
     def inactive_user_login_response(self, request, user):
         '''Handle a user not yet active'''
         cfg = request.config
@@ -85,6 +66,24 @@ class RegistrationMixin:
         message = request.app.render_template('registration/inactive_user.txt',
                                               context)
         raise AuthenticationError(message)
+
+    # PASSWORD RECOVERY
+    def password_recovery(self, request, **params):
+        """Password recovery
+        """
+        user = self.get_user(request, **params)
+        if not user or user.is_anonymous():
+            raise AuthenticationError("Can't find user, sorry")
+
+        auth_key = self.create_auth_key(request, user)
+        if not auth_key:
+            raise AuthenticationError("Cannot create authentication key")
+
+        return self.send_email_confirmation(
+            request, user, auth_key,
+            email_subject='registration/password_email_subject.txt',
+            email_message='registration/password_email.txt',
+            message='registration/password_message.txt')
 
     def send_email_confirmation(self, request, user, auth_key, ctx=None,
                                 email_subject=None, email_message=None,
@@ -111,4 +110,4 @@ class RegistrationMixin:
         body = app.render_template(
             email_message or 'registration/activation_email.txt', ctx)
         user.email_user(app, subject, body)
-        return user.email
+        return {'email': user.email}

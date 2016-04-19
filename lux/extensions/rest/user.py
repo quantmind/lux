@@ -113,7 +113,7 @@ class UserMixin(MessageMixin):
 
 
 class SessionMixin:
-    '''Mixin for web sessions
+    '''Mixin for web sessions & tokens
     '''
     encoded = None
     '''Encoded representation of this session'''

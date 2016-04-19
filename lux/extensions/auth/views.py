@@ -134,10 +134,12 @@ class Authorization(rest.Authorization):
                     entry = odm.mailinglist(email=email, topic=topic)
                     session.add(entry)
                     request.response.status_code = 201
-                    result = json_message('Email %s added to mailing list'
+                    result = json_message(request,
+                                          'Email %s added to mailing list'
                                           % email)
                 else:
-                    result = json_message('Email %s already in mailing list'
+                    result = json_message(request,
+                                          'Email %s already in mailing list'
                                           % email, level='warning')
         else:
             result = form.tojson()

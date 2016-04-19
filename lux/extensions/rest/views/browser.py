@@ -83,6 +83,9 @@ class ForgotPassword(WebFormRouter):
                         showLabels=False,
                         resultHandler='passwordChanged')
 
+    def post(self, request):
+        return actions.reset_password(request, self.fclass)
+
     @route('<key>')
     def get_reset_form(self, request):
         key = request.urlargs['key']

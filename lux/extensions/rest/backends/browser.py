@@ -111,6 +111,7 @@ class ApiSessionBackend(SessionBackendMixin,
     signup_url = 'authorizations/signup'
     """url for signup a user.
     """
+    reset_password_url = 'authorizations/reset-password'
     users_url = {'id': 'users',
                  'username': 'users',
                  'email': 'users',
@@ -135,7 +136,6 @@ class ApiSessionBackend(SessionBackendMixin,
             raise ImproperlyConfigured('JWT library not available')
         api = request.app.api(request)
         try:
-            # TODO: add address from request
             response = api.post('authorizations', data=data)
             token = response.json().get('token')
             payload = jwt.decode(token, verify=False)
@@ -190,6 +190,12 @@ class ApiSessionBackend(SessionBackendMixin,
         if resource:
             return resource.get(action, False)
         return False
+
+    def password_recovery(self, request, **params):
+        api = request.app.api(request)
+        response = api.post(self.reset_password_url, data=params)
+        if response.status_code == 200:
+            return response.json()
 
     def create_session(self, request, user=None):
         """Login and return response

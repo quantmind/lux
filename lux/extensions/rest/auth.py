@@ -166,7 +166,7 @@ class AuthenticationKeyMixin:
 
     @auth_backend
     def create_auth_key(self, request, user, **kw):
-        '''Create an authentication key for ``user``'''
+        """Create an authentication key for ``user``"""
         pass
 
     @auth_backend

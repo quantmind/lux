@@ -1,3 +1,7 @@
+from collections import namedtuple
+
+
+Message = namedtuple('Message', 'sender to subject message html_message')
 
 
 class EmailBackend:
@@ -19,7 +23,7 @@ class EmailBackend:
             return 0
 
     def message(self, sender, to, subject, message, html_message):
-        return sender, to, subject, message, html_message
+        return Message(sender, to, subject, message, html_message)
 
     def send_mails(self, messages):
         return len(messages)

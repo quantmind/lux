@@ -229,6 +229,8 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
                    'pulsar': 'http://pythonhosted.org/pulsar'},
                   'Links used throughout the web site'),
         # BASE email parameters
+        Parameter('EMAIL_BACKEND', 'lux.core.mail.EmailBackend',
+                  'Default locale'),
         Parameter('EMAIL_DEFAULT_FROM', '',
                   'Default email address to send email from'),
         Parameter('EMAIL_DEFAULT_TO', '',
@@ -256,8 +258,6 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
                   'Default content type for this application'),
         Parameter('SITE_MANAGERS', (),
                   'List of email for site managers'),
-        Parameter('EMAIL_BACKEND', 'lux.core.mail.EmailBackend',
-                  'Default locale'),
         Parameter('MD_EXTENSIONS', ['extra', 'meta', 'toc'],
                   'List/tuple of markdown extensions'),
         Parameter('GREEN_POOL', 100,

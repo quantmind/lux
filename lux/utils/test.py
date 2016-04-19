@@ -11,7 +11,8 @@ from io import StringIO
 
 from pulsar import get_event_loop, as_coroutine
 from pulsar.utils.httpurl import (Headers, encode_multipart_formdata,
-                                  ENCODE_BODY_METHODS, remove_double_slash)
+                                  ENCODE_BODY_METHODS, remove_double_slash,
+                                  parse_options_header)
 from pulsar.utils.string import random_string
 from pulsar.utils.websocket import (SUPPORTED_VERSIONS, websocket_key,
                                     frame_parser)
@@ -540,6 +541,7 @@ class Response:
         '''
         ct = self.response.content_type
         if ct:
+            ct, _ = parse_options_header(ct)
             if ct in JSON_CONTENT_TYPES:
                 return self.json()
             elif ct.startswith('text/'):

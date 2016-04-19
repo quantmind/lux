@@ -3,6 +3,7 @@ from pulsar.apps.wsgi import Json
 from pulsar.utils.slugify import slugify
 from pulsar import HttpException, Http404, MethodNotAllowed
 
+from lux.core import json_message
 from lux.forms import Form, ValidationError
 
 
@@ -10,10 +11,10 @@ class AuthenticationError(ValueError):
     pass
 
 
-def login(request, form):
+def login(request, fclass):
     """Authenticate the user
     """
-    form = _login_form(request, form)
+    form = _login_form(request, fclass)
 
     if form.is_valid():
         auth_backend = request.cache.auth_backend
@@ -80,6 +81,20 @@ def user_permissions(request):
     resources = request.url_data.get('resource', ())
     actions = request.url_data.get('action')
     return backend.get_permissions(request, resources, actions=actions)
+
+
+def reset_password(request, fclass):
+    form = _login_form(request, fclass)
+    if form.is_valid():
+        auth = request.cache.auth_backend
+        email = form.cleaned_data['email']
+        try:
+            data = auth.password_recovery(request, email=email)
+        except AuthenticationError as e:
+            data = json_message(request, str(e), error=True)
+    else:
+        data = form.tojson()
+    return Json(data).http_response(request)
 
 
 def _login_form(request, form):
