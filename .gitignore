@@ -17,7 +17,6 @@ build
 src
 deps
 *.egg-info
-example/luxweb/settings.py
 
 # javascript/css
 coverage
@@ -25,8 +24,10 @@ junit
 .grunt
 *.map
 lux/media/js/templates
-example/luxsite/media/luxsite/*.js
-example/luxsite/media/luxsite/*.css
+example/js/lux
+example/website/media/website/*.js
+example/website/media/website/*.css
+example/website/media/website/*.map
 
 *.log
 npm*

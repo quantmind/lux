@@ -6,10 +6,28 @@
             "release_notes": "docs/history"
         }
     },
+    "shell": {
+        "lux": {
+            "command": "{{ python }} manage.py media --js-src example/js --scss-src example/scss/deps",
+            "description": "copy lux media files to example directory"
+        },
+        "js": {
+            "command": [
+                "npm --run-script build"
+            ]
+        }
+    },
     "tasks": {
         "release": {
             "description": "make a new release to github",
             "command": ["github:lux"]
+        },
+        "js": {
+            "description": "Create the js files",
+            "command": [
+                "shell:lux",
+                "shell:js"
+            ]
         }
     }
 }

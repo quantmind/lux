@@ -1,4 +1,4 @@
-define(['lux'], function (lux) {
+define(['lux/main'], function (lux) {
     'use strict';
 
     describe('Test lux utilities', function () {

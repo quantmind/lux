@@ -1,9 +1,9 @@
 require([
     'require.config',
     'angular',
-    'lux/forms'
+    'lux/forms/main'
 ], function(lux) {
     'use strict';
 
-    lux.bootstrap('luxsite', []);
+    lux.bootstrap('website', []);
 });

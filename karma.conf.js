@@ -1,10 +1,15 @@
 module.exports = function (config) {
-    config.set({
+
+    var configuration = {
+
         frameworks: ['jasmine', 'requirejs', 'es5-shim'],
+
         browsers: ['PhantomJS', 'Chrome', 'Firefox'],
+
         preprocessors: {
             'js/!(build|tests|deps)/**/!(templates).js': ['coverage']
         },
+
         coverageReporter: {
             includeAllSources: true,
             reporters: [{
@@ -23,22 +28,27 @@ module.exports = function (config) {
                 return browser.toLowerCase().split(/[ /-]/)[0];
             }
         },
-        singleRun: true,
+
+        basePath: 'example/js',
+
         files: [
-            {pattern: 'js/build/lux/**/*.js', included: false},
-            {pattern: 'js/tests/data/*.js', included: false},
-            {pattern: 'js/tests/mocks/*.js', included: false},
-            {pattern: 'js/tests/specs/core/*.js', included: false},
-            {pattern: 'js/tests/specs/sidebar/*.js', included: false},
-            {pattern: 'js/tests/specs/stream/*.js', included: false},
-            {pattern: 'js/build/tests.config.js'},
-            {pattern: 'js/build/tests.runner.js'}
+            {pattern: 'lux/**/*.js', included: false},
+            {pattern: '*.js', included: false},
+            'tests/main.js',
+            {pattern: 'tests/test_*.js'}
         ],
+
         reporters: ['coverage', 'dots', 'junit'],
+
         junitReporter: {
             outputDir: 'junit',
             outputFile: 'test-results.xml'
         }
-    })
-    ;
+    };
+
+    if (process.env.TRAVIS){
+        configuration.browsers = ['PhantomJS', 'Firefox', 'ChromeNoSandbox'];
+    }
+
+    config.set(configuration);
 };
