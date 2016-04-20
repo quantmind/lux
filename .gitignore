@@ -28,6 +28,7 @@ example/js/lux
 example/website/media/website/*.js
 example/website/media/website/*.css
 example/website/media/website/*.map
+example/*/migrations
 
 *.log
 npm*

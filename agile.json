@@ -8,7 +8,7 @@
     },
     "shell": {
         "lux": {
-            "command": "{{ python }} manage.py media --js-src example/js --scss-src example/scss/deps",
+            "command": "{{ python }} manage.py website media --js-src example/js --scss-src example/scss/deps",
             "description": "copy lux media files to example directory"
         },
         "js": {
