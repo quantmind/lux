@@ -1,4 +1,4 @@
-<img src="https://assets.quantmind.com/logos/lux/lux-powered.png alt="Lux powered" width=300>
+<img src="https://assets.quantmind.com/logos/lux/lux-powered.png" alt="Lux powered" width=300>
 
 This directory contains three examples for sites powered by lux:
 
