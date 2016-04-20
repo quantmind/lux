@@ -1,18 +1,19 @@
 define(['angular',
-        'lux',
-        'lux/testing',
-        'lux/nav'], function (angular, lux, tests) {
+        'lux/main',
+        'lux/testing/main',
+        'lux/nav/main'], function (angular, lux, tests) {
     'use strict';
 
-    describe('Test lux.nav module', function () {
+    describe('Test lux.nav -', function () {
         //
         lux._navbarTests = {};
+
 
         beforeEach(function () {
             module('lux.nav');
         });
 
-        it('navbar directive', function () {
+        it('directive', function () {
             var template = '<navbar data-theme="inverse" data-id="navid3" data-top=1></navbar>',
                 element = tests.compile(template);
 
@@ -27,7 +28,7 @@ define(['angular',
             expect(nav.attr('id')).toBe('navid3');
         });
 
-        it('navbar directive with options from object', function () {
+        it('directive with options from object', function () {
             lux._navbarTests.navbar1 = {
                 id: 'navbar1',
                 theme: 'inverse',

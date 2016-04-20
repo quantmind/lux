@@ -1,5 +1,6 @@
 define(['angular',
-        'lux/config/main'], function (angular, lux) {
+        'lux/core/utils',
+        'lux/core/message'], function (angular, lux) {
     'use strict';
 
     var extend = angular.extend;
@@ -377,7 +378,7 @@ define(['angular',
         }
     };
 
-    return lux.apiFactory;
+    return lux;
 
     //
     function _luxHttpPromise () {

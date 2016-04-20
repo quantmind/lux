@@ -1,10 +1,10 @@
 define(['angular',
-        'lux',
-        'lux/testing',
-        'lux/nav'], function (angular, lux, tests) {
+        'lux/main',
+        'lux/testing/main',
+        'lux/nav/main'], function (angular, lux, tests) {
     'use strict';
 
-    describe('Test sidebar', function () {
+    describe('Test sidebar -', function () {
         //
         lux._sidebarTests = {};
 

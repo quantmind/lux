@@ -21,6 +21,7 @@
         "js": {
             "files": [
                 "example/js/*.js",
+                "example/js/tests/*.js",
                 "example/js/tests/**/*.js",
                 "lux/media/js/*.js",
                 "lux/media/js/**/*.js"

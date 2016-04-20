@@ -1,5 +1,5 @@
 define(['angular',
-        'lux/testing',
+        'lux/testing/main',
         'lux/components/codemirror'], function (angular, tests) {
     'use strict';
 
