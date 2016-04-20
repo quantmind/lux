@@ -25,6 +25,15 @@ class CommandError(ImproperlyConfigured):
     pass
 
 
+def service_parser(services, description, help=True):
+    description = description or 'services to run'
+    p = argparse.ArgumentParser(
+        description=description, add_help=help)
+    p.add_argument('service', nargs='?', choices=services,
+                   help='Service to run')
+    return p
+
+
 class ConsoleParser(object):
     '''A class for parsing the console inputs.
 

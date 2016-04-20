@@ -45,6 +45,13 @@ module.exports = function (config) {
         junitReporter: {
             outputDir: 'junit',
             outputFile: 'test-results.xml'
+        },
+        
+        customLaunchers: {
+            ChromeNoSandbox: {
+                base: 'Chrome',
+                flags: ['--no-sandbox']
+            }
         }
     };
 

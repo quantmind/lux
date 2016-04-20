@@ -28,7 +28,7 @@ from pulsar.apps.http import HttpClient
 from lux.utils.async import GreenPubSub
 from lux import __version__
 
-from .commands import ConsoleParser, CommandError, ConfigError
+from .commands import ConsoleParser, CommandError, ConfigError, service_parser
 from .extension import LuxExtension, Parameter, EventMixin, app_attribute
 from .wrappers import HeadMeta, error_handler, LuxContext
 from .templates import template_engine
@@ -42,7 +42,9 @@ from .content import render_data
 LUX_CORE = os.path.dirname(__file__)
 
 
-def execute_from_config(config_file, **params):     # pragma    nocover
+def execute_from_config(config_file, services=None,
+                        description=None, argv=None,
+                        **params):     # pragma    nocover
     """Create and run an :class:`.Application` from a ``config_file``.
 
     This is the function to use when creating the script which runs your
@@ -58,7 +60,14 @@ def execute_from_config(config_file, **params):     # pragma    nocover
         python module which implements the main application
         of the web site.
     """
-    return execute_app(App(config_file, **params))
+    if services:
+        p = service_parser(services, description, False)
+        opts, argv = p.parse_known_args(argv)
+        if not opts.service and len(argv) == 1 and argv[0] in ('-h', '--help'):
+            service_parser(services, description).parse_known_args()
+        config_file = config_file % (opts.service or services[0])
+
+    return execute_app(App(config_file, argv=argv, **params))
 
 
 def execute_app(app, argv=None, **params):  # pragma    nocover
