@@ -54,7 +54,7 @@ Python Requirements
 
 **Soft requirements**
 
-* sqlalchemy_, greenlet_ and pulsar-odm_ used by ``lux.extensions.odm``
+* sqlalchemy_ and pulsar-odm_ used by ``lux.extensions.odm``
 * pyjwt_ used by some authentication backends in ``lux.extensions.rest``
 * markdown_
 * oauthlib_ for ``lux.extensions.oauth``

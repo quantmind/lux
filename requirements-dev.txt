@@ -10,4 +10,5 @@ beautifulsoup4
 redis
 coverage
 flake8
+-e git+https://github.com/quantmind/pulsar-agile.git@master#egg=pulsar-agile
 -e git+https://github.com/quantmind/pulsar-odm.git@master#egg=pulsar-odm
