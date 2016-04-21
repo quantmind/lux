@@ -4,7 +4,7 @@ import signal
 
 from pulsar.utils.tools import Pidfile
 
-from lux.core import LuxCommand, Setting
+from lux.core import LuxCommand, Setting, CommandError
 
 
 class Command(LuxCommand):
@@ -15,23 +15,27 @@ class Command(LuxCommand):
                 default=5, type=int,
                 desc=('Timeout for waiting SIGTERM stop')),
     )
+    pulsar_config_include = ('log_level', 'log_handlers', 'debug',
+                             'config', 'pid_file')
 
     def run(self, options, **params):
         app = self.app
-        pid = 0
         pid_file = options.pid_file
         if pid_file:
             if os.path.isfile(pid_file):
                 pid = Pidfile(pid_file).read()
+                if not pid:
+                    raise CommandError('No pid in pid file %s' % pid_file)
             else:
-                app.write_err('Could not located pid file %s' % pid_file)
+                raise CommandError('Could not located pid file %s' % pid_file)
         else:
-            app.write_err('Pid file not available')
+            raise CommandError('Pid file not available')
 
-        if not pid:
-            return 1
+        try:
+            self.kill(pid, signal.SIGTERM)
+        except ProcessLookupError:
+            raise CommandError('Process %d does not exist' % pid) from None
 
-        self.kill(pid, signal.SIGTERM)
         start = time.time()
         while time.time() - start < options.timeout:
             if os.path.isfile(pid_file):

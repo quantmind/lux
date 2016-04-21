@@ -72,8 +72,6 @@ class ConsoleParser(object):
 
 
 class LuxApp(Application):
-    name = 'lux'
-    cfg = Config(include=('loglevel', 'loghandlers', 'debug', 'config'))
 
     def __call__(self, actor=None):
         try:
@@ -110,6 +108,8 @@ class LuxCommand(ConsoleParser):
 
         Default: ``sys.stderr``
     '''
+    pulsar_config_include = ('log_level', 'log_handlers', 'debug', 'config')
+
     def __init__(self, name, app):
         self.name = name
         self.app = app
@@ -157,8 +157,11 @@ class LuxCommand(ConsoleParser):
     def pulsar_app(self, argv, application=None, log_name='lux', **kw):
         app = self.app
         if application is None:
+            kw['name'] = app.meta.name
             application = LuxApp
-        cfg = application.cfg.copy()
+            cfg = Config(include=self.pulsar_config_include)
+        else:
+            cfg = application.cfg.copy()
         for setting in self.option_list:
             cfg.settings[setting.name] = setting.copy()
         return application(callable=app.callable,
