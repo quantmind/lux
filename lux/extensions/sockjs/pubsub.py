@@ -1,6 +1,5 @@
 from pulsar.apps.data import PubSubClient
 from pulsar.utils.string import to_string
-from pulsar.utils.importer import module_attribute
 
 from .auth import check_ws_permission
 
@@ -13,8 +12,7 @@ class PubSub:
     """
     @classmethod
     def pubsub(cls, app):
-        protocol = module_attribute(app.config['WEBSOCKET_PROTOCOL'])()
-        return app.pubsub(WS_KEY, protocol=protocol)
+        return app.pubsub.get(WS_KEY)
 
     def ws_publish(self, wsrequest):
         """Publish an event on a channel

@@ -87,7 +87,7 @@ class PullRepo(EventHandler):
                 response['command'] = self.command(branch)
                 result = await app.shell(request, response['command'])
                 response['result'] = result
-                app.reload()
+                await as_coroutine(app.reload())
             else:
                 raise HttpException('Repo directory not valid', status=412)
         return response

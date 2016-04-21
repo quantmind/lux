@@ -1,11 +1,6 @@
 """
 Websocket handler for SockJS clients.
 """
-import json
-
-from pulsar import ProtocolError
-from pulsar.utils.string import to_string
-
 from lux.core import Parameter, LuxExtension
 
 from .socketio import SocketIO
@@ -27,10 +22,7 @@ class Extension(LuxExtension, PubSub, WsModelRpc):
         Parameter('WS_HANDLER', LuxWs, 'Websocket handler'),
         Parameter('WEBSOCKET_HARTBEAT', 25, 'Hartbeat in seconds'),
         Parameter('WEBSOCKET_AVAILABLE', True,
-                  'Server handle websocket'),
-        Parameter('WEBSOCKET_PROTOCOL', 'lux.extensions.sockjs.Json',
-                  'Encoder and decoder for websocket messages. '
-                  'Default is json.')
+                  'Server handle websocket')
     ]
 
     def on_config(self, app):
@@ -43,15 +35,3 @@ class Extension(LuxExtension, PubSub, WsModelRpc):
         url = app.config['WS_URL']
         if handler and url:
             return [SocketIO(url, handler(app))]
-
-
-class Json:
-
-    def encode(self, msg):
-        return json.dumps(msg)
-
-    def decode(self, msg):
-        try:
-            return json.loads(to_string(msg))
-        except Exception as exc:
-            raise ProtocolError('Invalid JSON') from exc

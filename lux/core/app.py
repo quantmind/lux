@@ -21,11 +21,9 @@ from pulsar.apps.wsgi import (WsgiHandler, HtmlDocument, test_wsgi_environ,
                               middleware_in_executor, wsgi_request)
 from pulsar.utils.log import lazyproperty
 from pulsar.utils.importer import module_attribute
-from pulsar.apps.data import create_store
 from pulsar.apps.greenio import GreenWSGI, GreenHttp
 from pulsar.apps.http import HttpClient
 
-from lux.utils.async import GreenPubSub
 from lux import __version__
 
 from .commands import ConsoleParser, CommandError, ConfigError, service_parser
@@ -37,6 +35,7 @@ from .models import ModelContainer
 from .cache import create_cache
 from .exceptions import ShellError
 from .content import render_data
+from .channels import Channels
 
 
 LUX_CORE = os.path.dirname(__file__)
@@ -183,7 +182,6 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
     cms = None
     """CMS handler"""
     _WsgiHandler = WsgiHandler
-    _pubsub_store = None
     _http = None
     _config = [
         Parameter('EXTENSIONS', [],
@@ -278,6 +276,9 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
                   'signifies a request is secure.'),
         Parameter('PUBSUB_STORE', None,
                   'Connection string for a Publish/Subscribe data-store'),
+        Parameter('PUBSUB_PROTOCOL', 'lux.core.channels.Json',
+                  'Encoder and decoder for channel messages. '
+                  'Default is json.'),
         Parameter('BROADCAST_CHANNELS', None,
                   'Set of channels to broadcast events'),
         Parameter('HTTP_CLIENT_PARAMETERS', None,
@@ -293,6 +294,7 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
         self.models = ModelContainer(self)
         self.extensions = OrderedDict()
         self.config = _build_config(self)
+        self.channels = None
         self.fire('on_config')
 
     def __call__(self, environ, start_response):
@@ -667,32 +669,6 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
                 else:
                     yield mod
 
-    def pubsub(self, key=None, **kw):
-        """Get a pub-sub handler for a given key
-
-        A key is used to group together pub-subs so that bandwidths is reduced
-        If no key is provided the handler is not included in the pubsub cache.
-        """
-        if not self._pubsub_store:
-            if self.config['PUBSUB_STORE']:
-                self._pubsub_store = create_store(self.config['PUBSUB_STORE'])
-                self._pubsubs = {}
-            else:
-                self.logger.warning('No pubsub store configured. '
-                                    'Cannot access pubsub handler')
-                return
-        if key:
-            pubsub = self._pubsubs.get(key)
-            if not pubsub:
-                pubsub = self._pubsub_store.pubsub(**kw)
-                if pubsub:
-                    if self.app.green_pool:
-                        pubsub = GreenPubSub(self.app.green_pool, pubsub)
-                self._pubsubs[key] = pubsub
-        else:
-            pubsub = self._pubsub_store.pubsub()
-        return pubsub
-
     @app_attribute
     def http(self):
         """Get an http client for a given key
@@ -737,13 +713,20 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
             raise ShellError(msg, proc.returncode)
         return msg
 
-    def reload(self):
+    def reload(self, *args):
         """Force the reloading of this application
 
         The reload will occur at the next wsgi request
         """
-        self.logger.warning('Reload WSGI application')
-        self.callable.clear_local()
+        if args:
+            self.logger.warning('Reload WSGI application')
+            self.callable.clear_local()
+        else:
+            result = self.channels.publish('server', 'reload')
+            if result is None:
+                self.reload(True)
+            else:
+                return result
 
     # INTERNALS
     def _setup_logger(self, config, module, opts):
@@ -840,6 +823,7 @@ def _build_config(self):
 def _build_handler(self):
     engine = self.template_engine('python')
     self.config = render_data(self, self.config, engine, self.config)
+    self.channels = Channels(self)
 
     if not self.cms:
         self.cms = CMS(self)
@@ -851,6 +835,7 @@ def _build_handler(self):
     #
     # Use a green pool
     if self.green_pool:
+        middleware.insert(0, self.channels.green_middleware)
         handler = GreenWSGI(middleware, self.green_pool, rmiddleware)
     #
     # Use thread pool
