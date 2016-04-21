@@ -1,9 +1,9 @@
 import logging
 import json
-from asyncio import async
 
-from pulsar.apps.http import HttpClient
-from pulsar.utils.log import lazymethod
+from pulsar import ensure_future, isawaitable
+
+MESSAGE = 'Exception while posting message to Slack'
 
 
 def context_text_formatter(context):
@@ -50,14 +50,13 @@ class SlackHandler(logging.Handler):
         self.app = app
         self.webhook_url = '%s/%s' % (self.webhook_url, token)
 
-    @lazymethod
-    def http(self):
-        return HttpClient()
-
     def emit(self, record):
         """Emit record to slack channel using pycurl to avoid recurrence
         event logging (log logged record)
         """
+        if record.message.startswith(MESSAGE):   # avoid cyrcular emit
+            return
+
         cfg = self.app.config
         managers = cfg['SLACK_LINK_NAMES']
         text = ''
@@ -72,6 +71,20 @@ class SlackHandler(logging.Handler):
             ctx = context_factory(self)
             data['text'] += "\n" + context_text_formatter(ctx)
         data['text'] += "```\n%s\n```" % self.format(record)
-        http = self.http()
-        async(http.post(self.webhook_url, data=json.dumps(data)),
-              loop=http._loop)
+        sessions = self.app.http()
+        response = sessions.post(self.webhook_url,
+                                 data=json.dumps(data))
+        if isawaitable(response):
+            ensure_future(self._emit(response), loop=sessions._loop)
+        else:
+            sessions._loop.call_soon(self._raise_error, response)
+
+    async def _emit(self, response):
+        self._raise_error(await response)
+
+    def _raise_error(self, response):
+        try:
+            response.raise_for_status()
+        except Exception:
+            text = response.text()
+            self.app.logger.error('%s: %s' % (MESSAGE, text))

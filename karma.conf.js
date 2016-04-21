@@ -29,7 +29,7 @@ module.exports = function (config) {
             }
         },
 
-        basePath: 'example/js',
+        basePath: 'example/js/',
 
         files: [
             {pattern: 'lux/**/*.js', included: false},
@@ -46,7 +46,7 @@ module.exports = function (config) {
             outputDir: 'junit',
             outputFile: 'test-results.xml'
         },
-        
+
         customLaunchers: {
             ChromeNoSandbox: {
                 base: 'Chrome',

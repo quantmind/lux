@@ -192,24 +192,28 @@ class HtmlContentFile(HtmlFile):
         :param context: context dictionary
         :return: an HTML string
         """
-        context = context if context is not None else {}
-        render = app.template_engine(self.meta.template_engine)
-        content, meta = get_reader(app, self.src).read(self.src)
-        self.meta.update(meta)
-        meta = dict(self._flatten(self.meta))
-        context.update(meta)
-        self.meta = AttributeDictionary(
-            render_data(app, meta, render, context))
-        context.update(self.meta)
-        #
-        content = render(content, context)
-        if self.meta.template:
-            template = app.template_full_path(self.meta.template)
-            if template:
-                context['%s_main' % self.suffix] = content
-                with open(template, 'r') as file:
-                    template_str = file.read()
-                content = render(template_str, context)
+        content = ''
+        try:
+            context = context if context is not None else {}
+            render = app.template_engine(self.meta.template_engine)
+            content, meta = get_reader(app, self.src).read(self.src)
+            self.meta.update(meta)
+            meta = dict(self._flatten(self.meta))
+            context.update(meta)
+            self.meta = AttributeDictionary(
+                render_data(app, meta, render, context))
+            context.update(self.meta)
+            #
+            content = render(content, context)
+            if self.meta.template:
+                template = app.template_full_path(self.meta.template)
+                if template:
+                    context['%s_main' % self.suffix] = content
+                    with open(template, 'r') as file:
+                        template_str = file.read()
+                    content = render(template_str, context)
+        except Exception:
+            app.logger.exception('Could not render %s', self)
         return content
 
     # INTERNALS

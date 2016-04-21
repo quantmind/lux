@@ -35,6 +35,10 @@ define(['angular',
     lux.context = angular.extend({}, defaults, lux.context);
     lux.version = lux.context.lux_version;
     lux.forEach = forEach;
+
+    lux.toUrl = function (name) {
+        return require.toUrl(name);
+    };
     
     lux.media = function (url, ctx) {
         if (!ctx)

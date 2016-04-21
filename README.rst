@@ -79,6 +79,10 @@ flake8_ check (requires flake8 package)::
 
     flake8
 
+Debugging javascript on Chrome::
+
+    npm run-script debug
+
 
 .. _pulsar: https://github.com/quantmind/pulsar
 .. _pytz: http://pytz.sourceforge.net/

@@ -11,7 +11,7 @@ define(['angular',
         .value('blogDefaults', {
             centerMath: true,
             fallback: true,
-            katexCss: 'https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.3.0/katex.min.css'
+            katexCss: lux.toUrl('katex-css')
         })
         //
         .directive('blogPagination', [function () {
@@ -23,7 +23,7 @@ define(['angular',
         //
         .directive('blogHeader', [function () {
             return {
-                templateUrl: 'blog/templates/header.tpl.html',
+                templateUrl: 'lux/blog/templates/header.tpl.html',
                 restrict: 'AE'
             };
         }])

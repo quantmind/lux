@@ -12,6 +12,11 @@ define(['lux/main'], function (lux) {
             expect(lux.context.url).toBe('');
         });
 
+        it('Check require config', function () {
+            var value = lux.toUrl('angular');
+            expect(typeof(value)).toBe('string');
+        });
+
         it('Check lux media function', function () {
             var ctx = {MEDIA_URL: '/mediax/'};
             expect(lux.media('foo', ctx)).toBe('/mediax/foo');

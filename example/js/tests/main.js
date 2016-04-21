@@ -12,7 +12,7 @@
     });
 
     require.config({
-        baseUrl: 'base',
+        baseUrl: '/base',
         deps: ['require.config'],
         callback: function () {
             require.config({
