@@ -7,13 +7,17 @@ from pulsar.utils.importer import module_attribute
 
 
 class Channels(PubSubClient):
-
+    """Manage channels for publish/subscribe
+    """
     def __init__(self, app):
-        self._pubsub_store = None
-        self._pubsub = None
+        self.app = app
         self.channels = {}
         self.protocol = module_attribute(app.config['PUBSUB_PROTOCOL'])()
-        self.app = app
+        self._pubsub = None
+        prefix = self.app.config['PUBSUB_PREFIX']
+        if prefix is None:
+            prefix = '%s-' % self.app.config['APP_NAME']
+        self._prefix = prefix.lower()
 
     def __repr__(self):
         return repr(self.channels)
@@ -25,7 +29,10 @@ class Channels(PubSubClient):
         return name in self.channels
 
     def register(self, channel, event, callback):
-        """Register a channel event
+        """Register a callback to channel event
+
+        A prefix will be added to the channel name if not already available or
+        the prefix is an empty string
 
         :param channel: channel name
         :param event: event name
@@ -79,8 +86,16 @@ class Channels(PubSubClient):
                 'Got message on %s.%s with no handler', channel, event)
 
     def _channel_name(self, channel):
-        name = self.app.config['APP_NAME']
-        return ('%s-%s' % (name, channel)).lower()
+        if not self._prefix or channel.startswith(self._prefix):
+            return channel
+        else:
+            return ('%s%s' % (self._prefix, channel)).lower()
+
+    def _prefix(self):
+        prefix = self.app.config['PUBSUB_PREFIX']
+        if prefix is None:
+            prefix = '%s-' % self.app.config['APP_NAME']
+        return prefix
 
     def _get(self):
         """Get a pub-sub handler for a given key
@@ -88,19 +103,19 @@ class Channels(PubSubClient):
         A key is used to group together pub-subs so that bandwidths is reduced
         If no key is provided the handler is not included in the pubsub cache.
         """
-        if not self._pubsub:
-            if self._pubsub_store is None:
-                addr = self.app.config['PUBSUB_STORE']
-                if addr:
-                    self._pubsub_store = create_store(addr)
-                else:
-                    return
-            self._pubsub = self._pubsub_store.pubsub(protocol=self.protocol)
+        app = self.app
+        if self._pubsub is None:
+            addr = app.config['PUBSUB_STORE']
+            if addr:
+                store = create_store(addr)
+            else:
+                return
+            self._pubsub = store.pubsub(protocol=self.protocol)
 
         pubsub = self._pubsub
 
-        if pubsub and self.app.green_pool:
-            pubsub = GreenPubSub(self.app.green_pool, pubsub)
+        if pubsub and app.green_pool:
+            pubsub = GreenPubSub(app.green_pool, pubsub)
 
         return pubsub
 

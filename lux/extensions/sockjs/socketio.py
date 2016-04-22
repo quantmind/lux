@@ -30,8 +30,7 @@ class SocketIO(Router):
         response.content = 'Welcome to SockJS!\n'
         return response
 
-    @route(method=('OPTIONS', 'GET'),
-           response_content_types=('application/json',))
+    @route(method=('options', 'get'))
     def info(self, request):
         response = request.response
         self.info_cache(response.headers)

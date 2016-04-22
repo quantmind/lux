@@ -2,7 +2,10 @@ from unittest import mock
 import shutil
 from os import path
 
+from pulsar.apps.test import TestFailure
+
 from lux.utils import test
+from lux.core import CommandError
 
 
 class CommandTests(test.TestCase):
@@ -77,6 +80,9 @@ class CommandTests(test.TestCase):
         self.assertTrue(hasattr(command.kill, '__call__'))
         command.kill = mock.MagicMock()
         self.assertTrue(command.help)
-        await command([])
-        self.assertEqual(command.app.stderr.getvalue(),
-                         'Pid file not available\n')
+        try:
+            await command([])
+        except CommandError as exc:
+            self.assertEqual(str(exc), 'Pid file not available')
+        else:
+            raise TestFailure('CommandError not raised')

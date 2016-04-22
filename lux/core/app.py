@@ -274,13 +274,17 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
         Parameter('SECURE_PROXY_SSL_HEADER', None,
                   'A tuple representing a HTTP header/value combination that '
                   'signifies a request is secure.'),
+        #
+        # PubSub Channels base parameters
         Parameter('PUBSUB_STORE', None,
                   'Connection string for a Publish/Subscribe data-store'),
         Parameter('PUBSUB_PROTOCOL', 'lux.core.channels.Json',
                   'Encoder and decoder for channel messages. '
                   'Default is json.'),
-        Parameter('BROADCAST_CHANNELS', None,
-                  'Set of channels to broadcast events'),
+        Parameter('PUBSUB_PREFIX', None,
+                  'Prefix for pubsub channels. If not defined, the APP_NAME'
+                  'is used. To skip prefix set to empty string.'),
+        #
         Parameter('HTTP_CLIENT_PARAMETERS', None,
                   'A dictionary of parameters to pass to the Http Client')
         ]

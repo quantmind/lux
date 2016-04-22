@@ -12,7 +12,7 @@ REDIS_OK = check_server('redis')
 
 
 @skipUnless(REDIS_OK, 'Requires a running Redis server')
-class PubsubTests(test.TestCase):
+class ChannelsTests(test.TestCase):
     config_file = 'tests.core'
     config_params = {'PUBSUB_STORE': redis_cache_server,
                      'APP_NAME': 'foooo'}
@@ -22,7 +22,7 @@ class PubsubTests(test.TestCase):
         self.assertFalse(app.channels is None)
         self.assertFalse(app.channels)
 
-    async def _test_ping(self):
+    async def test_ping(self):
         app = self.application()
         client = test.TestClient(app)
         request = await client.get('/')

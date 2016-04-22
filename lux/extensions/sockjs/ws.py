@@ -10,7 +10,7 @@ from pulsar import ProtocolError
 from pulsar.apps import ws
 
 from .rpc import WsRpc
-from .pubsub import PubSub, Channels
+
 
 CONNECTION_ESTABLISHED = 'connection_established'
 CONNECTION = 'connection'
@@ -25,6 +25,10 @@ class WsClient:
     .. attr: transport
 
         The websocket protocol with the connection to the client
+
+    .. attr: rpc
+
+        The rpc for handling messanges from the client
 
     """
     logger = logging.getLogger('lux.sockjs')
@@ -42,8 +46,12 @@ class WsClient:
         self.session_id = session_id
         self.cache.ws_rpc_methods = {}
         self.rpc = WsRpc(self)
-        self.pubsub = PubSub.pubsub(self.app)
-        self.channels = Channels(self)
+
+    @property
+    def channels(self):
+        """handler for publish/subscribe channels
+        """
+        return self.app.channels
 
     @property
     def cache(self):
@@ -65,7 +73,9 @@ class WsClient:
 
     @property
     def protocol(self):
-        return self.pubsub._protocol
+        """Protocol object for encoding/decoding messanges
+        """
+        return self.app.channels.protocol
 
     def __str__(self):
         return '%s - %s' % (self.address, self.session_id)
@@ -82,7 +92,8 @@ class WsClient:
     def on_open(self):
         self.transport.on_open(self)
         self.app.fire('on_websocket_open', self)
-        self.write_message(CONNECTION, CONNECTION_ESTABLISHED,
+        self.write_message(CONNECTION,
+                           CONNECTION_ESTABLISHED,
                            data=dict(socket_id=self.session_id,
                                      time=self.started))
 
@@ -131,6 +142,8 @@ class LuxWs(ws.WS):
     green pool.
     """
     def __init__(self, app):
+        """"Load all websocket RPC methods
+        """
         self.rpc_methods = dict(self._ws_methods(app))
 
     def on_open(self, websocket):

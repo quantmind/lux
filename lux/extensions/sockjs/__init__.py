@@ -2,24 +2,25 @@
 Websocket handler for SockJS clients.
 """
 from lux.core import Parameter, LuxExtension
+from pulsar.utils.importer import module_attribute
 
 from .socketio import SocketIO
 from .ws import LuxWs
 from .auth import WsModelRpc, check_ws_permission, get_model
-from .pubsub import PubSub, Channels, broadcast
+from .channels import Channels
 
 
-__all__ = ['Channels',
-           'broadcast',
+__all__ = ['LuxWs',
            'check_ws_permission',
            'get_model']
 
 
-class Extension(LuxExtension, PubSub, WsModelRpc):
+class Extension(LuxExtension, Channels, WsModelRpc):
 
     _config = [
         Parameter('WS_URL', '/ws', 'Websocket base url'),
-        Parameter('WS_HANDLER', LuxWs, 'Websocket handler'),
+        Parameter('WS_HANDLER', 'lux.extensions.sockjs:LuxWs',
+                  'Dotted path to websocket handler'),
         Parameter('WEBSOCKET_HARTBEAT', 25, 'Hartbeat in seconds'),
         Parameter('WEBSOCKET_AVAILABLE', True,
                   'Server handle websocket')
@@ -29,9 +30,9 @@ class Extension(LuxExtension, PubSub, WsModelRpc):
         app.add_events(('on_websocket_open', 'on_websocket_close'))
 
     def middleware(self, app):
-        """Add middleware to edit content
+        """Add websocket middleware
         """
-        handler = app.config['WS_HANDLER']
         url = app.config['WS_URL']
-        if handler and url:
+        if url:
+            handler = module_attribute(app.config['WS_HANDLER'])
             return [SocketIO(url, handler(app))]

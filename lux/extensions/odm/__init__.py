@@ -9,8 +9,7 @@ built on top of sqlalchemy, pulsar and greenlet.
 
 _ ..pulsar-odm: https://github.com/quantmind/pulsar-odm
 '''
-from lux.core import Parameter, LuxExtension
-from lux.extensions.sockjs import broadcast
+from lux.core import Parameter, LuxExtension, app_attribute
 from lux.extensions.rest import SimpleBackend
 
 from pulsar.utils.log import LocalMixin
@@ -48,7 +47,9 @@ class Extension(LuxExtension, WsModelRpc):
                   'Dictionary for mapping alembic settings'),
         Parameter('DEFAULT_TEXT_SEARCH_CONFIG', 'english',
                   'Default config/language for :search full-text search '
-                  'operator')
+                  'operator'),
+        Parameter('PUBSUB_MODELS_BROADCAST', None,
+                  'Set of channels to broadcast events'),
     ]
 
     def on_config(self, app):
@@ -65,35 +66,35 @@ class Extension(LuxExtension, WsModelRpc):
         :param session:     SQLAlchemy session
         :param changes:     dict of model changes
         """
-        broadcast_models = self.broadcast_models(app)
-        if not broadcast_models:
+        bmodels = broadcast_models(app)
+        if not bmodels:
             return
         request = app.wsgi_request()
         request.cache.auth_backend = SimpleBackend()
         for instance, event in changes.values():
             name = instance.__class__.__name__.lower()
-            models = broadcast_models.get(name)
+            models = bmodels.get(name)
             if not models:
                 continue
+            channels = app.channels
             event = sql_to_broadcast.get(event, event)
             for model in models:
                 data = model.serialise(request, instance)
-                broadcast(app, model.identifier, event, data)
+                channels.publish(model.identifier, event, data)
 
-    def broadcast_models(self, app):
-        models = getattr(app, '_broadcast_models', None)
-        if models is None:
-            channels = app.config['BROADCAST_CHANNELS']
-            models = {}
-            if channels:
-                for model in app.models.values():
-                    if model.identifier in channels:
-                        if model.name not in models:
-                            models[model.name] = [model]
-                        else:
-                            models[model.name].append(model)
-            app._broadcast_models = models
-        return models
+
+@app_attribute
+def broadcast_models(app):
+    channels = app.config['PUBSUB_MODELS_BROADCAST']
+    models = {}
+    if channels:
+        for model in app.models.values():
+            if model.identifier in channels:
+                if model.name not in models:
+                    models[model.name] = [model]
+                else:
+                    models[model.name].append(model)
+    return models
 
 
 class Odm(LocalMixin):

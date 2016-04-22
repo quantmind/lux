@@ -172,14 +172,14 @@ class TestSockJSRestApp(test.AppTestCase):
                               params=dict(channel='pizza', event='myevent'))
         await websocket.handler.on_message(websocket, msg)
         msg = self.get_ws_message(websocket)
-        self.assertTrue('pizza' in msg['result'])
+        self.assertTrue('lux-pizza' in msg['result'])
         #
         msg = self.ws_message(method='subscribe', id=4556,
-                              params=dict(channel='foo', event='myevent'))
+                              params=dict(channel='lux-foo', event='myevent'))
         await websocket.handler.on_message(websocket, msg)
         msg = self.get_ws_message(websocket)
-        self.assertTrue('pizza' in msg['result'])
-        self.assertTrue('foo' in msg['result'])
+        self.assertTrue('lux-pizza' in msg['result'])
+        self.assertTrue('lux-foo' in msg['result'])
 
     async def test_ws_model_metadata_fails(self):
         websocket = await self.ws()
