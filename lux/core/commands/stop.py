@@ -12,7 +12,7 @@ class Command(LuxCommand):
 
     option_list = (
         Setting('timeout', ('--timeout',),
-                default=5, type=int,
+                default=10, type=int,
                 desc=('Timeout for waiting SIGTERM stop')),
     )
     pulsar_config_include = ('log_level', 'log_handlers', 'debug',

@@ -10,13 +10,17 @@ class Command(LuxCommand):
                 'init', 'merge', 'revision', 'show', 'stamp', 'upgrade']
 
     option_list = (
-        Setting('command', nargs='*', default=None, desc='Alembic command'),
-        Setting('branch', ('-b', '--branch'), default=None, nargs='?',
+        Setting('command',
+                nargs='*', default=None, desc='Alembic command'),
+        Setting('branch',
+                ('-b', '--branch'), default=None, nargs='?',
                 desc='Branch label for auto, revision and merge command',
                 meta='LABEL'),
-        Setting('list', ('--commands',), default=None, action='store_true',
+        Setting('list',
+                ('--commands',), default=None, action='store_true',
                 desc='List available Alembic commands'),
-        Setting('msg', ('-m', '--message'), nargs='?', default=None,
+        Setting('msg',
+                ('-m', '--message'), nargs='?', default=None,
                 desc='Message for auto, revision and merge command'),
     )
 
