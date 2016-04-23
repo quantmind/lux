@@ -1,12 +1,12 @@
 from datetime import datetime, timedelta
 
 from lux.core import route, json_message
+from lux.forms import get_form_class
 from lux.extensions import rest
 from lux.extensions.odm import CRUD, RestRouter
 from lux.extensions.rest.views.browser import ComingSoon as ComingSoonView
-from lux.extensions.rest.views.forms import EmailForm
 
-from pulsar import MethodNotAllowed, PermissionDenied
+from pulsar import MethodNotAllowed, PermissionDenied, Http404
 from pulsar.apps.wsgi import Json
 
 from .forms import (permission_model, group_model, user_model,
@@ -98,10 +98,14 @@ class Authorization(rest.Authorization):
     '''
     change_password_form = ChangePasswordForm
 
-    @route('mailing-list', metrhod=('post', 'options'))
+    @route('mailing-list', method=('post', 'options'))
     def mailing_list(self, request):
         '''Add a given email to a mailing list
         '''
+        form_class = get_form_class('mailing-list')
+        if not form_class:
+            raise Http404
+
         if request.method == 'OPTIONS':
             request.app.fire('on_preflight', request, methods=['POST'])
             return request.response
@@ -110,7 +114,8 @@ class Authorization(rest.Authorization):
         data = request.body_data()
         if user.is_authenticated():
             raise MethodNotAllowed
-        form = EmailForm(request, data=data)
+
+        form = form_class(request, data=data)
         if form.is_valid():
             email = form.cleaned_data['email']
             odm = request.app.odm()
@@ -141,4 +146,4 @@ class ComingSoon(ComingSoonView):
         api = request.config['API_URL']
         return rest.luxrest(api,
                             name='authorizations_url',
-                            path='mailing_list')
+                            path='mailing-list')

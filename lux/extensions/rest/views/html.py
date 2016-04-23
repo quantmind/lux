@@ -62,7 +62,7 @@ formreg['password-recovery'] = Layout(
 )
 
 
-formreg['get-notified'] = Layout(
+formreg['mailing-list'] = Layout(
     forms.EmailForm,
     Fieldset(all=True),
     Submit('Get notified'),

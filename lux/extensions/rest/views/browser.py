@@ -90,7 +90,7 @@ class ForgotPassword(WebFormRouter):
 
 
 class ComingSoon(WebFormRouter):
-    default_form = 'get-notified'
+    default_form = 'mailing-list'
 
 
 class MultiWebFormRouter(HtmlRouter):

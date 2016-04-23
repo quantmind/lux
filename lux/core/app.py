@@ -25,6 +25,7 @@ from pulsar.apps.greenio import GreenWSGI, GreenHttp
 from pulsar.apps.http import HttpClient
 
 from lux import __version__
+from lux.utils.files import skipfile
 
 from .commands import ConsoleParser, CommandError, ConfigError, service_parser
 from .extension import LuxExtension, Parameter, EventMixin, app_attribute
@@ -431,23 +432,31 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
     def commands(self):
         """Load all commands from installed applications"""
         cmnds = OrderedDict()
-        for e in self.config['EXTENSIONS']:
+        available = set()
+        for e in reversed(self.config['EXTENSIONS']):
             try:
                 modname = e + ('.core' if e == 'lux' else '') + '.commands'
                 mod = import_module(modname)
                 if hasattr(mod, '__path__'):
                     path = os.path.dirname(getfile(mod))
                     try:
-                        commands = tuple((f[:-3] for f in os.listdir(path)
-                                          if not f.startswith('_') and
-                                          f.endswith('.py')))
+                        commands = []
+
+                        for f in os.listdir(path):
+                            if skipfile(f) or not f.endswith('.py'):
+                                continue
+                            command = f[:-3]
+                            if command not in available:
+                                available.add(command)
+                                commands.append(command)
+
                         if commands:
-                            cmnds[e] = commands
+                            cmnds[e] = tuple(commands)
                     except OSError:
                         continue
             except ImportError:
                 pass    # No management module
-        return cmnds
+        return OrderedDict(((e, cmnds[e]) for e in reversed(cmnds)))
 
     @lazyproperty
     def email_backend(self):
@@ -460,11 +469,10 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
         """Construct and return a :class:`.Command` for this application
         """
         for e, cmnds in self.commands.items():
-            for cmnd in cmnds:
-                if name == cmnd:
-                    modname = 'lux.core' if e == 'lux' else e
-                    mod = import_module('%s.commands.%s' % (modname, name))
-                    return mod.Command(name, self)
+            if name in cmnds:
+                modname = 'lux.core' if e == 'lux' else e
+                mod = import_module('%s.commands.%s' % (modname, name))
+                return mod.Command(name, self)
         raise CommandError("Unknown command '%s'" % name)
 
     def get_usage(self):
