@@ -5,7 +5,6 @@ APP_NAME = COPYRIGHT = HTML_TITLE = 'website.com'
 EXTENSIONS = ('lux.extensions.base',
               'lux.extensions.angular',
               'lux.extensions.rest',
-              'lux.extensions.ui',
               'lux.extensions.content')
 
 DEFAULT_CONTENT_TYPE = 'text/html'

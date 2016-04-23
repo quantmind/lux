@@ -133,3 +133,9 @@ class ChangePasswordForm(PasswordForm):
 
 class RegistrationForm(forms.Form):
     expiry = forms.DateTimeField(required=False)
+
+
+class NewTokenForm(forms.Form):
+    """Form to create tokens for the current user
+    """
+    description = forms.TextField(minlength=2, maxlength=256)

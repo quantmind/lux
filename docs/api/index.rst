@@ -11,7 +11,6 @@ Python API
    forms
    params
    base
-   ui
    angular
    rest
    static

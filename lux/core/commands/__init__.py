@@ -7,8 +7,7 @@
 import argparse
 import logging
 
-from pulsar import (Setting, Application, ImproperlyConfigured, isawaitable,
-                    get_actor)
+from pulsar import Setting, Application, ImproperlyConfigured, isawaitable
 from pulsar.utils.config import Config, LogLevel, Debug, LogHandlers
 
 from lux import __version__
@@ -73,12 +72,11 @@ class ConsoleParser(object):
 
 class LuxApp(Application):
 
-    def __call__(self, actor=None):
-        try:
-            return super().__call__(actor)
-        except ImproperlyConfigured:
-            actor = actor or get_actor()
-            return self.on_config(actor)
+    def on_config(self, actor):
+        """This is just a dummy app and therefore we don't want to add
+        it to the arbiter monitor collection
+        """
+        return False
 
 
 class LuxCommand(ConsoleParser):
@@ -157,7 +155,6 @@ class LuxCommand(ConsoleParser):
     def pulsar_app(self, argv, application=None, log_name='lux', **kw):
         app = self.app
         if application is None:
-            kw['name'] = app.meta.name
             application = LuxApp
             cfg = Config(include=self.pulsar_config_include)
         else:

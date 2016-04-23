@@ -11,24 +11,23 @@ the model is overwritten.
 from pulsar import MethodNotAllowed, Http404
 
 from lux.core import route, JsonRouter
+from lux.forms import get_form_class
 
 from ..models import RestModel
-from . import actions, api, forms
+from . import actions, api
 
 
 class SignUp(JsonRouter):
     """Add endpoints for signup and signup confirmation
     """
-    create_user_form = forms.CreateUserForm
-
     def post(self, request):
         """Handle signup post data
         """
-        return actions.signup(request, self.create_user_form)
+        return actions.signup(request)
 
     @route('<key>', method=('post', 'options'))
     def signup_confirmation(self, request):
-        if not self.create_user_form:
+        if not get_form_class('signup'):
             raise Http404
 
         if request.method == 'OPTIONS':
@@ -41,12 +40,9 @@ class SignUp(JsonRouter):
 
 
 class ResetPassword(JsonRouter):
-    reset_password_request_form = forms.EmailForm
-    reset_form = forms.ChangePasswordForm
 
     def post(self, request):
-        return actions.reset_password_request(
-            request, self.reset_password_request_form)
+        return actions.reset_password_request(request)
 
     @route('<key>', method=('post', 'options'))
     def reset(self, request):
@@ -62,16 +58,13 @@ class ResetPassword(JsonRouter):
         if not user:
             raise Http404
 
-        return actions.reset_password(request, self.reset_form, key)
+        return actions.reset_password(request, key)
 
 
 class Authorization(api.RestRouter):
     """Authentication views for Restful APIs
     """
     model = RestModel('authorization')
-    login_form = forms.LoginForm
-    change_password_form = forms.ChangePasswordForm
-    request_reset_password_form = forms.EmailForm
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -84,7 +77,7 @@ class Authorization(api.RestRouter):
     def post(self, request):
         """Post request create a new Authorization token
         """
-        return actions.login(request, self.login_form)
+        return actions.login(request)
 
     @route('logout', metrhod=('post', 'options'))
     def logout(self, request):
@@ -98,9 +91,9 @@ class Authorization(api.RestRouter):
     def change_password(self, request):
         """Change user password
         """
-        # Set change_password_form to None to remove support
-        # for password change
-        if not self.change_password_form:
+        fclass = get_form_class('change-password')
+
+        if not fclass:
             raise Http404
 
         if request.method == 'OPTIONS':
@@ -111,7 +104,7 @@ class Authorization(api.RestRouter):
         if not user.is_authenticated():
             raise MethodNotAllowed
 
-        form = self.change_password_form(request, data=request.body_data())
+        form = fclass(request, data=request.body_data())
 
         if form.is_valid():
             auth_backend = request.cache.auth_backend

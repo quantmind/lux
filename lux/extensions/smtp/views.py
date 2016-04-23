@@ -1,6 +1,5 @@
 from lux import forms
-from lux.forms import Layout, Fieldset, Submit
-from lux.core import HtmlRouter
+from lux.forms import WebFormRouter, Layout, Fieldset, Submit, formreg
 
 from pulsar.apps.wsgi import Json
 
@@ -15,21 +14,20 @@ class ContactForm(forms.Form):
     body = forms.TextField(label='Your message', rows=10)
 
 
-HtmlContactForm = Layout(ContactForm,
-                         Fieldset(all=True, showLabels=False),
-                         Submit('Send', disabled="form.$invalid"),
-                         resultHandler='enquiry')
+formreg['contact'] = Layout(
+    ContactForm,
+    Fieldset(all=True, showLabels=False),
+    Submit('Send', disabled="form.$invalid"),
+    resultHandler='enquiry'
+)
 
 
-class ContactRouter(HtmlRouter):
-
-    def get_html(self, request):
-        url = str(self.full_route)
-        return HtmlContactForm(request).as_form(action=url)
+class ContactRouter(WebFormRouter):
+    default_form = 'contact'
 
     def post(self, request):
         data, _ = request.data_and_files()
-        form = ContactForm(request, data=data)
+        form = self.fclass(request, data=data)
         if form.is_valid():
             email = request.app.email_backend
             responses = request.app.config['EMAIL_ENQUIRY_RESPONSE'] or ()

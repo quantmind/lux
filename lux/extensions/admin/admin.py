@@ -5,6 +5,7 @@ from pulsar.apps.wsgi.routers import RouterType
 from pulsar.utils.html import nicename
 
 from lux.core import route, cached, HtmlRouter
+from lux.forms import get_form_layout
 from lux.extensions import rest
 from lux.extensions.angular import grid
 
@@ -128,7 +129,6 @@ class AdminModel(rest.RestMixin, AdminRouter):
     icon = None
     '''An icon for this Admin section
     '''
-    uimodules = ('lux.grid',)
 
     def info(self, request):
         '''Information for admin navigation
@@ -173,6 +173,7 @@ class CRUDAdmin(AdminModel):
         return self.get_form(request, form, id=id)
 
     def get_form(self, request, form, id=None):
+        form = get_form_layout(form)
         if not form:
             raise Http404
         action = 'update' if id else 'create'

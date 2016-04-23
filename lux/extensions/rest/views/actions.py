@@ -4,17 +4,17 @@ from pulsar.utils.slugify import slugify
 from pulsar import HttpException, Http404, MethodNotAllowed
 
 from lux.core import json_message
-from lux.forms import Form, ValidationError
+from lux.forms import Form, ValidationError, get_form_class
 
 
 class AuthenticationError(ValueError):
     pass
 
 
-def login(request, fclass):
+def login(request):
     """Authenticate the user
     """
-    form = _auth_form(request, fclass)
+    form = _auth_form(request, 'login')
 
     if form.is_valid():
         auth_backend = request.cache.auth_backend
@@ -32,10 +32,10 @@ def login(request, fclass):
     return Json(form.tojson()).http_response(request)
 
 
-def signup(request, form):
+def signup(request):
     """Signup a user
     """
-    form = _auth_form(request, form)
+    form = _auth_form(request, 'signup')
 
     if form.is_valid():
         auth_backend = request.cache.auth_backend
@@ -83,10 +83,10 @@ def user_permissions(request):
     return backend.get_permissions(request, resources, actions=actions)
 
 
-def reset_password_request(request, fclass):
+def reset_password_request(request):
     """Request a reset password code/email
     """
-    form = _auth_form(request, fclass)
+    form = _auth_form(request, 'password-recovery')
     if form.is_valid():
         auth = request.cache.auth_backend
         email = form.cleaned_data['email']
@@ -99,10 +99,10 @@ def reset_password_request(request, fclass):
     return Json(data).http_response(request)
 
 
-def reset_password(request, fclass, key):
+def reset_password(request, key):
     """Reset password
     """
-    form = _auth_form(request, fclass)
+    form = _auth_form(request, 'reset-password')
     if form.is_valid():
         auth = request.cache.auth_backend
         password = form.cleaned_data['password']
@@ -116,6 +116,7 @@ def reset_password(request, fclass, key):
 
 
 def _auth_form(request, form):
+    form = get_form_class(form)
     if not form:
         raise Http404
 

@@ -5,11 +5,35 @@ from .serialise import Layout
 from ..core.wrappers import HtmlRouter
 
 
-__all__ = ['WebFormRouter']
+# Form registry
+formreg = {}
 
 
 def method_not_allowed(request):
     raise MethodNotAllowed
+
+
+def get_form(form):
+    """Get a form class from registry
+    """
+    if form in formreg:
+        return formreg[form]
+    elif isinstance(form, str):
+        return None
+    else:
+        return form
+
+
+def get_form_class(form):
+    form = get_form(form)
+    if form:
+        return form.form_class if isinstance(form, Layout) else form
+
+
+def get_form_layout(form):
+    form = get_form(form)
+    if form:
+        return form if isinstance(form, Layout) else Layout(form)
 
 
 class WebFormRouter(HtmlRouter):
@@ -25,16 +49,14 @@ class WebFormRouter(HtmlRouter):
 
     @property
     def fclass(self):
-        form = self.form or self.default_form
-        return form.form_class if isinstance(form, Layout) else form
+        return get_form_class(self.form or self.default_form)
 
     def get_fclass(self, form):
-        return form.form_class if isinstance(form, Layout) else form
+        return get_form_class(form)
 
     @property
     def flayout(self):
-        form = self.form or self.default_form
-        return form if isinstance(form, Layout) else Layout(form)
+        return get_form_layout(self.form or self.default_form)
 
     def get_html(self, request):
         '''Handle the HTML page for login

@@ -32,12 +32,6 @@ REST
 .. lux_extension:: lux.extensions.rest
 
 
-Web design
-=====================
-
-.. lux_extension:: lux.extensions.ui
-
-
 .. _parameters-angular:
 
 AngularJS Integration

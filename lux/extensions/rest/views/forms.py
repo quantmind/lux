@@ -4,12 +4,12 @@ from lux import forms
 class LoginForm(forms.Form):
     '''The Standard login form'''
     error_message = 'Incorrect username or password'
-    username = forms.SlugField(required=True, maxlength=30)
-    password = forms.PasswordField(required=True, maxlength=128)
+    username = forms.SlugField(maxlength=30)
+    password = forms.PasswordField(maxlength=128)
 
 
 class PasswordForm(forms.Form):
-    password = forms.PasswordField(required=True, maxlength=128)
+    password = forms.PasswordField(maxlength=128)
     password_repeat = forms.PasswordField(
         label='Confirm password',
         data_check_repeat='password')
@@ -22,13 +22,18 @@ class PasswordForm(forms.Form):
 
 
 class CreateUserForm(PasswordForm):
-    username = forms.SlugField(required=True, maxlength=30)
-    email = forms.EmailField(required=True)
+    username = forms.SlugField(maxlength=30)
+    email = forms.EmailField()
 
 
 class ChangePasswordForm(PasswordForm):
-    pass
+    old_password = forms.PasswordField(maxlength=128)
 
 
 class EmailForm(forms.Form):
     email = forms.EmailField(label='Your email address')
+
+
+class NewTokenForm(forms.Form):
+    """Form to create tokens for the current user"""
+    description = forms.TextField(maxlength=256)

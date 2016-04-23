@@ -32,8 +32,7 @@ class CommandTests(test.TestCase):
         name = test.randomname('sp')
         target = None
         try:
-            await command([name])
-            target = command.target
+            target = await command([name])
             self.assertTrue(path.isdir(target))
         finally:
             if target:

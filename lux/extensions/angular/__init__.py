@@ -3,8 +3,6 @@ This extension does not provide any middleware per-se but it is required
 when using :ref:`lux.js <jsapi>` javascript module and
 provides the link between AngularJS_ and Python.
 
-**Required extensions**: :mod:`lux.extensions.ui`
-
 Usage
 =========
 
@@ -13,7 +11,6 @@ Include ``lux.extensions.angular`` into the :setting:`EXTENSIONS` list in your
 
     EXTENSIONS = [
         ...
-        'lux.extensions.ui',
         'lux.extensions.angular'
         ...
         ]

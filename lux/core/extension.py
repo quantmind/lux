@@ -48,7 +48,7 @@ class Parameter(object):
 
     Parameters are case insensitive.
     '''
-    def __init__(self, name, default, doc, jscontext=False):
+    def __init__(self, name, default, doc='', jscontext=False):
         self.name = name
         self.default = default
         self.doc = doc

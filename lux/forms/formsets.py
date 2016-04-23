@@ -7,9 +7,6 @@ from .fields import HiddenField
 from .errors import ValidationError, FormError
 
 
-__all__ = ['FormSet']
-
-
 HiddenInput = html_factory('input', type='hidden')
 
 

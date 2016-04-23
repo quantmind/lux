@@ -5,21 +5,16 @@ These views are used by the browser authentication backends
 from pulsar import Http404, HttpRedirect
 from pulsar.apps.wsgi import route
 
-from lux.core import Router
-from lux.forms import WebFormRouter, Layout, Fieldset, Submit
+from lux.core import Router, HtmlRouter
+from lux.forms import WebFormRouter, get_form_layout
 
-from . import forms, actions
+from . import actions
 
 
 class Login(WebFormRouter):
     """Web login view with post handler
     """
-    default_form = Layout(forms.LoginForm,
-                          Fieldset(all=True),
-                          Submit('Login', disabled="form.$invalid"),
-                          model='login',
-                          showLabels=False,
-                          resultHandler='login')
+    default_form = 'login'
 
     def get(self, request):
         if request.cache.user.is_authenticated():
@@ -27,7 +22,7 @@ class Login(WebFormRouter):
         return super().get(request)
 
     def post(self, request):
-        return actions.login(request, self.fclass)
+        return actions.login(request)
 
 
 class Logout(Router):
@@ -40,14 +35,7 @@ class Logout(Router):
 class SignUp(WebFormRouter):
     """Display a signup form anf handle signup
     """
-    default_form = Layout(forms.CreateUserForm,
-                          Fieldset('username', 'email', 'password',
-                                   'password_repeat'),
-                          Submit('Sign up',
-                                 disabled="form.$invalid"),
-                          showLabels=False,
-                          directive='user-form',
-                          resultHandler='signUp')
+    default_form = 'signup'
 
     def get(self, request):
         if request.cache.user.is_authenticated():
@@ -55,7 +43,7 @@ class SignUp(WebFormRouter):
         return super().get(request)
 
     def post(self, request):
-        return actions.signup(request, self.fclass)
+        return actions.signup(request)
 
     @route('<key>')
     def confirmation(self, request):
@@ -73,20 +61,10 @@ class SignUp(WebFormRouter):
 class ForgotPassword(WebFormRouter):
     """Manage forget passwords routes
     """
-    default_form = Layout(forms.EmailForm,
-                          Fieldset(all=True),
-                          Submit('Submit'),
-                          showLabels=False,
-                          resultHandler='passwordRecovery')
-
-    reset_form = Layout(forms.ChangePasswordForm,
-                        Fieldset(all=True),
-                        Submit('Change Password'),
-                        showLabels=False,
-                        resultHandler='passwordChanged')
+    default_form = 'password-recovery'
 
     def post(self, request):
-        return actions.reset_password_request(request, self.fclass)
+        return actions.reset_password_request(request)
 
     @route('<key>', method=('get', 'post'))
     def reset(self, request):
@@ -99,19 +77,70 @@ class ForgotPassword(WebFormRouter):
             raise Http404
 
         if request.method == 'GET':
-            form = self.reset_form(request)
-            html = form.as_form(action=request.full_path(),
-                                enctype='multipart/form-data',
-                                method='post')
+            form = get_form_layout('reset-password')
+            if not form:
+                raise Http404
+            html = form(request).as_form(action=request.full_path(),
+                                         enctype='multipart/form-data',
+                                         method='post')
             return self.html_response(request, html)
 
         else:
-            fclass = self.get_fclass(self.reset_form)
-            return actions.reset_password(request, fclass, key)
+            return actions.reset_password(request, key)
 
 
 class ComingSoon(WebFormRouter):
-    default_form = Layout(forms.EmailForm,
-                          Fieldset(all=True),
-                          Submit('Get notified'),
-                          showLabels=False)
+    default_form = 'get-notified'
+
+
+class MultiWebFormRouter(HtmlRouter):
+    default_action = None
+    templates_path = ''
+    action_config = {}
+
+    def action_context(self, request, context, target):
+        pass
+
+    def get(self, request):
+        action = request.urlargs.get('action')
+        if not action:
+            if self.default_action:
+                loc = '%s/%s' % (request.absolute_uri(), self.default_action)
+                raise HttpRedirect(loc)
+            else:
+                raise Http404
+        else:
+            return super().get(request)
+
+    @route('<action>')
+    def action(self, request):
+        app = request.app
+        action = request.urlargs['action']
+        template = app.template('%s/%s.html' % (self.templates_path, action))
+        if not template:
+            raise Http404
+        request.cache.template = template
+        return self.get(request)
+
+    def get_html(self, request):
+        template = request.cache.template
+        if not template:
+            raise Http404
+
+        action = request.urlargs.get('action')
+        context = dict(self.action_config.get(action) or ())
+        model = context.get('model') or self.model
+        path = context.get('path') or ''
+        target = model.get_target(request,
+                                  path=path,
+                                  get=context.get('getdata'))
+
+        if 'form' in context:
+            form = get_form_layout(context['form'])
+            if not form:
+                raise Http404
+            html = form.as_form(action=target)
+            context['html_main'] = html.render(request)
+
+        self.action_context(request, context, target)
+        return request.app.render_template(template, context)

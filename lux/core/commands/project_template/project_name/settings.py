@@ -14,7 +14,6 @@ AUTHENTICATION_BACKENDS = ['lux.extensions.auth.SessionBackend',
 
 
 EXTENSIONS = ['lux.extensions.base',
-              'lux.extensions.ui',
               'lux.extensions.cms',
               'lux.extensions.auth']
 

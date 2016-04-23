@@ -572,7 +572,7 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
             request.cache._in_application_context = True
             try:
                 ctx = LuxContext()
-                ctx.update(self._config_context())
+                ctx.update(self.config)
                 ctx.update(self.cms.context(ctx))
                 ctx.update(context or ())
                 for ext in self.extensions.values():
