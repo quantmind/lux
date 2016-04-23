@@ -1,11 +1,8 @@
 from example.cfg import *   # noqa
 
-APP_NAME = COPYRIGHT = HTML_TITLE = 'website.com'
-
-EXTENSIONS = ('lux.extensions.base',
-              'lux.extensions.angular',
-              'lux.extensions.rest',
-              'lux.extensions.content')
+EXTENSIONS = EXTENSIONS + (
+    'lux.extensions.angular',
+)
 
 DEFAULT_CONTENT_TYPE = 'text/html'
 API_URL = 'http://webapi.com'

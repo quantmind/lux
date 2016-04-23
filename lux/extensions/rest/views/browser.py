@@ -130,17 +130,17 @@ class MultiWebFormRouter(HtmlRouter):
         action = request.urlargs.get('action')
         context = dict(self.action_config.get(action) or ())
         model = context.get('model') or self.model
-        path = context.get('path') or ''
         target = model.get_target(request,
-                                  path=path,
+                                  path=context.get('path'),
                                   get=context.get('getdata'))
 
         if 'form' in context:
             form = get_form_layout(context['form'])
             if not form:
                 raise Http404
-            html = form.as_form(action=target)
+            html = form(request).as_form(action=target)
             context['html_main'] = html.render(request)
 
         self.action_context(request, context, target)
-        return request.app.render_template(template, context)
+        rnd = request.app.template_engine()
+        return rnd(template, context)

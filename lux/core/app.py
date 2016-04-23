@@ -537,7 +537,6 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
             filename = os.path.join(LUX_CORE, 'templates', name)
             if os.path.exists(filename):
                 return filename
-        self.logger.error('Template %s not found' % name)
 
     def template(self, name):
         """Load a template from the file system.

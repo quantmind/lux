@@ -2,6 +2,12 @@ import os
 
 from tests.config import redis_cache_server
 
+EXTENSIONS = ('lux.extensions.base',
+              'lux.extensions.rest',
+              'lux.extensions.content')
+
+
+APP_NAME = COPYRIGHT = HTML_TITLE = 'website.com'
 
 CACHE_SERVER = redis_cache_server
 CONTENT_REPO = os.path.dirname(__file__)

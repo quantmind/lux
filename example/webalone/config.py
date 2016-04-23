@@ -1,9 +1,10 @@
 from example.cfg import *   # noqa
 
-EXTENSIONS = ['lux.extensions.base',
-              'lux.extensions.odm',
-              'lux.extensions.rest',
-              'lux.extensions.auth']
+EXTENSIONS = EXTENSIONS + (
+    'lux.extensions.angular',
+    'lux.extensions.auth',
+    'lux.extensions.odm',
+)
 
 DEFAULT_CONTENT_TYPE = 'text/html'
 AUTHENTICATION_BACKENDS = ['lux.extensions.auth.SessionBackend',

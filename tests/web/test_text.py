@@ -17,3 +17,17 @@ class ContentTest(web.WebsiteTest):
         for entry in data:
             url = urlsplit(entry['html_url'])
             self.assertEqual(url.path, entry['path'])
+
+    async def test_get_settings_404(self):
+        request = await self.webclient.get('/settings')
+        self.assertEqual(request.response.status_code, 404)
+
+    async def test_get_settings_foo_404(self):
+        request = await self.webclient.get('/settings/foo')
+        self.assertEqual(request.response.status_code, 404)
+
+    async def test_get_settings_foo_303(self):
+        request = await self.webclient.get('/testing')
+        self.assertEqual(request.response.status_code, 302)
+        location = request.response['location']
+        self.assertTrue(urlsplit(location).path, '/testing/bla')
