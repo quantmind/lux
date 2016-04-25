@@ -83,9 +83,9 @@ define(['angular',
         }])
         //
         //  Directive for the sidebar
-        .directive('sidebar', ['$compile', 'luxSidebars', 'luxNavbar', 'navLinks',
+        .directive('sidebar', ['$compile', 'luxSidebars', 'luxNavbar',
             '$templateCache', '$window', '$timeout',
-            function ($compile, luxSidebars, luxNavbar, navLinks,
+            function ($compile, luxSidebars, luxNavbar,
                       $templateCache, $window, $timeout) {
                 //
                 var inner;
@@ -107,7 +107,7 @@ define(['angular',
                 function sidebar(scope, element, attrs) {
                     var options = lux.getOptions(attrs, 'sidebar'),
                         sidebar = angular.extend({}, scope.sidebar, options),
-                        navbar = luxNavbar(angular.extend({}, sidebar.navbar, options.navbar)),
+                        navbar = angular.extend({}, sidebar.navbar, options.navbar),
                         template;
 
                     navbar.top = true;
@@ -126,9 +126,7 @@ define(['angular',
                         //
                         template = $templateCache.get(luxSidebars.template());
                     } else
-                        template = $templateCache.get(luxNavbar.template());
-
-                    scope.links = navLinks;
+                        template = $templateCache.get('lux/nav/templates/sidebar-empty.tpl.html');
 
                     element.append($compile(template)(scope));
 

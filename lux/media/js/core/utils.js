@@ -39,7 +39,7 @@ define(['angular',
     lux.toUrl = function (name) {
         return require.toUrl(name);
     };
-    
+
     lux.media = function (url, ctx) {
         if (!ctx)
             ctx = lux.context;
@@ -282,6 +282,8 @@ define(['angular',
     lux.capitalize = function (str) {
         return str.charAt(0).toUpperCase() + str.slice(1);
     };
+
+    lux.noop = function () {};
 
     /**
      * Obtain a JSON object from a string (if available) otherwise null

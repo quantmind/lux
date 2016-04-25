@@ -17,7 +17,7 @@ define(['angular',
                 enabled: true,
                 requireBase: false,
                 rewriteLinks: false
-            }).hashPrefix('#');
+            }).hashPrefix('!');
         }]);
 
     return lux;

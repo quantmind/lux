@@ -49,10 +49,8 @@ define(['angular',
                     fire();
 
                     function fire () {
-                        var pos = currentYPosition(),
-                            pct = Math.min(opts.distance, pos)/opts.distance;
                         if (opts.callback)
-                            opts.callback(pct);
+                            opts.callback(currentYPosition());
                     }
                 }
             }]
