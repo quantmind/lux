@@ -8,17 +8,7 @@ define(['angular',
     //
     //	Drop in replacement for lux.ui.router when HTML5_NAVIGATION is off.
     //
-    angular.module('lux.router', ['lux.page'])
-        //
-        .config(['$locationProvider', function ($locationProvider) {
-            //
-            // Enable html5mode but set the hash prefix to something different from #
-            $locationProvider.html5Mode({
-                enabled: true,
-                requireBase: false,
-                rewriteLinks: false
-            }).hashPrefix('!');
-        }]);
+    angular.module('lux.router', ['lux.page']);
 
     return lux;
 });

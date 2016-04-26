@@ -20,6 +20,16 @@ define(['angular',
             scrollTargetClassFinish: 'finished'
         })
         //
+        .config(['$locationProvider', function ($locationProvider) {
+            //
+            // Enable html5mode but set the hash prefix to something different from #
+            $locationProvider.html5Mode({
+                enabled: true,
+                requireBase: false,
+                rewriteLinks: true
+            }).hashPrefix('!');
+        }])
+        //
         // Switch off scrolling managed by angular
         //.config(['$anchorScrollProvider', function ($anchorScrollProvider) {
         //    $anchorScrollProvider.disableAutoScrolling();
@@ -36,23 +46,15 @@ define(['angular',
 
                 function scrollService (scope) {
                     var target = null,
+                        lastDelay = 0,
                         scroll = angular.extend({}, defaults, scope.scroll);
 
                     scroll.path = location.path();
                     scroll.host = location.host();
+                    scroll.previousUrl = location.absUrl();
 
-                    // Hijack click event
-                    angular.element($window).bind('click', function (e) {
-                        var target = e.target;
-                        // TODO: we need to generalize this
-                        if (target.tagName == 'I' || target.tagName == 'img') target = target.parentElement;
-                        var href = angular.element(target).attr('href');
-                        if (angular.isDefined(href) && href.substring(0, 1) === '#') {
-                            e.preventDefault();
-                            timer(function () {
-                                location.hash(href.substring(1));
-                            });
-                        }
+                    scope.$watch(function () {
+                        scroll.watchUrl = location.absUrl();
                     });
                     //
                     // This is the first event triggered when the path location changes
@@ -60,20 +62,27 @@ define(['angular',
                         if (scroll.path !== location.path() || scroll.host !== location.host())
                             return;
 
-                        var hash = location.hash() || '',
-                            currentHash = scroll.hash || '';
+                        var hash = location.hash() || '';
 
-                        scroll.hash = currentHash;
                         scroll.absUrl = location.absUrl();
+                        scroll.stateChange = scroll.absUrl === scroll.watchUrl;
+                        scroll.watchUrl = scroll.absUrl;
 
-                        if (target)
+                        if (target) {
                             target = null;
-                        else if (hash !== currentHash) {
-                            e.preventDefault();
-                            timer(function () {
-                                _toTarget(hash);
-                            });
+                            return;
                         }
+
+                        if (!scroll.stateChange) location.hash(scroll.watchUrl);
+                        e.preventDefault();
+                        timer(function () {
+                            _toTarget(hash);
+                        });
+                    });
+
+                    scope.$on('$locationChangeSuccess', function () {
+                        if (scroll.path !== location.path())
+                            $window.location.reload();
                     });
 
                     function _finished () {
@@ -82,13 +91,23 @@ define(['angular',
                         if (target) {
                             if (target.hasClass(scroll.scrollTargetClass))
                                 target.addClass(scroll.scrollTargetClassFinish);
-                            scroll.hash = target.attr('id');
-                            $window.history.pushState(null, null, scroll.absUrl);
+                            var hash = target.attr('id'),
+                                previousUrl = scroll.previousUrl;
+
+                            scroll.previousUrl = scroll.absUrl;
+
+                            if (previousUrl === scroll.absUrl)
+                                target = null;
+                            else if (scroll.stateChange)
+                                $window.history.pushState(null, hash, scroll.absUrl);
+                            else
+                                $window.history.replaceState(null, hash, scroll.absUrl);
                         }
                     }
                     //
                     function _toTarget(hash) {
-                        var delay = angular.isDefined(scroll.hash) ? null : 0;
+                        var delay = lastDelay;
+                        lastDelay = null;
 
                         if (!hash && !scroll.topPage)
                             return _finished(null);
