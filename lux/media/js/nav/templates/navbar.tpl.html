@@ -22,7 +22,9 @@ ng-style="navbar.style" role="navigation">
         <nav class="navbar-collapse"
              uib-collapse="navbar.isCollapsed"
              expanding="navbar.expanding()"
-             collapsing="navbar.collapsing()">
+             expanded="navbar.expanded()"
+             collapsing="navbar.collapsing()"
+             collapsed="navbar.collapsed()">
             <ul ng-if="navbar.items" class="nav navbar-nav navbar-left">
                 <li ng-repeat="link in navbar.items" ng-class="{active:links.activeLink(link)}" navbar-link></li>
             </ul>

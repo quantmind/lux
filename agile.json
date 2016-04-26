@@ -51,6 +51,9 @@
                 "shell:js"
             ]
         },
+        "uglify": {
+            "command": "./node_modules/.bin/uglifyjs example/web/media/quantmind/quantmind.js -c -m -o quantmind/web/media/quantmind/quantmind.min.js"
+        },
         "dev": {
             "description": "Start development watch server",
             "command": ["watch"]

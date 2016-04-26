@@ -2,7 +2,7 @@ from example.cfg import *   # noqa
 
 EXTENSIONS = EXTENSIONS + (
     'lux.extensions.auth',
-    'lux.extensions.odm',
+    'lux.extensions.odm'
 )
 
 API_URL = ''

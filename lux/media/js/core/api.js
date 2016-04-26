@@ -52,28 +52,31 @@ define(['angular',
                       ApiTypes, AuthApis, $templateCache, $compile,
                       $scope, luxHttpPromise) {
 
-                var $lux = {
-                    location: $location,
-                    window: $window,
-                    log: $log,
-                    http: $http,
-                    q: $q,
-                    timeout: $timeout,
-                    templateCache: $templateCache,
-                    compile: $compile,
-                    apiUrls: {},
-                    promise: luxHttpPromise,
-                    api: api,
-                    authApi: authApi,
-                    formData: formData,
-                    renderTemplate: renderTemplate,
-                    messages: extend({}, lux.messageService, {
-                        pushMessage: function (message) {
-                            this.log($log, message);
-                            $scope.$broadcast('messageAdded', message);
-                        }
-                    })
-                };
+                var defApiUrl = '',
+                    $lux = {
+                        location: $location,
+                        window: $window,
+                        log: $log,
+                        http: $http,
+                        q: $q,
+                        timeout: $timeout,
+                        templateCache: $templateCache,
+                        compile: $compile,
+                        apiUrls: {},
+                        promise: luxHttpPromise,
+                        api: api,
+                        defaultApi: defaultApi,
+                        authApi: authApi,
+                        formData: formData,
+                        renderTemplate: renderTemplate,
+                        messages: extend({}, lux.messageService, {
+                            pushMessage: function (message) {
+                                this.log($log, message);
+                                $scope.$broadcast('messageAdded', message);
+                            }
+                        })
+                    };
+                
                 return $lux;
                 //  Create a client api
                 //  -------------------------
@@ -88,6 +91,7 @@ define(['angular',
                         var defaults;
                         if (angular.isObject(url)) {
                             defaults = url;
+                            url.url = url.url || $lux.defaultApi();
                             url = url.url;
                         }
                         api = ApiTypes[url];
@@ -101,6 +105,11 @@ define(['angular',
                     }
                 }
 
+                function defaultApi (url) {
+                    if (!arguments.length) return defApiUrl;
+                    defApiUrl = url || '';
+                    return $lux;
+                }
                 //
                 // Set/get the authentication handler for a given api
                 function authApi (api, auth) {

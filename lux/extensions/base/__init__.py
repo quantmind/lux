@@ -50,8 +50,7 @@ class Extension(LuxExtension):
             if path.endswith('/'):
                 path = path[:-1]
             d = app.meta.media_dir
-            if d is not None:
-                middleware.append(MediaRouter(path, d, show_indexes=app.debug))
+            middleware.append(MediaRouter(path, d, show_indexes=app.debug))
         if app.config['REDIRECTS']:
             for url, to in app.config['REDIRECTS'].items():
                 middleware.append(RedirectRouter(url, to))

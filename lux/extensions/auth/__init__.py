@@ -26,7 +26,7 @@ class Extension(LuxExtension):
         self.require(app, 'lux.extensions.rest')
 
     def on_token(self, app, request, token, user):
-        if user.is_authenticated():
+        if user and user.is_authenticated():
             token['username'] = user.username
             token['user_id'] = user.id
             token['name'] = user.full_name

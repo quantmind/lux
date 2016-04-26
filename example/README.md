@@ -30,10 +30,19 @@ pip install virtaulenv myexample
 ./myexample/bin/pip install -r requirements-dev.txt
 ```
 
-Set up database tables:
+## Webalone example
+
+This is a stand-alone web application with session authentication and database models.
+
+Set up migration environment (one time operation)
 ```
-# setup migrations
-./myexample/bin/python manage.py webalone alembic auto
-# initialise tables
+# setup migration environment
+./myexample/bin/python manage.py webalone alembic init
+# create initial migration
 ./myexample/bin/python manage.py webalone alembic auto -m initial
+```
+
+Create tables (one time operation)
+```
+./myexample/bin/python manage.py webalone alembic upgrade heads
 ```

@@ -12,6 +12,7 @@
     },
     "devDependencies": {
         "lodash": "4.11",
+        "uglify-js": "2.6",
         "eslint": "2.8",
         "eslint-plugin-disable": "0.2",
         "eslint-config-angular": "0.5",
@@ -36,7 +37,7 @@
     },
     "scripts": {
         "test": "eslint lux/media/js example/js && karma start --single-run",
-        "build": "npm test && r.js -o bundle.js optimize=none",
+        "build": "npm test && r.js -o bundle.js optimize=none && uglifyjs example/website/media/website/website.js -c -m -o example/website/media/website/website.min.js",
         "debug": "karma start --browsers Chrome"
     },
     "keywords": [],

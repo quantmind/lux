@@ -29,6 +29,10 @@ class TextForm(forms.Form):
 
 class ContentCRUD(rest.RestRouter):
 
+    def get(self, request):
+        self.check_model_permission(request, 'read')
+        return self.model.collection_response(request)
+
     def post(self, request):
         '''Create a new model
         '''

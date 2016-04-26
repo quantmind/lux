@@ -38,6 +38,7 @@ class Extension(LuxExtension):
 
     def on_config(self, app):
         self.require(app, 'lux.extensions.rest')
+        # Add models
         setup_content_models(app)
 
     def context(self, request, context):
@@ -51,7 +52,7 @@ class Extension(LuxExtension):
             location = app.config['STATIC_LOCATION']
             app._handler = MediaRouter('', location, default_suffix='html')
         #
-        # Add middleware if this is a web-site server
+        # Add HTML middleware if this is a web-site server
         elif app.config['DEFAULT_CONTENT_TYPE'] == 'text/html':
             app.cms = CMS(app)
 
@@ -72,12 +73,14 @@ class Extension(LuxExtension):
             middleware.append(GithubHook('/refresh-content',
                                          handle_payload=PullRepo(repo),
                                          secret=secret))
-        #
-        config = content_config(app)
-        if not config:
-            return middleware
-
+        content_config(app)
         return middleware
+
+    def api_sections(self, app):
+        """API sections, available whe API_URL is a relative path
+        """
+        for model in html_contents(app):
+            yield ContentCRUD(model)
 
     def get_template_full_path(self, app, name):
         repo = content_location(app)

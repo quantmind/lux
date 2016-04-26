@@ -83,10 +83,8 @@ define(['angular',
         }])
         //
         //  Directive for the sidebar
-        .directive('sidebar', ['$compile', 'luxSidebars', 'luxNavbar',
-            '$templateCache', '$window', '$timeout',
-            function ($compile, luxSidebars, luxNavbar,
-                      $templateCache, $window, $timeout) {
+        .directive('sidebar', ['$compile', 'luxSidebars', '$templateCache', '$window', '$timeout',
+            function ($compile, luxSidebars, $templateCache, $window, $timeout) {
                 //
                 var inner;
 
