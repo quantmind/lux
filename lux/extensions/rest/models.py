@@ -1,5 +1,6 @@
 import json
 import logging
+from inspect import isgenerator
 from urllib.parse import urljoin
 
 from pulsar import PermissionDenied
@@ -282,7 +283,7 @@ class RestModel(LuxModel, RestClient, ColumnPermissionsMixin):
         return request.url_data.get(cfg['API_SEARCH_KEY'], default)
 
     def serialise(self, request, data, **kw):
-        if isinstance(data, list):
+        if isinstance(data, list) or isgenerator(data):
             kw['in_list'] = True
             return [self.serialise_model(request, o, **kw) for o in data]
         else:
@@ -418,10 +419,13 @@ class RestModel(LuxModel, RestClient, ColumnPermissionsMixin):
         if not is_absolute_uri(url):
             base = base or request.absolute_uri('/')
             url = urljoin(base, url)
+            if not is_absolute_uri(url):
+                base = request.absolute_uri('/')
+                url = urljoin(base, url)
         if path:
             if not url.endswith('/'):
                 url = '%s/' % url
-            url = urljoin(url, path)
+            url = '%s%s' % (url, path)
         return url
 
 

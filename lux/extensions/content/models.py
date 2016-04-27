@@ -92,6 +92,7 @@ class Content(rest.RestModel):
         path = meta.get('path')
         if path is not None:
             meta['slug'] = slugify(path) or 'index'
+            path = '/'.join(path.split('/')[2:])
             meta['url'] = self.get_url(request, path)
             meta['html_url'] = self.get_html_url(request, path)
 
@@ -160,9 +161,11 @@ class Content(rest.RestModel):
                         yield self.asset(filename)
                 else:
                     filename = filename[:-len(ext)]
-                    yield self.read(request, filename).json(request)
+                    yield self.read(request, filename)
 
     def serialise_model(self, request, data, in_list=False, **kw):
+        if not isinstance(data, dict):
+            data = data.json(request)
         if in_list:
             data.pop('html_main', None)
         return data
@@ -260,7 +263,12 @@ class Query:
 
     @cached
     def read_files(self, request):
-        return [d for d in self.model.all(request) if d.get('priority')]
+        data = []
+        instances = self.model.all(request)
+        for d in self.model.serialise(request, instances):
+            if d.get('priority'):
+                data.append(d)
+        return data
 
 
 class asc:

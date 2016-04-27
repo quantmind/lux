@@ -1,7 +1,7 @@
 import json
 import logging
 
-from pulsar import PermissionDenied, Http404, HttpRedirect
+from pulsar import PermissionDenied, Http404, MethodNotAllowed
 from pulsar.apps.wsgi import route, Json, RouterParam
 from pulsar.utils.structures import AttributeDictionary
 from pulsar.utils.httpurl import remove_double_slash
@@ -74,28 +74,29 @@ class ContentCRUD(rest.RestRouter):
         return self.model.collection_response(
             request, sortby=['title:asc', 'order:desc'], **filters)
 
-    @route('<path:path>', method=('get', 'head', 'post'))
+    @route('<path:path>', method=('get', 'head', 'post', 'options'))
     def read_update(self, request):
         path = request.urlargs['path']
         model = self.model
         backend = request.cache.auth_backend
 
-        if request.method == 'GET':
-            try:
-                return self.render_file(request, path, True)
-            except Http404:
-                if not path.endswith('/'):
-                    if model.exist(request, '%s/index' % path):
-                        raise HttpRedirect('%s/' % path)
-                raise
+        if request.method == 'OPTIONS':
+            request.app.fire('on_preflight', request)
+            return request.response
 
         content = get_content(request, model, path)
-        if request.method == 'HEAD':
+
+        if request.method == 'GET':
+            data = model.serialise(request, content)
+
+        elif request.method == 'HEAD':
             if backend.has_permission(request, model.name, 'read'):
                 return request.response
 
-        if request.method == 'POST':
-            content.bla = None
+        else:
+            raise MethodNotAllowed
+
+        return self.json(request, data)
 
 
 class TextRouterBase(rest.RestMixin, core.HtmlRouter):

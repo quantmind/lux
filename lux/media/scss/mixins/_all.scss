@@ -16,6 +16,13 @@
     background-position: $position;
 }
 
+@mixin bg-image-full($url, $size, $position) {
+    background-image: url($url);
+    background-size: $size;
+    background-repeat: no-repeat;
+    background-position: $position;
+}
+
 @mixin transform($transforms) {
         -ms-transform: $transforms;
     -webkit-transform: $transforms;
