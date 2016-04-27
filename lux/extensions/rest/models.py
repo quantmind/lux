@@ -423,9 +423,12 @@ class RestModel(LuxModel, RestClient, ColumnPermissionsMixin):
                 base = request.absolute_uri('/')
                 url = urljoin(base, url)
         if path:
-            if not url.endswith('/'):
-                url = '%s/' % url
-            url = '%s%s' % (url, path)
+            if path.startswith('/'):
+                path = path[1:]
+            if path:
+                if not url.endswith('/'):
+                    url = '%s/' % url
+                url = '%s%s' % (url, path)
         return url
 
 

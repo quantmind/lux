@@ -92,7 +92,8 @@ class Content(rest.RestModel):
         path = meta.get('path')
         if path is not None:
             meta['slug'] = slugify(path) or 'index'
-            path = '/'.join(path.split('/')[2:])
+            if self.html_url:
+                path = '/'.join(path.split('/')[2:])
             meta['url'] = self.get_url(request, path)
             meta['html_url'] = self.get_html_url(request, path)
 
