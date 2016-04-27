@@ -26,6 +26,7 @@ class Login(WebFormRouter):
 
 
 class Logout(Router):
+    form_enctype = 'application/json'
     response_content_types = ['application/json']
 
     def post(self, request):

@@ -40,7 +40,7 @@ class WebFormRouter(HtmlRouter):
     '''A Router for rending web forms
     '''
     form_method = None
-    form_enctype = None
+    form_enctype = 'multipart/form-data'
     form_action = None
     default_form = Form
     form = None
@@ -63,12 +63,11 @@ class WebFormRouter(HtmlRouter):
         '''
         form = self.flayout(request)
         method = self.form_method or 'post'
-        enctype = self.form_enctype or 'multipart/form-data'
         action = self.form_action
         if hasattr(action, '__call__'):
             action = action(request)
         if not action:
             action = request.full_path()
         return form.as_form(action=action,
-                            enctype=enctype,
+                            enctype=self.form_enctype,
                             method=method)

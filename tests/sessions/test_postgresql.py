@@ -81,7 +81,7 @@ class TestPostgreSql(test.AppTestCase):
     async def test_login_fail(self):
         data = {'username': 'jdshvsjhvcsd',
                 'password': 'dksjhvckjsahdvsf'}
-        request = await self.client.post('/login',
+        request = await self.client.post('/auth/login',
                                          content_type='application/json',
                                          body=data)
         response = request.response
@@ -90,14 +90,14 @@ class TestPostgreSql(test.AppTestCase):
         self.assertFalse(user.is_authenticated())
         self.json(response)
         #
-        request = await self.client.get('/login')
+        request = await self.client.get('/auth/login')
         response = request.response
         token = self.authenticity_token(self.bs(response, 200))
         self.assertTrue(token)
         data.update(token)
         cookie = self.cookie(response)
         self.assertTrue(cookie)
-        request = await self.client.post('/login',
+        request = await self.client.post('/auth/login',
                                          content_type='application/json',
                                          body=data,
                                          cookie=cookie)
@@ -116,7 +116,7 @@ class TestPostgreSql(test.AppTestCase):
         self.assertEqual(user.username, username)
         self.assertNotEqual(user.password, password)
 
-        request = await self.client.get('/login')
+        request = await self.client.get('/auth/login')
         response = request.response
         token = self.authenticity_token(self.bs(response, 200))
         self.assertTrue(token)
@@ -125,7 +125,7 @@ class TestPostgreSql(test.AppTestCase):
         self.assertTrue(cookie)
         #
         # Login with csrf token and cookie, It should work
-        request = await self.client.post('/login',
+        request = await self.client.post('/auth/login',
                                          content_type='application/json',
                                          body=data,
                                          cookie=cookie)
@@ -146,7 +146,7 @@ class TestPostgreSql(test.AppTestCase):
         # The cookie has changed
         self.assertEqual(cookie3, None)
         #
-        request = await self.client.get('/login', cookie=cookie2)
+        request = await self.client.get('/auth/login', cookie=cookie2)
         response = request.response
         self.assertEqual(response.status_code, 302)
         return cookie2
@@ -155,7 +155,7 @@ class TestPostgreSql(test.AppTestCase):
         cookie = await self.test_create_superuser_command_and_login()
         #
         # This wont work, not csrf token
-        request = await self.client.post('/logout',
+        request = await self.client.post('/auth/logout',
                                          content_type='application/json',
                                          body={},
                                          cookie=cookie)
@@ -170,7 +170,7 @@ class TestPostgreSql(test.AppTestCase):
         token = self.authenticity_token(self.bs(response))
         self.assertTrue(token)
 
-        request = await self.client.post('/logout',
+        request = await self.client.post('/auth/logout',
                                          content_type='application/json',
                                          body=token,
                                          cookie=cookie)

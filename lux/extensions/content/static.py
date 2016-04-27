@@ -2,10 +2,11 @@
 """
 import os
 import shutil
+from itertools import chain
 from unittest import mock
 
 from lux.core import Cache, register_cache
-from lux.extensions.base import MediaRouter
+from lux.extensions.base.media import filesystem_path
 from lux.extensions.sitemap import BaseSitemap
 from lux.utils.files import skipfile
 
@@ -110,11 +111,17 @@ def copy_assets(app):
     if path:
         path = path[:-1]
         location = os.path.join(location, path[1:])
-    router = MediaRouter(path, app.meta.media_dir)
-    for name, path in router.extension_paths(app):
+    for name, path in extension_paths(app):
         dst = os.path.join(location, name)
         app.logger.info('Copy static files from %s to %s', path, dst)
         copy_files(path, dst)
+
+
+def extension_paths(self, app):
+    for name in sorted(chain(app.extensions, ('lux',))):
+        path = filesystem_path(app, None, (name,))
+        if os.path.isdir(path):
+            yield name, path
 
 
 def copy_file(app, content):

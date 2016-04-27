@@ -292,3 +292,6 @@ class SessionBackend(AuthMixin, backends.SessionBackend):
         with odm.begin() as s:
             s.add(session)
         return session
+
+    def on_html_document(self, app, request, doc):
+        doc.jscontext['WEB_API_URL'] = doc.jscontext.pop('API_URL')

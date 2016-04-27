@@ -1,16 +1,16 @@
 define(['angular',
         'lux/main',
-        'lux/services/pagination'], function (angular, lux) {
+        'lux/pagination/main'], function (angular, lux) {
     'use strict';
 
-    angular.module('lux.form.utils', ['lux.services.pagination'])
+    angular.module('lux.form.utils', ['lux.pagination'])
 
         .constant('lazyLoadOffset', 40) // API will be called this number of pixels
                                         // before bottom of UIselect list
 
-        .directive('remoteOptions', ['$lux', 'luxPaginationFactory', 'lazyLoadOffset',
+        .directive('remoteOptions', ['$lux', 'createPagination', 'lazyLoadOffset',
 
-            function ($lux, luxPagination, lazyLoadOffset) {
+            function ($lux, createPagination, lazyLoadOffset) {
 
                 return {
                     link: link
@@ -165,10 +165,11 @@ define(['angular',
                 function link(scope, element, attrs) {
 
                     if (attrs.remoteOptions) {
-                        var target = angular.fromJson(attrs.remoteOptions);
-                        var luxPag = luxPagination(scope, target, attrs.multiple);
+                        var target = angular.fromJson(attrs.remoteOptions),
+                            api = $lux.api(target),
+                            luxPag = createPagination(api, attrs.multiple);
 
-                        if (luxPag && target.name)
+                        if (api && target.name)
                             return remoteOptions(luxPag, target, scope, attrs, element);
                     }
 

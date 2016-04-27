@@ -154,7 +154,8 @@ class Content(rest.RestModel):
                         yield self.asset(filename)
                 else:
                     filename = filename[:-len(ext)]
-                    yield self.read(request, filename).json(request)
+                    if filename != 'index':
+                        yield self.read(request, filename).json(request)
 
     def serialise_model(self, request, data, in_list=False, **kw):
         if in_list:

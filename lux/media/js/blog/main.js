@@ -14,6 +14,41 @@ define(['angular',
             katexCss: lux.toUrl('katex-css')
         })
         //
+        .controller("BlogController", ['$scope', 'blogEntry', function (scope, blogEntry) {
+            blogEntry(scope.post || scope.page, scope.dateFormat);
+        }])
+        //
+        .factory('blogEntry', ['dateFilter', '$log', function (dateFilter, log) {
+
+            return blogEntry;
+
+            function blogEntry (post, dateFormat) {
+
+                post.title = post.title || "<No Title>";
+                post.authors = post.author;
+
+                if (post.author) {
+                    if (angular.isArray(post.author))
+                        post.authors = post.author.join(', ');
+                    else
+                        post.authors = post.author;
+                }
+
+                if (!post.date)
+                    post.date = post.published || post.last_modified;
+
+                if (post.date) {
+                    try {
+                        post.date = new Date(post.date);
+                        post.dateText = dateFilter(post.date, dateFormat);
+                    } catch (e) {
+                        log.error('Could not parse date ' + post.date);
+                    }
+                }
+            }
+
+        }])
+        //
         .directive('blogPagination', [function () {
             return {
                 templateUrl: 'lux/blog/templates/pagination.tpl.html',

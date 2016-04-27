@@ -19,11 +19,7 @@ define(['angular',
                 };
 
                 // response handler for login form
-                formHandlers.login = function (response, scope) {
-                    var target = scope.formAttrs.action,
-                        api = $lux.api(target);
-                    if (api)
-                        api.token(response.data.token);
+                formHandlers.login = function () {
                     $window.location.href = postLoginUrl;
                 };
 

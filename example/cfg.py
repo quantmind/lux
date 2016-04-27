@@ -19,3 +19,8 @@ SESSION_EXPIRY = 5
 DEFAULT_CACHE_EXPIRY = 5
 
 DATASTORE = 'postgresql+green://lux:luxtest@127.0.0.1:5432/luxtests'
+
+LOGIN_URL = '/auth/login'
+LOGOUT_URL = '/auth/logout'
+REGISTER_URL = '/auth/signup'
+RESET_PASSWORD_URL = '/auth/reset-password'

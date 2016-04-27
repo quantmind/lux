@@ -33,48 +33,39 @@ define(['angular',
          */
         .config(['paginationFactories', 'horizontalDefaults', function(paginationFactories, horizontalDefaults) {
 
-            paginationFactories['horizontal'] = function (api, scope, element, config) {
+            paginationFactories['horizontal'] = function (api, config) {
                 config = angular.extend({}, horizontalDefaults, config);
-                return horizontalPagination(api, scope, element, config);
+                return horizontalPagination(api, config);
             };
 
-        }])
-
-        .factory('createPagination', ['paginationFactories', function (paginationFactories) {
-
-            var createPagination = function (api, scope, element, attrs) {
-                var renderer = paginationFactories[attrs.type || 'horizontal'];
-
-                if (renderer) {
-                    scope.pag = renderer(api, scope, element, attrs);
-                    scope.pag.getItems();
-                }
-            };
-
-            return createPagination;
         }]);
 
 
-    function horizontalPagination (api, scope, element, config) {
-        var pag = {},
-            limit = parseInt(config.limit) || 25,
-            current = 1;
+    function horizontalPagination (api, config) {
+        var pag = {};
+
+        pag.limit = parseInt(config.limit) || 25;
+        pag.current = 1;
 
         /**
          * Called when page number was changed to get more data
          */
         pag.getItems = function () {
-            var offset = limit * (current - 1);
+            var offset = pag.limit * (pag.current - 1);
 
             api.get(null, {
-                limit: limit,
+                limit: pag.limit,
                 offset: offset
-            }, function (resp) {
-                scope.total = resp.data.total;
+            }).then(function (resp) {
+                var data = resp.data;
+                pag.total = data.total;
+                pag.first = data.first;
+                pag.next = data.next;
+                pag.last = data.last;
                 // last = getPageNumbers();
 
-                scope.items = resp.data.result;
-                scope.pages = generatePages();
+                pag.items = resp.data.result;
+                pag.pages = generatePages();
             });
         };
 

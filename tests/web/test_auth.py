@@ -10,7 +10,7 @@ class AuthTest(web.WebsiteTest):
         self.assertEqual(self.app.meta.name, 'example.webapi')
 
     async def test_get_login(self):
-        request = await self.webclient.get('/login')
+        request = await self.webclient.get('/auth/login')
         bs = self.bs(request.response, 200)
         self.assertEqual(str(bs.title), '<title>website.com</title>')
 
@@ -40,7 +40,7 @@ class AuthTest(web.WebsiteTest):
         request = await self.webclient.get('/', cookie=cookie)
         response = request.response
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.headers['location'], '/login')
+        self.assertEqual(response.headers['location'], '/auth/login')
         cookie2 = self.cookie(response)
         self.assertTrue(cookie2)
         self.assertTrue(cookie2.startswith('test-website='))

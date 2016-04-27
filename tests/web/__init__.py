@@ -20,7 +20,7 @@ class WebsiteTest(test.WebApiTestCase):
         # We need csrf and cookie to successfully login
         cookie = None
         if csrf is None:
-            request = await self.webclient.get('/login')
+            request = await self.webclient.get('/auth/login')
             bs = self.bs(request.response, 200)
             csrf = self.authenticity_token(bs)
             cookie = self.cookie(request.response)
@@ -35,7 +35,7 @@ class WebsiteTest(test.WebApiTestCase):
 
         # Get new token
         request = await self.webclient.post(
-            '/login',
+            '/auth/login',
             content_type='application/json',
             body=credentials,
             cookie=cookie)

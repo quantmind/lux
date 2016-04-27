@@ -31,7 +31,7 @@ class ContentCRUD(rest.RestRouter):
 
     def get(self, request):
         self.check_model_permission(request, 'read')
-        return self.model.collection_response(request)
+        return self.model.collection_response(request, sortby='date:desc')
 
     def post(self, request):
         '''Create a new model
@@ -57,6 +57,15 @@ class ContentCRUD(rest.RestRouter):
                 data = form.tojson()
             return Json(data).http_response(request)
         raise PermissionDenied
+
+    @route('links', method=('get', 'options'))
+    def links(self, request):
+        if request.method == 'OPTIONS':
+            request.app.fire('on_preflight', request, methods=['GET'])
+            return request.response
+
+        return self.model.collection_response(
+            request, sortby=['title:asc', 'order:desc'], **{'order:gt': 0})
 
     @route('<path:path>', method=('get', 'head', 'post'))
     def read_update(self, request):
@@ -94,15 +103,6 @@ class TextRouter(TextRouterBase):
         '''
         request.cache.text_router = True
         return self.render_file(request)
-
-    @route('_all', response_content_types=('application/json',))
-    def all(self, request):
-        return self.model.collection_response(request, sortby='date:desc')
-
-    @route('_links', response_content_types=('application/json',))
-    def links(self, request):
-        return self.model.collection_response(
-            request, sortby=['title:asc', 'order:desc'], **{'order:gt': 0})
 
     @route('<path:path>')
     def read(self, request):

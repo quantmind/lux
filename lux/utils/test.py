@@ -229,6 +229,17 @@ class TestMixin:
                          'application/json; charset=utf-8')
         return json.loads(self._content(response).decode('utf-8'))
 
+    def xml(self, response, status_code=None):
+        """Get JSON object from response
+        """
+        from bs4 import BeautifulSoup
+        if status_code:
+            self.assertEqual(response.status_code, status_code)
+        self.assertEqual(response.content_type,
+                         'application/xml; charset=utf-8')
+        text = self._content(response).decode('utf-8')
+        return BeautifulSoup(text, 'xml')
+
     def ws_upgrade(self, response):
         from lux.extensions.sockjs import LuxWs
         self.assertEqual(response.status_code, 101)
@@ -484,7 +495,8 @@ class WebApiTestCase(AppTestCase):
     async def _signup(self, csrf=None):
         """Signup to the web site
         """
-        cookie, csrf = await self._cookie_csrf('/signup', csrf)
+        url = self.app.config['REGISTER_URL']
+        cookie, csrf = await self._cookie_csrf(url, csrf)
         username = randomname(prefix='u-')
         password = randomname()
         email = '%s@%s.com' % (username, randomname())
@@ -493,7 +505,7 @@ class WebApiTestCase(AppTestCase):
                 'password_repeat': password,
                 'email': email}
         data.update(csrf)
-        request = await self.webclient.post('/signup',
+        request = await self.webclient.post(url,
                                             body=data,
                                             cookie=cookie,
                                             content_type='application/json')

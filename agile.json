@@ -51,8 +51,12 @@
                 "shell:js"
             ]
         },
-        "uglify": {
-            "command": "./node_modules/.bin/uglifyjs example/web/media/quantmind/quantmind.js -c -m -o quantmind/web/media/quantmind/quantmind.min.js"
+        "css": {
+            "description": "Create css file",
+            "command": [
+                "shell:lux",
+                "shell:js"
+            ]
         },
         "dev": {
             "description": "Start development watch server",

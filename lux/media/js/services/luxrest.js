@@ -15,7 +15,9 @@ define(['angular',
 
             // If the root scope has an API_URL register the luxrest client
             if ($scope.API_URL) {
-                $lux.defaultApi($lux.api($scope.API_URL, luxrest).baseUrl());
+                var api = $lux.api($scope.API_URL, luxrest);
+                $lux.api('', luxWebApi).scopeApi($scope);
+                $lux.defaultApi(api.baseUrl());
                 //
                 // web api handler
                 // var web = $lux.api('', luxWebApi);

@@ -10,8 +10,9 @@ define(['angular',
 
         .run(['$rootScope', '$lux', function ($scope, $lux) {
             //
-            if ($scope.API_URL) {
-                $lux.api($scope.API_URL, luxweb).scopeApi($scope);
+            if ($scope.WEB_API_URL) {
+                var api = $lux.api($scope.WEB_API_URL, luxweb).scopeApi($scope);
+                $lux.defaultApi(api.baseUrl());
             }
         }]);
 
@@ -161,17 +162,11 @@ define(['angular',
             };
 
             //
-            // Initialise a scope with an auth api handler
-            api.scopeApi = function (scope, auth) {
+            // Add methods to scope
+            api.scopeApi = function (scope) {
                 //  Get the api client
-                if (auth) {
-                    // Register auth as the authentication client of this api
-                    $lux.authApi(api, auth);
-                    auth.authName(null);
-                }
-
-                scope.api = function () {
-                    return $lux.api(url);
+                scope.api = function (target) {
+                    return $lux.api(target);
                 };
 
                 //  Get the current user
@@ -185,9 +180,33 @@ define(['angular',
                         e.preventDefault();
                         e.stopPropagation();
                     }
-                    if (api.user()) api.logout(scope);
+                    if (api.user()) logout(scope);
                 };
+
+                return api;
             };
+
+            function logout (scope) {
+                var url = lux.context.LOGOUT_URL;
+                if (!url) {
+                    $lux.messages.error('No logout url! Cannot logout');
+                    return;
+                }
+
+                scope.$emit('pre-logout');
+                api.post({
+                    path: url
+                }).then(function () {
+                    scope.$emit('after-logout');
+                    if (lux.context.POST_LOGOUT_URL) {
+                        $lux.window.location.href = lux.context.POST_LOGOUT_URL;
+                    } else {
+                        $lux.window.location.reload();
+                    }
+                }, function () {
+                    $lux.messages.error('Error while logging out');
+                });
+            }
 
             return api;
         };

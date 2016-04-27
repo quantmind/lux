@@ -1,5 +1,4 @@
 import os
-from itertools import chain
 
 from pulsar.apps import wsgi
 
@@ -33,22 +32,9 @@ class MediaRouter(wsgi.MediaRouter):
     '''A simple application for handling static files
     '''
     request_class = core.WsgiRequest
-    lux = True
 
     def filesystem_path(self, request):
-        '''Override :class:`~pulsar.apps.wsgi.router.MediaRouter`
-        '''
-        if self.lux:
-            bits = request.urlargs['path'].split('/')
-            return filesystem_path(request.app, self._file_path, bits)
-        else:
-            return super(MediaRouter, self).filesystem_path(request)
-
-    def extension_paths(self, app):
-        if self.lux:
-            for name in sorted(chain(app.extensions, ('lux',))):
-                path = filesystem_path(app, None, (name,))
-                if os.path.isdir(path):
-                    yield name, path
-        else:
-            yield '', self._file_path
+        """Override :class:`~pulsar.apps.wsgi.router.MediaRouter`
+        """
+        bits = request.urlargs['path'].split('/')
+        return filesystem_path(request.app, self._file_path, bits)

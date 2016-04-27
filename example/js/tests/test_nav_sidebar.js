@@ -19,8 +19,10 @@ define(['angular',
             //
             expect(element[0].tagName).toBe('SIDEBAR');
             //
-            var nav = angular.element(element.children()[0]);
+            var navbar = angular.element(element.children()[0]);
             //
+            expect(navbar[0].tagName).toBe('NAVBAR');
+            var nav = angular.element(navbar.children()[0]);
             expect(nav[0].tagName).toBe('NAV');
             expect(nav.hasClass('navbar')).toBe(true);
 

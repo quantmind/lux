@@ -4,9 +4,11 @@ import shutil
 from tests.config import *  # noqa
 
 from lux.core import LuxExtension
-from lux.extensions.content import Content, CMS, content_location
+from lux.extensions.content import Content, content_location
 
 
+API_URL = 'api'
+DEFAULT_CONTENT_TYPE = 'text/html'
 CONTENT_REPO = os.path.join(os.path.dirname(__file__), 'test_repo')
 
 GITHUB_HOOK_KEY = 'test12345'
@@ -31,9 +33,7 @@ def create_content(name, path=None):
 
 class Extension(LuxExtension):
 
-    def middleware(self, app):
+    def on_config(self, app):
         repo = content_location(app)
-        app.cms = CMS(app)
-        app.cms.add_router(Content('blog', repo))
-        app.cms.add_router(Content('site', repo, ''))
-        return app.cms.middleware()
+        app.models.register(Content('blog', repo))
+        app.models.register(Content('site', repo, ''))

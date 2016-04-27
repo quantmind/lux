@@ -5,35 +5,17 @@ from urllib.parse import urlencode
 
 from pulsar import (ImproperlyConfigured, HttpException, Http401,
                     PermissionDenied, Http404, HttpRedirect)
-from pulsar.utils.httpurl import is_absolute_uri
 
 from lux.core import Parameter
 
 from .mixins import jwt, SessionBackendMixin
 from .registration import RegistrationMixin
-from .. import (AuthenticationError, AuthBackend, luxrest,
+from .. import (AuthenticationError, AuthBackend,
                 User, Session, ModelMixin)
 from ..views import browser
 
 
 NotAuthorised = (Http401, PermissionDenied)
-
-
-def auth_router(api_url, url, Router, path=None):
-    params = {'form_enctype': 'application/json'}
-
-    if api_url is None or is_absolute_uri(api_url):
-        action = luxrest('', path=url)
-    else:
-        params['post'] = None
-        action = luxrest(api_url, name='authorizations_url')
-
-    params['form_action'] = action
-    if path is None:
-        path = url
-    if path:
-        action['path'] = path
-    return Router(url, **params)
 
 
 class BrowserBackend(RegistrationMixin,
@@ -63,27 +45,19 @@ class BrowserBackend(RegistrationMixin,
     def middleware(self, app):
         middleware = []
         cfg = app.config
-        api_url = cfg['API_URL']
 
         if cfg['LOGIN_URL']:
-            middleware.append(auth_router(api_url,
-                                          cfg['LOGIN_URL'],
-                                          self.LoginRouter, False))
+            middleware.append(self.LoginRouter(cfg['LOGIN_URL']))
 
-        if cfg['LOGOUT_URL'] and self.LogoutRouter:
-            middleware.append(auth_router(api_url,
-                                          cfg['LOGOUT_URL'],
-                                          self.LogoutRouter))
+        if cfg['LOGOUT_URL']:
+            middleware.append(self.LogoutRouter(cfg['LOGOUT_URL']))
 
         if cfg['REGISTER_URL']:
-            middleware.append(auth_router(api_url,
-                                          cfg['REGISTER_URL'],
-                                          self.SignUpRouter))
+            middleware.append(self.SignUpRouter(cfg['REGISTER_URL']))
 
         if cfg['RESET_PASSWORD_URL']:
-            middleware.append(auth_router(api_url,
-                                          cfg['RESET_PASSWORD_URL'],
-                                          self.ForgotPasswordRouter))
+            middleware.append(
+                self.ForgotPasswordRouter(cfg['RESET_PASSWORD_URL']))
 
         return middleware
 
