@@ -28,11 +28,14 @@ class DataError(Exception):
 COLUMNS = [
     RestColumn('priority', sortable=True, type='int'),
     RestColumn('order', sortable=True, type='int'),
+    RestColumn('slug', sortable=True),
+    RestColumn('path', sortable=True),
     RestColumn('title')]
 
 
 OPERATORS = {
     'eq': lambda x, y: x == y,
+    'ne': lambda x, y: x != y,
     'gt': lambda x, y: x > y,
     'ge': lambda x, y: x >= y,
     'lt': lambda x, y: x < y,
@@ -64,6 +67,9 @@ class Content(rest.RestModel):
         return Query(request, self)
 
     def query(self, request, session, *filters):
+        if filters:
+            request.logger.warning('Cannot use postional filters in %s',
+                                   request.path)
         return session
 
     def tojson(self, request, obj, exclude=None, **kw):
@@ -154,13 +160,11 @@ class Content(rest.RestModel):
                         yield self.asset(filename)
                 else:
                     filename = filename[:-len(ext)]
-                    if filename != 'index':
-                        yield self.read(request, filename).json(request)
+                    yield self.read(request, filename).json(request)
 
     def serialise_model(self, request, data, in_list=False, **kw):
         if in_list:
-            data.pop('html', None)
-            data.pop('site', None)
+            data.pop('html_main', None)
         return data
 
     # INTERNALS
@@ -256,7 +260,7 @@ class Query:
 
     @cached
     def read_files(self, request):
-        return [d for d in self.model.all(request) if d['priority']]
+        return [d for d in self.model.all(request) if d.get('priority')]
 
 
 class asc:

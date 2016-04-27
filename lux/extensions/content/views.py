@@ -27,11 +27,18 @@ class TextForm(forms.Form):
     published = forms.DateTimeField(required=False)
 
 
+def list_filter(model, filters):
+    filters['path:ne'] = remove_double_slash('/%s' % model.html_url)
+    return filters
+
+
 class ContentCRUD(rest.RestRouter):
 
     def get(self, request):
         self.check_model_permission(request, 'read')
-        return self.model.collection_response(request, sortby='date:desc')
+        filters = list_filter(self.model, {})
+        return self.model.collection_response(request, sortby='date:desc',
+                                              **filters)
 
     def post(self, request):
         '''Create a new model
@@ -63,9 +70,9 @@ class ContentCRUD(rest.RestRouter):
         if request.method == 'OPTIONS':
             request.app.fire('on_preflight', request, methods=['GET'])
             return request.response
-
+        filters = list_filter(self.model, {'order:gt': 0})
         return self.model.collection_response(
-            request, sortby=['title:asc', 'order:desc'], **{'order:gt': 0})
+            request, sortby=['title:asc', 'order:desc'], **filters)
 
     @route('<path:path>', method=('get', 'head', 'post'))
     def read_update(self, request):
