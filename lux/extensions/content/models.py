@@ -63,6 +63,10 @@ class Content(rest.RestModel):
         api_url = '%s/%s' % (api_prefix, name)
         super().__init__(name, columns=columns, url=api_url, html_url=path)
 
+    @cached
+    def get_instance(self, request, path):
+        return self.serialise_model(request, self.read(request, path))
+
     def session(self, request):
         return Query(request, self)
 
@@ -71,6 +75,13 @@ class Content(rest.RestModel):
             request.logger.warning('Cannot use postional filters in %s',
                                    request.path)
         return session
+
+    def serialise_model(self, request, data, in_list=False, **kw):
+        if not isinstance(data, dict):
+            data = self.tojson(request, data, **kw)
+        if in_list:
+            data.pop('html_main', None)
+        return data
 
     def tojson(self, request, obj, exclude=None, **kw):
         return obj.json(request)
@@ -163,13 +174,6 @@ class Content(rest.RestModel):
                 else:
                     filename = filename[:-len(ext)]
                     yield self.read(request, filename)
-
-    def serialise_model(self, request, data, in_list=False, **kw):
-        if not isinstance(data, dict):
-            data = data.json(request)
-        if in_list:
-            data.pop('html_main', None)
-        return data
 
     # INTERNALS
     def _path(self, request, path):

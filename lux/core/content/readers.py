@@ -52,9 +52,9 @@ class BaseReader(object):
 
     def read(self, src):
         """Parse content and metadata of markdown files"""
-        with open(src, 'r') as text:
+        with open(src, 'rb') as text:
             body = text.read()
-        return self.process(body, src)
+        return self.process(body.decode('utf-8'), src)
 
     def process(self, body, src, meta=None):
         """Return the dict containing document metadata

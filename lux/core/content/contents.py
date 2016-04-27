@@ -152,39 +152,6 @@ class HtmlContentFile(HtmlFile):
         self.meta['html_main'] = self.render(app, context)
         return dict(self.meta)
 
-    def html(self, request):
-        '''Build the ``html_main`` key for this content and set
-        content specific values to the ``head`` tag of the
-        HTML5 document.
-        '''
-        # The JSON data for this page
-        data = self.json(request)
-        doc = request.html_document
-        #
-        image = absolute_uri(request, data.get('image'))
-        doc.meta.update({'og:image': image,
-                         'og:published_time': data.get('date'),
-                         'og:modified_time': data.get('modified')})
-        head = {}
-        page = {}
-        for key, value in data.items():
-            bits = key.split('_')
-            N = len(bits)
-            if N > 1 and bits[0] == 'head':
-                key = '_'.join(bits[1:])
-                head[key] = value
-                doc.meta.set('_'.join(bits[1:]), value)
-            elif N == 1:
-                page[key] = value
-
-        # Add head keys if needed
-        for key in HEAD_META:
-            if key not in head and key in data:
-                doc.meta.set(key, data[key])
-
-        doc.jscontext['page'] = page
-        return data['html_main']
-
     def render(self, app, context):
         """Render this content with a context dictionary
 
@@ -236,3 +203,35 @@ class HtmlContentFile(HtmlFile):
             return str(value)
         else:
             return value
+
+
+def html(request, data):
+    '''Build the ``html_main`` key for this content and set
+    content specific values to the ``head`` tag of the
+    HTML5 document.
+    '''
+    doc = request.html_document
+    #
+    image = absolute_uri(request, data.get('image'))
+    doc.meta.update({'og:image': image,
+                     'og:published_time': data.get('date'),
+                     'og:modified_time': data.get('modified')})
+    head = {}
+    page = {}
+    for key, value in data.items():
+        bits = key.split('_')
+        N = len(bits)
+        if N > 1 and bits[0] == 'head':
+            key = '_'.join(bits[1:])
+            head[key] = value
+            doc.meta.set('_'.join(bits[1:]), value)
+        elif N == 1:
+            page[key] = value
+
+    # Add head keys if needed
+    for key in HEAD_META:
+        if key not in head and key in data:
+            doc.meta.set(key, data[key])
+
+    doc.jscontext['page'] = page
+    return data['html_main']

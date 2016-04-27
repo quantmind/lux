@@ -9,6 +9,7 @@ from pulsar.utils.httpurl import remove_double_slash
 from lux import core, forms
 from lux.extensions import rest
 from lux.extensions.sitemap import Sitemap, SitemapIndex
+from lux.core.content import html as get_html
 
 from .models import Content, DataError
 
@@ -78,7 +79,6 @@ class ContentCRUD(rest.RestRouter):
     def read_update(self, request):
         path = request.urlargs['path']
         model = self.model
-        backend = request.cache.auth_backend
 
         if request.method == 'OPTIONS':
             request.app.fire('on_preflight', request)
@@ -87,11 +87,12 @@ class ContentCRUD(rest.RestRouter):
         content = get_content(request, model, path)
 
         if request.method == 'GET':
+            self.check_model_permission(request, 'read', content)
             data = model.serialise(request, content)
 
         elif request.method == 'HEAD':
-            if backend.has_permission(request, model.name, 'read'):
-                return request.response
+            self.check_model_permission(request, 'read', content)
+            return request.response
 
         else:
             raise MethodNotAllowed
@@ -100,57 +101,21 @@ class ContentCRUD(rest.RestRouter):
 
 
 class TextRouterBase(rest.RestMixin, core.HtmlRouter):
-    render_file = RouterParam()
+    model = RouterParam()
 
 
 class TextRouter(TextRouterBase):
-    '''CRUD views for the text APIs
-    '''
+    """CRUD views for the text APIs
+    """
     def get_html(self, request):
         '''Return a div for pagination
         '''
         request.cache.text_router = True
-        return self.render_file(request)
+        return render_content(request, self.model, request.urlargs)
 
     @route('<path:path>')
     def read(self, request):
-        request.cache.text_router = True
-        return self.render_file(request, request.urlargs['path'], True)
-
-    def render_file(self, request, path='', as_response=False):
-        model = self.model
-        backend = request.cache.auth_backend
-
-        if backend.has_permission(request, model.name, 'read'):
-            content = get_content(request, model, path)
-            response = request.response
-            if content is response:
-                assert as_response
-                return content
-
-            response.content_type = content.content_type
-            if content.content_type == 'text/html':
-
-                if response.content_type == 'application/json':
-                    data = content.json(request)
-                    if as_response:
-                        return Json(data).http_response(request)
-                    else:
-                        return data
-                else:
-                    html = content.html(request)
-                    if as_response:
-                        return self.html_response(request, html)
-                    else:
-                        return html
-            elif as_response:
-                response.content_type = content.content_type
-                response.content = content.raw(request)
-                return response
-            else:
-                return content.raw(request)
-
-        raise PermissionDenied
+        return self.get(request)
 
 
 class TextCMS(TextRouter):
@@ -182,6 +147,7 @@ class RouterMap(Sitemap):
     def items(self, request):
         model = self.content_router.model
         for item in model.all(request):
+            item = item.json(request)
             yield AttributeDictionary(loc=item['html_url'],
                                       lastmod=item['modified'],
                                       priority=item.get('priority', 1))
@@ -228,9 +194,8 @@ class CMS(core.CMS):
                     router_args = router.resolve(path)
                     if router_args:
                         router, args = router_args
-                        path = tuple(args.values())[0] if args else 'index'
                         try:
-                            html = router.render_file(request, path)
+                            html = render_content(request, router.model, args)
                         except Http404:
                             pass
             finally:
@@ -239,7 +204,18 @@ class CMS(core.CMS):
 
 
 def get_content(request, model, path):
-    try:
-        return model.read(request, path)
-    except DataError:
-        raise Http404
+    app = request.app
+    if app.rest_api_client:
+        api = app.api(request)
+        return api.get('%s/%s' % (model.url, path)).json()
+    else:
+        try:
+            return model.get_instance(request, path)
+        except DataError:
+            raise Http404
+
+
+def render_content(request, model, urlargs):
+    path = urlargs.get('path', 'index')
+    content = get_content(request, model, path)
+    return get_html(request, content)
