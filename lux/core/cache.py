@@ -67,6 +67,9 @@ class Cache:
     def hmget(self, key, *fields):
         pass
 
+    def clear(self):
+        pass
+
     def set_json(self, key, value, timeout=None):
         value = json.dumps(value)
         self.set(key, value, timeout=timeout)
@@ -215,6 +218,11 @@ class RedisCache(Cache):
     def hmget(self, key, *fields):
         return self._wait(self.client.hmset(key, *fields))
 
+    def clear(self):
+        pattern = '%s-*' % self.app.config['APP_NAME']
+        result = self.client.eval(clear_cache, (), (pattern,))
+        return self._wait(result)
+
     def lock(self, name, **kwargs):
         return GreenLock(self.client.lock(name, **kwargs), self._wait)
 
@@ -337,3 +345,12 @@ def register_cache(name, dotted_path):
 
 register_cache('dummy', 'lux.core.cache.DummyCache')
 register_cache('redis', 'lux.core.cache.RedisCache')
+
+
+clear_cache = '''\
+local keys = redis.call('keys', ARGV[1]);
+for i=1,#keys,5000 do
+    redis.call('del', unpack(keys, i, math.min(i+4999, #keys)))
+end
+return #keys
+'''

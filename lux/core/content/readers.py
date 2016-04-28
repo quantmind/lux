@@ -1,10 +1,8 @@
-from itertools import chain
-
 from pulsar.utils.slugify import slugify
 
 from .contents import (ContentFile, HtmlContentFile, METADATA_PROCESSORS,
                        HtmlFile, register_reader)
-from .urlwrappers import MultiValue
+from .urlwrappers import MultiValue, chain_meta
 
 try:
     from markdown import Markdown
@@ -50,21 +48,17 @@ class BaseReader(object):
     def __str__(self):
         return self.__class__.__name__
 
-    def read(self, src):
+    def read(self, src, meta=None):
         """Parse content and metadata of markdown files"""
         with open(src, 'rb') as text:
             body = text.read()
-        return self.process(body.decode('utf-8'), src)
+        return self.process(body.decode('utf-8'), src, meta=meta)
 
     def process(self, body, src, meta=None):
         """Return the dict containing document metadata
         """
-        if meta is None:
-            meta = {}
         cfg = self.config
-        head_meta = {}
-        meta = meta.items() if meta else ()
-        meta_input = chain(DEFAULTS, meta)
+        meta_input = chain_meta(DEFAULTS, meta)
         meta = {}
         as_list = MultiValue()
         for key, values in meta_input:
@@ -73,27 +67,19 @@ class BaseReader(object):
                 values = (values,)
             if key not in METADATA_PROCESSORS:
                 bits = key.split('_', 1)
-                if len(bits) > 1:
-                    k = ':'.join(bits[1:])
-                    if bits[0] == 'meta':
-                        meta[k] = guess(as_list(values, cfg))
-                        continue
-                    if bits[0] == 'head':
-                        head_meta[k] = guess(as_list(values, cfg))
-                        continue
-                    if bits[0] == 'og' or bits[0] == 'twitter':
-                        k = ':'.join(bits)
-                        head_meta[k] = guess(as_list(values, cfg))
-                        continue
-                self.logger.warning("Unknown meta '%s' in '%s'", key, src)
+                values = guess(as_list(values, cfg))
+                if len(bits) > 1 and bits[0] == 'meta':
+                    k = '_'.join(bits[1:])
+                    meta[k] = values
+                else:
+                    meta[key] = values
             #
             elif values:
                 # Remove default values if any
                 proc = METADATA_PROCESSORS[key]
                 meta[key] = proc(values, cfg)
         if meta.get('priority') == '0':
-            head_meta['robots'] = ['noindex', 'nofollow']
-        meta['head'] = head_meta
+            meta['head_robots'] = ['noindex', 'nofollow']
         return body, meta
 
 
@@ -124,9 +110,7 @@ class MarkdownReader(BaseReader):
         raw = '%s\n\n%s' % (raw, self.links())
         md = self.md
         body = md.convert(raw)
-        meta = meta if meta is not None else {}
-        meta.update(md.Meta)
-        return super().process(body, src, meta=meta)
+        return super().process(body, src, meta=chain_meta(meta, md.Meta))
 
     def links(self):
         links = self.app.config.get('_MARKDOWN_LINKS_')

@@ -2,11 +2,10 @@ import os
 import mimetypes
 
 from pulsar.utils.httpurl import remove_double_slash
-from pulsar.apps.wsgi import file_response
 from pulsar.utils.slugify import slugify
 
 from lux.core import cached
-from lux.core.content import get_reader
+from lux.core.content import get_reader, ContentFile
 from lux.extensions import rest
 from lux.extensions.rest import RestColumn
 from lux.utils.files import skipfile
@@ -63,7 +62,6 @@ class Content(rest.RestModel):
         api_url = '%s/%s' % (api_prefix, name)
         super().__init__(name, columns=columns, url=api_url, html_url=path)
 
-    @cached
     def get_instance(self, request, path):
         return self.serialise_model(request, self.read(request, path))
 
@@ -72,19 +70,29 @@ class Content(rest.RestModel):
 
     def query(self, request, session, *filters):
         if filters:
-            request.logger.warning('Cannot use postional filters in %s',
+            request.logger.warning('Cannot use positional filters in %s',
                                    request.path)
         return session
 
-    def serialise_model(self, request, data, in_list=False, **kw):
-        if not isinstance(data, dict):
-            data = self.tojson(request, data, **kw)
+    def serialise_model(self, request, content, in_list=False, **kw):
+        if isinstance(content, ContentFile):
+            return content.response(request)
+        if not isinstance(content, dict):
+            content = self.tojson(request, content, **kw)
         if in_list:
-            data.pop('html_main', None)
-        return data
+            content.pop('body', None)
+        return content
 
     def tojson(self, request, obj, exclude=None, **kw):
-        return obj.json(request)
+        meta = obj.json(request)
+        path = meta.get('path')
+        if path is not None:
+            meta['slug'] = slugify(path) or 'index'
+            if self.html_url:
+                path = '/'.join(path.split('/')[2:])
+            meta['url'] = self.get_url(request, path)
+            meta['html_url'] = self.get_html_url(request, path)
+        return meta
 
     def get_target(self, request, **extra_data):
         '''Get a target for a form
@@ -96,37 +104,24 @@ class Content(rest.RestModel):
         target.update(**extra_data)
         return target
 
-    def context(self, request, instance, context):
-        """Json representation of content
-        """
-        meta = instance.meta
-        path = meta.get('path')
-        if path is not None:
-            meta['slug'] = slugify(path) or 'index'
-            if self.html_url:
-                path = '/'.join(path.split('/')[2:])
-            meta['url'] = self.get_url(request, path)
-            meta['html_url'] = self.get_html_url(request, path)
-
     def read(self, request, path):
         '''Read content from file in the repository
         '''
         src = os.path.join(self.directory, path)
-        if os.path.isdir(src):
-            src = os.path.join(src, 'index')
+
         if src.endswith('.html'):
-            src = src[:-5]
+            raise DataError
 
         # Handle files which are not html
         content_type, _ = mimetypes.guess_type(src)
         if content_type and os.path.isfile(src):
-            return file_response(request, src, content_type=content_type)
+            return ContentFile(src, content_type=content_type)
 
         # Add extension
         ext = '.%s' % self.ext
         src = '%s%s' % (src, ext)
         if not os.path.isfile(src):
-            raise DataError('%s not available' % path)
+            raise DataError
 
         path = os.path.relpath(src, self.directory)
         #

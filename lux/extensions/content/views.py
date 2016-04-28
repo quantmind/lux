@@ -66,7 +66,7 @@ class ContentCRUD(rest.RestRouter):
             return Json(data).http_response(request)
         raise PermissionDenied
 
-    @route('links', method=('get', 'options'))
+    @route('_links', method=('get', 'options'))
     def links(self, request):
         if request.method == 'OPTIONS':
             request.app.fire('on_preflight', request, methods=['GET'])
@@ -89,6 +89,8 @@ class ContentCRUD(rest.RestRouter):
         if request.method == 'GET':
             self.check_model_permission(request, 'read', content)
             data = model.serialise(request, content)
+            if data == request.response:
+                return data
 
         elif request.method == 'HEAD':
             self.check_model_permission(request, 'read', content)
@@ -108,8 +110,6 @@ class TextRouter(TextRouterBase):
     """CRUD views for the text APIs
     """
     def get_html(self, request):
-        '''Return a div for pagination
-        '''
         request.cache.text_router = True
         return render_content(request, self.model, request.urlargs)
 

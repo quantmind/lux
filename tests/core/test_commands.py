@@ -1,11 +1,15 @@
-from unittest import mock
+from unittest import mock, skipUnless
 import shutil
 from os import path
 
 from pulsar.apps.test import TestFailure
+from pulsar.apps.test import check_server
 
 from lux.utils import test
 from lux.core import CommandError
+
+
+REDIS_OK = check_server('redis')
 
 
 class CommandTests(test.TestCase):
@@ -85,3 +89,12 @@ class CommandTests(test.TestCase):
             self.assertEqual(str(exc), 'Pid file not available')
         else:
             raise TestFailure('CommandError not raised')
+
+    @skipUnless(REDIS_OK, 'Requires a running Redis server and '
+                          'redis python client')
+    async def test_clear_cache(self):
+        redis = 'redis://%s' % self.cfg.redis_server
+        command = self.fetch_command('clear_cache', CACHE_SERVER=redis)
+        self.assertTrue(command.help)
+        result = await command([])
+        self.assertEqual(result, 0)

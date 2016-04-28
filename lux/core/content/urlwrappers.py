@@ -1,3 +1,6 @@
+from collections import Mapping
+from itertools import chain
+
 from pulsar.utils.slugify import slugify
 
 
@@ -6,6 +9,16 @@ def identity(x, cfg):
 
 
 SEP = ', '
+
+
+def _items(meta):
+    if isinstance(meta, Mapping):
+        return meta.items()
+    return meta or ()
+
+
+def chain_meta(meta1, meta2):
+    return chain(_items(meta1), _items(meta2))
 
 
 class Processor(object):
@@ -52,13 +65,8 @@ class URLWrapper(object):
         self.slug = slugify(name)
 
     def to_json(self, request):
-        base = type(self).__name__
-        name = self.name
-        path = ('/%s/%s' % (base, self.name)).lower()
-        d = {'name': name}
-        if path:
-            d['url'] = request.absolute_uri(path)
-        return d
+        # TODO
+        return self.name
 
     def __hash__(self):
         return hash(self.slug)

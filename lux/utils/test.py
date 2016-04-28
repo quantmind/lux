@@ -322,10 +322,10 @@ class TestCase(unittest.TestCase, TestMixin):
         self.apps.append(app)
         return app
 
-    def fetch_command(self, command, app=None):
+    def fetch_command(self, command, app=None, **params):
         """Fetch a command."""
         if not app:
-            app = self.application()
+            app = self.application(**params)
         cmd = app.get_command(command)
         self.assertTrue(cmd.logger)
         self.assertEqual(cmd.name, command)
