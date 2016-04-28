@@ -1,24 +1,8 @@
-from collections import Mapping
-from itertools import chain
-
 from pulsar.utils.slugify import slugify
 
-
-def identity(x, cfg):
-    return x
-
+from . utils import identity
 
 SEP = ', '
-
-
-def _items(meta):
-    if isinstance(meta, Mapping):
-        return meta.items()
-    return meta or ()
-
-
-def chain_meta(meta1, meta2):
-    return chain(_items(meta1), _items(meta2))
 
 
 class Processor(object):

@@ -42,6 +42,13 @@ OPERATORS = {
     }
 
 
+snippets_url = 'snippets'
+
+
+class Snippet(rest.RestModel):
+    pass
+
+
 class Content(rest.RestModel):
     '''A Content model with file-system backend
 
@@ -55,7 +62,6 @@ class Content(rest.RestModel):
         self.directory = directory
         self.ext = ext
         self.content_meta = content_meta or {}
-        self.content_meta['model'] = self
         if path is None:
             path = name
         columns = columns or COLUMNS[:]
@@ -84,7 +90,7 @@ class Content(rest.RestModel):
         return content
 
     def tojson(self, request, obj, exclude=None, **kw):
-        meta = obj.json(request)
+        meta = obj.json(request.app)
         path = meta.get('path')
         if path is not None:
             meta['slug'] = slugify(path) or 'index'
@@ -108,6 +114,8 @@ class Content(rest.RestModel):
         '''Read content from file in the repository
         '''
         src = os.path.join(self.directory, path)
+        if os.path.isdir(src):
+            src = os.path.join(src, 'index')
 
         if src.endswith('.html'):
             raise DataError
@@ -136,8 +144,9 @@ class Content(rest.RestModel):
         if path.endswith('/'):
             path = path[:-1]
         path = '/%s' % path
-        return get_reader(request.app, src).content(src, path=path,
-                                                    **self.content_meta)
+        meta = self.content_meta.copy()
+        meta['path'] = path
+        return get_reader(request.app, src).read(src, meta)
 
     def asset(self, filename):
         if self.html_url:
@@ -266,7 +275,7 @@ class Query:
         data = []
         instances = self.model.all(request)
         for d in self.model.serialise(request, instances):
-            if d.get('priority'):
+            if d.get('priority', 1):
                 data.append(d)
         return data
 

@@ -1,8 +1,5 @@
-from pulsar.utils.slugify import slugify
-
-from .contents import (ContentFile, HtmlContentFile, METADATA_PROCESSORS,
-                       HtmlFile, register_reader)
-from .urlwrappers import MultiValue, chain_meta
+from .contents import ContentFile, HtmlContent, register_reader, process_meta
+from .utils import chain_meta
 
 try:
     from markdown import Markdown
@@ -10,14 +7,6 @@ except ImportError:     # pragma    nocover
     Markdown = False
 
 Restructured = False
-
-
-def guess(value):
-    return value if len(value) > 1 else value[-1]
-
-
-DEFAULTS = (('priority', 1),
-            ('order', 0))
 
 
 @register_reader
@@ -37,6 +26,7 @@ class BaseReader(object):
     enabled = True
     file_extensions = ['']
     extensions = None
+    suffix = None
     content = ContentFile
 
     def __init__(self, app, ext=None):
@@ -57,44 +47,24 @@ class BaseReader(object):
     def process(self, body, src, meta=None):
         """Return the dict containing document metadata
         """
-        cfg = self.config
-        meta_input = chain_meta(DEFAULTS, meta)
-        meta = {}
-        as_list = MultiValue()
-        for key, values in meta_input:
-            key = slugify(key, separator='_')
-            if not isinstance(values, (list, tuple)):
-                values = (values,)
-            if key not in METADATA_PROCESSORS:
-                bits = key.split('_', 1)
-                values = guess(as_list(values, cfg))
-                if len(bits) > 1 and bits[0] == 'meta':
-                    k = '_'.join(bits[1:])
-                    meta[k] = values
-                else:
-                    meta[key] = values
-            #
-            elif values:
-                # Remove default values if any
-                proc = METADATA_PROCESSORS[key]
-                meta[key] = proc(values, cfg)
-        if meta.get('priority') == '0':
-            meta['head_robots'] = ['noindex', 'nofollow']
-        return body, meta
+        meta = dict(process_meta(meta, self.config)) if meta else None
+        return self.content(src, body, meta)
 
 
 @register_reader
 class HtmlReader(BaseReader):
-    content = HtmlFile
+    content = HtmlContent
     file_extensions = ['html']
+    suffix = 'html'
 
 
 @register_reader
 class MarkdownReader(BaseReader):
     """Reader for Markdown files"""
     enabled = bool(Markdown)
-    content = HtmlContentFile
+    content = HtmlContent
     file_extensions = ['md', 'markdown', 'mkd', 'mdown']
+    suffix = 'html'
 
     @property
     def md(self):
@@ -131,11 +101,11 @@ class MarkdownReader(BaseReader):
 @register_reader
 class RestructuredReader(BaseReader):
     enabled = bool(Restructured)
-    content = HtmlContentFile
+    content = HtmlContent
     file_extensions = ['rst']
+    suffix = 'html'
 
-    def process(self, raw, path, **params):
-        raw = raw.decode('utf-8')
+    def process(self, raw, src, meta=None):
         re = Restructured(raw)
         body = re.convert()
-        return self.post_process(body, re.Meta, path, **params)
+        return super().process(body, src, meta=chain_meta(meta, re.Meta))

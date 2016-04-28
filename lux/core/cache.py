@@ -249,63 +249,68 @@ class CacheObject:
         self.user = user
         self.timeout = timeout
 
-    def cache_key(self, app):
+    def cache_key(self, arg):
         key = ''
+        app = arg.app
         if isinstance(self.instance, Cacheable):
-            key = self.instance.cache_key(app.app)
+            key = self.instance.cache_key(app)
 
         if isinstance(app, WsgiRequest):
             if not key:
                 key = app.path
             if self.user:
-                key = '%s:%s' % (key, app.cache.user)
+                key = '%s-%s' % (key, app.cache.user)
 
         base = self.callable.__name__
         if self.instance:
-            base = '%s:%s' % (type(self.instance).__name__, base)
+            base = '%s-%s' % (type(self.instance).__name__, base)
 
-        base = '%s:%s' % (app.config['APP_NAME'], base)
-        return slugify('%s:%s' % (base, key) if key else base)
+        base = '%s-%s' % (app.config['APP_NAME'], base)
+        return slugify('%s-%s' % (base, key) if key else base)
 
-    def __call__(self, callable, *args, **kw):
+    def __call__(self, *args, **kw):
         if self.callable is None:
-            assert not args and not kw
-            self.callable = callable
+            # Initialisation
+            assert len(args) == 1 and not kw
+            self.callable = args[0]
             return self
 
-        app = callable
+        arg = args[0] if args else None
 
-        if not hasattr(callable, 'cache_server'):
+        if not hasattr(arg, 'app'):
             try:
                 if self.instance:
-                    app = self.instance.app
+                    arg = self.instance.app
                 else:
                     raise AttributeError
             except AttributeError:
-                app = None
+                arg = None
                 logger.error('Could not obtain application from first '
-                             'parameter nor from bound instance')
+                             'parameter nor from bound instance. '
+                             'Cannot use cache.')
 
-        args = (callable,) + args
         if self.instance:
             args = (self.instance,) + args
 
-        if app:
-            key = self.cache_key(app)
-            result = app.cache_server.get_json(key)
+        if arg:
+            key = self.cache_key(arg)
+            result = arg.app.cache_server.get_json(key)
             if result is not None:
                 return result
 
         result = self.callable(*args, **kw)
 
-        if app:
+        if arg:
             timeout = self.timeout
-            if timeout in app.config:
-                timeout = app.config[timeout]
+            app = arg.app
+            config = app.config
+
+            if timeout in config:
+                timeout = config[timeout]
             try:
                 int(timeout)
             except Exception:
-                timeout = app.config['DEFAULT_CACHE_TIMEOUT']
+                timeout = config['DEFAULT_CACHE_TIMEOUT']
 
             try:
                 app.cache_server.set_json(key, result, timeout=timeout)

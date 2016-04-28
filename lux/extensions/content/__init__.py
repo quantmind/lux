@@ -1,14 +1,15 @@
 import os
 import json
 
-from pulsar.apps.wsgi import MediaRouter
 from pulsar.utils.slugify import slugify
+from pulsar.apps.wsgi import MediaRouter
 
 from lux.core import Parameter, LuxExtension
 from lux.utils.data import update_dict
 
-from .models import Content
-from .views import TextRouter, TextCMS, ContentCRUD, TextForm, CMS
+from .models import Content, Snippet, snippets_url
+from .views import ContentCRUD, SnippetCRUD
+from .cms import TextRouter, TextCMS, CMS
 from .github import GithubHook, EventHandler, PullRepo
 
 
@@ -17,7 +18,6 @@ __all__ = ['Content',
            'TextCMS',
            'ContentCRUD',
            'CMS',
-           'TextForm',
            'GithubHook',
            'EventHandler',
            'PullRepo',
@@ -28,6 +28,8 @@ class Extension(LuxExtension):
     _config = [
         Parameter('CONTENT_REPO', None,
                   'Directory where content repo is located'),
+        Parameter('CONTENT_PARTIALS', None,
+                  'Path to CMS Partials snippets'),
         Parameter('CONTENT_LOCATION', None,
                   'Directory where content is located inside CONTENT_REPO'),
         Parameter('STATIC_LOCATION', None,
@@ -44,7 +46,8 @@ class Extension(LuxExtension):
     def context(self, request, context):
         if request.cache.html_main:
             context['html_main'] = request.cache.html_main
-        context['slug'] = slugify(request.path[1:] or 'index')
+        if 'slug' not in context:
+            context['slug'] = slugify(request.path[1:] or 'index')
         return context
 
     def on_loaded(self, app):
@@ -79,6 +82,9 @@ class Extension(LuxExtension):
     def api_sections(self, app):
         """API sections, available whe API_URL is a relative path
         """
+        snippet = app.models.get(snippets_url)
+        if snippet:
+            yield SnippetCRUD(snippet)
         for model in html_contents(app):
             yield ContentCRUD(model)
 
@@ -115,6 +121,8 @@ def setup_content_models(app):
         path = os.path.join(location, 'context')
         if os.path.isdir(path):
             app.config['CONTENT_PARTIALS'] = path
+
+    app.models.register(Snippet('snippet'))
 
     for loc, cfg in config.pop('paths', {}).items():
         path = cfg.pop('path', loc)

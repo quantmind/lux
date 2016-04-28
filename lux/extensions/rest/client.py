@@ -11,7 +11,7 @@ class ApiClient:
     the same application this client is part of)
     '''
     def __init__(self, app):
-        self._app = app
+        self.app = app
         self._threads = threading.local()
         self._headers = [('content-type', 'application/json')]
         token = app.config['API_AUTHENTICATION_TOKEN']
@@ -22,7 +22,7 @@ class ApiClient:
     def http(self):
         http = getattr(self._threads, 'http', None)
         if http is None:
-            self.http = http = self._app.http()
+            self.http = http = self.app.http()
         return http
 
     @http.setter
@@ -40,6 +40,10 @@ class ApiClientRequest:
         self._request = request
         self._http = http
         self._headers = headers
+
+    @property
+    def app(self):
+        return self._request.app
 
     @property
     def url(self):

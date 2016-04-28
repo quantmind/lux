@@ -229,8 +229,6 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
         Parameter('HTML_TEMPLATES', {'/': 'home.html'},
                   'Dictionary of Html templates to render'),
         # CONTENT base parameters
-        Parameter('CONTENT_PARTIALS', None,
-                  'Path to CMS Partials snippets'),
         Parameter('CONTENT_LINKS',
                   {'python': 'https://www.python.org/',
                    'lux': 'https://github.com/quantmind/lux',
@@ -580,7 +578,7 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
             try:
                 ctx = LuxContext()
                 ctx.update(self.config)
-                ctx.update(self.cms.context(ctx))
+                ctx.update(self.cms.context(request, ctx))
                 ctx.update(context or ())
                 for ext in self.extensions.values():
                     if hasattr(ext, 'context'):

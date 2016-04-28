@@ -1,9 +1,6 @@
 from pulsar.apps.wsgi import Route, Html
 from pulsar.utils.structures import AttributeDictionary
 
-from .content import static_context
-from .cache import cached
-
 
 class Page(AttributeDictionary):
     '''An object representing an HTML page
@@ -15,7 +12,7 @@ class Page(AttributeDictionary):
 
 
 class CMS:
-    '''Lux CMS base class.
+    """Lux CMS base class.
 
     Retrieve HTML templates from the :setting:`HTML_TEMPLATES` dictionary
 
@@ -26,7 +23,7 @@ class CMS:
     .. attribute:: key
 
         A key which identify the CMS. Not used yet. #TOTO explain this
-    '''
+    """
     _sitemap = None
 
     def __init__(self, app, key=None):
@@ -104,15 +101,10 @@ class CMS:
             key = '%s:%s' (key, self.key)
         return key
 
-    @cached
-    def context(self, context):
-        '''Static context dictionary for this cms
-        '''
-        path = self.app.config['CONTENT_PARTIALS']
-        if path:
-            return static_context(self.app, path, context)
-        else:
-            return {}
+    def context(self, request, context):
+        """Context dictionary for this cms
+        """
+        return ()
 
 
 _content_types = {'md': 'html',

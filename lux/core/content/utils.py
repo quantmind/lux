@@ -1,34 +1,15 @@
-import os
+from itertools import chain
 
-from lux.utils.files import skipfile, get_rel_dir
-
-from .contents import get_reader
+from pulsar.utils.structures import mapping_iterator
 
 
-def static_context(app, location, context):
-    '''Load static context from ``location``
-    '''
-    ctx = {}
-    if os.path.isdir(location):
-        for dirpath, dirs, filenames in os.walk(location, topdown=False):
-            if skipfile(os.path.basename(dirpath) or dirpath):
-                continue
-            for filename in filenames:
-                if skipfile(filename):
-                    continue
-                file_bits = filename.split('.')
-                bits = [file_bits[0]]
+def identity(x, cfg):
+    return x
 
-                prefix = get_rel_dir(dirpath, location)
-                while prefix:
-                    prefix, tail = os.path.split(prefix)
-                    bits.append(tail)
 
-                filename = os.path.join(dirpath, filename)
-                content = get_reader(app, filename).content(filename)
-                name = '_'.join(reversed(bits))
-                if content.suffix:
-                    name = '%s_%s' % (content.suffix, name)
-                ctx[name] = content.render(app, context)
-                context[name] = ctx[name]
-    return ctx
+def guess(value):
+    return value if len(value) > 1 else value[-1]
+
+
+def chain_meta(meta1, meta2):
+    return chain(mapping_iterator(meta1), mapping_iterator(meta2))

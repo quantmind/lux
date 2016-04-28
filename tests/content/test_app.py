@@ -18,16 +18,6 @@ class TestContentViews(test.AppTestCase):
         remove_repo()
         return super().tearDownClass()
 
-    @classmethod
-    def create_test_application(cls):
-        app = super().create_test_application()
-        app.shell = cls.shell
-        return app
-
-    @classmethod
-    async def shell(cls, *args):
-        return 'foo\n'
-
     async def test_404(self):
         request = await self.client.get('/blog/bla')
         response = request.response
@@ -76,4 +66,6 @@ class TestContentViews(test.AppTestCase):
                                          headers=headers)
 
         data = self.json(request.response, 200)
-        self.assertEqual(data['result'], 'foo\n')
+        self.assertTrue(data['result'])
+        self.assertTrue(data['success'])
+        self.assertEqual(data['event'], 'push')

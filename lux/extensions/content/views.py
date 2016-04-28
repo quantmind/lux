@@ -2,16 +2,13 @@ import json
 import logging
 
 from pulsar import PermissionDenied, Http404, MethodNotAllowed
-from pulsar.apps.wsgi import route, Json, RouterParam
-from pulsar.utils.structures import AttributeDictionary
+from pulsar.apps.wsgi import route, Json
 from pulsar.utils.httpurl import remove_double_slash
 
-from lux import core, forms
+from lux import forms
 from lux.extensions import rest
-from lux.extensions.sitemap import Sitemap, SitemapIndex
-from lux.core.content import html as get_html
 
-from .models import Content, DataError
+from .utils import get_context_files, get_reader, get_content, DataError
 
 
 SLUG_LENGTH = 64
@@ -31,6 +28,28 @@ class TextForm(forms.Form):
 def list_filter(model, filters):
     filters['path:ne'] = remove_double_slash('/%s' % model.html_url)
     return filters
+
+
+class SnippetCRUD(rest.RestRouter):
+
+    def get(self, request):
+        ctx = {}
+        for key in get_context_files(request.app):
+            ctx[key] = request.absolute_uri(key)
+        return self.json(request, ctx)
+
+    @route('<key>', method=('get', 'options'))
+    def _context_path(self, request):
+        if request.method == 'OPTIONS':
+            request.app.fire('on_preflight', request, methods=['GET'])
+            return request.response
+        ctx = get_context_files(request.app)
+        src = ctx.get(request.urlargs['key'])
+        if not src:
+            raise Http404
+        app = request.app
+        content = get_reader(app, src).read(src)
+        return self.json(request, content.json(app))
 
 
 class ContentCRUD(rest.RestRouter):
@@ -67,7 +86,7 @@ class ContentCRUD(rest.RestRouter):
         raise PermissionDenied
 
     @route('_links', method=('get', 'options'))
-    def links(self, request):
+    def _links(self, request):
         if request.method == 'OPTIONS':
             request.app.fire('on_preflight', request, methods=['GET'])
             return request.response
@@ -100,122 +119,3 @@ class ContentCRUD(rest.RestRouter):
             raise MethodNotAllowed
 
         return self.json(request, data)
-
-
-class TextRouterBase(rest.RestMixin, core.HtmlRouter):
-    model = RouterParam()
-
-
-class TextRouter(TextRouterBase):
-    """CRUD views for the text APIs
-    """
-    def get_html(self, request):
-        request.cache.text_router = True
-        return render_content(request, self.model, request.urlargs)
-
-    @route('<path:path>')
-    def read(self, request):
-        return self.get(request)
-
-
-class TextCMS(TextRouter):
-    '''A Text CRUD Router which can be used as CMS Router
-    '''
-    def response_wrapper(self, callable, request):
-        try:
-            return callable(request)
-        except Http404:
-            pass
-
-
-class CMSmap(SitemapIndex):
-    '''Build the sitemap for this Content Management System'''
-    cms = None
-
-    def items(self, request):
-        for index, map in enumerate(self.cms.sitemaps):
-            if not index:
-                continue
-            url = request.absolute_uri(str(map.route))
-            _, last_modified = map.sitemap(request)
-            yield AttributeDictionary(loc=url, lastmod=last_modified)
-
-
-class RouterMap(Sitemap):
-    content_router = None
-
-    def items(self, request):
-        model = self.content_router.model
-        for item in model.all(request):
-            item = item.json(request)
-            yield AttributeDictionary(loc=item['html_url'],
-                                      lastmod=item['modified'],
-                                      priority=item.get('priority', 1))
-
-
-class CMS(core.CMS):
-    '''Override default lux :class:`.CMS` handler
-
-    This CMS handler reads page information from the database and
-    '''
-    def __init__(self, app):
-        super().__init__(app)
-        self.sitemaps = [CMSmap('/sitemap.xml', cms=self)]
-        self._middleware = []
-
-    def add_router(self, router, sitemap=True):
-        if isinstance(router, Content):
-            router = TextCMS(router, html=True)
-        router.model = self.app.models.register(router.model)
-
-        if sitemap:
-            path = str(router.route)
-            if path != '/':
-                url = remove_double_slash('%s/sitemap.xml' % path)
-            else:
-                url = '/sitemap1.xml'
-            sitemap = RouterMap(url, content_router=router)
-            self.sitemaps.append(sitemap)
-
-        self._middleware.append(router)
-
-    def middleware(self):
-        all = self.sitemaps[:]
-        all.extend(self._middleware)
-        return all
-
-    def inner_html(self, request, page, self_comp=''):
-        html = super().inner_html(request, page, self_comp)
-        if not request.cache.text_router:
-            request.cache.html_main = html
-            path = request.path[1:]
-            try:
-                for router in self._middleware:
-                    router_args = router.resolve(path)
-                    if router_args:
-                        router, args = router_args
-                        try:
-                            html = render_content(request, router.model, args)
-                        except Http404:
-                            pass
-            finally:
-                request.cache.pop('html_main')
-        return html
-
-
-def get_content(request, model, path):
-    app = request.app
-    if app.rest_api_client:
-        api = app.api(request)
-        return api.get('%s/%s' % (model.url, path)).json()
-    else:
-        try:
-            return model.get_instance(request, path)
-        except DataError:
-            raise Http404
-
-
-def render_content(request, model, urlargs):
-    path = urlargs.get('path', 'index')
-    content = get_content(request, model, path)
-    return get_html(request, content)

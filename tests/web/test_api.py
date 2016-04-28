@@ -21,11 +21,11 @@ class ApiTest(web.WebsiteTest):
             self.assertEqual(url.path, entry['path'])
 
     async def test_options_article_links(self):
-        request = await self.client.options('/content/articles/links')
+        request = await self.client.options('/content/articles/_links')
         self.assertEqual(request.response.status_code, 200)
 
     async def test_article_links(self):
-        request = await self.client.get('/content/articles/links')
+        request = await self.client.get('/content/articles/_links')
         data = self.json(request.response, 200)['result']
         self.assertEqual(len(data), 2)
         for entry in data:

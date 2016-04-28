@@ -7,7 +7,7 @@ from collections import Mapping
 from dateutil.parser import parse as parse_date
 
 from pulsar import Unsupported
-from pulsar.utils.structures import mapping_iterator
+from pulsar.utils.slugify import slugify
 from pulsar.apps.wsgi import file_response
 from pulsar.utils.httpurl import CacheControl
 
@@ -15,6 +15,7 @@ from lux.utils import iso8601, absolute_uri
 
 from .urlwrappers import (URLWrapper, Processor, MultiValue, Tag, Author,
                           Category)
+from .utils import mapping_iterator, guess
 from ..cache import Cacheable
 
 
@@ -46,8 +47,6 @@ METADATA_PROCESSORS = dict(((p.name, p) for p in (
     MultiValue('keywords', Tag),
     MultiValue('category', Category),
     MultiValue('author', Author),
-    MultiValue('require_css'),
-    MultiValue('require_js'),
     Processor('template'),
     Processor('template-engine')
 )))
@@ -103,6 +102,26 @@ def render_data(app, value, render, context):
         return value
 
 
+def process_meta(meta, cfg):
+    as_list = MultiValue()
+    for key, values in mapping_iterator(meta):
+        key = slugify(key, separator='_')
+        if not isinstance(values, (list, tuple)):
+            values = (values,)
+        if key not in METADATA_PROCESSORS:
+            bits = key.split('_', 1)
+            values = guess(as_list(values, cfg))
+            if len(bits) > 1 and bits[0] == 'meta':
+                k = '_'.join(bits[1:])
+                yield k, values
+            else:
+                yield key, values
+        #
+        elif values:
+            process = METADATA_PROCESSORS[key]
+            yield key, process(values, cfg)
+
+
 class ContentFile:
     """A class for managing a file-based content
     """
@@ -123,55 +142,35 @@ class ContentFile:
                              cache_control=self.cache_control)
 
 
-class HtmlFile(Cacheable):
-    suffix = 'html'
+class HtmlContent(Cacheable):
 
-    def __init__(self, src, **params):
+    def __init__(self, src, body, meta=None):
         self.src = src
-        self.model = params.pop('model', None)
-        self.meta = params
+        self.body = body
+        self.meta = meta
 
     def __repr__(self):
         return self.src
     __str__ = __repr__
-
-    @property
-    def content_type(self):
-        return 'text/html'
 
     def cache_key(self, app):
         return self.src
 
-    def render(self, app, context):
-        render = app.template_engine(self.meta.template_engine)
-        with open(self.src, 'r') as file:
-            template_str = file.read()
-        return render(template_str, context)
-
-
-class HtmlContentFile(HtmlFile):
-    template = None
-
-    def __repr__(self):
-        return self.src
-    __str__ = __repr__
-
-    @property
-    def content_type(self):
-        return 'text/html'
-
-    def json(self, request):
+    def json(self, app):
         """Convert the content into a JSON dictionary
         """
-        app = request.app
-        meta = self.meta.copy()
-        meta['modified'] = modified_datetime(self.src)
-        content, meta = get_reader(app, self.src).read(self.src, meta)
-        render = app.template_engine(meta.get('template_engine'))
-        context = app.config.copy()
-        context.update(meta)
-        meta = render_data(app, meta, render, context)
-        meta['body'] = content
+        if self.meta is not None:
+            meta = self.meta
+            if 'modified' not in meta:
+                meta['modified'] = modified_datetime(self.src)
+            render = app.template_engine(meta.get('template_engine'))
+            context = app.config.copy()
+            context.update(meta)
+            meta = render_data(app, meta, render, context)
+        else:
+            meta = {}
+        meta['body_length'] = len(self.body)
+        meta['body'] = self.body
         return dict(_flatten(meta))
 
 
@@ -182,18 +181,15 @@ def html(request, meta):
     """
     doc = request.html_document
     app = request.app
-    content = meta.get('body')
-    template = meta.get('template')
     context = app.context(request)
-    if template:
-        context['html_main'] = content
-        content = app.render_template(template, context,
-                                      engine=meta.get('template_engine'))
+    content = render_body(app, meta, context)
     #
     image = absolute_uri(request, meta.get('image'))
     doc.meta.update({'og:image': image,
                      'og:published_time': meta.get('date'),
                      'og:modified_time': meta.get('modified')})
+    if meta.get('priority') == '0':
+        meta['head_robots'] = ['noindex', 'nofollow']
     #
     # Add head keys
     head = {}
@@ -237,3 +233,16 @@ def _flatten_value(value):
         return str(value)
     else:
         return value
+
+
+def render_body(app, meta, context):
+    body = meta.get('body', '')
+    engine = meta.get('template_engine')
+    template = meta.get('template')
+    context = context.copy()
+    context.update(meta)
+    body = app.template_engine(engine)(body, context)
+    if template:
+        context['html_main'] = body
+        body = app.render_template(template, context, engine=engine)
+    return body
