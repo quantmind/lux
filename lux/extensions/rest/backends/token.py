@@ -1,15 +1,13 @@
 from pulsar import ImproperlyConfigured, Http401
 from pulsar.utils.pep import to_string
 
-from lux.core import Parameter
-
 from .mixins import jwt, TokenBackendMixin
 from .registration import RegistrationMixin
 from .. import AuthBackend, Authorization
 
 
 class TokenBackend(TokenBackendMixin, RegistrationMixin, AuthBackend):
-    '''Backend based on JWT_
+    """Backend based on JWT_
 
     Once a ``jtw`` is created, authetication is achieved by setting
     the ``Authorization`` header to ``Bearer jwt``.
@@ -18,12 +16,7 @@ class TokenBackend(TokenBackendMixin, RegistrationMixin, AuthBackend):
 
     .. _pyjwt: https://pypi.python.org/pypi/PyJWT
     .. _JWT: http://self-issued.info/docs/draft-ietf-oauth-json-web-token.html
-    '''
-    _config = [
-        Parameter('CORS_ALLOWED_METHODS', 'GET, PUT, POST, DELETE, HEAD',
-                  'Access-Control-Allow-Methods for CORS')
-    ]
-
+    """
     def api_sections(self, app):
         """This backend add the authorization router to the Rest API
         """

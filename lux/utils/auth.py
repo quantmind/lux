@@ -1,4 +1,7 @@
+from random import randint
+
 from pulsar import PermissionDenied, Http401
+from pulsar.utils.string import random_string
 
 
 def ensure_authenticated(request):
@@ -38,3 +41,12 @@ def normalise_email(email):
         email_name, domain_part = email.strip().rsplit('@', 1)
         email = '@'.join([email_name, domain_part.lower()])
     return email
+
+
+def generate_secret(length=50, hexadecimal=False):
+    if hexadecimal:
+        return ''.join((hex(randint(1, 10000)) for _ in range(length)))
+    else:
+        chars = 'abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)'
+        return random_string(min_len=length, max_len=length,
+                             char=chars)

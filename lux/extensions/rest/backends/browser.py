@@ -6,8 +6,6 @@ from urllib.parse import urlencode
 from pulsar import (ImproperlyConfigured, HttpException, Http401,
                     PermissionDenied, Http404, HttpRedirect)
 
-from lux.core import Parameter
-
 from .mixins import jwt, SessionBackendMixin
 from .registration import RegistrationMixin
 from .. import (AuthenticationError, AuthBackend,
@@ -25,18 +23,6 @@ class BrowserBackend(RegistrationMixin,
     It can be used by web servers delegating authentication to a backend API
     or handling authentication on the same site.
     """
-    _config = [
-        Parameter('LOGIN_URL', '/login', 'Url to login page', True),
-        Parameter('LOGOUT_URL', '/logout', 'Url to logout', True),
-        Parameter('REGISTER_URL', '/signup',
-                  'Url to register with site', True),
-        Parameter('TOS_URL', '/tos',
-                  'Terms of Service url',
-                  True),
-        Parameter('PRIVACY_POLICY_URL', '/privacy-policy',
-                  'The url for the privacy policy, required for signups',
-                  True)
-    ]
     LoginRouter = browser.Login
     LogoutRouter = browser.Logout
     SignUpRouter = browser.SignUp

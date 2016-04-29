@@ -19,7 +19,9 @@ __all__ = ['TokenBackend', 'SessionBackend',
 class Extension(LuxExtension):
     _config = [
         Parameter('ANONYMOUS_GROUP', 'anonymous',
-                  'Name of the group for all anonymous users')
+                  'Name of the group for all anonymous users'),
+        Parameter('GENERAL_MAILING_LIST_TOPIC', 'general',
+                  "topic for general mailing list")
     ]
 
     def on_config(self, app):

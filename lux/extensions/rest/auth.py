@@ -1,5 +1,6 @@
 from functools import partial
 
+from pulsar.utils.importer import module_attribute
 from lux.core import LuxExtension
 from lux.forms import ValidationError
 
@@ -51,7 +52,8 @@ class AuthBase(LuxExtension):
 
     def validate_username(self, request, username):
         request = request
-        if request.config['CHECK_USERNAME'](request, username):
+        validator = module_attribute(request.config['CHECK_USERNAME'])
+        if validator(request, username):
             return username
         else:
             raise ValidationError('Username not available')

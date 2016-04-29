@@ -72,6 +72,12 @@ class ConsoleParser(object):
 
 class LuxApp(Application):
 
+    def __call__(self):
+        try:
+            return super().__call__()
+        except ImproperlyConfigured:
+            pass
+
     def on_config(self, actor):
         """This is just a dummy app and therefore we don't want to add
         it to the arbiter monitor collection

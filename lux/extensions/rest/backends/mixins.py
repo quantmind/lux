@@ -6,7 +6,7 @@ from pulsar import ImproperlyConfigured, Http401
 from pulsar.utils.pep import to_string
 from pulsar.apps.wsgi import Route, wsgi_request
 
-from lux.core import Parameter, app_attribute
+from lux.core import app_attribute
 
 try:
     import jwt
@@ -57,7 +57,7 @@ class TokenBackendMixin:
 @app_attribute
 def exclude_urls(app):
     urls = []
-    for url in app.config['EXCLUDE_SESSION_URLS']:
+    for url in app.config['SESSION_EXCLUDE_URLS']:
         urls.append(Route(url))
     return tuple(urls)
 
@@ -82,13 +82,6 @@ class SessionBackendMixin(TokenBackendMixin):
     This mixin implements the request and response middleware and introduce
     three abstract method for session CRUD operations.
     """
-    _config = [
-        Parameter('SESSION_COOKIE_NAME', 'LUX',
-                  'Name of the cookie which stores session id'),
-        Parameter('EXCLUDE_SESSION_URLS', (),
-                  'Tuple of urls where persistent session is not required')
-    ]
-
     def logout(self, request):
         request.cache.user = self.anonymous()
         request.cache.session = self.create_session(request)

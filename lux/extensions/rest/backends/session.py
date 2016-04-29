@@ -2,8 +2,6 @@ import time
 
 from pulsar import PermissionDenied, ImproperlyConfigured
 
-from lux.core import Parameter
-
 from .. import AuthBackend
 from .mixins import jwt, SessionBackendMixin
 from .registration import RegistrationMixin
@@ -26,16 +24,6 @@ class CsrfBackend(AuthBackend):
     This backend is aimed at html web applications with form sending requests
     It requires the :class:`.SessionBackend`.
     """
-    _config = [
-        Parameter('CSRF_EXPIRY', 60*60,
-                  'Cross Site Request Forgery token expiry in seconds.'),
-        Parameter('CSRF_PARAM', 'authenticity_token',
-                  'CSRF parameter name in forms'),
-        Parameter('BAD_CSRF_TOKEN_MESSAGE', 'CSRF token missing or incorrect',
-                  'Message to display when CSRF is wrong'),
-        Parameter('EXPIRED_CSRF_TOKEN_MESSAGE', 'CSRF token expired',
-                  'Message to display when CSRF token has expired')
-    ]
     CSRF_SET = frozenset(('GET', 'HEAD', 'OPTIONS'))
 
     def on_form(self, app, form):
@@ -71,8 +59,8 @@ class CsrfBackend(AuthBackend):
                               secret_key)
 
     def validate_csrf_token(self, request, token):
-        bad_token = request.config['BAD_CSRF_TOKEN_MESSAGE']
-        expired_token = request.config['EXPIRED_CSRF_TOKEN_MESSAGE']
+        bad_token = request.config['CSRF_BAD_TOKEN_MESSAGE']
+        expired_token = request.config['CSRF_EXPIRED_TOKEN_MESSAGE']
         if not jwt:     # pragma    nocover
             raise ImproperlyConfigured('JWT library not available')
         if not token:

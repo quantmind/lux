@@ -12,7 +12,6 @@ just after the :mod:`lux.extensions.base`::
                   ]
 
 """
-from importlib import import_module
 from urllib.parse import urljoin
 
 from pulsar import ImproperlyConfigured
@@ -96,10 +95,8 @@ class Extension(MultiAuthBackend):
                   'secret-key',
                   'A string or bytes used for encrypting data. Must be unique '
                   'to the application and long and random enough'),
-        Parameter('SESSION_EXPIRY', 7*24*60*60,
-                  'Expiry for a session/token in seconds.'),
-        Parameter('CHECK_USERNAME', check_username,
-                  'Check if the username is valid'),
+        Parameter('CHECK_USERNAME', 'lux.extensions.rest:check_username',
+                  'Dotted path to username validation function'),
         Parameter('PERMISSION_LEVELS', {'read': 10,
                                         'create': 20,
                                         'update': 30,
@@ -135,7 +132,48 @@ class Extension(MultiAuthBackend):
                   'URL users are redirected to after logged out',
                   jscontext=True),
         Parameter('WEB_SITE_URL', None,
-                  'Url of the website registering to')]
+                  'Url of the website registering to'),
+        Parameter('LOGIN_URL', '/login', 'Url to login page', True),
+        Parameter('LOGOUT_URL', '/logout', 'Url to logout', True),
+        Parameter('REGISTER_URL', '/signup',
+                  'Url to register with site', True),
+        Parameter('TOS_URL', '/tos',
+                  'Terms of Service url',
+                  True),
+        Parameter('PRIVACY_POLICY_URL', '/privacy-policy',
+                  'The url for the privacy policy, required for signups',
+                  True),
+        #
+        Parameter('CORS_ALLOWED_METHODS', 'GET, PUT, POST, DELETE, HEAD',
+                  'Access-Control-Allow-Methods for CORS'),
+        #
+        # SESSIONS
+        Parameter('SESSION_COOKIE_NAME', 'LUX',
+                  'Name of the cookie which stores session id'),
+        Parameter('SESSION_EXCLUDE_URLS', (),
+                  'Tuple of urls where persistent session is not required'),
+        Parameter('SESSION_EXPIRY', 7 * 24 * 60 * 60,
+                  'Expiry for a session/token in seconds.'),
+        #
+        # CSRF
+        Parameter('CSRF_EXPIRY', 60 * 60,
+                  'Cross Site Request Forgery token expiry in seconds.'),
+        Parameter('CSRF_PARAM', 'authenticity_token',
+                  'CSRF parameter name in forms'),
+        Parameter('CSRF_BAD_TOKEN_MESSAGE', 'CSRF token missing or incorrect',
+                  'Message to display when CSRF is wrong'),
+        Parameter('CSRF_EXPIRED_TOKEN_MESSAGE', 'CSRF token expired',
+                  'Message to display when CSRF token has expired'),
+        #
+        #
+        Parameter('REGISTER_URL', '/signup',
+                  'Url to register with site', True),
+        Parameter('RESET_PASSWORD_URL', '/reset-password',
+                  'If given, add the router to handle password resets',
+                  True),
+        Parameter('ACCOUNT_ACTIVATION_DAYS', 2,
+                  'Number of days the activation code is valid')
+    ]
 
     def on_config(self, app):
         self.backends = []
@@ -147,7 +185,8 @@ class Extension(MultiAuthBackend):
             else:
                 app.config['API_URL'] = str(RestRoot(url))
 
-        module = import_module(app.meta.module_name)
+        if not app.config['PASSWORD_SECRET_KEY']:
+            app.config['PASSWORD_SECRET_KEY'] = app.config['SECRET_KEY']
 
         for dotted_path in app.config['AUTHENTICATION_BACKENDS']:
             backend = module_attribute(dotted_path)
@@ -155,7 +194,6 @@ class Extension(MultiAuthBackend):
                 self.logger.error('Could not load backend "%s"', dotted_path)
                 continue
             backend = backend()
-            backend.setup(app.config, module, app.params)
             self.backends.append(backend)
             app.bind_events(backend, exclude=('on_config',))
 

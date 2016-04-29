@@ -41,3 +41,11 @@ def json_value(value):
 
 def json_sequence(value):
     return [json_value(v) for v in value]
+
+
+def multi_pop(key, *dicts):
+    value = None
+    for d in dicts:
+        if key in d:
+            value = d.pop(key)
+    return value

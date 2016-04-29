@@ -84,9 +84,9 @@ class UniqueField:
     '''
     validation_error = '{0} not available'
 
-    def __init__(self, field=None, model=None, validation_error=None):
-        self.field = field
+    def __init__(self, model=None, field=None, validation_error=None):
         self.model = model
+        self.field = field
         self.validation_error = validation_error or self.validation_error
 
     def __call__(self, value, bfield):

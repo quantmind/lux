@@ -5,6 +5,7 @@ import string
 import logging
 import json
 import pickle
+from collections import OrderedDict
 from unittest import mock
 from urllib.parse import urlparse, urlunparse
 from io import StringIO
@@ -30,6 +31,7 @@ __all__ = ['TestClient',
            'TestCase',
            'AppTestCase',
            'WebApiTestCase',
+           'load_fixtures',
            'randomname',
            'green',
            'sequential',
@@ -78,8 +80,6 @@ def test_app(test, config_file=None, config_params=True, argv=None, **params):
         kwargs.update(params)
         if 'SECRET_KEY' not in kwargs:
             kwargs['SECRET_KEY'] = generate_secret()
-        if 'PASSWORD_SECRET_KEY' not in kwargs:
-            kwargs['PASSWORD_SECRET_KEY'] = generate_secret()
     else:
         kwargs = params
     config_file = config_file or test.config_file
@@ -104,6 +104,41 @@ def get_params(*names):
         else:
             return
     return cfg
+
+
+def load_fixtures(app, path=None):
+    if not path:
+        path = os.path.join(app.meta.path, 'fixtures')
+
+    fixtures = OrderedDict()
+    if os.path.isdir(path):
+        for filename in os.listdir(path):
+            if filename.endswith('.json'):
+                with open(os.path.join(path, filename), 'r') as file:
+                    fixtures.update(json.load(file,
+                                              object_pairs_hook=OrderedDict))
+    else:
+        logger.error('Could not find %s path for fixtures', path)
+
+    total = 0
+
+    for model, items in fixtures.items():
+        logger.debug('Creating %d fixtures for "%s"', len(items), model)
+        if model == 'user':
+            request = app.wsgi_request()
+            auth = app.auth_backend
+            for params in items:
+                auth.create_user(request, **params)
+                total += 1
+        else:
+            odm = app.odm()
+            model = odm[model]
+            with odm.begin() as session:
+                for params in items:
+                    session.add(model(**params))
+                total += 1
+
+    logger.info('Created %s objects from %d models', total, len(fixtures))
 
 
 class TestClient:
@@ -148,6 +183,7 @@ class TestClient:
 
         request = self.app.wsgi_request(path=path, headers=heads, body=body,
                                         **extra)
+        request.environ['SERVER_NAME'] = 'localhost'
         start_response = mock.MagicMock()
         return request, start_response
 
@@ -598,6 +634,8 @@ class TestApp:
 
     def __init__(self, app):
         self.app = app
+        app.stdout = StringIO()
+        app.stderr = StringIO()
 
     def __getattr__(self, name):
         return getattr(self.app, name)

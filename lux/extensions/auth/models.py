@@ -91,8 +91,8 @@ class Group(Model):
 
 class Permission(Model):
     id = Column(Integer, primary_key=True)
-    name = Column(String(120), unique=True)
-    description = Column(String(120), unique=True)
+    name = Column(String(60), unique=True)
+    description = Column(String(120))
     policy = Column(JSONType)
 
 

@@ -36,6 +36,10 @@ class RestColumn(rest.RestColumn):
 class RestModel(rest.RestModel):
     '''A rest model based on SqlAlchemy ORM
     '''
+    def rest_columns(self):
+        self.columns()  # make sure columns are loaded
+        return self._rest_columns
+
     def session(self, request):
         '''Obtain a session
         '''
@@ -94,7 +98,7 @@ class RestModel(rest.RestModel):
         return meta
 
     def load_related(self,  instance):
-        for column in self._rest_columns.values():
+        for column in self.rest_columns().values():
             if isinstance(column, ModelColumn):
                 getattr(instance, column.name)
 
@@ -127,7 +131,7 @@ class RestModel(rest.RestModel):
         '''Set the the attribute ``name`` to ``value`` in a model ``instance``
         '''
         current_value = getattr(instance, name, None)
-        col = self._rest_columns.get(name)
+        col = self.rest_columns().get(name)
         if isinstance(col, ModelColumn):
             if isinstance(current_value, (list, set)):
                 if not isinstance(value, (list, tuple, set)):
@@ -159,11 +163,12 @@ class RestModel(rest.RestModel):
         exclude = set(exclude or ())
         exclude.update(self._exclude)
         columns = self.columns()
+        rest_columns = self.rest_columns()
 
         fields = {}
         for col in columns:
             name = col['name']
-            restcol = self._rest_columns[name]
+            restcol = rest_columns[name]
             if name in exclude:
                 continue
             try:
@@ -233,8 +238,8 @@ class RestModel(rest.RestModel):
     def _load_columns(self):
         '''List of column definitions
         '''
-        db_columns = self._get_db_columns()
         self._rest_columns = {}
+        db_columns = self._get_db_columns()
         input_columns = self._columns or []
         cols = db_columns._data.copy()
         columns = []

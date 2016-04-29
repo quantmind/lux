@@ -26,6 +26,7 @@ from pulsar.apps.http import HttpClient
 
 from lux import __version__
 from lux.utils.files import skipfile
+from lux.utils.data import multi_pop
 
 from .commands import ConsoleParser, CommandError, ConfigError, service_parser
 from .extension import LuxExtension, Parameter, EventMixin, app_attribute
@@ -116,7 +117,9 @@ def execute_app(app, argv=None, **params):  # pragma    nocover
 
 class App(LazyWsgi):
 
-    def __init__(self, config_file, script=None, argv=None, **params):
+    def __init__(self, config_file, script=None, argv=None, config=None, **kw):
+        params = config or {}
+        params.update(kw)
         self._params = params
         self._config_file = config_file
         self._script = script
@@ -198,7 +201,7 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
                   'Application site name', True),
         Parameter('ENCODING', 'utf-8',
                   'Default encoding for text.'),
-        Parameter('EXTRA_SETTINGS_FILE', None,
+        Parameter('SETTINGS_FILES', None,
                   'Path to a json file with additional settings'),
         Parameter('ERROR_HANDLER', error_handler,
                   'Handler of Http exceptions'),
@@ -378,7 +381,6 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
             if not self.cfg:
                 self.cfg = pulsar.Config(debug=self.debug)
             environ['pulsar.cfg'] = self.cfg
-
         request.cache.app = self
         return request
 
@@ -738,7 +740,7 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
                 return result
 
     # INTERNALS
-    def _setup_logger(self, config, module, opts):
+    def _setup_logger(self, config, opts):
         debug = opts.debug or self.params.get('debug', False)
         cfg = pulsar.Config()
         cfg.set('debug', debug)
@@ -748,7 +750,7 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
         if self.params.get('SETUP_LOGGER', True):
             self.logger = cfg.configured_logger('lux')
         else:
-            super()._setup_logger(config, module, opts)
+            super()._setup_logger(config, opts)
 
     def _config_context(self):
         cfg = self.config
@@ -785,8 +787,7 @@ def _module_types(mod, filter, cache=None):
 
 
 def _build_config(self):
-    module_name = self.callable._config_file
-    # Check if an extension module is available
+    module_name = self.callable._config_file or 'lux'
     module = import_module(module_name)
     self.meta = self.meta.copy(module)
     if self.meta.name != 'lux':
@@ -802,29 +803,30 @@ def _build_config(self):
         raise ConfigError(opts.config)
     #
     # setup application
-    config = {}
-    self.setup(config, config_module, self.params, opts)
+    config = {'_parameters': {}}
+    self.setup(config, opts)
+    configs = _load_configs(self, config, config_module)
     #
     # Load extensions
     self.logger.debug('Setting up extensions')
     apps = list(config['EXTENSIONS'])
     _add_app(apps, 'lux', 0)
     _add_app(apps, self.meta.name)
-    media_url = config['MEDIA_URL']
-    if media_url:
-        config['MEDIA_URL'] = remove_double_slash('/%s/' % media_url)
-    config['EXTENSIONS'] = tuple(apps)
+
     extensions = self.extensions
-    for name in config['EXTENSIONS'][1:]:
+    for name in apps[1:]:
         Ext = self.load_extension(name)
         if Ext:
             extension = Ext()
             extensions[extension.meta.name] = extension
             self.bind_events(extension)
-            extension.setup(config, config_module, self.params)
+            extension.setup(config)
 
-    if config['EXTRA_SETTINGS_FILE']:
-        _config_from_json(self, config['EXTRA_SETTINGS_FILE'], config)
+    _config_from_json(configs, config)
+    config['EXTENSIONS'] = tuple(apps)
+    media_url = config['MEDIA_URL']
+    if media_url:
+        config['MEDIA_URL'] = remove_double_slash('/%s/' % media_url)
 
     return config
 
@@ -873,25 +875,57 @@ def _build_middleware(self, extensions, middleware, rmiddleware):
     return middleware, rmiddleware
 
 
-def _config_from_json(self, filename, config):
-    try:
-        with open(filename) as fp:
-            extra = json.load(fp)
-    except FileNotFoundError:
-        self.logger.error('Could not load "%s", no such file', filename)
-        return
-    except json.JSONDecodeError:
-        self.logger.error('Could not json decode "%s", skipping', filename)
-        return
+def _load_configs(self, config, config_module):
+    params = self.params.copy()
+    cfg = dict(_load_config(vars(config_module)))
+    configs = [cfg]
+    settings_files = multi_pop('SETTINGS_FILES', cfg, params)
 
-    for namespace, cfg in extra.items():
-        # Allow one nesting
-        if namespace not in config:
-            if not isinstance(cfg, dict):
-                continue
-            for name, value in cfg.items():
-                fullname = '%s_%s' % (namespace, name)
-                if fullname in config:
-                    config[fullname] = value
-        else:
-            config[namespace] = cfg
+    if settings_files:
+        if isinstance(settings_files, str):
+            settings_files = [settings_files]
+        ok = []
+
+        for filename in settings_files:
+            try:
+                with open(filename) as fp:
+                    cfg = json.load(fp)
+            except FileNotFoundError:
+                self.logger.error('Could not load "%s", no such file',
+                                  filename)
+            except json.JSONDecodeError:
+                self.logger.error('Could not json decode "%s", skipping',
+                                  filename)
+            else:
+                cfg.pop('SETTINGS_FILES', None)
+                configs.append(cfg)
+                ok.append(filename)
+
+        if ok:
+            config['SETTINGS_FILES'] = ok
+
+    configs.append(params)
+    config['EXTENSIONS'] = multi_pop('EXTENSIONS', *configs) or ()
+    return configs
+
+
+def _load_config(cfg):
+    for name, value in cfg.items():
+        if name == name.upper():
+            yield name, value
+
+
+def _config_from_json(configs, parameters):
+
+    for config in configs:
+        for namespace, cfg in config.items():
+            # Allow one nesting
+            if namespace not in parameters:
+                if not isinstance(cfg, dict):
+                    continue
+                for name, value in cfg.items():
+                    fullname = '%s_%s' % (namespace, name)
+                    if fullname in parameters:
+                        parameters[fullname] = value
+            else:
+                parameters[namespace] = cfg

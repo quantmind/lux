@@ -3,23 +3,12 @@ from datetime import datetime, timedelta
 
 from pulsar import HttpGone, Http404
 
-from lux.core import Parameter
 from lux.extensions.rest import AuthenticationError, website_url
 
 
 class RegistrationMixin:
     """Mixin for adding User account registration and email confirmation
     """
-    _config = [
-        Parameter('REGISTER_URL', '/signup',
-                  'Url to register with site', True),
-        Parameter('RESET_PASSWORD_URL', '/reset-password',
-                  'If given, add the router to handle password resets',
-                  True),
-        Parameter('ACCOUNT_ACTIVATION_DAYS', 2,
-                  'Number of days the activation code is valid')
-    ]
-
     def auth_key_expiry(self, request):
         days = request.config['ACCOUNT_ACTIVATION_DAYS']
         return datetime.now() + timedelta(days=days)

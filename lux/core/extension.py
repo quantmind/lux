@@ -184,23 +184,17 @@ class LuxExtension(metaclass=ExtensionType):
                 raise ImproperlyConfigured(
                     '"%s" extension requires "%s" extension' % (self, ext))
 
-    def setup(self, config, module, params, opts=None):
-        '''Internal method which prepare the extension for usage.
-        '''
-        if '_parameters' not in config:
-            config['_parameters'] = {}
+    def setup(self, config, opts=None):
+        """Internal method which prepare the extension for usage.
+        """
         parameters = config['_parameters']
         for setting in self.meta.config.values():
             if setting.name in parameters:
                 setting.override = True
             parameters[setting.name] = setting
-            if setting.name in params:
-                value = params[setting.name]
-            else:
-                default = os.environ.get(setting.name, setting.default)
-                value = getattr(module, setting.name, default)
+            value = os.environ.get(setting.name, setting.default)
             config[setting.name] = value
-        self._setup_logger(config, module, opts)
+        self._setup_logger(config, opts)
 
     def get_template_full_path(self, app, name):
         '''Full path for a template name
@@ -236,7 +230,7 @@ class LuxExtension(metaclass=ExtensionType):
     def __str__(self):
         return self.__repr__()
 
-    def _setup_logger(self, config, module, opts):
+    def _setup_logger(self, config, opts):
         '''Called by :meth:`setup` method to setup the :attr:`logger`.'''
         self.logger = logging.getLogger(self.meta.name)
 

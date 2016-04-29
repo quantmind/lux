@@ -4,7 +4,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.orm import joinedload
 from datetime import datetime
 
-from lux.core import cached, Parameter, json_message
+from lux.core import cached, json_message
 from lux.utils.crypt import digest
 from lux.utils.auth import normalise_email
 from lux.extensions.rest import PasswordMixin, backends, AuthenticationError
@@ -17,9 +17,6 @@ class AuthMixin(PasswordMixin):
     """Mixin to implement authentication backend based on
     SQLAlchemy models
     """
-    _config = [Parameter('GENERAL_MAILING_LIST_TOPIC', 'general',
-                         "topic for general mailing list")]
-
     def get_user(self, request, user_id=None, token_id=None, username=None,
                  email=None, auth_key=None, **kw):
         """Securely fetch a user by id, username, email or auth key
