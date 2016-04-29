@@ -34,8 +34,5 @@ class Extension(LuxExtension):
                 route = AdminRouterCls()
                 route.model = app.models.register(route.model)
                 admin.add_child(route)
-                # path = route.path()
-                # if not path.endswith('/'):
-                #     middleware.append(RedirectRouter('%s/' % path, path))
             middleware.append(admin)
             return middleware

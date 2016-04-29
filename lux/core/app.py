@@ -153,29 +153,6 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
     the web server.
     An :class:`App` is not usually initialised directly, the higher level
     :func:`.execute_from_config` is used instead.
-
-    .. attribute:: config
-
-        The configuration dictionary containing all patameters specified in
-        the :attr:`config_module`.
-
-    .. attribute:: debug
-
-        debug flag set at runtime via the ``debug`` flag::
-
-            python myappscript.py serve --debug
-
-    .. attribute:: handler
-
-        The :class:`~pulsar.apps.wsgi.handlers.WsgiHandler` for this
-        application. It is created the first time the callable
-        method of this :class:`.Application` is accessed by the WSGI
-        server.
-
-    .. attribute:: auth_backend
-
-        Used by the sessions extension
-
     """
     cfg = None
     debug = False
