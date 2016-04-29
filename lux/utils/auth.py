@@ -8,7 +8,7 @@ def ensure_authenticated(request):
     :return:            user object
     """
     user = request.cache.user
-    if not user.is_authenticated():
+    if not user or not user.is_authenticated():
         raise Http401('Token', 'Requires authentication')
     return user
 

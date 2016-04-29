@@ -279,6 +279,20 @@ class Form(metaclass=FormType):
                 messages.append(msg)
             return messages
 
+    def message(self):
+        messages = self.tojson()
+        msg = ''
+        if isinstance(messages, dict):
+            messages = messages['errors']
+            msg = 'ERROR: '
+        for idx, message in enumerate(messages):
+            if idx:
+                msg += ', '
+            if 'field' in message:
+                msg += '%s: ' % message['field']
+            msg += message['message']
+        return msg
+
     # INTERNALS
     def _check_unwind(self, raise_error=True):
         if not hasattr(self, '_data'):

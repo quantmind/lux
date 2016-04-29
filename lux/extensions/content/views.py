@@ -1,28 +1,15 @@
-import json
 import logging
 
-from pulsar import PermissionDenied, Http404, MethodNotAllowed
-from pulsar.apps.wsgi import route, Json
+from pulsar import Http404, MethodNotAllowed
+from pulsar.apps.wsgi import route
 from pulsar.utils.httpurl import remove_double_slash
 
-from lux import forms
 from lux.extensions import rest
 
-from .utils import get_context_files, get_reader, get_content, DataError
+from .utils import get_context_files, get_reader, get_content
 
 
-SLUG_LENGTH = 64
 logger = logging.getLogger('lux.extensions.content')
-
-
-class TextForm(forms.Form):
-    title = forms.CharField()
-    slug = forms.CharField(required=False,
-                           max_length=SLUG_LENGTH)
-    author = forms.CharField(required=False)
-    body = forms.TextField(text_edit=json.dumps({'mode': 'markdown'}))
-    tags = forms.CharField(required=False)
-    published = forms.DateTimeField(required=False)
 
 
 def list_filter(model, filters):
@@ -59,31 +46,6 @@ class ContentCRUD(rest.RestRouter):
         filters = list_filter(self.model, {})
         return self.model.collection_response(request, sortby='date:desc',
                                               **filters)
-
-    def post(self, request):
-        '''Create a new model
-        '''
-        model = self.model
-        if not model.form:
-            raise Http404
-        backend = request.cache.auth_backend
-        if backend.has_permission(request, model.name, 'create'):
-            data, files = self.json_data_files(request)
-            form = model.form(request, data=data, files=files)
-            if form.is_valid():
-                try:
-                    instance = self.create_model(request, form.cleaned_data)
-                except DataError as exc:
-                    logger.exception('Could not create model')
-                    form.add_error_message(str(exc))
-                    data = form.tojson()
-                else:
-                    data = model.serialise(request, instance)
-                    request.response.status_code = 201
-            else:
-                data = form.tojson()
-            return Json(data).http_response(request)
-        raise PermissionDenied
 
     @route('_links', method=('get', 'options'))
     def _links(self, request):

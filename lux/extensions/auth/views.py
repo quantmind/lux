@@ -10,8 +10,7 @@ from pulsar import MethodNotAllowed, PermissionDenied, Http404
 from pulsar.apps.wsgi import Json
 
 from .forms import (permission_model, group_model, user_model,
-                    registration_model, mailing_list_model,
-                    ChangePasswordForm)
+                    registration_model, mailing_list_model)
 
 
 class PermissionCRUD(CRUD):
@@ -94,9 +93,6 @@ class UserCRUD(CRUD):
 
 
 class Authorization(rest.Authorization):
-    '''Override Authorization router with a new create_user_form
-    '''
-    change_password_form = ChangePasswordForm
 
     @route('mailing-list', method=('post', 'options'))
     def mailing_list(self, request):

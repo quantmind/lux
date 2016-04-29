@@ -1,10 +1,10 @@
-"""Utilities for testing Lux applications
-"""
+"""Utilities for testing Lux applications"""
 import os
 import unittest
 import string
 import logging
 import json
+import pickle
 from unittest import mock
 from urllib.parse import urlparse, urlunparse
 from io import StringIO
@@ -18,12 +18,22 @@ from pulsar.utils.websocket import (SUPPORTED_VERSIONS, websocket_key,
                                     frame_parser)
 from pulsar.apps.wsgi import WsgiResponse
 from pulsar.apps.http import JSON_CONTENT_TYPES
-from pulsar.apps.test import test_timeout, sequential   # noqa
+from pulsar.apps.test import test_timeout, sequential
 
 from lux.core import App
 from lux.core.commands.generate_secret_key import generate_secret
 
 logger = logging.getLogger('lux.test')
+
+
+__all__ = ['TestClient',
+           'TestCase',
+           'AppTestCase',
+           'WebApiTestCase',
+           'randomname',
+           'green',
+           'sequential',
+           'test_timeout']
 
 
 def randomname(prefix=None, len=8):
@@ -302,6 +312,13 @@ class TestMixin:
             meta = bs.find('meta', property='og:image')
             self.assertEqual(meta['content'], image)
 
+    def get_command(self, app, command):
+        cmd = app.get_command(command)
+        self.assertTrue(cmd.logger)
+        self.assertEqual(cmd.name, command)
+        self.assertTrue(cmd.help)
+        return cmd
+
     def _content(self, response):
         return b''.join(response.content)
 
@@ -326,18 +343,18 @@ class TestCase(unittest.TestCase, TestMixin):
         """Fetch a command."""
         if not app:
             app = self.application(**params)
-        cmd = app.get_command(command)
-        self.assertTrue(cmd.logger)
-        self.assertEqual(cmd.name, command)
-        return cmd
+        return self.get_command(app, command)
 
 
 class AppTestCase(unittest.TestCase, TestMixin):
-    """Test class for testing a single aaplication
+    """Test class for testing a single application
     """
     odm = None
     """Original odm handler"""
     app = None
+    """Test class application"""
+    datastore = None
+    """Test class datastore dictionary"""
 
     @classmethod
     def setUpClass(cls):
@@ -378,8 +395,9 @@ class AppTestCase(unittest.TestCase, TestMixin):
         DATASTORE = cls.app.config['DATASTORE']
         if not isinstance(DATASTORE, dict):
             DATASTORE = {'default': DATASTORE}
-        # Replace datastores
-        datastore = {}
+        #
+        # Replace datastores with temporary ones for this test class
+        cls.datastore = {}
         for original_engine, database in cls.dbs.items():
             orig_url = str(original_engine.url)
             for engine in odm.engines():
@@ -387,8 +405,8 @@ class AppTestCase(unittest.TestCase, TestMixin):
                     new_url = str(engine.url)
                     for key, url in DATASTORE.items():
                         if url == orig_url:
-                            datastore[key] = new_url
-        cls.app.config['DATASTORE'] = datastore
+                            cls.datastore[key] = new_url
+        cls.app.config['DATASTORE'] = cls.datastore
         odm.table_create()
         cls.populatedb()
 
@@ -431,6 +449,21 @@ class AppTestCase(unittest.TestCase, TestMixin):
     @classmethod
     def api_url(cls, path):
         return remove_double_slash('%s/%s' % (cls.app.config['API_URL'], path))
+
+    @classmethod
+    def clone_app(cls):
+        sapp = pickle.dumps(cls.app.callable)
+        app = pickle.loads(sapp).setup(handler=False)
+        if cls.datastore:
+            app.config['DATASTORE'] = cls.datastore
+        return TestApp(app)
+
+    def fetch_command(self, command, new=False):
+        """Fetch a command."""
+        app = self.app
+        if new:
+            app = self.clone_app()
+        return self.get_command(app, command)
 
     def create_superuser(self, username, email, password):
         """A shortcut for the create_superuser command
@@ -559,3 +592,20 @@ class Response:
             elif ct.startswith('text/'):
                 return self.text()
         return self.content
+
+
+class TestApp:
+
+    def __init__(self, app):
+        self.app = app
+
+    def __getattr__(self, name):
+        return getattr(self.app, name)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        odm = self.odm
+        if odm:
+            odm.close()

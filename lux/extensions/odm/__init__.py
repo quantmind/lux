@@ -12,11 +12,9 @@ _ ..pulsar-odm: https://github.com/quantmind/pulsar-odm
 from lux.core import Parameter, LuxExtension, app_attribute
 from lux.extensions.rest import SimpleBackend
 
-from pulsar.utils.log import LocalMixin
-
 from odm import declared_attr
 
-from .exc import *     # noqa
+from .exc import OdmError, QueryError, ModelNotFound
 from .mapper import Mapper, model_base
 from .views import CRUD, RestRouter
 from .models import RestModel, RestColumn, ModelColumn
@@ -27,7 +25,8 @@ from .ws import WsModelRpc
 __all__ = ['model_base', 'declared_attr',
            'CRUD', 'RestRouter',
            'RestModel', 'RestColumn',
-           'ModelColumn', 'RelationshipField', 'UniqueField']
+           'ModelColumn', 'RelationshipField', 'UniqueField',
+           'OdmError', 'QueryError', 'ModelNotFound']
 
 
 sql_to_broadcast = {'insert': 'create'}
@@ -55,7 +54,7 @@ class Extension(LuxExtension, WsModelRpc):
     def on_config(self, app):
         '''Initialise Object Data Mapper'''
         self.require(app, 'lux.extensions.rest')
-        app.odm = Odm(app, app.config['DATASTORE'])
+        app.odm = Odm(app)
         app.add_events(('on_before_commit', 'on_after_commit'))
 
     def on_after_commit(self, app, session, changes):
@@ -97,26 +96,34 @@ def broadcast_models(app):
     return models
 
 
-class Odm(LocalMixin):
+class Odm:
     '''Lazy object data mapper container
 
     Usage:
 
         odm = app.odm()
     '''
+    mapper = None
 
-    def __init__(self, app, binds):
+    def __init__(self, app):
         self.app = app
-        self.binds = binds
+
+    @property
+    def binds(self):
+        return self.app.config['DATASTORE']
 
     def __call__(self):
-        if self.local.mapper is None:
-            self.local.mapper = Mapper(self.app, self.binds)
-        return self.local.mapper
+        if self.mapper is None:
+            self.mapper = Mapper(self.app, self.binds)
+        return self.mapper
+
+    def close(self):
+        if self.mapper:
+            self.mapper.close()
 
     def database_create(self, database, **params):
-        odm = Odm(self.app, self.binds)
-        odm.local.mapper = self().database_create(database, **params)
+        odm = self.__class__(self.app)
+        odm.mapper = self().database_create(database, **params)
         return odm
 
     async def tables(self):
