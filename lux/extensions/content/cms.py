@@ -5,26 +5,40 @@ from pulsar import Http404
 
 from lux.extensions.sitemap import Sitemap, SitemapIndex
 from lux.core.content import html as get_html
-from lux.extensions import rest
 from lux import core
-
-from .models import Content
-from .utils import get_content, get_context
 
 
 def render_content(request, model, urlargs):
     path = urlargs.get('path', 'index')
-    content = get_content(request, model, path)
+    content = model.get_content(request, path)
     return get_html(request, content)
 
 
-class TextRouterBase(rest.RestMixin, core.HtmlRouter):
-    model = RouterParam()
+class CmsContent:
+
+    def __init__(self, group, path=None, meta=None, api=None):
+        self.group = group
+        self.path = path if path is not None else group
+        self.meta = meta
+        self.api = api or 'contents'
+
+    def get_content(self, request, path):
+        api = request.app.api(request)
+        api_path = self.api_path(request, path)
+        return api.get(api_path).json()
+
+    def api_path(self, request, path):
+        return '%s/%s/%s' % (self.api, self.group, path)
 
 
-class TextRouter(TextRouterBase):
+class TextRouter(core.HtmlRouter):
     """CRUD views for the text APIs
     """
+    model = RouterParam()
+
+    def __init__(self, model):
+        super().__init__(model.path, model=model)
+
     def get_html(self, request):
         request.cache.text_router = True
         return render_content(request, self.model, request.urlargs)
@@ -81,9 +95,8 @@ class CMS(core.CMS):
         self._middleware = []
 
     def add_router(self, router, sitemap=True):
-        if isinstance(router, Content):
-            router = TextCMS(router, html=True)
-        router.model = self.app.models.register(router.model)
+        if isinstance(router, CmsContent):
+            router = TextCMS(router)
 
         if sitemap:
             path = str(router.route)
@@ -119,5 +132,5 @@ class CMS(core.CMS):
                 request.cache.pop('html_main')
         return html
 
-    def context(self, request, context):
-        return get_context(request, context)
+    #def context(self, request, context):
+    #    return get_context(request, context)

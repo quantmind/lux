@@ -101,7 +101,18 @@ class TestPostgreSqlBase(test.AppTestCase):
 
 
 class TestPostgreSql(TestPostgreSqlBase):
+    async def test_relationship_field(self):
+        token = await self._token()
+        person = await self._create_person(token, 'spiderman')
+        task = await self._create_task(token,
+                                       'climb a wall a day',
+                                       person)
+        self.assertTrue('assigned' in task)
+        request = await self.client.get('/tasks/%s' % task['id'])
+        data = self.json(request.response, 200)
+        self.assertEqual(data['assigned'], task['assigned'])
 
+class d:
     async def test_odm(self):
         tables = await self.app.odm.tables()
         self.assertTrue(tables)
@@ -256,7 +267,8 @@ class TestPostgreSql(TestPostgreSqlBase):
     async def test_relationship_field(self):
         token = await self._token()
         person = await self._create_person(token, 'spiderman')
-        task = await self._create_task(token, 'climb a wall a day',
+        task = await self._create_task(token,
+                                       'climb a wall a day',
                                        person)
         self.assertTrue('assigned' in task)
 

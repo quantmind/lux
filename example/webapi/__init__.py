@@ -1,6 +1,6 @@
 from lux.core import LuxExtension, route
 from lux.extensions import odm, rest
-from lux.extensions.auth.forms import UserModel, group_model
+from lux.extensions.auth.forms import UserModel
 from lux.utils.auth import ensure_authenticated
 
 
@@ -16,7 +16,7 @@ def user_model():
                       id_field='username',
                       repr_field='name',
                       exclude=('password',))
-    model.add_related_column('groups', group_model)
+    model.add_related_column('groups', model='groups')
     return model
 
 

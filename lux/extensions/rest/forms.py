@@ -1,50 +1,44 @@
 import logging
 import json
 
-from sqlalchemy.inspection import inspect
-
 from lux import forms
 from lux.forms.fields import MultipleMixin
 
-from .models import ModelMixin
-
-logger = logging.getLogger('lux.extensions.odm')
+logger = logging.getLogger('lux.extensions.rest')
 
 
-class RelationshipField(MultipleMixin, forms.Field, ModelMixin):
-    '''A :class:`.Field` for database relationships
-    '''
+class RelationshipField(MultipleMixin, forms.Field):
+    """A :class:`.Field` for rest-models relationships
+    """
     validation_error = 'Invalid {0}'
     attrs = {'type': 'select'}
 
     def __init__(self, model, request_params=None, format_string=None,
-                 get_field=None, **kw):
+                 get_field=None, path=None, **kw):
         super().__init__(**kw)
-        self.set_model(model)
+        self.model = model
+        self.path = path
         self.request_params = request_params
-        self.format_string = format_string
         self.get_field = get_field
-
-    def get_model(self):
-        if hasattr(self.model, '__call__'):
-            self.model = self.model()
-        return self.model
 
     def getattrs(self, form=None):
         attrs = super().getattrs(form)
         if not form:
             logger.error('%s %s cannot get remote target. No form available',
                          self.__class__.__name__, self.name)
-        else:
-            model = self.get_model()
-            attrs.update(model.field_options(form.request))
-            if self.format_string:
-                attrs['data-remote-options-value'] = json.dumps({
-                    'type': 'formatString',
-                    'source': self.format_string})
-            if self.request_params:
-                attrs['data-remote-options-params'] = json.dumps(
-                    self.request_params)
+            return attrs
+
+        request = form.request
+        model = request.app.models.get(self.model)
+        if not model:
+            logger.error('%s cannot get remote target. Model %s not available',
+                         self, self.model)
+            return attrs
+
+        target = model.get_target(request,
+                                  path=self.path,
+                                  params=self.request_params)
+        attrs['relationship'] = json.dumps(target)
         return attrs
 
     def _clean(self, value, bfield):

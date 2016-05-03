@@ -54,19 +54,20 @@ class Content(rest.RestModel):
 
     This model provide read-only operations
     '''
-    def __init__(self, name, repo, path=None, ext='md', content_meta=None,
-                 columns=None, api_prefix='content'):
-        directory = os.path.join(repo, name)
-        if not os.path.isdir(directory):
-            os.makedirs(directory)
-        self.directory = directory
+    def __init__(self, name, repo=None, path=None, ext='md',
+                 content_meta=None, columns=None,
+                 api_prefix='content'):
+        if repo:
+            repo = os.path.join(repo, name)
+            if not os.path.isdir(repo):
+                os.makedirs(repo)
+        self.directory = repo
         self.ext = ext
         self.content_meta = content_meta or {}
         if path is None:
             path = name
         columns = columns or COLUMNS[:]
-        api_url = '%s/%s' % (api_prefix, name)
-        super().__init__(name, columns=columns, url=api_url, html_url=path)
+        super().__init__(name, columns=columns, url=api_prefix, html_url=path)
 
     def get_instance(self, request, path):
         return self.serialise_model(request, self.read(request, path))
@@ -80,25 +81,20 @@ class Content(rest.RestModel):
                                    request.path)
         return session
 
-    def serialise_model(self, request, content, in_list=False, **kw):
+    def tojson(self, request, content, in_list=False, **kw):
         if isinstance(content, ContentFile):
             return content.response(request)
         if not isinstance(content, dict):
-            content = self.tojson(request, content, **kw)
+            content = content.json(request.app)
+            path = content.get('path')
+            if path is not None:
+                content['slug'] = slugify(path) or 'index'
+                if self.html_url:
+                    path = '/'.join(path.split('/')[2:])
+                content['html_url'] = self.get_html_url(request, path)
         if in_list:
             content.pop('body', None)
         return content
-
-    def tojson(self, request, obj, exclude=None, **kw):
-        meta = obj.json(request.app)
-        path = meta.get('path')
-        if path is not None:
-            meta['slug'] = slugify(path) or 'index'
-            if self.html_url:
-                path = '/'.join(path.split('/')[2:])
-            meta['url'] = self.get_url(request, path)
-            meta['html_url'] = self.get_html_url(request, path)
-        return meta
 
     def get_target(self, request, **extra_data):
         '''Get a target for a form

@@ -8,7 +8,7 @@ define(['angular',
         .constant('lazyLoadOffset', 40) // API will be called this number of pixels
                                         // before bottom of UIselect list
 
-        .directive('remoteOptions', ['$lux', 'createPagination', 'lazyLoadOffset',
+        .directive('relationship', ['$lux', 'createPagination', 'lazyLoadOffset',
 
             function ($lux, createPagination, lazyLoadOffset) {
 

@@ -115,6 +115,19 @@ def execute_app(app, argv=None, **params):  # pragma    nocover
         parser.parse_args(argv)
 
 
+def extend_config(config, parameters):
+    """Extend a config dictionary with additional parameters
+    """
+    for namespace, cfg in parameters.items():
+        # Allow one nesting
+        if namespace not in config and isinstance(cfg, dict):
+            for name, value in cfg.items():
+                fullname = '%s_%s' % (namespace, name)
+                config[fullname] = value
+        else:
+            config[namespace] = cfg
+
+
 class App(LazyWsgi):
 
     def __init__(self, config_file, script=None, argv=None, config=None, **kw):
@@ -788,7 +801,8 @@ def _build_config(self):
     self.logger.debug('Setting up extensions')
     apps = list(config['EXTENSIONS'])
     _add_app(apps, 'lux', 0)
-    _add_app(apps, self.meta.name)
+    if self.meta.name != 'lux':
+        _add_app(apps, self.meta.name)
 
     extensions = self.extensions
     for name in apps[1:]:
@@ -895,14 +909,4 @@ def _load_config(cfg):
 def _config_from_json(configs, parameters):
 
     for config in configs:
-        for namespace, cfg in config.items():
-            # Allow one nesting
-            if namespace not in parameters:
-                if not isinstance(cfg, dict):
-                    continue
-                for name, value in cfg.items():
-                    fullname = '%s_%s' % (namespace, name)
-                    if fullname in parameters:
-                        parameters[fullname] = value
-            else:
-                parameters[namespace] = cfg
+        extend_config(parameters, config)

@@ -12,8 +12,10 @@ from .backends import TokenBackend, SessionBackend
 from .views import Authorization, ComingSoon
 
 
-__all__ = ['TokenBackend', 'SessionBackend',
-           'Authorization', 'ComingSoon']
+__all__ = ['TokenBackend',
+           'SessionBackend',
+           'Authorization',
+           'ComingSoon']
 
 
 class Extension(LuxExtension):

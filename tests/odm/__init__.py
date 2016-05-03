@@ -7,6 +7,7 @@ from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
 from lux import forms
 from lux.core import LuxExtension
 from lux.extensions import odm
+from lux.extensions.rest import RelationshipField, UniqueField
 from lux.extensions.auth.views import PermissionCRUD, GroupCRUD
 
 from odm.types import ChoiceType
@@ -81,16 +82,16 @@ def task_model():
 class TaskForm(forms.Form):
     subject = forms.CharField(required=True)
     done = forms.BooleanField(default=False)
-    assigned = odm.RelationshipField('person',
-                                     label='assigned',
-                                     required=False)
+    assigned = RelationshipField('persons',
+                                 label='assigned',
+                                 required=False)
     enum_field = forms.EnumField(enum_class=TestEnum, default=TestEnum.opt1)
     desc = forms.CharField(required=False)
 
 
 class PersonForm(forms.Form):
-    model = 'person'
-    username = forms.CharField(validator=odm.UniqueField())
+    model = 'persons'
+    username = forms.CharField(validator=UniqueField())
     name = forms.CharField(required=True)
 
 
@@ -120,5 +121,5 @@ class UserCRUD(odm.CRUD):
                           columns=('username', 'active', 'superuser'),
                           exclude=('password', 'permissions'))
 
-    def serialise_model(self, request, data, in_list=False):
-        return self.model.tojson(request, data, exclude=('superuser',))
+    def tojson(self, request, o, exclude=None, **kw):
+        return self.model.tojson(request, o, exclude=('superuser',), **kw)

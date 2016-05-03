@@ -3,7 +3,7 @@ import os
 import unittest
 import string
 import logging
-import json
+import json as _json
 import pickle
 from collections import OrderedDict
 from unittest import mock
@@ -115,8 +115,8 @@ def load_fixtures(app, path=None):
         for filename in os.listdir(path):
             if filename.endswith('.json'):
                 with open(os.path.join(path, filename), 'r') as file:
-                    fixtures.update(json.load(file,
-                                              object_pairs_hook=OrderedDict))
+                    fixtures.update(_json.load(file,
+                                               object_pairs_hook=OrderedDict))
     else:
         logger.error('Could not find %s path for fixtures', path)
 
@@ -154,8 +154,9 @@ class TestClient:
         return cmd(argv, **kwargs)
 
     def request_start_response(self, method, path, HTTP_ACCEPT=None,
-                               headers=None, body=None, content_type=None,
-                               token=None, cookie=None, **extra):
+                               headers=None, body=None, json=None,
+                               content_type=None, token=None, cookie=None,
+                               **extra):
         method = method.upper()
         extra['REQUEST_METHOD'] = method.upper()
         path = path or '/'
@@ -164,6 +165,10 @@ class TestClient:
         heads = self.headers[:]
         if headers:
             heads.extend(headers)
+        if json is not None:
+            content_type = 'application/json'
+            assert not body
+            body = json
         if content_type:
             heads.append(('content-type', content_type))
         if token:
@@ -179,7 +184,7 @@ class TestClient:
                 body, content_type = encode_multipart_formdata(body)
                 heads.append(('content-type', content_type))
             elif content_type == 'application/json':
-                body = json.dumps(body).encode('utf-8')
+                body = _json.dumps(body).encode('utf-8')
 
         request = self.app.wsgi_request(path=path, headers=heads, body=body,
                                         **extra)
@@ -273,7 +278,7 @@ class TestMixin:
             self.assertEqual(response.status_code, status_code)
         self.assertEqual(response.content_type,
                          'application/json; charset=utf-8')
-        return json.loads(self._content(response).decode('utf-8'))
+        return _json.loads(self._content(response).decode('utf-8'))
 
     def xml(self, response, status_code=None):
         """Get JSON object from response
@@ -304,8 +309,8 @@ class TestMixin:
         return websocket
 
     def ws_message(self, **params):
-        msg = json.dumps(params)
-        return json.dumps([msg])
+        msg = _json.dumps(params)
+        return _json.dumps([msg])
 
     def get_ws_message(self, websocket):
         mock = websocket.connection.write
@@ -318,7 +323,7 @@ class TestMixin:
         frame = parser.decode(frame)
         wsclient = websocket.cache.wsclient
         websocket.connection.reset_mock()
-        msg = json.loads(frame.body[1:])[0]
+        msg = _json.loads(frame.body[1:])[0]
         return wsclient.protocol.decode(msg)
 
     def assertValidationError(self, response, field=None, text=None):
@@ -461,7 +466,7 @@ class AppTestCase(unittest.TestCase, TestMixin):
                 for filename in os.listdir(fixtures):
                     if filename.endswith(('.json')):
                         with open(os.path.join(fixtures, filename), 'r') as fp:
-                            data = json.load(fp)
+                            data = _json.load(fp)
 
                     for model, entries in data.items():
                         create = getattr(cls,
@@ -615,7 +620,7 @@ class Response:
         return self.content.decode(charset, errors or 'strict')
 
     def json(self, charset=None, errors=None):
-        return json.loads(self.text(charset, errors))
+        return _json.loads(self.text(charset, errors))
 
     def decode_content(self):
         '''Return the best possible representation of the response body.

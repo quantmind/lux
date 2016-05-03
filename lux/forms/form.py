@@ -239,7 +239,9 @@ class Form(metaclass=FormType):
         fields for example. It doesn't need to return anything, just throw a
         :class:`.ValidationError` in case the cleaning is not successful.
         '''
-        pass
+        model = self.request.app.models.get(self.model)
+        if model:
+            model.validate_fields(self.request, self.cleaned_data)
 
     def add_message(self, message):
         '''Add a message to the form'''

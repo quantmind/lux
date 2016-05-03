@@ -1,4 +1,3 @@
-import json
 import logging
 from inspect import isgenerator
 from urllib.parse import urljoin
@@ -18,10 +17,22 @@ logger = logging.getLogger('lux.extensions.rest')
 class RestColumn:
     """A class for specifying attributes of a REST column/field
     for a model
+
+    .. attribute:: sotable
+
+        Can be sorted or not
+
+    .. attribute:: hidden
+
+        Can be hidden when displayed by a rest client (in a table for example)
+
+    .. attribute:: model
+
+        If available, this column is related to another model
     """
 
     def __init__(self, name, sortable=None, filter=None, type=None,
-                 displayName=None, field=None, hidden=None):
+                 displayName=None, field=None, hidden=None, model=None):
         self.name = name
         self.sortable = sortable
         self.filter = filter
@@ -29,6 +40,7 @@ class RestColumn:
         self.displayName = displayName
         self.field = field
         self.hidden = hidden
+        self.model = model
 
     @classmethod
     def make(cls, col):
@@ -44,6 +56,9 @@ class RestColumn:
 
     def as_dict(self, defaults=True):
         return dict(self._as_dict(defaults))
+
+    def set(self, instance, value):
+        setattr(instance, self.name, value)
 
     def _as_dict(self, defaults):
         for k, v in self.__dict__.items():
@@ -162,26 +177,14 @@ class RestClient:
         api_url = self.api_url or app.config.get('API_URL')
         if not api_url:
             return
-        target = {'url': api_url, 'name': self.api_name}
+        target = {
+            'id_field': self.id_field,
+            'repr_field': self.repr_field,
+            'url': api_url,
+            'name': self.api_name
+        }
         target.update(**extra_data)
         return target
-
-    def field_options(self, request, **extra_data):
-        """Return a generator of options for a html serializer
-        """
-        if not request:
-            logger.error('%s cannot get remote target. No request', self)
-            return
-        target = self.get_target(request, **extra_data)
-        yield 'data-remote-options', json.dumps(target)
-        yield 'data-remote-options-id', self.id_field
-        yield 'data-remote-options-value', json.dumps({
-            'type': 'field',
-            'source': self.repr_field})
-        yield 'data-ng-options', self.remote_options_str.format(
-            options=self.api_name)
-        yield 'data-ng-options-ui-select', \
-            self.remote_options_str_ui_select.format(options=self.api_name)
 
 
 class RestModel(LuxModel, RestClient, ColumnPermissionsMixin):
@@ -289,6 +292,25 @@ class RestModel(LuxModel, RestClient, ColumnPermissionsMixin):
         else:
             return self.serialise_model(request, data)
 
+    def serialise_model(self, request, obj, exclude=None, **kw):
+        """
+        Makes a model instance JSON-friendly. Removes fields that the
+        user does not have read access to.
+
+        :param request:     request object
+        :param data:        data
+        :return:            dict
+        """
+        exclude = set(exclude or ())
+        fields = self.columns_without_permission(request, 'read')
+        exclude.update(self.column_fields(fields, 'name'))
+        model = self.tojson(request, obj, exclude=exclude, **kw)
+        if self.id_field not in model and self.id_field not in exclude:
+            model[self.id_field] = getattr(obj, self.id_field)
+        if 'url' not in exclude:
+            model['url'] = self.get_url(request, model[self.id_field])
+        return model
+
     def collection_data(self, request, *filters, **params):
         """Handle a response for a list of models
         """
@@ -375,13 +397,19 @@ class RestModel(LuxModel, RestClient, ColumnPermissionsMixin):
             meta['permissions'] = permissions
         return meta
 
+    def add_related_column(self, name, model, field=None, **kw):
+        '''Add a related column to the model
+        '''
+        assert not self._app, 'already loaded'
+        if field:
+            self._exclude.add(field)
+        column = RestColumn(name, field=field, model=model, **kw)
+        cols = list(self._columns or ())
+        cols.append(column)
+        self._columns = cols
+
     def get_instance(self, request, **args):
         raise NotImplementedError
-
-    def serialise_model(self, request, data, **kw):
-        """Serialise on model
-        """
-        return self.tojson(request, data)
 
     def get_url(self, request, path):
         return self._build_url(request, path, self.url,

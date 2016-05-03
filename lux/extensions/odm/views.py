@@ -5,6 +5,7 @@ import odm
 
 from lux.core import route
 from lux.extensions import rest
+from lux.forms import get_form_class
 
 from .models import RestModel
 
@@ -35,7 +36,8 @@ class CRUD(RestRouter):
         '''Create a new model
         '''
         model = self.model
-        if not model.form:
+        form_class = get_form_class(model.form)
+        if not form_class:
             raise MethodNotAllowed
 
         self.check_model_permission(request, 'create')
@@ -43,7 +45,7 @@ class CRUD(RestRouter):
         columns = model.column_fields(columns, 'name')
 
         data, files = request.data_and_files()
-        form = model.form(request, data=data, files=files)
+        form = form_class(request, data=data, files=files)
         if form.is_valid():
             # At the moment, we silently drop any data
             # for columns the user doesn't have update access to,
@@ -104,7 +106,7 @@ class CRUD(RestRouter):
                 return request.response
 
             elif request.method in ('POST', 'PUT'):
-                form_class = model.updateform
+                form_class = get_form_class(model.updateform)
 
                 if not form_class:
                     raise MethodNotAllowed

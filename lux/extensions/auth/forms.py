@@ -1,56 +1,38 @@
 import json
 
 from lux import forms
-from lux.extensions import odm
-from lux.extensions.rest import AuthenticationError, RestColumn
-from lux.extensions.rest.views.forms import PasswordForm, CreateUserForm
+from lux.forms import Layout, Fieldset, Submit, formreg
+from lux.extensions.odm import RestModel
+from lux.extensions.rest import (AuthenticationError, RestColumn,
+                                 RelationshipField, UniqueField)
+from lux.extensions.rest.views.forms import PasswordForm
 from lux.extensions.rest.policy import validate_policy
 from lux.utils.auth import ensure_authenticated
 
 
-full_name = RestColumn('full_name', displayName='name',
-                       field=('first_name', 'last_name', 'username', 'email'))
+full_name = RestColumn(
+    'full_name',
+    displayName='name',
+    field=('first_name', 'last_name', 'username', 'email')
+)
 
 
-def permission_model():
-    return odm.RestModel('permission', PermissionForm, PermissionForm,
-                         repr_field='name')
+class UserModel(RestModel):
 
-
-def group_model():
-    model = odm.RestModel('group',
-                          GroupForm,
-                          GroupForm,
-                          repr_field='name')
-    model.add_related_column('permissions', permission_model)
-    return model
-
-
-def user_model():
-    model = UserModel('user',
-                      CreateUserForm,
-                      UserForm,
-                      id_field='username',
-                      repr_field='name',
-                      exclude=('password',),
-                      columns=(full_name,))
-    model.add_related_column('groups', group_model)
-    return model
-
-
-def registration_model():
-    return odm.RestModel('registration',
-                         RegistrationForm,
-                         exclude=('user_id',))
-
-
-def mailing_list_model():
-    model = odm.RestModel('mailinglist', url='mailinglist')
-    model.add_related_column('user', user_model, 'user_id')
-    return model
-
-
-class UserModel(odm.RestModel):
+    @classmethod
+    def create(cls):
+        return cls(
+            'user',
+            'create-user',
+            'user',
+            id_field='username',
+            repr_field='name',
+            exclude=('password',),
+            columns=(
+                full_name,
+                RestColumn('groups', model='groups')
+            )
+        )
 
     def create_model(self, request, data, session=None):
         '''Override create model so that it calls the backend method
@@ -60,7 +42,7 @@ class UserModel(odm.RestModel):
         return request.cache.auth_backend.create_user(request, **data)
 
 
-class TokenModel(odm.RestModel):
+class TokenModel(RestModel):
     """REST model for tokens
     """
     @classmethod
@@ -80,7 +62,7 @@ class TokenModel(odm.RestModel):
 
 
 class PermissionForm(forms.Form):
-    model = 'permission'
+    model = 'permissions'
     id = forms.HiddenField(required=False)
     name = forms.CharField()
     description = forms.TextField()
@@ -92,12 +74,12 @@ class PermissionForm(forms.Form):
 
 
 class GroupForm(forms.Form):
-    model = 'group'
+    model = 'groups'
     id = forms.HiddenField(required=False)
-    name = forms.SlugField(validator=odm.UniqueField())
-    permissions = odm.RelationshipField(permission_model,
-                                        multiple=True,
-                                        required=False)
+    name = forms.SlugField(validator=UniqueField())
+    permissions = RelationshipField('permissions',
+                                    multiple=True,
+                                    required=False)
 
 
 class UserForm(forms.Form):
@@ -109,9 +91,7 @@ class UserForm(forms.Form):
     superuser = forms.BooleanField()
     active = forms.BooleanField()
     joined = forms.DateTimeField(readonly=True, required=False)
-    groups = odm.RelationshipField(group_model,
-                                   multiple=True,
-                                   required=False)
+    groups = RelationshipField('groups', multiple=True, required=False)
 
 
 class ChangePasswordForm(PasswordForm):
@@ -139,3 +119,32 @@ class NewTokenForm(forms.Form):
     """Form to create tokens for the current user
     """
     description = forms.TextField(minlength=2, maxlength=256)
+
+#
+# HTML FORM REGISTRATION
+formreg['create-group'] = Layout(
+    GroupForm,
+    Fieldset(all=True),
+    Submit('Create new group')
+)
+
+
+formreg['group'] = Layout(
+    GroupForm,
+    Fieldset(all=True),
+    Submit('Update group')
+)
+
+
+formreg['create-permission'] = Layout(
+    PermissionForm,
+    Fieldset(all=True),
+    Submit('Create new permissions')
+)
+
+
+formreg['permission'] = Layout(
+    PermissionForm,
+    Fieldset(all=True),
+    Submit('Update permissions')
+)

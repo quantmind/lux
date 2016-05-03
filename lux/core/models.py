@@ -15,8 +15,7 @@ class ModelContainer(dict):
         '''
         if not isinstance(model, LuxModel):
             model = model()
-        assert isinstance(model, LuxModel), ('An instance of a lux model '
-                                             'is required')
+
         if model.identifier in self:
             return self[model.identifier]
 
@@ -29,6 +28,8 @@ class ModelContainer(dict):
 
 
 class LuxModel:
+    """Base class for models
+    """
     identifier = None
     _app = None
 
@@ -50,7 +51,18 @@ class LuxModel:
         '''
         setattr(instance, name, value)
 
-    def tojson(self, request, instance, exclude=None, decoder=None):
+    def serialise_model(self, request, data, **kw):
+        """Serialise on model
+        """
+        return self.tojson(request, data, **kw)
+
+    def validate_fields(self, request, data):
+        """Validate fields values
+        """
+        pass
+
+    def tojson(self, request, instance, in_list=False,
+               exclude=None, decoder=None):
         '''Convert a model ``object`` into a JSON serializable
         dictionary
         '''
@@ -66,6 +78,11 @@ class LuxModel:
     def query(self, request, session, *filters):
         '''Manipulate a query if needed
         '''
+        raise NotImplementedError
+
+    def create_model(self, request, data, session=None):
+        """Create a new model form data
+        """
         raise NotImplementedError
 
     def context(self, request, instance, context):

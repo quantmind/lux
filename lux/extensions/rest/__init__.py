@@ -30,6 +30,7 @@ from .views.api import RestRoot, RestRouter, RestMixin
 from .views.auth import Authorization
 from .policy import has_permission
 from .pagination import Pagination, GithubPagination
+from .forms import RelationshipField, UniqueField
 from .user import (MessageMixin, UserMixin, SessionMixin, PasswordMixin,
                    User, Session)
 
@@ -52,17 +53,14 @@ __all__ = ['RestModel',
            'User',
            'Session',
            #
+           # Form fields related to rest models
+           'RelationshipField',
+           'UniqueField',
+           #
            'login',
            'logout',
            'user_permissions',
            'check_username']
-
-
-def luxrest(url, **rest):
-    """Dictionary containing the api type and the api url name
-    """
-    rest['url'] = url
-    return rest
 
 
 def website_url(request, location=None):
@@ -106,6 +104,8 @@ class Extension(MultiAuthBackend):
                   'Default permission level'),
         Parameter('DEFAULT_PERMISSION_LEVELS', {'site:admin': 'none'},
                   'Dictionary of default permission levels'),
+        #
+        # REST API SETTINGS
         Parameter('API_URL', None, 'URL FOR THE REST API', True),
         Parameter('API_SEARCH_KEY', 'q',
                   'The query key for full text search'),
@@ -225,28 +225,33 @@ class Extension(MultiAuthBackend):
         url = app.config['API_URL']
         # If the api url is not absolute, add the api middleware
         if url is not None:
-            if is_absolute_uri(url):
+
+            api = RestRoot(url)
+            for extension in app.extensions.values():
+                api_sections = getattr(extension, 'api_sections', None)
+                if api_sections:
+                    for router in api_sections(app) or ():
+                        if isinstance(router, ModelMixin):
+                            # Register model
+                            router.model = app.models.register(
+                                router.model)
+                        # Add router to API root-router
+                        api.add_child(router)
+
+            if app.rest_api_client:
+                #
+                # Create rest-api handler
                 app.api = ApiClient(app)
             else:
+                #
+                # Add API root-router to middleware
+                middleware.append(api)
+                #
                 # Add the preflight and token events
                 events = ('on_preflight', 'on_token')
                 app.add_events(events)
                 for backend in self.backends:
                     app.bind_events(backend, events)
-
-                api = RestRoot(url)
-                middleware.append(api)
-                for extension in app.extensions.values():
-                    api_sections = getattr(extension, 'api_sections', None)
-                    if api_sections:
-                        for router in api_sections(app):
-                            if not isinstance(router, ModelMixin):
-                                raise ImproperlyConfigured('Router must be a '
-                                                           'ModelMixin')
-                            # Register model
-                            router.model = app.models.register(router.model)
-                            # Add router
-                            api.add_child(router)
 
         return middleware
 

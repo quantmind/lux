@@ -419,6 +419,12 @@ class SlugField(CharField):
     validation_error = ('Only lower case, alphanumeric characters and '
                         'hyphens are allowed')
 
+    def handle_params(self, separator='-', **kw):
+        '''Called during initialization for handling extra key-valued
+        parameters.'''
+        self.separator = separator
+        super().handle_params(**kw)
+
     def getattrs(self, form=None):
         attrs = super().getattrs(form)
         attrs['autocorrect'] = 'off'
@@ -427,6 +433,6 @@ class SlugField(CharField):
 
     def _clean(self, value, field):
         value = super()._clean(value, field)
-        if slugify(value) != value:
+        if slugify(value, separator=self.separator) != value:
             raise ValidationError(self.validation_error)
         return value

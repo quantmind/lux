@@ -21,7 +21,8 @@ from pulsar.apps.wsgi import route
 from .commands import ConsoleParser, CommandError, LuxCommand, Setting
 from .extension import LuxExtension, Parameter, app_attribute
 from .models import LuxModel
-from .app import App, Application, execute_from_config
+from .app import (App, Application, execute_from_config,
+                  execute_app, extend_config)
 from .wrappers import (Html, WsgiRequest, Router, HtmlRouter,
                        JsonRouter, json_message, cached_property,
                        RedirectRouter, LuxContext, RouterParam,
@@ -44,6 +45,8 @@ __all__ = ['ConsoleParser',
            'App',
            'Application',
            'execute_from_config',
+           'execute_app',
+           'extend_config',
            'register_template_engine',
            'template_engine',
            'CMS',

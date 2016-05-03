@@ -1,4 +1,4 @@
-'''
+"""
 Lux extension for integrating SQL and NoSQL databases into applications.
 
 The extension create a new application method called ``odm``
@@ -8,35 +8,34 @@ It requires the :mod:`lux.extensions.rest` module and pulsar-odm_ which is
 built on top of sqlalchemy, pulsar and greenlet.
 
 _ ..pulsar-odm: https://github.com/quantmind/pulsar-odm
-'''
+"""
 from lux.core import Parameter, LuxExtension, app_attribute
 from lux.extensions.rest import SimpleBackend
 
 from odm import declared_attr
 
-from .exc import OdmError, QueryError, ModelNotFound
 from .mapper import Mapper, model_base
 from .views import CRUD, RestRouter
-from .models import RestModel, RestColumn, ModelColumn
-from .forms import RelationshipField, UniqueField
+from .models import RestModel, RestColumn
 from .ws import WsModelRpc
 
 
-__all__ = ['model_base', 'declared_attr',
-           'CRUD', 'RestRouter',
-           'RestModel', 'RestColumn',
-           'ModelColumn', 'RelationshipField', 'UniqueField',
-           'OdmError', 'QueryError', 'ModelNotFound']
+__all__ = ['model_base',
+           'declared_attr',
+           'CRUD',
+           'RestRouter',
+           'RestModel',
+           'RestColumn']
 
 
 sql_to_broadcast = {'insert': 'create'}
 
 
 class Extension(LuxExtension, WsModelRpc):
-    '''Object data mapper extension
+    """Object data mapper extension
 
     Uses pulsar-odm for sychronous & asynchronous data mappers
-    '''
+    """
     _config = [
         Parameter('DATASTORE', None,
                   'Dictionary for mapping models to their back-ends database'),
@@ -97,12 +96,8 @@ def broadcast_models(app):
 
 
 class Odm:
-    '''Lazy object data mapper container
-
-    Usage:
-
-        odm = app.odm()
-    '''
+    """Lazy object data mapper container
+    """
     mapper = None
 
     def __init__(self, app):

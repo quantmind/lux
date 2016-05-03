@@ -2,34 +2,52 @@ from datetime import datetime, timedelta
 
 from lux.core import route, json_message
 from lux.forms import get_form_class
-from lux.extensions import rest
-from lux.extensions.odm import CRUD, RestRouter
+from lux.extensions.rest import RestColumn, Authorization as RestAuthorization
+from lux.extensions.odm import CRUD, RestRouter, RestModel
 from lux.extensions.rest.views.browser import ComingSoon as ComingSoonView
 
 from pulsar import MethodNotAllowed, PermissionDenied, Http404
 from pulsar.apps.wsgi import Json
 
-from .forms import (permission_model, group_model, user_model,
-                    registration_model, mailing_list_model)
+from .forms import UserModel
 
 
 class PermissionCRUD(CRUD):
-    model = permission_model()
+    model = RestModel(
+        'permission',
+        'permission',
+        'permission',
+        repr_field='name'
+    )
 
 
 class GroupCRUD(CRUD):
-    model = group_model()
+    model = RestModel(
+        'group',
+        'create-group',
+        'group',
+        repr_field='name',
+        columns=[RestColumn('permissions', model='permissions')]
+    )
 
 
 class MailingListCRUD(CRUD):
-    model = mailing_list_model()
+    model = RestModel(
+        'mailinglist',
+        url='mailinglist',
+        columns=[RestColumn('user', field='user_id', model='users')]
+    )
 
 
 class RegistrationCRUD(RestRouter):
     get_user = None
     '''Function to retrieve user from url
     '''
-    model = registration_model()
+    model = RestModel(
+        'registration',
+        'registration',
+        exclude=('user_id',)
+    )
 
     def get(self, request):
         '''Get a list of models
@@ -84,7 +102,7 @@ class RegistrationCRUD(RestRouter):
 class UserCRUD(CRUD):
     """CRUD views for users
     """
-    model = user_model()
+    model = UserModel.create()
 
     def __init__(self, *args, **kw):
         super().__init__(*args, **kw)
@@ -92,7 +110,7 @@ class UserCRUD(CRUD):
         route.add_child(RegistrationCRUD(get_user=self.get_instance))
 
 
-class Authorization(rest.Authorization):
+class Authorization(RestAuthorization):
 
     @route('mailing-list', method=('post', 'options'))
     def mailing_list(self, request):
@@ -139,7 +157,6 @@ class ComingSoon(ComingSoonView):
     form_enctype = 'application/json'
 
     def form_action(self, request):
-        api = request.config['API_URL']
-        return rest.luxrest(api,
-                            name='authorizations_url',
-                            path='mailing-list')
+        model = request.app.models.get('mailing-lists')
+        if model:
+            return model.target(request)

@@ -210,7 +210,6 @@ define(['angular',
 
                     angular.forEach(metadata.columns, function (col) {
                         column = {
-                            luxRemoteType: col.remoteType,
                             field: col.name,
                             displayName: col.displayName,
                             type: getColumnType(col.type) || 'string',
@@ -462,7 +461,7 @@ define(['angular',
                     clearData(gridApi);
 
                 if (value.filters[0].term) {
-                    if (value.colDef.luxRemoteType === 'str') {
+                    if (value.colDef.type === 'string') {
                         operator = 'search';
                     } else {
                         operator = 'eq';

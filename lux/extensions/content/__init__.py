@@ -9,11 +9,12 @@ from lux.utils.data import update_dict
 
 from .models import Content, Snippet, snippets_url
 from .views import ContentCRUD, SnippetCRUD
-from .cms import TextRouter, TextCMS, CMS
+from .cms import TextRouter, TextCMS, CMS, CmsContent
 from .github import GithubHook, EventHandler, PullRepo
 
 
 __all__ = ['Content',
+           'CmsContent',
            'TextRouter',
            'TextCMS',
            'ContentCRUD',

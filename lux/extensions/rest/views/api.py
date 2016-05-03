@@ -21,7 +21,11 @@ class RestRoot(Router):
     def apis(self, request):
         routes = {}
         for router in self.routes:
-            routes[router.model.api_name] = request.absolute_uri(router.path())
+            url = request.absolute_uri(router.path())
+            if isinstance(router, RestMixin):
+                routes[router.model.api_name] = url
+            else:
+                routes[router.name] = url
         return routes
 
     def get(self, request):

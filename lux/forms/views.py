@@ -59,8 +59,6 @@ class WebFormRouter(HtmlRouter):
         return get_form_layout(self.form or self.default_form)
 
     def get_html(self, request):
-        '''Handle the HTML page for login
-        '''
         form = self.flayout(request)
         method = self.form_method or 'post'
         action = self.form_action

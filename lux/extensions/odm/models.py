@@ -64,30 +64,20 @@ class RestModel(rest.RestModel):
             query = query.filter(*filters)
         return query
 
-    def get_instance(self, request, session=None, **args):
+    def get_instance(self, request, session=None, *filters, **args):
         if not args:  # pragma    nocover
             raise Http404
         odm = request.app.odm()
         with odm.begin(session=session) as session:
             query = self.query(request, session)
+            if filters:
+                query = query.filter(*filters)
+            if args:
+                query = query.filter_by(**args)
             try:
-                return query.filter_by(**args).one()
+                return query.one()
             except (DataError, NoResultFound):
                 raise Http404
-
-    def serialise_model(self, request, data, **kw):
-        """
-        Makes a model instance JSON-friendly. Removes fields that the
-        user does not have read access to.
-
-        :param request:     request object
-        :param data:        data
-        :param kw:          not used
-        :return:            dict
-        """
-        exclude = self.columns_without_permission(request, 'read')
-        exclude = self.column_fields(exclude, 'name')
-        return self.tojson(request, data, exclude=exclude)
 
     def meta(self, request, *filters, exclude=None):
         meta = super().meta(request, exclude=exclude)
@@ -96,11 +86,6 @@ class RestModel(rest.RestModel):
             query = self.query(request, session, *filters)
             meta['total'] = query.count()
         return meta
-
-    def load_related(self,  instance):
-        for column in self.rest_columns().values():
-            if isinstance(column, ModelColumn):
-                getattr(instance, column.name)
 
     def db_model(self):
         '''Database model
@@ -116,26 +101,15 @@ class RestModel(rest.RestModel):
         else:
             return [c for c in columns if c in dbc]
 
-    def add_related_column(self, name, model, field=None, **kw):
-        '''Add a related column to the model
-        '''
-        assert not self._app, 'already loaded'
-        if field:
-            self._exclude.add(field)
-        column = ModelColumn(name, model, field=field, **kw)
-        cols = list(self._columns or ())
-        cols.append(column)
-        self._columns = cols
-
     def set_model_attribute(self, instance, name, value):
         '''Set the the attribute ``name`` to ``value`` in a model ``instance``
         '''
         current_value = getattr(instance, name, None)
         col = self.rest_columns().get(name)
-        if isinstance(col, ModelColumn):
+        if col.model:
             if isinstance(current_value, (list, set)):
                 if not isinstance(value, (list, tuple, set)):
-                    raise TypeError('list or tuple required')
+                    raise TypeError('list, tuple or set required')
                 relmodel = col.model
                 idfield = relmodel.id_field
                 all = set((getattr(v, idfield) for v in value))
@@ -151,11 +125,11 @@ class RestModel(rest.RestModel):
                     if pkey not in avail:
                         current_value.append(item)
             elif not is_same_model(current_value, value):
-                setattr(instance, name, value)
+                col.set(instance, value)
         else:
             setattr(instance, name, value)
 
-    def tojson(self, request, obj, exclude=None):
+    def tojson(self, request, obj, exclude=None, **kw):
         '''Override the method from the base class.
 
         It uses sqlalchemy model information about columns
@@ -181,9 +155,8 @@ class RestModel(rest.RestModel):
                     data = data.isoformat()
                 elif isinstance(data, Enum):
                     data = data.name
-                elif isinstance(restcol, ModelColumn):
-                    related = request.app.models.register(restcol.model)
-                    data = self._related_model(request, related, data)
+                elif restcol.model:
+                    data = self._related_model(request, restcol.model, data)
                 else:   # Test Json
                     json.dumps(data)
             except TypeError:
@@ -216,7 +189,6 @@ class RestModel(rest.RestModel):
             for name, value in data.items():
                 self.set_model_attribute(instance, name, value)
             session.flush()
-            self.load_related(instance)
         return instance
 
     def update_model(self, request, instance, data):
@@ -369,30 +341,14 @@ class ModelMixin(rest.ModelMixin):
     RestModel = RestModel
 
 
-class ModelColumn(RestColumn):
-    '''A Column based on another model
-    '''
-    def __init__(self, name, model, **kwargs):
-        self._model = model
-        super().__init__(name, **kwargs)
-
-    @property
-    def model(self):
-        if hasattr(self._model, '__call__'):
-            self._model = self._model()
-        return self._model
-
-
 def column_info(name, col):
     sortable = True
     filter = True
     try:
         python_type = col.type.python_type
         type = _types.get(python_type, 'string')
-        remote_type = python_type.__name__.lower()
     except NotImplementedError:
         type = col.type.__class__.__name__.lower()
-        remote_type = type
         sortable = False
         filter = False
 
@@ -401,8 +357,7 @@ def column_info(name, col):
             'displayName': col.doc or nicename(name),
             'sortable': sortable,
             'filter': filter,
-            'type': type,
-            'remoteType': remote_type}
+            'type': type}
 
     return info
 
