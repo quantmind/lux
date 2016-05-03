@@ -30,7 +30,7 @@ from lux.utils.data import multi_pop
 
 from .commands import ConsoleParser, CommandError, ConfigError, service_parser
 from .extension import LuxExtension, Parameter, EventMixin, app_attribute
-from .wrappers import HeadMeta, error_handler, LuxContext
+from .wrappers import HeadMeta, error_handler, LuxContext, formreg
 from .templates import template_engine
 from .cms import CMS
 from .models import ModelContainer
@@ -173,6 +173,9 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
     admin = None
     _handler = None
     auth_backend = None
+    formreg = None
+    """Form registry for this application. Add/override forms via the
+    on_loaded event"""
     cms = None
     """CMS handler"""
     _WsgiHandler = WsgiHandler
@@ -306,6 +309,7 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
     def wsgi_handler(self):
         if self._handler is None:
             self._handler = _build_handler(self)
+            self.formreg = formreg.copy()
             self.fire('on_loaded')
         return self._handler
 

@@ -22,7 +22,7 @@ from pulsar.apps.wsgi import wsgi_request
 from lux.core import Parameter
 
 from .auth import AuthBackend, auth_backend, MultiAuthBackend
-from .models import RestModel, RestColumn, ModelMixin
+from .models import RestModel, RestColumn, ModelMixin, is_rel_column
 from .client import ApiClient
 from .views.actions import (AuthenticationError, check_username, login,
                             logout, user_permissions)
@@ -37,6 +37,7 @@ from .user import (MessageMixin, UserMixin, SessionMixin, PasswordMixin,
 
 __all__ = ['RestModel',
            'RestColumn',
+           'is_rel_column',
            'ModelMixin',
            'AuthBackend',
            'auth_backend',
@@ -196,8 +197,6 @@ class Extension(MultiAuthBackend):
             backend = backend()
             self.backends.append(backend)
             app.bind_events(backend, exclude=('on_config',))
-
-        for backend in self.backends:
             if hasattr(backend, 'on_config'):
                 backend.on_config(app)
 
@@ -215,43 +214,46 @@ class Extension(MultiAuthBackend):
         for backend in self.backends:
             middleware.extend(backend.middleware(app) or ())
 
+        if app.config['API_URL'] is None:
+            return middleware
+
+        api = RestRoot(app.config['API_URL'])
+
+        # Add routesr and models
+        for extension in app.extensions.values():
+            api_sections = getattr(extension, 'api_sections', None)
+            if api_sections:
+                for router in api_sections(app) or ():
+                    if isinstance(router, ModelMixin):
+                        # Register model
+                        router.model = app.models.register(
+                            router.model)
+                    # Add router to API root-router
+                    api.add_child(router)
+
+        # reuters not required
+        if app.rest_api_client:
+            #
+            # Create rest-api handler
+            app.api = ApiClient(app)
+            return middleware
+        #
+        # Create paginator
         dotted_path = app.config['PAGINATION']
         pagination = module_attribute(dotted_path)
         if not pagination:
             raise ImproperlyConfigured('Could not load paginator "%s"',
                                        dotted_path)
         app.pagination = pagination()
-
-        url = app.config['API_URL']
-        # If the api url is not absolute, add the api middleware
-        if url is not None:
-
-            api = RestRoot(url)
-            for extension in app.extensions.values():
-                api_sections = getattr(extension, 'api_sections', None)
-                if api_sections:
-                    for router in api_sections(app) or ():
-                        if isinstance(router, ModelMixin):
-                            # Register model
-                            router.model = app.models.register(
-                                router.model)
-                        # Add router to API root-router
-                        api.add_child(router)
-
-            if app.rest_api_client:
-                #
-                # Create rest-api handler
-                app.api = ApiClient(app)
-            else:
-                #
-                # Add API root-router to middleware
-                middleware.append(api)
-                #
-                # Add the preflight and token events
-                events = ('on_preflight', 'on_token')
-                app.add_events(events)
-                for backend in self.backends:
-                    app.bind_events(backend, events)
+        #
+        # Add API root-router to middleware
+        middleware.append(api)
+        #
+        # Add the preflight and token events
+        events = ('on_preflight', 'on_token')
+        app.add_events(events)
+        for backend in self.backends:
+            app.bind_events(backend, events)
 
         return middleware
 

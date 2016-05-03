@@ -36,7 +36,7 @@ class CRUD(RestRouter):
         '''Create a new model
         '''
         model = self.model
-        form_class = get_form_class(model.form)
+        form_class = get_form_class(request, model.form)
         if not form_class:
             raise MethodNotAllowed
 
@@ -106,7 +106,7 @@ class CRUD(RestRouter):
                 return request.response
 
             elif request.method in ('POST', 'PUT'):
-                form_class = get_form_class(model.updateform)
+                form_class = get_form_class(request, model.updateform)
 
                 if not form_class:
                     raise MethodNotAllowed

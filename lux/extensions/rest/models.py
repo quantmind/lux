@@ -75,6 +75,12 @@ class RestColumn:
                 yield k, v
 
 
+def is_rel_column(col):
+    """Check if an object is a Rest Column for a related model
+    """
+    return isinstance(col, RestColumn) and col.model
+
+
 class ColumnPermissionsMixin:
     """Mixin for managing model permissions at column (field) level
 

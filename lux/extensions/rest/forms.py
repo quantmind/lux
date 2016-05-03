@@ -1,6 +1,8 @@
 import logging
 import json
 
+from pulsar import Http404
+
 from lux import forms
 from lux.forms.fields import MultipleMixin
 
@@ -13,7 +15,7 @@ class RelationshipField(MultipleMixin, forms.Field):
     validation_error = 'Invalid {0}'
     attrs = {'type': 'select'}
 
-    def __init__(self, model, request_params=None, format_string=None,
+    def __init__(self, model, request_params=None,
                  get_field=None, path=None, **kw):
         super().__init__(**kw)
         self.model = model
@@ -87,20 +89,23 @@ class UniqueField:
         model = self.model or bfield.form.model
         field = self.field or bfield.name
         previous_state = bfield.form.previous_state
-        assert model, 'model not available'
-        assert field, 'field not available'
-        app = bfield.request.app
-        # Get a reference to the object data mapper
-        odm = app.odm()
-        model = odm[model]
-        pkey = inspect(model).primary_key
-        with odm.begin() as session:
-            q = session.query(model).filter_by(**{field: value})
-            if previous_state:
-                for pkey_col in pkey:
-                    q = q.filter(pkey_col != getattr(previous_state,
-                                                     pkey_col.name))
-            if q.count():
+        if not model:
+            raise forms.ValidationError('No model')
+
+        request = bfield.request
+        app = request.app
+        model = app.models.get(model)
+        if not model:
+            model = self.model or bfield.form.model
+            raise forms.ValidationError('No model %s' % model)
+
+        try:
+            instance = model.get_instance(request, **{field: value})
+        except Http404:
+            pass
+        else:
+            if previous_state != instance:
                 raise forms.ValidationError(
                     self.validation_error.format(value))
-            return value
+
+        return value

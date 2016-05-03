@@ -14,7 +14,7 @@ from . import actions
 class Login(WebFormRouter):
     """Web login view with post handler
     """
-    default_form = 'login'
+    form = 'login'
 
     def get(self, request):
         if request.cache.user.is_authenticated():
@@ -36,7 +36,7 @@ class Logout(Router):
 class SignUp(WebFormRouter):
     """Display a signup form anf handle signup
     """
-    default_form = 'signup'
+    form = 'signup'
 
     def get(self, request):
         if request.cache.user.is_authenticated():
@@ -62,14 +62,14 @@ class SignUp(WebFormRouter):
 class ForgotPassword(WebFormRouter):
     """Manage forget passwords routes
     """
-    default_form = 'password-recovery'
+    form = 'password-recovery'
 
     def post(self, request):
         return actions.reset_password_request(request)
 
     @route('<key>', method=('get', 'post'))
     def reset(self, request):
-        """Get reste form and rest password
+        """Get reset form and handle rest password
         """
         key = request.urlargs['key']
         backend = request.cache.auth_backend
@@ -78,7 +78,7 @@ class ForgotPassword(WebFormRouter):
             raise Http404
 
         if request.method == 'GET':
-            form = get_form_layout('reset-password')
+            form = get_form_layout(request, 'reset-password')
             if not form:
                 raise Http404
             html = form(request).as_form(action=request.full_path(),
@@ -91,7 +91,7 @@ class ForgotPassword(WebFormRouter):
 
 
 class ComingSoon(WebFormRouter):
-    default_form = 'mailing-list'
+    form = 'mailing-list'
 
 
 class MultiWebFormRouter(HtmlRouter):
@@ -136,7 +136,7 @@ class MultiWebFormRouter(HtmlRouter):
                                   get=context.get('getdata'))
 
         if 'form' in context:
-            form = get_form_layout(context['form'])
+            form = get_form_layout(request, context['form'])
             if not form:
                 raise Http404
             html = form(request).as_form(action=target)

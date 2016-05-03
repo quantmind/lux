@@ -116,7 +116,7 @@ def reset_password(request, key):
 
 
 def _auth_form(request, form):
-    form = get_form_class(form)
+    form = get_form_class(request, form)
     if not form:
         raise Http404
 

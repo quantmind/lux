@@ -1,8 +1,8 @@
 import json
 
 from pulsar.utils.slugify import slugify
+from pulsar.apps.wsgi import Html
 
-from lux.core import Html
 from lux.utils.crypt import get_random_string
 
 

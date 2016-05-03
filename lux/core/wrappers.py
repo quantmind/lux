@@ -13,13 +13,15 @@ from pulsar.utils.structures import mapping_iterator
 from lux.utils.data import unique_tuple
 
 
-Html = wsgi.Html
-
-
 TEXT_CONTENT_TYPES = unique_tuple(('text/html', 'text/plain'))
 
 DEFAULT_CONTENT_TYPES = unique_tuple(('text/html', 'text/plain', 'text/csv'),
                                      JSON_CONTENT_TYPES)
+
+#
+# Global form registry
+# It can be overwritten in the on_load event of a lux application
+formreg = {}
 
 
 class LuxContext(dict):

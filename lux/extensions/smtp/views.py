@@ -1,3 +1,5 @@
+from pulsar import MethodNotAllowed
+
 from lux import forms
 from lux.forms import WebFormRouter, Layout, Fieldset, Submit, formreg
 
@@ -23,11 +25,15 @@ formreg['contact'] = Layout(
 
 
 class ContactRouter(WebFormRouter):
-    default_form = 'contact'
+    form = 'contact'
 
     def post(self, request):
         data, _ = request.data_and_files()
-        form = self.fclass(request, data=data)
+        form_class = self.get_form_class(request)
+        if not form_class:
+            raise MethodNotAllowed
+
+        form = form_class(request, data=data)
         if form.is_valid():
             email = request.app.email_backend
             responses = request.app.config['EMAIL_ENQUIRY_RESPONSE'] or ()

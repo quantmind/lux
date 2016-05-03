@@ -29,8 +29,8 @@ def is_same_model(model1, model2):
     return False
 
 
-class RestColumn(rest.RestColumn):
-    pass
+RestColumn = rest.RestColumn
+is_rel_column = rest.is_rel_column
 
 
 class RestModel(rest.RestModel):
@@ -106,7 +106,7 @@ class RestModel(rest.RestModel):
         '''
         current_value = getattr(instance, name, None)
         col = self.rest_columns().get(name)
-        if col.model:
+        if is_rel_column(col):
             if isinstance(current_value, (list, set)):
                 if not isinstance(value, (list, tuple, set)):
                     raise TypeError('list, tuple or set required')
@@ -155,8 +155,14 @@ class RestModel(rest.RestModel):
                     data = data.isoformat()
                 elif isinstance(data, Enum):
                     data = data.name
-                elif restcol.model:
-                    data = self._related_model(request, restcol.model, data)
+                elif is_rel_column(restcol):
+                    model = request.app.models.get(restcol.model)
+                    if model:
+                        data = self._related_model(request, model, data)
+                    else:
+                        data = None
+                        request.logger.error(
+                            'Could not fined model %s', restcol.model)
                 else:   # Test Json
                     json.dumps(data)
             except TypeError:

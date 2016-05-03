@@ -173,7 +173,7 @@ class CRUDAdmin(AdminModel):
         return self.get_form(request, form, id=id)
 
     def get_form(self, request, form, id=None):
-        form = get_form_layout(form)
+        form = get_form_layout(request, form)
         if not form:
             raise Http404
         action = 'update' if id else 'create'

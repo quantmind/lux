@@ -44,16 +44,40 @@ Layout
 
 .. _django: https://www.djangoproject.com/
 '''
-from .fields import *       # noqa
-from .errors import *       # noqa
+from .fields import (Field, CharField, TextField, BooleanField, JsonField,
+                     DateField, DateTimeField, ChoiceField, IntegerField,
+                     FloatField, EmailField, FileField, HiddenField,
+                     PasswordField, UrlField, SlugField, EnumField)
+from .errors import FormError, FieldError, ValidationError
 from .formsets import FormSet
 from .form import FormType, Form, BoundField, FieldList, create_form, FORMKEY
 from .serialise import Fieldset, Submit, Layout, Row, Col, as_serialised_field
-from .views import (WebFormRouter, get_form, get_form_layout,
-                    get_form_class, formreg)
-
+from .options import Options, OptionGroup
+from .views import WebFormRouter, get_form, get_form_layout, get_form_class
+from ..core.wrappers import formreg
 
 __all__ = [
+    'Field',
+    'CharField',
+    'TextField',
+    'BooleanField',
+    'JsonField',
+    'DateField',
+    'DateTimeField',
+    'ChoiceField',
+    'IntegerField',
+    'FloatField',
+    'EmailField',
+    'FileField',
+    'HiddenField',
+    'PasswordField',
+    'UrlField',
+    'SlugField',
+    'EnumField',
+    #
+    'Options',
+    'OptionGroup',
+    #
     'FormSet',
     'FormType',
     'Form',
@@ -71,5 +95,10 @@ __all__ = [
     'get_form',
     'get_form_class',
     'get_form_layout',
-    'formreg'
+    'formreg',
+    #
+    # Errors
+    'FormError',
+    'FieldError',
+    'ValidationError'
 ]

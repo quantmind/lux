@@ -23,7 +23,7 @@ from .extension import LuxExtension, Parameter, app_attribute
 from .models import LuxModel
 from .app import (App, Application, execute_from_config,
                   execute_app, extend_config)
-from .wrappers import (Html, WsgiRequest, Router, HtmlRouter,
+from .wrappers import (WsgiRequest, Router, HtmlRouter,
                        JsonRouter, json_message, cached_property,
                        RedirectRouter, LuxContext, RouterParam,
                        JSON_CONTENT_TYPES, DEFAULT_CONTENT_TYPES)
