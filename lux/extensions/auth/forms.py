@@ -17,17 +17,21 @@ full_name = RestColumn(
 )
 
 
+# REST Models
 class UserModel(RestModel):
 
     @classmethod
-    def create(cls):
+    def create(cls, url=None, exclude=None, hidden=None):
+        exclude = exclude or ('password',),
         return cls(
             'user',
             'create-user',
             'user',
+            url=url,
             id_field='username',
             repr_field='name',
-            exclude=('password',),
+            exclude=exclude,
+            hidden=hidden,
             columns=(
                 full_name,
                 RestColumn('groups', model='groups')
@@ -46,13 +50,14 @@ class TokenModel(RestModel):
     """REST model for tokens
     """
     @classmethod
-    def create(cls, user_model):
-        TokenForm = forms.create_form(
-            'TokenForm',
-            forms.TextField('description', required=True, maxlength=256))
-        model = cls('token', TokenForm)
-        model.add_related_column('user', user_model, 'user_id')
-        return model
+    def create(cls):
+        return cls(
+            'token',
+            'create-token',
+            columns=[
+                RestColumn('user', field='user_id', model='users')
+            ]
+        )
 
     def create_model(self, request, data, session=None):
         user = ensure_authenticated(request)
@@ -61,6 +66,7 @@ class TokenModel(RestModel):
         return auth.create_token(request, user, **data)
 
 
+# FORMS
 class PermissionForm(forms.Form):
     model = 'permissions'
     id = forms.HiddenField(required=False)
@@ -122,6 +128,13 @@ class NewTokenForm(forms.Form):
 
 #
 # HTML FORM REGISTRATION
+formreg['user'] = Layout(
+    UserForm,
+    Fieldset(all=True),
+    Submit('Update user')
+)
+
+
 formreg['create-group'] = Layout(
     GroupForm,
     Fieldset(all=True),
@@ -147,4 +160,11 @@ formreg['permission'] = Layout(
     PermissionForm,
     Fieldset(all=True),
     Submit('Update permissions')
+)
+
+
+formreg['create-token'] = Layout(
+    NewTokenForm,
+    Fieldset(all=True),
+    Submit('Create token')
 )

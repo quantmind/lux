@@ -1,7 +1,6 @@
 from inspect import isclass
 
 from pulsar import Http404, PermissionDenied
-from pulsar.apps.wsgi.routers import RouterType
 from pulsar.utils.html import nicename
 
 from lux.core import route, cached, HtmlRouter
@@ -26,16 +25,12 @@ class register:
     :param model: a string or a :class:`~lux.extensions.rest.RestModel`
     '''
     def __init__(self, model):
-        if isinstance(model, RouterType):
-            model = model.model
-        if not isinstance(model, rest.RestModel):
-            model = rest.RestModel(model)
         self.model = model
 
     def __call__(self, cls):
         assert is_admin(cls, False)
         cls.model = self.model
-        adminMap[self.model.name] = cls
+        adminMap[self.model] = cls
         return cls
 
 
@@ -85,7 +80,7 @@ class Admin(AdminRouter):
         resources = []
         for child in self.routes:
             if isinstance(child, AdminModel):
-                resource = child.model.name
+                resource = child.model
                 resources.append(resource)
                 section, info = child.info(request)
                 infos.append((resource, section, info))
@@ -172,18 +167,26 @@ class CRUDAdmin(AdminModel):
         form = self.updateform or self.form
         return self.get_form(request, form, id=id)
 
-    def get_form(self, request, form, id=None):
+    def get_form(self, request, form=None, id=None):
+        if id:
+            action = 'update'
+            form = form or self.updateform or self.form
+        else:
+            action = 'create'
+            form = form or self.form
+
         form = get_form_layout(request, form)
         if not form:
             raise Http404
-        action = 'update' if id else 'create'
+
         backend = request.cache.auth_backend
         model = self.model
 
         if backend.has_permission(request, model.name, action):
-            target = model.get_target(request, path=id, get=True)
+            target = model.get_target(request, path=id)
             html = form(request).as_form(action=target, actionType=action)
             context = {'html_form': html.render()}
             html = request.app.render_template(self.addtemplate, context)
             return self.html_response(request, html)
+
         raise PermissionDenied

@@ -13,6 +13,7 @@ just after the :mod:`lux.extensions.base`::
 
 """
 from urllib.parse import urljoin
+from collections import OrderedDict
 
 from pulsar import ImproperlyConfigured
 from pulsar.utils.importer import module_attribute
@@ -219,17 +220,21 @@ class Extension(MultiAuthBackend):
 
         api = RestRoot(app.config['API_URL'])
 
-        # Add routesr and models
+        # Add routers and models
+        routes = OrderedDict()
         for extension in app.extensions.values():
             api_sections = getattr(extension, 'api_sections', None)
             if api_sections:
                 for router in api_sections(app) or ():
-                    if isinstance(router, ModelMixin):
-                        # Register model
-                        router.model = app.models.register(
-                            router.model)
-                    # Add router to API root-router
-                    api.add_child(router)
+                    routes[router.route.path] = router
+
+        # Allow router override
+        for router in routes.values():
+            if isinstance(router, ModelMixin):
+                # Register model
+                router.model = app.models.register(router.model)
+            # Add router to API root-router
+            api.add_child(router)
 
         # reuters not required
         if app.rest_api_client:

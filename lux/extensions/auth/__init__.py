@@ -9,13 +9,17 @@ how to write authentication backends and models in lux.
 from lux.core import Parameter, LuxExtension
 
 from .backends import TokenBackend, SessionBackend
-from .views import Authorization, ComingSoon
+from .views import (Authorization, ComingSoon, UserRest, UserCRUD,
+                    GroupCRUD, PermissionCRUD, RegistrationCRUD,
+                    MailingListCRUD, TokenCRUD)
+from .forms import UserModel
 
 
 __all__ = ['TokenBackend',
            'SessionBackend',
            'Authorization',
-           'ComingSoon']
+           'ComingSoon',
+           'UserModel']
 
 
 class Extension(LuxExtension):
@@ -34,3 +38,12 @@ class Extension(LuxExtension):
             token['username'] = user.username
             token['user_id'] = user.id
             token['name'] = user.full_name
+
+    def api_sections(self, app):
+        return (UserRest(),
+                UserCRUD(),
+                GroupCRUD(),
+                PermissionCRUD(),
+                RegistrationCRUD(),
+                MailingListCRUD(),
+                TokenCRUD())

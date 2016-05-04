@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 import odm
 
 from pulsar import ImproperlyConfigured
@@ -15,8 +17,13 @@ class Mapper(odm.Mapper):
     def __init__(self, app, binds):
         self.app = app
         super().__init__(binds)
+        models = OrderedDict()
         for module in self.app.module_iterator('models'):
-            self.register_module(module)
+            models.update(odm.get_models(module) or ())
+            models.update(((table.key, table) for table
+                           in odm.module_tables(module)))
+        for model in models.values():
+            self.register(model)
         if self.is_green and not app.config['GREEN_POOL']:
             raise ImproperlyConfigured('ODM requires a greenlet pool but '
                                        'GREEN_POOL is not set to a positive '

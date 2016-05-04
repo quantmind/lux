@@ -2,14 +2,19 @@ from datetime import datetime, timedelta
 
 from lux.core import route, json_message
 from lux.forms import get_form_class
-from lux.extensions.rest import RestColumn, Authorization as RestAuthorization
+from lux.extensions.rest import (RestColumn, user_permissions,
+                                 Authorization as RestAuthorization)
 from lux.extensions.odm import CRUD, RestRouter, RestModel
 from lux.extensions.rest.views.browser import ComingSoon as ComingSoonView
 
 from pulsar import MethodNotAllowed, PermissionDenied, Http404
 from pulsar.apps.wsgi import Json
 
-from .forms import UserModel
+from .forms import UserModel, TokenModel
+
+
+class TokenCRUD(CRUD):
+    model = TokenModel.create()
 
 
 class PermissionCRUD(CRUD):
@@ -108,6 +113,52 @@ class UserCRUD(CRUD):
         super().__init__(*args, **kw)
         route = self.get_route('read_update_delete')
         route.add_child(RegistrationCRUD(get_user=self.get_instance))
+
+
+class UserRest(RestRouter):
+    """Rest view for the authenticated user
+
+    No CREATE, simple read, updates and other update-type operations
+    """
+    model = UserModel.create(url='user',
+                             hidden=('id', 'oauth'),
+                             exclude=('password', 'type'))
+
+    def get_instance(self, request, session=None):
+        return ensure_authenticated(request)
+
+    def get(self, request):
+        """Get the authenticated user
+        """
+        user = self.get_instance(request)
+        data = self.model.serialise(request, user)
+        return self.json(request, data)
+
+    def post(self, request):
+        """Update authenticated user and/or user profile
+        """
+        user = self.get_instance(request)
+        model = self.model
+        if not model.updateform:
+            raise MethodNotAllowed
+        form = model.updateform(request, data=request.body_data())
+        if form.is_valid():
+            user = model.update_model(request, user, form.cleaned_data)
+            data = model.serialise(request, user)
+        else:
+            data = form.tojson()
+        return self.json(request, data)
+
+    @route('permissions', method=['get', 'options'])
+    def get_permissions(self, request):
+        """Check permissions the authenticated user has for a
+        given action.
+        """
+        if request.method == 'options':
+            request.app.fire('on_preflight', request, methods=['GET'])
+            return request.response
+        permissions = user_permissions(request)
+        return self.json(request, permissions)
 
 
 class Authorization(RestAuthorization):

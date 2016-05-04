@@ -6,18 +6,8 @@ from pulsar.utils.slugify import slugify
 
 from lux.core import cached
 from lux.core.content import get_reader, ContentFile
-from lux.extensions import rest
-from lux.extensions.rest import RestColumn
+from lux.extensions.rest import RestModel, RestColumn
 from lux.utils.files import skipfile
-
-
-__all__ = ('_b', 'DataError', 'Content')
-
-
-def _b(value):
-    '''Return string literals
-    '''
-    return value.encode('utf-8')
 
 
 class DataError(Exception):
@@ -42,14 +32,7 @@ OPERATORS = {
     }
 
 
-snippets_url = 'snippets'
-
-
-class Snippet(rest.RestModel):
-    pass
-
-
-class Content(rest.RestModel):
+class ContentModel(RestModel):
     '''A Content model with file-system backend
 
     This model provide read-only operations

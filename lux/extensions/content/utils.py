@@ -7,7 +7,18 @@ from lux.utils.files import skipfile, get_rel_dir
 from lux.core import cached, Cacheable
 from lux.core.content import get_reader, render_body
 
-from .models import DataError, snippets_url
+from .models import DataError
+
+
+def content_location(app, *args):
+    repo = app.config['CONTENT_REPO']
+    if repo:
+        location = app.config['CONTENT_LOCATION']
+        if location:
+            repo = os.path.join(repo, location)
+        if args:
+            repo = os.path.join(repo, *args)
+    return repo
 
 
 def get_content(request, model, path):
@@ -26,7 +37,7 @@ def get_context_files(app):
     '''Load static context from ``location``
     '''
     ctx = {}
-    location = app.config['CONTENT_PARTIALS']
+    location = content_location(app, 'context')
     if location and os.path.isdir(location):
         for dirpath, dirs, filenames in os.walk(location, topdown=False):
             if skipfile(os.path.basename(dirpath) or dirpath):
@@ -57,7 +68,7 @@ def get_context(request, context):
     if app.rest_api_client:
         api = app.api(request)
         for key in get_api_snippets(api):
-            ctx[key] = LazyApiContext(api, key, snippets_url, context)
+            ctx[key] = LazyApiContext(api, key, 'context', context)
     else:
         for key, src in get_context_files(app).items():
             ctx[key] = LazyContext(app, key, src, context)
@@ -102,4 +113,4 @@ class LazyApiContext(LazyContext, Cacheable):
 
 @cached
 def get_api_snippets(api):
-    return api.get(snippets_url).json()
+    return api.get('context').json()

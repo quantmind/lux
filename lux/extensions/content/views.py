@@ -1,6 +1,5 @@
 import logging
 
-from pulsar import Http404, MethodNotAllowed
 from pulsar.apps.wsgi import route
 from pulsar.utils.httpurl import remove_double_slash
 
@@ -17,29 +16,9 @@ def list_filter(model, filters):
     return filters
 
 
-class SnippetCRUD(rest.RestRouter):
-
-    def get(self, request):
-        ctx = {}
-        for key in get_context_files(request.app):
-            ctx[key] = request.absolute_uri(key)
-        return self.json(request, ctx)
-
-    @route('<key>', method=('get', 'options'))
-    def _context_path(self, request):
-        if request.method == 'OPTIONS':
-            request.app.fire('on_preflight', request, methods=['GET'])
-            return request.response
-        ctx = get_context_files(request.app)
-        src = ctx.get(request.urlargs['key'])
-        if not src:
-            raise Http404
-        app = request.app
-        content = get_reader(app, src).read(src)
-        return self.json(request, content.json(app))
-
-
 class ContentCRUD(rest.RestRouter):
+    """REST API view for content
+    """
 
     def get(self, request):
         self.check_model_permission(request, 'read')
@@ -47,37 +26,47 @@ class ContentCRUD(rest.RestRouter):
         return self.model.collection_response(request, sortby='date:desc',
                                               **filters)
 
-    @route('_links', method=('get', 'options'))
+    @route('<group>', method=('get', 'options'))
+    def get_group(self, request):
+        if request.method == 'OPTIONS':
+            request.app.fire('on_preflight', request, methods=['GET'])
+            return request.response
+
+        self.check_model_permission(request, 'read')
+        filters = list_filter(self.model, {'group': request.urlargs['group']})
+        return self.model.collection_response(request, sortby='date:desc',
+                                              **filters)
+
+    @route('<group>/_links', method=('get', 'options'))
     def _links(self, request):
         if request.method == 'OPTIONS':
             request.app.fire('on_preflight', request, methods=['GET'])
             return request.response
-        filters = list_filter(self.model, {'order:gt': 0})
+
+        filters = list_filter(self.model, {'group': request.urlargs['group'],
+                                           'order:gt': 0})
         return self.model.collection_response(
             request, sortby=['title:asc', 'order:desc'], **filters)
 
-    @route('<path:path>', method=('get', 'head', 'post', 'options'))
+    @route('<group>/<path:path>', method=('get', 'head', 'options'))
     def read_update(self, request):
         path = request.urlargs['path']
+        group = request.urlargs['group']
         model = self.model
 
         if request.method == 'OPTIONS':
-            request.app.fire('on_preflight', request)
+            request.app.fire('on_preflight', methods=['GET', 'HEAD'])
             return request.response
 
-        content = get_content(request, model, path)
+        content = get_content(request, group, path)
 
         if request.method == 'GET':
             self.check_model_permission(request, 'read', content)
             data = model.serialise(request, content)
             if data == request.response:
                 return data
+            return self.json(request, data)
 
         elif request.method == 'HEAD':
             self.check_model_permission(request, 'read', content)
             return request.response
-
-        else:
-            raise MethodNotAllowed
-
-        return self.json(request, data)

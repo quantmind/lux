@@ -1,9 +1,10 @@
-'''
-Extension for an Admin Web inteface.
+"""
+Extension for an Admin Web interface.
 
 In order to use the Admin interface, the :setting:`ADMIN_URL`
-needs to be specified.
-'''
+needs to be specified and :setting:`DEFAULT_CONTENT_TYPE` set
+to ``text/html``
+"""
 from lux.core import Parameter, LuxExtension
 
 from .admin import Admin, AdminModel, CRUDAdmin, adminMap, register, is_admin
@@ -23,7 +24,7 @@ class Extension(LuxExtension):
 
     def middleware(self, app):
         admin = app.config['ADMIN_URL']
-        if admin:
+        if admin and app.config['DEFAULT_CONTENT_TYPE'] == 'text/html':
             self.require(app, 'lux.extensions.rest')
             self.admin = admin = Admin(admin)
             middleware = []

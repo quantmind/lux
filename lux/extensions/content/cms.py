@@ -94,6 +94,27 @@ class CMS(core.CMS):
         self.sitemaps = [CMSmap('/sitemap.xml', cms=self)]
         self._middleware = []
 
+    @classmethod
+    def build(cls, app, ContentClass=None):
+        cms = cls(app)
+        ContentClass = ContentClass or CmsContent
+        models = app.config['CONTENT_MODELS']
+        if isinstance(models, list):
+            for cfg in models:
+                if not isinstance(cfg, dict):
+                    app.logger.error('content models should contain '
+                                     'dictionaries')
+                    continue
+                name = cfg.get('name')
+                if not name:
+                    app.logger.error('content models should have a name')
+                    continue
+                path = cfg.get('path', '')
+                content = ContentClass(name, path=path, meta=cfg.get('meta'))
+                cms.add_router(content)
+        app._handler.middleware.extend(cms.middleware())
+        return cms
+
     def add_router(self, router, sitemap=True):
         if isinstance(router, CmsContent):
             router = TextCMS(router)
