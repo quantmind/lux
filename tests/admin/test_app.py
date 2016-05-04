@@ -11,15 +11,15 @@ class AdminTest(test.AppTestCase):
         self.assertIsInstance(admin, Admin)
         sitemap = admin.sitemap(request)
         self.assertTrue(sitemap)
-        self.assertEqual(len(sitemap), 1)
+        self.assertEqual(len(sitemap), 2)
         items = {}
         for site in sitemap:
             items.update(((item['title'], item) for item in site['items']))
-        self.assertEqual(len(items), 1)
-        blog = items['Blogs']
+        self.assertEqual(len(items), 5)
+        blog = items['Blog']
         self.assertEqual(blog['icon'], 'fa fa-book')
-        self.assertEqual(blog['title'], 'Blogs')
-        self.assertEqual(blog['href'], '/admin/blogs')
+        self.assertEqual(blog['title'], 'Blog')
+        self.assertEqual(blog['href'], '/admin/blog')
 
     async def test_admin_home_view(self):
         request = await self.client.get('/admin')
@@ -27,16 +27,16 @@ class AdminTest(test.AppTestCase):
         self.assertEqual(response.status_code, 200)
 
     async def test_list_view(self):
-        request = await self.client.get('/admin/blogs')
+        request = await self.client.get('/admin/blog')
         response = request.response
         self.assertEqual(response.status_code, 200)
 
     async def test_add_view(self):
-        request = await self.client.get('/admin/blogs/add')
+        request = await self.client.get('/admin/blog/add')
         response = request.response
         self.assertEqual(response.status_code, 200)
 
     async def test_edit_view(self):
-        request = await self.client.get('/admin/blogs/1')
+        request = await self.client.get('/admin/blog/1')
         response = request.response
         self.assertEqual(response.status_code, 200)

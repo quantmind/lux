@@ -32,8 +32,6 @@ class Extension(LuxExtension):
             for AdminRouterCls in all:
                 if not AdminRouterCls.model:
                     continue
-                route = AdminRouterCls()
-                route.model = app.models.register(route.model)
-                admin.add_child(route)
+                admin.add_child(AdminRouterCls())
             middleware.append(admin)
             return middleware

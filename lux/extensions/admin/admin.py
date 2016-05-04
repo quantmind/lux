@@ -5,7 +5,6 @@ from pulsar.utils.html import nicename
 
 from lux.core import route, cached, HtmlRouter
 from lux.forms import get_form_layout
-from lux.extensions import rest
 from lux.extensions.angular import grid
 
 # Override Default Admin Router for a model
@@ -65,10 +64,8 @@ class AdminRouter(HtmlRouter):
 
 
 class Admin(AdminRouter):
-    '''Admin Root
-
-    This router containes all Admin routers managing models.
-    '''
+    """Admin Root - contains all Admin routers managing models.
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # set self as the angular root
@@ -113,10 +110,11 @@ class Admin(AdminRouter):
                 yield resource, section, info
 
 
-class AdminModel(rest.RestMixin, AdminRouter):
+class AdminModel(AdminRouter):
     '''Router for rendering an admin section relative to
     a given rest model
     '''
+    model = None
     section = None
     permissions = None
     '''An permissions used in grid
@@ -124,11 +122,15 @@ class AdminModel(rest.RestMixin, AdminRouter):
     icon = None
     '''An icon for this Admin section
     '''
+    def __init__(self):
+        assert self.model
+        super().__init__(self.model)
 
     def info(self, request):
         '''Information for admin navigation
         '''
-        url = self.model.url
+        model = self.get_model(request)
+        url = model.url
         name = nicename(url)
         info = {'title': name,
                 'name': name,
@@ -138,7 +140,7 @@ class AdminModel(rest.RestMixin, AdminRouter):
 
     def get_html(self, request):
         app = request.app
-        model = self.model
+        model = self.get_model(request)
         options = dict(target=model.get_target(request))
         if self.permissions is not None:
             options['permissions'] = self.permissions
@@ -180,11 +182,11 @@ class CRUDAdmin(AdminModel):
             raise Http404
 
         backend = request.cache.auth_backend
-        model = self.model
+        model = self.get_model(request)
 
         if backend.has_permission(request, model.name, action):
-            target = model.get_target(request, path=id)
-            html = form(request).as_form(action=target, actionType=action)
+            target = model.get_target(request, path=id, action=action)
+            html = form(request).as_form(action=target)
             context = {'html_form': html.render()}
             html = request.app.render_template(self.addtemplate, context)
             return self.html_response(request, html)

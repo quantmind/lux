@@ -5,12 +5,12 @@ class AngularAdminTest(app.AdminTest):
     config_params = {'HTML5_NAVIGATION': True}
 
     async def test_angular_sitemap(self):
-        request = await self.client.get('/admin/blogs')
+        request = await self.client.get('/admin/blog')
         jscontext = request.html_document.jscontext
         pages = jscontext.get('pages')
         self.assertTrue(pages)
-        updates = pages.get('admin_blogs_update')
+        updates = pages.get('admin_blog_update')
         self.assertTrue(updates)
-        self.assertEqual(updates['url'], '/admin/blogs/:id')
+        self.assertEqual(updates['url'], '/admin/blog/:id')
         self.assertEqual(updates['templateUrl'],
-                         '/admin/blogs/:id?template=ui')
+                         '/admin/blog/:id?template=ui')

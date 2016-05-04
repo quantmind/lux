@@ -101,8 +101,8 @@ define(['angular',
             //
             //  Check the run method in the "lux.services" module for more information
             api.formReady = function (model, formScope) {
-                var resolve = api.defaults().get;
-                if (resolve) {
+                var action = api.defaults().action;
+                if (action === 'update') {
                     api.get().success(function (data) {
                         lux.forEach(data, function (value, key) {
                             // TODO: do we need a callback for JSON fields?

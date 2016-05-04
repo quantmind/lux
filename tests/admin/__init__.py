@@ -1,6 +1,8 @@
 from lux import forms
 from lux.core import LuxExtension
+
 from lux.extensions.admin import register, CRUDAdmin
+from lux.extensions.odm import CRUD, RestModel
 
 
 from tests.config import *  # noqa
@@ -14,6 +16,7 @@ EXTENSIONS = ['lux.extensions.base',
               'lux.extensions.admin']
 
 API_URL = 'api'
+DEFAULT_CONTENT_TYPE = 'text/html'
 AUTHENTICATION_BACKENDS = ['lux.extensions.auth.TokenBackend']
 DATASTORE = 'postgresql+green://lux:luxtest@127.0.0.1:5432/luxtests'
 DEFAULT_PERMISSION_LEVELS = {}
@@ -21,7 +24,12 @@ DEFAULT_PERMISSION_LEVEL = '*'
 
 
 class Extension(LuxExtension):
-    pass
+
+    def api_sections(self, app):
+        return [CRUD(RestModel('blog', 'blog', 'blog', url='blog'))]
+
+    def on_loaded(self, app):
+        app.forms['blog'] = forms.Layout(BlogForm)
 
 
 class BlogForm(forms.Form):
@@ -33,4 +41,4 @@ class BlogForm(forms.Form):
 @register('blog')
 class BlogAdmin(CRUDAdmin):
     icon = 'fa fa-book'
-    form = forms.Layout(BlogForm)
+    form = 'blog'

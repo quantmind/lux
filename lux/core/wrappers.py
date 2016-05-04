@@ -1,7 +1,7 @@
 import json
 from collections import Mapping
 
-from pulsar import ImproperlyConfigured
+from pulsar import ImproperlyConfigured, Http404
 from pulsar.apps.wsgi import cached_property
 from pulsar.apps import wsgi
 from pulsar.apps.wsgi import (Json, RouterParam, Router, Route,
@@ -122,6 +122,8 @@ class HtmlRouter(Router):
     response_content_types = TEXT_CONTENT_TYPES
     template = None
     """Inner template"""
+    model = RouterParam()
+    """optional REST model name"""
 
     def get(self, request):
         html = self.get_html(request)
@@ -177,6 +179,14 @@ class HtmlRouter(Router):
         """key for a child router
         """
         return '%s%s' % (self.name, prefix) if self.name else prefix
+
+    def get_model(self, request):
+        model = None
+        if self.model:
+            model = request.app.models.get(self.model)
+        if not model:
+            raise Http404
+        return model
 
     def make_router(self, rule, **params):
         """Create a new :class:`.Router` form rule and parameters

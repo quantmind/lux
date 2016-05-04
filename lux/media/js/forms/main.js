@@ -129,10 +129,9 @@ define(['angular',
                 //  If it uses the api for posting, register with it
                 scope.$on('formReady', function (e, model, formScope) {
                     var attrs = formScope.formAttrs,
-                        action = attrs ? attrs.action : null,
-                        actionType = attrs ? attrs.actionType : null;
+                        action = attrs ? attrs.action : null;
 
-                    if (isObject(action) && actionType !== 'create') {
+                    if (isObject(action)) {
                         var api = $lux.api(action);
                         if (api) {
                             $lux.log.info('Form ' + formScope.formModelName + ' registered with "' +

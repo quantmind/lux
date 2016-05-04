@@ -1,5 +1,5 @@
 from pulsar.utils.structures import AttributeDictionary
-from pulsar.apps.wsgi import route, RouterParam
+from pulsar.apps.wsgi import route
 from pulsar.utils.httpurl import remove_double_slash
 from pulsar import Http404
 
@@ -34,8 +34,6 @@ class CmsContent:
 class TextRouter(core.HtmlRouter):
     """CRUD views for the text APIs
     """
-    model = RouterParam()
-
     def __init__(self, model):
         super().__init__(model.path, model=model)
 

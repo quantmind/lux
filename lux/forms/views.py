@@ -8,7 +8,7 @@ from ..core.wrappers import HtmlRouter
 def get_form(request, form):
     """Get a form class from registry
     """
-    registry = request.app.formreg
+    registry = request.app.forms
     if form in registry:
         return registry[form]
     elif isinstance(form, str):

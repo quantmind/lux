@@ -12,7 +12,7 @@ from lux.utils.auth import ensure_authenticated
 
 full_name = RestColumn(
     'full_name',
-    displayName='name',
+    displayName='Name',
     field=('first_name', 'last_name', 'username', 'email')
 )
 
@@ -22,14 +22,14 @@ class UserModel(RestModel):
 
     @classmethod
     def create(cls, url=None, exclude=None, hidden=None):
-        exclude = exclude or ('password',),
+        exclude = exclude or ('password',)
         return cls(
             'user',
             'create-user',
             'user',
             url=url,
             id_field='username',
-            repr_field='name',
+            repr_field='full_name',
             exclude=exclude,
             hidden=hidden,
             columns=(

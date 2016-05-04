@@ -173,7 +173,7 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
     admin = None
     _handler = None
     auth_backend = None
-    formreg = None
+    forms = None
     """Form registry for this application. Add/override forms via the
     on_loaded event"""
     cms = None
@@ -309,7 +309,7 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
     def wsgi_handler(self):
         if self._handler is None:
             self._handler = _build_handler(self)
-            self.formreg = formreg.copy()
+            self.forms = formreg.copy()
             self.fire('on_loaded')
         return self._handler
 
