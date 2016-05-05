@@ -97,7 +97,7 @@ class UserForm(forms.Form):
     superuser = forms.BooleanField()
     active = forms.BooleanField()
     joined = forms.DateTimeField(readonly=True, required=False)
-    groups = RelationshipField('groups', multiple=True, required=False)
+    # groups = RelationshipField('groups', multiple=True, required=False)
 
 
 class ChangePasswordForm(PasswordForm):

@@ -10,7 +10,7 @@ define(function () {
             'angular-touch': '//cdnjs.cloudflare.com/ajax/libs/angular.js/1.5.5/angular-touch',
             'angular-ui-bootstrap': 'https://cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/1.3.2/ui-bootstrap-tpls',
             'angular-ui-router': '//cdnjs.cloudflare.com/ajax/libs/angular-ui-router/0.2.14/angular-ui-router',
-            'angular-ui-select': '//cdnjs.cloudflare.com/ajax/libs/angular-ui-select/0.14.9/select',
+            'angular-ui-select': '//cdnjs.cloudflare.com/ajax/libs/angular-ui-select/0.16.1/select',
             'angular-cookies': '//cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.9/angular-cookies',
             'angular-ui-grid': '//cdnjs.cloudflare.com/ajax/libs/angular-ui-grid/3.1.1/ui-grid',
             'angular-scroll': '//cdnjs.cloudflare.com/ajax/libs/angular-scroll/0.7.2/angular-scroll',

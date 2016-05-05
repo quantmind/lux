@@ -44,33 +44,26 @@ class RelationshipField(MultipleMixin, forms.Field):
         return attrs
 
     def _clean(self, value, bfield):
-        app = bfield.request.app
-        # Get a reference to the object data mapper
-        odm = app.odm()
-        model = app.models.register(self.get_model())
-        db_model = model.db_model()
-        if not self.multiple:
-            value = (value,)
-        idcolumn = getattr(db_model, model.id_field)
         try:
-            with odm.begin() as session:
-                all = session.query(db_model).filter(idcolumn.in_(value))
-                if self.multiple:
-                    return list(all)
+            request = bfield.request
+            model = request.app.models.get(self.model)
+            if not self.multiple:
+                value = (value,)
+
+            data = model.collection_data(request, **{model.id_field: value})
+            result = data['result']
+            if self.multiple:
+                return result
+            else:
+                if len(result) == 1:
+                    return result[0]
                 else:
-                    if all.count() == 1:
-                        instance = all.one()
-                        if self.get_field:
-                            return getattr(instance, self.get_field)
-                        else:
-                            return instance
-                    else:
-                        raise forms.ValidationError(
-                            self.validation_error.format(model))
+                    raise forms.ValidationError(
+                        self.validation_error.format(model))
         except forms.ValidationError:
             raise
-        except Exception as exc:
-            app.logger.exception(str(exc))
+        except Exception:
+            request.logger.exception('Critical exception while validating')
             raise forms.ValidationError(
                 self.validation_error.format(model))
 

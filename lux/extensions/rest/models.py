@@ -54,7 +54,12 @@ class RestColumn:
 
     __str__ = __repr__
 
-    def as_dict(self, defaults=True):
+    def as_dict(self, model, defaults=True):
+        if self.model:
+            if self.field:
+                model._exclude.add(self.field)
+            if not self.type:
+                self.type = 'object'
         return dict(self._as_dict(defaults))
 
     def set(self, instance, value):
@@ -173,7 +178,7 @@ class ColumnPermissionsMixin:
 class RestClient:
     """Implemets method accessed by clients to Rest Models
     """
-    def get_target(self, request, **extra_data):
+    def get_target(self, request, **params):
         """Get a target object for this model
 
         Used by HTML Router to get information about the LUX REST API
@@ -189,7 +194,14 @@ class RestClient:
             'url': api_url,
             'name': self.api_name
         }
-        target.update(**extra_data)
+        #
+        # Add additional parameters
+        for key, value in params.items():
+            if hasattr(value, '__call__'):
+                value = value(request)
+            if value is not None:
+                target[key] = value
+
         return target
 
 
@@ -443,7 +455,7 @@ class RestModel(LuxModel, RestClient, ColumnPermissionsMixin):
             col = RestColumn.make(info)
             if col.name in self._hidden:
                 col.hidden = True
-            columns.append(col.as_dict())
+            columns.append(col.as_dict(self))
 
         return columns
 
@@ -457,6 +469,7 @@ class RestModel(LuxModel, RestClient, ColumnPermissionsMixin):
                 base = request.absolute_uri('/')
                 url = urljoin(base, url)
         if path:
+            path = str(path)
             if path.startswith('/'):
                 path = path[1:]
             if path:

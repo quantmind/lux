@@ -100,39 +100,9 @@ define(['angular',
             //  Fired when a lux form uses this api to post data
             //
             //  Check the run method in the "lux.services" module for more information
-            api.formReady = function (model, formScope) {
+            api.formReady = function () {
                 var action = api.defaults().action;
-                if (action === 'update') {
-                    api.get().success(function (data) {
-                        lux.forEach(data, function (value, key) {
-                            // TODO: do we need a callback for JSON fields?
-                            // or shall we leave it here?
-
-                            var modelType = formScope[formScope.formModelName + 'Type'];
-                            var jsonArrayKey = key.split('[]')[0];
-
-                            // Stringify json only if has json mode enabled
-                            if (modelType[jsonArrayKey] === 'json' && lux.isJsonStringify(value)) {
-
-                                // Get rid of the brackets from the json array field
-                                if (angular.isArray(value)) {
-                                    key = jsonArrayKey;
-                                }
-
-                                value = angular.toJson(value, null, 4);
-                            }
-
-                            if (angular.isArray(value)) {
-                                model[key] = [];
-                                angular.forEach(value, function (item) {
-                                    model[key].push(item.id || item);
-                                });
-                            } else {
-                                model[key] = value.id || value;
-                            }
-                        });
-                    });
-                }
+                if (action === 'update') return api.get();
             };
 
             //  override request and attach error callbacks

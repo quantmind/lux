@@ -222,6 +222,7 @@ class RestModel(rest.RestModel):
         cols = db_columns._data.copy()
         columns = []
 
+        # process input columns first
         for info in input_columns:
             col = RestColumn.make(info)
             if col.name not in self._rest_columns:
@@ -229,9 +230,9 @@ class RestModel(rest.RestModel):
                 # If a database column
                 if isinstance(dbcol, Column):
                     info = column_info(col.name, dbcol)
-                    info.update(col.as_dict(defaults=False))
+                    info.update(col.as_dict(self, defaults=False))
                 else:
-                    info = col.as_dict()
+                    info = col.as_dict(self)
                 self._append_col(col, columns, info)
 
         for name, col in cols.items():

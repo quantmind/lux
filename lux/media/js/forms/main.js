@@ -1,5 +1,6 @@
 define(['angular',
         'lux/main',
+        'lux/forms/api',
         'lux/forms/process',
         'lux/forms/utils',
         'lux/forms/handlers'], function (angular, lux, formProcessors) {
@@ -60,7 +61,7 @@ define(['angular',
     //      formFieldChange: triggered when a form field changes:
     //          arguments: formmodel, field (changed)
     //
-    angular.module('lux.form', ['lux.form.utils', 'lux.form.handlers', 'lux.form.process'])
+    angular.module('lux.form', ['lux.form.api', 'lux.form.utils', 'lux.form.handlers', 'lux.form.process'])
         //
         .constant('formDefaults', {
             // Default layout
@@ -125,31 +126,15 @@ define(['angular',
         .run(['$rootScope', '$lux', 'formDefaults',
             function (scope, $lux, formDefaults) {
                 //
-                //  Listen for a Lux form to be available
-                //  If it uses the api for posting, register with it
-                scope.$on('formReady', function (e, model, formScope) {
-                    var attrs = formScope.formAttrs,
-                        action = attrs ? attrs.action : null;
-
-                    if (isObject(action)) {
-                        var api = $lux.api(action);
-                        if (api) {
-                            $lux.log.info('Form ' + formScope.formModelName + ' registered with "' +
-                                api.toString() + '" api');
-                            api.formReady(model, formScope);
-                        }
-                    }
-                    //
-                    // Convert date string to date object
-                    lux.forms.directives.push(fieldToDate(formDefaults));
-                });
+                // Convert date string to date object
+                lux.forms.directives.push(fieldToDate(formDefaults));
             }]
         )
         //
         // A factory for rendering form fields
-        .factory('baseForm', ['$log', '$http', '$document', '$templateCache',
-            'formDefaults', 'formElements',
-            function (log, $http, $document, $templateCache, formDefaults, formElements) {
+        .factory('baseForm', ['$lux', '$log', '$http', '$document', '$templateCache',
+            'formDefaults', 'formElements', 'remoteSelect',
+            function ($lux, log, $http, $document, $templateCache, formDefaults, formElements, remoteSelect) {
                 //
                 var elements = formElements();
 
@@ -211,6 +196,7 @@ define(['angular',
                                 fieldType = info.element;
                         }
 
+                        thisField.element = fieldType;
                         renderer = self[fieldType];
 
                         buildFieldInfo(scope.formModelName, thisField, fieldType);
@@ -347,6 +333,9 @@ define(['angular',
                             modelOptions = angular.extend({}, field.modelOptions, scope.inputModelOptions),
                             element;
 
+                        // Add this field to the fields object
+                        scope.fields[field.name] = field;
+
                         // Add model attribute
                         input.attr('ng-model', scope.formModelName + '["' + field.name + '"]');
                         // Add input model options
@@ -392,12 +381,18 @@ define(['angular',
                     // Create a select element
                     select: function (scope) {
                         var field = scope.field,
-                            groups = {},
-                            groupList = [],
-                            options = [],
+                            element = this.input(scope),
+                            options = field.options;
+
+                        field.api = field.relationship ? $lux.api(angular.fromJson(field.relationship)) : null;
+                        field.options = [];
+                        field.groupList = [];
+
+                        var groups = {},
                             group;
 
-                        forEach(field.options, function (opt) {
+
+                        forEach(options, function (opt) {
                             if (angular.isString(opt)) {
                                 opt = {'value': opt};
                             } else if (isArray(opt)) {
@@ -409,37 +404,42 @@ define(['angular',
                             if (opt.group) {
                                 group = groups[opt.group];
                                 if (!group) {
-                                    group = {name: opt.group, options: []};
+                                    group = {
+                                        name: opt.group,
+                                        options: []
+                                    };
                                     groups[opt.group] = group;
-                                    groupList.push(group);
+                                    field.groupList.push(group);
                                 }
                                 group.options.push(opt);
                             } else
-                                options.push(opt);
+                                field.options.push(opt);
                             // Set the default value if not available
                             if (!field.value) field.value = opt.value;
                         });
 
-                        var element = this.input(scope);
+                        this.selectWidget(scope, element);
 
-                        this.selectWidget(scope, element, field, groupList, options);
+                        //remoteSelect(scope);
 
                         return this.onChange(scope, element);
                     },
                     //
                     // Standard select widget
-                    selectWidget: function (scope, element, field, groupList, options) {
+                    selectWidget: function (scope, element) {
                         var grp,
                             placeholder,
+                            field = scope.field,
+                            groupList = scope.groupList,
+                            options = scope.options,
                             select = _select(scope.info.element, element);
 
-                        if (!field.multiple && angular.isUndefined(field['data-remote-options'])) {
+                        if (!field.multiple) {
                             placeholder = angular.element($document[0].createElement('option'))
                                 .attr('value', '').text(field.placeholder || formDefaults.defaultSelectPlaceholder);
 
-                            if (field.required) {
+                            if (field.required)
                                 placeholder.prop('disabled', true);
-                            }
 
                             select.append(placeholder);
                             if (angular.isUndefined(field.value)) {
@@ -514,7 +514,7 @@ define(['angular',
                     //  Add change event
                     onChange: function (scope, element) {
                         var field = scope.field,
-                            input = angular.element(element[0].querySelector(scope.info.element));
+                            input = angular.element(element[0].querySelector(field.element));
                         input.attr('ng-change', 'fireFieldChange("' + field.name + '")');
                         return element;
                     },
@@ -714,6 +714,7 @@ define(['angular',
         //
         .factory('formRenderer', ['$lux', '$compile', 'formDefaults',
             'standardForm', 'horizontalForm', 'inlineForm',
+
             function ($lux, $compile, formDefaults, standardForm, horizontalForm, inlineForm) {
                 //
                 function renderer(scope, element, attrs) {
@@ -750,6 +751,7 @@ define(['angular',
                         scope.formModelName = form.model;
                         //
                         scope[scope.formModelName] = formmodel;
+                        scope.fields = {};
                         scope.formAttrs = form;
                         scope.formClasses = {};
                         scope.formErrors = {};
@@ -870,7 +872,7 @@ define(['angular',
         ])
         //
         // Lux form
-        .directive('luxForm', ['formRenderer', function (formRenderer) {
+        .directive('luxForm', ['formRenderer', 'formApi', function (formRenderer, formApi) {
             return {
                 restrict: 'AE',
                 //
@@ -885,8 +887,7 @@ define(['angular',
                         post: function (scope, element) {
                             // create the form
                             formRenderer.createForm(scope, element);
-                            // Emit the form upwards through the scope hierarchy
-                            scope.$emit('formReady', scope[scope.formModelName], scope);
+                            formApi.ready(scope);
                         }
                     };
                 }

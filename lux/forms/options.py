@@ -1,3 +1,5 @@
+from enum import Enum
+
 from .errors import ValidationError
 
 
@@ -7,10 +9,17 @@ def as_value_dict(c):
     return c
 
 
+def options_from_enum(options):
+    for option in options:
+        yield {'value': option.value, 'name': option.name}
+
+
 class Options(object):
     '''Manage group of options for a :class:`.ChoiceField`
     '''
     def __init__(self, options):
+        if isinstance(options, type) and issubclass(options, Enum):
+            options = tuple(options_from_enum(options))
         self._choices = options or ()
 
     def all(self, form=None):
