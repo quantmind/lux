@@ -11,15 +11,19 @@
         "bootstrap-sass": "3.3"
     },
     "devDependencies": {
+        "angular-mocks": "1.5",
+        "babel-preset-es2015-rollup": "1.1",
+        "babel-eslint": "5.0",
+        "babelify": "7.2",
+        "browserify": "13.0",
+        "d3-collection": "0.1",
         "lodash": "4.11",
-        "uglify-js": "2.6",
         "eslint": "2.8",
-        "eslint-plugin-disable": "0.2",
         "eslint-config-angular": "0.5",
         "eslint-plugin-angular": "1.0",
-        "angular-mocks": "1.5",
-        "requirejs": "2.2",
+        "eslint-plugin-disable": "0.2",
         "karma": "0.13",
+        "karma-browserify": "5.0",
         "karma-coverage": "0.5",
         "karma-chrome-launcher": "0.2",
         "karma-firefox-launcher": "0.1",
@@ -29,15 +33,24 @@
         "karma-es5-shim": "0.0.4",
         "karma-jasmine": "0.3",
         "jasmine-core": "2.4",
-        "phantomjs-prebuilt": "2.1"
+        "ng-annotate": "1.2",
+        "phantomjs-prebuilt": "2.1",
+        "requirejs": "2.2",
+        "rollup": "0.25",
+        "rollup-plugin-json": "2.0",
+        "rollup-plugin-babel": "2.4",
+        "rollup-plugin-node-resolve": "1.5",
+        "uglify-js": "2.6",
+        "watchify": "3.7"
     },
     "repository": {
         "type": "git",
         "url": "https://github.com/quantmind/lux"
     },
     "scripts": {
-        "test": "eslint lux/media/js example/js && karma start --single-run",
-        "build": "npm test && r.js -o bundle.js optimize=none && uglifyjs example/website/media/website/website.js -c -m -o example/website/media/website/website.min.js",
+        "test": "eslint lux/js && karma start --single-run",
+        "build-bundle": "rollup -c && ng-annotate -a build/rollup.js -o build/lux.js",
+        "build": "npm run-script build-bundle && r.js -o bundle.js optimize=none && uglifyjs example/website/media/website/website.js -c -m -o example/website/media/website/website.min.js",
         "debug": "karma start --browsers Chrome"
     },
     "keywords": [],

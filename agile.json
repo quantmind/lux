@@ -23,9 +23,9 @@
                 "example/js/*.js",
                 "example/js/tests/*.js",
                 "example/js/tests/**/*.js",
-                "lux/media/js/*.js",
-                "lux/media/js/**/*.js",
-                "lux/media/js/**/templates/*.html"
+                "lux/js/*.js",
+                "lux/js/**/*.js",
+                "lux/js/**/templates/*.html"
             ],
             "command": "js"
         },

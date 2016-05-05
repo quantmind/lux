@@ -1,4 +1,5 @@
 from pulsar import Http404
+from pulsar.apps.wsgi import route, Json
 
 from .form import Form
 from .serialise import Layout
@@ -62,3 +63,20 @@ class WebFormRouter(HtmlRouter):
         return form.as_form(action=action,
                             enctype=self.form_enctype,
                             method=method)
+
+    @route()
+    def jsonform(self, request):
+        form = self.get_form_layout(request)
+        if not form:
+            raise Http404
+        method = self.form_method or 'post'
+        action = self.form_action
+        if hasattr(action, '__call__'):
+            action = action(request)
+        if not action:
+            action = request.full_path()
+        data = form.as_dict(action=action,
+                            enctype=self.form_enctype,
+                            method=method)
+        return Json(data).http_response(request)
+

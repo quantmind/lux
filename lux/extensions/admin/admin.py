@@ -1,6 +1,7 @@
 from inspect import isclass
 
 from pulsar import Http404, PermissionDenied
+from pulsar.apps.wsgi import Json
 from pulsar.utils.html import nicename
 
 from lux.core import route, cached, HtmlRouter
@@ -170,6 +171,7 @@ class CRUDAdmin(AdminModel):
         return self.get_form(request, form, id=id)
 
     def get_form(self, request, form=None, id=None):
+        json = 'json' in request.url_data
         if id:
             action = 'update'
             form = form or self.updateform or self.form
@@ -186,9 +188,13 @@ class CRUDAdmin(AdminModel):
 
         if backend.has_permission(request, model.name, action):
             target = model.get_target(request, path=id, action=action)
-            html = form(request).as_form(action=target)
-            context = {'html_form': html.render()}
-            html = request.app.render_template(self.addtemplate, context)
-            return self.html_response(request, html)
+            if json:
+                data = form(request).as_dict(action=target)
+                return Json(data).http_response(request)
+            else:
+                html = form(request).as_form(action=target)
+                context = {'html_form': html.render()}
+                html = request.app.render_template(self.addtemplate, context)
+                return self.html_response(request, html)
 
         raise PermissionDenied

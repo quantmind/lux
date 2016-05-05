@@ -1,7 +1,0 @@
-<div>
-    <div class="alert alert-{{ message.type }}" role="alert" ng-repeat="message in messages">
-        <a href="#" class="close" ng-click="removeMessage($event, message)">&times;</a>
-        <i ng-if="message.icon" ng-class="message.icon"></i>
-        <span ng-bind-html="message.text"></span>
-    </div>
-</div>

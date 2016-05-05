@@ -45,10 +45,10 @@ class MediaBuilder:
         self.process_js('', self.app_base())
 
     def media(self, media, get_target):
-        sources = [('lux', os.path.join(lux.PACKAGE_DIR, 'media', media))]
+        sources = [('lux', os.path.join(lux.PACKAGE_DIR, media))]
         for ext in self.app.extensions.values():
-            if ext.meta.name != self.app.meta.name and ext.meta.media_dir:
-                src = os.path.join(ext.meta.media_dir, media)
+            if ext.meta.name != self.app.meta.name:
+                src = os.path.join(ext.meta.path, media)
                 if os.path.isdir(src):
                     name = ext.meta.name.split('.')[-1]
                     sources.append((name, src))

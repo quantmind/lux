@@ -1,50 +1,28 @@
-module.exports = function (config) {
+module.exports = function(config) {
 
     var configuration = {
 
-        frameworks: ['jasmine', 'requirejs', 'es5-shim'],
+        browsers: ['PhantomJS', 'Firefox', 'Chrome'],
 
-        browsers: ['PhantomJS', 'Chrome', 'Firefox'],
-
-        preprocessors: {
-            'js/!(build|tests|deps)/**/!(templates).js': ['coverage']
+        phantomjsLauncher: {
+            exitOnResourceError: true
         },
-
-        coverageReporter: {
-            includeAllSources: true,
-            reporters: [{
-                type: 'html',
-                dir: 'coverage/'
-            }, {
-                type: 'lcovonly',
-                dir: 'coverage/'
-            }, {
-                type: 'cobertura',
-                dir: 'coverage/'
-            },{
-                type: 'text-summary'
-            }],
-            subdir: function (browser) {
-                return browser.toLowerCase().split(/[ /-]/)[0];
-            }
-        },
-
-        basePath: 'example/js/',
+        basePath: '',
+        frameworks: ['jasmine', 'browserify', 'es5-shim'],
 
         files: [
-            {pattern: 'lux/**/*.js', included: false},
-            {pattern: '*.js', included: false},
-            {pattern: 'tests/data/*.js', included: false},
-            {pattern: 'tests/mocks/*.js', included: false},
-            {pattern: 'tests/test_*.js', included: false},
-            'tests/main.js',
+            'lux/js/tests/test-*.js'
         ],
 
-        reporters: ['coverage', 'dots', 'junit'],
+        preprocessors: {
+            'lux/js/**/*.js': 'browserify'
+        },
 
-        junitReporter: {
-            outputDir: 'junit',
-            outputFile: 'test-results.xml'
+        browserify: {
+            debug: true,
+            transform: [
+                ['babelify', {presets: ['es2015']}]
+            ]
         },
 
         customLaunchers: {
@@ -53,9 +31,11 @@ module.exports = function (config) {
                 flags: ['--no-sandbox']
             }
         }
+
+        // define reporters, port, logLevel, browsers etc.
     };
 
-    if (process.env.TRAVIS){
+    if(process.env.TRAVIS){
         configuration.browsers = ['PhantomJS', 'Firefox', 'ChromeNoSandbox'];
     }
 
