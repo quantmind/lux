@@ -19,8 +19,18 @@ export function compile (template, scope) {
     var element = null;
     inject(function($compile, $rootScope) {
         if (!scope) scope = $rootScope.$new();
-        
+
         element = digest($compile, template, scope);
     });
     return element;
+}
+
+
+export function getForm(element) {
+    expect(element.length).toBe(1);
+    expect(element[0].tagName).toBe('DIV');
+    expect(element.children().length).toBe(1);
+    var form = _.element(element.children()[0]);
+    expect(form[0].tagName).toBe('FORM');
+    return form;
 }

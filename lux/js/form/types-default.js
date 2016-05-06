@@ -8,8 +8,14 @@ export default function (ngModule) {
         // Inputs
         p.setType({
             name: 'input',
-            template: `<input class="form-control" ng-model="model[options.key]">`,
-            wrapper: ['bootstrapLabel', 'bootstrapHasError']
+            template: inputTpl,
+            wrapper: ['bootstrapLabel', 'bootstrapHasError'],
+            defaultOptions: function (field) {
+                return {
+                    title: field.name,
+                    value: ''
+                }
+            }
         });
 
         // Checkbox
@@ -29,14 +35,14 @@ export default function (ngModule) {
         // Select
         p.setType({
             name: 'select',
-            template: `<select class="form-control" ng-model="model[options.key]"></select>`,
+            template: `<select class="form-control" ng-model="model[field.name]"></select>`,
             wrapper: ['bootstrapLabel', 'bootstrapHasError']
         });
 
         // Textarea
         p.setType({
             name: 'textarea',
-            template: `<textarea class="form-control" ng-model="model[options.key]"></textarea>`,
+            template: `<textarea class="form-control" ng-model="model[field.name]"></textarea>`,
             wrapper: ['bootstrapLabel', 'bootstrapHasError'],
             defaultOptions: {
                 ngModelAttrs: {
@@ -45,7 +51,36 @@ export default function (ngModule) {
                 }
             }
         });
+
+        // Fieldset
+        p.setType({
+            name: 'fieldset',
+            template: fieldsetTpl,
+            group: true
+        });
+
+        // Div
+        p.setType({
+            name: 'div',
+            group: true
+        });
     }
+}
+
+function inputTpl(field) {
+    return `<input class="form-control" 
+id="${field.id}"
+name="${field.name}"
+type="${field.type}"
+value="${field.value}"
+title="${field.title}"
+ng-model="model['${field.name}']"
+ng-required="field.required"
+ng-readonly="field.readonly"
+ng-disabled="field.disabled"
+ng-minlength="field.minlength"
+ng-maxlength="field.minlength"
+>`
 }
 
 const checkboxTpl = `
@@ -53,7 +88,7 @@ const checkboxTpl = `
 <label>
         <input type="checkbox"
            class="formly-field-checkbox"
-               ng-model="model[options.key]">
+               ng-model="model[field.name]">
         {{to.label}}
         {{to.required ? '*' : ''}}
     </label>
@@ -69,9 +104,16 @@ const radioTpl = `
              id="{{id + '_'+ $index}}"
              tabindex="0"
              ng-value="option[to.valueProp || 'value']"
-             ng-model="model[options.key]">
+             ng-model="model[field.name]">
       {{option[to.labelProp || 'name']}}
     </label>
   </div>
 </div>
 `
+
+
+function fieldsetTpl (field) {
+    var legend = field.legend || ``;
+    if (legend) legend = `<legend>${legend}</legend>`;
+    return `<fieldset>${legend}</fieldset>`
+}

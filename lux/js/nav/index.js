@@ -1,4 +1,4 @@
-import {default as _} from '../ng';
+import _ from '../ng';
 
 // lux.nav module
 var luxNavModule = _.module('lux.nav', ['lux']);

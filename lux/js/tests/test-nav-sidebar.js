@@ -1,5 +1,5 @@
 import {module, compile, _} from './tools';
-import * as lux from '../';
+import '../';
 
 
 describe('Test sidebar -', function () {

@@ -2,6 +2,8 @@ import _ from '../ng';
 
 export function noop () {}
 
+const jsLibs = {};
+
 
 export function getOptions (root, attrs, optionName) {
     var exclude = [name, 'class', 'style'],
@@ -95,4 +97,17 @@ export function joinUrl () {
         }
     }
     return url;
+}
+
+
+export function jsLib(name, callback) {
+    var lib = jsLibs[name];
+
+    if (!lib && callback)
+        require([name], function (lib) {
+            jsLibs[name] = lib;
+            callback(lib);
+        });
+
+    return lib;
 }
