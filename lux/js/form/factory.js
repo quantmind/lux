@@ -1,4 +1,4 @@
-import {default as _} from '../angular-fix';
+import _ from '../ng';
 import {getOptions} from '../core/utils';
 import s4 from '../core/s4';
 
@@ -16,6 +16,10 @@ export default function ($lux, $window, $log, $http, $document, luxFormElements)
         if (_.isString(formData))
             return $lux.get(formData);
     };
+
+    formFactory.prototype = Form.prototype;
+
+    return formFactory;
 }
 
 function formId () {

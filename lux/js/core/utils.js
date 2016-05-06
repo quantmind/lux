@@ -1,4 +1,4 @@
-import {default as _} from '../angular-fix'
+import _ from '../ng';
 
 export function noop () {}
 
@@ -66,6 +66,8 @@ export function urlBase64DecodeToJSON (str) {
     }
     return JSON.parse(decoded);
 }
+
+export const isAbsolute = new RegExp('^([a-z]+://|//)');
 
 
 export function joinUrl () {

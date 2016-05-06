@@ -1,20 +1,17 @@
-import angular from './angular-fix';
+import _ from './ng';
 
 import * as core from './core';
-import * as form from './form';
 
-const luxModule = angular.module('lux', []);
+const luxModule = _.module('lux', []);
 
 luxModule.factory('$lux', core.lux);
 
 
-var luxFormModule = angular.module('lux.form', ['lux']);
-
-
-luxFormModule.constant('LuxFormElements', form.elements);
-luxFormModule.directive('LuxForm', form.directive);
-luxFormModule.factory('luxFormFactory', form.factory);
+import './form';
+import './nav';
 
 
 export {version} from '../../package.json';
-export {noop, urlBase64Decode, joinUrl, getOptions} from './core/utils';
+export {default as querySelector} from './core/queryselector';
+export {default as s4} from './core/s4';
+export {noop, urlBase64Decode, joinUrl, getOptions, isAbsolute} from './core/utils';

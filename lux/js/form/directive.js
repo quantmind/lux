@@ -12,7 +12,7 @@ export default function (luxFormFactory) {
             return {
                 pre: function (scope, element, attr) {
                     // Initialise the scope from the attributes
-                    result = luxFormFactory.init(scope, element, attr);
+                    scope.luxForm = luxFormFactory(scope, element, attr);
                 },
                 post: function (scope, element) {
                     // create the form

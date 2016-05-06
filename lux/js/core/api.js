@@ -1,5 +1,5 @@
 import {map} from 'd3-collection';
-import {default as _} from '../angular-fix';
+import _ from '../ng';
 
 
 // @ngInject

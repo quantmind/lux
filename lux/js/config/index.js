@@ -4,7 +4,7 @@ define(['lux/config/paths',
     'use strict';
 
     // If a file assign http as protocol (https does not work with PhantomJS)
-    var root = this,
+    var root = window,
         protocol = root.location ? (root.location.protocol === 'file:' ? 'http:' : '') : '',
         ostring = Object.prototype.toString,
         minify = root.MINIFIED_MEDIA === false ? false : true,
