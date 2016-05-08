@@ -1,21 +1,13 @@
-from pulsar import ImproperlyConfigured, Http401
+from pulsar import Http401
 from pulsar.utils.pep import to_string
 
-from .mixins import jwt, TokenBackendMixin
+from .mixins import TokenBackendMixin
 from .registration import RegistrationMixin
 from .. import AuthBackend, Authorization
 
 
 class TokenBackend(TokenBackendMixin, RegistrationMixin, AuthBackend):
-    """Backend based on JWT_
-
-    Once a ``jtw`` is created, authetication is achieved by setting
-    the ``Authorization`` header to ``Bearer jwt``.
-
-    Requires pyjwt_ package.
-
-    .. _pyjwt: https://pypi.python.org/pypi/PyJWT
-    .. _JWT: http://self-issued.info/docs/draft-ietf-oauth-json-web-token.html
+    """Toekn Backend
     """
     def api_sections(self, app):
         """This backend add the authorization router to the Rest API
@@ -35,8 +27,6 @@ class TokenBackend(TokenBackendMixin, RegistrationMixin, AuthBackend):
         and the authentication type if ``bearer`` try to perform
         authentication using JWT_.
         '''
-        if not jwt:     # pragma    nocover
-            raise ImproperlyConfigured('JWT library not available')
         auth = request.get('HTTP_AUTHORIZATION')
         user = request.cache.user
         if auth and user.is_anonymous():

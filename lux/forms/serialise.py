@@ -3,8 +3,6 @@ import json
 from pulsar.utils.slugify import slugify
 from pulsar.apps.wsgi import Html
 
-from lux.utils.crypt import get_random_string
-
 
 def serialised_fields(form_class, fields, missings):
     '''Utility function for checking fields in layouts'''
@@ -35,7 +33,7 @@ def as_serialised_field(field, form):
             if name.startswith('data_'):
                 value = data.pop(name)
                 data[name.replace('_', '-')] = value
-        return {'field': data}
+        return data
 
 
 class FormElement:
@@ -61,7 +59,7 @@ class Submit(FormElement):
             self.attrs['type'] = self.type
 
     def as_dict(self, form=None):
-        return {'field': self.attrs}
+        return self.attrs
 
 
 class Fieldset(FormElement):
@@ -83,10 +81,11 @@ class Fieldset(FormElement):
     __str__ = __repr__
 
     def as_dict(self, form=None):
-        return {
-            'field': self.attrs.copy(),
-            'children': [as_serialised_field(c, form) for c in self.children]
-            }
+        field = self.attrs.copy();
+        if self.children:
+            field['children'] = [as_serialised_field(c, form)
+                                 for c in self.children]
+        return field
 
     def setup(self, form_class, missings):
         children = self.children
@@ -138,32 +137,11 @@ class SerialisedForm(object):
         self.layout = layout
         self.form = form
 
-    def as_dict(self, id=None, **attrs):
+    def as_dict(self, **attrs):
         data = self.layout.as_dict(self.form)
-        form = data['field']
-        if 'model' not in form:
-            form['model'] = self.form.__class__.__name__
-        if id is None and not form.get('id'):
-            id = '%s_%s' % (self.form.__class__.__name__.lower(),
-                            get_random_string(5))
-        if id:
-            form['id'] = id
-        form.update(attrs)
+        data.update(attrs)
         return data
 
-    def as_form(self, ng_controller=None, **attrs):
-        data = self.as_dict(**attrs)
-        form = data['field']
-        directive = form.pop('directive', 'lux-form')
-        id = form['id']
-        script = form_script % (id, json.dumps(data))
-        html = Html(directive, script).data('options', 'luxforms.%s' % id)
-        ng_controller = ng_controller or form.pop('ng_controller', None)
-        # add controller if required
-        if ng_controller:
-            html.data('ng-controller', ng_controller)
-        return html
-
-
-form_script = ('<script>if (!this.luxforms) {this.luxforms = {};} '
-               'this.luxforms.%s = %s;</script>')
+    def as_form(self, **attrs):
+        data = json.dumps(self.as_dict(**attrs))
+        return Html('lux-form').attr('json', data)

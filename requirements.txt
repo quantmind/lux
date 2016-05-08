@@ -2,4 +2,5 @@ python-dateutil
 pytz
 greenlet
 jinja2
+pyjwt
 pulsar

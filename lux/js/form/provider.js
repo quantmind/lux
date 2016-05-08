@@ -9,6 +9,7 @@ export default function () {
             date: 'input',
             datetime: 'input',
             email: 'input',
+            hidden: 'input',
             month: 'input',
             number: 'input',
             search: 'input',
@@ -81,6 +82,6 @@ export default function () {
     }
 
     function getTag (type) {
-        return tagMap[type];
+        return tagMap[type] || type;
     }
 }

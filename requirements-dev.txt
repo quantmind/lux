@@ -5,7 +5,6 @@ unidecode
 markdown
 sphinx
 pyyaml
-pyjwt
 beautifulsoup4
 redis
 coverage

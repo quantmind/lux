@@ -619,6 +619,7 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
                 request.response.status_code = status_code
             context = self.context(request, context)
             if doc.jscontext:
+
                 jscontext = json.dumps(doc.jscontext)
                 encoded = b64encode(jscontext.encode('utf-8')).decode('utf-8')
                 doc.head.embedded_js.insert(

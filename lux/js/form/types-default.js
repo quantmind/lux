@@ -52,6 +52,11 @@ export default function (ngModule) {
             }
         });
 
+        p.setType({
+            name: 'button',
+            template: buttonTpl
+        });
+
         // Fieldset
         p.setType({
             name: 'fieldset',
@@ -116,4 +121,9 @@ function fieldsetTpl (field) {
     var legend = field.legend || ``;
     if (legend) legend = `<legend>${legend}</legend>`;
     return `<fieldset>${legend}</fieldset>`
+}
+
+
+function buttonTpl(field) {
+    return `<button name="${field.name}" class="btn btn-default" >${field.label}</button>`
 }

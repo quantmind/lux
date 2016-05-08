@@ -69,6 +69,16 @@ export function urlBase64DecodeToJSON (str) {
     return JSON.parse(decoded);
 }
 
+export function decodeJWToken (token) {
+    var parts = token.split('.');
+
+    if (parts.length !== 3) {
+        throw new Error('JWT must have 3 parts');
+    }
+
+    return urlBase64DecodeToJSON(parts[1]);
+};
+
 export const isAbsolute = new RegExp('^([a-z]+://|//)');
 
 

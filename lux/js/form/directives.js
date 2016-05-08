@@ -9,42 +9,47 @@ export function luxForm ($lux, $window) { //, $compile, luxFormConfig) {
     return {
         restrict: 'AE',
         replace: true,
+        transclude: true,
+        scope: {
+            'json': '=?',
+            'model': '=?'
+        },
         template: formTemplate,
+        controller: FormController,
         link: linkForm
     };
 
     function formTemplate (el, attrs) {
-        var form  = getForm(attrs);
-        return `<form class="lux-form" name="${form.id}" role="form" novalidate>
-<lux-field ng-repeat="field in luxform.children"</lux-field>
-</form>`;
-    }
+        var href = attrs.href;
 
-    function getForm (attrs) {
-        var form = getOptions($window, attrs, 'luxForm');
-        if (form.json) {
-            form = _.fromJson(form.json);
-        }
-        if (form.href) {
-            $lux.api(form.href).get().then(function (data) {
-                _.extend(form, data);
-                form.hrefData = true;
-                formLink(scope, element, form);
+        if (href && !attrs.json) {
+            return $lux.api(href).get().then(function (data) {
+                attrs.json = data;
+                return formTemplate(el, attrs);
             }, function (msg) {
                 $lux.messages.error(msg)
             });
-            return;
         }
-        attrs.form = form;
-        form.id = 'form'; // form.id || luxFormConfig.id();
-        form.fields = {}
-        return form;
+
+        var form_id = attrs.id || 'form',
+            inner = innerTemplate(form_id);
+
+        return `<form class="lux-form" name="${form_id}" role="form" novalidate>
+${inner}
+<div ng-transclude></div>
+</form>`;
+    }
+
+    // ngInject
+    function FormController ($scope) {
+        $scope.model = {};  // model values
+        $scope.fields = {};
+        $scope.field = $scope.json;
     }
 
     function linkForm (scope, element, attrs) {
         var form = attrs.form;
-        scope.model = {};
-        scope.luxform = form;
+        //scope.json = form;
     }
 
 }
@@ -57,16 +62,23 @@ export function luxField ($log, $compile, luxFormConfig) {
     return {
         restrict: 'AE',
         require: '?^luxForm',
+        scope: {
+            fields: '=',
+            model: '=',
+            form: '=',
+            field: '='
+        },
+        controller: FieldController,
         link: linkField
     };
 
     // @ngInject
-    function linkField ($scope, element) {
+    function FieldController ($scope) {
         var field = $scope.field,
             tag = field.tag || cfg.getTag(field.type);
 
         if (!tag)
-            return $lux.error('Could not find a tag for field');
+            return $log.error('Could not find a tag for field');
 
         field.id = field.id || cfg.id();
         field.tag = tag;
@@ -78,32 +90,65 @@ export function luxField ($log, $compile, luxFormConfig) {
         mergeOptions(field, type.defaultOptions, $scope);
         field.fieldType = type;
 
-        var template = type.template || '',
-            w;
-
         if (!type.group) {
             if (!field.name)
                 return $log.error('Field with no name attribute in lux-form');
-            $scope.luxform.fields[field.name] = field;
+            $scope.fields[field.name] = field;
         }
+    }
+
+    function linkField(scope, el) {
+        var field = scope.field,
+            fieldType = field.fieldType,
+            template, w;
+
+        if (!fieldType) return;
+
+        template = fieldType.template || '';
 
         if (_.isFunction(template))
             template = template(field);
 
-        _.forEach(type.wrapper, (wrapper) => {
+        var children = field.children;
+
+        if (_.isArray(children) && children.length) {
+            var inner = innerTemplate('form');
+            if (template) {
+                var tel = _.element(template);
+                tel.append(inner);
+                template = asHtml(tel);
+            } else
+                template = inner;
+        }
+
+        _.forEach(fieldType.wrapper, (wrapper) => {
             w = cfg.getWrapper(wrapper);
             if (w) template = w.template(template) || template;
             else $log.error(`Could not locate lux-form wrapper "${wrapper}" in "${type.name}" field`);
         });
 
-        var inner = $compile(template)($scope);
-        element.append(inner);
+        el.html(asHtml(template));
+        $compile(el.contents())(scope);
     }
 
     function mergeOptions(field, defaults, $scope) {
         if (_.isFunction(defaults)) defaults = defaults(field, $scope);
         reverseMerge(field, defaults);
     }
+
+    // sort-of stateless util functions
+    function asHtml(el) {
+        const wrapper = _.element('<a></a>');
+        return wrapper.append(el).html();
+    }
 }
 
 
+function innerTemplate (form_id) {
+    return `<lux-field ng-repeat="child in field.children"
+field="child"
+model="model"
+fields="fields"
+form="${form_id}">
+</lux-field>`
+}
