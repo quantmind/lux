@@ -4,7 +4,8 @@ import {default as _} from '../ng';
 export default function () {
 
     const formMap = {},
-        wrapperMap = {},
+        wrapperMap = {},    // container of Html wrappers for form elements
+        actionMap = {},     // container of actions on a form
         tagMap = {
             date: 'input',
             datetime: 'input',
@@ -29,6 +30,8 @@ export default function () {
         getWrapper,
         getTag: getTag,
         setTag: setTag,
+        getAction: getAction,
+        setAction: setAction,
         id: formid,
         // Required for angular providers
         $get: () => this
@@ -64,6 +67,7 @@ export default function () {
         formName = formName || 'default';
         var form = formMap[formName];
         if (!form) throw Error(`Form ${formName} is not available`);
+        name = getTag(name);
         return form[name];
     }
 
@@ -83,5 +87,13 @@ export default function () {
 
     function getTag (type) {
         return tagMap[type] || type;
+    }
+
+    function getAction (type) {
+        return actionMap[type];
+    }
+
+    function setAction (type, action) {
+        actionMap[type] = action;
     }
 }

@@ -1,4 +1,4 @@
-import {isAbsolute} from '../core/utils';
+import {urlIsAbsolute} from '../core/urls';
 import _ from '../ng';
 
 
@@ -29,7 +29,7 @@ export function link($location) {
             }
         url = _.isString(url) ? url : url.href || url.url;
         if (!url) return;
-        if (isAbsolute.test(url))
+        if (urlIsAbsolute(url))
             loc = $location.absUrl();
         else
             loc = $location.path();

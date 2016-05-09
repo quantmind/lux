@@ -49,14 +49,15 @@ class FormElement:
 
 
 class Submit(FormElement):
-    type = 'button'
+    tag = 'button'
+    type = 'submit'
 
-    def __init__(self, label, name=None, **attrs):
+    def __init__(self, label, name=None, tag=None, type=None, **attrs):
         self.attrs = attrs
         self.attrs['label'] = label
         self.attrs['name'] = slugify(name or label, separator='')
-        if not self.attrs.get('type'):
-            self.attrs['type'] = self.type
+        self.attrs['tag'] = tag or self.tag
+        self.attrs['type'] = type or self.type
 
     def as_dict(self, form=None):
         return self.attrs

@@ -1,7 +1,8 @@
 
 export default function (ngModule) {
-    ngModule.config(['luxFormConfigProvider', addWrappers]);
-
+    ngModule.config(addWrappers);
+    
+    // @ngInject
     function addWrappers(luxFormConfigProvider) {
         var p = luxFormConfigProvider;
 
@@ -11,8 +12,8 @@ export default function (ngModule) {
         });
 
         p.setWrapper({
-            name: 'bootstrapHasError',
-            template: errorTpl
+            name: 'bootstrapStatus',
+            template: statusTpl
         });
 
     }
@@ -20,18 +21,17 @@ export default function (ngModule) {
 
 
 const labelTpl = function (inner) {
-    return `<div>
-  <label for="{{id}}" class="control-label {{to.labelSrOnly ? 'sr-only' : ''}}" ng-if="to.label">
-    {{to.label}}
-    {{to.required ? '*' : ''}}
+    return `<label for="{{field.id}}" class="control-label {{field.labelSrOnly ? 'sr-only' : ''}}" ng-if="field.label">
+    {{field.label}}
+    {{field.required ? '*' : ''}}
   </label>
-  ${inner}
-</div>`;
+  ${inner}`;
 }
 
 
-const errorTpl = function (inner) {
-    return `<div class="form-group" ng-class="{'has-error': showError}">
-  ${inner}
+const statusTpl = function (inner) {
+    return `<div class="form-group" ng-class="{'has-error': field.error, 'has-success': field.success}">
+${inner}
+<p ng-if="field.error" class="text-danger error-block">{{ field.error }}</p>
 </div>`;
 }

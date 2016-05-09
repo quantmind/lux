@@ -1,10 +1,9 @@
 import _ from '../ng';
-import {getOptions} from '../core/utils';
 import reverseMerge from '../core/reverseMerge';
 
 
 // @ngInject
-export function luxForm ($lux, $window) { //, $compile, luxFormConfig) {
+export function luxForm ($lux) {
 
     return {
         restrict: 'AE',
@@ -43,20 +42,19 @@ ${inner}
     // ngInject
     function FormController ($scope) {
         $scope.model = {};  // model values
-        $scope.fields = {};
-        $scope.field = $scope.json;
+        $scope.fields = {};  //field container
+        $scope.field = $scope.json;  // currenct field (form)
     }
 
-    function linkForm (scope, element, attrs) {
-        var form = attrs.form;
-        //scope.json = form;
+    function linkForm ($scope) {
+        $scope.form.$action = $scope.field.action;
     }
 
 }
 
 
 // @ngInject
-export function luxField ($log, $compile, luxFormConfig) {
+export function luxField ($log, $lux, luxFormConfig, luxLazy) {
     var cfg = luxFormConfig;
 
     return {
@@ -82,6 +80,7 @@ export function luxField ($log, $compile, luxFormConfig) {
 
         field.id = field.id || cfg.id();
         field.tag = tag;
+
         var type = cfg.getType(field.tag);
 
         if (!type)
@@ -93,7 +92,8 @@ export function luxField ($log, $compile, luxFormConfig) {
         if (!type.group) {
             if (!field.name)
                 return $log.error('Field with no name attribute in lux-form');
-            $scope.fields[field.name] = field;
+            $scope.field = new Field($scope, $log, $lux, cfg, field);
+            $scope.fields[field.name] = $scope.field;
         }
     }
 
@@ -124,11 +124,12 @@ export function luxField ($log, $compile, luxFormConfig) {
         _.forEach(fieldType.wrapper, (wrapper) => {
             w = cfg.getWrapper(wrapper);
             if (w) template = w.template(template) || template;
-            else $log.error(`Could not locate lux-form wrapper "${wrapper}" in "${type.name}" field`);
+            else $log.error(`Could not locate lux-form wrapper "${wrapper}" in "${field.name}" field`);
         });
 
         el.html(asHtml(template));
-        $compile(el.contents())(scope);
+        var compileHtml = fieldType.compile || compile;
+        compileHtml(luxLazy, el.contents(), scope);
     }
 
     function mergeOptions(field, defaults, $scope) {
@@ -141,6 +142,10 @@ export function luxField ($log, $compile, luxFormConfig) {
         const wrapper = _.element('<a></a>');
         return wrapper.append(el).html();
     }
+
+    function compile(lazy, html, scope) {
+        lazy.$compile(html)(scope);
+    }
 }
 
 
@@ -151,4 +156,59 @@ model="model"
 fields="fields"
 form="${form_id}">
 </lux-field>`
+}
+
+// Logic and data for a form Field
+class Field {
+
+    constructor ($scope, $log, $lux, cfg, field) {
+        this.$scope = $scope;
+        this.$log = $log;
+        this.$lux = $lux;
+        this.$cfg = cfg;
+        let directives = [];
+        _.forEach(field, (value, key) => {
+            if (isDirective(key))
+                directives.push(`${key}='${value}'`);
+            else
+                this[key] = value;
+        });
+        this.directives = directives.join(directives);
+
+    }
+
+    get error () {
+        var ngField = this.ngField;
+        if (this.displayStatus && ngField.$invalid) {
+            if (ngField.$error.required) return this.required_error || 'This field is required';
+            else return this.validation_error || 'Not a valid value';
+        }
+    }
+
+    get success () {
+        if (this.displayStatus && !this.error) return true;
+    }
+
+    get displayStatus () {
+        return this.$form.$submitted || this.ngField.$dirty;
+    }
+
+    $click ($event) {
+        var action = this.$cfg.getAction(this.type);
+        if (action) action.call(this, $event);
+    }
+
+    get $form () {
+        return this.$scope.form;
+    }
+
+    get ngField () {
+        return this.$scope.form[this.name];
+    }
+}
+
+
+function isDirective(key) {
+    var bits = key.split('-');
+    if (bits.length === 2) return true;
 }

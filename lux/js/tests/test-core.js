@@ -1,19 +1,11 @@
 import {_, inject, module} from './tools';
-import {joinUrl, getOptions} from '../core/utils';
+import {getOptions} from '../core/utils';
 
 
 describe('lux core', function() {
 
     beforeEach(() => {
         module('lux');
-    });
-
-    it('Check joinUrl', function () {
-        expect(joinUrl('bla', 'foo')).toBe('bla/foo');
-        expect(joinUrl('bla/', '/foo')).toBe('bla/foo');
-        expect(joinUrl('bla', '')).toBe('bla');
-        expect(joinUrl('bla', '///foo')).toBe('bla/foo');
-        expect(joinUrl('bla//////', '///foo')).toBe('bla/foo');
     });
 
     it('Test getOptions', inject(
@@ -32,9 +24,13 @@ describe('lux core', function() {
         })
     );
 
-    it('Test getOptions', inject(
+    it('Test $lux', inject(
         function($lux) {
             expect(_.isObject($lux.context)).toBe(true);
+
+            var api = $lux.api('');
+            expect(api.baseUrl).toBe('');
+            expect(api.path).toBe('');
         })
     );
 });

@@ -40,7 +40,7 @@ class RelationshipField(MultipleMixin, forms.Field):
         target = model.get_target(request,
                                   path=self.path,
                                   params=self.request_params)
-        attrs['relationship'] = json.dumps(target)
+        attrs['lux-remote'] = json.dumps(target)
         return attrs
 
     def _clean(self, value, bfield):

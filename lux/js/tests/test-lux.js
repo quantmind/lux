@@ -20,4 +20,13 @@ describe('lux core', function() {
             expect($lux.csrf).toBe(undefined);
         })
     );
+
+    it('Test luxLazy', inject(
+        function(luxLazy) {
+
+            expect(_.isObject(luxLazy)).toBe(true);
+            expect(_.isFunction(luxLazy.$compile)).toBe(true);
+            expect(_.isFunction(luxLazy.require)).toBe(true);
+        })
+    );
 });

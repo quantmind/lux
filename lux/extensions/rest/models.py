@@ -1,11 +1,11 @@
 import logging
 from inspect import isgenerator
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse, urlunparse
 
 from pulsar import PermissionDenied
 from pulsar.utils.html import nicename
 from pulsar.apps.wsgi import Json
-from pulsar.utils.httpurl import is_absolute_uri
+from pulsar.utils.httpurl import is_absolute_uri, remove_double_slash
 from pulsar.utils.log import lazymethod
 
 from lux.core import LuxModel
@@ -188,11 +188,14 @@ class RestClient:
         api_url = self.api_url or app.config.get('API_URL')
         if not api_url:
             return
+        url = list(urlparse(api_url))
+        url[2] = remove_double_slash('%s/%s' % (url[2], self.url))
+        url = urlunparse(url)
+
         target = {
             'id_field': self.id_field,
             'repr_field': self.repr_field,
-            'url': api_url,
-            'name': self.api_name
+            'url': url
         }
         #
         # Add additional parameters

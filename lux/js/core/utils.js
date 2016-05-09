@@ -79,45 +79,29 @@ export function decodeJWToken (token) {
     return urlBase64DecodeToJSON(parts[1]);
 };
 
-export const isAbsolute = new RegExp('^([a-z]+://|//)');
-
-
-export function joinUrl () {
-    var bit, url = '';
-    for (var i = 0; i < arguments.length; ++i) {
-        bit = arguments[i];
-        if (bit) {
-            var cbit = bit,
-                slash = false;
-            // remove front slashes if cbit has some
-            while (url && cbit.substring(0, 1) === '/')
-                cbit = cbit.substring(1);
-            // remove end slashes
-            while (cbit.substring(cbit.length - 1) === '/') {
-                slash = true;
-                cbit = cbit.substring(0, cbit.length - 1);
-            }
-            if (cbit) {
-                if (url && url.substring(url.length - 1) !== '/')
-                    url += '/';
-                url += cbit;
-                if (slash)
-                    url += '/';
-            }
-        }
-    }
-    return url;
-}
-
-
 export function jsLib(name, callback) {
     var lib = jsLibs[name];
 
-    if (!lib && callback)
-        require([name], function (lib) {
-            jsLibs[name] = lib;
+    if (callback) {
+        if (lib)
             callback(lib);
-        });
+        else {
+            require([name], function (lib) {
+                jsLibs[name] = lib || true;
+                callback(lib);
+            });
+        }
+    }
 
     return lib;
+}
+
+
+export function LuxException (value, message) {
+   this.value = value;
+   this.message = message;
+
+   this.toString = function() {
+      return `${this.message} : ${this.value}`;
+   };
 }
