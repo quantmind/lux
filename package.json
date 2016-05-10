@@ -8,16 +8,16 @@
     },
     "dependencies": {
         "angular": "1.5",
+        "lodash-es": "4.12",
         "bootstrap-sass": "3.3"
     },
     "devDependencies": {
         "angular-mocks": "1.5",
-        "babel-preset-es2015-rollup": "1.1",
         "babel-eslint": "5.0",
+        "babel-preset-es2015-rollup": "1.1",
         "babelify": "7.2",
         "browserify": "13.0",
         "d3-collection": "0.1",
-        "lodash": "4.11",
         "eslint": "2.8",
         "eslint-config-angular": "0.5",
         "eslint-plugin-angular": "1.0",
@@ -40,6 +40,7 @@
         "rollup-plugin-json": "2.0",
         "rollup-plugin-babel": "2.4",
         "rollup-plugin-node-resolve": "1.5",
+        "rollup-plugin-replace": "1.1",
         "uglify-js": "2.6",
         "watchify": "3.7"
     },

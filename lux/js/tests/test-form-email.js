@@ -1,4 +1,4 @@
-import {module, inject, compile, getForm, _} from './tools';
+import {module, compile, getForm, _} from './tools';
 import * as lux from '../index';
 
 
@@ -8,9 +8,9 @@ describe('lux core', function() {
         module('lux.form');
     });
 
-    it('Test $lux', inject(($rootScope) => {
+    it('Test $lux', () => {
 
-        var form = _.toJson({
+        var json = _.toJson({
             children: [
                 {
                     type: 'email',
@@ -20,7 +20,7 @@ describe('lux core', function() {
             ]
         });
 
-        var element = compile(`<div><lux-form json=${form}></lux-form></div>`),
+        var element = compile(`<div><lux-form json=${json}></lux-form></div>`),
             form = getForm(element),
             scope = form.isolateScope(),
             input = lux.querySelector(form, 'input');
@@ -34,5 +34,5 @@ describe('lux core', function() {
         scope.$digest();
         expect(scope.form.login.$valid).toBe(true);
         expect(scope.form.login.$invalid).toBe(false);
-    }));
+    });
 });

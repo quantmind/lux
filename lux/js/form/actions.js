@@ -10,7 +10,7 @@ export default function (ngModule) {
 
         cfg.setAction('submit', submitForm);
 
-        cfg.setOnSuccess('default', defaultOnSuccess);
+        cfg.onSuccess('default', defaultOnSuccess);
     }
 
 }
@@ -56,7 +56,7 @@ function submitForm (e) {
 
     function success (response) {
         form.$pending = false;
-        var hook = $cfg.getOnSuccess(info.resultHandler);
+        var hook = $cfg.onSuccess(info.resultHandler);
         hook(response, info);
     }
 

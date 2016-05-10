@@ -6,7 +6,7 @@ export default function () {
     const formMap = {},
         wrapperMap = {},    // container of Html wrappers for form elements
         actionMap = {},     // container of actions on a form
-        onSuccess = {},     // collection of handlers invoked on succesful submits
+        successHooks = {},  // collection of handlers invoked on successful submits
         tagMap = {
             date: 'input',
             datetime: 'input',
@@ -34,8 +34,7 @@ export default function () {
         setTag: setTag,
         getAction: getAction,
         setAction: setAction,
-        getOnSuccess: getOnSuccess,
-        setOnSuccess: setOnSuccess,
+        onSuccess: onSuccess,
         id: formid,
         // Required for angular providers
         $get: () => this
@@ -101,11 +100,11 @@ export default function () {
         actionMap[type] = action;
     }
 
-    function getOnSuccess (type) {
-        return onSuccess[type] || onSuccess['default'];
-    }
-
-    function setOnSuccess (type, hook) {
-        onSuccess[type] = hook;
+    function onSuccess (type, hook) {
+        if (arguments.length === 2) {
+            successHooks[type] = hook;
+            return this;
+        } else
+            return successHooks[type] || successHooks['default'];
     }
 }

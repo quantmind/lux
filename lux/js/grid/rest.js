@@ -9,27 +9,26 @@ class Rest {
     }
 
     connect () {
-        return this.getMetaData();
+        return this.getMetadata();
     }
 
     getMetadata () {
-        const grid = this.grid,
-              path = this.api.defaults.path || '';
+        const grid = this.grid;
         this.api.get({
-            path: path + '/metadata'
+            path: 'metadata'
         }).success(function (metadata) {
-            grid.onMetadataReceived(metadata);
+            grid.$onMetadata(metadata);
         });
     }
 
     getData (options) {
-        var grid = this._grid,
-            query = grid.state.query();
+        var grid = this.grid,
+            query = grid.state.query;
 
         _.extend(query, options);
 
         return this.api.get({params: query}).success(function (data) {
-            grid.onDataReceived(data);
+            grid.$onData(data);
         });
     }
 

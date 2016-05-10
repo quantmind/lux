@@ -8,10 +8,12 @@ import _ from '../ng';
 const ENCODE_URL_METHODS = ['delete', 'get', 'head', 'options'];
 //  HTTP verbs which don't send a csrf token in their requests
 const NO_CSRF = ['get', 'head', 'options'];
+//
+let luxId = 0;
 
 
 // @ngInject
-export default function ($location, $window, $q, $http, $log, $timeout, luxMessage) {
+export default function ($location, $window, $http, $log, $timeout, luxMessage) {
 
     var doc = $window.document,
         context = $window.lux,
@@ -30,15 +32,14 @@ export default function ($location, $window, $q, $http, $log, $timeout, luxMessa
         context.user = decodeJWToken(user)
     }
 
-    return new Lux($location, $q, $http, $log, $timeout, context, luxMessage);
+    return new Lux($location, $http, $log, $timeout, context, luxMessage);
 }
 
 
 class Lux {
 
-    constructor ($location, $q, $http, $log, $timeout, context, luxMessage) {
+    constructor ($location, $http, $log, $timeout, context, luxMessage) {
         this.$location = $location;
-        this.$q = $q;
         this.$http = $http;
         this.$log = $log;
         this.$timeout = $timeout;
@@ -89,6 +90,10 @@ class Lux {
         action.path = urlJoin(path, action.path);
 
         return new ApiClass(this, action);
+    }
+
+    id (prefix) {
+        return (prefix || 'l') + (++luxId);
     }
 }
 
@@ -150,10 +155,13 @@ class Api {
                 method: method.toLowerCase(),
                 params: _.extend({}, this.params, opts.params),
                 headers: opts.headers || {},
-                url: this.url
+                url: urlJoin(this.url, opts.path)
             };
 
         if (ENCODE_URL_METHODS.indexOf(options.method) === -1) options.data = opts.data;
+
+        if (!options.headers.hasOwnProperty('Content-Type'))
+            options.headers['Content-Type'] = 'application/json';
 
         this.httpOptions(options);
         //
@@ -170,8 +178,6 @@ class WebApi extends Api {
 
         if ($lux.csrf && NO_CSRF.indexOf(options.method === -1))
             options.data = _.extend(options.data || {}, $lux.csrf);
-
-        options.headers['Content-Type'] = 'application/json';
     }
 
 }
@@ -181,8 +187,6 @@ class RestApi extends Api {
 
     httpOptions (options) {
         var $lux = this.$lux;
-
-        options.headers['Content-Type'] = 'application/json';
 
         var token = $lux.userToken;
 

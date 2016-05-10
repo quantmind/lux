@@ -62,21 +62,15 @@ export default function ($controllerProvider, $provide, $compileProvider, $filte
 
         function loadModule(modules, onLoad) {
             if (!_.isArray(modules)) modules = [modules];
-            let runBlocks = [],
+            let moduleFunctions = [],
                 provider,
                 invokeQueue,
                 invokeArgs,
                 ii, i;
 
-            for (let k = 0; k < modules.length; ++k) {
+            const runBlocks = collectModules(modules, moduleCache, moduleFunctions, []);
 
-                const moduleName = modules[k];
-
-                if (moduleCache[moduleName]) continue;
-
-                const moduleFn = _.module(moduleName);
-
-                runBlocks = runBlocks.concat(moduleFn._runBlocks);
+            _.forEach(moduleFunctions, (moduleFn) => {
                 try {
                     for (invokeQueue = moduleFn._invokeQueue, i = 0, ii = invokeQueue.length; i < ii; i++) {
                         invokeArgs = invokeQueue[i];
@@ -89,21 +83,34 @@ export default function ($controllerProvider, $provide, $compileProvider, $filte
                         provider[invokeArgs[1]].apply(provider, invokeArgs[2]);
                     }
                 } catch (e) {
-                    if (e.message) e.message += ' while loading ' + moduleName;
+                    if (e.message) e.message += ' while loading ' + moduleFn.name;
                     throw e;
                 }
-            }
+            });
 
             _.forEach(runBlocks, (fn) => {
                 $injector.invoke(fn);
-            });
-
-            _.forEach(modules, (module) => {
-                moduleCache[module] = true;
             });
 
             onLoad();
             $timeout(consumeQueue);
         }
     }
+}
+
+
+function collectModules(modules, cache, moduleFunctions, runBlocks) {
+    let moduleFn;
+
+    _.forEach(modules, (name) => {
+        if (!cache[name]) {
+            moduleFn = _.module(name);
+            cache[name] = true;
+            runBlocks = collectModules(moduleFn.requires, cache, moduleFunctions, runBlocks);
+            moduleFunctions.push(moduleFn);
+            runBlocks = runBlocks.concat(moduleFn._runBlocks);
+        }
+    });
+
+    return runBlocks;
 }

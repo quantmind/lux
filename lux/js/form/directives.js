@@ -4,7 +4,6 @@ import reverseMerge from '../core/reverseMerge';
 
 // @ngInject
 export function luxForm ($lux, $log, luxFormConfig) {
-    var cfg = luxFormConfig;
 
     return {
         restrict: 'AE',

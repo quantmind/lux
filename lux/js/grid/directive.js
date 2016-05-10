@@ -5,7 +5,7 @@ export default function () {
     return {
         restrict: 'AE',
         scope: {
-            grid: '=?'
+            gridOptions: '=?'
         },
         controller: GridController,
         link: link
@@ -13,9 +13,9 @@ export default function () {
 
     // @ngInject
     function GridController ($scope, luxGrid) {
-        $scope.grid = luxGrid($scope.grid)
+        $scope.grid = luxGrid($scope.gridOptions);
     }
-    
+
     function link ($scope, element) {
         $scope.grid.$onLink($scope, element);
     }
