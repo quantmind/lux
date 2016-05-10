@@ -18,23 +18,9 @@ export default function ($lux) {
 }
 
 
-export function selectOptions (items) {
-    if (!_.isArray(items)) return [];
-    return items.map((opt) => {
-        if (_.isArray(opt)) {
-            opt = {
-                value: opt[0],
-                label: opt[1] || opt[0]
-            }
-        }
-        return opt;
-    });
-}
-
-
 export function compileUiSelect (lazy, html, scope) {
 
     lazy.require(['angular-ui-select', 'angular-sanitize'], ['ui.select', 'ngSanitize'], function () {
-        lazy.$compile(html)(scope);
+        html = lazy.$compile(html)(scope);
     });
 }

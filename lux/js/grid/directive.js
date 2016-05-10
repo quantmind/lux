@@ -1,22 +1,22 @@
-//import _ from '../ng';
-import {getOptions} from '../core/utils';
 
-// @ngInject
-export default function (luxGrid) {
+
+export default function () {
 
     return {
-        restrict: 'A',
-        link: {
-            pre: function (scope, element, attrs) {
-                var opts = getOptions(attrs, 'luxGrid');
-                    //scripts = element[0].getElementsByTagName('script');
-
-                //_.forEach(scripts, function (js) {
-                //    lux.globalEval(js.innerHTML);
-                //});
-
-                luxGrid(scope, opts);
-            }
-        }
+        restrict: 'AE',
+        scope: {
+            grid: '=?'
+        },
+        controller: GridController,
+        link: link
     };
+
+    // @ngInject
+    function GridController ($scope, luxGrid) {
+        $scope.grid = luxGrid($scope.grid)
+    }
+    
+    function link ($scope, element) {
+        $scope.grid.$onLink($scope, element);
+    }
 }

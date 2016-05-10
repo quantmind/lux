@@ -77,7 +77,7 @@ export function decodeJWToken (token) {
     }
 
     return urlBase64DecodeToJSON(parts[1]);
-};
+}
 
 export function jsLib(name, callback) {
     var lib = jsLibs[name];

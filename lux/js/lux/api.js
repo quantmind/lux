@@ -11,7 +11,7 @@ const NO_CSRF = ['get', 'head', 'options'];
 
 
 // @ngInject
-export default function ($location, $window, $q, $http, $log, $timeout) {
+export default function ($location, $window, $q, $http, $log, $timeout, luxMessage) {
 
     var doc = $window.document,
         context = $window.lux,
@@ -30,19 +30,20 @@ export default function ($location, $window, $q, $http, $log, $timeout) {
         context.user = decodeJWToken(user)
     }
 
-    return new Lux($location, $q, $http, $log, $timeout, context);
+    return new Lux($location, $q, $http, $log, $timeout, context, luxMessage);
 }
 
 
 class Lux {
 
-    constructor ($location, $q, $http, $log, $timeout, context) {
+    constructor ($location, $q, $http, $log, $timeout, context, luxMessage) {
         this.$location = $location;
         this.$q = $q;
         this.$http = $http;
         this.$log = $log;
         this.$timeout = $timeout;
         this.$apis = map();
+        this.messages = luxMessage;
         this.context = context;
     }
 
@@ -139,24 +140,24 @@ class Api {
         return new paginator(this);
     }
 
-    httpOptions (opts) {}
+    httpOptions () {}
 
     request (method, opts) {
         if (!opts) opts = {};
         // handle urlparams when not an object
         var $lux = this.$lux,
-            o = {
+            options = {
                 method: method.toLowerCase(),
                 params: _.extend({}, this.params, opts.params),
                 headers: opts.headers || {},
                 url: this.url
             };
 
-        if (ENCODE_URL_METHODS.indexOf(o.method) === -1) o.data = opts.data;
+        if (ENCODE_URL_METHODS.indexOf(options.method) === -1) options.data = opts.data;
 
-        this.httpOptions(opts);
+        this.httpOptions(options);
         //
-        return $lux.$http(opts);
+        return $lux.$http(options);
     }
 
 }
@@ -171,7 +172,7 @@ class WebApi extends Api {
             options.data = _.extend(options.data || {}, $lux.csrf);
 
         options.headers['Content-Type'] = 'application/json';
-    };
+    }
 
 }
 
@@ -187,5 +188,5 @@ class RestApi extends Api {
 
         if (token)
             options.headers.Authorization = 'Bearer ' + token;
-    };
+    }
 }

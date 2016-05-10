@@ -3,7 +3,8 @@ import reverseMerge from '../core/reverseMerge';
 
 
 // @ngInject
-export function luxForm ($lux) {
+export function luxForm ($lux, $log, luxFormConfig) {
+    var cfg = luxFormConfig;
 
     return {
         restrict: 'AE',
@@ -14,8 +15,7 @@ export function luxForm ($lux) {
             'model': '=?'
         },
         template: formTemplate,
-        controller: FormController,
-        link: linkForm
+        controller: FormController
     };
 
     function formTemplate (el, attrs) {
@@ -42,12 +42,9 @@ ${inner}
     // ngInject
     function FormController ($scope) {
         $scope.model = {};  // model values
-        $scope.fields = {};  //field container
-        $scope.field = $scope.json;  // currenct field (form)
-    }
-
-    function linkForm ($scope) {
-        $scope.form.$action = $scope.field.action;
+        $scope.fields = {};
+        $scope.info = new Form($scope, $lux, $log, luxFormConfig, $scope.json);
+        $scope.field = $scope.info;
     }
 
 }
@@ -61,7 +58,7 @@ export function luxField ($log, $lux, luxFormConfig, luxLazy) {
         restrict: 'AE',
         require: '?^luxForm',
         scope: {
-            fields: '=',
+            info: '=',
             model: '=',
             form: '=',
             field: '='
@@ -86,15 +83,15 @@ export function luxField ($log, $lux, luxFormConfig, luxLazy) {
         if (!type)
             return $log.error(`No field type for ${field.tag}`);
 
-        mergeOptions(field, type.defaultOptions, $scope);
-        field.fieldType = type;
-
         if (!type.group) {
             if (!field.name)
                 return $log.error('Field with no name attribute in lux-form');
-            $scope.field = new Field($scope, $log, $lux, cfg, field);
-            $scope.fields[field.name] = $scope.field;
+            $scope.field = field = new Field($scope, $lux, $log, cfg, field);
+            $scope.info.fields[field.name] = field;
         }
+
+        mergeOptions(field, type.defaultOptions, $scope);
+        field.fieldType = type;
     }
 
     function linkField(scope, el) {
@@ -153,19 +150,20 @@ function innerTemplate (form_id) {
     return `<lux-field ng-repeat="child in field.children"
 field="child"
 model="model"
-fields="fields"
+info="info"
 form="${form_id}">
 </lux-field>`
 }
 
-// Logic and data for a form Field
-class Field {
 
-    constructor ($scope, $log, $lux, cfg, field) {
+class FormElement {
+
+    constructor ($scope, $lux, $log, $cfg, field) {
         this.$scope = $scope;
-        this.$log = $log;
         this.$lux = $lux;
-        this.$cfg = cfg;
+        this.$cfg = $cfg;
+        this.$log = $log;
+        this.id = $cfg.id();
         let directives = [];
         _.forEach(field, (value, key) => {
             if (isDirective(key))
@@ -173,13 +171,43 @@ class Field {
             else
                 this[key] = value;
         });
-        this.directives = directives.join(directives);
-
+        this.directives = directives.join(' ');
     }
+
+    get $form () {
+        return this.$scope.form;
+    }
+
+    get model () {
+        return this.$scope.model;
+    }
+}
+
+
+class Form extends FormElement {
+
+    addMessages (messages, level) {
+        if (!level) level = 'info';
+        var $lux = this.$lux,
+            opts = {rel: this.id};
+
+        if (_.isArray(messages)) messages = [messages];
+        _.forEach(messages, (message) => {
+            $lux.messages.log(level, message, opts);
+        });
+    }
+
+    get fields () {
+        return this.$scope.fields;
+    }
+}
+
+// Logic and data for a form Field
+class Field extends FormElement {
 
     get error () {
         var ngField = this.ngField;
-        if (this.displayStatus && ngField.$invalid) {
+        if (ngField && this.displayStatus && ngField.$invalid) {
             if (ngField.$error.required) return this.required_error || 'This field is required';
             else return this.validation_error || 'Not a valid value';
         }
@@ -190,20 +218,21 @@ class Field {
     }
 
     get displayStatus () {
-        return this.$form.$submitted || this.ngField.$dirty;
+        var ngField = this.ngField;
+        return ngField && (this.$form.$submitted || ngField.$dirty);
+    }
+
+    get ngField () {
+        return this.$scope.form[this.name];
+    }
+
+    get info () {
+        return this.$scope.info;
     }
 
     $click ($event) {
         var action = this.$cfg.getAction(this.type);
         if (action) action.call(this, $event);
-    }
-
-    get $form () {
-        return this.$scope.form;
-    }
-
-    get ngField () {
-        return this.$scope.form[this.name];
     }
 }
 

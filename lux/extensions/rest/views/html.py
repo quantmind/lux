@@ -33,10 +33,9 @@ formreg['new-token'] = Layout(
 formreg['login'] = Layout(
     forms.LoginForm,
     Fieldset(all=True),
-    Submit('Login', disabled="form.$invalid"),
-    model='login',
+    Submit('Login'),
     showLabels=False,
-    resultHandler='login'
+    resultHandler='redirect'
 )
 
 

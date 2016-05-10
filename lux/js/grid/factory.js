@@ -1,45 +1,64 @@
 import _ from '../ng';
-import {jslib} from '../core/utils';
 
 
-// @ngInject
-export default function ($window, luxGridConfig) {
+export class Grid {
 
-    return luxGridApi;
-
-    function luxGridApi (scope, options) {
-        options = _.extend({}, luxGridConfig.defaults, options);
-        var grid = new Grid(options, luxGridConfig);
-        grid.dataProvider = luxGridConfig.getDataProvider(grid);
-        grid.dataProvider.connect();
-        return grid;
-    }
-}
-
-
-class Grid {
-
-    constructor (options, cfg) {
-        var self = this;
+    constructor (options, $compile, $window) {
         this.options = options;
-        this.cfg = cfg;
-
-        options.onRegisterApi = function (api) {
-            if (!jslib('lodash')) {
-                jslib('lodash', () => {
-                    self.onRegisterApi(api);
-                });
-            } else
-                self.onRegisterApi(api);
-        };
+        this.$compile = $compile;
+        this.$window = $window;
     }
 
-    onRegisterApi (api) {
+    getObjectIdField (entity) {
+        var reprPath = grid.options.reprPath || $window.location;
+        return reprPath + '/' + entity[grid.metaFields.id];
+    }
+
+    $onLoaded (cfg) {
+        this.$cfg = cfg;
+        this.$directives = 'ui-grid-pagination ui-grid-selection ui-grid-auto-resize';
+        this.$dataProvider = cfg.getDataProvider(this);
+        build(this);
+    }
+
+    $onLink (scope, element) {
+        this.$scope = scope;
+        this.$element = element;
+        build(this);
+    }
+
+    $onMetadataReceived (metadata) {
+        if (metadata)
+            luxMetadata(this, metadata);
+        this.$element.replaceWith(this.$cfg.$compile(gridTpl(this))(this.$scope));
+    }
+
+    $onRegisterApi (api) {
         this.options = api.grid.options;
         this.api = api;
         api.lux = this;
         this.cfg.onInit(this);
         this.dataProvider.getPage();
     }
+}
 
+
+function build (grid) {
+    if (grid.$element && grid.$dataProvider)
+        grid.$dataProvider.connect();
+}
+
+
+function gridTpl(grid) {
+    return `<div class="grid"
+ui-grid="grid.options"
+${grid.$directives}>
+</div>`;
+}
+
+
+function luxMetadata(grid, metadata) {
+    if(metadata['default-limit'])
+        grid.options.paginationPageSize = metadata['default-limit'];
+    _.extend(grid, metadata);
 }

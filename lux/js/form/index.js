@@ -26,3 +26,8 @@ formWrappers(luxFormModule);
 
 import formActions from './actions';
 formActions(luxFormModule);
+
+
+// Run configuration
+import runForm from './run';
+luxFormModule.run(runForm);

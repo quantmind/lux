@@ -14,7 +14,7 @@ export function urlResolve(url) {
     urlParsingNode.setAttribute('href', url);
 
     // urlParsingNode provides the UrlUtils interface - http://url.spec.whatwg.org/#urlutils
-    var url = {
+    url = {
         href: urlParsingNode.href,
         protocol: urlParsingNode.protocol ? urlParsingNode.protocol.replace(/:$/, '') : '',
         host: urlParsingNode.host,

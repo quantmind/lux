@@ -4,13 +4,13 @@ import _ from '../ng';
 var luxGridModule = _.module('lux.grid', ['lux']);
 
 // Data providers
-import luxGridConfig from './provider';
-luxGridModule.provider('luxGridConfig', luxGridConfig);
+import luxGrid from './provider';
+luxGridModule.provider('luxGrid', luxGrid);
 
 
 import luxGridDirective from './directive';
 luxGridModule.directive('luxGrid', luxGridDirective);
 
 
-import luxGridRun from './run';
-luxGridModule.run(luxGridRun);
+import registerProviders from './register';
+luxGridModule.config(registerProviders);

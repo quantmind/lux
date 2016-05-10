@@ -1,10 +1,11 @@
-import {selectOptions, compileUiSelect} from './remote';
+import {compileUiSelect} from './remote';
+import {defaultPlaceholder, selectOptions} from './utils';
 
 
 // Set default types
 export default function (ngModule) {
     ngModule.config(addTypes);
-    
+
     // @ngInject
     function addTypes(luxFormConfigProvider) {
         var p = luxFormConfigProvider;
@@ -17,7 +18,7 @@ export default function (ngModule) {
             defaultOptions: function (field) {
                 return {
                     title: field.name,
-                    placeholder: field.label || field.name,
+                    placeholder: defaultPlaceholder(field),
                     labelSrOnly: field.showLabels === false || field.type === 'hidden',
                     value: ''
                 }
@@ -43,10 +44,9 @@ export default function (ngModule) {
             template: selectTpl,
             wrapper: ['bootstrapLabel', 'bootstrapStatus'],
             defaultOptions: function (field) {
-                var options = field.options;
-                delete field.options;
                 return {
-                    options: selectOptions(options)
+                    placeholder: defaultPlaceholder(field),
+                    options: selectOptions(field)
                 };
             }
         });
@@ -57,10 +57,9 @@ export default function (ngModule) {
             template: uiSelectTpl,
             wrapper: ['bootstrapLabel', 'bootstrapStatus'],
             defaultOptions: function (field) {
-                var options = field.options;
-                delete field.options;
                 return {
-                    options: selectOptions(options)
+                    placeholder: defaultPlaceholder(field),
+                    options: selectOptions(field)
                 };
             },
             compile: compileUiSelect
@@ -73,7 +72,7 @@ export default function (ngModule) {
             wrapper: ['bootstrapLabel', 'bootstrapStatus'],
             defaultOptions: function (field) {
                 return {
-                    placeholder: field.label || field.name,
+                    placeholder: defaultPlaceholder(field),
                     ngModelAttrs: {
                         rows: {attribute: 'rows'},
                         cols: {attribute: 'cols'}
@@ -119,7 +118,7 @@ type="${field.type}"
 value="${field.value}"
 title="${field.title}"
 placeholder="${field.placeholder}"
-${field.directives}"
+${field.directives}
 ng-model="model['${field.name}']"
 ng-required="field.required"
 ng-readonly="field.readonly"
@@ -133,7 +132,7 @@ function selectTpl (field) {
     return `<select class="form-control"
 id="${field.id}"
 name="${field.name}"
-${field.directives}"
+${field.directives}
 ng-model="model['${field.name}']"
 ng-options="option.label for option in field.options track by option.value"
 ng-required="field.required"
@@ -148,7 +147,7 @@ function textareaTpl (field) {
 id="${field.id}"
 name="${field.name}"
 placeholder="${field.placeholder}"
-${field.directives}"
+${field.directives}
 ng-model="model['${field.name}']"
 ng-required="field.required"
 ng-readonly="field.readonly"
@@ -203,21 +202,20 @@ ng-click="field.$click($event)"
 
 
 function uiSelectTpl(field) {
-    return `<ui-select class="form-control"
+    return `<ui-select
 id="${field.id}"
 name="${field.name}"
-${field.directives}"
+${field.directives}
+theme="bootstrap"
 ng-model="model['${field.name}']"
-ng-options="option.label for option in field.options track by option.value"
 ng-required="field.required"
 ng-readonly="field.readonly"
 ng-disabled="field.disabled"
-theme="bootstrap"
 >
-<ui-select-match placeholder="Select or search a person in the list...">{{$select.selected.name}}</ui-select-match>
+<ui-select-match placeholder="${field.placeholder}">{{$select.selected.label}}</ui-select-match>
 <ui-select-choices repeat="item in field.options | filter: $select.search">
   <div ng-bind-html="item.label | highlight: $select.search"></div>
-  <small ng-if="item-description" ng-bind-html="item.description | highlight: $select.search"></small>
+  <small ng-if="item.description" ng-bind-html="item.description | highlight: $select.search"></small>
 </ui-select-choices>
 </ui-select>`
 }

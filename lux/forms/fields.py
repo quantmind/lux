@@ -322,20 +322,29 @@ class ChoiceField(MultipleMixin, Field):
     It has several additional attributes which can be specified
     via the :class:`Options` class.
     '''
+    options_url = None
+    options = None
     attrs = {'type': 'select'}
 
     def getattrs(self, form=None):
         attrs = super().getattrs(form)
-        attrs['options'] = self.options.all(form)
+        options_url = self.options_url
+        if hasattr(options_url, '__call__'):
+            options_url = options_url(form.request)
+        if options_url:
+            attrs['options'] = options_url
+        else:
+            attrs['options'] = self.options.all(form)
         return attrs
 
     def value_from_instance(self, instance):
         # Delegate to options
         return self.options.value_from_instance(self, instance)
 
-    def handle_params(self, options=None, **kwargs):
+    def handle_params(self, options=None, options_url=None, **kwargs):
         '''options is an iterable or a callable which takes bound field
         as only argument'''
+        self.options_url = options_url
         if not isinstance(options, Options):
             options = Options(options)
         self.options = options

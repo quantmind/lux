@@ -25,7 +25,7 @@ describe('lux core', function() {
             scope = form.isolateScope(),
             input = lux.querySelector(form, 'input');
 
-        expect(_.isObject(scope.fields['login'])).toBe(true);
+        expect(_.isObject(scope.info.fields['login'])).toBe(true);
         expect(input.length).toBe(1);
 
         //scope.model.login = 'user@example.com';

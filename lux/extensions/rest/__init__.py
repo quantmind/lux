@@ -59,6 +59,8 @@ __all__ = ['RestModel',
            'RelationshipField',
            'UniqueField',
            #
+           'api_url',
+           #
            'login',
            'logout',
            'user_permissions',
@@ -69,6 +71,14 @@ def website_url(request, location=None):
     """A website url
     """
     url = request.config.get('WEB_SITE_URL')
+    url = url or request.absolute_uri('/')
+    if location:
+        url = urljoin(url, location)
+    return url
+
+
+def api_url(request, location=None):
+    url = request.config.get('API_URL')
     url = url or request.absolute_uri('/')
     if location:
         url = urljoin(url, location)

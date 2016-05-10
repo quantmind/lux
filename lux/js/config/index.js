@@ -7,7 +7,7 @@ define(['lux/config/paths',
     var root = window,
         protocol = root.location ? (root.location.protocol === 'file:' ? 'http:' : '') : '',
         ostring = Object.prototype.toString,
-        minify = root.MINIFIED_MEDIA === false ? false : true,
+        minify = root.minifiedMedia === false ? false : true,
         end = '.js';
 
     return config;

@@ -60,9 +60,9 @@ class WebFormRouter(HtmlRouter):
             action = action(request)
         if not action:
             action = request.full_path()
-        return form.as_form(action=action,
-                            enctype=self.form_enctype,
-                            method=method)
+        return form(request).as_form(action=action,
+                                     enctype=self.form_enctype,
+                                     method=method)
 
     @route()
     def jsonform(self, request):
