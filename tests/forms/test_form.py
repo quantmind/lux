@@ -19,7 +19,7 @@ class SimpleForm(forms.Form):
     rank = forms.IntegerField(required=False)
     dt = forms.DateField(required=False)
     timestamp = forms.DateTimeField(required=False)
-    enum_field = forms.EnumField(required=False, enum_class=TestEnum)
+    enum_field = forms.ChoiceField(required=False, options=TestEnum)
 
 
 class PageForm(forms.Form):

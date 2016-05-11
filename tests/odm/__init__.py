@@ -85,7 +85,7 @@ class TaskForm(forms.Form):
     assigned = RelationshipField('persons',
                                  label='assigned',
                                  required=False)
-    enum_field = forms.EnumField(enum_class=TestEnum, default=TestEnum.opt1)
+    enum_field = forms.ChoiceField(options=TestEnum, default=TestEnum.opt1)
     desc = forms.CharField(required=False)
 
 

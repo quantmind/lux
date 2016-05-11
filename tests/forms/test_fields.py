@@ -52,15 +52,13 @@ class FieldTests(test.TestCase):
         #
         self.assertEqual(repr(field), 'foo')
 
-    def test_EnumField(self):
-        field = forms.EnumField(enum_class=TestEnum)
+    def test_ChoiceField_Enum(self):
+        field = forms.ChoiceField(options=TestEnum)
         self.assertEqual(field.attrs.get('name'), None)
         #
         self.assertEqual(field.options.all(), ['opt1', 'opt2'])
         attrs = field.getattrs()
         self.assertEqual(attrs['options'], ['opt1', 'opt2'])
-        #
-        self.assertEqual(repr(field), 'EnumField')
 
     def test_JsonField(self):
         field = forms.JsonField()
