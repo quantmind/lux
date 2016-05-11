@@ -13,7 +13,7 @@ export default class LuxComponent {
         var $lux = this.$lux,
             opts = {rel: this.$id};
 
-        if (_.isArray(messages)) messages = [messages];
+        if (!_.isArray(messages)) messages = [messages];
         _.forEach(messages, (message) => {
             $lux.messages.log(level, message, opts);
         });

@@ -1,5 +1,6 @@
 import _ from '../ng';
 import reverseMerge from '../core/reverseMerge';
+import LuxComponent from '../lux/component';
 
 
 // @ngInject
@@ -14,7 +15,10 @@ export function luxForm ($lux, $log, luxFormConfig) {
             'model': '=?'
         },
         template: formTemplate,
-        controller: FormController
+        controller: FormController,
+        link: {
+            post: postLink
+        }
     };
 
     function formTemplate (el, attrs) {
@@ -44,6 +48,30 @@ ${inner}
         $scope.fields = {};
         $scope.info = new Form($scope, $lux, $log, luxFormConfig, $scope.json);
         $scope.field = $scope.info;
+    }
+
+    function postLink ($scope) {
+        var info = $scope.info,
+            action = info.action;
+
+        if (!action || action.action != 'update') return;
+
+        var api = $lux.api(action);
+        $scope.form.$pending = true;
+        api.get().then(success, failure);
+
+        function success (response) {
+            $scope.form.$pending = false;
+            var data = response.data;
+            _.forEach(data, function (value, key) {
+                $scope.model[key] = value.id || value;
+            })
+        }
+
+        function failure () {
+            $scope.form.$pending = false;
+        }
+
     }
 
 }
@@ -155,14 +183,14 @@ form="${form_id}">
 }
 
 
-class FormElement {
+class FormElement extends LuxComponent {
 
     constructor ($scope, $lux, $log, $cfg, field) {
+        super($lux);
         this.$scope = $scope;
         this.$lux = $lux;
         this.$cfg = $cfg;
         this.$log = $log;
-        this.id = $cfg.id();
         let directives = [];
         _.forEach(field, (value, key) => {
             if (isDirective(key))
@@ -185,19 +213,38 @@ class FormElement {
 
 class Form extends FormElement {
 
-    addMessages (messages, level) {
-        if (!level) level = 'info';
-        var $lux = this.$lux,
-            opts = {rel: this.id};
+    get fields () {
+        return this.$scope.fields;
+    }
 
-        if (_.isArray(messages)) messages = [messages];
-        _.forEach(messages, (message) => {
-            $lux.messages.log(level, message, opts);
+    setSubmited () {
+        this.$form.$setSubmitted();
+        this.$form.$pending = true;
+        this.$lux.messages.clear(this.id);
+        _.forEach(this.fields, (field) => {
+            delete field.server_message;
+            delete field.server_error;
         });
     }
 
-    get fields () {
-        return this.$scope.fields;
+    addMessages (messages, level) {
+        var fields = this.fields,
+            formMessage = [],
+            error;
+        if (!_.isArray(messages)) messages = [messages];
+
+        _.forEach(messages, (message) => {
+            if (message.field && fields[message.field]) {
+                if (level === 'error') {
+                    fields[message.field].server_error = message.message;
+                    fields[message.field].ngField.$invalid = true;
+                } else
+                    fields[message.field].server_message = message.message;
+            } else
+                formMessage.push(message);
+        });
+
+        super.addMessages(formMessage, level);
     }
 }
 
@@ -208,7 +255,7 @@ class Field extends FormElement {
         var ngField = this.ngField;
         if (ngField && this.displayStatus && ngField.$invalid) {
             if (ngField.$error.required) return this.required_error || 'This field is required';
-            else return this.validation_error || 'Not a valid value';
+            else return this.server_error || this.validation_error || 'Not a valid value';
         }
     }
 
@@ -217,6 +264,7 @@ class Field extends FormElement {
     }
 
     get displayStatus () {
+        if (this.disabled || this.readonly) return false;
         var ngField = this.ngField;
         return ngField && (this.$form.$submitted || ngField.$dirty);
     }

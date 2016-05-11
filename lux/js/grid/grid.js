@@ -15,8 +15,7 @@ export default class Grid extends LuxComponent {
     }
 
     refresh () {
-        var query = this.query();
-        this.$dataProvider.getPage(query);
+        this.$dataProvider.getPage();
     }
 
     wrapCell (cell) {
@@ -72,11 +71,18 @@ class State {
 
     constructor (grid) {
         this.$grid = grid;
-        this.page = 1;
     }
 
     get options () {
         return this.$grid.options;
+    }
+
+    get page () {
+        return this.$grid.options.paginationCurrentPage;
+    }
+
+    set page (value) {
+        this.$grid.options.paginationCurrentPage = value;
     }
 
     get limit () {
@@ -95,8 +101,16 @@ class State {
         this.$grid.options.totalItems = value;
     }
 
+    get totalPages () {
+        return this.$grid.api.pagination.getTotalPages();
+    }
+
     get offset () {
         return this.limit*(this.page - 1);
+    }
+
+    get inPage () {
+        return Math.min(this.total - this.offset, this.limit);
     }
 
     get query () {
@@ -132,6 +146,7 @@ function build (grid) {
 function gridTpl(grid) {
     return `<div class='grid'
 ui-grid='grid.options'
+ng-style="grid.style"
 ${grid.$directives}>
 </div>`;
 }

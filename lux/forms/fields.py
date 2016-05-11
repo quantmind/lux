@@ -358,31 +358,6 @@ class ChoiceField(MultipleMixin, Field):
         return value
 
 
-class EnumField(ChoiceField):
-
-    def handle_params(self, enum_class=None, **kwargs):
-        if enum_class is None:
-            raise ValueError
-
-        kwargs.update(options=tuple(e.name for e in enum_class))
-        super().handle_params(**kwargs)
-        self.enum_class = enum_class
-
-        if isinstance(self.default, Enum):
-            self.default = self.default.name
-
-    def _clean(self, value, instance):
-        value = super()._clean(value, instance)
-        ret = None
-        for e in self.enum_class:
-            if e.name.lower() == value.lower():
-                ret = e
-        if ret is None:
-            raise ValidationError(
-                self.validation_error.format(value))
-        return ret
-
-
 class EmailField(CharField):
     attrs = {'type': 'email'}
 

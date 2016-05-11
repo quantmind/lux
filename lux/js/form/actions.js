@@ -32,15 +32,12 @@ function submitForm (e) {
     var api = $lux.api(action);
 
     // Flag the form as submitted
-    form.$setSubmitted();
+    info.setSubmited();
     //
     // Invalid?
     if (form.$invalid)
         form.$setDirty();
         // return this.$lux.messages.info('Invalid form - not submitting');
-
-    form.$pending = true;
-    $lux.messages.clear(info.id);
 
     var ct = (info.enctype || '').split(';')[0],
         method = info.method || 'post',

@@ -213,7 +213,7 @@ ng-readonly="field.readonly"
 ng-disabled="field.disabled"
 >
 <ui-select-match placeholder="${field.placeholder}">{{$select.selected.label}}</ui-select-match>
-<ui-select-choices repeat="item in field.options | filter: $select.search">
+<ui-select-choices repeat="item.value as item in field.options | filter: $select.search">
   <div ng-bind-html="item.label | highlight: $select.search"></div>
   <small ng-if="item.description" ng-bind-html="item.description | highlight: $select.search"></small>
 </ui-select-choices>

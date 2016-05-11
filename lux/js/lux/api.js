@@ -65,7 +65,9 @@ class Lux {
         }
 
         if (_.isString(action)) action = {url: action};
-        if (!_.isObject(action) || !_.isString(action.url))
+        else action = _.extend({}, action);
+        
+        if (!_.isString(action.url))
             throw new LuxException(action, 'action must be an object with url property');
 
         var url = action.url,

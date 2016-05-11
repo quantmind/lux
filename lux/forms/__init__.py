@@ -47,7 +47,7 @@ Layout
 from .fields import (Field, CharField, TextField, BooleanField, JsonField,
                      DateField, DateTimeField, ChoiceField, IntegerField,
                      FloatField, EmailField, FileField, HiddenField,
-                     PasswordField, UrlField, SlugField, EnumField)
+                     PasswordField, UrlField, SlugField)
 from .errors import FormError, FieldError, ValidationError
 from .formsets import FormSet
 from .form import FormType, Form, BoundField, FieldList, create_form, FORMKEY
@@ -73,7 +73,6 @@ __all__ = [
     'PasswordField',
     'UrlField',
     'SlugField',
-    'EnumField',
     #
     'Options',
     'OptionGroup',

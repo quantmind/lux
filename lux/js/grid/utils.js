@@ -116,6 +116,7 @@ export function booleanColumn (column, grid) {
 }
 
 export function objectColumn (column, grid) {
+    // TODO: this requires fixing (add a url for example)
     column.cellTemplate = grid.wrapCell('{{COL_FIELD.repr || COL_FIELD.id}}');
 }
 
@@ -147,28 +148,15 @@ function getColumnType(type) {
 
 
 function updateGridHeight (grid) {
-    var options = grid.options,
-        scope = grid.scope,
-        length = grid.options.totalItems,
-        element = grid.api.grid.element,
-        totalPages = scope.grid.api.pagination.getTotalPages(),
-        currentPage = grid.state.page(),
-        limit = grid.state.limit(),
-        lastPage = length % limit,
-        gridHeight = 0;
+    var state = grid.state,
+        options = grid.options,
+        gridHeight = state.inPage*options.rowHeight + options.offsetGridHeight;
 
-    // Calculate grid height
-    if (length > 0) {
-        if (currentPage < totalPages || lastPage === 0)
-            gridHeight = limit * options.rowHeight + options.offsetGridHeight;
-        else
-            gridHeight = lastPage * options.rowHeight + options.offsetGridHeight;
-    }
+    if (gridHeight < options.minGridHeight) gridHeight = options.minGridHeight;
 
-    if (gridHeight < options.minGridHeight)
-        gridHeight = options.minGridHeight;
-
-    element.css('height', gridHeight + 'px');
+    grid.style = {
+        height: gridHeight + 'px'
+    };
 }
 
 
@@ -229,7 +217,7 @@ function paginate (pageNumber, pageSize) {
 
     grid.state.page = pageNumber;
     grid.state.limit = pageSize;
-    grid.refreshPage();
+    grid.refresh();
 }
 
 
