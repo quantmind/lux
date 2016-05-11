@@ -53,6 +53,14 @@ class WsgiRequest(wsgi.WsgiRequest):
         return self.cache.logger or self.cache.app.logger
 
     @property
+    def api(self):
+        """handler to a Lux API server for this request
+        """
+        api = self.app.api
+        if api:
+            return api(self)
+
+    @property
     def http(self):
         return self.cache.http or self.cache.app.http()
 

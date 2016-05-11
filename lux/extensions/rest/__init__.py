@@ -246,7 +246,7 @@ class Extension(MultiAuthBackend):
             # Add router to API root-router
             api.add_child(router)
 
-        # reuters not required
+        # routers not required
         if app.rest_api_client:
             #
             # Create rest-api handler

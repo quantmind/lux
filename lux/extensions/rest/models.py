@@ -10,6 +10,8 @@ from pulsar.utils.log import lazymethod
 
 from lux.core import LuxModel
 
+from .client import url_path
+
 
 logger = logging.getLogger('lux.extensions.rest')
 
@@ -471,15 +473,7 @@ class RestModel(LuxModel, RestClient, ColumnPermissionsMixin):
             if not is_absolute_uri(url):
                 base = request.absolute_uri('/')
                 url = urljoin(base, url)
-        if path:
-            path = str(path)
-            if path.startswith('/'):
-                path = path[1:]
-            if path:
-                if not url.endswith('/'):
-                    url = '%s/' % url
-                url = '%s%s' % (url, path)
-        return url
+        return url_path(url, path)
 
 
 class ModelMixin:

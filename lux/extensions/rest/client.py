@@ -1,5 +1,4 @@
 import threading
-from urllib.parse import urljoin
 
 from lux.core import raise_http_error
 
@@ -66,8 +65,13 @@ class ApiClientRequest:
         return self.request('HEAD', path, **kw)
 
     def request(self, method, path=None, token=None, headers=None, **kw):
+        url = self.url
+        # Allow to pass an api target dict as path
+        if isinstance(path, dict):
+            url = path.get('url', url)
+            path = path.get('path')
         request = self._request
-        url = urljoin(self.url, path or '')
+        url = url_path(url, path)
         req_headers = self._headers[:]
         req_headers.extend(headers or ())
         agent = request.get('HTTP_USER_AGENT', request.config['APP_NAME'])
@@ -79,3 +83,15 @@ class ApiClientRequest:
         response = self._http.request(method, url, headers=req_headers, **kw)
         raise_http_error(response)
         return response
+
+
+def url_path(url, path):
+    if path:
+        path = str(path)
+        if path.startswith('/'):
+            path = path[1:]
+        if path:
+            if not url.endswith('/'):
+                url = '%s/' % url
+            url = '%s%s' % (url, path)
+    return url

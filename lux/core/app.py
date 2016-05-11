@@ -178,6 +178,8 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
     on_loaded event"""
     cms = None
     """CMS handler"""
+    api = None
+    """Handler for Lux API server"""
     _WsgiHandler = WsgiHandler
     _http = None
     _config = [

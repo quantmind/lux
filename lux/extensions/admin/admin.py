@@ -185,9 +185,11 @@ class CRUDAdmin(AdminModel):
 
         backend = request.cache.auth_backend
         model = self.get_model(request)
+        target = model.get_target(request, path=id, action=action)
+        if id:
+            request.api.head(target)
 
         if backend.has_permission(request, model.name, action):
-            target = model.get_target(request, path=id, action=action)
             if json:
                 data = form(request).as_dict(action=target)
                 return Json(data).http_response(request)

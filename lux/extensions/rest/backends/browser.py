@@ -140,9 +140,7 @@ class ApiSessionBackend(SessionBackendMixin,
         return False
 
     def password_recovery(self, request, **params):
-        api = request.app.api(request)
-        response = api.post(self.reset_password_url, data=params)
-        return response.json()
+        return request.api.post(self.reset_password_url, data=params).json()
 
     def set_password(self, request, password, user=None, auth_key=None):
         api = request.app.api(request)
@@ -154,9 +152,8 @@ class ApiSessionBackend(SessionBackendMixin,
         return response.json()
 
     def confirm_auth_key(self, request, key, **kw):
-        api = request.app.api(request)
         try:
-            api.head('%s/%s' % (self.auth_keys_url, key))
+            request.api.head('%s/%s' % (self.auth_keys_url, key))
         except Http404:
             return False
         return True
