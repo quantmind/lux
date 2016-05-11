@@ -10,7 +10,7 @@ export default {
     plugins: [
         json(),
         replace({
-            "from 'lodash'": "from 'lodash-es'"
+            "from 'lodash'": "from '../ld'"
         }),
         babel({
             babelrc: false,

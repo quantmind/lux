@@ -1,4 +1,5 @@
 /* eslint-plugin-disable angular */
+/* global define */
 define(function () {
     const
         root = window,
