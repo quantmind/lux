@@ -19,24 +19,18 @@ export default function ($controllerProvider, $provide, $compileProvider, $filte
     function getProvider ($injector, $log, $compile, $timeout) {
         var moduleCache = {};
 
-        return {
+        var provider = {
             require: _require,
+            $require: require,
             $compile: $compile
         };
 
+        return provider;
+
         function _require(libNames, modules, onLoad) {
             if (!_.isArray(modules)) modules = [modules];
-            var missingModules = [];
 
-            _.forEach(modules, (module) => {
-                try {
-                    _.module(module);
-                } catch (err) {
-                    missingModules.push(module);
-                }
-            });
-
-            if (!missingModules.length) {
+            if (!modules.length) {
                 onLoad();
                 return;
             }
@@ -44,10 +38,10 @@ export default function ($controllerProvider, $provide, $compileProvider, $filte
             if (!_.isArray(libNames)) libNames= [libNames];
 
             if (loading)
-                loadingQueue.push([libNames, missingModules, onLoad]);
+                loadingQueue.push([libNames, modules, onLoad]);
             else {
-                require(libNames, () => {
-                    loadModule(missingModules, onLoad);
+                provider.$require(libNames, () => {
+                    loadModule(modules, onLoad);
                 });
             }
         }

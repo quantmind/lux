@@ -20,7 +20,7 @@ export default function ($lux) {
 
 export function compileUiSelect (lazy, html, scope) {
 
-    lazy.require(['angular-ui-select', 'angular-sanitize'], ['ui.select', 'ngSanitize'], function () {
+    lazy.require(['ui-select', 'angular-sanitize'], ['ui.select', 'ngSanitize'], function () {
         html = lazy.$compile(html)(scope);
     });
 }

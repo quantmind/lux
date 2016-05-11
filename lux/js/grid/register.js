@@ -8,7 +8,7 @@ export default function (luxGridProvider) {
     luxGridProvider.registerDataProvider('rest', rest);
 
     luxGridProvider
-        .columnProcessor('date', utils.datesorting)
+        .columnProcessor('date', utils.dateColumn)
         .columnProcessor('datetime', utils.dateColumn)
         .columnProcessor('boolean', utils.booleanColumn)
         .columnProcessor('string', utils.stringColumn)

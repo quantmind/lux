@@ -73,7 +73,6 @@ class State {
     constructor (grid) {
         this.$grid = grid;
         this.page = 1;
-        this.total = 0;
     }
 
     get options () {
@@ -119,8 +118,11 @@ class State {
 
 function build (grid) {
     if (grid.$element && grid.$dataProvider) {
+        var onRegisterApi = grid.options.onRegisterApi;
+
         grid.options.onRegisterApi = function (api) {
             grid.$onRegisterApi(api);
+            if (onRegisterApi) onRegisterApi(api)
         };
         grid.$dataProvider.connect();
     }

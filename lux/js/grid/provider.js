@@ -87,7 +87,7 @@ export default function () {
     function get ($compile, $window, $lux, $injector, luxLazy) {
 
         function gridApi (options) {
-            reversemerge(options, gridApi.defaults);
+            options = reversemerge(options || {}, gridApi.defaults);
             var grid = new Grid(options, $lux, $compile, $window);
             luxLazy.require(['angular-ui-grid'], options.modules, () => {
                 var uiGridConstants = $injector.get('uiGridConstants');

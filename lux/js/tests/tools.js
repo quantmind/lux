@@ -1,6 +1,9 @@
 import angular from '../ng';
 
-require('angular-mocks');
+import 'angular-mocks';
+import 'angular-ui-grid/ui-grid';
+import 'ui-select';
+import mock_data from './mock'
 
 
 export const inject = angular.mock.inject;
@@ -25,6 +28,24 @@ export function compile (template, scope) {
     return element;
 }
 
+//
+export function newScope () {
+    var scope = null;
+    inject(function($rootScope) {
+        scope = $rootScope.$new();
+    });
+    return scope;
+}
+
+//
+export function httpBackend () {
+    var httpBackend = null;
+    inject(function($httpBackend) {
+        httpBackend = $httpBackend;
+    });
+    return httpBackend;
+}
+
 
 export function getForm(element) {
     expect(element.length).toBe(1);
@@ -34,3 +55,11 @@ export function getForm(element) {
     expect(form[0].tagName).toBe('FORM');
     return form;
 }
+
+
+_.module('lux.mocks', ['lux'])
+    .run(function ($httpBackend) {
+        for (var url in mock_data) {
+            $httpBackend.whenGET(url).respond(mock_data[url]);
+        }
+    });
