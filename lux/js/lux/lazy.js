@@ -5,6 +5,7 @@ import _ from '../ng';
 export default function ($controllerProvider, $provide, $compileProvider, $filterProvider) {
 
     var loading = false,
+        slice = Array.prototype.slice,
         loadingQueue = [],
         providers = {
             $controllerProvider: $controllerProvider,
@@ -28,21 +29,28 @@ export default function ($controllerProvider, $provide, $compileProvider, $filte
         return provider;
 
         function _require(libNames, modules, onLoad) {
-            if (!_.isArray(modules)) modules = [modules];
-
-            if (!modules.length) {
-                onLoad();
-                return;
+            if (arguments.length === 2) {
+                onLoad = modules;
+                modules = null;
             }
-
-            if (!_.isArray(libNames)) libNames= [libNames];
-
             if (loading)
-                loadingQueue.push([libNames, modules, onLoad]);
-            else {
-                provider.$require(libNames, () => {
-                    loadModule(modules, onLoad);
+                return loadingQueue.push({
+                    libNames: libNames,
+                    modules: modules,
+                    onLoad: onLoad
                 });
+
+            if (!_.isArray(libNames)) libNames = [libNames];
+
+            provider.$require(libNames, execute);
+
+            function execute() {
+
+                if (modules) loadModule(modules);
+
+                onLoad.apply(null, arguments);
+
+                $timeout(consumeQueue);
             }
         }
 
@@ -50,11 +58,11 @@ export default function ($controllerProvider, $provide, $compileProvider, $filte
             var q = loadingQueue.splice(0, 1);
             if (q.length) {
                 q = q[0];
-                require(q[0], q[1], q[2]);
+                provider.require(q.libNames, q.modules, q.onLoad);
             }
         }
 
-        function loadModule(modules, onLoad) {
+        function loadModule(modules) {
             if (!_.isArray(modules)) modules = [modules];
             let moduleFunctions = [],
                 provider,
@@ -85,9 +93,6 @@ export default function ($controllerProvider, $provide, $compileProvider, $filte
             _.forEach(runBlocks, (fn) => {
                 $injector.invoke(fn);
             });
-
-            onLoad();
-            $timeout(consumeQueue);
         }
     }
 }

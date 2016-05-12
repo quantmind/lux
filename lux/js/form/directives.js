@@ -229,8 +229,7 @@ class Form extends FormElement {
 
     addMessages (messages, level) {
         var fields = this.fields,
-            formMessage = [],
-            error;
+            formMessage = [];
         if (!_.isArray(messages)) messages = [messages];
 
         _.forEach(messages, (message) => {

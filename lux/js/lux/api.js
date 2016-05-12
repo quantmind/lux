@@ -13,7 +13,7 @@ let luxId = 0;
 
 
 // @ngInject
-export default function ($location, $window, $http, $log, $timeout, luxMessage) {
+export default function ($location, $window, $http, $log, $timeout, luxMessage, luxLazy) {
 
     var doc = $window.document,
         context = $window.lux,
@@ -32,19 +32,20 @@ export default function ($location, $window, $http, $log, $timeout, luxMessage) 
         context.user = decodeJWToken(user)
     }
 
-    return new Lux($location, $http, $log, $timeout, context, luxMessage);
+    return new Lux($location, $http, $log, $timeout, context, luxMessage, luxLazy);
 }
 
 
 class Lux {
 
-    constructor ($location, $http, $log, $timeout, context, luxMessage) {
+    constructor ($location, $http, $log, $timeout, context, luxMessage, luxLazy) {
         this.$location = $location;
         this.$http = $http;
         this.$log = $log;
         this.$timeout = $timeout;
         this.$apis = map();
         this.messages = luxMessage;
+        this.lazy = luxLazy;
         this.context = context;
     }
 
@@ -66,7 +67,7 @@ class Lux {
 
         if (_.isString(action)) action = {url: action};
         else action = _.extend({}, action);
-        
+
         if (!_.isString(action.url))
             throw new LuxException(action, 'action must be an object with url property');
 

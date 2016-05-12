@@ -1,7 +1,7 @@
 import _ from '../ng';
 
 
-export function luxMessages () {
+export default function () {
 
     return {
         restrict: 'AE',

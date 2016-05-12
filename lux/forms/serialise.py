@@ -4,6 +4,10 @@ from pulsar.utils.slugify import slugify
 from pulsar.apps.wsgi import Html
 
 
+def attributes(attrs):
+    return dict(((slugify(k), v) for k, v in attrs.items()))
+
+
 def serialised_fields(form_class, fields, missings):
     '''Utility function for checking fields in layouts'''
     for field in fields:
@@ -23,16 +27,12 @@ def as_serialised_field(field, form):
     if isinstance(field, FormElement):
         return field.as_dict(form)
     else:
-        data = field.getattrs(form)
+        data = attributes(field.getattrs(form))
         data['name'] = field.html_name()
         if form.is_bound:
             pass
         elif field.name in form.initial:
             data['value'] = form.initial[field.name]
-        for name in tuple(data):
-            if name.startswith('data_'):
-                value = data.pop(name)
-                data[name.replace('_', '-')] = value
         return data
 
 
@@ -60,7 +60,7 @@ class Submit(FormElement):
         self.attrs['type'] = type or self.type
 
     def as_dict(self, form=None):
-        return self.attrs
+        return attributes(self.attrs)
 
 
 class Fieldset(FormElement):
@@ -82,7 +82,7 @@ class Fieldset(FormElement):
     __str__ = __repr__
 
     def as_dict(self, form=None):
-        field = self.attrs.copy()
+        field = attributes(self.attrs);
         if self.children:
             field['children'] = [as_serialised_field(c, form)
                                  for c in self.children]

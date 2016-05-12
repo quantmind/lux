@@ -26,7 +26,7 @@ before_script:
 script:
   - python setup.py test --coverage -q
   - flake8
-  - python lux_config.py js
+  - npm test
   - if [[ $TRAVIS_PYTHON_VERSION == '3.5.1' ]]; then python setup.py test --coveralls; fi
 
 notifications:
