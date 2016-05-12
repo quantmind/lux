@@ -28,8 +28,8 @@ class FormAngularLayoutTests(test.TestCase):
     def _field(self, data, idx):
         self.assertEqual(len(data['children']), 1)
         data = data['children'][0]
-        self.assertEqual(data['field']['type'], 'fieldset')
-        return data['children'][idx]['field']
+        self.assertEqual(data['type'], 'fieldset')
+        return data['children'][idx]
 
     def test_layout_class(self):
         self.assertTrue(Layout1.form_class)
@@ -40,14 +40,14 @@ class FormAngularLayoutTests(test.TestCase):
         form = Layout1()
         data = form.as_dict()
         self.assertEqual(len(data), 2)
-        self.assertEqual(data['field']['type'], 'form')
+        self.assertEqual(data['type'], 'form')
         self.assertEqual(len(data['children']), 1)
 
     def test_render_form(self):
         form = Layout1()
         html = form.as_form()
         self.assertEqual(html.tag, 'lux-form')
-        self.assertEqual(len(html.children), 1)
+        self.assertEqual(len(html.children), 0)
 
     def test_render_form_width_button(self):
         form = Layout2()
@@ -59,25 +59,25 @@ class FormAngularLayoutTests(test.TestCase):
         data = form.as_dict()
         self.assertEqual(len(data['children']), 1)
         data = data['children'][0]
-        self.assertEqual(data['field']['type'], 'fieldset')
+        self.assertEqual(data['type'], 'fieldset')
         self.assertEqual(len(data['children']), 3)
         textarea = data['children'][2]
-        self.assertEqual(textarea['field']['type'], 'textarea')
+        self.assertEqual(textarea['type'], 'textarea')
         choice = data['children'][1]
-        self.assertEqual(choice['field']['type'], 'select')
+        self.assertEqual(choice['type'], 'select')
 
     def test_select_field(self):
         form = PageForm1()
         data = form.as_dict()
         self.assertEqual(len(data['children']), 1)
         data = data['children'][0]
-        self.assertEqual(data['field']['type'], 'fieldset')
+        self.assertEqual(data['type'], 'fieldset')
         self.assertEqual(len(data['children']), 3)
         markup = data['children'][1]
-        self.assertEqual(markup['field']['type'], 'select')
-        options = markup['field']['options']
+        self.assertEqual(markup['type'], 'select')
+        options = markup['options']
         self.assertEqual(len(options), 2)
-        self.assertTrue(markup['field']['required'])
+        self.assertTrue(markup['required'])
 
     def test_validation_attribute(self):
         form = PageForm1()

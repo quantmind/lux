@@ -133,7 +133,8 @@ class RestModel(rest.RestModel):
         else:
             setattr(instance, name, value)
 
-    def tojson(self, request, obj, exclude=None, **kw):
+    def tojson(self, request, obj, exclude=None, in_list=None,
+               exclude_related=None, **kw):
         '''Override the method from the base class.
 
         It uses sqlalchemy model information about columns
@@ -160,13 +161,16 @@ class RestModel(rest.RestModel):
                 elif isinstance(data, Enum):
                     data = data.name
                 elif is_rel_column(restcol):
+                    if exclude_related:
+                        continue
                     model = request.app.models.get(restcol.model)
                     if model:
-                        data = self._related_model(request, model, data)
+                        data = self._related_model(request, model, data,
+                                                   in_list)
                     else:
                         data = None
                         request.logger.error(
-                            'Could not fined model %s', restcol.model)
+                            'Could not find model %s', restcol.model)
                 else:   # Test Json
                     json.dumps(data)
             except TypeError:
@@ -174,6 +178,10 @@ class RestModel(rest.RestModel):
                     data = str(data)
                 except Exception:
                     continue
+            except AttributeError:
+                request.logger.exception('Invalid attribute %s in model %s',
+                                         name, self.model)
+                continue
             if data is not None:
                 if isinstance(data, list):
                     name = '%s[]' % name
@@ -181,9 +189,14 @@ class RestModel(rest.RestModel):
         # a json-encodable dict
         return fields
 
-    def id_repr(self, request, obj):
+    def id_repr(self, request, obj, in_list=True):
         if obj:
-            data = {'id': getattr(obj, self.id_field)}
+            if in_list:
+                data = {'id': getattr(obj, self.id_field)}
+            else:
+                data = self.serialise_model(request, obj, exclude_related=True)
+                data['id'] = data.pop(self.id_field)
+
             if self.repr_field != self.id_field:
                 repr = getattr(obj, self.repr_field)
                 if repr != data['id']:
@@ -259,11 +272,11 @@ class RestModel(rest.RestModel):
     def _get_db_columns(self):
         return get_columns(self.db_model())
 
-    def _related_model(self, request, model, obj):
+    def _related_model(self, request, model, obj, in_list):
         if isinstance(obj, list):
-            return [self._related_model(request, model, d) for d in obj]
+            return [self._related_model(request, model, d, True) for d in obj]
         else:
-            return model.id_repr(request, obj)
+            return model.id_repr(request, obj, in_list)
 
     def _do_filter(self, request, query, field, op, value):
         """

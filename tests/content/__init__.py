@@ -4,7 +4,7 @@ import shutil
 from tests.config import *  # noqa
 
 from lux.core import LuxExtension
-from lux.extensions.content import Content, content_location
+from lux.extensions.content import ContentModel, content_location
 
 
 API_URL = 'api'
@@ -35,5 +35,5 @@ class Extension(LuxExtension):
 
     def on_config(self, app):
         repo = content_location(app)
-        app.models.register(Content('blog', repo))
-        app.models.register(Content('site', repo, ''))
+        app.models.register(ContentModel('blog', repo))
+        app.models.register(ContentModel('site', repo, ''))

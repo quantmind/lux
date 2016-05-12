@@ -2,7 +2,7 @@ import os
 
 from lux.utils import test
 from lux.extensions.rest import UserMixin
-from lux.extensions.content.models import Content, DataError
+from lux.extensions.content.models import ContentModel, DataError
 
 from tests.content import CONTENT_REPO, remove_repo, create_content
 
@@ -15,7 +15,7 @@ class TestContentModel(test.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.model = Content('tests', CONTENT_REPO, '')
+        cls.model = ContentModel('tests', CONTENT_REPO, '')
         create_content('tests')
 
     @classmethod
@@ -26,11 +26,11 @@ class TestContentModel(test.TestCase):
         # repo exist
         self.assertEqual(str(self.model.directory),
                          os.path.join(CONTENT_REPO, 'tests'))
-        self.assertIsInstance(self.model, Content)
+        self.assertIsInstance(self.model, ContentModel)
 
         # repo not exist
         pwd = os.path.join(CONTENT_REPO, 'repo_test')
-        Content('Test', pwd)
+        ContentModel('Test', pwd)
         self.assertTrue(os.path.exists(pwd))
 
     def test_read(self):

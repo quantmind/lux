@@ -195,7 +195,7 @@ class FormTests(test.TestCase):
         form = SimpleForm(data=dict(name='luca', enum_field='opt1'))
         self.assertTrue(form.is_valid())
         self.assertEqual(len(form.cleaned_data), 2)
-        self.assertEqual(form.cleaned_data['enum_field'], TestEnum.opt1)
+        self.assertEqual(form.cleaned_data['enum_field'], 'opt1')
 
     def test_enum_field_error(self):
         form = SimpleForm(data=dict(name='luca', enum_field='optfail'))

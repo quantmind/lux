@@ -242,7 +242,13 @@ def render_body(app, meta, context):
     context = context.copy()
     context.update(meta)
     body = app.template_engine(engine)(body, context)
-    if template:
+    if isinstance(template, dict):
+        if 'body' in template:
+            context['html_main'] = body
+            rnd = app.template_engine(engine)
+            body = rnd(template['body'], context)
+    else:
         context['html_main'] = body
         body = app.render_template(template, context, engine=engine)
+
     return body

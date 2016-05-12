@@ -6,6 +6,7 @@ from lux.extensions.rest import (RestColumn, user_permissions,
                                  Authorization as RestAuthorization)
 from lux.extensions.odm import CRUD, RestRouter, RestModel
 from lux.extensions.rest.views.browser import ComingSoon as ComingSoonView
+from lux.utils.auth import ensure_authenticated
 
 from pulsar import MethodNotAllowed, PermissionDenied, Http404
 from pulsar.apps.wsgi import Json
