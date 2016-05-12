@@ -56,10 +56,20 @@ class LuxModel:
         """
         return self.tojson(request, data, **kw)
 
-    def validate_fields(self, request, data):
+    def validate_fields(self, request, instance, data):
         """Validate fields values
         """
         pass
+
+    def get_instance(self, request, *args, **kwargs):
+        """Retrieve an instance of this model
+        """
+        raise NotImplementedError
+
+    def get_list(self, request, *args, **kwargs):
+        """Retrieve a list of instances of this model
+        """
+        raise NotImplementedError
 
     def tojson(self, request, instance, in_list=False,
                exclude=None, decoder=None):
@@ -93,6 +103,11 @@ class LuxModel:
         :param context: context dictionary
         :return:
         """
+
+    def same_instance(self, instance1, instance2):
+        """Compare two instances for equality
+        """
+        return instance1 == instance2
 
     def _load_columns(self):
         raise NotImplementedError

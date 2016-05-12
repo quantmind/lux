@@ -22,8 +22,10 @@ from lux.extensions import rest
 def is_same_model(model1, model2):
     if type(model1) == type(model2):
         if model1 is not None:
-            pkname = class_mapper(type(model1)).primary_key[0].name
-            return getattr(model1, pkname) == getattr(model2, pkname)
+            for pk in class_mapper(type(model1)).primary_key:
+                if getattr(model1, pk.name) != getattr(model2, pk.name):
+                    return False
+            return True
         else:
             return True
     return False
@@ -45,7 +47,7 @@ class RestModel(rest.RestModel):
         '''
         return request.app.odm().begin()
 
-    def query(self, request, session, *filters):
+    def query(self, request, session, *args, **kwargs):
         """
         Returns a query object for the model.
 
@@ -60,24 +62,28 @@ class RestModel(rest.RestModel):
         db_model = self.db_model()
         db_columns = self.db_columns(self.column_fields(entities))
         query = session.query(db_model).options(load_only(*db_columns))
-        if filters:
-            query = query.filter(*filters)
+        if args:
+            query = query.filter(*args)
+        if kwargs:
+            query = query.filter_by(**kwargs)
         return query
 
-    def get_instance(self, request, session=None, *filters, **args):
-        if not args:  # pragma    nocover
+    def get_instance(self, request, session=None, *args, **kwargs):
+        if not args and not kwargs:  # pragma    nocover
             raise Http404
         odm = request.app.odm()
         with odm.begin(session=session) as session:
-            query = self.query(request, session)
-            if filters:
-                query = query.filter(*filters)
-            if args:
-                query = query.filter_by(**args)
+            query = self.query(request, session, *args, **kwargs)
             try:
                 return query.one()
             except (DataError, NoResultFound):
                 raise Http404
+
+    def get_list(self, request, session=None, *args, **kwargs):
+        odm = request.app.odm()
+        with odm.begin(session=session) as session:
+            query = self.query(request, session, *args, **kwargs)
+            return list(query)
 
     def meta(self, request, *filters, exclude=None):
         meta = super().meta(request, exclude=exclude)
@@ -107,11 +113,9 @@ class RestModel(rest.RestModel):
         current_value = getattr(instance, name, None)
         col = self.rest_columns().get(name)
         if is_rel_column(col):
+            rel_model = self.app.models.get(col.model)
             if isinstance(current_value, (list, set)):
-                if not isinstance(value, (list, tuple, set)):
-                    raise TypeError('list, tuple or set required')
-                relmodel = col.model
-                idfield = relmodel.id_field
+                idfield = rel_model.id_field
                 all = set((getattr(v, idfield) for v in value))
                 avail = set()
                 for item in tuple(current_value):
@@ -124,7 +128,7 @@ class RestModel(rest.RestModel):
                     pkey = getattr(item, idfield)
                     if pkey not in avail:
                         current_value.append(item)
-            elif not is_same_model(current_value, value):
+            elif not rel_model.same_instance(current_value, value):
                 col.set(instance, value)
         else:
             setattr(instance, name, value)
@@ -211,6 +215,9 @@ class RestModel(rest.RestModel):
         session = odm.session_from_object(instance)
         with odm.begin(session=session) as session:
             session.delete(instance)
+
+    def same_instance(self, instance1, instance2):
+        return is_same_model(instance1, instance2)
 
     # INTERNALS
     def _load_columns(self):

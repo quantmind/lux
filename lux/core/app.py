@@ -621,7 +621,8 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
                 request.response.status_code = status_code
             context = self.context(request, context)
             if not request.config['MINIFIED_MEDIA']:
-                doc.head.embedded_js.insert(0, 'window.minifiedMedia = false;');
+                doc.head.embedded_js.insert(
+                    0, 'window.minifiedMedia = false;')
 
             if doc.jscontext:
 

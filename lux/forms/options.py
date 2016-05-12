@@ -11,7 +11,7 @@ def as_value_dict(c):
 
 def options_from_enum(options):
     for option in options:
-        yield {'value': option.value, 'name': option.name}
+        yield option.name
 
 
 class Options(object):
@@ -49,7 +49,7 @@ class Options(object):
     def clean(self, values, bfield):
         choices = set()
         for c in self.all(bfield.form):
-            if isinstance(c, tuple):
+            if isinstance(c, (list, tuple)):
                 c = c[0]
             elif isinstance(c, dict):
                 c = c['value']

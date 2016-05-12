@@ -21,8 +21,13 @@ full_name = RestColumn(
 class UserModel(RestModel):
 
     @classmethod
-    def create(cls, url=None, exclude=None, hidden=None):
+    def create(cls, url=None, exclude=None, hidden=None, columns=None):
         exclude = exclude or ('password',)
+        columns = list(columns or ())
+        columns.extend((
+            full_name,
+            RestColumn('groups', model='groups')
+        ))
         return cls(
             'user',
             'create-user',
@@ -32,10 +37,7 @@ class UserModel(RestModel):
             repr_field='full_name',
             exclude=exclude,
             hidden=hidden,
-            columns=(
-                full_name,
-                RestColumn('groups', model='groups')
-            )
+            columns=columns
         )
 
     def create_model(self, request, data, session=None):

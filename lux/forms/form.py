@@ -242,7 +242,9 @@ class Form(metaclass=FormType):
         if self.request:
             model = self.request.app.models.get(self.model)
             if model:
-                model.validate_fields(self.request, self.cleaned_data)
+                model.validate_fields(self.request,
+                                      self.previous_state,
+                                      self.cleaned_data)
 
     def add_message(self, message):
         '''Add a message to the form'''

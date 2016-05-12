@@ -3,6 +3,8 @@ import {parseColumns, parseData} from './utils';
 import LuxComponent from '../lux/component'
 import pop from '../core/pop';
 
+const cellClass = 'ui-grid-cell-contents';
+
 
 export default class Grid extends LuxComponent {
 
@@ -18,13 +20,10 @@ export default class Grid extends LuxComponent {
         this.$dataProvider.getPage();
     }
 
-    wrapCell (cell) {
-        return `<div class="ui-grid-cell-contents">${cell}</div>`;
-    }
-
-    getObjectIdField (entity) {
-        var reprPath = this.options.reprPath || this.$window.location;
-        return reprPath + '/' + entity[this.id];
+    wrapCell (cell, klass) {
+        let cl = cellClass;
+        if (klass) cl = `${cl} ${klass}`;
+        return `<div class="${cl}">${cell}</div>`;
     }
 
     $onLoaded (cfg, uiGridConstants) {
@@ -46,8 +45,8 @@ export default class Grid extends LuxComponent {
             var options = this.options;
              if(metadata['default-limit'])
                 options.paginationPageSize = pop(metadata, 'default-limit');
-            options.columnDefs = parseColumns(this, metadata);
             this.metadata = metadata;
+            options.columnDefs = parseColumns(this, metadata);
         }
 
         this.$element.replaceWith(this.$compile(gridTpl(this))(this.$scope));

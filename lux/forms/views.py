@@ -79,4 +79,3 @@ class WebFormRouter(HtmlRouter):
                             enctype=self.form_enctype,
                             method=method)
         return Json(data).http_response(request)
-

@@ -47,17 +47,13 @@ class RelationshipField(MultipleMixin, forms.Field):
         try:
             request = bfield.request
             model = request.app.models.get(self.model)
-            if not self.multiple:
-                value = (value,)
-
-            data = model.collection_data(request, **{model.id_field: value})
-            result = data['result']
+            kwargs = {model.id_field: value}
             if self.multiple:
-                return result
+                return model.get_list(request, **kwargs)
             else:
-                if len(result) == 1:
-                    return result[0]
-                else:
+                try:
+                    return model.get_instance(request, **kwargs)
+                except Http404:
                     raise forms.ValidationError(
                         self.validation_error.format(model))
         except forms.ValidationError:

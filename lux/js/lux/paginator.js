@@ -1,3 +1,5 @@
+import _ from '../ng';
+
 
 class Paginator {
 
@@ -6,8 +8,14 @@ class Paginator {
     }
 
     getData (opts, callback) {
+        if (arguments.length === 1 && _.isFunction(opts)) {
+            callback = opts;
+            opts = null;
+        }
         this.api.get(opts).then(function (response) {
-            callback(response.data);
+            var data = response.data;
+            if (callback)
+                callback(data.result);
         });
     }
 

@@ -37,7 +37,10 @@ export function parseColumns(grid, metadata) {
         if (_.isDefined(column.field) && column.field === metadata.repr) {
             if (permissions.update) {
                 // If there is an update permission then display link
-                column.cellTemplate = grid.wrapCell('<a ng-href="{{grid.api.lux.getObjectIdField(row.entity)}}">{{COL_FIELD}}</a>');
+                var path = grid.options.reprPath || grid.$window.location,
+                    idfield = metadata.id;
+                column.cellTemplate = grid.wrapCell(
+                    `<a href="${path}/{{ row.entity['${idfield}'] }}" title="Edit {{ COL_FIELD }}">{{COL_FIELD}}</a>`);
             }
             // Set repr column as the first column
             columnDefs.splice(0, 0, column);
@@ -87,7 +90,8 @@ export function stringColumn (column, grid) {
 
 
 export function urlColumn (column, grid) {
-    column.cellTemplate = grid.wrapCell('<a ng-href="{{COL_FIELD.url || COL_FIELD}}">{{COL_FIELD.repr || COL_FIELD}}</a>');
+    column.cellTemplate = grid.wrapCell(
+        '<a href="{{COL_FIELD.url || COL_FIELD}}">{{COL_FIELD.repr || COL_FIELD}}</a>');
 }
 
 
@@ -102,7 +106,9 @@ export function dateColumn (column) {
 
 
 export function booleanColumn (column, grid) {
-    column.cellTemplate = grid.wrapCell('<i ng-class="grid.api.lux.getBooleanIconField(COL_FIELD)"></i>');
+    column.cellTemplate = grid.wrapCell(
+        `<i ng-class="COL_FIELD ? 'fa fa-check-circle text-success' : 'fa fa-check-circle text-danger'"></i>`,
+        'text-center');
 
     if (column.enableFiltering) {
         column.filter = {

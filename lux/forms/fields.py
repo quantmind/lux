@@ -1,5 +1,4 @@
 from datetime import datetime, date
-from enum import Enum
 
 import json
 import pytz

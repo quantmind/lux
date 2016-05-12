@@ -431,9 +431,6 @@ class RestModel(LuxModel, RestClient, ColumnPermissionsMixin):
         cols.append(column)
         self._columns = cols
 
-    def get_instance(self, request, **args):
-        raise NotImplementedError
-
     def get_url(self, request, path):
         return self._build_url(request, path, self.url,
                                request.config.get('API_URL'))

@@ -1,9 +1,18 @@
+from unittest import mock
+
 from lux.utils import test
 from lux.extensions.admin import Admin
 
 
 class AdminTest(test.AppTestCase):
     config_file = 'tests.admin'
+
+    @classmethod
+    def create_test_application(cls):
+        """Return the lux application"""
+        app = super().create_test_application()
+        app.api = mock.MagicMock()
+        return app
 
     def test_app(self):
         request = self.app.wsgi_request(path='/admin')

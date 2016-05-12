@@ -49,3 +49,14 @@ def multi_pop(key, *dicts):
         if key in d:
             value = d.pop(key)
     return value
+
+
+def as_tuple(value=None):
+    if value is None:
+        return ()
+    elif isinstance(value, tuple):
+        return value
+    elif isinstance(value, (list, tuple, set, frozenset)):
+        return tuple(value)
+    else:
+        return value,
