@@ -1,4 +1,11 @@
 import _ from '../ng';
+import querySelector from '../core/querySelector';
+
+const aceTemplate = `<div class="ace-lux">
+<div ng-if="aceHeader" class="ace-lux-header" lux-navbar="aceHeader"></div>
+<div class="ace-lux-editor"></div>
+</div>`;
+
 
 // load ace with require
 // https://github.com/ajaxorg/ace-builds/issues/35
@@ -15,6 +22,7 @@ export default function ($lux) {
     function linkAce(scope, el, attrs, ngModel) {
 
         var ace,
+            element,
             editor,
             session,
             text = '',
@@ -53,7 +61,10 @@ export default function ($lux) {
             ace.config.set("packaged", true);
             ace.config.set("basePath", require.toUrl("ace"));
             //
-            editor = ace.edit(el[0]);
+            element = _.element(aceTemplate);
+            el.after(element).css('display', 'none');
+            element = querySelector(element, '.ace-lux-editor');
+            editor = ace.edit(element[0]);
             session = editor.getSession();
             session.setValue(text);
             updateOptions();
@@ -122,42 +133,12 @@ export default function ($lux) {
         }
 
         function setOptions() {
-
             editor.setTheme(`ace/theme/${opts.theme}`);
             session.setMode(`ace/mode/${opts.mode}`);
-            session.setTabSize(opts.tabSize);
-
-            // sets the ace worker path, if running from concatenated
-            // or minified source
-            if (_.isDefined(opts.workerPath)) {
-                var config = window.ace.require('ace/config');
-                config.set('workerPath', opts.workerPath);
-            }
-            // ace requires loading
-            if (_.isDefined(opts.require)) {
-                opts.require.forEach(function (n) {
-                    window.ace.require(n);
-                });
-            }
-            // Boolean options
-            if (_.isDefined(opts.showGutter)) {
-                editor.renderer.setShowGutter(opts.showGutter);
-            }
-            if (_.isDefined(opts.useWrapMode)) {
-                session.setUseWrapMode(opts.useWrapMode);
-            }
-            if (_.isDefined(opts.showInvisibles)) {
-                editor.renderer.setShowInvisibles(opts.showInvisibles);
-            }
-            if (_.isDefined(opts.showIndentGuides)) {
-                editor.renderer.setDisplayIndentGuides(opts.showIndentGuides);
-            }
-            if (_.isDefined(opts.useSoftTabs)) {
-                session.setUseSoftTabs(opts.useSoftTabs);
-            }
-            if (_.isDefined(opts.showPrintMargin)) {
-                editor.setShowPrintMargin(opts.showPrintMargin);
-            }
+            var options = _.extend({}, opts);
+            delete options.theme;
+            delete options.mode;
+            editor.setOptions(options);
 
             // commands
             if (_.isDefined(opts.disableSearch) && opts.disableSearch) {
@@ -175,50 +156,6 @@ export default function ($lux) {
                     }
                 ]);
             }
-
-            // Basic options
-            if (_.isString(opts.theme)) {
-                editor.setTheme('ace/theme/' + opts.theme);
-            }
-            if (_.isString(opts.mode)) {
-                session.setMode('ace/mode/' + opts.mode);
-            }
-            // Advanced options
-            if (_.isDefined(opts.firstLineNumber)) {
-                if (_.isNumber(opts.firstLineNumber)) {
-                    session.setOption('firstLineNumber', opts.firstLineNumber);
-                } else if (_.isFunction(opts.firstLineNumber)) {
-                    session.setOption('firstLineNumber', opts.firstLineNumber());
-                }
-            }
-
-            // advanced options
-            var key, obj;
-            if (_.isDefined(opts.advanced)) {
-                for (key in opts.advanced) {
-                    // create a javascript object with the key and value
-                    obj = {name: key, value: opts.advanced[key]};
-                    // try to assign the option to the ace editor
-                    editor.setOption(obj.name, obj.value);
-                }
-            }
-
-            // advanced options for the renderer
-            if (_.isDefined(opts.rendererOptions)) {
-                for (key in opts.rendererOptions) {
-                    // create a javascript object with the key and value
-                    obj = {name: key, value: opts.rendererOptions[key]};
-                    // try to assign the option to the ace editor
-                    editor.renderer.setOption(obj.name, obj.value);
-                }
-            }
-
-            // onLoad callbacks
-            _.forEach(opts.callbacks, function (cb) {
-                if (_.isFunction(cb)) {
-                    cb(editor);
-                }
-            });
         }
     }
 }

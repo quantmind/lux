@@ -15,13 +15,11 @@ class RelationshipField(MultipleMixin, forms.Field):
     validation_error = 'Invalid {0}'
     attrs = {'type': 'select'}
 
-    def __init__(self, model, request_params=None,
-                 get_field=None, path=None, **kw):
+    def __init__(self, model, params=None, path=None, **kw):
         super().__init__(**kw)
         self.model = model
         self.path = path
-        self.request_params = request_params
-        self.get_field = get_field
+        self.params = params
 
     def getattrs(self, form=None):
         attrs = super().getattrs(form)
@@ -39,7 +37,7 @@ class RelationshipField(MultipleMixin, forms.Field):
 
         target = model.get_target(request,
                                   path=self.path,
-                                  params=self.request_params)
+                                  params=self.params)
         attrs['lux-remote'] = json.dumps(target)
         return attrs
 

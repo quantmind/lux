@@ -23,6 +23,7 @@ from pulsar.utils.log import lazyproperty
 from pulsar.utils.importer import module_attribute
 from pulsar.apps.greenio import GreenWSGI, GreenHttp
 from pulsar.apps.http import HttpClient
+from pulsar.utils.string import to_bytes
 
 from lux import __version__
 from lux.utils.files import skipfile
@@ -711,19 +712,25 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
         else:
             return future
 
-    async def shell(self, request, command):
+    async def shell(self, request, command, communicate=None, raw=False):
         """Asynchronous execution of a shell command
         """
         request.logger.info('Execute shell command: %s', command)
+        stdin = subprocess.PIPE if communicate else None
         proc = await create_subprocess_shell(command,
+                                             stdin=stdin,
                                              stdout=subprocess.PIPE,
-                                             stderr=subprocess.STDOUT)
-        await proc.wait()
-        msg = await proc.stdout.read()
-        msg = msg.decode('utf-8').strip()
+                                             stderr=subprocess.PIPE)
+        if communicate:
+            msg, err = await proc.communicate(to_bytes(communicate))
+        else:
+            await proc.wait()
+            msg = await proc.stdout.read()
+            err = await proc.stderr.read()
         if proc.returncode:
-            raise ShellError(msg, proc.returncode)
-        return msg
+            err = err.decode('utf-8').strip()
+            raise ShellError(err, proc.returncode)
+        return msg if raw else msg.decode('utf-8').strip()
 
     def reload(self, *args):
         """Force the reloading of this application
