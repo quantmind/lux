@@ -13,7 +13,7 @@ __all__ = ['Filehandler']
 
 
 def skipfile(name):
-    return name.startswith('.') or name.startswith('__')
+    return name.startswith('.') or name.startswith('_')
 
 
 def directory(dir):
