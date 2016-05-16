@@ -120,6 +120,7 @@ class LuxCommand(ConsoleParser):
 
     def __call__(self, argv, **params):
         app = self.pulsar_app(argv)
+        app.cfg.daemon = False
         app()
         # Make sure the wsgi handler is created
         assert self.app.wsgi_handler()
