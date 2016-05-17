@@ -68,11 +68,15 @@ def execute_from_config(config_file, services=None,
         if not opts.service and len(argv) == 1 and argv[0] in ('-h', '--help'):
             service_parser(services, description).parse_known_args()
         config_file = config_file % (opts.service or services[0])
+        if opts.service and description:
+            description = '%s - %s' % (description, opts.service)
 
-    return execute_app(App(config_file, argv=argv, **params))
+    return execute_app(App(config_file, argv=argv, **params),
+                       description=description)
 
 
-def execute_app(app, argv=None, **params):  # pragma    nocover
+def execute_app(app, argv=None, description=None,
+                **params):  # pragma    nocover
     """Execute a given ``app``.
 
     :parameter app: the :class:`.App` to execute
@@ -93,7 +97,7 @@ def execute_app(app, argv=None, **params):  # pragma    nocover
         print('IMPROPERLY CONFUGURED: %s' % e)
         exit(1)
     # Parse for the command
-    parser = application.get_parser(add_help=False)
+    parser = application.get_parser(add_help=False, description=description)
     opts, _ = parser.parse_known_args(argv)
     #
     # we have a command
@@ -112,7 +116,7 @@ def execute_app(app, argv=None, **params):  # pragma    nocover
             exit(1)
     else:
         # this should fail unless we pass -h
-        parser = application.get_parser(nargs=1)
+        parser = application.get_parser(nargs=1, description=description)
         parser.parse_args(argv)
 
 
@@ -472,10 +476,16 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
                 return mod.Command(name, self)
         raise CommandError("Unknown command '%s'" % name)
 
-    def get_usage(self):
+    def get_usage(self, description=None):
         """Returns the script's main help text, as a string."""
-        description = self.config['DESCRIPTION'] or 'Lux toolkit'
-        usage = ['', '', description, '',
+        if not description:
+            description = self.config['DESCRIPTION'] or 'Lux toolkit'
+        usage = ['',
+                 '',
+                 '----------------------------------------------',
+                 description,
+                 '----------------------------------------------',
+                 '',
                  "Type '%s <command> --help' for help on a specific command." %
                  (self.meta.script or ''),
                  '', '', "Available commands:", ""]
@@ -486,7 +496,8 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
         text = '\n'.join(usage)
         return text
 
-    def get_parser(self, with_commands=True, nargs='?', **params):
+    def get_parser(self, with_commands=True, nargs='?', description=None,
+                   **params):
         """Return a python :class:`argparse.ArgumentParser` for parsing
         the command line.
 
@@ -495,8 +506,9 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
             :class:`argparse.ArgumentParser` constructor.
         """
         if with_commands:
-            params['usage'] = self.get_usage()
-        parser = super().get_parser(**params)
+            params['usage'] = self.get_usage(description=description)
+            description = None
+        parser = super().get_parser(description=description, **params)
         parser.add_argument('command', nargs=nargs, help='command to run')
         return parser
 

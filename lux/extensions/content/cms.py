@@ -107,7 +107,7 @@ class CMS(core.CMS):
                 if not name:
                     app.logger.error('content models should have a name')
                     continue
-                path = cfg.get('path', '')
+                path = cfg.get('path', name)
                 content = ContentClass(name, path=path, meta=cfg.get('meta'))
                 cms.add_router(content)
         app._handler.middleware.extend(cms.middleware())

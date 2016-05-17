@@ -247,7 +247,7 @@ def render_body(app, meta, context):
             context['html_main'] = body
             rnd = app.template_engine(engine)
             body = rnd(template['body'], context)
-    else:
+    elif template:
         context['html_main'] = body
         body = app.render_template(template, context, engine=engine)
 
