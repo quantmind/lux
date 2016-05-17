@@ -27,7 +27,7 @@ def as_serialised_field(field, form):
     if isinstance(field, FormElement):
         return field.as_dict(form)
     else:
-        data = attributes(field.getattrs(form))
+        data = field.getattrs(form)
         data['name'] = field.html_name()
         if form.is_bound:
             pass

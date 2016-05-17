@@ -2,7 +2,7 @@
 EXTENSIONS = ['lux.extensions.base',
               'tests']
 
-MEDIA_URL = 'static'
+MEDIA_URL = '/static/'
 
 thread_workers = 1
 

@@ -15,7 +15,7 @@ Layout2 = Layout(TestAForm1,
 
 
 class PageForm(forms.Form):
-    url = forms.UrlField()
+    url = forms.UrlField(lux_directive='foo')
     markup = forms.ChoiceField(options=('bla', 'foo'))
     body = forms.CharField(type='textarea', required=False)
 
@@ -84,3 +84,4 @@ class FormAngularLayoutTests(test.TestCase):
         data = form.as_dict()
         url = self._field(data, 0)
         self.assertEqual(url['validation_error'], 'Not a valid url')
+        self.assertEqual(url['lux-directive'], 'foo')

@@ -15,7 +15,7 @@ import hashlib
 from urllib.parse import urlparse
 
 from pulsar.apps import wsgi
-from pulsar.utils.httpurl import remove_double_slash
+from pulsar.utils.httpurl import remove_double_slash, is_absolute_uri
 
 from lux.core import LuxExtension, Parameter, RedirectRouter
 
@@ -44,13 +44,17 @@ class Extension(LuxExtension):
         middleware = []
         if app.config['CLEAN_URL']:
             middleware.append(wsgi.clean_path_middleware)
-        app.config['MEDIA_URL'] = remove_double_slash(app.config['MEDIA_URL'])
-        if app.config['SERVE_STATIC_FILES']:
-            path = app.config['MEDIA_URL']
+        path = app.config['MEDIA_URL']
+
+        if is_absolute_uri(path):
+            app.config['SERVE_STATIC_FILES'] = False
+
+        elif app.config['SERVE_STATIC_FILES']:
             if path.endswith('/'):
                 path = path[:-1]
             d = app.meta.media_dir
             middleware.append(MediaRouter(path, d, show_indexes=app.debug))
+
         if app.config['REDIRECTS']:
             for url, to in app.config['REDIRECTS'].items():
                 middleware.append(RedirectRouter(url, to))

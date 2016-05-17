@@ -15,7 +15,6 @@ from base64 import b64encode
 
 import pulsar
 from pulsar import ImproperlyConfigured, HttpException
-from pulsar.utils.httpurl import remove_double_slash
 from pulsar.apps.wsgi import (WsgiHandler, HtmlDocument, test_wsgi_environ,
                               LazyWsgi, wait_for_body_middleware,
                               middleware_in_executor, wsgi_request)
@@ -845,10 +844,6 @@ def _build_config(self):
 
     _config_from_json(configs, config)
     config['EXTENSIONS'] = tuple(apps)
-    media_url = config['MEDIA_URL']
-    if media_url:
-        config['MEDIA_URL'] = remove_double_slash('/%s/' % media_url)
-
     return config
 
 
