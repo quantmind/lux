@@ -36,7 +36,6 @@ class Extension(lux.Extension):
     def middleware(self, app):
         content = Content('blog',
                           child_url='<int:year>/<month2>/<slug>',
-                          html_body_template='blog.html',
                           dir=os.path.join(base, 'content', 'blog'),
                           meta_child={'og:type', 'article'})
         # if app.config['TEST_DOCS']:

@@ -60,3 +60,7 @@ def as_tuple(value=None):
         return tuple(value)
     else:
         return value,
+
+
+def boolean_from_url_query(value):
+    return value.lower() in ('', 'true', 'yes')

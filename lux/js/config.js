@@ -8,7 +8,7 @@ define(function () {
         minify = root.minifiedMedia === false ? false : true,
         end = '.js',
         defaultPaths = {
-            'ace': '//cdnjs.cloudflare.com/ajax/libs/ace/1.2.3',
+            'ace': '//cdnjs.cloudflare.com/ajax/libs/ace/1.2.3/',
             'angular': '//ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular',
             'angular-animate': '//ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular-animate',
             'angular-sanitize': '//ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular-sanitize',
@@ -131,7 +131,7 @@ define(function () {
                         params = params[1];
                     } else
                         params = '';
-                    if (path.substring(path.length - 3) !== end)
+                    if (path.substring(path.length - 1) != '/' && path.substring(path.length - 3) !== end)
                         path += min;
                     if (params) {
                         if (path.substring(path.length - 3) !== end)

@@ -5,10 +5,12 @@ from sqlalchemy.orm import relationship
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
 
 from lux import forms
+from lux.forms import Layout, Fieldset, Submit
 from lux.core import LuxExtension
 from lux.extensions import odm
+from lux.extensions.odm import RestModel, RestColumn, CRUD
 from lux.extensions.rest import RelationshipField, UniqueField
-from lux.extensions.auth.views import PermissionCRUD, GroupCRUD
+from lux.extensions.auth.views import PermissionCRUD, GroupCRUD, UserCRUD
 
 from odm.types import ChoiceType
 
@@ -38,6 +40,18 @@ class Extension(LuxExtension):
                 PermissionCRUD(),
                 GroupCRUD()]
 
+    def on_loaded(self, app):
+        app.forms['task'] = Layout(
+            TaskForm,
+            Fieldset(all=True),
+            Submit('submit')
+        )
+        app.forms['person'] = Layout(
+            PersonForm,
+            Fieldset(all=True),
+            Submit('submit')
+        )
+
 
 Model = odm.model_base('odmtest')
 
@@ -66,20 +80,8 @@ class Task(Model):
         return relationship('Person', backref='tasks')
 
 
-# REST models
-def person_model():
-    return odm.RestModel('person', PersonForm, PersonForm, url='people')
-
-
-def task_model():
-    '''Rest model for the task
-    '''
-    model = odm.RestModel('task', TaskForm, TaskForm)
-    model.add_related_column('assigned', person_model, 'assigned_id')
-    return model
-
-
 class TaskForm(forms.Form):
+    model = 'tasks'
     subject = forms.CharField(required=True)
     done = forms.BooleanField(default=False)
     assigned = RelationshipField('persons',
@@ -95,31 +97,12 @@ class PersonForm(forms.Form):
     name = forms.CharField(required=True)
 
 
-class UserForm(forms.Form):
-    username = forms.CharField()
-    email = forms.EmailField()
-    first_name = forms.CharField(required=False)
-    last_name = forms.CharField(required=False)
-    superuser = forms.BooleanField()
-    active = forms.BooleanField()
+class CRUDTask(CRUD):
+    model = RestModel('task', 'task', 'task',
+                      columns=[RestColumn('assigned',
+                                          model='persons',
+                                          field='assigned_id')])
 
 
-class CRUDTask(odm.CRUD):
-    model = task_model()
-
-
-class CRUDPerson(odm.CRUD):
-    model = person_model()
-
-
-class UserCRUD(odm.CRUD):
-    '''Test custom CRUD view and RestModel
-    '''
-    model = odm.RestModel('user',
-                          UserForm,
-                          UserForm,
-                          columns=('username', 'active', 'superuser'),
-                          exclude=('password', 'permissions'))
-
-    def tojson(self, request, o, exclude=None, **kw):
-        return self.model.tojson(request, o, exclude=('superuser',), **kw)
+class CRUDPerson(CRUD):
+    model = RestModel('person', 'person', 'person', url='people')

@@ -294,20 +294,6 @@ class RestModel(LuxModel, RestClient, ColumnPermissionsMixin):
             limit = default
         return min(limit, max_limit)
 
-    def offset(self, request, offset=None):
-        """Retrieve the offset value from the url when fetching list of data
-        """
-        try:
-            offset = int(offset)
-        except Exception:
-            offset = 0
-        return max(0, offset)
-
-    def search_text(self, request, default=None):
-        cfg = request.config
-        default = default or ''
-        return request.url_data.get(cfg['API_SEARCH_KEY'], default)
-
     def serialise(self, request, data, **kw):
         if isinstance(data, list) or isgenerator(data):
             kw['in_list'] = True
@@ -335,24 +321,33 @@ class RestModel(LuxModel, RestClient, ColumnPermissionsMixin):
         return model
 
     def collection_data(self, request, *filters, **params):
-        """Handle a response for a list of models
+        """Return a list of models satisfying user queries
+
+        :param request: WSGI request with url data
+        :param filters: positional filters passed by the application
+        :param params: key-value filters passed by the application (the url
+            data parameters will update this dictionary)
+        :return: a pagination object as return by the
+            :meth:`.query_data` method
         """
         cfg = request.config
         params.update(request.url_data)
-        limit = params.pop(cfg['API_LIMIT_KEY'], None)
-        offset = params.pop(cfg['API_OFFSET_KEY'], None)
+        params['limit'] = params.pop(cfg['API_LIMIT_KEY'], None)
+        params['offset'] = params.pop(cfg['API_OFFSET_KEY'], None)
+        params['search'] = params.pop(cfg['API_SEARCH_KEY'], None)
         with self.session(request) as session:
             query = self.query(request, session, *filters)
-            return self.query_data(request, query, limit=limit,
-                                   offset=offset, **params)
+            return self.query_data(request, query, **params)
 
     def query_data(self, request, query, limit=None, offset=None,
-                   text=None, sortby=None, max_limit=None, **params):
+                   search=None, sortby=None, max_limit=None, **params):
+        """Application query method
+
+        This method does not use url data
+        """
         limit = self.limit(request, limit, max_limit)
-        offset = self.offset(request, offset)
-        text = self.search_text(request, text)
-        sortby = request.url_data.get('sortby', sortby)
-        query = self.filter(request, query, text, params)
+        offset = get_offset(offset)
+        query = self.filter(request, query, search, params)
         total = query.count()
         query = self.sortby(request, query, sortby)
         data = query.limit(limit).offset(offset).all()
@@ -361,10 +356,6 @@ class RestModel(LuxModel, RestClient, ColumnPermissionsMixin):
 
     def collection_response(self, request, *filters, **params):
         data = self.collection_data(request, *filters, **params)
-        return Json(data).http_response(request)
-
-    def query_response(self, request, query, **kwargs):
-        data = self.query_data(request, query, **kwargs)
         return Json(data).http_response(request)
 
     def filter(self, request, query, text, params):
@@ -500,3 +491,11 @@ class ModelMixin:
         backend = request.cache.auth_backend
         if not backend.has_permission(request, model.name, level):
             raise PermissionDenied
+
+
+def get_offset(offset=None):
+    try:
+        offset = int(offset)
+    except Exception:
+        offset = 0
+    return max(0, offset)

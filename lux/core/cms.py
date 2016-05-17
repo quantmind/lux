@@ -1,13 +1,24 @@
 from pulsar.apps.wsgi import Route, Html
 from pulsar.utils.structures import AttributeDictionary
 
+from .extension import app_attribute
+
 
 class Page(AttributeDictionary):
     '''An object representing an HTML page
 
+    .. attribute:: path
+
+        Regex to match urls
+
+    .. attribute:: body
+
+        the outer template body. If this is present the :attr:`.template`
+        is disregarded
+
     .. attribute:: template
 
-        HTML string for the html body tag
+        template file for the outer template body
     '''
 
 
@@ -19,16 +30,9 @@ class CMS:
     .. attribute:: app
 
         lux Application
-
-    .. attribute:: key
-
-        A key which identify the CMS. Not used yet. #TOTO explain this
     """
-    _sitemap = None
-
-    def __init__(self, app, key=None):
+    def __init__(self, app):
         self.app = app
-        self.key = key
 
     @property
     def config(self):
@@ -65,7 +69,7 @@ class CMS:
         If no page is matched returns Nothing.
         '''
         if sitemap is None:
-            sitemap = self.site_map(self.app)
+            sitemap = self.site_map()
 
         for page in sitemap:
             route = Route(page['path'])
@@ -77,29 +81,25 @@ class CMS:
                 if matched is not None and '__remaining__' not in matched:
                     return page
 
-    def site_map(self, app):
-        if self._sitemap is None:
-            sitemap = []
-            for url, page in self.app.config['HTML_TEMPLATES'].items():
-                if not isinstance(page, dict):
-                    page = dict(template=page)
-                page['path'] = url
-                sitemap.append(page)
-            self._sitemap = sitemap
-        return self._sitemap
+    def site_map(self):
+        return app_sitemap(self.app)
 
     def render(self, page, context):
         '''Render a ``page`` with a ``context`` dictionary
         '''
         if not isinstance(page, Page):
             page = Page(template=page)
-        return self.app.render_template(page.template, context)
+
+        if page.body:
+            engine = self.app.template_engine(page.engine)
+            return engine(page.body, context)
+        elif page.template:
+            return self.app.render_template(page.template, context)
+        else:
+            return context.get('html_main')
 
     def cache_key(self):
-        key = 'cms:sitemap'
-        if self.key:
-            key = '%s:%s' (key, self.key)
-        return key
+        return 'cms:sitemap'
 
     def context(self, request, context):
         """Context dictionary for this cms
@@ -113,3 +113,14 @@ _content_types = {'md': 'html',
 
 def content_type(ct):
     return _content_types.get(ct, ct)
+
+
+@app_attribute
+def app_sitemap(app):
+    sitemap = []
+    for url, page in app.config['HTML_TEMPLATES'].items():
+        if not isinstance(page, dict):
+            page = dict(template=page)
+        page['path'] = url
+        sitemap.append(page)
+    return sitemap

@@ -123,8 +123,6 @@ class HtmlRouter(Router):
     """Extend pulsar :class:`~pulsar.apps.wsgi.routers.Router`
     with content management.
     """
-    html_body_template = RouterParam(None)
-    """Template for the html body"""
     uirouter = RouterParam(None)
     uimodules = RouterParam(None)
     response_content_types = TEXT_CONTENT_TYPES
@@ -156,11 +154,6 @@ class HtmlRouter(Router):
         if request.url_data.get('template') == 'ui':
             request.response.content = html
             return request.response
-
-        if not page.template:
-            page.template = self.getparam('html_body_template',
-                                          default='home.html',
-                                          parents=True)
 
         return app.html_response(request, page, context=context)
 

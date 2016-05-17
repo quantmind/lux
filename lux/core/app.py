@@ -15,6 +15,7 @@ from base64 import b64encode
 
 import pulsar
 from pulsar import ImproperlyConfigured, HttpException
+from pulsar.utils.httpurl import remove_double_slash
 from pulsar.apps.wsgi import (WsgiHandler, HtmlDocument, test_wsgi_environ,
                               LazyWsgi, wait_for_body_middleware,
                               middleware_in_executor, wsgi_request)
@@ -637,7 +638,6 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
                     0, 'window.minifiedMedia = false;')
 
             if doc.jscontext:
-
                 jscontext = json.dumps(doc.jscontext)
                 encoded = b64encode(jscontext.encode('utf-8')).decode('utf-8')
                 doc.head.embedded_js.insert(

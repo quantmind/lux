@@ -28,7 +28,8 @@ class ApiClient:
     def http(self, value):
         self._threads.http = value
 
-    def __call__(self, request):
+    def __call__(self, request=None):
+        request = request or self.app
         return ApiClientRequest(request, self.http, self._headers)
 
 
@@ -74,12 +75,17 @@ class ApiClientRequest:
         url = url_path(url, path)
         req_headers = self._headers[:]
         req_headers.extend(headers or ())
-        agent = request.get('HTTP_USER_AGENT', request.config['APP_NAME'])
+        agent = request.config['APP_NAME']
+
+        if request != request.app:
+            agent = request.get('HTTP_USER_AGENT', agent)
+            if not token and request.cache.session:
+                token = request.cache.session.encoded
+
         req_headers.append(('user-agent', agent))
-        if not token and request.cache.session:
-            token = request.cache.session.encoded
         if token:
             req_headers.append(('Authorization', 'Bearer %s' % token))
+
         response = self._http.request(method, url, headers=req_headers, **kw)
         raise_http_error(response)
         return response

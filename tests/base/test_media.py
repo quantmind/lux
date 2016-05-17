@@ -16,4 +16,3 @@ class CommandTests(test.TestCase):
         app = self.application(SERVE_STATIC_FILES=True)
         self.assertEqual(app.config['MEDIA_URL'], '/static/')
         self.assertTrue(app.config['SERVE_STATIC_FILES'])
-
