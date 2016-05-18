@@ -91,7 +91,7 @@ export default function ($lux) {
 
             // unbind old blur listener
             editor.removeListener('blur', onBlurListener);
-            onBlurListener = onChange(opts.onBlur);
+            onBlurListener = onBlur(opts.onBlur);
             session.on('blur', onBlurListener);
 
             setOptions();

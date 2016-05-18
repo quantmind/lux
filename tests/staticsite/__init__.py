@@ -12,7 +12,6 @@ SITE_URL = 'http://example.com'
 EXTENSIONS = ['lux.extensions.base',
               'lux.extensions.sitemap',
               'lux.extensions.oauth',
-              'lux.extensions.angular',
               'lux.extensions.content']
 
 

@@ -5,7 +5,6 @@ import _ from '../ng';
 export default function ($controllerProvider, $provide, $compileProvider, $filterProvider) {
 
     var loading = false,
-        slice = Array.prototype.slice,
         loadingQueue = [],
         providers = {
             $controllerProvider: $controllerProvider,

@@ -1,7 +1,6 @@
 from example.cfg import *   # noqa
 
 EXTENSIONS = EXTENSIONS + (
-    'lux.extensions.angular',
     'lux.extensions.admin',
     'lux.extensions.auth',
     'lux.extensions.odm',

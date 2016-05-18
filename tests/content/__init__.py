@@ -15,14 +15,14 @@ EXTENSIONS = ['lux.extensions.rest',
 
 CONTENT_MODELS = [
     {
+        "name": "blog"
+    },
+    {
         "name": "site",
         "path": "",
         "meta": {
             "image": "/media/lux/see.jpg"
         }
-    },
-    {
-        "name": "blog"
     }
 ]
 

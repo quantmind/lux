@@ -7,10 +7,11 @@ to ``text/html``
 """
 from lux.core import Parameter, LuxExtension
 
-from .admin import Admin, AdminModel, CRUDAdmin, adminMap, register, is_admin
+from .admin import (Admin, AdminModel, CRUDAdmin, adminMap, register,
+                    is_admin, grid)
 
 
-__all__ = ['Admin', 'AdminModel', 'CRUDAdmin', 'register', 'adminMap']
+__all__ = ['Admin', 'AdminModel', 'CRUDAdmin', 'register', 'adminMap', 'grid']
 
 
 class Extension(LuxExtension):

@@ -13,6 +13,8 @@ from pulsar.apps.data.redis.client import RedisClient
 
 from lux.utils import test
 
+from tests.config import redis_cache_server
+
 
 REDIS_OK = check_server('redis')
 
@@ -48,7 +50,7 @@ class LockTests:
         lock.release()
 
 
-class TestWrappers(test.TestCase, LockTests):
+class TestDymmuCache(test.TestCase, LockTests):
 
     def setUp(self):
         self.app = self.application()
@@ -76,14 +78,8 @@ class TestWrappers(test.TestCase, LockTests):
 
 @skipUnless(REDIS_OK, 'Requires a running Redis server')
 class TestRedisCache(test.AppTestCase, LockTests):
-    config_params = {'GREEN_POOL': 20}
+    config_params = {'CACHE_SERVER': redis_cache_server}
     ClientClass = RedisClient
-
-    @classmethod
-    def setUpClass(cls):
-        redis = 'redis://%s' % cls.cfg.redis_server
-        cls.config_params.update({'CACHE_SERVER': redis})
-        return super().setUpClass()
 
     def setUp(self):
         self.cache = self.app.cache_server
@@ -112,5 +108,4 @@ class TestRedisCache(test.AppTestCase, LockTests):
 @skipUnless(REDIS_OK and StrictRedis, ('Requires a running Redis server and '
                                        'redis python client'))
 class TestRedisCacheSync(TestRedisCache):
-    config_params = {}
     ClientClass = StrictRedis

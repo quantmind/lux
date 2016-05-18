@@ -1,12 +1,12 @@
+import json
 from inspect import isclass
 
 from pulsar import Http404, PermissionDenied
-from pulsar.apps.wsgi import Json
+from pulsar.apps.wsgi import Json, Html
 from pulsar.utils.html import nicename
 
 from lux.core import route, cached, HtmlRouter
 from lux.forms import get_form_layout
-from lux.extensions.angular import grid
 
 # Override Default Admin Router for a model
 adminMap = {}
@@ -16,6 +16,10 @@ def is_admin(cls, check_model=True):
     if isclass(cls) and issubclass(cls, AdminModel) and cls is not AdminModel:
         return bool(cls.model) if check_model else True
     return False
+
+
+def grid(options):
+    return Html('lux-grid').attr('grid-options', json.dumps(options)).render()
 
 
 class register:

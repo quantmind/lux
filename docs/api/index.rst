@@ -11,7 +11,6 @@ Python API
    forms
    params
    base
-   angular
    rest
    static
    oauth/index

@@ -32,20 +32,12 @@ REST
 .. lux_extension:: lux.extensions.rest
 
 
-.. _parameters-angular:
-
-AngularJS Integration
-========================
-
-.. lux_extension:: lux.extensions.angular
-
-
 .. _parameters-static:
 
-Static Site
+CMS
 ================
 
-.. lux_extension:: lux.extensions.static
+.. lux_extension:: lux.extensions.content
 
 
 .. _parameters-oauth:

@@ -2,7 +2,6 @@ from example.cfg import *   # noqa
 
 EXTENSIONS = EXTENSIONS + (
     'lux.extensions.admin',
-    'lux.extensions.angular',
 )
 
 DEFAULT_CONTENT_TYPE = 'text/html'
