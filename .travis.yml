@@ -1,7 +1,7 @@
 language: python
 
 node_js:
-  - "node"
+  - "5"
 
 python:
   - 3.5.1

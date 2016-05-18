@@ -6,6 +6,7 @@ import pytz
 
 from sqlalchemy import Column, desc, String
 from sqlalchemy.orm import class_mapper, load_only
+from sqlalchemy.orm.base import instance_state
 from sqlalchemy.sql.expression import func, cast
 from sqlalchemy.exc import DataError
 from sqlalchemy.orm.exc import NoResultFound
@@ -139,6 +140,14 @@ class RestModel(rest.RestModel):
 
         It uses sqlalchemy model information about columns
         '''
+        if instance_state(obj).detached:
+            odm = request.app.odm()
+            with odm.begin() as session:
+                session.add(obj)
+                return self.tojson(request, obj, exclude=exclude,
+                                   in_list=in_list,
+                                   exclude_related=exclude_related, **kw)
+
         exclude = set(exclude or ())
         exclude.update(self._exclude)
         columns = self.columns()
