@@ -10,7 +10,7 @@ class TestGithub(OAuthTest):
         oauths = request.cache.oauths
         self.assertTrue(oauths)
 
-    async def __test_authorization_redirect(self):
+    async def test_authorization_redirect(self):
         request = await self.client.get('/oauth/github')
         response = request.response
         self.assertEqual(response.status_code, 302)
@@ -23,7 +23,7 @@ class TestGithub(OAuthTest):
         self.assertEqual(response.status_code, 302)
         self.assertTrue(request.logger.exception.called)
 
-    async def __test_redirect_user_created(self):
+    async def test_redirect_user_created(self):
         token1 = await self._oauth_redirect('github')
         #
         # Lets try another redirect, this time the user is not created because
