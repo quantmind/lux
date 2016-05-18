@@ -12,8 +12,7 @@ EXTENSIONS = ['lux.extensions.base',
 
 DATASTORE = 'postgresql+green://lux:luxtest@127.0.0.1:5432/luxtests'
 SESSION_COOKIE_NAME = 'test-oauth'
-AUTHENTICATION_BACKENDS = ['lux.extensions.auth.SessionBackend',
-                           'lux.extensions.auth.TokenBackend']
+AUTHENTICATION_BACKENDS = ['lux.extensions.auth.SessionBackend']
 
 # Just some dummy values for testing
 OAUTH_PROVIDERS = {'amazon': {'key': 'fdfvfvfv',

@@ -50,7 +50,7 @@ class OAuth2Api(OAuthApi):
         self.params = kw
         if self.token:
             value = '%s %s' % (self.token_type, self.token)
-            self.headers.append(('Authorization', value))
+            self.headers['Authorization'] = value
 
 
 class OAuth1(metaclass=OAuthMeta):
@@ -236,9 +236,7 @@ class OAuth2(OAuth1):
         body = oauth.client.prepare_request_body(
             redirect_uri=redirect_uri,
             client_secret=self.config['secret'])
-        response = request.http.post(
-            self.token_uri, data=body,
-            headers=[('content-type', 'application/x-www-form-urlencoded')])
+        response = request.http.post(self.token_uri, data=body)
         response.raise_for_status()
         return response.decode_content()
 

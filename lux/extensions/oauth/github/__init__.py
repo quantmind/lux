@@ -3,11 +3,9 @@ from ..oauth import OAuth2, OAuth2Api
 
 class Api(OAuth2Api):
     url = 'https://api.github.com'
-    headers = [('content-type', 'application/json')]
 
     def user(self):
-        url = '%s/user' % self.url
-        response = self.http.get(url, headers=self.headers)
+        response = self.http.get('%s/user' % self.url)
         response.raise_for_status()
         return response.json()
 
