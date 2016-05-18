@@ -6,6 +6,6 @@ class TestUtils(test.TestCase):
 
     def test_rest_column(self):
         col = RestColumn('bla')
-        info = col.as_dict()
+        info = col.as_dict(None)
         self.assertEqual(info['name'], 'bla')
         self.assertEqual(info['field'], 'bla')

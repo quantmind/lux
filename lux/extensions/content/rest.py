@@ -5,8 +5,6 @@ from pulsar.utils.httpurl import remove_double_slash
 
 from lux.extensions import rest
 
-from .utils import get_context_files, get_reader, get_content
-
 
 logger = logging.getLogger('lux.extensions.content')
 
@@ -19,23 +17,16 @@ def list_filter(model, filters):
 class ContentCRUD(rest.RestRouter):
     """REST API view for content
     """
-
-    def get(self, request):
-        self.check_model_permission(request, 'read')
-        filters = list_filter(self.model, {})
-        return self.model.collection_response(request, sortby='date:desc',
-                                              **filters)
-
     @route('<group>', method=('get', 'options'))
     def get_group(self, request):
         if request.method == 'OPTIONS':
             request.app.fire('on_preflight', request, methods=['GET'])
             return request.response
 
-        self.check_model_permission(request, 'read')
-        filters = list_filter(self.model, {'group': request.urlargs['group']})
-        return self.model.collection_response(request, sortby='date:desc',
-                                              **filters)
+        group = request.urlargs['group']
+        self.check_model_permission(request, 'read', group=group)
+        filters = list_filter(self.model, {'sortby': 'date:desc'})
+        return self.model.collection_response(request, **filters)
 
     @route('<group>/_links', method=('get', 'options'))
     def _links(self, request):
@@ -43,10 +34,11 @@ class ContentCRUD(rest.RestRouter):
             request.app.fire('on_preflight', request, methods=['GET'])
             return request.response
 
-        filters = list_filter(self.model, {'group': request.urlargs['group'],
-                                           'order:gt': 0})
-        return self.model.collection_response(
-            request, sortby=['title:asc', 'order:desc'], **filters)
+        filters = list_filter(self.model, {
+            'order:gt': 0,
+            'sortby': ['title:asc', 'order:desc']
+        })
+        return self.model.collection_response(request, **filters)
 
     @route('<group>/<path:path>', method=('get', 'head', 'options'))
     def read_update(self, request):
@@ -55,18 +47,23 @@ class ContentCRUD(rest.RestRouter):
         model = self.model
 
         if request.method == 'OPTIONS':
-            request.app.fire('on_preflight', methods=['GET', 'HEAD'])
+            request.app.fire('on_preflight', request, methods=['GET', 'HEAD'])
             return request.response
 
-        content = get_content(request, group, path)
+        self.check_model_permission(request, 'read', group=group)
+
+        content = model.get_instance(request, '%s/%s' % (group, path))
 
         if request.method == 'GET':
-            self.check_model_permission(request, 'read', content)
             data = model.serialise(request, content)
             if data == request.response:
                 return data
             return self.json(request, data)
 
         elif request.method == 'HEAD':
-            self.check_model_permission(request, 'read', content)
             return request.response
+
+    def check_model_permission(self, request, level, model=None, group=None):
+        if not model and group:
+            model = 'contents:%s' % group
+        return super().check_model_permission(request, level, model)

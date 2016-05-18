@@ -6,38 +6,38 @@ from pulsar.apps.wsgi import MediaRouter
 from lux.core import Parameter, LuxExtension
 
 from .models import ContentModel
-from .views import ContentCRUD
-from .cms import TextRouter, TextCMS, CMS, CmsContent
+from .rest import ContentCRUD
+from .cms import TextRouter, CMS, CmsContent, LazyContext
 from .github import GithubHook, EventHandler, PullRepo
-from .utils import content_location
+from .files import content_location
+from .static import StaticCache
 
 
 __all__ = ['Content',
            'CmsContent',
            'TextRouter',
-           'TextCMS',
            'ContentCRUD',
            'CMS',
            'GithubHook',
            'EventHandler',
-           'PullRepo']
+           'PullRepo',
+           'StaticCache',
+           'LazyContext']
 
 
 class Extension(LuxExtension):
     _config = [
+        Parameter('CONTENT_MODELS', None,
+                  'List of content model configurations'),
         Parameter('CONTENT_REPO', None,
                   'Directory where content repo is located'),
-        Parameter('CONTENT_MODELS', None,
-                  'Structure of content'),
-        Parameter('CONTENT_PARTIALS', None,
-                  'Path to CMS Partials snippets'),
         Parameter('CONTENT_LOCATION', None,
                   'Directory where content is located inside CONTENT_REPO'),
         Parameter('STATIC_LOCATION', None,
                   'Directory where the static site is created'),
         Parameter('GITHUB_HOOK_KEY', None,
                   'Secret key for github webhook')
-        ]
+    ]
 
     def on_config(self, app):
         self.require(app, 'lux.extensions.rest')

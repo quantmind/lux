@@ -36,9 +36,8 @@ class TestContentViews(test.AppTestCase):
         signature = github_signature('test12345', payload)
         headers = [('X-Hub-Signature', signature.hexdigest()),
                    ('X-GitHub-Event', 'ping')]
-        request = await self.client.post('/refresh-content',
-                                         body=payload,
-                                         content_type='application/json',
+        request = await self.client.post('/api/refresh-content',
+                                         json=payload,
                                          headers=headers)
         response = request.response
         self.assertEqual(response.status_code, 400)
@@ -48,9 +47,8 @@ class TestContentViews(test.AppTestCase):
         signature = github_signature('test12345', payload)
         headers = [('X-Hub-Signature', 'sha1=%s' % signature.hexdigest()),
                    ('X-GitHub-Event', 'ping')]
-        request = await self.client.post('/refresh-content',
-                                         body=payload,
-                                         content_type='application/json',
+        request = await self.client.post('/api/refresh-content',
+                                         json=payload,
                                          headers=headers)
         # TODO: this tests fails in travis sometimes, need to find a solution
         if request.response.status_code != 200:
@@ -63,9 +61,8 @@ class TestContentViews(test.AppTestCase):
         signature = github_signature('test12345', payload)
         headers = [('X-Hub-Signature', 'sha1=%s' % signature.hexdigest()),
                    ('X-GitHub-Event', 'push')]
-        request = await self.client.post('/refresh-content',
-                                         body=payload,
-                                         content_type='application/json',
+        request = await self.client.post('/api/refresh-content',
+                                         json=payload,
                                          headers=headers)
         # TODO: this tests fails in travis sometimes, need to find a solution
         if request.response.status_code != 200:

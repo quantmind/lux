@@ -189,12 +189,9 @@ class Extension(MultiAuthBackend):
 
     def on_config(self, app):
         self.backends = []
-        app.rest_api_client = False
         url = app.config['API_URL']
         if url is not None:
-            if is_absolute_uri(url):
-                app.rest_api_client = True
-            else:
+            if not is_absolute_uri(url):
                 app.config['API_URL'] = str(RestRoot(url))
 
         if not app.config['PASSWORD_SECRET_KEY']:
@@ -246,11 +243,11 @@ class Extension(MultiAuthBackend):
             # Add router to API root-router
             api.add_child(router)
 
-        # routers not required
-        if app.rest_api_client:
-            #
-            # Create rest-api handler
-            app.api = ApiClient(app)
+        # Create the rest-api handler
+        app.api = ApiClient(app)
+
+        # routers not required when this is a client app
+        if is_absolute_uri(app.config['API_URL']):
             return middleware
         #
         # Create paginator

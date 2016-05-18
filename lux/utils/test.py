@@ -72,7 +72,8 @@ def green(test_fun):
     return _
 
 
-def test_app(test, config_file=None, config_params=True, argv=None, **params):
+def test_app(test, config_file=None, config_params=True, argv=None,
+             api_app=None, **params):
     """Return an application for testing. Override if needed.
     """
     if config_params:
@@ -92,6 +93,14 @@ def test_app(test, config_file=None, config_params=True, argv=None, **params):
     app = App(config_file, argv=argv, **kwargs).setup()
     app.stdout = StringIO()
     app.stderr = StringIO()
+
+    if app.api:
+        api_app = api_app or app
+        http = TestApiClient(api_app, list(app.api.http.headers))
+        # Override http client for the api handler
+        app.api.http = http
+        assert app.api.http == http
+
     return app
 
 
@@ -541,12 +550,8 @@ class WebApiTestCase(AppTestCase):
         assert cls.web_config_file, "no web_config_file specified"
         await as_coroutine(super().setUpClass())
         cls.web = test_app(cls, config_file=cls.web_config_file,
-                           config_params=False)
-        api = cls.web.api
-        http = TestApiClient(cls.app, list(api.http.headers))
-        # Override http client for the api handler
-        api.http = http
-        assert api.http == http
+                           config_params=False, api_app=cls.app)
+        assert cls.web.api.http.app is cls.app
         cls.webclient = TestClient(cls.web)
 
     def check_html_token(self, doc, token):

@@ -2,7 +2,7 @@
 '''
 from datetime import datetime, timedelta
 
-from pulsar import HttpRedirect
+from pulsar import HttpRedirect, Http404
 from pulsar.apps import http
 from pulsar.apps.http import HttpClient
 
@@ -151,17 +151,23 @@ class OAuth1(metaclass=OAuthMeta):
         if not user:
             # The user is not available, if username or email are not available
             # redirect to a form to add them
-            if not username or not email:
-                raise HttpRedirect()
-
-            # Create the user
-            user = backend.create_user(
-                request,
-                username=username,
-                email=email,
-                first_name=self.firstname(user_data),
-                last_name=self.lastname(user_data),
-                active=True)
+            if username or email:
+                # Create the user
+                user = backend.create_user(
+                    request,
+                    username=username,
+                    email=email,
+                    first_name=self.firstname(user_data),
+                    last_name=self.lastname(user_data),
+                    active=True)
+            else:
+                register = request.config.get('REGISTER_URL')
+                if register:
+                    raise HttpRedirect(register)
+                else:
+                    request.logger.error('No registration url, cannot create '
+                                         'user from %s OAuth', self.name)
+                    raise Http404
 
         self.associate_token(request, user_data, user, access_token)
         backend.login(request, user)

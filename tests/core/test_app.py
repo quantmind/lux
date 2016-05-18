@@ -23,29 +23,32 @@ class CommandTests(test.TestCase):
         app = self.application()
         cms = app.cms
         self.assertEqual(cms.app, app)
-        self.assertEqual(cms.key, None)
-        self.assertEqual(cms._sitemap, None)
 
     def test_cms_page(self):
         app = self.application()
-        page = app.cms.page('')
+        request = app.wsgi_request()
+        page = app.cms.page(request, '')
         self.assertTrue(page)
         self.assertEqual(page.path, '/')
         self.assertEqual(page.template, 'home.html')
-        self.assertIsInstance(app.cms._sitemap, list)
+        sitemap = app.cms.sitemap(request)
+        self.assertIsInstance(sitemap, list)
+        self.assertEqual(id(sitemap), id(app.cms.sitemap(request)))
 
     def test_cms_no_page(self):
         app = self.application()
-        page = app.cms.page('xxx')
+        request = app.wsgi_request()
+        page = app.cms.page(request, 'xxx')
         self.assertFalse(page)
         self.assertEqual(page.path, None)
         self.assertEqual(page.template, None)
-        self.assertIsInstance(app.cms._sitemap, list)
+        self.assertIsInstance(app.cms.sitemap(request), list)
 
     def test_cms_path_page(self):
         app = self.application()
-        page = app.cms.page('bla/foo')
+        request = app.wsgi_request()
+        page = app.cms.page(request, 'bla/foo')
         self.assertTrue(page)
         self.assertEqual(page.path, '/bla/<path:path>')
         self.assertEqual(page.template, 'bla.html')
-        self.assertIsInstance(app.cms._sitemap, list)
+        self.assertIsInstance(app.cms.sitemap(request), list)

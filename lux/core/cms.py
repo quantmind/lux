@@ -38,13 +38,13 @@ class CMS:
     def config(self):
         return self.app.config
 
-    def page(self, path):
+    def page(self, request, path):
         '''Obtain a page object from a request path.
 
         This method always return a :class:`.Page`. If there are no
         registered pages which match the path, it return an empty Page.
         '''
-        return Page(self.match(path) or ())
+        return Page(self.match(request, path) or ())
 
     def inner_html(self, request, page, html=''):
         '''Render the inner part of the page template (``html_main``)
@@ -60,18 +60,12 @@ class CMS:
             html = request.app.render_template(page.inner_template, context)
         return html
 
-    def match(self, path, sitemap=None):
-        '''Match a path with a page form ``sitemap``
+    def match(self, request, path):
+        '''Match a path with a page form :meth:`.sitemap`
 
-        If no sitemap is given, use the default sitemap
-        form the :meth:`site_map` method.
-
-        If no page is matched returns Nothing.
+        It returns Nothing if no page is matched
         '''
-        if sitemap is None:
-            sitemap = self.site_map()
-
-        for page in sitemap:
+        for page in self.sitemap(request):
             route = Route(page['path'])
             if isinstance(path, Route):
                 if path == route:
@@ -81,7 +75,7 @@ class CMS:
                 if matched is not None and '__remaining__' not in matched:
                     return page
 
-    def site_map(self):
+    def sitemap(self, request):
         return app_sitemap(self.app)
 
     def render(self, page, context):
@@ -98,21 +92,10 @@ class CMS:
         else:
             return context.get('html_main')
 
-    def cache_key(self):
-        return 'cms:sitemap'
-
     def context(self, request, context):
         """Context dictionary for this cms
         """
         return ()
-
-
-_content_types = {'md': 'html',
-                  'rst': 'html'}
-
-
-def content_type(ct):
-    return _content_types.get(ct, ct)
 
 
 @app_attribute

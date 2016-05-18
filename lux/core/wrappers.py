@@ -142,7 +142,7 @@ class HtmlRouter(Router):
         # get cms for this router
         cms = self.cms(app)
         # fetch the cms page if possible
-        page = cms.page(request.path[1:])
+        page = cms.page(request, request.path[1:])
         # render the inner part of the html page
         html = cms.inner_html(request, page, html)
 

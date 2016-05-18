@@ -472,18 +472,20 @@ class ModelMixin:
             model = self.RestModel(model)
         self.model = model
 
-    def check_model_permission(self, request, level, model=None):
+    def check_model_permission(self, request, level, resource=None):
         """
         Checks whether the user has the requested level of access to
         the model, raising PermissionDenied if not
 
         :param request:     request object
         :param level:       access level
+        :param resource:    resource to check permission
         :raise:             PermissionDenied
         """
-        model = self.model
+        if not resource:
+            resource = self.model.name
         backend = request.cache.auth_backend
-        if not backend.has_permission(request, model.name, level):
+        if not backend.has_permission(request, resource, level):
             raise PermissionDenied
 
 

@@ -67,7 +67,7 @@ class Cache:
     def hmget(self, key, *fields):
         pass
 
-    def clear(self):
+    def clear(self, prefix=None):
         pass
 
     def set_json(self, key, value, timeout=None):
@@ -218,8 +218,12 @@ class RedisCache(Cache):
     def hmget(self, key, *fields):
         return self._wait(self.client.hmset(key, *fields))
 
-    def clear(self):
-        pattern = '%s-*' % self.app.config['APP_NAME']
+    def clear(self, prefix=None):
+        if prefix is None:
+            prefix = self.app.config['APP_NAME']
+        pattern = '%s*' % prefix
+        self.app.logger.warning('Clearing keys matching %s pattern from %s '
+                                'cache', pattern, self)
         result = self.client.eval(clear_cache, (), (pattern,))
         return self._wait(result)
 
@@ -245,12 +249,13 @@ class CacheObject:
     instance = None
     callable = None
 
-    def __init__(self, user=False, timeout=None):
+    def __init__(self, user=False, timeout=None, key=None):
         self.user = user
         self.timeout = timeout
+        self.key = key
 
     def cache_key(self, arg):
-        key = ''
+        key = self.key or ''
         app = arg.app
         if isinstance(self.instance, Cacheable):
             key = self.instance.cache_key(app)

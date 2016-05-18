@@ -1,3 +1,4 @@
+"""Test sessions backend with Sqlite"""
 import tests.sessions.test_postgresql as postgresql
 
 

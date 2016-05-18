@@ -10,8 +10,6 @@ EXTENSIONS = ('lux.extensions.base',
 APP_NAME = COPYRIGHT = HTML_TITLE = 'website.com'
 
 CACHE_SERVER = redis_cache_server
-CONTENT_REPO = os.path.dirname(__file__)
-CONTENT_LOCATION = 'content'
 EMAIL_DEFAULT_FROM = 'admin@lux.com'
 EMAIL_BACKEND = 'lux.core.mail.LocalMemory'
 SESSION_COOKIE_NAME = 'test-website'
@@ -24,3 +22,19 @@ LOGIN_URL = '/auth/login'
 LOGOUT_URL = '/auth/logout'
 REGISTER_URL = '/auth/signup'
 RESET_PASSWORD_URL = '/auth/reset-password'
+
+
+CONTENT_REPO = os.path.dirname(__file__)
+CONTENT_LOCATION = 'content'
+CONTENT_MODELS = [
+    {
+        "name": "articles"
+    },
+    {
+        "name": "site",
+        "path": "",
+        "meta": {
+            "image": "/media/lux/see.jpg"
+        }
+    }
+]

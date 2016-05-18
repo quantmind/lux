@@ -10,7 +10,7 @@ from lux.extensions.base.media import filesystem_path
 from lux.extensions.sitemap import BaseSitemap
 from lux.utils.files import skipfile
 
-from .views import TextRouter
+from .cms import TextRouter
 
 
 class StaticCache(Cache):

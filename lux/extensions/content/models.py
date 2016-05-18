@@ -1,6 +1,7 @@
 import os
 import mimetypes
 
+from pulsar import Http404
 from pulsar.utils.httpurl import remove_double_slash
 from pulsar.utils.slugify import slugify
 
@@ -8,10 +9,6 @@ from lux.core import cached
 from lux.core.content import get_reader, ContentFile
 from lux.extensions.rest import RestModel, RestColumn
 from lux.utils.files import skipfile
-
-
-class DataError(Exception):
-    pass
 
 
 COLUMNS = [
@@ -29,7 +26,7 @@ OPERATORS = {
     'ge': lambda x, y: x >= y,
     'lt': lambda x, y: x < y,
     'le': lambda x, y: x <= y
-    }
+}
 
 
 class ContentModel(RestModel):
@@ -37,20 +34,14 @@ class ContentModel(RestModel):
 
     This model provide read-only operations
     '''
-    def __init__(self, name, repo=None, path=None, ext='md',
-                 content_meta=None, columns=None,
-                 api_prefix='content'):
-        if repo:
-            repo = os.path.join(repo, name)
-            if not os.path.isdir(repo):
-                os.makedirs(repo)
-        self.directory = repo
+    def __init__(self, location, name='content', columns=None, ext='md',
+                 id_field=None, **kwargs):
+        if not os.path.isdir(location):
+            os.makedirs(location)
+        self.directory = location
         self.ext = ext
-        self.content_meta = content_meta or {}
-        if path is None:
-            path = name
         columns = columns or COLUMNS[:]
-        super().__init__(name, columns=columns, url=api_prefix, html_url=path)
+        super().__init__(name, columns=columns, id_field='path', **kwargs)
 
     def get_instance(self, request, path):
         return self.serialise_model(request, self.read(request, path))
@@ -72,9 +63,6 @@ class ContentModel(RestModel):
             path = content.get('path')
             if path is not None:
                 content['slug'] = slugify(path) or 'index'
-                if self.html_url:
-                    path = '/'.join(path.split('/')[2:])
-                content['html_url'] = self.get_html_url(request, path)
         if in_list:
             content.pop('body', None)
         return content
@@ -97,7 +85,7 @@ class ContentModel(RestModel):
             src = os.path.join(src, 'index')
 
         if src.endswith('.html'):
-            raise DataError
+            raise Http404
 
         # Handle files which are not html
         content_type, _ = mimetypes.guess_type(src)
@@ -108,7 +96,7 @@ class ContentModel(RestModel):
         ext = '.%s' % self.ext
         src = '%s%s' % (src, ext)
         if not os.path.isfile(src):
-            raise DataError
+            raise Http404
 
         path = os.path.relpath(src, self.directory)
         #
@@ -123,8 +111,7 @@ class ContentModel(RestModel):
         if path.endswith('/'):
             path = path[:-1]
         path = '/%s' % path
-        meta = self.content_meta.copy()
-        meta['path'] = path
+        meta = dict(path=path)
         return get_reader(request.app, src).read(src, meta)
 
     def asset(self, filename):
@@ -141,15 +128,18 @@ class ContentModel(RestModel):
         :param force: if true all content is yielded, otherwise only content
             matching the extension
         """
-        directory = self.directory
+        group = request.urlargs.get('group')
+        if not group:
+            return []
+        directory = os.path.join(self.directory, group)
         ext = '.%s' % self.ext
         for dirpath, dirnames, filenames in os.walk(directory):
             for filename in filenames:
                 if skipfile(filename):
                     continue
-                if dirpath != directory:
-                    path = os.path.relpath(dirpath, directory)
-                    filename = os.path.join(path, filename)
+
+                path = os.path.relpath(dirpath, self.directory)
+                filename = os.path.join(path, filename)
 
                 if not filename.endswith(ext):
                     if force:

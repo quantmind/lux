@@ -1,5 +1,7 @@
 import threading
 
+from pulsar.utils.httpurl import is_absolute_uri
+
 from lux.core import raise_http_error
 
 
@@ -28,8 +30,7 @@ class ApiClient:
     def http(self, value):
         self._threads.http = value
 
-    def __call__(self, request=None):
-        request = request or self.app
+    def __call__(self, request):
         return ApiClientRequest(request, self.http, self._headers)
 
 
@@ -47,7 +48,13 @@ class ApiClientRequest:
 
     @property
     def url(self):
-        return self._request.config['API_URL']
+        url = self._request.config['API_URL']
+        if not is_absolute_uri(url):
+            path = self._request.path
+            if path.startswith(url):
+                raise RuntimeError('Cannot access api from API domain')
+            url = self._request.absolute_uri(url)
+        return url
 
     def __repr__(self):
         return 'api(%s)' % self.url
@@ -75,12 +82,9 @@ class ApiClientRequest:
         url = url_path(url, path)
         req_headers = self._headers[:]
         req_headers.extend(headers or ())
-        agent = request.config['APP_NAME']
-
-        if request != request.app:
-            agent = request.get('HTTP_USER_AGENT', agent)
-            if not token and request.cache.session:
-                token = request.cache.session.encoded
+        agent = request.get('HTTP_USER_AGENT', request.config['APP_NAME'])
+        if not token and request.cache.session:
+            token = request.cache.session.encoded
 
         req_headers.append(('user-agent', agent))
         if token:

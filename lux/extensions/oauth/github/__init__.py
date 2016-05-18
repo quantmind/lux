@@ -25,10 +25,10 @@ class Github(OAuth2):
     api = Api
 
     def username(self, user_data):
-        return user_data['login']
+        return user_data.get('login')
 
     def firstname(self, user_data):
-        return user_data['name']
+        return user_data.get('name')
 
     def lastname(self, user_data):
-        return user_data['lastName']
+        return user_data.get('lastName')

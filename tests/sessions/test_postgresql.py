@@ -1,3 +1,4 @@
+"""Test sessions backend with PostgreSql"""
 from unittest import skipUnless
 
 from pulsar.apps.test import check_server

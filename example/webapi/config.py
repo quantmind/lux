@@ -11,5 +11,6 @@ DATASTORE = 'postgresql+green://lux:luxtest@127.0.0.1:5432/luxtests'
 
 DEFAULT_PERMISSION_LEVEL = 'none'
 DEFAULT_PERMISSION_LEVELS = {'user': 'read',
-                             'site': 'read',
-                             'articles': 'read'}
+                             'contents:context': 'read',
+                             'contents:site': 'read',
+                             'contents:articles': 'read'}
