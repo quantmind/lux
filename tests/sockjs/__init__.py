@@ -1,7 +1,6 @@
 from lux.core import LuxExtension
 
 from tests.config import *  # noqa
-from tests.auth import UserRest
 
 EXTENSIONS = ['lux.extensions.base',
               'lux.extensions.rest',
@@ -19,9 +18,6 @@ PUBSUB_MODELS_BROADCAST = set(['tasks'])
 
 
 class Extension(LuxExtension):
-
-    def api_sections(self, app):
-        return [UserRest()]
 
     def ws_add(self, request):
         """Add two numbers

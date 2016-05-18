@@ -1,5 +1,4 @@
 import logging
-from inspect import isgenerator
 from urllib.parse import urljoin, urlparse, urlunparse
 
 from pulsar import PermissionDenied
@@ -217,6 +216,11 @@ class RestModel(LuxModel, RestClient, ColumnPermissionsMixin):
 
         name of this REST model
 
+    .. attribute:: identifier
+
+        unique string identifier of this REST model (by default the plural
+        of :attr:`.name`)
+
     .. attribute:: api_name
 
         name used as key in the dictionary of API endpoints. By default it is
@@ -241,9 +245,6 @@ class RestModel(LuxModel, RestClient, ColumnPermissionsMixin):
         Optional list of column names which will have the hidden attribute
         set to True in the :class:`.RestColumn` metadata
     """
-    remote_options_str = 'item.id as item.name for item in {options}'
-    remote_options_str_ui_select = 'item.id as item in {options}'
-
     def __init__(self, name, form=None, updateform=None, columns=None,
                  url=None, api_name=None, exclude=None,
                  api_url=None, html_url=None, id_field=None,
@@ -293,13 +294,6 @@ class RestModel(LuxModel, RestClient, ColumnPermissionsMixin):
         except Exception:
             limit = default
         return min(limit, max_limit)
-
-    def serialise(self, request, data, **kw):
-        if isinstance(data, list) or isgenerator(data):
-            kw['in_list'] = True
-            return [self.serialise_model(request, o, **kw) for o in data]
-        else:
-            return self.serialise_model(request, data)
 
     def serialise_model(self, request, obj, exclude=None, **kw):
         """

@@ -82,7 +82,7 @@ class Fieldset(FormElement):
     __str__ = __repr__
 
     def as_dict(self, form=None):
-        field = attributes(self.attrs);
+        field = attributes(self.attrs)
         if self.children:
             field['children'] = [as_serialised_field(c, form)
                                  for c in self.children]

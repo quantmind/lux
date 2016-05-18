@@ -1,11 +1,10 @@
-'''
-Bettery included Authentication models and Backends.
-This extension requires :mod:`lux.extensions.odm` module.
+"""Battery included Authentication models and Backends.
+This extension requires the :mod:`lux.extensions.rest` module.
 
-It provides models for User, Groups and Permissions.
+It provides models for Users, Groups and Permissions.
 If you need something different you can use this extension as a guide on
 how to write authentication backends and models in lux.
-'''
+"""
 from lux.core import Parameter, LuxExtension
 
 from .backends import TokenBackend, SessionBackend

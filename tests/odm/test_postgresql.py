@@ -23,9 +23,7 @@ class TestPostgreSqlBase(test.AppTestCase):
         '''
         if credentials is None:
             credentials = self.su_credentials
-        request = await self.client.post('/authorizations',
-                                         content_type='application/json',
-                                         body=credentials)
+        request = await self.client.post('/authorizations', json=credentials)
         response = request.response
         self.assertEqual(response.status_code, 201)
         user = request.cache.user
@@ -39,12 +37,8 @@ class TestPostgreSqlBase(test.AppTestCase):
         data['subject'] = subject
         if person:
             data['assigned'] = person['id']
-        request = await self.client.post(
-            '/tasks', body=data, token=token,
-            content_type='application/json')
-        response = request.response
-        self.assertEqual(response.status_code, 201)
-        data = self.json(response)
+        request = await self.client.post('/tasks', json=data, token=token)
+        data = self.json(request.response, 201)
         self.assertIsInstance(data, dict)
         self.assertTrue('id' in data)
         self.assertEqual(data['subject'], subject)
@@ -73,12 +67,9 @@ class TestPostgreSqlBase(test.AppTestCase):
         name = name or username
         request = await self.client.post(
             '/people',
-            body={'username': username, 'name': name},
-            token=token,
-            content_type='application/json')
-        response = request.response
-        self.assertEqual(response.status_code, 201)
-        data = self.json(response)
+            json={'username': username, 'name': name},
+            token=token)
+        data = self.json(request.response, 201)
         self.assertIsInstance(data, dict)
         self.assertTrue('id' in data)
         self.assertEqual(data['name'], name)
@@ -87,12 +78,9 @@ class TestPostgreSqlBase(test.AppTestCase):
     async def _update_person(self, token, id, username=None, name=None):
         request = await self.client.post(
             '/people/{}'.format(id),
-            body={'username': username, 'name': name},
-            token=token,
-            content_type='application/json')
-        response = request.response
-        self.assertEqual(response.status_code, 200)
-        data = self.json(response)
+            json={'username': username, 'name': name},
+            token=token)
+        data = self.json(request.response, 200)
         self.assertIsInstance(data, dict)
         self.assertTrue('id' in data)
         if name:
@@ -101,18 +89,7 @@ class TestPostgreSqlBase(test.AppTestCase):
 
 
 class TestPostgreSql(TestPostgreSqlBase):
-    async def test_relationship_field(self):
-        token = await self._token()
-        person = await self._create_person(token, 'spiderman')
-        task = await self._create_task(token,
-                                       'climb a wall a day',
-                                       person)
-        self.assertTrue('assigned' in task)
-        request = await self.client.get('/tasks/%s' % task['id'])
-        data = self.json(request.response, 200)
-        self.assertEqual(data['assigned'], task['assigned'])
 
-class d:
     async def test_odm(self):
         tables = await self.app.odm.tables()
         self.assertTrue(tables)
@@ -188,8 +165,7 @@ class d:
         # Update task
         request = await self.client.post(
             '/tasks/%d' % task['id'],
-            body={'done': True},
-            content_type='application/json')
+            json={'done': True})
 
         response = request.response
         self.assertEqual(response.status_code, 403)
@@ -197,8 +173,8 @@ class d:
         # Update task
         request = await self.client.post(
             '/tasks/%d' % task['id'],
-            body={'done': True}, token=token,
-            content_type='application/json')
+            json={'done': True},
+            token=token)
 
         response = request.response
         self.assertEqual(response.status_code, 200)
@@ -271,14 +247,15 @@ class d:
                                        'climb a wall a day',
                                        person)
         self.assertTrue('assigned' in task)
+        request = await self.client.get('/tasks/%s' % task['id'])
+        data = self.json(request.response, 200)
+        self.assertEqual(data['assigned'], task['assigned'])
 
     async def test_relationship_field_failed(self):
         token = await self._token()
         data = {'subject': 'climb a wall a day',
                 'assigned': 6868897}
-        request = await self.client.post('/tasks', body=data,
-                                         token=token,
-                                         content_type='application/json')
+        request = await self.client.post('/tasks', json=data, token=token)
         self.assertValidationError(request.response, 'assigned',
                                    'Invalid person')
 
@@ -286,9 +263,7 @@ class d:
         token = await self._token()
         await self._create_person(token, 'spiderman1', 'luca')
         data = dict(username='spiderman1', name='john')
-        request = await self.client.post('/people', body=data,
-                                         token=token,
-                                         content_type='application/json')
+        request = await self.client.post('/people', json=data, token=token)
         self.assertValidationError(request.response, 'username',
                                    'spiderman1 not available')
 
@@ -303,9 +278,8 @@ class d:
 
         request = await self.client.post(
             '/people/{}'.format(data['id']),
-            body={'username': 'spiderfail1', 'name': 'luca'},
-            token=token,
-            content_type='application/json')
+            json={'username': 'spiderfail1', 'name': 'luca'},
+            token=token)
         response = request.response
         self.assertValidationError(response, 'username',
                                    'spiderfail1 not available')
@@ -329,23 +303,17 @@ class d:
 
     async def test_enum_field_fail(self):
         token = await self._token()
-        request = await self.client.post(
-            '/tasks',
-            body={'enum_field': 'opt3'},
-            token=token,
-            content_type='application/json')
+        request = await self.client.post('/tasks', json={'enum_field': 'opt3'},
+                                         token=token)
         response = request.response
         self.assertValidationError(response, 'enum_field',
                                    'opt3 is not a valid choice')
 
-    async def test_metadata_custom(self):
-        request = await self.client.get('/users/metadata',
-                                        content_type='application/json')
-        response = request.response
-        self.assertEqual(response.status_code, 200)
-        data = self.json(response)
+    async def test_metadata_users(self):
+        request = await self.client.get('/users/metadata')
+        data = self.json(request.response, 200)
         columns = data['columns']
-        self.assertEqual(len(columns), 8)
+        self.assertTrue(columns)
 
     async def test_preflight_request(self):
         request = await self.client.options('/users')
@@ -394,15 +362,6 @@ class d:
         self.assertTrue(result)
         for task in result:
             self.assertEqual(task['done'], False)
-
-    def test_multi_relationship_field(self):
-        from lux.extensions.odm import RelationshipField, RestModel
-        field = RelationshipField(RestModel('book'), name='test_book',
-                                  multiple=True)
-        self.assertEqual(field.model.name, 'book')
-        attrs = field.getattrs()
-        self.assertEqual(attrs.get('multiple'), True)
-        self.assertEqual(attrs.get('label'), 'Test book')
 
     async def test_limit(self):
         token = await self._token()

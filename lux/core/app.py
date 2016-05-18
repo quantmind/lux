@@ -15,7 +15,6 @@ from base64 import b64encode
 
 import pulsar
 from pulsar import ImproperlyConfigured, HttpException
-from pulsar.utils.httpurl import remove_double_slash
 from pulsar.apps.wsgi import (WsgiHandler, HtmlDocument, test_wsgi_environ,
                               LazyWsgi, wait_for_body_middleware,
                               middleware_in_executor, wsgi_request)

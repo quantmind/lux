@@ -86,7 +86,7 @@ class RegistrationCRUD(RestRouter):
             request.response.status_code = 201
         else:
             data = form.tojson()
-        return Json(data).http_response(request)
+        return self.json(request, data)
 
     @route(method=('get', 'options'))
     def metadata(self, request):
@@ -101,7 +101,7 @@ class RegistrationCRUD(RestRouter):
 
         if backend.has_permission(request, model.name, 'read'):
             meta = model.meta(request)
-            return Json(meta).http_response(request)
+            return self.json(request, meta)
         raise PermissionDenied
 
 

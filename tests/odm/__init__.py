@@ -27,8 +27,8 @@ API_URL = ''
 
 
 class TestEnum(Enum):
-    opt1 = '1'
-    opt2 = '2'
+    opt1 = 1
+    opt2 = 2
 
 
 class Extension(LuxExtension):
@@ -68,7 +68,8 @@ class Task(Model):
     subject = Column(String(250))
     done = Column(Boolean, default=False)
     created = Column(DateTime, default=datetime.utcnow)
-    enum_field = Column(ChoiceType(TestEnum), default=TestEnum.opt1)
+    enum_field = Column(ChoiceType(TestEnum, impl=Integer),
+                        default=TestEnum.opt1)
     desc = Column(String(250))
 
     @odm.declared_attr
@@ -82,17 +83,15 @@ class Task(Model):
 
 class TaskForm(forms.Form):
     model = 'tasks'
-    subject = forms.CharField(required=True)
+    subject = forms.CharField()
     done = forms.BooleanField(default=False)
-    assigned = RelationshipField('persons',
-                                 label='assigned',
-                                 required=False)
-    enum_field = forms.ChoiceField(options=TestEnum, default=TestEnum.opt1)
+    assigned = RelationshipField('people', required=False)
+    enum_field = forms.ChoiceField(options=TestEnum, default='opt1')
     desc = forms.CharField(required=False)
 
 
 class PersonForm(forms.Form):
-    model = 'persons'
+    model = 'people'
     username = forms.CharField(validator=UniqueField())
     name = forms.CharField(required=True)
 
@@ -100,7 +99,7 @@ class PersonForm(forms.Form):
 class CRUDTask(CRUD):
     model = RestModel('task', 'task', 'task',
                       columns=[RestColumn('assigned',
-                                          model='persons',
+                                          model='people',
                                           field='assigned_id')])
 
 

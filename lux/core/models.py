@@ -1,4 +1,5 @@
 from copy import copy
+from inspect import isgenerator
 
 from pulsar import ImproperlyConfigured
 from pulsar.utils.log import lazymethod
@@ -45,6 +46,15 @@ class LuxModel:
 
     def register(self, app):
         self._app = app
+
+    def serialise(self, request, data, **kw):
+        """Serialise a model or a collection of models
+        """
+        if isinstance(data, list) or isgenerator(data):
+            kw['in_list'] = True
+            return [self.serialise_model(request, o, **kw) for o in data]
+        else:
+            return self.serialise_model(request, data)
 
     def set_model_attribute(self, instance, name, value):
         '''Set the the attribute ``name`` to ``value`` in a model ``instance``
