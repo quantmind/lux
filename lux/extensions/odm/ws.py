@@ -1,5 +1,6 @@
 from pulsar.apps import rpc
 
+from lux.forms import get_form_class
 from lux.extensions.sockjs import check_ws_permission, get_model
 
 
@@ -16,13 +17,16 @@ class WsModelRpc:
         :return: object with metadata information
         """
         model = get_model(wsrequest)
-        if not model.form:
-            raise rpc.InvalidRequest('cannot create model')
-        check_ws_permission(wsrequest, model.name, 'create')
         request = wsrequest.wsgi_request
+        form_class = get_form_class(request, model.form)
+        if not form_class:
+            raise rpc.InvalidRequest('cannot create model %s' % model.name)
+
+        check_ws_permission(wsrequest, model.name, 'create')
         columns = model.columns_with_permission(request, 'create')
         columns = model.column_fields(columns, 'name')
-        form = model.form(request, data=wsrequest.params)
+
+        form = form_class(request, data=wsrequest.params)
         if form.is_valid():
             filtered_data = {k: v for k, v in form.cleaned_data.items() if
                              k in columns}

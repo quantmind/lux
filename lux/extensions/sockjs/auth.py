@@ -79,5 +79,5 @@ def get_model(wsrequest):
     model = wsrequest.pop_param('model')
     restmodel = wsrequest.app.models.get(model)
     if not restmodel:
-        raise rpc.InvalidParams('bad model')
+        raise rpc.InvalidParams('Model "%s" does not exist' % model)
     return restmodel

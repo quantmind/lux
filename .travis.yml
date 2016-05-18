@@ -1,4 +1,4 @@
-language: node_js
+language: python
 
 node_js:
   - "6"
@@ -6,8 +6,8 @@ node_js:
 python:
   - 3.5.1
 
-before_install:
-  - npm install
+# before_install:
+#   - npm install
 
 install:
   - pip install cython
@@ -29,7 +29,7 @@ before_script:
 script:
   - python setup.py test --coverage -q
   - flake8
-  - npm test
+  # - npm test
   - if [[ $TRAVIS_PYTHON_VERSION == '3.5.1' ]]; then python setup.py test --coveralls; fi
 
 notifications:

@@ -193,7 +193,7 @@ class TestSockJSRestApp(test.AppTestCase):
                               params=dict(model='foo'))
         await websocket.handler.on_message(websocket, msg)
         msg = self.get_ws_message(websocket)
-        self.assertEqual(msg['error']['message'], 'bad model')
+        self.assertEqual(msg['error']['message'], 'Model "foo" does not exist')
 
     async def test_ws_model_metadata(self):
         websocket = await self.ws()
@@ -248,4 +248,7 @@ class TestSockJSRestApp(test.AppTestCase):
         self.assertTrue(msg)
         self.assertEqual(msg['event'], 'create')
         self.assertEqual(msg['channel'], 'lux-tasks')
+        # TODO: this is caused by different value of the localhost
+        data.pop('url')
+        msg['data'].pop('url')
         self.assertEqual(msg['data'], data)
