@@ -1,7 +1,10 @@
 from importlib import import_module
 
+from pulsar import ImproperlyConfigured
 from pulsar.utils.structures import AttributeDictionary
 from pulsar.utils.pep import to_bytes
+
+from lux.core import app_attribute, create_cache
 
 
 UNUSABLE_PASSWORD = '!'
@@ -198,3 +201,33 @@ class Session(AttributeDictionary, SessionMixin):
     Used by the :class:`.ApiSessionBackend`
     '''
     pass
+
+
+class SessionBackend:
+
+    def __init__(self, cache):
+        self.cache = cache
+
+    def get(self, id):
+        return self.cache.get_json(self.session_key(id))
+
+    def set(self, id, data):
+        self.cache.set_json(self.session_key(id), data)
+
+    def clear(self, app_name=None):
+        key = self.session_key(app_name=app_name)
+        return self.cache.clear(key)
+
+    def session_key(self, id=None, app_name=None):
+        app_name = app_name or self.cache.app.config['APP_NAME']
+        base = 'session:%s:' % app_name
+        return '%s:%s' % (base, id) if id else base
+
+
+@app_attribute
+def session_backend(app):
+    url = app.config['SESSION_BACKEND']
+    if not url:
+        raise ImproperlyConfigured('Session backend required by '
+                                   'authentication backend')
+    return SessionBackend(create_cache(app, url))

@@ -1,23 +1,9 @@
 """Test sessions backend with PostgreSql"""
-from unittest import skipUnless
-
-from pulsar.apps.test import check_server
-
 from lux.utils import test
 
 
-REDIS_OK = check_server('redis')
-
-
-@skipUnless(REDIS_OK, 'Requires a running Redis server')
 class TestPostgreSql(test.AppTestCase):
     config_file = 'example.webalone.config'
-
-    @classmethod
-    def setUpClass(cls):
-        cls.config_params['CACHE_SERVER'] = ('redis://%s' %
-                                             cls.cfg.redis_server)
-        return super().setUpClass()
 
     def test_backend(self):
         backend = self.app.auth_backend

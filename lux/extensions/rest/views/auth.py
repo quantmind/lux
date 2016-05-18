@@ -27,7 +27,7 @@ class SignUp(JsonRouter):
 
     @route('<key>', method=('post', 'options'))
     def signup_confirmation(self, request):
-        if not get_form_class('signup'):
+        if not get_form_class(request, 'signup'):
             raise Http404
 
         if request.method == 'OPTIONS':
@@ -91,7 +91,7 @@ class Authorization(api.RestRouter):
     def change_password(self, request):
         """Change user password
         """
-        fclass = get_form_class('change-password')
+        fclass = get_form_class(request, 'change-password')
 
         if not fclass:
             raise Http404

@@ -9,12 +9,11 @@ EXTENSIONS = ('lux.extensions.base',
 
 APP_NAME = COPYRIGHT = HTML_TITLE = 'website.com'
 
-CACHE_SERVER = redis_cache_server
+SESSION_BACKEND = redis_cache_server
 EMAIL_DEFAULT_FROM = 'admin@lux.com'
 EMAIL_BACKEND = 'lux.core.mail.LocalMemory'
 SESSION_COOKIE_NAME = 'test-website'
 SESSION_EXPIRY = 5
-DEFAULT_CACHE_EXPIRY = 5
 
 DATASTORE = 'postgresql+green://lux:luxtest@127.0.0.1:5432/luxtests'
 

@@ -33,7 +33,7 @@ from .policy import has_permission
 from .pagination import Pagination, GithubPagination
 from .forms import RelationshipField, UniqueField
 from .user import (MessageMixin, UserMixin, SessionMixin, PasswordMixin,
-                   User, Session)
+                   User, Session, session_backend)
 
 
 __all__ = ['RestModel',
@@ -54,6 +54,7 @@ __all__ = ['RestModel',
            'PasswordMixin',
            'User',
            'Session',
+           'session_backend',
            #
            # Form fields related to rest models
            'RelationshipField',
@@ -166,6 +167,8 @@ class Extension(MultiAuthBackend):
                   'Tuple of urls where persistent session is not required'),
         Parameter('SESSION_EXPIRY', 7 * 24 * 60 * 60,
                   'Expiry for a session/token in seconds.'),
+        Parameter('SESSION_BACKEND', None,
+                  'Cache backend for session objects.'),
         #
         # CSRF
         Parameter('CSRF_EXPIRY', 60 * 60,

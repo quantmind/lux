@@ -24,8 +24,13 @@ class CmsContent:
         content = request.api.get(api_path).json()
         return get_html(request, content)
 
-    def api_path(self, request, path):
-        return '%s/%s/%s' % (self.api, self.group, path)
+    def all(self, request):
+        api_path = self.api_path(request)
+        return request.api.get(api_path).json()['result']
+
+    def api_path(self, request, path=None):
+        base = '%s/%s' % (self.api, self.group)
+        return '%s/%s' % (base, path) if path else base
 
 
 class TextRouter(core.HtmlRouter):
@@ -57,15 +62,13 @@ class CMSmap(SitemapIndex):
 
 
 class RouterMap(Sitemap):
-    content_router = None
+    model = None
 
     def items(self, request):
-        model = self.content_router.model
-        # TODO: this need to be generalised to api
-        for item in model.all(request):
-            item = model.serialise_model(request, item)
-            yield AttributeDictionary(loc=item['html_url'],
-                                      lastmod=item['modified'],
+        for item in self.model.all(request):
+            html_url = request.absolute_uri(item['path'])
+            yield AttributeDictionary(loc=html_url,
+                                      lastmod=item.get('modified'),
                                       priority=item.get('priority', 1))
 
 
@@ -110,7 +113,7 @@ class CMS(core.CMS):
                 url = remove_double_slash('%s/sitemap.xml' % path)
             else:
                 url = '/sitemap1.xml'
-            sitemap = RouterMap(url, content_router=router)
+            sitemap = RouterMap(url, model=router.model)
             self.sitemaps.append(sitemap)
 
         self._middleware.append(router)

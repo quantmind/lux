@@ -13,7 +13,7 @@ WS_URL = '/testws'
 API_URL = ''
 AUTHENTICATION_BACKENDS = ['lux.extensions.auth.TokenBackend']
 DATASTORE = 'postgresql+green://lux:luxtest@127.0.0.1:5432/luxtests'
-CACHE_SERVER = PUBSUB_STORE = redis_cache_server
+PUBSUB_STORE = redis_cache_server
 PUBSUB_MODELS_BROADCAST = set(['tasks'])
 
 

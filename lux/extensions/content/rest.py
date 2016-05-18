@@ -1,17 +1,11 @@
 import logging
 
 from pulsar.apps.wsgi import route
-from pulsar.utils.httpurl import remove_double_slash
 
 from lux.extensions import rest
 
 
 logger = logging.getLogger('lux.extensions.content')
-
-
-def list_filter(model, filters):
-    filters['path:ne'] = remove_double_slash('/%s' % model.html_url)
-    return filters
 
 
 class ContentCRUD(rest.RestRouter):
@@ -25,7 +19,7 @@ class ContentCRUD(rest.RestRouter):
 
         group = request.urlargs['group']
         self.check_model_permission(request, 'read', group=group)
-        filters = list_filter(self.model, {'sortby': 'date:desc'})
+        filters = {'sortby': 'date:desc'}
         return self.model.collection_response(request, **filters)
 
     @route('<group>/_links', method=('get', 'options'))
@@ -34,10 +28,10 @@ class ContentCRUD(rest.RestRouter):
             request.app.fire('on_preflight', request, methods=['GET'])
             return request.response
 
-        filters = list_filter(self.model, {
+        filters = {
             'order:gt': 0,
             'sortby': ['title:asc', 'order:desc']
-        })
+        }
         return self.model.collection_response(request, **filters)
 
     @route('<group>/<path:path>', method=('get', 'head', 'options'))

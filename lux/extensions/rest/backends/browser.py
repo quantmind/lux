@@ -8,7 +8,7 @@ from pulsar import (ImproperlyConfigured, HttpException, Http401,
 
 from .mixins import jwt, SessionBackendMixin
 from .registration import RegistrationMixin
-from .. import (AuthenticationError, AuthBackend,
+from .. import (AuthenticationError, AuthBackend, session_backend,
                 User, Session, ModelMixin)
 from ..views import browser
 
@@ -174,18 +174,17 @@ class ApiSessionBackend(SessionBackendMixin,
     def get_session(self, request, key):
         """Get the session at key from the cache server
         """
-        app = request.app
-        session = app.cache_server.get_json(self._key(key))
+        cache = session_backend(request.app)
+        session = cache.get(key)
         if session:
             session = Session(session)
             if session.user:
                 user = User(session.user)
                 # Check if the token is still a valid one
-                api = request.app.api(request)
                 try:
                     if not session.encoded:
                         raise Http401
-                    api.head('authorizations', token=session.encoded)
+                    request.api.head('authorizations', token=session.encoded)
                 except NotAuthorised:
                     handle_401(request, user)
                 session.user = user
@@ -195,15 +194,9 @@ class ApiSessionBackend(SessionBackendMixin,
         data = session.all()
         if session.user:
             data['user'] = session.user.all()
-        store = request.app.cache_server
-        if store.name == 'dummy':
-            request.logger.error('Cannot use dummy cache with %s backend',
-                                 self.__class__.__name__)
-        store.set_json(self._key(session.id), data)
+        session_backend(request.app).set(session.id, data)
 
-    def _key(self, id):
-        return 'session:%s' % id
-
+    # INTERNALS
     def _get_permissions(self, request, resources, actions=None):
         assert self.permissions_url, "permission url not available"
         if not isinstance(resources, (list, tuple)):

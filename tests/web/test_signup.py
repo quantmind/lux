@@ -22,16 +22,12 @@ class AuthTest(web.WebsiteTest):
 
     async def test_signup_error(self):
         data = {'username': 'djkhvbdf'}
-        request = await self.webclient.post('/auth/signup',
-                                            body=data,
-                                            content_type='application/json')
+        request = await self.webclient.post('/auth/signup', json=data)
         self.json(request.response, 403)
 
     async def test_signup_error_api(self):
         data = {'username': 'djkhvbdf'}
-        request = await self.client.post('/authorizations/signup',
-                                         body=data,
-                                         content_type='application/json')
+        request = await self.client.post('/authorizations/signup', json=data)
         self.assertValidationError(request.response)
 
     async def test_signup_confirmation(self):
@@ -54,15 +50,11 @@ class AuthTest(web.WebsiteTest):
     async def test_reset_password_fail(self):
         cookie, data = await self._cookie_csrf('/auth/reset-password')
         request = await self.webclient.post('/auth/reset-password',
-                                            body=data,
-                                            content_type='application/json',
-                                            cookie=cookie)
+                                            json=data, cookie=cookie)
         self.assertValidationError(request.response, 'email')
         data['email'] = 'dvavf@sdvavadf.com'
         request = await self.webclient.post('/auth/reset-password',
-                                            body=data,
-                                            content_type='application/json',
-                                            cookie=cookie)
+                                            json=data, cookie=cookie)
         self.assertValidationError(request.response,
                                    text="Can't find user, sorry")
 
@@ -76,9 +68,7 @@ class AuthTest(web.WebsiteTest):
         cookie, data = await self._cookie_csrf('/auth/reset-password')
         data['email'] = 'toni@foo.com'
         request = await self.webclient.post('/auth/reset-password',
-                                            body=data,
-                                            content_type='application/json',
-                                            cookie=cookie)
+                                            json=data, cookie=cookie)
         data = self.json(request.response, 200)
         self.assertTrue(data['email'], 'toni@foo.com')
         mail = None
