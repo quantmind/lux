@@ -3,19 +3,12 @@ machine:
   node:
     version: 5.7.0
 
-  python:
-    version: 3.5.1
 
 dependencies:
-  pre:
-    - pip install -U -r requirements.txt
-
-database:
   override:
-    - psql -a -f tests/db.sql
+    - npm install
+
 
 test:
   override:
-    - python setup.py test --coverage -q
-    - flake 8
     - npm test
