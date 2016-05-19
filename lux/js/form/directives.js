@@ -1,5 +1,5 @@
 import _ from '../ng';
-import reverseMerge from '../core/reverseMerge';
+import reverseMerge from '../core/reversemerge';
 import LuxComponent from '../lux/component';
 
 
