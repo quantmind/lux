@@ -8,9 +8,9 @@
 Lux is a library for developing web applications with Python and javascript frameworks such as AngularJS.
 
 :Badges: |license|  |pyversions| |status| |downloads|
-:Master CI: |master-build| |coverage-master|
-:Dev CI: |dev-build| |coverage-dev|
-:Javascript: |jsdep| |jsdevdep|
+:Python CI: |master-build| |coverage-master|
+:Javascript CI: |jsci| |jsdep| |jsdevdep|
+:Python dev CI: |dev-build| |coverage-dev|
 :Documentation: http://quantmind.github.io/lux/
 :Downloads: https://pypi.python.org/pypi/lux
 :Source: https://github.com/quantmind/lux
@@ -38,6 +38,8 @@ Lux is a library for developing web applications with Python and javascript fram
   :target: https://david-dm.org/quantmind/lux
 .. |jsdevdep| image:: https://david-dm.org/quantmind/lux/dev-status.svg
   :target: https://david-dm.org/quantmind/lux#info=devDependencies
+.. |jsci| image:: https://circleci.com/gh/quantmind/lux.svg?style=svg
+    :target: https://circleci.com/gh/quantmind/lux
 
 .. _requirements:
 
