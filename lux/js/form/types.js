@@ -124,7 +124,7 @@ ng-required="field.required"
 ng-readonly="field.readonly"
 ng-disabled="field.disabled"
 ng-minlength="field.minlength"
-ng-maxlength="field.minlength"
+ng-maxlength="field.maxlength"
 >`
 }
 

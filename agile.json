@@ -1,8 +1,10 @@
 {
+    "python": {
+        "lux_version": "lux.__version__"
+    },
     "github": {
         "lux": {
-            "python_module": "lux",
-            "version": "lux.__version__",
+            "version": "{{ lux_version }}",
             "release_notes": "docs/history"
         }
     },
@@ -13,8 +15,10 @@
         },
         "js": {
             "command": [
+                "npm run-script test-light",
                 "npm run-script build"
-            ]
+            ],
+            "interactive": true
         }
     },
     "watch": {
@@ -42,7 +46,7 @@
     "tasks": {
         "release": {
             "description": "make a new release to github",
-            "command": ["github:lux"]
+            "command": ["python", "github:lux"]
         },
         "js": {
             "description": "Create the js files",

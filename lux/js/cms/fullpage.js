@@ -5,7 +5,7 @@ export default function ($window) {
         restrict: 'AE',
 
         link: function (scope, element, attrs) {
-            var opts = scope.$eval(attrs.luxFullPage),
+            var opts = scope.$eval(attrs.luxFullpage) || {},
                 offset = +(opts.offset || 0),
                 height = $window.innerHeight - offset,
                 watch = opts.watch;

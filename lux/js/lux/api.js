@@ -54,6 +54,10 @@ class Lux {
         return this.context.csrf;
     }
 
+    get user () {
+        return this.context.user;
+    }
+
     get userToken () {
         return this.context.userToken;
     }

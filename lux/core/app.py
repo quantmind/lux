@@ -255,12 +255,14 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
                   'Default formatting for dates in JavaScript', True),
         Parameter('DEFAULT_TEMPLATE_ENGINE', 'jinja2',
                   'Default template engine'),
+        # Cache
         Parameter('CACHE_SERVER', 'dummy://',
                   ('Cache server, can be a connection string to a valid '
                    'datastore which support the cache protocol or an object '
                    'supporting the cache protocol')),
-        Parameter('DEFAULT_CACHE_TIMEOUT', 60,
+        Parameter('CACHE_DEFAULT_TIMEOUT', 60,
                   'Default timeout for data stored in cache'),
+        #
         Parameter('LOCALE', 'en_GB', 'Default locale', True),
         Parameter('DEFAULT_TIMEZONE', 'GMT',
                   'Default timezone'),

@@ -52,6 +52,7 @@
     },
     "scripts": {
         "test": "npm run-script build-bundle && karma start --single-run",
+        "test-light": "npm run-script build-bundle && karma start --single-run --browsers PhantomJS",
         "build-bundle": "eslint lux/js && rollup -c && ng-annotate -a build/rollup.js -o build/lux.js",
         "build": "npm run-script build-bundle && r.js -o bundle.js optimize=none && uglifyjs example/website/media/website/website.js -c -m -o example/website/media/website/website.min.js",
         "debug": "karma start --browsers Chrome"

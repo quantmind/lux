@@ -27,6 +27,9 @@ formWrappers(luxFormModule);
 import formActions from './actions';
 formActions(luxFormModule);
 
+import formMessages from './messages';
+formMessages(luxFormModule);
+
 
 // Run configuration
 import runForm from './run';

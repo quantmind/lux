@@ -2,7 +2,7 @@ import {module, compile, getForm, _} from './tools';
 import * as lux from '../index';
 
 
-describe('lux core', function() {
+describe('lux form email', function() {
 
     beforeEach(() => {
         module('lux.form');

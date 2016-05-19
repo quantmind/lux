@@ -253,8 +253,8 @@ class Field extends FormElement {
     get error () {
         var ngField = this.ngField;
         if (ngField && this.displayStatus && ngField.$invalid) {
-            if (ngField.$error.required) return this.required_error || 'This field is required';
-            else return this.server_error || this.validation_error || 'Not a valid value';
+            var msg = this.$cfg.error(ngField);
+            return this.server_error || msg || 'Not a valid value';
         }
     }
 

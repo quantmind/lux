@@ -49,9 +49,7 @@ class UserMixin:
 
     async def test_options_user_permissions(self):
         request = await self.client.options('/user/permissions')
-        response = request.response
-        self.assertEqual(response.status_code, 200)
-        self.assertTrue('Access-Control-Allow-Origin' in response.headers)
+        self.checkOptions(request.response)
 
     async def test_get_user_permissions_anonymous(self):
         request = await self.client.get('/user/permissions')

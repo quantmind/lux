@@ -315,7 +315,7 @@ class CacheObject:
             try:
                 int(timeout)
             except Exception:
-                timeout = config['DEFAULT_CACHE_TIMEOUT']
+                timeout = config['CACHE_DEFAULT_TIMEOUT']
 
             try:
                 app.cache_server.set_json(key, result, timeout=timeout)

@@ -5,7 +5,6 @@
 |
 |
 
-Lux is a library for developing web applications with Python and javascript frameworks such as AngularJS.
 
 :Badges: |license|  |pyversions| |status| |downloads|
 :Python CI: |master-build| |coverage-master|
@@ -40,6 +39,10 @@ Lux is a library for developing web applications with Python and javascript fram
   :target: https://david-dm.org/quantmind/lux#info=devDependencies
 .. |jsci| image:: https://circleci.com/gh/quantmind/lux.svg?style=svg
     :target: https://circleci.com/gh/quantmind/lux
+
+Lux is a library for developing asynchronous web applications with python 3.5 or above.
+It uses pulsar_ asynchronous framework built on top of python asyncio_ module.
+
 
 .. _requirements:
 
@@ -86,6 +89,7 @@ Debugging javascript on Chrome::
     npm run-script debug
 
 
+.. _asyncio: https://docs.python.org/3/library/asyncio.html
 .. _pulsar: https://github.com/quantmind/pulsar
 .. _pytz: http://pytz.sourceforge.net/
 .. _dateutil: https://pypi.python.org/pypi/python-dateutil

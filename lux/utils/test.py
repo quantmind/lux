@@ -379,6 +379,10 @@ class TestMixin:
         self.json(response, 401)
         self.assertEqual(response.headers['WWW-Authenticate'], 'Token')
 
+    def checkOptions(self, response):
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue('Access-Control-Allow-Origin' in response.headers)
+
     def check_og_meta(self, bs, type=None, image=None):
         meta = bs.find('meta', property='og:type')
         self.assertEqual(meta['content'], type or 'website')
