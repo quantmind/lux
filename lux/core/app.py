@@ -146,8 +146,10 @@ class App(LazyWsgi):
     def command(self):
         return self._argv[0] if self._argv else None
 
-    def setup(self, environ=None, handler=True):
+    def setup(self, environ=None, on_config=None, handler=True):
         app = Application(self)
+        if on_config:
+            on_config(app)
         if handler:
             app.wsgi_handler()
         return app
@@ -297,6 +299,7 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
         self.auth_backend = self
         self.threads = threading.local()
         self.models = ModelContainer(self)
+        self.providers = {}
         self.extensions = OrderedDict()
         self.config = _build_config(self)
         self.channels = None

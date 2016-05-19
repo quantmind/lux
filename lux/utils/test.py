@@ -7,7 +7,6 @@ import json as _json
 import pickle
 from collections import OrderedDict
 from unittest import mock
-from urllib.parse import urlparse, urlunparse
 from io import StringIO
 
 from pulsar import get_event_loop, as_coroutine
@@ -22,6 +21,7 @@ from pulsar.apps.http import JSON_CONTENT_TYPES
 from pulsar.apps.test import test_timeout, sequential
 
 from lux.core import App
+from lux.extensions.rest import ApiClient
 from lux.core.commands.generate_secret_key import generate_secret
 
 logger = logging.getLogger('lux.test')
@@ -90,17 +90,10 @@ def test_app(test, config_file=None, config_params=True, argv=None,
         argv.append('--log-level')
         levels = test.cfg.log_level if hasattr(test, 'cfg') else ['none']
         argv.extend(levels)
-    app = App(config_file, argv=argv, **kwargs).setup()
+    app = App(config_file, argv=argv, **kwargs).setup(
+        on_config=test.app_test_providers)
     app.stdout = StringIO()
     app.stderr = StringIO()
-
-    if app.api:
-        api_app = api_app or app
-        http = TestApiClient(api_app, list(app.api.http.headers))
-        # Override http client for the api handler
-        app.api.http = http
-        assert app.api.http == http
-
     return app
 
 
@@ -233,13 +226,41 @@ class TestClient:
         return self.get(path, headers=headers)
 
 
+class TestHttpApiClient(TestClient):
+    """Api client test handler
+    """
+    def request(self, method, path, data=None, **params):
+        """Override :meth:`TestClient.request` for testing Api clients
+        inside a lux application
+        """
+        params['body'] = data
+        request, sr = self.request_start_response(method, path, **params)
+        response = self.app(request.environ, sr)
+        green_pool = self.app.green_pool
+        response = green_pool.wait(response, True) if green_pool else response
+        return Response(response)
+
+
 class TestMixin:
+    app = None
+    """Test class application"""
     config_file = 'tests.config'
     """The config file to use when building an :meth:`application`"""
     config_params = {}
     """Dictionary of parameters to override the parameters from
     :attr:`config_file`"""
     prefixdb = 'luxtest_'
+
+    @classmethod
+    def app_test_providers(cls, app):
+        if 'Api' in app.providers:
+            app.providers['Api'] = cls.apiClient
+
+    @classmethod
+    def apiClient(cls, app):
+        api = ApiClient(app)
+        api.http = TestHttpApiClient(cls.app or app)
+        return api
 
     def authenticity_token(self, doc):
         name = doc.find('meta', attrs={'name': 'csrf-param'})
@@ -401,8 +422,6 @@ class AppTestCase(unittest.TestCase, TestMixin):
     """
     odm = None
     """Original odm handler"""
-    app = None
-    """Test class application"""
     datastore = None
     """Test class datastore dictionary"""
 
@@ -522,22 +541,6 @@ class AppTestCase(unittest.TestCase, TestMixin):
                                        ['--username', username,
                                         '--email', email,
                                         '--password', password])
-
-
-class TestApiClient(TestClient):
-    """Api client test handler
-    """
-    def request(self, method, path, data=None, **params):
-        """Override :meth:`TestClient.request` for testing Api clients
-        inside a lux application
-        """
-        path = urlunparse(('', '') + tuple(urlparse(path))[2:])
-        params['body'] = data
-        request, sr = self.request_start_response(method, path, **params)
-        response = self.app(request.environ, sr)
-        green_pool = self.app.green_pool
-        response = green_pool.wait(response, True) if green_pool else response
-        return Response(response)
 
 
 class WebApiTestCase(AppTestCase):

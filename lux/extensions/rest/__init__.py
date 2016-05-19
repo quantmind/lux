@@ -212,6 +212,7 @@ class Extension(MultiAuthBackend):
                 backend.on_config(app)
 
         app.auth_backend = self
+        app.providers['Api'] = ApiClient
 
     def sorted_config(self):
         cfg = self.meta.config.copy()
@@ -247,7 +248,7 @@ class Extension(MultiAuthBackend):
             api.add_child(router)
 
         # Create the rest-api handler
-        app.api = ApiClient(app)
+        app.api = app.providers['Api'](app)
 
         # routers not required when this is a client app
         if is_absolute_uri(app.config['API_URL']):
