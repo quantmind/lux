@@ -3,4 +3,4 @@ pytz
 greenlet
 jinja2
 pyjwt
-pulsar
+pulsar-odm
