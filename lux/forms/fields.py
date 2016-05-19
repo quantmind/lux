@@ -1,4 +1,5 @@
 from datetime import datetime, date
+from collections import Mapping
 
 import json
 import pytz
@@ -115,7 +116,7 @@ class Field:
         '''
         raise ValueError
 
-    def clean(self, value, bfield):
+    def clean(self, value, bfield=None):
         '''Clean the field value'''
         if value in NOTHING:
             value = self.get_default(bfield)
@@ -276,7 +277,7 @@ class BooleanField(Field):
     default = False
     required = False
 
-    def clean(self, value, instance):
+    def clean(self, value, instance=None):
         '''Clean the field value'''
         if value in ('False', '0'):
             return False
@@ -291,8 +292,16 @@ class JsonField(TextField):
         try:
             return json.loads(value)
         except Exception:
-            raise ValidationError(
-                self.validation_error.format(value))
+            if isinstance(value, (Mapping, list, tuple)):
+                try:
+                    json.dumps(value)
+                    return value
+                except Exception:
+                    raise ValidationError(
+                        self.validation_error.format(value)) from None
+            else:
+                raise ValidationError(
+                    self.validation_error.format(value)) from None
 
 
 class MultipleMixin:

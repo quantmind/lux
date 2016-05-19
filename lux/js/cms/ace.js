@@ -44,7 +44,7 @@ export default function ($lux) {
                     return '';
                 }
                 else if (_.isObject(value) || _.isArray(value)) {
-                    throw new Error('ui-ace cannot use an object or an array as a model');
+                    return _.toJson(value, 4);
                 }
                 return value;
             });

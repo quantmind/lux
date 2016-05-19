@@ -375,6 +375,10 @@ class TestMixin:
             self.assertEqual(data['message'], text)
             self.assertTrue(data['error'])
 
+    def check401(self, response):
+        self.json(response, 401)
+        self.assertEqual(response.headers['WWW-Authenticate'], 'Token')
+
     def check_og_meta(self, bs, type=None, image=None):
         meta = bs.find('meta', property='og:type')
         self.assertEqual(meta['content'], type or 'website')

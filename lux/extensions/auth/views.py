@@ -140,10 +140,11 @@ class UserRest(RestRouter):
         """
         user = self.get_instance(request)
         model = self.model
-        if not model.updateform:
+        form_class = get_form_class(request, model.updateform)
+        if not form_class:
             raise MethodNotAllowed
-        form = model.updateform(request, data=request.body_data())
-        if form.is_valid():
+        form = form_class(request, data=request.body_data())
+        if form.is_valid(exclude_missing=True):
             user = model.update_model(request, user, form.cleaned_data)
             data = model.serialise(request, user)
         else:

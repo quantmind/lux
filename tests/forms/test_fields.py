@@ -62,18 +62,21 @@ class FieldTests(test.TestCase):
 
     def test_JsonField(self):
         field = forms.JsonField()
-
         value = {'test': '????'}
         t = type(value)
         json_val = json.dumps(value)
-
-        result = field._clean(json_val, None)
-
+        result = field.clean(json_val)
         self.assertEqual(type(result), t)
 
-    def test_JsonField_raises(self):
+    def test_JsonField_string(self):
         field = forms.JsonField()
-        value = 'string'
+        self.assertRaises(forms.ValidationError, field.clean, 'string')
 
-        with self.assertRaises(forms.ValidationError):
-            field._clean(value, None)
+    def test_JsonField_object(self):
+        field = forms.JsonField()
+        value = {'bla': 'foo', 'zzz': [1, 2, 3]}
+        self.assertEqual(field.clean(value), value)
+
+    def test_JsonField_fail(self):
+        field = forms.JsonField()
+        self.assertRaises(forms.ValidationError, field.clean, self)

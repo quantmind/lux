@@ -33,10 +33,8 @@ class PermissionsMixin:
 
     async def test_create_permission_errors(self):
         token = await self._token()
-        data = dict(name='blabla')
         request = await self.client.post('/permissions',
-                                         body=data,
-                                         content_type='application/json',
+                                         json=dict(name='blabla'),
                                          token=token)
         self.assertValidationError(request.response, 'policy', 'required')
         #
