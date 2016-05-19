@@ -1,5 +1,5 @@
 import _ from '../ng';
-import querySelector from '../core/querySelector';
+import querySelector from '../core/queryselector';
 
 const aceTemplate = `<div class="ace-lux">
 <div ng-if="aceHeader" class="ace-lux-header" lux-navbar="aceHeader"></div>
