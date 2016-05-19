@@ -1,5 +1,3 @@
-import _ from '../ng';
-
 // @ngInject
 export default function ($window) {
 
