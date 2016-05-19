@@ -1,3 +1,11 @@
 machine:
   node:
     version: 5.7.0
+  python:
+    version: 3.5.1
+  services:
+    - redis
+  database:
+    override:
+      - psql -U postgres -f tests/db.sql
+

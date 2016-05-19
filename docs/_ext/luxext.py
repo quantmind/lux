@@ -1,11 +1,7 @@
 from importlib import import_module
 
 from docutils.parsers.rst import Directive, directives
-from docutils.parsers.rst.directives.tables import ListTable
-from docutils import io, nodes, statemachine, utils, frontend
-from docutils.utils import SystemMessagePropagation
-
-import sphinx
+from docutils import nodes, statemachine
 
 
 class lux_extension(nodes.General, nodes.Element):
@@ -37,7 +33,6 @@ class LuxExtensionDirective(Directive):
         """
         # Get content and options
         path = self.arguments[0]
-        node = lux_extension()
         klass = self.options.get('classname') or 'Extension'
         try:
             module = import_module(path)
