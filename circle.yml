@@ -6,13 +6,16 @@ machine:
   services:
     - redis
 
-  python:
-    test:
-      override:
-        - pyenv global 3.5.1
-        - pip install -r requirements-dev.txt
-        - setup.py test --coverage -q
-        - flake8
+
+dependencies:
+  pre:
+    - pyenv global 3.5.1
+    - pip install -r requirements-dev.txt
+
+test:
+  override:
+    - setup.py test --coverage -q
+    - flake8
 
 
 database:
