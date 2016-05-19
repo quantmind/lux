@@ -1,34 +1,14 @@
 machine:
-  pre:
-    - wget https://s3.amazonaws.com/circle-downloads/circle-pyenv-python-3.5.1_1.0_amd64.deb
-    - sudo dpkg -i circle-pyenv-python-3.5.1_1.0_amd64.deb
 
   node:
     version:
       5.7.0
 
-  python:
-    version:
-      3.5.1
-
-  services:
-    - redis
-
 
 dependencies:
   override:
-    - pip --version
-    - pip install -r requirements-dev.txt -U
-    - pip install -r requirements.txt
+    - npm install
 
 test:
   override:
-    - pyenv global 3.5.1
-    - setup.py test --coverage -q
-    - flake8
-
-
-database:
-  pre:
-    - psql -U postgres -f tests/db.sql
-
+    - npm test
