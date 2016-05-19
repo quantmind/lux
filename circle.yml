@@ -8,12 +8,15 @@ machine:
 
 
 dependencies:
-  pre:
+  override:
     - pyenv global 3.5.1
-    - pip install -r requirements-dev.txt
+    - pip --version
+    - pip install -r requirements-dev.txt -U
+    - pip install -r requirements.txt
 
 test:
   override:
+    - pyenv global 3.5.1
     - setup.py test --coverage -q
     - flake8
 

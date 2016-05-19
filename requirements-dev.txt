@@ -1,3 +1,4 @@
+pip
 cython
 psycopg2
 alembic
