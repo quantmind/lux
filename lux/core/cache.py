@@ -235,9 +235,11 @@ class RedisCache(Cache):
 
 
 class Cacheable:
-    """An class which can create its how cache key
+    """An class which can create its own :meth:`cache_key`
     """
     def cache_key(self, app):
+        """cache key
+        """
         return ''
 
 

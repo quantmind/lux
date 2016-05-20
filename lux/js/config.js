@@ -87,6 +87,7 @@ define(function () {
         };
 
     function config(cfg) {
+        if (!cfg) cfg = {};
         cfg.shim = extend(defaultShim, cfg.shim);
         cfg.paths = newPaths(cfg);
         require.config(cfg);

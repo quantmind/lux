@@ -170,8 +170,13 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
     It is a specialised :class:`~.LuxExtension` which collects
     all extensions of your application and setup the wsgi middleware used by
     the web server.
-    An :class:`App` is not usually initialised directly, the higher level
-    :func:`.execute_from_config` is used instead.
+    An :class:`Application` is not initialised directly, the higher level
+    :func:`.execute_from_config` or :func:`.execute_app` are
+    used instead.
+
+    .. attribute:: config
+
+        The configuration dictionary
     """
     cfg = None
     debug = False
@@ -365,7 +370,7 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
 
     def get_version(self):
         """Get version of this :class:`App`. Required by
-        :class:`.ConsoleParser`."""
+        :class:`~.ConsoleParser`."""
         return self.meta.version
 
     def wsgi_request(self, environ=None, loop=None, path=None,

@@ -5,6 +5,9 @@ from .mixins import TokenBackendMixin
 from .registration import RegistrationMixin
 from .. import AuthBackend, Authorization
 
+# Cross-Origin Resource Sharing header
+CORS = 'Access-Control-Allow-Origin'
+
 
 class TokenBackend(TokenBackendMixin, RegistrationMixin, AuthBackend):
     """Toekn Backend
@@ -53,10 +56,9 @@ class TokenBackend(TokenBackendMixin, RegistrationMixin, AuthBackend):
                     request.cache.user = user
 
     def response(self, environ, response):
-        name = 'Access-Control-Allow-Origin'
-        if name not in response.headers:
+        if CORS not in response.headers:
             origin = environ.get('HTTP_ORIGIN', '*')
-            response[name] = origin
+            response[CORS] = origin
         return response
 
     def response_middleware(self, app):
@@ -73,7 +75,7 @@ class TokenBackend(TokenBackendMixin, RegistrationMixin, AuthBackend):
         if origin == 'null':
             origin = '*'
 
-        response['Access-Control-Allow-Origin'] = origin
+        response[CORS] = origin
         if headers:
             response['Access-Control-Allow-Headers'] = headers
         response['Access-Control-Allow-Methods'] = methods

@@ -156,7 +156,7 @@ class UserRest(RestRouter):
         """Check permissions the authenticated user has for a
         given action.
         """
-        if request.method == 'options':
+        if request.method == 'OPTIONS':
             request.app.fire('on_preflight', request, methods=['GET'])
             return request.response
         permissions = user_permissions(request)
@@ -169,7 +169,7 @@ class Authorization(RestAuthorization):
     def mailing_list(self, request):
         '''Add a given email to a mailing list
         '''
-        form_class = get_form_class('mailing-list')
+        form_class = get_form_class(request, 'mailing-list')
         if not form_class:
             raise Http404
 
