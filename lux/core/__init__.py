@@ -12,7 +12,7 @@ from .wrappers import (WsgiRequest, Router, HtmlRouter,
 from .templates import register_template_engine, template_engine
 from .cms import CMS
 from .mail import EmailBackend
-from .cache import cached, Cacheable, Cache, register_cache, create_cache
+from .cache import cached, Cache, register_cache, create_cache
 from .exceptions import raise_http_error, ShellError
 
 
@@ -34,7 +34,6 @@ __all__ = ['ConsoleParser',
            'CMS',
            'EmailBackend',
            'cached',
-           'Cacheable',
            'Cache',
            'register_cache',
            'create_cache',

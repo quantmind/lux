@@ -16,7 +16,6 @@ from lux.utils import iso8601, absolute_uri
 from .urlwrappers import (URLWrapper, Processor, MultiValue, Tag, Author,
                           Category)
 from .utils import mapping_iterator, guess
-from ..cache import Cacheable
 
 
 no_draft_field = ('date', 'category')
@@ -142,7 +141,7 @@ class ContentFile:
                              cache_control=self.cache_control)
 
 
-class HtmlContent(Cacheable):
+class HtmlContent:
 
     def __init__(self, src, body, meta=None):
         self.src = src
@@ -152,9 +151,6 @@ class HtmlContent(Cacheable):
     def __repr__(self):
         return self.src
     __str__ = __repr__
-
-    def cache_key(self, app):
-        return self.src
 
     def json(self, app):
         """Convert the content into a JSON dictionary

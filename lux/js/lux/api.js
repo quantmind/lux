@@ -95,7 +95,7 @@ class Lux {
         }
 
         action.path = urlJoin(path, action.path);
-
+        
         return new ApiClass(this, action);
     }
 

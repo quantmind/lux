@@ -108,18 +108,17 @@ class Col(Fieldset):
 class Layout(Fieldset):
     type = 'form'
     form_class = None
-    default_element = Fieldset
     all = True
 
-    def __init__(self, form, *children, **attrs):
+    def __init__(self, form, *children, default_element=Fieldset, **attrs):
         super().__init__(*children, **attrs)
-        self.setup(form)
+        self.setup(form, default_element)
 
     def __call__(self, *args, **kwargs):
         form = self.form_class(*args, **kwargs)
         return SerialisedForm(self, form)
 
-    def setup(self, instance_type):
+    def setup(self, instance_type, default_element):
         self.form_class = instance_type
         missings = list(self.form_class.base_fields)
         children = self.children
@@ -127,9 +126,16 @@ class Layout(Fieldset):
         for field in serialised_fields(self.form_class, children, missings):
             self.children.append(field)
         if missings and self.all:
-            field = self.default_element(*missings)
+            field = default_element(*missings)
             field.setup(self.form_class, missings)
             self.children.append(field)
+
+        for name, inline in self.form_class.inlines.items():
+            inline = Layout(inline.form_class,
+                            style='inline',
+                            prefix=name,
+                            type='ng-form')
+            self.children.append(inline)
 
 
 class SerialisedForm(object):

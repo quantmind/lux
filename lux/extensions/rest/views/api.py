@@ -21,7 +21,7 @@ class RestRoot(Router):
     def apis(self, request):
         routes = {}
         for router in self.routes:
-            url = request.absolute_uri(router.path())
+            url = '%s%s' % (request.absolute_uri(), router.route.rule)
             if isinstance(router, RestMixin):
                 routes[router.model.api_name] = url
             else:
@@ -36,15 +36,19 @@ class RestMixin(ModelMixin):
     '''A mixin to be used in conjunction with Routers, usually
     as the first class in the multi-inheritance declaration
     '''
-    def __init__(self, *args, html=False, **kwargs):
-        if self.model is None and args:
-            model, args = args[0], args[1:]
-            self.set_model(model)
+    def __init__(self, *args, **kwargs):
+        url = None
+        if args:
+            url_or_model, args = args[0], args[1:]
+            if isinstance(url_or_model, RestModel):
+                self.model = url_or_model
+            else:
+                url = url_or_model
 
         if not isinstance(self.model, RestModel):
             raise NotImplementedError('REST model not available')
 
-        url = self.model.html_url if html else self.model.url
+        url = url or self.model.url
         assert url is not None, "Model %s has no valid url" % self.model
         super().__init__(url, *args, **kwargs)
 

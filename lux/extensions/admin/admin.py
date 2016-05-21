@@ -1,7 +1,7 @@
 import json
 from inspect import isclass
 
-from pulsar import Http404, PermissionDenied
+from pulsar import Http404
 from pulsar.apps.wsgi import Json, Html
 from pulsar.utils.html import nicename
 
@@ -16,6 +16,11 @@ def is_admin(cls, check_model=True):
     if isclass(cls) and issubclass(cls, AdminModel) and cls is not AdminModel:
         return bool(cls.model) if check_model else True
     return False
+
+
+def default_filter(cls):
+    if cls.model:
+        return cls
 
 
 def grid(options):
@@ -58,9 +63,6 @@ class AdminRouter(HtmlRouter):
             doc = request.html_document
             doc.jscontext['navigation'] = admin.sitemap(request)
 
-    def get_html(self, request):
-        return request.app.render_template('partials/admin.html')
-
     def admin_root(self):
         router = self
         while router and not isinstance(router, Admin):
@@ -76,15 +78,28 @@ class Admin(AdminRouter):
         # set self as the angular root
         self._angular_root = self
 
+    def load(self, app, filter=None):
+        all = app.module_iterator('admin', is_admin, '__admins__')
+        filter = filter or default_filter
+        for cls in all:
+            cls = filter(cls)
+            if not cls:
+                continue
+            self.add_child(cls())
+        return self
+
     @cached(user=True)
     def sitemap(self, request):
         infos = []
         resources = []
         for child in self.routes:
             if isinstance(child, AdminModel):
+                try:
+                    section, info = child.info(request)
+                except Http404:
+                    continue
                 resource = child.model
                 resources.append(resource)
-                section, info = child.info(request)
                 infos.append((resource, section, info))
 
         backend = request.cache.auth_backend
@@ -143,14 +158,15 @@ class AdminModel(AdminRouter):
                 'icon': self.icon}
         return self.section, info
 
-    def get_html(self, request):
-        app = request.app
+    def get_target(self, request, **kwr):
         model = self.get_model(request)
-        options = dict(target=model.get_target(request))
+        return model.get_target(request, **kwr)
+
+    def get_html(self, request):
+        options = dict(target=self.get_target(request))
         if self.permissions is not None:
             options['permissions'] = self.permissions
-        context = {'grid': grid(options)}
-        return app.render_template('partials/admin-list.html', context)
+        return grid(options)
 
 
 class CRUDAdmin(AdminModel):
@@ -158,7 +174,6 @@ class CRUDAdmin(AdminModel):
     '''
     form = None
     updateform = None
-    addtemplate = 'partials/admin-add.html'
 
     @route()
     def add(self, request):
@@ -170,9 +185,7 @@ class CRUDAdmin(AdminModel):
     def update(self, request):
         '''Edit an existing model
         '''
-        id = request.urlargs['id']
-        form = self.updateform or self.form
-        return self.get_form(request, form, id=id)
+        return self.get_form(request, id=request.urlargs['id'])
 
     def get_form(self, request, form=None, id=None):
         json = 'json' in request.url_data
@@ -187,20 +200,15 @@ class CRUDAdmin(AdminModel):
         if not form:
             raise Http404
 
-        backend = request.cache.auth_backend
-        model = self.get_model(request)
-        target = model.get_target(request, path=id, action=action)
+        target = self.get_target(request, path=id, action=action)
         if id:
             request.api.head(target)
+        else:
+            self.get_model(request).check_permission(request, action)
 
-        if backend.has_permission(request, model.name, action):
-            if json:
-                data = form(request).as_dict(action=target)
-                return Json(data).http_response(request)
-            else:
-                html = form(request).as_form(action=target)
-                context = {'html_form': html.render()}
-                html = request.app.render_template(self.addtemplate, context)
-                return self.html_response(request, html)
-
-        raise PermissionDenied
+        if json:
+            data = form(request).as_dict(action=target)
+            return Json(data).http_response(request)
+        else:
+            html = form(request).as_form(action=target)
+            return self.html_response(request, html)

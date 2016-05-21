@@ -163,6 +163,15 @@ class App(LazyWsgi):
         return app
 
 
+def Http(app):
+    params = app.config['HTTP_CLIENT_PARAMETERS'] or {}
+    green = app.green_pool
+    if not green:
+        params['loop'] = pulsar.new_event_loop()
+    http = HttpClient(**params)
+    return GreenHttp(http) if green else http
+
+
 class Application(ConsoleParser, LuxExtension, EventMixin):
     """The :class:`.Application` is the WSGI callable for serving
     lux applications.
@@ -305,12 +314,15 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
         self.meta.script = callable._script
         self.auth_backend = self
         self.threads = threading.local()
-        self.models = ModelContainer(self)
-        self.providers = {}
+        self.providers = {
+            'Model': ModelContainer,
+            'Http': Http
+        }
         self.extensions = OrderedDict()
         self.config = _build_config(self)
         self.channels = None
         self.fire('on_config')
+        self.models = self.providers['Model'](self)
 
     def __call__(self, environ, start_response):
         """The WSGI thing."""
@@ -318,7 +330,6 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
         request = self.wsgi_request(environ)
         if self.debug:
             self.logger.debug('Serving request %s' % request.path)
-        request.cache.auth_backend = self
         self.fire('on_request', request)
         return wsgi_handler(environ, start_response)
 
@@ -709,12 +720,7 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
         A key is used to group together clients so that bandwidths is reduced
         If no key is provided the handler is not included in the http cache.
         """
-        params = self.config['HTTP_CLIENT_PARAMETERS'] or {}
-        green = self.green_pool
-        if not green:
-            params['loop'] = pulsar.new_event_loop()
-        http = HttpClient(**params)
-        return GreenHttp(http) if green else http
+        return self.providers['Http'](self)
 
     def run_in_executor(self, callable, *args):
         """Run a ``callable`` in the event loop executor

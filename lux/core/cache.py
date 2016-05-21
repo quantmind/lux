@@ -234,15 +234,6 @@ class RedisCache(Cache):
         return value
 
 
-class Cacheable:
-    """An class which can create its own :meth:`cache_key`
-    """
-    def cache_key(self, app):
-        """cache key
-        """
-        return ''
-
-
 class CacheObject:
     """Object which implement cache functionality on callables.
 
@@ -259,9 +250,6 @@ class CacheObject:
     def cache_key(self, arg):
         key = self.key or ''
         app = arg.app
-        if isinstance(self.instance, Cacheable):
-            key = self.instance.cache_key(app)
-
         if isinstance(app, WsgiRequest):
             if not key:
                 key = app.path

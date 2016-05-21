@@ -1,10 +1,10 @@
 import logging
-from urllib.parse import urljoin, urlparse, urlunparse
+from urllib.parse import urljoin
 
 from pulsar import PermissionDenied
 from pulsar.utils.html import nicename
 from pulsar.apps.wsgi import Json
-from pulsar.utils.httpurl import is_absolute_uri, remove_double_slash
+from pulsar.utils.httpurl import is_absolute_uri
 from pulsar.utils.log import lazymethod
 
 from lux.core import LuxModel
@@ -112,6 +112,7 @@ class ColumnPermissionsMixin:
         :param request:     request object
         :param column:      column name
         :param level:       requested access level
+        :param instance:    optional instance to check permission
         :return:            True iff user has permission
         """
         backend = request.cache.auth_backend
@@ -177,26 +178,31 @@ class ColumnPermissionsMixin:
 
 
 class RestClient:
-    """Implemets method accessed by clients to Rest Models
+    """Implements the method accessed by clients of lux Rest API
     """
+    def api_url(self, request, id=None):
+        base = request.config.get('API_URL')
+        if base:
+            if not is_absolute_uri(base):
+                base = request.absolute_uri('/')
+            if base.endswith('/'):
+                base = base[:-1]
+            base = '%s/%s' % (base, self.url)
+            return '%s/%s' % (base, id) if id else base
+
     def get_target(self, request, **params):
         """Get a target object for this model
 
         Used by HTML Router to get information about the LUX REST API
         of this Rest Model
         """
-        app = request.app
-        api_url = self.api_url or app.config.get('API_URL')
+        api_url = self.api_url(request)
         if not api_url:
             return
-        url = list(urlparse(api_url))
-        url[2] = remove_double_slash('%s/%s' % (url[2], self.url))
-        url = urlunparse(url)
-
         target = {
             'id_field': self.id_field,
             'repr_field': self.repr_field,
-            'url': url
+            'url': api_url
         }
         #
         # Add additional parameters
@@ -246,8 +252,7 @@ class RestModel(LuxModel, RestClient, ColumnPermissionsMixin):
         set to True in the :class:`.RestColumn` metadata
     """
     def __init__(self, name, form=None, updateform=None, columns=None,
-                 url=None, api_name=None, exclude=None,
-                 api_url=None, html_url=None, id_field=None,
+                 url=None, exclude=None, html_url=None, id_field=None,
                  repr_field=None, hidden=None):
         assert name, 'model name not available'
         self.name = name
@@ -258,7 +263,6 @@ class RestModel(LuxModel, RestClient, ColumnPermissionsMixin):
         self.id_field = id_field or 'id'
         self.repr_field = repr_field or 'id'
         self.html_url = html_url
-        self.api_url = api_url
         self._columns = columns
         self._exclude = set(exclude or ())
         self._hidden = set(hidden or ())
@@ -311,7 +315,7 @@ class RestModel(LuxModel, RestClient, ColumnPermissionsMixin):
         if self.id_field not in model and self.id_field not in exclude:
             model[self.id_field] = getattr(obj, self.id_field)
         if 'url' not in exclude:
-            model['url'] = self.get_url(request, model[self.id_field])
+            model['url'] = self.api_url(request, model[self.id_field])
         return model
 
     def collection_data(self, request, *filters, **params):
@@ -416,15 +420,29 @@ class RestModel(LuxModel, RestClient, ColumnPermissionsMixin):
         cols.append(column)
         self._columns = cols
 
-    def get_url(self, request, path):
-        return self._build_url(request, path, self.url,
-                               request.config.get('API_URL'))
-
     def get_html_url(self, request, path):
         return self._build_url(request,
                                path,
                                self.html_url,
                                request.config.get('WEB_SITE_URL'))
+
+    def check_permission(self, request, level, *args):
+        """
+        Checks whether the user has the requested level of access to
+        the model, raising PermissionDenied if not
+
+        :param request:     request object
+        :param level:       access level
+        :param field:       optional field to check permission
+        :param instance:    optional model instance to check permission
+        :raise:             PermissionDenied
+        """
+        resource = self.name
+        if args:
+            resource = '%s:%s' % (resource, ':'.join(args))
+        backend = request.cache.auth_backend
+        if not backend.has_permission(request, resource, level):
+            raise PermissionDenied
 
     def _do_sortby(self, request, query, entry, direction):
         raise NotImplementedError

@@ -138,7 +138,7 @@ class CMS(core.CMS):
                         try:
                             html = router.model.render_content(request, args)
                         except Http404:
-                            pass
+                            break
             finally:
                 request.cache.pop('html_main')
         return html

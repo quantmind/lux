@@ -54,7 +54,7 @@ class FormSet(object):
         base_fields = self.form_class.base_fields
         # Add the id field if not already available
         if 'id' not in base_fields:
-            base_fields['id'] = HiddenField(required=False)
+            base_fields['id'] = HiddenField('id', required=False)
         self.name = None
         self.creation_counter = FormSet.creation_counter
         self.initial_length = initial_length

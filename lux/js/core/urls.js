@@ -62,7 +62,7 @@ export function urlJoin () {
                 slash = true;
                 cbit = cbit.substring(0, cbit.length - 1);
             }
-            if (cbit) {
+            if (cbit || slash) {
                 if (url && url.substring(url.length - 1) !== '/')
                     url += '/';
                 url += cbit;
