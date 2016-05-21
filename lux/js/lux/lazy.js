@@ -2,7 +2,8 @@ import _ from '../ng';
 
 
 // @ngInject
-export default function ($controllerProvider, $provide, $compileProvider, $filterProvider) {
+export default function ($controllerProvider, $provide, $compileProvider,
+                         $filterProvider, $locationProvider) {
 
     var loading = false,
         loadingQueue = [],
@@ -14,6 +15,12 @@ export default function ($controllerProvider, $provide, $compileProvider, $filte
         };
 
     this.$get = getProvider;
+
+    $locationProvider.html5Mode({
+        enabled: true,
+        requireBase: false,
+        rewriteLinks: false
+    });
 
     // @ngInject
     function getProvider ($injector, $log, $compile, $timeout) {

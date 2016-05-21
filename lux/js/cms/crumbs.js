@@ -21,22 +21,23 @@ export default function ($location) {
 function crumbs (loc) {
     var steps = [],
         path = loc.path(),
-        last;
+        last = last = {
+            label: 'Home',
+            href: '/'
+        };
 
+    steps.push(last);
+    
     path.split('/').forEach(function (name) {
-        if (!name) {
-            last = {
-                label: 'Home',
-                href: '/'
-            };
-        } else {
+        if (name) {
             last = {
                 label: name.split(/[-_]+/).map(capitalize).join(' '),
                 href: urlJoin(last.href, name)
-            };
+            }
+            steps.push(last);
         }
-        steps.push(last);
     });
+    steps[steps.length-1].last = true;
 
     return steps;
 }
