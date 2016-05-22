@@ -6,7 +6,8 @@ from pulsar.utils.log import lazymethod
 
 
 class ModelContainer(dict):
-
+    """Mapping of model identifiers to :class:`.LuxModel` objects
+    """
     def __init__(self, app):
         super().__init__()
         self._app = app
@@ -26,6 +27,11 @@ class ModelContainer(dict):
             self[model.identifier] = model
 
         return model
+
+    def get(self, name, default=None):
+        if isinstance(name, LuxModel):
+            name = name.identifier
+        return super().get(name, default)
 
 
 class LuxModel:

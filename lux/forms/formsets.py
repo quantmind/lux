@@ -1,16 +1,10 @@
 from copy import copy
 from itertools import zip_longest
 
-from pulsar.apps.wsgi import html_factory
-
-from .fields import HiddenField
 from .errors import ValidationError, FormError
 
 
-HiddenInput = html_factory('input', type='hidden')
-
-
-class FormSet(object):
+class FormSet:
     '''A factory class for foreign keys model fields. Instances
     of this class are declared in the body of a :class:`Form`.
 
@@ -41,7 +35,6 @@ class FormSet(object):
 
     def __init__(self,
                  form_class,
-                 model=None,
                  related_name=None,
                  clean=None,
                  initial_length=3,
@@ -51,10 +44,6 @@ class FormSet(object):
         self.related_name = related_name
         self.clean = clean
         self.instances_from_related = instances_from_related
-        base_fields = self.form_class.base_fields
-        # Add the id field if not already available
-        if 'id' not in base_fields:
-            base_fields['id'] = HiddenField('id', required=False)
         self.name = None
         self.creation_counter = FormSet.creation_counter
         self.initial_length = initial_length
@@ -85,6 +74,7 @@ class FormSet(object):
         return self._forms
 
     def is_valid(self, exclude_missing=False):
+        return True
         self._unwind()
         return bool(self._errors)
 
@@ -124,7 +114,6 @@ class FormSet(object):
                     instances = list(instances)
                     num_forms = self.extra_length + len(instances)
                 num_forms = max(num_forms, self.initial_length)
-            self.num_forms = HiddenInput(name=nf, value=num_forms)
 
             for idx, instance in zip_longest(range(num_forms), instances):
                 f = self.get_form(self.prefix, idx, instance)

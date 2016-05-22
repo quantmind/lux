@@ -155,7 +155,7 @@ class Form(metaclass=FormType):
     model = None
 
     def __init__(self, request=None, data=None, files=None, initial=None,
-                 prefix=None, previous_state=None):
+                 prefix=None, previous_state=None, model=None):
         self.request = request
         self.is_bound = data is not None or files is not None
         if self.is_bound:
@@ -172,6 +172,7 @@ class Form(metaclass=FormType):
         else:
             self.initial = {}
         self.prefix = prefix or ''
+        self.model = model or self.model
         self.messages = {}
         self.changed = False
         self.form_sets = {}
