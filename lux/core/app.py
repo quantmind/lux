@@ -186,6 +186,12 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
     .. attribute:: config
 
         The configuration dictionary
+
+    .. attribute::  extensions
+
+        Ordered dictionary of :class:`.LuxExtension` loaded into the
+        application. Extensions are specified in the :setting:`EXTENSIONS`
+        setting parameter
     """
     cfg = None
     debug = False
@@ -314,15 +320,12 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
         self.meta.script = callable._script
         self.auth_backend = self
         self.threads = threading.local()
-        self.providers = {
-            'Model': ModelContainer,
-            'Http': Http
-        }
+        self.providers = {'Http': Http}
+        self.models = ModelContainer(self)
         self.extensions = OrderedDict()
         self.config = _build_config(self)
         self.channels = None
         self.fire('on_config')
-        self.models = self.providers['Model'](self)
 
     def __call__(self, environ, start_response):
         """The WSGI thing."""

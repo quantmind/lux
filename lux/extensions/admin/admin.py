@@ -142,9 +142,10 @@ class AdminModel(AdminRouter):
     icon = None
     '''An icon for this Admin section
     '''
-    def __init__(self):
+    def __init__(self, model=None, **kwargs):
+        self.model = model or self.model
         assert self.model
-        super().__init__(self.model)
+        super().__init__(self.model, **kwargs)
 
     def info(self, request):
         '''Information for admin navigation

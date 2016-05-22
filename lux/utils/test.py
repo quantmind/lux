@@ -438,7 +438,7 @@ class AppTestCase(unittest.TestCase, TestMixin):
     """Test class datastore dictionary"""
 
     @classmethod
-    def setUpClass(cls):
+    async def setUpClass(cls):
         # Create the application
         cls.dbs = {}
         cls.app = cls.create_test_application()
@@ -446,7 +446,8 @@ class AppTestCase(unittest.TestCase, TestMixin):
         if hasattr(cls.app, 'odm'):
             # Store the original odm for removing the new databases
             cls.odm = cls.app.odm
-            return cls.setupdb()
+            await cls.setupdb()
+        await as_coroutine(cls.beforeAll())
 
     @classmethod
     def tearDownClass(cls):
@@ -502,12 +503,13 @@ class AppTestCase(unittest.TestCase, TestMixin):
         fixtures = os.path.join(cls.app.meta.path, 'fixtures')
         if os.path.isdir(fixtures):
             odm = cls.app.odm()
-            with odm.begin() as session:
-                for filename in os.listdir(fixtures):
-                    if filename.endswith(('.json')):
-                        with open(os.path.join(fixtures, filename), 'r') as fp:
-                            data = _json.load(fp)
+            for filename in os.listdir(fixtures):
+                if not filename.endswith(('.json')):
+                    continue
 
+                with open(os.path.join(fixtures, filename), 'r') as fp:
+                    data = _json.load(fp)
+                with odm.begin() as session:
                     for model, entries in data.items():
                         create = getattr(cls,
                                          'db_create_%s' % model,
@@ -538,6 +540,10 @@ class AppTestCase(unittest.TestCase, TestMixin):
         if cls.datastore:
             app.config['DATASTORE'] = cls.datastore
         return TestApp(app)
+
+    @classmethod
+    def beforeAll(cls):
+        """Can be used to add logic before all tests"""
 
     def fetch_command(self, command, new=False):
         """Fetch a command."""

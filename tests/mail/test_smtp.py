@@ -21,8 +21,7 @@ class SmtpMockTest(test.AppTestCase):
     config_file = 'tests.mail'
 
     @classmethod
-    def setUpClass(cls):
-        super(SmtpMockTest, cls).setUpClass()
+    def beforeAll(cls):
         backend = cls.app.email_backend
         backend._open = cls._backend_open
 

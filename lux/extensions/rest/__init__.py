@@ -229,7 +229,7 @@ class Extension(MultiAuthBackend):
         if app.config['API_URL'] is None:
             return middleware
 
-        api = RestRoot(app.config['API_URL'])
+        self.api_router = RestRoot(app.config['API_URL'])
 
         # Add routers and models
         routes = OrderedDict()
@@ -245,7 +245,7 @@ class Extension(MultiAuthBackend):
                 # Register model
                 router.model = app.models.register(router.model)
             # Add router to API root-router
-            api.add_child(router)
+            self.api_router.add_child(router)
 
         # Create the rest-api handler
         app.api = app.providers['Api'](app)
@@ -263,7 +263,7 @@ class Extension(MultiAuthBackend):
         app.pagination = pagination()
         #
         # Add API root-router to middleware
-        middleware.append(api)
+        middleware.append(self.api_router)
         #
         # Add the preflight and token events
         events = ('on_preflight', 'on_token')
