@@ -57,6 +57,7 @@ meta = dict(
         'Operating System :: OS Independent',
         'Programming Language :: JavaScript',
         'Programming Language :: Python',
+        'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.5',
         'Topic :: Utilities'
     ]
