@@ -432,8 +432,11 @@ class BoundField(object):
             form._form_message(form._errors, self.name, err)
 
 
-def create_form(name, *fields, **params):
+def create_form(form_name, *fields, base=None, **params):
     '''Create a form class from fields
     '''
+    base = base or Form
+    if not isinstance(base, tuple):
+        base = (base,)
     params.update(((f.name, f) for f in fields))
-    return FormType(name, (Form,), params)
+    return FormType(form_name, base, params)

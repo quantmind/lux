@@ -261,7 +261,7 @@ class RestModel(LuxModel, RestClient, ColumnPermissionsMixin):
         self.url = url if url is not None else '%ss' % name
         self.api_name = '%s_url' % self.url.replace('/', '_')
         self.id_field = id_field or 'id'
-        self.repr_field = repr_field or 'id'
+        self.repr_field = repr_field or self.id_field
         self.html_url = html_url
         self._columns = columns
         self._exclude = set(exclude or ())

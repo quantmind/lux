@@ -80,3 +80,10 @@ class FieldTests(test.TestCase):
     def test_JsonField_fail(self):
         field = forms.JsonField()
         self.assertRaises(forms.ValidationError, field.clean, self)
+
+    def test_copy(self):
+        field = forms.CharField('test')
+        field2 = field.copy()
+        field2.attrs['disabled'] = True
+        self.assertFalse('disabled' in field.attrs)
+        self.assertTrue(field2.attrs['disabled'])

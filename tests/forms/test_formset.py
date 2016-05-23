@@ -30,7 +30,7 @@ class FormsetTests(test.TestCase):
         self.assertFalse(form.form_sets['users'].is_bound)
         self.assertEqual(form.form_sets['users'].related_form, form)
 
-    def test_bound_empty(self):
+    def __test_bound_empty(self):
         form = EmailUserForm(data={'body': 'Hello!'})
         self.assertTrue(form.is_bound)
         self.assertFalse(form.is_valid())

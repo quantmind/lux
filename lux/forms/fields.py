@@ -1,5 +1,6 @@
 from datetime import datetime, date
 from collections import Mapping
+from inspect import isclass
 
 import json
 import pytz
@@ -51,10 +52,10 @@ class Field:
 
         Template string for validation errors
 
-    .. attribute:: transform
+    .. attribute:: validator
 
-        function that transforms a field value before the validator and
-        cleaning functions are called
+        Optional function to validate a filed value which successfully passed
+        the clean method
 
     .. attribute:: attrs
 
@@ -128,6 +129,8 @@ class Field:
 
     def validate(self, value, bfield):
         if self.validator:
+            if isclass(self.validator):
+                self.validator = self.validator()
             value = self.validator(value, bfield)
         return value
 
@@ -157,38 +160,39 @@ class Field:
             attrs['validation_error'] = self.validation_error
         return attrs
 
+    def metadata(self):
+        return {
+            'name': self.name,
+            'displayName': self.label or nicename(self.name),
+            'type': self.attrs.get('type')
+        }
+
+    def copy(self):
+        return self.__copy__()
+
+    def __copy__(self):
+        cls = self.__class__
+        field = cls.__new__(cls)
+        field.__dict__ = self.__dict__.copy()
+        field.attrs = self.attrs.copy()
+        return field
+
 
 class CharField(Field):
-    '''A text :class:`Field` which introduces three
-    optional parameter (attribute):
+    """A text :class:`.Field`
 
     .. attribute:: maxlength
 
-        If provided, the text length will be validated accordingly.
+        The maximum text length
+
+        Default ``50``.
+
+    .. attribute:: minlength
+
+        If provided, the minimum text length will be validated accordingly.
 
         Default ``None``.
-
-    .. attribute:: char_transform
-
-        One of ``None``, ``u`` for upper and ``l`` for lower. If provided
-        converts text to upper or lower.
-
-        Default ``None``.
-
-    .. attribute:: toslug
-
-        If provided it will be used to create a slug text which can be used
-        as URI without the need to escape.
-        For example, if ``toslug`` is set to "_", than::
-
-            bla foo; bee
-
-        becomes::
-
-            bla_foo_bee
-
-        Default ``None``
-    '''
+    """
     attrs = {'type': 'text', 'maxlength': 50}
     default = ''
 

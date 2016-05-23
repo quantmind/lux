@@ -67,13 +67,9 @@ class CMS:
         '''
         for page in self.sitemap(request):
             route = Route(page['path'])
-            if isinstance(path, Route):
-                if path == route:
-                    return page
-            else:
-                matched = route.match(path)
-                if matched is not None and '__remaining__' not in matched:
-                    return page
+            matched = route.match(path)
+            if matched is not None and '__remaining__' not in matched:
+                return page
 
     def sitemap(self, request):
         return app_sitemap(self.app)

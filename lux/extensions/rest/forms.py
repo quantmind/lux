@@ -41,6 +41,13 @@ class RelationshipField(MultipleMixin, forms.Field):
         attrs['lux-remote'] = json.dumps(target)
         return attrs
 
+    def metadata(self):
+        """Override metadata method"""
+        meta = super().metadata()
+        meta['type'] = 'object'
+        meta['model'] = self.model
+        return meta
+
     def _clean(self, value, bfield):
         try:
             request = bfield.request

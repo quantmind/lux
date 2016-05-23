@@ -108,17 +108,18 @@ class Col(Fieldset):
 class Layout(Fieldset):
     type = 'form'
     form_class = None
+    default_element = Fieldset
     all = True
 
-    def __init__(self, form, *children, default_element=Fieldset, **attrs):
+    def __init__(self, form, *children, **attrs):
         super().__init__(*children, **attrs)
-        self.setup(form, default_element)
+        self.setup(form)
 
     def __call__(self, *args, **kwargs):
         form = self.form_class(*args, **kwargs)
         return SerialisedForm(self, form)
 
-    def setup(self, instance_type, default_element):
+    def setup(self, instance_type):
         self.form_class = instance_type
         missings = list(self.form_class.base_fields)
         children = self.children
@@ -126,7 +127,7 @@ class Layout(Fieldset):
         for field in serialised_fields(self.form_class, children, missings):
             self.children.append(field)
         if missings and self.all:
-            field = default_element(*missings)
+            field = self.default_element(*missings)
             field.setup(self.form_class, missings)
             self.children.append(field)
 
