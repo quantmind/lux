@@ -75,7 +75,7 @@ class WebFormRouter(HtmlRouter):
             action = action(request)
         if not action:
             action = request.full_path()
-        data = form.as_dict(action=action,
-                            enctype=self.form_enctype,
-                            method=method)
+        data = form(request).as_dict(action=action,
+                                     enctype=self.form_enctype,
+                                     method=method)
         return Json(data).http_response(request)

@@ -1,11 +1,16 @@
 import json
 
-from pulsar.utils.slugify import slugify
 from pulsar.apps.wsgi import Html
+from pulsar.utils.slugify import slugify
 
 
-def attributes(attrs):
-    return dict(((slugify(k), v) for k, v in attrs.items()))
+def attributes(form, attrs):
+    request = form.request if form else None
+    for k, v in attrs.items():
+        if hasattr(v, '__call__'):
+            v = v(request)
+        if v is not None:
+            yield k.replace('_', '-'), v
 
 
 def serialised_fields(form_class, fields, missings):
@@ -60,7 +65,7 @@ class Submit(FormElement):
         self.attrs['type'] = type or self.type
 
     def as_dict(self, form=None):
-        return attributes(self.attrs)
+        return dict(attributes(form, self.attrs))
 
 
 class Fieldset(FormElement):
@@ -82,7 +87,7 @@ class Fieldset(FormElement):
     __str__ = __repr__
 
     def as_dict(self, form=None):
-        field = attributes(self.attrs)
+        field = dict(attributes(form, self.attrs))
         if self.children:
             field['children'] = [as_serialised_field(c, form)
                                  for c in self.children]
