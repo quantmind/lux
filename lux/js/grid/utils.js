@@ -123,7 +123,7 @@ export function booleanColumn (column, grid) {
 
 export function objectColumn (column, grid) {
     // TODO: this requires fixing (add a url for example)
-    column.cellTemplate = grid.wrapCell('{{COL_FIELD.repr || COL_FIELD.id}}');
+    column.cellTemplate = grid.wrapCell('{{COL_FIELD.repr || COL_FIELD.id || COL_FIELD}}');
 }
 
 

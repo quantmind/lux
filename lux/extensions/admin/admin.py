@@ -167,6 +167,8 @@ class AdminModel(AdminRouter):
         options = dict(target=self.get_target(request))
         if self.permissions is not None:
             options['permissions'] = self.permissions
+        options['enableRowSelection'] = True
+        options['enableSelectAll'] = True
         return grid(options)
 
 

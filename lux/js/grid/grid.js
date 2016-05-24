@@ -2,18 +2,20 @@ import _ from '../ng';
 import {parseColumns, parseData} from './utils';
 import LuxComponent from '../lux/component'
 import pop from '../core/pop';
+// import gridMenu from '../menu';
 
 const cellClass = 'ui-grid-cell-contents';
 
 
 export default class Grid extends LuxComponent {
 
-    constructor (options, $lux, $compile, $window) {
+    constructor (options, $lux, $compile, $window, $injector) {
         super($lux);
         this.options = options;
         this.state = new State(this);
         this.$compile = $compile;
         this.$window = $window;
+        this.$injector = $injector;
     }
 
     refresh () {
@@ -26,10 +28,13 @@ export default class Grid extends LuxComponent {
         return `<div class="${cl}">${cell}</div>`;
     }
 
-    $onLoaded (cfg, uiGridConstants) {
+    get uiGridConstants () {
+        return this.$injector.get('uiGridConstants');
+    }
+
+    $onLoaded (cfg, directives) {
         this.$cfg = cfg;
-        this.uiGridConstants = uiGridConstants;
-        this.$directives = 'ui-grid-pagination ui-grid-selection ui-grid-auto-resize';
+        this.$directives = directives;
         this.$dataProvider = cfg.getDataProvider(this);
         build(this);
     }
@@ -41,13 +46,17 @@ export default class Grid extends LuxComponent {
     }
 
     $onMetadata (metadata) {
+        var options = this.options;
+
         if (metadata) {
-            var options = this.options;
              if(metadata['default-limit'])
                 options.paginationPageSize = pop(metadata, 'default-limit');
             this.metadata = metadata;
             options.columnDefs = parseColumns(this, metadata);
         }
+
+        // if (options.enableGridMenu)
+         //    gridMenu(this);
 
         this.$element.replaceWith(this.$compile(gridTpl(this))(this.$scope));
     }

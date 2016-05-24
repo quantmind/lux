@@ -122,7 +122,7 @@ ${field.directives}
 ng-model="model['${field.name}']"
 ng-required="field.required"
 ng-readonly="field.readonly"
-ng-disabled="field.disabled"
+ng-disabled="${field.disabled}"
 ng-minlength="field.minlength"
 ng-maxlength="field.maxlength"
 >`
@@ -137,7 +137,7 @@ ng-model="model['${field.name}']"
 ng-options="option.label for option in field.options track by option.value"
 ng-required="field.required"
 ng-readonly="field.readonly"
-ng-disabled="field.disabled"
+ng-disabled="${field.disabled}"
 >
 </select>`
 }
@@ -210,7 +210,7 @@ theme="bootstrap"
 ng-model="model['${field.name}']"
 ng-required="field.required"
 ng-readonly="field.readonly"
-ng-disabled="field.disabled"
+ng-disabled="${field.disabled}"
 >
 <ui-select-match placeholder="${field.placeholder}">{{$select.selected.label}}</ui-select-match>
 <ui-select-choices repeat="item.value as item in field.options | filter: $select.search">

@@ -73,40 +73,31 @@ class Google(OAuth2):
     fa = 'google'
 
     def on_html_document(self, request, doc):
-        self.google_context(doc)
-        self.add_analytics(doc)
+        self.add_analytics(request, doc)
         key = self.config.get('simple_key')
         if key:
             sensor = 'true' if self.config.get('map_sensor') else 'false'
             doc.jscontext['googlemaps'] = google_map_url % (key, sensor)
 
-    def google_context(self, doc):
-        google = doc.jscontext.get('google')
-        if google is None:
-            doc.jscontext['google'] = {}
-
-    def add_analytics(self, doc):
-        google = doc.jscontext['google']
-        analytics = self.config.get('analytics')
-        if analytics and 'id' in analytics:
-            google['analytics'] = analytics
-            if 'ga' not in analytics:
-                analytics['ga'] = 'ga'
-            txt = GOOGLE_ANALYTICS.substitute(analytics)
+    def add_analytics(self, request, doc):
+        id = self.config.get('analytics_id')
+        if id:
+            rnd = request.app.template_engine()
+            txt = rnd(GOOGLE_ANALYTICS, id=id, ga='ga')
             doc.head.append(txt)
 
 
-GOOGLE_ANALYTICS = Template('''\
+GOOGLE_ANALYTICS = '''\
 <script>
   (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
   (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
   m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-  })(window,document,'script','//www.google-analytics.com/analytics.js','$ga');
+  })(window,document,'script','//www.google-analytics.com/analytics.js','{{ ga }}');
 
-  $ga('create', '$id', 'auto');
-  $ga('send', 'pageview');
+  {{ ga }}('create', '{{ id }}', 'auto');
+  {{ ga }}('send', 'pageview');
 
-</script>''')
+</script>'''
 
 
 google_map_url = ('async!https://maps.googleapis.com/maps/api/js?'

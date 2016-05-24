@@ -27,7 +27,7 @@ __all__ = ['Content',
 
 class Extension(LuxExtension):
     _config = [
-        Parameter('CONTENT_MODELS', None,
+        Parameter('CONTENT_GROUPS', None,
                   'List of content model configurations'),
         Parameter('CONTENT_REPO', None,
                   'Directory where content repo is located'),

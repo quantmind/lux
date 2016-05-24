@@ -86,20 +86,29 @@ class CMS(core.CMS):
     def build(cls, app, ContentClass=None):
         cms = cls(app)
         ContentClass = ContentClass or CmsContent
-        models = app.config['CONTENT_MODELS']
-        if isinstance(models, list):
-            for cfg in models:
+        models = app.config['CONTENT_GROUPS']
+        cfgs = {}
+        if isinstance(models, dict):
+            for name, cfg in models.items():
                 if not isinstance(cfg, dict):
                     app.logger.error('content models should contain '
                                      'dictionaries')
                     continue
-                name = cfg.get('name')
                 if not name:
                     app.logger.error('content models should have a name')
                     continue
                 path = cfg.get('path', name)
-                content = ContentClass(name, path=path, meta=cfg.get('meta'))
+                if path == '*':
+                    path = ''
+                if path.startswith('/'):
+                    path = path[1:]
+                cfgs[path] = (name, cfg.get('meta'))
+
+            for path in reversed(sorted(cfgs)):
+                name, meta = cfgs[path]
+                content = ContentClass(name, path=path, meta=meta)
                 cms.add_router(content)
+
         app._handler.middleware.extend(cms.middleware())
         return cms
 

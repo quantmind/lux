@@ -12,8 +12,8 @@ Add :mod:`lux.extensions.oauth` to the :setting:`EXTENSIONS` list of your
 project and include the :setting:`OAUTH_PROVIDERS` dictionary::
 
     OAUTH_PROVIDERS = {
-        'google': ...,
-        'twitter': ...,
+        "google": ...,
+        "twitter": ...,
     }
 
 This extension adds open graph meta tags when the :setting:`DEFAULT_OG_TYPE`

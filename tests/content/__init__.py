@@ -13,18 +13,15 @@ GITHUB_HOOK_KEY = 'test12345'
 EXTENSIONS = ['lux.extensions.rest',
               'lux.extensions.content']
 
-CONTENT_MODELS = [
-    {
-        "name": "blog"
-    },
-    {
-        "name": "site",
+CONTENT_GROUPS = {
+    "blog": {},
+    "site": {
         "path": "",
         "meta": {
             "image": "/media/lux/see.jpg"
         }
     }
-]
+}
 
 
 def remove_repo():

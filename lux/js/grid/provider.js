@@ -11,19 +11,18 @@ export default function () {
         onInitCallbacks = [],
         columnProcessors = {},
         defaults = {
-            modules: [
-                'ui.grid',
-                'ui.grid.pagination',
-                'ui.grid.selection',
-                'ui.grid.autoResize',
-                'ui.grid.resizeColumns'
-            ],
+            //
+            // Auto Resize
+            enableAutoResize: true,
+            //
             // Filtering
             enableFiltering: true,
-            enableRowHeaderSelection: false,
-            useExternalPagination: true,
-            useExternalSorting: true,
             useExternalFiltering: true,
+            gridFilters: {},
+            //
+            // Sorting
+            useExternalSorting: true,
+            //
             // Scrollbar display: 0 - never, 1 - always, 2 - when needed
             enableHorizontalScrollbar: 0,
             enableVerticalScrollbar: 0,
@@ -34,13 +33,21 @@ export default function () {
             //
             // Grid pagination
             enablePagination: true,
+            useExternalPagination: true,
             paginationPageSizes: [25, 50, 100, 250],
             paginationPageSize: 25,
             //
-            gridFilters: {},
-            //
-            enableGridMenu: true,
+            // Grid Menu
+            enableGridMenu: false,
             gridMenuShowHideColumns: false,
+            //
+            // Column resizing
+            enableResizeColumn: true,
+            //
+            // Row Selection
+            enableSelect: true,
+            multiSelect: true,
+            // enableRowHeaderSelection: false,
             //
             // Lux specific options
             // request delay in ms
@@ -52,7 +59,9 @@ export default function () {
     _.extend(this, {
         defaults: defaults,
         registerDataProvider,
+        // processor for columns
         columnProcessor,
+        // callback when the grid initialise
         onInit,
         // Required for angular providers
         $get: get
@@ -86,12 +95,37 @@ export default function () {
     // @ngInject
     function get ($compile, $window, $lux, $injector, luxLazy) {
 
+        // Grid constructor
         function gridApi (options) {
             options = reversemerge(options || {}, gridApi.defaults);
-            var grid = new Grid(options, $lux, $compile, $window);
-            luxLazy.require(['angular-ui-grid'], options.modules, () => {
-                var uiGridConstants = $injector.get('uiGridConstants');
-                grid.$onLoaded(gridApi, uiGridConstants);
+            var modules = ['ui.grid'],
+                directives = [];
+
+            if (options.enableSelect) {
+                directives.push('ui-grid-selection');
+                modules.push('ui.grid.selection');
+            }
+
+            if (options.enablePagination) {
+                directives.push('ui-grid-pagination');
+                modules.push('ui.grid.pagination');
+            }
+            //
+            //  Grid auto resize
+            if (options.enableAutoResize) {
+                directives.push('ui-grid-auto-resize');
+                modules.push('ui.grid.autoResize');
+            }
+            //
+            // Column resizing
+            if (options.enableResizeColumn) {
+                modules.push('ui.grid.resizeColumns');
+                directives.push('ui-grid-resize-columns');
+            }
+
+            var grid = new Grid(options, $lux, $compile, $window, $injector);
+            luxLazy.require(['angular-ui-grid', 'angular-ui-bootstrap'], modules, () => {
+                grid.$onLoaded(gridApi, directives.join(' '));
             });
             return grid;
         }
