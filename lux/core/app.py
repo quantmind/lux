@@ -866,7 +866,9 @@ def _build_config(self):
             self.bind_events(extension)
             extension.setup(config)
 
+    params = configs.pop()
     _config_from_json(configs, config)
+    config.update(params)
     config['EXTENSIONS'] = tuple(apps)
     return config
 

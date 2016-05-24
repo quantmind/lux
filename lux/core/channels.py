@@ -4,6 +4,7 @@ from collections import namedtuple
 
 from pulsar import ProtocolError
 from pulsar.utils.string import to_string
+from pulsar.utils.slugify import slugify
 from pulsar.apps.data import create_store, PubSubClient
 from pulsar.apps.ds import redis_to_py_pattern
 from pulsar.utils.importer import module_attribute
@@ -22,7 +23,7 @@ class Channels(PubSubClient):
         self._pubsub = None
         prefix = self.app.config['PUBSUB_PREFIX']
         if prefix is None:
-            prefix = '%s-' % self.app.config['APP_NAME']
+            prefix = '%s-' % slugify(self.app.config['APP_NAME'])
         self._prefix = prefix.lower()
 
     def __repr__(self):
@@ -50,14 +51,17 @@ class Channels(PubSubClient):
             return
         channel_name = self._channel_name(channel_name)
         channel = self.channels.get(channel_name)
+        subscribe = False
         if channel is None:
             channel = Channel(self, channel_name)
             self.channels[channel.name] = channel
+            subscribe = True
         channel.register(event, callback)
-        pubsub.subscribe(channel.name)
-        pubsub.add_client(self)
-        channels = pubsub.channels()
-        return [to_string(c) for c in channels]
+        if subscribe:
+            pubsub.subscribe(channel.name)
+            pubsub.add_client(self)
+            channels = pubsub.channels()
+            return [to_string(c) for c in channels]
 
     def publish(self, channel, event, data=None, user=None):
         """Publish a new ``event` on a ``channel``
