@@ -22,14 +22,13 @@ from pulsar.apps.wsgi import wsgi_request
 
 from lux.core import Parameter
 
-from .auth import AuthBackend, auth_backend, MultiAuthBackend
+from .auth import AuthBackend, auth_backend, MultiAuthBackend, AppRequest
 from .models import RestModel, RestColumn, ModelMixin, is_rel_column
 from .client import ApiClient
 from .views.actions import (AuthenticationError, check_username, login,
                             logout, user_permissions)
 from .views.api import RestRoot, RestRouter, RestMixin
 from .views.auth import Authorization
-from .policy import has_permission
 from .pagination import Pagination, GithubPagination
 from .forms import RelationshipField, UniqueField
 from .user import (MessageMixin, UserMixin, SessionMixin, PasswordMixin,
@@ -65,7 +64,9 @@ __all__ = ['RestModel',
            'login',
            'logout',
            'user_permissions',
-           'check_username']
+           'check_username',
+           #
+           'AppRequest']
 
 
 def website_url(request, location=None):
@@ -213,6 +214,7 @@ class Extension(MultiAuthBackend):
 
         app.auth_backend = self
         app.providers['Api'] = ApiClient
+        app.add_events(('on_before_commit', 'on_after_commit'))
 
     def sorted_config(self):
         cfg = self.meta.config.copy()
@@ -290,9 +292,3 @@ class Extension(MultiAuthBackend):
 
     def __call__(self, environ, start_response):
         return self.request(wsgi_request(environ))
-
-
-class SimpleBackend(AuthBackend):
-
-    def has_permission(self, request, resource, action):
-        return has_permission(request, {}, resource, action)

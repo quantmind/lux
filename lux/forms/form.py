@@ -6,8 +6,6 @@ from .errors import ValidationError, FormError
 from .fields import Field
 from .formsets import FormSet
 
-FORMKEY = 'm__form'
-
 
 class FieldList(list):
     '''A list of :class:`Field` and :class:`FieldList`.
@@ -247,13 +245,9 @@ class Form(metaclass=FormType):
                                       self.previous_state,
                                       self.cleaned_data)
 
-    def add_message(self, message):
-        '''Add a message to the form'''
-        self._form_message(self.messages, FORMKEY, message)
-
-    def add_error_message(self, message):
+    def add_error_message(self, message, field=None):
         '''Add an error message to the form'''
-        self._form_message(self.errors, FORMKEY, message)
+        self._form_message(self.errors, field or '', message)
 
     def tojson(self):
         '''Return a json-serialisable dictionary of messages for form fields.
@@ -275,28 +269,19 @@ class Form(metaclass=FormType):
                     msg['field'] = field.html_name
                 messages.append(msg)
             return data
-        else:
-            messages = []
-            for name, msg in self.messages.items():
-                msg = {'message': msg}
-                field = self.dfields.get(name)
-                if field:
-                    msg['field'] = field.html_name
-                messages.append(msg)
-            return messages
 
     def message(self):
         messages = self.tojson()
         msg = ''
-        if isinstance(messages, dict):
+        if messages:
             messages = messages['errors']
             msg = 'ERROR: '
-        for idx, message in enumerate(messages):
-            if idx:
-                msg += ', '
-            if 'field' in message:
-                msg += '%s: ' % message['field']
-            msg += message['message']
+            for idx, message in enumerate(messages):
+                if idx:
+                    msg += ', '
+                if 'field' in message:
+                    msg += '%s: ' % message['field']
+                msg += message['message']
         return msg
 
     # INTERNALS
@@ -429,7 +414,7 @@ class BoundField(object):
                     or value not in NOTHING:
                 self.form._cleaned_data[self.name] = value
         except ValidationError as err:
-            form._form_message(form._errors, self.name, err)
+            form.add_error_message(err, self.name)
 
 
 def create_form(form_name, *fields, base=None, **params):

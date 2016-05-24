@@ -1,6 +1,8 @@
 from functools import partial
 
 from pulsar.utils.importer import module_attribute
+from pulsar.utils.structures import AttributeDictionary
+
 from lux.core import LuxExtension
 from lux.forms import ValidationError
 
@@ -218,3 +220,23 @@ class AuthBackend(AuthBase,
         '''Get a dictionary of permissions for the given resource
         '''
         pass
+
+
+class SimpleBackend(AuthBackend):
+
+    def has_permission(self, request, resource, action):
+        return True
+
+
+class AppRequest:
+
+    def __init__(self, app, **kw):
+        self.cache = AttributeDictionary(app=app, **kw)
+        self.cache.auth_backend = SimpleBackend()
+
+    @property
+    def app(self):
+        return self.cache.app
+
+    def __getattr__(self, name):
+        return getattr(self.app, name)

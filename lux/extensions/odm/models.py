@@ -17,6 +17,7 @@ from pulsar.utils.log import lazymethod
 
 from odm.utils import get_columns
 
+from lux.core import app_attribute
 from lux.extensions import rest
 
 
@@ -39,6 +40,10 @@ is_rel_column = rest.is_rel_column
 class RestModel(rest.RestModel):
     '''A rest model based on SqlAlchemy ORM
     '''
+    def register(self, app):
+        super().register(app)
+        odm_models(app)[self.name] = self
+
     def rest_columns(self):
         self.columns()  # make sure columns are loaded
         return self._rest_columns
@@ -135,7 +140,7 @@ class RestModel(rest.RestModel):
             setattr(instance, name, value)
 
     def tojson(self, request, obj, exclude=None, in_list=None,
-               exclude_related=None, **kw):
+               exclude_related=None, safe=False, **kw):
         '''Override the method from the base class.
 
         It uses sqlalchemy model information about columns
@@ -145,7 +150,7 @@ class RestModel(rest.RestModel):
             with odm.begin() as session:
                 session.add(obj)
                 return self.tojson(request, obj, exclude=exclude,
-                                   in_list=in_list,
+                                   in_list=in_list, safe=safe,
                                    exclude_related=exclude_related, **kw)
 
         exclude = set(exclude or ())
@@ -187,9 +192,11 @@ class RestModel(rest.RestModel):
                     data = str(data)
                 except Exception:
                     continue
-            except AttributeError:
-                request.logger.exception('Invalid attribute %s in model %s',
-                                         name, self.model)
+            except Exception:
+                if not safe:
+                    request.logger.exception(
+                        'Exception while converting attribute %s in model '
+                        '%s to JSON', name, self)
                 continue
             if data is not None:
                 if isinstance(data, list):
@@ -396,6 +403,11 @@ def column_info(name, col):
             'type': type}
 
     return info
+
+
+@app_attribute
+def odm_models(app):
+    return {}
 
 
 _types = {int: 'integer',

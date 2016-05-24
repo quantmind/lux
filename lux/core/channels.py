@@ -1,9 +1,15 @@
 import json
+import re
+from collections import namedtuple
 
 from pulsar import ProtocolError
 from pulsar.utils.string import to_string
 from pulsar.apps.data import create_store, PubSubClient
+from pulsar.apps.ds import redis_to_py_pattern
 from pulsar.utils.importer import module_attribute
+
+
+regex_callbacks = namedtuple('regex_callbacks', 'regex callbacks')
 
 
 class Channels(PubSubClient):
@@ -28,13 +34,13 @@ class Channels(PubSubClient):
     def __contains__(self, name):
         return name in self.channels
 
-    def register(self, channel, event, callback):
-        """Register a callback to channel event
+    def register(self, channel_name, event, callback):
+        """Register a callback to channel ``event``
 
         A prefix will be added to the channel name if not already available or
         the prefix is an empty string
 
-        :param channel: channel name
+        :param channel_name: channel name
         :param event: event name
         :param callback: callback to execute when event on channel occurs
         :return: the list of channels subscribed
@@ -42,18 +48,25 @@ class Channels(PubSubClient):
         pubsub = self._get()
         if not pubsub:
             return
-        channel = self._channel_name(channel)
-        events = self.channels.get(channel)
-        if events is None:
-            events = Events()
-            self.channels[channel] = events
-        events.add(event, callback)
-        pubsub.subscribe(channel)
+        channel_name = self._channel_name(channel_name)
+        channel = self.channels.get(channel_name)
+        if channel is None:
+            channel = Channel(self, channel_name)
+            self.channels[channel.name] = channel
+        channel.register(event, callback)
+        pubsub.subscribe(channel.name)
         pubsub.add_client(self)
         channels = pubsub.channels()
         return [to_string(c) for c in channels]
 
     def publish(self, channel, event, data=None, user=None):
+        """Publish a new ``event` on a ``channel``
+
+        :param channel: channel name
+        :param event: event name
+        :param data: optional payload to include in the event
+        :param user: optional user to include in the event
+        """
         pubsub = self._get()
         if not pubsub:
             return
@@ -63,6 +76,11 @@ class Channels(PubSubClient):
 
     # INTERNALS
     def green_middleware(self, environ, start_response):
+        """Add a middleeware when running with greenlets.
+
+        This middleware register the app.reload callback to
+        the server.reload event
+        """
         app = self.app
         self.register('server', 'reload', app.reload)
 
@@ -73,29 +91,19 @@ class Channels(PubSubClient):
             msg['data']['user'] = user
         return msg
 
-    def __call__(self, channel, message):
-        events = self.channels.get(channel)
-        if events:
-            event = message.pop('event', None)
-            if event and event in events:
-                data = message.get('data')
-                for callback in events[event]:
-                    callback(channel, event, data)
-                return
-        self.app.logger.warning(
-                'Got message on %s.%s with no handler', channel, event)
+    def __call__(self, channel_name, message):
+        channel = self.channels.get(channel_name)
+        if channel:
+            channel(message)
+        else:
+            self.app.logger.warning(
+                'Got message on channel "%s" with no handlers', channel_name)
 
     def _channel_name(self, channel):
         if not self._prefix or channel.startswith(self._prefix):
             return channel
         else:
             return ('%s%s' % (self._prefix, channel)).lower()
-
-    def _prefix(self):
-        prefix = self.app.config['PUBSUB_PREFIX']
-        if prefix is None:
-            prefix = '%s-' % self.app.config['APP_NAME']
-        return prefix
 
     def _get(self):
         """Get a pub-sub handler for a given key
@@ -120,18 +128,58 @@ class Channels(PubSubClient):
         return pubsub
 
 
-class Events(dict):
+class Channel:
+    """Lux Channel
 
-    def add(self, event, callback):
-        callbacks = self.get(event)
-        if not callbacks:
-            callbacks = []
-            self[event] = callbacks
+    .. attribute:: channels
 
-        if callback not in callbacks:
-            callbacks.append(callback)
+        the channels container
 
-        return callbacks
+    .. attribute:: name
+
+        channel name
+
+    .. attribute:: callbacks
+
+        dictionary mapping events to callbacks
+    """
+    def __init__(self, channels, name):
+        self.channels = channels
+        self.name = name
+        self.callbacks = {}
+
+    @property
+    def app(self):
+        """:class:`.Application` this channel belong to
+        """
+        return self.channels.app
+
+    def __repr__(self):
+        return repr(self.callbacks)
+
+    def __call__(self, message):
+        event = message.pop('event', '')
+        data = message.get('data')
+        for regex, callbacks in self.callbacks.values():
+            match = regex.match(event)
+            if match:
+                match = match.group()
+                for callback in callbacks:
+                    callback(self, match, data)
+
+    def register(self, event, callback):
+        """Register a ``callback`` for ``event``
+        """
+        regex = redis_to_py_pattern(event)
+        entry = self.callbacks.get(regex)
+        if not entry:
+            entry = regex_callbacks(re.compile(regex), [])
+            self.callbacks[regex] = entry
+
+        if callback not in entry.callbacks:
+            entry.callbacks.append(callback)
+
+        return entry
 
 
 class Json:

@@ -183,6 +183,12 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
     :func:`.execute_from_config` or :func:`.execute_app` are
     used instead.
 
+    .. attribute:: channels
+
+        The :class:`.Channels` manager of this application. This attribute
+        can be used to register to channels events or publish events
+        on channels. For more information check the channels documentation
+
     .. attribute:: config
 
         The configuration dictionary
@@ -194,6 +200,7 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
         setting parameter
     """
     cfg = None
+    channels = None
     debug = False
     logger = None
     admin = None
@@ -324,7 +331,6 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
         self.models = ModelContainer(self)
         self.extensions = OrderedDict()
         self.config = _build_config(self)
-        self.channels = None
         self.fire('on_config')
 
     def __call__(self, environ, start_response):

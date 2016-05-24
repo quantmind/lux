@@ -50,7 +50,7 @@ from .fields import (Field, CharField, TextField, BooleanField, JsonField,
                      PasswordField, UrlField, SlugField)
 from .errors import FormError, FieldError, ValidationError
 from .formsets import FormSet
-from .form import FormType, Form, BoundField, FieldList, create_form, FORMKEY
+from .form import FormType, Form, BoundField, FieldList, create_form
 from .serialise import Fieldset, Submit, Layout, Row, Col, as_serialised_field
 from .options import Options, OptionGroup
 from .views import WebFormRouter, get_form, get_form_layout, get_form_class
@@ -83,7 +83,7 @@ __all__ = [
     'BoundField',
     'FieldList',
     'create_form',
-    'FORMKEY',
+    #
     'Fieldset',
     'Submit',
     'Layout',

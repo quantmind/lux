@@ -87,10 +87,8 @@ class LuxModel:
         """
         raise NotImplementedError
 
-    def tojson(self, request, instance, in_list=False,
-               exclude=None, decoder=None):
-        '''Convert a model ``object`` into a JSON serializable
-        dictionary
+    def tojson(self, request, instance, **kw):
+        '''Convert a model ``object`` into a JSON serializable dictionary
         '''
         raise NotImplementedError
 

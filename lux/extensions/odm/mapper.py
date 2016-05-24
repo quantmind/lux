@@ -47,4 +47,4 @@ class LuxSession(odm.OdmSession):
     def signal(cls, session, changes, event):
         '''Signal changes on session
         '''
-        session.app.fire(event, session, changes)
+        session.app.fire(event, session, changes, safe=True)

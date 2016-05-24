@@ -230,3 +230,10 @@ class FormTests(test.TestCase):
         self.assertFalse(form.is_valid())
         self.assertValidationError(form.tojson(), 'name',
                                    'too long')
+
+    def test_form_message(self):
+        form = PageForm(data={})
+        self.assertFalse(form.exclude_missing)
+        self.assertFalse(form.is_valid())
+        msg = form.message()
+        self.assertTrue(msg.startswith('ERROR: '))
