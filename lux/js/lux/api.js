@@ -21,6 +21,7 @@ export default function ($location, $window, $http, $log, $timeout, luxMessage, 
         token = _.element(doc.querySelector('meta[name=csrf-token]')).attr('content'),
         user = _.element(doc.querySelector('meta[name=user-token]')).attr('content');
 
+    if (_.isString(context)) context = decodeJWToken(context);
     if (!_.isObject(context)) context = {};
 
     if (name && token) {
@@ -32,13 +33,14 @@ export default function ($location, $window, $http, $log, $timeout, luxMessage, 
         context.user = decodeJWToken(user)
     }
 
-    return new Lux($location, $http, $log, $timeout, context, luxMessage, luxLazy);
+    return new Lux($window, $location, $http, $log, $timeout, context, luxMessage, luxLazy);
 }
 
 
 class Lux {
 
-    constructor ($location, $http, $log, $timeout, context, luxMessage, luxLazy) {
+    constructor ($window, $location, $http, $log, $timeout, context, luxMessage, luxLazy) {
+        this.$window = $window;
         this.$location = $location;
         this.$http = $http;
         this.$log = $log;
@@ -95,12 +97,28 @@ class Lux {
         }
 
         action.path = urlJoin(path, action.path);
-        
+
         return new ApiClass(this, action);
     }
 
     id (prefix) {
         return (prefix || 'l') + (++luxId);
+    }
+
+    logout (e, url) {
+        e.preventDefault();
+        var api = this.api(url),
+            self = this;
+
+        api.post().then(function () {
+            if (self.context.POST_LOGOUT_URL) {
+                self.$window.location.href = self.context.POST_LOGOUT_URL;
+            } else {
+                self.$window.location.reload();
+            }
+        }, function () {
+            self.messages.error('Error while logging out');
+        });
     }
 }
 

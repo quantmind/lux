@@ -103,10 +103,6 @@ class Extension(MultiAuthBackend):
                   '',
                   'A string or bytes used for encrypting data. Must be unique '
                   'to the application and long and random enough'),
-        Parameter('SECRET_KEY',
-                  'secret-key',
-                  'A string or bytes used for encrypting data. Must be unique '
-                  'to the application and long and random enough'),
         Parameter('CHECK_USERNAME', 'lux.extensions.rest:check_username',
                   'Dotted path to username validation function'),
         Parameter('PERMISSION_LEVELS', {'read': 10,

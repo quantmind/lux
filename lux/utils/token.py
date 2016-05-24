@@ -16,6 +16,10 @@ from datetime import date
 encode = jwt.encode
 
 
+def encode_json(payload, secret, **kw):
+    return encode(payload, secret, **kw).decode('utf-8')
+
+
 def create_token(request, *args, expiry=None, **kwargs):
     token = dict(*args, **kwargs)
 

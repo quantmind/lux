@@ -11,7 +11,6 @@ from copy import copy
 from inspect import isclass, getfile
 from collections import OrderedDict
 from importlib import import_module
-from base64 import b64encode
 
 import pulsar
 from pulsar import ImproperlyConfigured, HttpException
@@ -27,6 +26,7 @@ from pulsar.utils.string import to_bytes
 from lux import __version__
 from lux.utils.files import skipfile
 from lux.utils.data import multi_pop
+from lux.utils.token import encode_json
 
 from .commands import ConsoleParser, CommandError, ConfigError, service_parser
 from .extension import LuxExtension, Parameter, EventMixin, app_attribute
@@ -239,6 +239,12 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
                   'Use minified media files. All media files will replace '
                   'their extensions with .min.ext. For example, javascript '
                   'links *.js become *.min.js', True),
+        #
+        Parameter('SECRET_KEY',
+                  'secret-key',
+                  'A string or bytes used for encrypting data. Must be unique '
+                  'to the application and long and random enough'),
+        #
         # HTML base parameters
         Parameter('HTML_TITLE', 'Lux',
                   'Default HTML Title'),
@@ -667,8 +673,7 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
                     0, 'window.minifiedMedia = false;')
 
             if doc.jscontext:
-                jscontext = json.dumps(doc.jscontext)
-                encoded = b64encode(jscontext.encode('utf-8')).decode('utf-8')
+                encoded = encode_json(doc.jscontext, self.config['SECRET_KEY'])
                 doc.head.embedded_js.insert(
                     0, 'var lux = "%s";\n' % encoded)
             body = self.cms.render(page, context)

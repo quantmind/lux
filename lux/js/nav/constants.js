@@ -21,7 +21,7 @@ ng-style="navbar.style" role="navigation">
                 <span class="icon-bar"></span>
             </button>
             <ul ng-if="navbar.itemsLeft" class="nav navbar-nav navbar-left">
-                <li ng-repeat="link in navbar.itemsLeft" ng-class="{active:links.activeLink(link)}" navbar-link></li>
+                <li ng-repeat="link in navbar.itemsLeft" ng-class="{active:links.activeLink(link)}" lux-link></li>
             </ul>
             <a ng-if="navbar.brandImage" href="{{navbar.url}}" class="navbar-brand" target="{{navbar.target}}">
                 <img ng-src="{{navbar.brandImage}}" alt="{{navbar.brand || 'brand'}}">
@@ -37,10 +37,10 @@ ng-style="navbar.style" role="navigation">
              collapsing="navbar.collapsing()"
              collapsed="navbar.collapsed()">
             <ul ng-if="navbar.items" class="nav navbar-nav navbar-left">
-                <li ng-repeat="link in navbar.items" ng-class="{active:links.activeLink(link)}" navbar-link></li>
+                <li ng-repeat="link in navbar.items" ng-class="{active:links.activeLink(link)}" lux-link></li>
             </ul>
             <ul ng-if="navbar.itemsRight" class="nav navbar-nav navbar-right">
-                <li ng-repeat="link in navbar.itemsRight" ng-class="{active:links.activeLink(link)}" navbar-link></li>
+                <li ng-repeat="link in navbar.itemsRight" ng-class="{active:links.activeLink(link)}" lux-link></li>
             </ul>
         </nav>
     </div>
