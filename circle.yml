@@ -12,4 +12,4 @@ dependencies:
 test:
   override:
     - npm test
-    - mv coverage $CIRCLE_ARTIFACTS/coverage
+    - mv coverage/C* $CIRCLE_ARTIFACTS/coverage

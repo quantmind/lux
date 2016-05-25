@@ -6,9 +6,9 @@
 |
 
 
-:Badges: |license|  |pyversions| |status| |downloads|
+:Badges: |license|  |pyversions| |status|
 :Python CI: |master-build| |coverage-master|
-:Javascript CI: |jsci| |jsdep| |jsdevdep|
+:Javascript CI: |jsci| |jsdep| |jsdevdep| jscoverage_
 :Python dev CI: |dev-build| |coverage-dev|
 :Documentation: http://quantmind.github.io/lux/
 :Downloads: https://pypi.python.org/pypi/lux
@@ -39,6 +39,7 @@
   :target: https://david-dm.org/quantmind/lux#info=devDependencies
 .. |jsci| image:: https://circleci.com/gh/quantmind/lux.svg?style=svg
     :target: https://circleci.com/gh/quantmind/lux
+.. _jscoverage: https://circleci.com/api/v1/project/quantmind/lux/latest/artifacts/0/$CIRCLE_ARTIFACTS/coverage/index.html?branch=master&filter=successful
 
 Lux is a library for developing asynchronous web applications with python 3.5 or above.
 It uses pulsar_ asynchronous framework built on top of python asyncio_ module.
