@@ -13,40 +13,45 @@ export default function ($luxProvider) {
         .columnProcessor('string', utils.stringColumn)
         .columnProcessor('url', utils.urlColumn)
         .columnProcessor('object', utils.objectColumn)
-        .onInit(utils.paginationEvents);
-    
-    grid.defaults.gridMenu = {
-        'create': {
-            title: 'Add',
-            icon: 'fa fa-plus',
-            permissionType: 'create'
-        },
-        'delete': {
-            title: 'Delete',
-            icon: 'fa fa-trash',
-            permissionType: 'delete',
-            template: deleteTpl
-        },
-        'columnsVisibility': {
-            title: 'Columns visibility',
-            icon: 'fa fa-eye'
-        }
-    };
+        .component({
+            require: function (options, r) {
+                if (options.enableSelect) {
+                    r.modules.push('ui.grid.selection');
+                    r.directives.push('ui-grid-selection');
+                }
+            }
+        })
+        //
+        // Pagination component
+        .component({
+            require: function (options, r) {
+                if (options.enablePagination) {
+                    r.modules.push('ui.grid.pagination');
+                    r.directives.push('ui-grid-pagination');
+                }
+            },
+            onMetadata : function (grid) {
+                if(grid.metadata['default-limit'])
+                    grid.options.paginationPageSize = grid.metadata['default-limit'];
+            },
+            onInit: utils.paginationEvents
+        })
+        .component({
+            require: function (options, r) {
+                if (options.enableAutoResize) {
+                    r.modules.push('ui.grid.autoResize');
+                    r.directives.push('ui-grid-auto-resize');
+                }
+            }
+        })
+        .component({
+            require: function (options, r) {
+                if (options.enableResizeColumn) {
+                    r.modules.push('ui.grid.resizeColumns');
+                    r.directives.push('ui-grid-resize-columns');
+                }
+            }
+        });
+
 }
 
-
-const deleteTpl = `<div class="modal-header">
-    <button type="button" class="close" aria-label="Close" ng-click="$dismiss()"><span aria-hidden="true">&times;</span></button>
-    <h4 class="modal-title"><i class="fa fa-trash"></i> Delete {{stateName}}</h4>
-</div>
-<div class="modal-body">
-    <p class="modal-info">{{infoMessage}}</p>
-    <ul class="modal-items">
-        <li ng-repeat="item in selected">{{item[repr_field]}}</li>
-    </ul>
-    <p class="text-danger cannot-undo">{{dangerMessage}}</p>
-</div>
-<div class="modal-footer">
-    <button type="button" class="btn btn-primary" ng-click="$close()">Yes</button>
-    <button type="button" class="btn btn-default" ng-click="$dismiss()">No</button>
-</div>`;

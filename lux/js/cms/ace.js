@@ -35,7 +35,7 @@ export default function ($lux) {
                 tabSize: 4
             }, $lux.context.ace, scope.$eval(attrs.luxAce));
 
-        $lux.lazy.require(['ace/ace'], startAce);
+        $lux.require(['ace/ace'], startAce);
 
         // Bind to the Model
         if (ngModel) {

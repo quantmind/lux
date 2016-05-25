@@ -1,8 +1,6 @@
 import _ from '../ng';
 import {parseColumns, parseData} from './utils';
-import LuxComponent from '../lux/component'
-import pop from '../core/pop';
-// import gridMenu from '../menu';
+import LuxComponent from '../lux/component';
 
 const cellClass = 'ui-grid-cell-contents';
 
@@ -44,17 +42,11 @@ export default class Grid extends LuxComponent {
 
     $onMetadata (metadata) {
         var options = this.options;
-
-        if (metadata) {
-             if(metadata['default-limit'])
-                options.paginationPageSize = pop(metadata, 'default-limit');
-            this.metadata = metadata;
-            options.columnDefs = parseColumns(this, metadata);
-        }
-
-        // if (options.enableGridMenu)
-         //    gridMenu(this);
-
+        this.metadata = _.extend({
+            permissions: {}
+        }, metadata);
+        if (this.metadata.columns) options.columnDefs = parseColumns(this);
+        this.$provider.onMetadata(this);
         this.$element.replaceWith(this.$compile(gridTpl(this))(this.$scope));
     }
 

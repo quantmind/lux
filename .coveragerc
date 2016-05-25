@@ -1,7 +1,11 @@
 [run]
 concurrency = greenlet
 source = lux
-omit = */utils/sphinxtogithub.py
+omit =
+    */__init__.py
+    */utils/sphinxtogithub.py
+    */utils/version.py
+    */utils/crypt/arc4.py
 
 [report]
 # Regexes for lines to exclude from consideration

@@ -14,6 +14,7 @@ export default function ($controllerProvider, $provide, $compileProvider, $filte
             $controllerProvider: $controllerProvider,
             $compileProvider: $compileProvider,
             $filterProvider: $filterProvider,
+            $locationProvider: $locationProvider,
             $provide: $provide, // other things (constant, decorator, provider, factory, service)
             $injector: $injector
         };
@@ -24,7 +25,7 @@ export default function ($controllerProvider, $provide, $compileProvider, $filte
         rewriteLinks: false
     });
 
-    _.extend(this, providers, {
+    _.extend(this, {
         // Required for angular providers
         plugins: plugins,
         $get: lux
@@ -58,7 +59,7 @@ export default function ($controllerProvider, $provide, $compileProvider, $filte
 
 
     function _require(libNames, modules, onLoad) {
-        var provider = this;
+        var $lux = this;
 
         if (arguments.length === 2) {
             onLoad = modules;
@@ -73,7 +74,7 @@ export default function ($controllerProvider, $provide, $compileProvider, $filte
 
         if (!_.isArray(libNames)) libNames = [libNames];
 
-        provider.$require(libNames, execute);
+        $lux.$require(libNames, execute);
 
         function execute() {
 
@@ -81,14 +82,14 @@ export default function ($controllerProvider, $provide, $compileProvider, $filte
 
             onLoad.apply(null, arguments);
 
-            provider.$timeout(consumeQueue);
+            $lux.$timeout(consumeQueue);
         }
 
         function consumeQueue() {
             var q = loadingQueue.splice(0, 1);
             if (q.length) {
                 q = q[0];
-                provider.require(q.libNames, q.modules, q.onLoad);
+                $lux.require(q.libNames, q.modules, q.onLoad);
             }
         }
 
@@ -110,17 +111,16 @@ export default function ($controllerProvider, $provide, $compileProvider, $filte
 
             function _invokeQueue(queue) {
                 _.forEach(queue, (args) => {
-                    var provider = providers[args[0]],
-                        method = args[1];
+                    var provider = providers[args[0]] || $injector.get(args[0]);
                     if (provider)
-                        provider[method].apply(provider, args[2]);
+                        provider[args[1]].apply(provider, args[2]);
                     else
-                        return provider.$log.error("unsupported provider " + args[0]);
+                        return $lux.$log.error("unsupported provider " + args[0]);
                 });
             }
 
             _.forEach(runBlocks, (fn) => {
-                provider.$injector.invoke(fn);
+                $lux.$injector.invoke(fn);
             });
         }
     }

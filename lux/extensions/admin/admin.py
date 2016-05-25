@@ -164,11 +164,14 @@ class AdminModel(AdminRouter):
         return model.get_target(request, **kwr)
 
     def get_html(self, request):
-        options = dict(target=self.get_target(request))
+        options = dict(
+            target=self.get_target(request),
+            enableRowSelection=True,
+            enableSelectAll=True,
+            enableGridMenu=True
+        )
         if self.permissions is not None:
             options['permissions'] = self.permissions
-        options['enableRowSelection'] = True
-        options['enableSelectAll'] = True
         return grid(options)
 
 

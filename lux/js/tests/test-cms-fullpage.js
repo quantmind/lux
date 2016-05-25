@@ -35,4 +35,12 @@ describe('lux-fullpage directive', function() {
         expect(height).toBe(wheight - 80 + 'px');
 
     });
+
+    it('Test lux-year directive', () => {
+
+        var element = compile(`<span lux-year></span>`);
+        
+        expect(+element.html() >= 2016).toBe(true);
+
+    });
 });

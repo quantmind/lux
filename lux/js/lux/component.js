@@ -15,6 +15,10 @@ export default class LuxComponent {
     get $injector () {
         return this.$lux.$injector;
     }
+    
+    get $window () {
+        return this.$lux.$window;
+    }
 
     addMessages (messages, level) {
         if (!level) level = 'info';

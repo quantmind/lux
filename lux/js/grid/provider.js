@@ -8,8 +8,8 @@ import reversemerge from '../core/reversemerge';
 export default function ($luxProvider) {
 
     const
-        providerMap = {},
-        onInitCallbacks = [],
+        dataProviderMap = {},
+        components = [],
         columnProcessors = {},
         defaults = {
             //
@@ -38,8 +38,6 @@ export default function ($luxProvider) {
             paginationPageSizes: [25, 50, 100, 250],
             paginationPageSize: 25,
             //
-            // Grid Menu
-            enableGridMenu: false,
             gridMenuShowHideColumns: false,
             //
             // Column resizing
@@ -63,34 +61,50 @@ export default function ($luxProvider) {
         dataProvider,
         // processor for columns
         columnProcessor,
-        // callback when the grid initialise
-        onInit
+        // add or retrieve a component
+        component,
+        //
+        onInit,
+        //
+        onMetadata
     });
 
     $luxProvider.plugins.grid = $luxProvider.grid;
 
+    var defaultComponent = {
+        require: function () {},
+        onInit: function () {},
+        onMetadata: function () {}
+    };
+
     function dataProvider (type, dataProvider) {
         if (arguments.length === 2) {
-            providerMap[type] = dataProvider;
+            dataProviderMap[type] = dataProvider;
             if (!defaultProvider) defaultProvider = type;
             return this;
         } else {
             if (!type) type = defaultProvider;
-            var provider = providerMap[type];
+            var provider = dataProviderMap[type];
             if (provider) return provider;
             throw Error('No data provider found');
         }
     }
 
+    function component(component) {
+        components.push(_.extend({}, defaultComponent, component));
+        return this;
+    }
+
     function onInit (grid) {
-        if (grid instanceof Grid) {
-            _.forEach(onInitCallbacks, (callback) => {
-                callback(grid);
-            });
-        } else {
-            onInitCallbacks.push(grid);
-            return this;
-        }
+        _.forEach(components, (component) => {
+            component.onInit(grid);
+        });
+    }
+
+    function onMetadata (grid) {
+        _.forEach(components, (component) => {
+            component.onMetadata(grid);
+        });
     }
 
     function columnProcessor(type, hook) {
@@ -105,38 +119,23 @@ export default function ($luxProvider) {
     // Grid constructor
     function grid (options) {
         var $lux = this,
-            provider = $luxProvider.grid;
+            provider = $luxProvider.grid,
+            r = {
+                requires: ['angular-ui-grid'],
+                modules: ['ui.grid'],
+                directives: []
+            };
 
         options = reversemerge(options || {}, provider.defaults);
-        var modules = ['ui.grid'],
-            directives = [];
 
-        if (options.enableSelect) {
-            directives.push('ui-grid-selection');
-            modules.push('ui.grid.selection');
-        }
-
-        if (options.enablePagination) {
-            directives.push('ui-grid-pagination');
-            modules.push('ui.grid.pagination');
-        }
-        //
-        //  Grid auto resize
-        if (options.enableAutoResize) {
-            directives.push('ui-grid-auto-resize');
-            modules.push('ui.grid.autoResize');
-        }
-        //
-        // Column resizing
-        if (options.enableResizeColumn) {
-            modules.push('ui.grid.resizeColumns');
-            directives.push('ui-grid-resize-columns');
-        }
+        _.forEach(components, (component) => {
+            component.require(options, r);
+        });
 
         var grid = new Grid($lux, provider, options);
 
-        $lux.require(['angular-ui-grid', 'angular-ui-bootstrap'], modules, () => {
-            grid.$onLoaded(directives.join(' '));
+        $lux.require(r.requires, r.modules, () => {
+            grid.$onLoaded(r.directives.join(' '));
         });
 
         return grid;

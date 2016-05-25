@@ -14,3 +14,6 @@ luxGridModule.directive('luxGrid', luxGridDirective);
 
 import registerProviders from './register';
 luxGridModule.config(registerProviders);
+
+import menuConfig from './menu';
+luxGridModule.config(menuConfig);

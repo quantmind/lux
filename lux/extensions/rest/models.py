@@ -401,7 +401,9 @@ class RestModel(LuxModel, RestClient, ColumnPermissionsMixin):
         if not self.form:
             permissions['create'] = False
 
-        meta = {'id': self.id_field,
+        meta = {'name': self.name,
+                'url': self.api_url(request),
+                'id': self.id_field,
                 'repr': self.repr_field,
                 'columns': columns,
                 'default-limit': request.config['API_LIMIT_DEFAULT']}

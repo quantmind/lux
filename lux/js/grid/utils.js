@@ -2,8 +2,9 @@ import _ from '../ng';
 import {debounce, findIndex, merge} from 'lodash';
 
 
-export function parseColumns(grid, metadata) {
-    var permissions = metadata.permissions || {},
+export function parseColumns(grid) {
+    var metadata = grid.metadata,
+        permissions = metadata.permissions,
         columnDefs = [],
         columnHook,
         column;

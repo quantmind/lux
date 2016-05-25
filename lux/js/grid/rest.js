@@ -37,7 +37,7 @@ class Rest {
     }
 
     deleteItem (identifier) {
-        return this.api.delete({path: this._subPath + '/' + identifier});
+        return this.api.delete({path: identifier});
     }
 }
 
