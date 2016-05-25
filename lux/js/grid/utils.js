@@ -5,6 +5,7 @@ import {debounce, findIndex, merge} from 'lodash';
 export function parseColumns(grid, metadata) {
     var permissions = metadata.permissions || {},
         columnDefs = [],
+        columnHook,
         column;
 
     _.forEach(metadata.columns, function (col) {
@@ -24,7 +25,8 @@ export function parseColumns(grid, metadata) {
         if (!col.filter)
             column.enableFiltering = false;
 
-        grid.$cfg.column(column, grid);
+        columnHook = grid.$provider.columnProcessor(column.type);
+        if (columnHook) columnHook(column, grid);
 
         if (_.isString(col.cellFilter)) {
             column.cellFilter = col.cellFilter;

@@ -11,17 +11,39 @@ module.exports = function(config) {
         frameworks: ['jasmine', 'browserify', 'es5-shim'],
 
         files: [
-            'lux/js/tests/test-*.js'
+            'lux/js/cms/*.js',
+            'lux/js/core/*.js',
+            'lux/js/form/*.js',
+            'lux/js/grid/*.js',
+            'lux/js/lux/*.js',
+            'lux/js/nav/*.js',
+            'lux/js/tests/*.js'
         ],
 
         preprocessors: {
-            'lux/js/**/*.js': 'browserify'
+            'lux/js/**/*.js': ['browserify']
         },
+
+        // coverage reporter generates the coverage
+        reporters: ['progress', 'coverage'],
 
         browserify: {
             debug: true,
             transform: [
-                ['babelify', {presets: ['es2015']}]
+                [
+                    'babelify',
+                    {
+                        presets: ['es2015']
+                    }
+                ],
+                [
+                    'browserify-istanbul',
+                    {
+                        instrumenterConfig: {
+                            embedSource: true
+                        }
+                    }
+                ]
             ]
         },
 
@@ -30,6 +52,12 @@ module.exports = function(config) {
                 base: 'Chrome',
                 flags: ['--no-sandbox']
             }
+        },
+
+        // optionally, configure the reporter
+        coverageReporter: {
+            type : 'html',
+            dir : 'coverage/'
         }
 
         // define reporters, port, logLevel, browsers etc.

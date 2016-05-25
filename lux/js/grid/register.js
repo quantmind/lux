@@ -3,11 +3,10 @@ import * as utils from './utils';
 
 
 // @ngInject
-export default function (luxGridProvider) {
+export default function ($luxProvider) {
+    var grid = $luxProvider.grid;
 
-    luxGridProvider.registerDataProvider('rest', rest);
-
-    luxGridProvider
+    grid.dataProvider('rest', rest)
         .columnProcessor('date', utils.dateColumn)
         .columnProcessor('datetime', utils.dateColumn)
         .columnProcessor('boolean', utils.booleanColumn)
@@ -16,7 +15,7 @@ export default function (luxGridProvider) {
         .columnProcessor('object', utils.objectColumn)
         .onInit(utils.paginationEvents);
     
-    luxGridProvider.defaults.gridMenu = {
+    grid.defaults.gridMenu = {
         'create': {
             title: 'Add',
             icon: 'fa fa-plus',

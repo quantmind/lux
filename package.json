@@ -8,7 +8,7 @@
     },
     "dependencies": {
         "angular": "1.5",
-        "lodash-es": "4.12",
+        "lodash-es": "4.13",
         "bootstrap-sass": "3.3"
     },
     "devDependencies": {
@@ -19,11 +19,13 @@
         "babel-preset-es2015-rollup": "1.1",
         "babelify": "7.3",
         "browserify": "13.0",
+        "browserify-istanbul": "2.0",
         "d3-collection": "0.2",
         "eslint": "2.10",
         "eslint-config-angular": "0.5",
         "eslint-plugin-angular": "1.0",
         "eslint-plugin-disable": "0.3",
+        "jasmine-core": "2.4",
         "karma": "0.13",
         "karma-browserify": "5.0",
         "karma-coverage": "1.0",
@@ -33,7 +35,6 @@
         "karma-jasmine": "1.0",
         "karma-junit-reporter": "1.0",
         "karma-phantomjs-launcher": "1.0",
-        "jasmine-core": "2.4",
         "ng-annotate": "1.2",
         "phantomjs-prebuilt": "2.1",
         "requirejs": "2.2",

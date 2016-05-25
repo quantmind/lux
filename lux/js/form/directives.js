@@ -78,7 +78,7 @@ ${inner}
 
 
 // @ngInject
-export function luxField ($log, $lux, luxFormConfig, luxLazy) {
+export function luxField ($log, $lux, luxFormConfig) {
     var cfg = luxFormConfig;
 
     return {
@@ -153,7 +153,7 @@ export function luxField ($log, $lux, luxFormConfig, luxLazy) {
 
         el.html(asHtml(template));
         var compileHtml = fieldType.compile || compile;
-        compileHtml(luxLazy, el.contents(), scope);
+        compileHtml($lux, el.contents(), scope);
     }
 
     function mergeOptions(field, defaults, $scope) {

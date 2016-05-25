@@ -1,4 +1,5 @@
 import _ from '../ng';
+import {Lux, windowContext} from './api';
 
 
 // @ngInject
@@ -7,6 +8,8 @@ export default function ($controllerProvider, $provide, $compileProvider, $filte
 
     var loading = false,
         loadingQueue = [],
+        moduleCache = {},
+        plugins = {},
         providers = {
             $controllerProvider: $controllerProvider,
             $compileProvider: $compileProvider,
@@ -15,51 +18,70 @@ export default function ($controllerProvider, $provide, $compileProvider, $filte
             $injector: $injector
         };
 
-    this.$get = getProvider;
-
     $locationProvider.html5Mode({
         enabled: true,
         requireBase: false,
         rewriteLinks: false
     });
 
+    _.extend(this, providers, {
+        // Required for angular providers
+        plugins: plugins,
+        $get: lux
+    });
+
     // @ngInject
-    function getProvider ($injector, $log, $compile, $timeout, $rootScope) {
-        var moduleCache = {};
-
-        var provider = {
-            require: _require,      // require with module loading
-            $require: require,      // requirejs
+    function lux ($injector, $location, $window, $http, $log, $timeout,
+                  $compile, $rootScope, luxMessage) {
+        var core = {
+            $injector: $injector,
+            $location: $location,
+            $window: $window,
+            $http: $http,
+            $log: $log,
+            $timeout: $timeout,
             $compile: $compile,
-            $rootScope: $rootScope
+            $rootScope: $rootScope,
+            $require: require,
+            require: _require,
+            messages: luxMessage,
+            context: windowContext($window),
+            moduleLoaded: moduleLoaded
         };
+        return new Lux(core, plugins);
+    }
 
-        return provider;
 
-        function _require(libNames, modules, onLoad) {
-            if (arguments.length === 2) {
-                onLoad = modules;
-                modules = null;
-            }
-            if (loading)
-                return loadingQueue.push({
-                    libNames: libNames,
-                    modules: modules,
-                    onLoad: onLoad
-                });
+    function moduleLoaded (name) {
+        return moduleCache[name] || false;
+    }
 
-            if (!_.isArray(libNames)) libNames = [libNames];
 
-            provider.$require(libNames, execute);
+    function _require(libNames, modules, onLoad) {
+        var provider = this;
 
-            function execute() {
+        if (arguments.length === 2) {
+            onLoad = modules;
+            modules = null;
+        }
+        if (loading)
+            return loadingQueue.push({
+                libNames: libNames,
+                modules: modules,
+                onLoad: onLoad
+            });
 
-                if (modules) loadModule(modules);
+        if (!_.isArray(libNames)) libNames = [libNames];
 
-                onLoad.apply(null, arguments);
+        provider.$require(libNames, execute);
 
-                $timeout(consumeQueue);
-            }
+        function execute() {
+
+            if (modules) loadModule(modules);
+
+            onLoad.apply(null, arguments);
+
+            provider.$timeout(consumeQueue);
         }
 
         function consumeQueue() {
@@ -86,19 +108,19 @@ export default function ($controllerProvider, $provide, $compileProvider, $filte
                 }
             });
 
-            function _invokeQueue (queue) {
+            function _invokeQueue(queue) {
                 _.forEach(queue, (args) => {
                     var provider = providers[args[0]],
                         method = args[1];
                     if (provider)
                         provider[method].apply(provider, args[2]);
                     else
-                        return $log.error("unsupported provider " + args[0]);
+                        return provider.$log.error("unsupported provider " + args[0]);
                 });
             }
 
             _.forEach(runBlocks, (fn) => {
-                $injector.invoke(fn);
+                provider.$injector.invoke(fn);
             });
         }
     }

@@ -4,7 +4,8 @@ import Grid from './grid';
 import reversemerge from '../core/reversemerge';
 
 
-export default function () {
+// @ngInject
+export default function ($luxProvider) {
 
     const
         providerMap = {},
@@ -56,20 +57,29 @@ export default function () {
         };
     let defaultProvider;
 
-    _.extend(this, {
+    $luxProvider.grid = _.extend(grid, {
         defaults: defaults,
-        registerDataProvider,
+        // get/set data Provider
+        dataProvider,
         // processor for columns
         columnProcessor,
         // callback when the grid initialise
-        onInit,
-        // Required for angular providers
-        $get: get
+        onInit
     });
 
-    function registerDataProvider (type, dataProvider) {
-        providerMap[type] = dataProvider;
-        if (!defaultProvider) defaultProvider = type;
+    $luxProvider.plugins.grid = $luxProvider.grid;
+
+    function dataProvider (type, dataProvider) {
+        if (arguments.length === 2) {
+            providerMap[type] = dataProvider;
+            if (!defaultProvider) defaultProvider = type;
+            return this;
+        } else {
+            if (!type) type = defaultProvider;
+            var provider = providerMap[type];
+            if (provider) return provider;
+            throw Error('No data provider found');
+        }
     }
 
     function onInit (grid) {
@@ -92,63 +102,43 @@ export default function () {
         }
     }
 
-    // @ngInject
-    function get ($compile, $window, $lux, $injector, luxLazy) {
+    // Grid constructor
+    function grid (options) {
+        var $lux = this,
+            provider = $luxProvider.grid;
 
-        // Grid constructor
-        function gridApi (options) {
-            options = reversemerge(options || {}, gridApi.defaults);
-            var modules = ['ui.grid'],
-                directives = [];
+        options = reversemerge(options || {}, provider.defaults);
+        var modules = ['ui.grid'],
+            directives = [];
 
-            if (options.enableSelect) {
-                directives.push('ui-grid-selection');
-                modules.push('ui.grid.selection');
-            }
-
-            if (options.enablePagination) {
-                directives.push('ui-grid-pagination');
-                modules.push('ui.grid.pagination');
-            }
-            //
-            //  Grid auto resize
-            if (options.enableAutoResize) {
-                directives.push('ui-grid-auto-resize');
-                modules.push('ui.grid.autoResize');
-            }
-            //
-            // Column resizing
-            if (options.enableResizeColumn) {
-                modules.push('ui.grid.resizeColumns');
-                directives.push('ui-grid-resize-columns');
-            }
-
-            var grid = new Grid(options, $lux, $compile, $window, $injector);
-            luxLazy.require(['angular-ui-grid', 'angular-ui-bootstrap'], modules, () => {
-                grid.$onLoaded(gridApi, directives.join(' '));
-            });
-            return grid;
+        if (options.enableSelect) {
+            directives.push('ui-grid-selection');
+            modules.push('ui.grid.selection');
         }
 
-        return _.extend(gridApi, {
-            defaults: defaults,
-            column,
-            registerDataProvider,
-            getDataProvider,
-            onInit
+        if (options.enablePagination) {
+            directives.push('ui-grid-pagination');
+            modules.push('ui.grid.pagination');
+        }
+        //
+        //  Grid auto resize
+        if (options.enableAutoResize) {
+            directives.push('ui-grid-auto-resize');
+            modules.push('ui.grid.autoResize');
+        }
+        //
+        // Column resizing
+        if (options.enableResizeColumn) {
+            modules.push('ui.grid.resizeColumns');
+            directives.push('ui-grid-resize-columns');
+        }
+
+        var grid = new Grid($lux, provider, options);
+
+        $lux.require(['angular-ui-grid', 'angular-ui-bootstrap'], modules, () => {
+            grid.$onLoaded(directives.join(' '));
         });
 
-        function column (column, grid) {
-            var hook = columnProcessors[column.type];
-            if (hook) hook(column, grid);
-        }
-
-        function getDataProvider (grid) {
-            var type = grid.options.dataProvider;
-            if (!type) type = defaultProvider;
-            var provider = providerMap[type];
-            if (provider) return provider($lux, grid);
-            throw Error('No data provider found');
-        }
+        return grid;
     }
 }

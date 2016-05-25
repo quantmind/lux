@@ -14,19 +14,12 @@ describe('lux core', function() {
 
     it('Test $lux', inject(
         function($lux) {
-
+            expect(_.isFunction($lux.$compile)).toBe(true);
+            expect(_.isFunction($lux.$require)).toBe(true);
+            expect(_.isFunction($lux.require)).toBe(true);
             expect(_.isObject($lux.context)).toBe(true);
             expect($lux.userToken).toBe(undefined);
             expect($lux.csrf).toBe(undefined);
-        })
-    );
-
-    it('Test luxLazy', inject(
-        function(luxLazy) {
-
-            expect(_.isObject(luxLazy)).toBe(true);
-            expect(_.isFunction(luxLazy.$compile)).toBe(true);
-            expect(_.isFunction(luxLazy.require)).toBe(true);
         })
     );
 });

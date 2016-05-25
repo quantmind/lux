@@ -8,6 +8,14 @@ export default class LuxComponent {
         this.$id = $lux.id();
     }
 
+    get $compile () {
+        return this.$lux.$compile;
+    }
+
+    get $injector () {
+        return this.$lux.$injector;
+    }
+
     addMessages (messages, level) {
         if (!level) level = 'info';
         var $lux = this.$lux,

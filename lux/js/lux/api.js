@@ -12,9 +12,7 @@ const NO_CSRF = ['get', 'head', 'options'];
 let luxId = 0;
 
 
-// @ngInject
-export default function ($location, $window, $http, $log, $timeout, luxMessage, luxLazy) {
-
+export function windowContext ($window) {
     var doc = $window.document,
         context = $window.lux,
         name = _.element(doc.querySelector('meta[name=csrf-param]')).attr('content'),
@@ -32,23 +30,15 @@ export default function ($location, $window, $http, $log, $timeout, luxMessage, 
         context.userToken = user;
         context.user = decodeJWToken(user)
     }
-
-    return new Lux($window, $location, $http, $log, $timeout, context, luxMessage, luxLazy);
+    return context;
 }
 
 
-class Lux {
+export class Lux {
 
-    constructor ($window, $location, $http, $log, $timeout, context, luxMessage, luxLazy) {
-        this.$window = $window;
-        this.$location = $location;
-        this.$http = $http;
-        this.$log = $log;
-        this.$timeout = $timeout;
+    constructor (core, plugins) {
+        _.extend(this, core, plugins);
         this.$apis = map();
-        this.messages = luxMessage;
-        this.lazy = luxLazy;
-        this.context = context;
     }
 
     // Return the csrf key-value token to post in forms

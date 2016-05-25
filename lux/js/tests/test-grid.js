@@ -5,8 +5,8 @@ import '../index';
 describe('lux core', function() {
 
     _.module('lux.grid.test', ['lux.grid', 'lux.mocks'])
-        .run((luxLazy) => {
-            luxLazy.$require = function (deps, callback) {
+        .run(($lux) => {
+            $lux.$require = function (deps, callback) {
                 callback();
             };
         });

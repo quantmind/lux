@@ -9,13 +9,11 @@ const cellClass = 'ui-grid-cell-contents';
 
 export default class Grid extends LuxComponent {
 
-    constructor (options, $lux, $compile, $window, $injector) {
+    constructor ($lux, provider, options) {
         super($lux);
+        this.$provider= provider;
         this.options = options;
         this.state = new State(this);
-        this.$compile = $compile;
-        this.$window = $window;
-        this.$injector = $injector;
     }
 
     refresh () {
@@ -32,10 +30,9 @@ export default class Grid extends LuxComponent {
         return this.$injector.get('uiGridConstants');
     }
 
-    $onLoaded (cfg, directives) {
-        this.$cfg = cfg;
+    $onLoaded (directives) {
         this.$directives = directives;
-        this.$dataProvider = cfg.getDataProvider(this);
+        this.$dataProvider = this.$provider.dataProvider(this.options.dataProvider)(this);
         build(this);
     }
 
@@ -65,7 +62,7 @@ export default class Grid extends LuxComponent {
         this.options = api.grid.options;
         this.api = api;
         api.lux = this;
-        this.$cfg.onInit(this);
+        this.$provider.onInit(this);
         this.$dataProvider.getPage();
     }
 
