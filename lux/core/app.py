@@ -30,13 +30,12 @@ from lux.utils.token import encode_json
 
 from .commands import ConsoleParser, CommandError, ConfigError, service_parser
 from .extension import LuxExtension, Parameter, EventMixin, app_attribute
-from .wrappers import HeadMeta, error_handler, LuxContext, formreg
-from .templates import template_engine
+from .wrappers import HeadMeta, LuxContext, formreg
+from .templates import render_data, template_engine
 from .cms import CMS
 from .models import ModelContainer
 from .cache import create_cache
 from .exceptions import ShellError
-from .content import render_data
 from .channels import Channels
 
 
@@ -231,8 +230,8 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
                   'Default encoding for text.'),
         Parameter('SETTINGS_FILES', None,
                   'Path to a json file with additional settings'),
-        Parameter('ERROR_HANDLER', error_handler,
-                  'Handler of Http exceptions'),
+        Parameter('ERROR_HANDLER', 'lux.core.wrappers:error_handler',
+                  'Dotted path to handler of Http exceptions'),
         Parameter('MEDIA_URL', '/media/',
                   'the base url for static files', True),
         Parameter('MINIFIED_MEDIA', True,
@@ -410,7 +409,8 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
             environ = test_wsgi_environ(path=path, loop=loop, **kw)
         request = wsgi_request(environ, app_handler=app_handler,
                                urlargs=urlargs)
-        environ['error.handler'] = self.config['ERROR_HANDLER']
+        environ['error.handler'] = module_attribute(
+            self.config['ERROR_HANDLER'])
         environ['default.content_type'] = self.config['DEFAULT_CONTENT_TYPE']
         # Check if pulsar is serving the application
         if 'pulsar.cfg' not in environ:
@@ -574,7 +574,7 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
 
     # Template redering
     def template_full_path(self, names):
-        """Return the template full path or None.
+        """Return a template filesystem full path or None
 
         Loops through all :attr:`extensions` in reversed order and
         check for ``name`` within the ``templates`` directory
@@ -605,6 +605,14 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
             with open(filename, 'r') as file:
                 return file.read()
         return ''
+
+    def html_content(self, request, name, context):
+        """Get an HTML string from a name
+        """
+        for ext in reversed(tuple(self.extensions.values())):
+            html = ext.html_content(request, name, context)
+            if html is not None:
+                return html
 
     def context(self, request, context=None):
         """Load the ``context`` dictionary for a ``request``.

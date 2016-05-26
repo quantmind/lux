@@ -3,7 +3,7 @@ import os
 from lux.utils.files import skipfile, get_rel_dir
 
 from lux.core import cached
-from lux.core.content import get_reader
+from .contents import get_reader
 
 
 def content_location(app, *args):

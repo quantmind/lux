@@ -6,9 +6,10 @@ from pulsar.utils.httpurl import remove_double_slash
 from pulsar.utils.slugify import slugify
 
 from lux.core import cached
-from lux.core.content import get_reader, ContentFile
 from lux.extensions.rest import RestModel, RestColumn
 from lux.utils.files import skipfile
+
+from .contents import get_reader
 
 
 COLUMNS = [
@@ -34,14 +35,14 @@ class ContentModel(RestModel):
 
     This model provide read-only operations
     '''
-    def __init__(self, location, name='content', columns=None, ext='md',
-                 id_field=None, **kwargs):
+    def __init__(self, location, name='content', columns=None, ext='md', **kw):
         if not os.path.isdir(location):
             os.makedirs(location)
         self.directory = location
         self.ext = ext
         columns = columns or COLUMNS[:]
-        super().__init__(name, columns=columns, id_field='path', **kwargs)
+        kw['id_field'] = 'path'
+        super().__init__(name, columns=columns, **kw)
 
     def get_instance(self, request, path):
         return self.serialise_model(request, self.read(request, path))
@@ -56,8 +57,6 @@ class ContentModel(RestModel):
         return session
 
     def tojson(self, request, content, in_list=False, **kw):
-        if isinstance(content, ContentFile):
-            return content.response(request)
         if not isinstance(content, dict):
             content = content.json(request.app)
             path = content.get('path')
@@ -84,13 +83,10 @@ class ContentModel(RestModel):
         if os.path.isdir(src):
             src = os.path.join(src, 'index')
 
-        if src.endswith('.html'):
-            raise Http404
-
-        # Handle files which are not html
+        # Don't serve path with a suffix
         content_type, _ = mimetypes.guess_type(src)
-        if content_type and os.path.isfile(src):
-            return ContentFile(src, content_type=content_type)
+        if content_type:
+            raise Http404
 
         # Add extension
         ext = '.%s' % self.ext

@@ -17,7 +17,7 @@ class EmailBackend(core.EmailBackend):
             msg.attach_alternative(html_message, 'text/html')
         return msg
 
-    def send_mails(self, messages):
+    def send_mails(self, messages):     # pragma    nocover
         '''Send emails in the event loop executor.
 
         :param messages: list of messages to send
@@ -38,12 +38,12 @@ class EmailBackend(core.EmailBackend):
         except ConnectionRefusedError:
             self.app.logger.error('Could not connect to mail server',
                                   extra={'mail': True})
-        except smtplib.SMTPException:
+        except Exception:
             self.app.logger.exception('Error while sending mail',
                                       extra={'mail': True})
         return num_sent
 
-    def _open(self):
+    def _open(self):    # pragma    nocover
         """
         Ensures we have a connection to the email server. Returns whether or
         not a new connection was required (True or False).

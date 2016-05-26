@@ -109,6 +109,11 @@ class LuxModel:
         """
         raise NotImplementedError
 
+    def delete_model(self, request, instance):
+        """Delete a model ``instance``
+        """
+        raise NotImplementedError
+
     def context(self, request, instance, context):
         """Add context to an instance context
 

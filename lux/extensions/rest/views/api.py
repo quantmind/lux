@@ -46,7 +46,8 @@ class RestMixin(ModelMixin):
                 url = url_or_model
 
         if not isinstance(self.model, RestModel):
-            raise NotImplementedError('REST model not available')
+            raise TypeError('REST model not available in %s router' %
+                            self.__class__.__name__)
 
         url = url or self.model.url
         assert url is not None, "Model %s has no valid url" % self.model

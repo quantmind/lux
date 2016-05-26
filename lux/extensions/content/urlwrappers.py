@@ -1,8 +1,11 @@
 from pulsar.utils.slugify import slugify
 
-from . utils import identity
 
 SEP = ', '
+
+
+def identity(x, cfg):
+    return x
 
 
 class Processor(object):
@@ -48,7 +51,7 @@ class URLWrapper(object):
         self._name = name
         self.slug = slugify(name)
 
-    def to_json(self, request):
+    def __call__(self, app):
         # TODO
         return self.name
 

@@ -1,9 +1,11 @@
 import os
 
+from pulsar import Http404
 from pulsar.utils.slugify import slugify
 from pulsar.apps.wsgi import MediaRouter
 
 from lux.core import Parameter, LuxExtension
+from lux.extensions.rest import api_path
 
 from .models import ContentModel
 from .rest import ContentCRUD
@@ -11,6 +13,7 @@ from .cms import TextRouter, CMS, CmsContent, LazyContext
 from .github import GithubHook, EventHandler, PullRepo
 from .files import content_location
 from .static import StaticCache
+from .contents import html_partial
 
 
 __all__ = ['Content',
@@ -78,3 +81,14 @@ class Extension(LuxExtension):
         repo = content_location(app)
         if repo:
             return os.path.join(repo, 'templates', name)
+
+    def html_content(self, request, path, context):
+        url = api_path(request, 'contents', path)
+        if url:
+            try:
+                meta = request.api.get(url).json()
+            except Http404:
+                pass
+            app = request.app
+            context = app.context(request, context)
+            return html_partial(app, meta, context)

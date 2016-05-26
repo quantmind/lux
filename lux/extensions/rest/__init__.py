@@ -12,7 +12,7 @@ just after the :mod:`lux.extensions.base`::
                   ]
 
 """
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 from collections import OrderedDict
 
 from pulsar import ImproperlyConfigured
@@ -60,6 +60,7 @@ __all__ = ['RestModel',
            'UniqueField',
            #
            'api_url',
+           'api_path',
            #
            'login',
            'logout',
@@ -85,6 +86,13 @@ def api_url(request, location=None):
     if location:
         url = urljoin(url, location)
     return url
+
+
+def api_path(request, model, *args):
+    model = request.app.models.get(model)
+    if model:
+        path = urlparse(model.api_url(request)).path
+        return '%s/%s' % (path, '/'.join(args)) if args else path
 
 
 class Extension(MultiAuthBackend):
@@ -116,7 +124,7 @@ class Extension(MultiAuthBackend):
                   'Dictionary of default permission levels'),
         #
         # REST API SETTINGS
-        Parameter('API_URL', None, 'URL FOR THE REST API', True),
+        Parameter('API_URL', None, 'URL FOR THE REST API'),
         Parameter('API_SEARCH_KEY', 'q',
                   'The query key for full text search'),
         Parameter('API_OFFSET_KEY', 'offset', ''),

@@ -50,10 +50,11 @@ ${inner}
         $scope.field = $scope.info;
     }
 
-    function postLink ($scope) {
+    function postLink ($scope, $element) {
         var info = $scope.info,
             action = info.action;
 
+        $scope.$element = $element;
         if (!action || action.action != 'update') return;
 
         var api = $lux.api(action);
@@ -159,6 +160,12 @@ export function luxField ($log, $lux, luxFormConfig) {
     function mergeOptions(field, defaults, $scope) {
         if (_.isFunction(defaults)) defaults = defaults(field, $scope);
         reverseMerge(field, defaults);
+        _.forEach(cfg.inheritAttributes, (attr) => {
+            if (!field.hasOwnProperty(attr))
+                field[attr] = $scope.info[attr];
+        });
+        if (field.type === 'hidden')
+            field.labelSrOnly = true;
     }
 
     // sort-of stateless util functions

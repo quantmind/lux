@@ -19,7 +19,6 @@ export default function (ngModule) {
                 return {
                     title: field.name,
                     placeholder: defaultPlaceholder(field),
-                    labelSrOnly: field.showLabels === false || field.type === 'hidden',
                     value: ''
                 }
             }
@@ -73,10 +72,7 @@ export default function (ngModule) {
             defaultOptions: function (field) {
                 return {
                     placeholder: defaultPlaceholder(field),
-                    ngModelAttrs: {
-                        rows: {attribute: 'rows'},
-                        cols: {attribute: 'cols'}
-                    }
+                    rows: 10
                 };
             }
         });
@@ -90,7 +86,6 @@ export default function (ngModule) {
                     label: field.name,
                     type: 'submit',
                     value: field.name
-                    //disabled: "form.$invalid"
                 }
             }
         });
@@ -147,11 +142,12 @@ function textareaTpl (field) {
 id="${field.id}"
 name="${field.name}"
 placeholder="${field.placeholder}"
+rows="${field.rows}"
 ${field.directives}
 ng-model="model['${field.name}']"
 ng-required="field.required"
 ng-readonly="field.readonly"
-ng-disabled="field.disabled">
+ng-disabled="${field.disabled}">
 "${field.value}"
 </textarea>`;
 }
@@ -194,7 +190,7 @@ function fieldsetTpl (field) {
 function buttonTpl(field) {
     return `<button name="${field.name}"
 class="btn btn-default"
-ng-disabled="field.disabled"
+ng-disabled="${field.disabled}"
 type="${field.type}"
 ng-click="field.$click($event)"
 >${field.label}</button>`

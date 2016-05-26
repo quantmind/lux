@@ -4,33 +4,33 @@ from pulsar.utils.httpurl import remove_double_slash
 from pulsar import Http404
 
 from lux.extensions.sitemap import Sitemap, SitemapIndex
-from lux.core.content import html as get_html
+from lux.extensions.rest import api_path
 from lux.core import cached
 from lux import core
+
+from .contents import html_content
 
 
 class CmsContent:
     """Model for Html Routers serving CMS content
     """
-    def __init__(self, group, path=None, meta=None, api=None):
+    def __init__(self, group, path=None, meta=None):
         self.group = group
         self.path = path if path is not None else group
         self.meta = meta
-        self.api = api or 'contents'
 
     def render_content(self, request, urlargs):
         path = urlargs.get('path', 'index')
         api_path = self.api_path(request, path)
         content = request.api.get(api_path).json()
-        return get_html(request, content)
+        return html_content(request, content)
 
     def all(self, request):
         api_path = self.api_path(request)
         return request.api.get(api_path).json()['result']
 
-    def api_path(self, request, path=None):
-        base = '%s/%s' % (self.api, self.group)
-        return '%s/%s' % (base, path) if path else base
+    def api_path(self, request, *args):
+        return api_path(request, 'contents', self.group, *args)
 
 
 class TextRouter(core.HtmlRouter):
@@ -40,6 +40,9 @@ class TextRouter(core.HtmlRouter):
         super().__init__(model.path, model=model)
 
     def get_html(self, request):
+        # This method is called when no other Router matched the path
+        # in request. This means if no content is available will result
+        # in 404 response
         request.cache.text_router = True
         return self.model.render_content(request, request.urlargs)
 

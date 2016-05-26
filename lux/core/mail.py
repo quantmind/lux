@@ -16,7 +16,7 @@ class EmailBackend:
         if not to:
             to = self.app.config['EMAIL_DEFAULT_TO']
         if sender and to:
-            message = self.message(sender, to, subject, message,
+            message = self.message(sender, to, subject, message or '',
                                    html_message)
             return self.send_mails([message])
         else:

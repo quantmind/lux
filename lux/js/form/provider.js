@@ -27,6 +27,7 @@ export default function () {
     let formCount = 1;
 
     _.extend(this, {
+        inheritAttributes: ['labelSrOnly'],
         setType,
         getType,
         setWrapper,

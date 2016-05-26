@@ -1,4 +1,4 @@
-from pulsar import MethodNotAllowed
+from pulsar import MethodNotAllowed, as_coroutine
 
 from lux import forms
 from lux.forms import WebFormRouter, Layout, Fieldset, Submit, formreg
@@ -20,19 +20,20 @@ formreg['contact'] = Layout(
     ContactForm,
     Fieldset(all=True, showLabels=False),
     Submit('Send', disabled="form.$invalid"),
-    resultHandler='enquiry'
+    labelSrOnly=True,
+    resultHandler='replace'
 )
 
 
 class ContactRouter(WebFormRouter):
     form = 'contact'
 
-    def post(self, request):
-        data, _ = request.data_and_files()
+    async def post(self, request):
         form_class = self.get_form_class(request)
         if not form_class:
             raise MethodNotAllowed
 
+        data, _ = await as_coroutine(request.data_and_files())
         form = form_class(request, data=data)
         if form.is_valid():
             email = request.app.email_backend
@@ -45,17 +46,28 @@ class ContactRouter(WebFormRouter):
                 sender = engine(cfg.get('sender', ''), context)
                 to = engine(cfg.get('to', ''), context)
                 subject = engine(cfg.get('subject', ''), context)
-                if 'message-template' in cfg:
-                    message = app.render_template(
-                        cfg['message-template'], context)
+                html_message = None
+                message = None
+                if 'message-content' in cfg:
+                    html_message = await self.html_content(
+                        request, cfg['message-content'], context)
                 else:
                     message = engine(cfg.get('message', ''), context)
 
-                email.send_mail(sender=sender, to=to, subject=subject,
-                                message=message)
+                await email.send_mail(sender=sender,
+                                      to=to,
+                                      subject=subject,
+                                      message=message,
+                                      html_message=html_message)
 
-            data = dict(success=True, message="Message sent")
+            data = dict(success=True,
+                        message=request.config['EMAIL_MESSAGE_SUCCESS'])
 
         else:
             data = form.tojson()
         return Json(data).http_response(request)
+
+    def html_content(self, request, content, context):
+        app = request.app
+        return app.green_pool.submit(app.html_content,
+                                     request, content, context)

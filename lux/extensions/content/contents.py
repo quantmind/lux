@@ -1,39 +1,37 @@
 import os
 import stat
-import mimetypes
 from datetime import datetime, date
 from collections import Mapping
+from itertools import chain
 
 from dateutil.parser import parse as parse_date
 
 from pulsar import Unsupported
 from pulsar.utils.slugify import slugify
-from pulsar.apps.wsgi import file_response
-from pulsar.utils.httpurl import CacheControl
+from pulsar.utils.structures import mapping_iterator
 
 from lux.utils import iso8601, absolute_uri
 
 from .urlwrappers import (URLWrapper, Processor, MultiValue, Tag, Author,
                           Category)
-from .utils import mapping_iterator, guess
+
+try:
+    from markdown import Markdown
+except ImportError:     # pragma    nocover
+    Markdown = False
 
 
-no_draft_field = ('date', 'category')
+def chain_meta(meta1, meta2):
+    return chain(mapping_iterator(meta1), mapping_iterator(meta2))
+
+
+def guess(value):
+    return value if len(value) > 1 else value[-1]
 
 
 READERS = {}
-
-
-CONTENT_EXTENSIONS = {'text/html': 'html',
-                      'text/plain': 'txt',
-                      'text/css': 'css',
-                      'application/json': 'json',
-                      'application/javascript': 'js',
-                      'application/xml': 'xml'}
-
+# Meta attributes to contribute to html head tag
 HEAD_META = frozenset(('title', 'description', 'author', 'keywords'))
-
-
 METADATA_PROCESSORS = dict(((p.name, p) for p in (
     Processor('title'),
     Processor('description'),
@@ -62,27 +60,21 @@ def modified_datetime(src):
     return datetime.fromtimestamp(stat_src[stat.ST_MTIME])
 
 
-def is_html(content_type):
-    return content_type == 'text/html'
-
-
-def is_text(content_type):
-    return content_type in CONTENT_EXTENSIONS
-
-
 def register_reader(cls):
     for extension in cls.file_extensions:
         READERS[extension] = cls
     return cls
 
 
-def get_reader(app, src):
-    bits = src.split('.')
-    ext = bits[-1] if len(bits) > 1 else None
-    Reader = READERS.get(ext) or READERS['']
-    if not Reader.enabled:
-        raise Unsupported('Missing dependencies for %s' % Reader.__name__)
-    return Reader(app.app, ext)
+def get_reader(app, src=None, ext=None):
+    if src:
+        bits = src.split('.')
+        ext = bits[-1] if len(bits) > 1 else None
+    reader = READERS.get(ext) or READERS['html']
+    if not reader or not reader.enabled:
+        name = reader.__name__ if reader else ext
+        raise Unsupported('Missing dependencies for %s' % name)
+    return reader(app.app, ext)
 
 
 def render_data(app, value, render, context):
@@ -121,26 +113,6 @@ def process_meta(meta, cfg):
             yield key, process(values, cfg)
 
 
-class ContentFile:
-    """A class for managing a file-based content
-    """
-    cache_control = CacheControl(maxage=86400)
-
-    def __init__(self, src, content_type=None, cache_control=None):
-        self.src = src
-        self.content_type = content_type or mimetypes.guess_type(src)[0]
-        self.cache_control = cache_control or self.cache_control
-
-    def __repr__(self):
-        return self.src
-    __str__ = __repr__
-
-    def response(self, request):
-        return file_response(request, self.src,
-                             content_type=self.content_type,
-                             cache_control=self.cache_control)
-
-
 class HtmlContent:
 
     def __init__(self, src, body, meta=None):
@@ -170,7 +142,111 @@ class HtmlContent:
         return dict(_flatten(meta))
 
 
-def html(request, meta):
+@register_reader
+class HtmlReader:
+    """Base class to read files.
+
+    This class is used to process static files, and it can be inherited for
+    other types of file. A Reader class must have the following attributes:
+
+    - enabled: (boolean) tell if the Reader class is enabled. It
+      generally depends on the import of some dependency.
+    - file_extensions: a list of file extensions that the Reader will process.
+    - extensions: a list of extensions to use in the reader (typical use is
+      Markdown).
+
+    """
+    content = HtmlContent
+    file_extensions = ['html']
+    suffix = 'html'
+    enabled = True
+    extensions = None
+
+    def __init__(self, app, ext=None):
+        self.app = app
+        self.ext = ext
+        self.logger = app.logger
+        self.config = app.config
+
+    def __str__(self):
+        return self.__class__.__name__
+
+    def read(self, src, meta=None):
+        """Read content from a file"""
+        with open(src, 'rb') as text:
+            body = text.read()
+        return self.process(body.decode('utf-8'), src, meta=meta)
+
+    def process(self, body, src=None, meta=None):
+        """Return the dict containing document metadata
+        """
+        meta = dict(process_meta(meta, self.config)) if meta else {}
+        meta['type'] = self.file_extensions[0]
+        return self.content(src, body, meta)
+
+
+@register_reader
+class MarkdownReader(HtmlReader):
+    """Reader for Markdown files"""
+    enabled = bool(Markdown)
+    file_extensions = ['markdown', 'mdown', 'mkd', 'md']
+    suffix = 'html'
+
+    @property
+    def md(self):
+        md = getattr(self.app, '_markdown', None)
+        if md is None:
+            extensions = list(self.config['MD_EXTENSIONS'])
+            if 'meta' not in extensions:
+                extensions.append('meta')
+            self.app._markdown = Markdown(extensions=extensions)
+        return self.app._markdown
+
+    def process(self, raw, src=None, meta=None):
+        raw = '%s\n\n%s' % (raw, self.links())
+        md = self.md
+        body = md.convert(raw)
+        meta = tuple(chain_meta(meta, md.Meta))
+        return super().process(body, src, meta=meta)
+
+    def links(self):
+        links = self.app.config.get('_MARKDOWN_LINKS_')
+        if links is None:
+            links = []
+            for name, href in self.app.config['CONTENT_LINKS'].items():
+                title = None
+                if isinstance(href, dict):
+                    title = href.get('title')
+                    href = href['href']
+                md = '[%s]: %s "%s"' % (name, href, title or name)
+                links.append(md)
+            links = '\n'.join(links)
+            self.app.config['_MARKDOWN_LINKS_'] = links
+        return links
+
+
+def html_partial(app, meta, context):
+    body = meta.pop('body', '')
+    reader = get_reader(app, ext=meta.pop('type', ''))
+    body = reader.process(body).body
+    engine = meta.pop('template_engine', None)
+    template = meta.pop('template', None)
+    context = context.copy()
+    context.update(meta)
+    body = app.template_engine(engine)(body, context)
+    if isinstance(template, dict):
+        if 'body' in template:
+            context['html_main'] = body
+            rnd = app.template_engine(engine)
+            body = rnd(template['body'], context)
+    elif template:
+        context['html_main'] = body
+        body = app.render_template(template, context, engine=engine)
+
+    return body
+
+
+def html_content(request, meta):
     """Build the ``html_main`` key for this content and set
     content specific values to the ``head`` tag of the
     HTML5 document.
@@ -178,7 +254,7 @@ def html(request, meta):
     doc = request.html_document
     app = request.app
     context = app.context(request)
-    content = render_body(app, meta, context)
+    content = html_partial(app, meta, context)
     #
     image = absolute_uri(request, meta.get('image'))
     doc.meta.update({'og:image': image,
@@ -229,22 +305,3 @@ def _flatten_value(value):
         return str(value)
     else:
         return value
-
-
-def render_body(app, meta, context):
-    body = meta.get('body', '')
-    engine = meta.get('template_engine')
-    template = meta.get('template')
-    context = context.copy()
-    context.update(meta)
-    body = app.template_engine(engine)(body, context)
-    if isinstance(template, dict):
-        if 'body' in template:
-            context['html_main'] = body
-            rnd = app.template_engine(engine)
-            body = rnd(template['body'], context)
-    elif template:
-        context['html_main'] = body
-        body = app.render_template(template, context, engine=engine)
-
-    return body
