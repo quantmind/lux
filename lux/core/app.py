@@ -31,7 +31,7 @@ from lux.utils.token import encode_json
 from .commands import ConsoleParser, CommandError, ConfigError, service_parser
 from .extension import LuxExtension, Parameter, EventMixin, app_attribute
 from .wrappers import HeadMeta, LuxContext, formreg
-from .templates import render_data, template_engine
+from .templates import render_data, template_engine, Template
 from .cms import CMS
 from .models import ModelContainer
 from .cache import create_cache
@@ -262,14 +262,20 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
                     'content': 'width=device-width, initial-scale=1'}],
                   'List of default ``meta`` elements to add to the html head'
                   'element'),
-        Parameter('HTML_TEMPLATES', {'/': 'home.html'},
-                  'Dictionary of Html templates to render'),
+        #
         # CONTENT base parameters
+        Parameter('CONTENT_GROUPS', {
+            "site": {
+                "path": "/",
+                "template": "home.html"
+            }
+        }, 'List of content model configurations'),
         Parameter('CONTENT_LINKS',
                   {'python': 'https://www.python.org/',
                    'lux': 'https://github.com/quantmind/lux',
                    'pulsar': 'http://pythonhosted.org/pulsar'},
                   'Links used throughout the web site'),
+        #
         # BASE email parameters
         Parameter('EMAIL_BACKEND', 'lux.core.mail.EmailBackend',
                   'Default locale'),
@@ -603,8 +609,8 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
         filename = self.template_full_path(name)
         if filename:
             with open(filename, 'r') as file:
-                return file.read()
-        return ''
+                return Template(file.read())
+        return Template()
 
     def html_content(self, request, name, context):
         """Get an HTML string from a name
@@ -684,7 +690,9 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
                 encoded = encode_json(doc.jscontext, self.config['SECRET_KEY'])
                 doc.head.embedded_js.insert(
                     0, 'var lux = "%s";\n' % encoded)
-            body = self.cms.render(page, context)
+
+            page = self.cms.as_page(page)
+            body = self.cms.render_body(request, page, context)
             doc.body.append(body)
             return doc.http_response(request)
         raise HttpException(status=415)

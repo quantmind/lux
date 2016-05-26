@@ -19,6 +19,7 @@ export default function (ngModule) {
                 return {
                     title: field.name,
                     placeholder: defaultPlaceholder(field),
+                    disabled: false,
                     value: ''
                 }
             }

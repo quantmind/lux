@@ -15,25 +15,38 @@ SESSION_COOKIE_NAME = 'test-oauth'
 AUTHENTICATION_BACKENDS = ['lux.extensions.auth.SessionBackend']
 
 # Just some dummy values for testing
-OAUTH_PROVIDERS = {'amazon': {'key': 'fdfvfvfv',
-                              'secret': 'fvfvdvdf'},
-                   'facebook': {'key': 'fdfvfvfv',
-                                'secret': 'fdfvfvfv'},
-                   'twitter': {'key': 'fdfvfvfv',
-                               'secret': 'fdfvfvfv',
-                               'site': '@fdfvfvfv'},
-                   'github': {'key': 'fdfvfvfv',
-                              'secret': 'fdfvfvfv',
-                              'login': True},
-                   'google': {'analytics': {'id': 'UA-7718259-1'},
-                              'simple_key': 'fdfvfvfv',
-                              'key': 'fdfvfvfv',
-                              'secret': 'fdfvfvfv',
-                              'login': True},
-                   'linkedin': {'key': 'fdfvfvfv',
-                                'secret': 'fdfvfvfv',
-                                'login': True}
-                   }
+OAUTH_PROVIDERS = {
+    'amazon': {
+        'key': 'fdfvfvfv',
+        'secret': 'fvfvdvdf'
+    },
+    'facebook': {
+        'key': 'fdfvfvfv',
+        'secret': 'fdfvfvfv'
+    },
+    'twitter': {
+        'key': 'fdfvfvfv',
+        'secret': 'fdfvfvfv',
+        'site': '@fdfvfvfv'
+    },
+    'github': {
+        'key': 'fdfvfvfv',
+        'secret': 'fdfvfvfv',
+        'login': True
+    },
+    'google': {
+        'analytics_id': 'UA-7718259-1',
+        'simple_key': 'fdfvfvfv',
+        'key': 'fdfvfvfv',
+        'secret': 'fdfvfvfv',
+        'login': True
+    },
+    'linkedin': {
+        'key': 'fdfvfvfv',
+        'secret': 'fdfvfvfv',
+        'login': True
+    }
+}
 
 
 mock_return_values = {

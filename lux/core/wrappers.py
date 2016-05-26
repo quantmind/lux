@@ -2,10 +2,9 @@ import json
 from collections import Mapping
 
 from pulsar import ImproperlyConfigured, Http404
-from pulsar.apps.wsgi import cached_property
 from pulsar.apps import wsgi
-from pulsar.apps.wsgi import (Json, RouterParam, Router, Route,
-                              render_error_debug)
+from pulsar.apps.wsgi import (Json, RouterParam, Router, Route, Html,
+                              cached_property, render_error_debug)
 from pulsar.apps.wsgi.utils import error_messages
 from pulsar.utils.httpurl import JSON_CONTENT_TYPES
 from pulsar.utils.structures import mapping_iterator
@@ -123,39 +122,35 @@ class HtmlRouter(Router):
     """Extend pulsar :class:`~pulsar.apps.wsgi.routers.Router`
     with content management.
     """
-    uirouter = RouterParam(None)
-    uimodules = RouterParam(None)
-    response_content_types = TEXT_CONTENT_TYPES
-    template = None
-    """Inner template"""
+    response_content_types = DEFAULT_CONTENT_TYPES
     model = RouterParam()
-    """optional REST model name"""
 
     def get(self, request):
-        html = self.get_html(request)
-        return self.html_response(request, html)
+        return self.html_response(request, self.get_html(request))
 
-    def html_response(self, request, html):
-        """Render `html` as a full Html document or a partial
-        """
+    def json_response(self, request, data):
+        return Json(data).http_response(request)
+
+    def html_response(self, request, inner_html):
         app = request.app
         # get cms for this router
-        cms = self.cms(app)
-        # fetch the cms page if possible
-        page = cms.page(request, request.path[1:])
+        cms = app.cms
+        # fetch the cms page
+        page = cms.page(request.path[1:])
         # render the inner part of the html page
-        html = cms.inner_html(request, page, html)
-
-        context = app.context(request)
-        context.update(self.context(request) or ())
-        context['html_main'] = html
+        if isinstance(inner_html, Html):
+            inner_html = inner_html.render(request)
+        page.inner_html = cms.inner_html(request, page, inner_html)
 
         # This request is for the inner template only
         if request.url_data.get('template') == 'ui':
-            request.response.content = html
+            rnd = app.template_engine(page.template_engine)
+            context = app.context(request)
+            context.update(page.meta or ())
+            request.response.content = rnd(inner_html, context)
             return request.response
 
-        return app.html_response(request, page, context=context)
+        return app.html_response(request, page)
 
     def get_inner_template(self, request, inner_template=None):
         return inner_template or self.template
@@ -173,18 +168,13 @@ class HtmlRouter(Router):
         """
         pass
 
-    def cms(self, app):
-        return app.cms
-
     def childname(self, prefix):
         """key for a child router
         """
         return '%s%s' % (self.name, prefix) if self.name else prefix
 
-    def get_model(self, request):
-        model = None
-        if self.model:
-            model = request.app.models.get(self.model)
+    def get_model(self, request, model=None):
+        model = request.app.models.get(model or self.model)
         if not model:
             raise Http404
         return model

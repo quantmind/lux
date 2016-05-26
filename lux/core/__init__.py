@@ -9,7 +9,7 @@ from .wrappers import (WsgiRequest, Router, HtmlRouter,
                        JsonRouter, json_message, cached_property,
                        RedirectRouter, LuxContext,
                        JSON_CONTENT_TYPES, DEFAULT_CONTENT_TYPES)
-from .templates import register_template_engine, template_engine
+from .templates import register_template_engine, template_engine, Template
 from .cms import CMS
 from .mail import EmailBackend
 from .cache import cached, Cache, register_cache, create_cache
@@ -31,6 +31,7 @@ __all__ = ['ConsoleParser',
            'extend_config',
            'register_template_engine',
            'template_engine',
+           'Template',
            'CMS',
            'EmailBackend',
            'cached',

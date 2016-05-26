@@ -194,6 +194,7 @@ class FormElement extends LuxComponent {
 
     constructor ($scope, $lux, $log, $cfg, field) {
         super($lux);
+        this.name = field.name;
         this.$scope = $scope;
         this.$lux = $lux;
         this.$cfg = $cfg;
@@ -202,7 +203,7 @@ class FormElement extends LuxComponent {
         _.forEach(field, (value, key) => {
             if (isDirective(key))
                 directives.push(`${key}='${value}'`);
-            else
+            else if (key.substring(0,1) !== '$')
                 this[key] = value;
         });
         this.directives = directives.join(' ');
@@ -263,6 +264,18 @@ class Field extends FormElement {
             var msg = this.$cfg.error(ngField);
             return this.server_error || msg || 'Not a valid value';
         }
+    }
+
+    tostring () {
+        return `${this.tag}.${this.name}`;
+    }
+
+    get value () {
+        return this.$scope.model[this.name]
+    }
+
+    set value (value) {
+        this.$scope.model[this.name] = value;
     }
 
     get success () {

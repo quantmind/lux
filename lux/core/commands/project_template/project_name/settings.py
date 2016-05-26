@@ -32,10 +32,5 @@ LOGIN_URL = '/login'
 REGISTER_URL = '/signup'
 RESET_PASSWORD_URL = '/reset-password'
 
-HTML_TEMPLATES = {'/': 'home.html',
-                  LOGIN_URL: 'small.html',
-                  REGISTER_URL: 'small.html',
-                  RESET_PASSWORD_URL: 'small.html'}
-
 # PULSAR config
 log_level = ['pulsar.info']

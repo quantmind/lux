@@ -13,3 +13,6 @@ luxModule.factory('luxMessage', luxMessage);
 // Directives
 import luxPage from './page';
 luxModule.directive('luxPage', luxPage);
+
+import luxLazy from './lazy';
+luxModule.directive('luxLazy', luxLazy);

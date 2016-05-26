@@ -7,12 +7,12 @@ class CommandTests(test.TestCase):
     config_file = 'tests.core'
 
     def test_clone(self):
-        template = {'/': 'foo.html'}
+        groups = {'site': {}}
         app = self.application()
-        callable = app.clone_callable(HTML_TEMPLATES=template)
+        callable = app.clone_callable(CONTENT_GROUPS=groups)
         self.assertNotEqual(app.callable, callable)
         app2 = callable.setup()
-        self.assertEqual(app2.config['HTML_TEMPLATES'], template)
+        self.assertEqual(app2.config['CONTENT_GROUPS'], groups)
 
     def test_require(self):
         app = self.application()

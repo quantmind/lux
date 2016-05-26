@@ -2,7 +2,7 @@ import json
 from inspect import isclass
 
 from pulsar import Http404
-from pulsar.apps.wsgi import Json, Html
+from pulsar.apps.wsgi import Html
 from pulsar.utils.html import nicename
 
 from lux.core import route, cached, HtmlRouter
@@ -136,10 +136,12 @@ class AdminModel(AdminRouter):
     '''
     model = None
     section = None
-    permissions = None
-    '''An permissions used in grid
-    '''
     icon = None
+    grid_options = dict(
+        enableRowSelection=True,
+        enableSelectAll=True,
+        enableGridMenu=True
+    )
     '''An icon for this Admin section
     '''
     def __init__(self, model=None, **kwargs):
@@ -159,19 +161,17 @@ class AdminModel(AdminRouter):
                 'icon': self.icon}
         return self.section, info
 
-    def get_target(self, request, **kwr):
-        model = self.get_model(request)
-        return model.get_target(request, **kwr)
+    def get_target(self, request, model=None, **kw):
+        model = self.get_model(request, model=model)
+        return model.get_target(request, **kw)
 
     def get_html(self, request):
-        options = dict(
-            target=self.get_target(request),
-            enableRowSelection=True,
-            enableSelectAll=True,
-            enableGridMenu=True
-        )
-        if self.permissions is not None:
-            options['permissions'] = self.permissions
+        return self.get_grid(request)
+
+    def get_grid(self, request, basePath=None, **kw):
+        options = self.grid_options.copy()
+        options['target'] = self.get_target(request, **kw)
+        options['basePath'] = basePath
         return grid(options)
 
 
@@ -185,16 +185,24 @@ class CRUDAdmin(AdminModel):
     def add(self, request):
         '''Add a new model
         '''
-        return self.get_form(request, self.form)
+        form = self.get_form(request, self.form)
+        return self.json_or_html(request, form)
 
     @route('<id>')
     def update(self, request):
         '''Edit an existing model
         '''
-        return self.get_form(request, id=request.urlargs['id'])
+        form = self.get_form(request, id=request.urlargs['id'])
+        return self.json_or_html(request, form)
 
-    def get_form(self, request, form=None, id=None):
-        json = 'json' in request.url_data
+    def json_or_html(self, request, data):
+        if 'json' in request.url_data:
+            return self.json_response(request, data)
+        else:
+            return self.html_response(request, data)
+
+    def get_form(self, request, form=None, id=None, model=None,
+                 initial=None):
         if id:
             action = 'update'
             form = form or self.updateform or self.form
@@ -206,15 +214,14 @@ class CRUDAdmin(AdminModel):
         if not form:
             raise Http404
 
-        target = self.get_target(request, path=id, action=action)
+        target = self.get_target(request, path=id, action=action, model=model)
         if id:
             request.api.head(target)
         else:
             self.get_model(request).check_permission(request, action)
 
-        if json:
-            data = form(request).as_dict(action=target)
-            return Json(data).http_response(request)
+        form = form(request, initial=initial, model=model)
+        if 'json' in request.url_data:
+            return form.as_dict(action=target)
         else:
-            html = form(request).as_form(action=target)
-            return self.html_response(request, html)
+            return form.as_form(action=target)

@@ -40,7 +40,7 @@ export function parseColumns(grid) {
         if (_.isDefined(column.field) && column.field === metadata.repr) {
             if (permissions.update) {
                 // If there is an update permission then display link
-                var path = grid.options.reprPath || grid.$window.location,
+                var path = grid.options.basePath || grid.$window.location,
                     idfield = metadata.id;
                 column.cellTemplate = grid.wrapCell(
                     `<a href="${path}/{{ row.entity['${idfield}'] }}" title="Edit {{ COL_FIELD }}">{{COL_FIELD}}</a>`);

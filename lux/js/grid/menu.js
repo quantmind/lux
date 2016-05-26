@@ -21,14 +21,14 @@ export default function ($luxProvider) {
     defaults.enableGridMenu = false;
 
     defaults.gridMenu = {
-        'create': {
+        create: {
             title: function (name) {
                 return `Add ${name}`;
             },
             icon: 'fa fa-plus',
             permissionType: 'create'
         },
-        'delete': {
+        delete: {
             title: function (name) {
                 return `Delete ${name}`;
             },
@@ -41,9 +41,11 @@ export default function ($luxProvider) {
             error: 'Error while deleting',
             empty: 'Please, select one or more rows'
         },
-        'columnsVisibility': {
+        columnsVisibility: {
             title: 'Columns visibility',
-            icon: 'fa fa-eye'
+            icon: 'fa fa-table',
+            info: 'Click buttons to toggle visibility of columns',
+            template: visibilityTpl
         }
     }
 }
@@ -124,6 +126,21 @@ function gridMenu (grid) {
 
     };
 
+
+    actions.columnsVisibility = function () {
+        var options = grid.options.gridMenu.columnsVisibility;
+
+        scope.columns = grid.options.columnDefs;
+        scope.infoMessage = options.info;
+        scope.toggleVisible = toggleVisible;
+        scope.activeClass = activeClass;
+
+        $uibModal.open({
+            scope: scope,
+            template: options.template
+        });
+    };
+
     _.forEach(grid.options.gridMenu, (item, key) => {
         var title = item.title;
 
@@ -144,6 +161,24 @@ function gridMenu (grid) {
     });
 
     grid.options.gridMenuCustomItems = menu;
+
+
+    function toggleVisible (column) {
+        if (column.hasOwnProperty('visible'))
+            column.visible = !column.visible;
+        else
+            column.visible = false;
+
+        grid.api.core.refresh();
+    }
+
+    function activeClass (column) {
+        if (column.hasOwnProperty('visible')) {
+            if (column.visible) return 'btn-success';
+            return 'btn-danger';
+        } else
+            return 'btn-success';
+    }
 }
 
 
@@ -162,4 +197,21 @@ const deleteTpl = `<div class="modal-header">
     <button ng-if="selected.length" type="button" class="btn btn-danger" ng-click="$close()">Yes</button>
     <button ng-if="selected.length" type="button" class="btn btn-default" ng-click="$dismiss()">No</button>
     <button ng-if="!selected.length" type="button" class="btn btn-default" ng-click="$dismiss()">Close</button>
+</div>`;
+
+
+const visibilityTpl = `<div class="modal-header">
+    <button type="button" class="close" aria-label="Close" ng-click="$dismiss()"><span aria-hidden="true">&times;</span></button>
+    <h4 class="modal-title"><i class="fa fa-table"></i> Change columns visibility</h4>
+</div>
+<div class="modal-body">
+    <p class="modal-info">{{infoMessage}}</p>
+    <ul class="modal-items list-inline">
+        <li ng-repeat="col in columns" style="padding: 5px">
+            <a class="btn btn-default btn-sm" ng-class="activeClass(col)" ng-click="toggleVisible(col)">{{col.displayName}}</a>
+        </li>
+    </ul>
+</div>
+<div class="modal-footer">
+    <button type="button" class="btn btn-default" ng-click="$dismiss()">Close</button>
 </div>`;

@@ -225,25 +225,8 @@ class MarkdownReader(HtmlReader):
         return links
 
 
-def html_partial(app, meta, context):
-    body = meta.pop('body', '')
-    reader = get_reader(app, ext=meta.pop('type', ''))
-    body = reader.process(body).body
-    engine = meta.pop('template_engine', None)
-    template = meta.pop('template', None)
-    context = context.copy()
-    context.update(meta)
-    body = app.template_engine(engine)(body, context)
-    if isinstance(template, dict):
-        if 'body' in template:
-            context['html_main'] = body
-            rnd = app.template_engine(engine)
-            body = rnd(template['body'], context)
-    elif template:
-        context['html_main'] = body
-        body = app.render_template(template, context, engine=engine)
-
-    return body
+def html_partial(app, html_main, meta):
+    return html_main
 
 
 def html_content(request, meta):
@@ -252,16 +235,15 @@ def html_content(request, meta):
     HTML5 document.
     """
     doc = request.html_document
-    app = request.app
-    context = app.context(request)
-    content = html_partial(app, meta, context)
-    #
-    image = absolute_uri(request, meta.get('image'))
-    doc.meta.update({'og:image': image,
-                     'og:published_time': meta.get('date'),
-                     'og:modified_time': meta.get('modified')})
-    if meta.get('priority') == '0':
-        meta['head_robots'] = ['noindex', 'nofollow']
+    doc.meta.update({
+        'og:image': absolute_uri(request, meta.pop('image', None)),
+        'og:published_time': meta.pop('date', None),
+        'og:modified_time': meta.pop('modified', None)
+    })
+
+    if meta.pop('priority', None) == 0:
+        doc.meta['head_robots'] = ['noindex', 'nofollow']
+
     #
     # Add head keys
     head = {}
@@ -269,6 +251,7 @@ def html_content(request, meta):
     for key, value in meta.items():
         bits = key.split('_', 1)
         if len(bits) == 2 and bits[0] == 'head':
+            # when using file based content __ is replaced by :
             key = bits[1].replace('__', ':')
             head[key] = value
             doc.meta.set(key, value)
@@ -281,7 +264,6 @@ def html_content(request, meta):
             doc.meta.set(key, meta[key])
 
     doc.jscontext['page'] = page
-    return content
 
 
 # INTERNALS

@@ -1,4 +1,4 @@
-from string import Template
+import string
 from datetime import date
 from collections import Mapping
 
@@ -61,6 +61,27 @@ def _render_dict(app, d, render, context):
             yield k, v
 
 
+class Template:
+    """Mark a string to be a template"""
+    __slots__ = ('template',)
+
+    def __init__(self, template=None):
+        if isinstance(template, Template):
+            template = template.template
+        self.template = template or ''
+
+    def __repr__(self):
+        return self.template
+    __str__ = __repr__
+
+    def __getattr__(self, name):
+        return getattr(self.template, name)
+
+    def render(self, app, context, engine=None):
+        rnd = app.template_engine(engine)
+        return rnd(self.template, context)
+
+
 class TemplateEngine:
 
     def __call__(self, text, context):
@@ -75,7 +96,7 @@ class Python(TemplateEngine):
 
     def __call__(self, text, *args, **kwargs):
         context = dict(*args, **kwargs)
-        return Template(text).safe_substitute(context)
+        return string.Template(text).safe_substitute(context)
 
 
 @register_template_engine

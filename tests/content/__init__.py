@@ -14,9 +14,11 @@ EXTENSIONS = ['lux.extensions.rest',
               'lux.extensions.content']
 
 CONTENT_GROUPS = {
-    "blog": {},
+    "blog": {
+        "path": "blog"
+    },
     "site": {
-        "path": "",
+        "path": "*",
         "meta": {
             "image": "/media/lux/see.jpg"
         }
