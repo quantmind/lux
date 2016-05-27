@@ -3,16 +3,10 @@ from unittest import mock
 from lux.utils import test
 from lux.extensions.oauth import request_oauths
 
-from tests.config import *  # noqa
+from example.webalone.config import *  # noqa
 
-EXTENSIONS = ['lux.extensions.base',
-              'lux.extensions.rest',
-              'lux.extensions.odm',
-              'lux.extensions.oauth']
-
-DATASTORE = 'postgresql+green://lux:luxtest@127.0.0.1:5432/luxtests'
+EXTENSIONS += ('lux.extensions.oauth',)
 SESSION_COOKIE_NAME = 'test-oauth'
-AUTHENTICATION_BACKENDS = ['lux.extensions.auth.SessionBackend']
 
 # Just some dummy values for testing
 OAUTH_PROVIDERS = {

@@ -150,7 +150,7 @@ class HtmlRouter(JsonRouter):
             request.response.content = page.render_inner(request)
             return request.response
 
-        return app.html_response(request, page)
+        return app.html_response(request, page, self.context(request))
 
     def get_inner_template(self, request, inner_template=None):
         return inner_template or self.template

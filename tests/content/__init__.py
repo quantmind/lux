@@ -15,11 +15,15 @@ EXTENSIONS = ['lux.extensions.rest',
 
 CONTENT_GROUPS = {
     "blog": {
-        "path": "blog"
+        "path": "blog",
+        "meta": {
+            "priority": 1
+        }
     },
     "site": {
         "path": "*",
         "meta": {
+            "priority": 1,
             "image": "/media/lux/see.jpg"
         }
     }

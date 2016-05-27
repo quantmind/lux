@@ -196,9 +196,6 @@ class LuxExtension(metaclass=ExtensionType):
             config[setting.name] = value
         self._setup_logger(config, opts)
 
-    def html_content(self, request, name, context):
-        pass
-
     def get_template_full_path(self, app, name):
         '''Full path for a template name
         '''

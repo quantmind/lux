@@ -12,6 +12,11 @@ except ImportError:     # pragma    nocover
     def transform(html_message, base_url=None):
         return html_message
 
+try:
+    from bs4 import BeautifulSoup as bs
+except ImportError:     # pragma    nocover
+    bs = None
+
 
 class EmailBackend(core.EmailBackend):
 
@@ -20,10 +25,16 @@ class EmailBackend(core.EmailBackend):
         """
         if not isinstance(to, (list, tuple)):
             to = [to]
+        if html_message:
+            if not message and bs:
+                body = bs(html_message, 'html.parser').find('body')
+                if body:
+                    message = body.get_text().strip()
+            html_message = transform(html_message)
+
         msg = EmailMultiAlternatives(subject, message, sender, to,
                                      encoding=self.app.config['ENCODING'])
         if html_message:
-            html_message = transform(html_message)
             msg.attach_alternative(html_message, 'text/html')
         return msg
 

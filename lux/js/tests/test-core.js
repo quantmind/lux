@@ -30,7 +30,11 @@ describe('lux core', function() {
 
             var api = $lux.api('');
             expect(api.baseUrl).toBe('');
-            expect(api.path).toBe('');
+            expect(api.path).toBe(undefined);
+
+            api = $lux.api('http://bla.com/foo');
+            expect(api.baseUrl).toBe('http://bla.com/foo');
+            expect(api.path).toBe(undefined);
         })
     );
 });

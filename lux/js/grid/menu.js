@@ -100,11 +100,19 @@ function gridMenu (grid) {
 
             $q.all(promises).then(function (results) {
                 grid.refresh();
-                var reprs = results.join(', ');
-                $lux.messages.success(`Successfully deleted ${results.length} ${modelName}: ${reprs}`);
-            }, function (results) {
-                var reprs = results.join(', ');
-                $lux.messages.error(reprs);
+                let ok = [], error = [], reprs;
+                _.forEach(results, (r) => {
+                    if (r.success) ok.push(r.item);
+                    else error.push(r.item);
+                });
+                if (ok.length) {
+                    reprs = ok.join(', ');
+                    $lux.messages.success(`Successfully deleted ${results.length} ${modelName}: ${reprs}`);
+                }
+                if (error.length) {
+                    reprs = error.join(', ');
+                    $lux.messages.error(`Could not delete ${results.length} ${modelName}: ${reprs}`);
+                }
             });
 
         });
@@ -114,11 +122,11 @@ function gridMenu (grid) {
                 repr = item[grid.metadata.repr] || pk;
 
             function onSuccess() {
-                return repr;
+                return {success: true, item: repr};
             }
 
             function onFailure() {
-                return `${options.error} ${repr}`;
+                return {item: `${repr}`};
             }
 
             return grid.$dataProvider.deleteItem(pk).then(onSuccess, onFailure);

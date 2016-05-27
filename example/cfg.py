@@ -28,12 +28,16 @@ CONTENT_LOCATION = 'content'
 CONTENT_GROUPS = {
     "articles": {
         "path": "articles",
-        "body_template": "home.html"
+        "body_template": "home.html",
+        "meta": {
+            "priority": 1
+        }
     },
     "site": {
         "path": "*",
         "body_template": "home.html",
         "meta": {
+            "priority": 1,
             "image": "/media/lux/see.jpg"
         }
     }

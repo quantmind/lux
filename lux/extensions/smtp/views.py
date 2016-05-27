@@ -67,5 +67,5 @@ class ContactRouter(WebFormRouter):
 
     def html_content(self, request, content, context):
         app = request.app
-        return app.green_pool.submit(app.html_content,
+        return app.green_pool.submit(app.cms.html_content,
                                      request, content, context)

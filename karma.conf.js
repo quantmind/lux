@@ -35,15 +35,15 @@ module.exports = function(config) {
                     {
                         presets: ['es2015']
                     }
-                ],
-                [
-                    'browserify-istanbul',
-                    {
-                        instrumenterConfig: {
-                            embedSource: true
-                        }
-                    }
                 ]
+                //[
+                //    'browserify-istanbul',
+                //    {
+                //        instrumenterConfig: {
+                //            embedSource: true
+                //        }
+                //    }
+                //]
             ]
         },
 

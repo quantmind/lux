@@ -86,7 +86,7 @@ export class Lux {
             if (!ApiClass) ApiClass = this.api(action.baseUrl, RestApi);
         }
 
-        action.path = urlJoin(path, action.path);
+        action.baseUrl = urlJoin(action.baseUrl, path);
 
         return new ApiClass(this, action);
     }
@@ -166,11 +166,12 @@ class Api {
         if (!opts) opts = {};
         // handle urlparams when not an object
         var $lux = this.$lux,
+            path = _.isDefined(opts.url) ? opts.url : this.$defaults.path,
             options = {
                 method: method.toLowerCase(),
                 params: _.extend({}, this.params, opts.params),
                 headers: opts.headers || {},
-                url: urlJoin(this.url, opts.path)
+                url: urlJoin(this.baseUrl, path, opts.path)
             };
 
         if (ENCODE_URL_METHODS.indexOf(options.method) === -1) options.data = opts.data;

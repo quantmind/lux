@@ -613,14 +613,6 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
                     return Template(file.read())
         return Template()
 
-    def html_content(self, request, name, context):
-        """Get an HTML string from a name
-        """
-        for ext in reversed(tuple(self.extensions.values())):
-            html = ext.html_content(request, name, context)
-            if html is not None:
-                return html
-
     def context(self, request, context=None):
         """Load the ``context`` dictionary for a ``request``.
 

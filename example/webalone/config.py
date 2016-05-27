@@ -3,8 +3,7 @@ from example.cfg import *   # noqa
 EXTENSIONS = EXTENSIONS + (
     'lux.extensions.admin',
     'lux.extensions.auth',
-    'lux.extensions.odm',
-    'example.website'  # Add this extension for javascript
+    'lux.extensions.odm'
 )
 
 API_URL = 'api'

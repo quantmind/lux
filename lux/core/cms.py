@@ -50,15 +50,16 @@ class Page:
     def priority(self):
         return self.meta.get('priority')
 
-    def render_inner(self, request):
-        return self.render(request, self.inner_template)
+    def render_inner(self, request, context=None):
+        return self.render(request, self.inner_template, context)
 
-    def render(self, request, template):
+    def render(self, request, template, context=None):
         if template:
             app = request.app
-            context = app.context(request)
-            context.update(self.meta)
-            return template.render(app, context)
+            ctx = app.context(request)
+            ctx.update(self.meta)
+            ctx.update(context or ())
+            return template.render(app, ctx)
         return ''
 
     def copy(self):
@@ -159,6 +160,9 @@ class CMS:
         html_main = self.replace_html_main(page.body_template,
                                            page.inner_template)
         return html_main.render(self.app, context)
+
+    def html_content(self, request, path, context):
+        pass
 
     def context(self, request, context):
         """Context dictionary for this cms

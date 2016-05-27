@@ -26,7 +26,7 @@ export function urlResolve(url) {
         //
         $base: function () {
             var base = `${url.protocol}://${url.hostname}`;
-            if (url.protocol !== DEFAULT_PORTS[+url.port]) base += `:${url.port}`;
+            if (url.port && url.protocol !== DEFAULT_PORTS[+url.port]) base += `:${url.port}`;
             return base;
         }
     };

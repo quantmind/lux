@@ -12,7 +12,8 @@ export function luxForm ($lux, $log, luxFormConfig) {
         transclude: true,
         scope: {
             'json': '=?',
-            'model': '=?'
+            'model': '=?',
+            'url': '=?'
         },
         template: formTemplate,
         controller: FormController,

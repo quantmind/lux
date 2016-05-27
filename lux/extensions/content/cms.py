@@ -64,14 +64,13 @@ class CMS(core.CMS):
             middleware.append(sitemap)
             processed.add(page.name)
         # Last add the CMS router
-        if processed:
-            middleware.append(CMSRouter('<path:path>'))
+        middleware.append(CMSRouter('<path:path>'))
 
-    def inner_html(self, request, page, inner_html):
+    def inner_html(self, request, page, inner_html=None):
         try:
             if not page.name:
                 raise Http404
-            path = page.urlargs.get('path', 'index')
+            path = page.urlargs.get('path') or 'index'
             path = api_path(request, 'contents', page.name, path)
             data = request.api.get(path).json()
             inner_html = self.data_to_html(page, data, inner_html)
@@ -93,22 +92,34 @@ class CMS(core.CMS):
         return request.api.get('contents/context').json()['result']
 
     def html_content(self, request, path, context):
+        """Render the inner html
+        """
+        bits = path.split('/')
         page = self.as_page()
-        path = api_path(request, 'contents', path)
-        data = request.api.get(path).json()
-        html = self.data_to_html(page, data)
-        context = self.app.context(request, context)
-        return html.render(self.app, context)
+        page.name = bits[0]
+        page.urlargs = {'path': '/'.join(bits[1:])}
+        page.inner_template = self.inner_html(request, page)
+        return page.render_inner(request, context)
 
     def data_to_html(self, page, data, inner_html=None):
         template = Template(data.pop('body', None))
         inner_html = self.app.cms.replace_html_main(template, inner_html)
-        replace(page, data, 'inner_template')
-        replace(page, data, 'body_template')
+        self.replace_template(page, data, 'inner_template', 'template')
+        self.replace_template(page, data, 'inner_template')
+        self.replace_template(page, data, 'body_template')
         reader = get_reader(self.app, ext=data.pop('type', 'html'))
         page.meta = page.meta or {}
         page.meta.update(data)
         return Template(reader.process(inner_html).body)
+
+    def replace_template(self, page, data, attr, key_data=None):
+        key_data = key_data or attr
+        if key_data in data:
+            data = data.pop(key_data)
+            if isinstance(data, dict):
+                data = data.get('body')
+            if data:
+                setattr(page, attr, Template(data))
 
     def all(self, request, name):
         path = api_path(request, 'contents', name)
@@ -136,8 +147,3 @@ class LazyContext:
             self.context = body
             context[self.key] = body
         return self.context
-
-
-def replace(page, data, key):
-    if key in data:
-        page[key] = data.pop(key)
