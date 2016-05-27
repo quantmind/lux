@@ -10,7 +10,7 @@ from pulsar import Unsupported
 from pulsar.utils.slugify import slugify
 from pulsar.utils.structures import mapping_iterator
 
-from lux.utils import iso8601, absolute_uri
+from lux.utils import iso8601
 
 from .urlwrappers import (URLWrapper, Processor, MultiValue, Tag, Author,
                           Category)
@@ -31,7 +31,6 @@ def guess(value):
 
 READERS = {}
 # Meta attributes to contribute to html head tag
-HEAD_META = frozenset(('title', 'description', 'author', 'keywords'))
 METADATA_PROCESSORS = dict(((p.name, p) for p in (
     Processor('title'),
     Processor('description'),
@@ -223,47 +222,6 @@ class MarkdownReader(HtmlReader):
             links = '\n'.join(links)
             self.app.config['_MARKDOWN_LINKS_'] = links
         return links
-
-
-def html_partial(app, html_main, meta):
-    return html_main
-
-
-def html_content(request, meta):
-    """Build the ``html_main`` key for this content and set
-    content specific values to the ``head`` tag of the
-    HTML5 document.
-    """
-    doc = request.html_document
-    doc.meta.update({
-        'og:image': absolute_uri(request, meta.pop('image', None)),
-        'og:published_time': meta.pop('date', None),
-        'og:modified_time': meta.pop('modified', None)
-    })
-
-    if meta.pop('priority', None) == 0:
-        doc.meta['head_robots'] = ['noindex', 'nofollow']
-
-    #
-    # Add head keys
-    head = {}
-    page = {}
-    for key, value in meta.items():
-        bits = key.split('_', 1)
-        if len(bits) == 2 and bits[0] == 'head':
-            # when using file based content __ is replaced by :
-            key = bits[1].replace('__', ':')
-            head[key] = value
-            doc.meta.set(key, value)
-        else:
-            page[key] = value
-
-    # Add head keys if needed
-    for key in HEAD_META:
-        if key not in head and key in meta:
-            doc.meta.set(key, meta[key])
-
-    doc.jscontext['page'] = page
 
 
 # INTERNALS

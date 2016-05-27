@@ -61,25 +61,18 @@ def _render_dict(app, d, render, context):
             yield k, v
 
 
-class Template:
-    """Mark a string to be a template"""
-    __slots__ = ('template',)
-
-    def __init__(self, template=None):
+class Template(str):
+    """Mark a string to be a template
+    """
+    def __new__(cls, template=None):
         if isinstance(template, Template):
-            template = template.template
-        self.template = template or ''
-
-    def __repr__(self):
-        return self.template
-    __str__ = __repr__
-
-    def __getattr__(self, name):
-        return getattr(self.template, name)
+            return template
+        else:
+            return super().__new__(cls, template or '')
 
     def render(self, app, context, engine=None):
         rnd = app.template_engine(engine)
-        return rnd(self.template, context)
+        return rnd(self, context)
 
 
 class TemplateEngine:

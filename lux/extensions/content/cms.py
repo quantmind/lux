@@ -6,11 +6,11 @@ from lux.extensions.rest import api_path
 from lux.core import cached, Template
 from lux import core
 
-from .contents import html_content
+from .contents import get_reader
 
 
 class CMSRouter(core.HtmlRouter):
-    """CRUD views for the text APIs
+    """Fallback CMS Router
     """
     def get_html(self, request):
         # This method is called when no other Router matched the path
@@ -33,10 +33,11 @@ class CMSmap(SitemapIndex):
 
 
 class RouterMap(Sitemap):
-    model = None
+    name = None
 
     def items(self, request):
-        for item in self.model.all(request):
+        cms = request.app.cms
+        for item in cms.all(request, self.name):
             html_url = request.absolute_uri(item['path'])
             yield AttributeDictionary(loc=html_url,
                                       lastmod=item.get('modified'),
@@ -66,7 +67,12 @@ class CMS(core.CMS):
 
     def inner_html(self, request, page, inner_html):
         try:
-            inner_html = self.html_main(request, page, inner_html)
+            if not page.name:
+                raise Http404
+            path = page.urlargs.get('path', 'index')
+            path = api_path(request, 'contents', page.name, path)
+            data = request.api.get(path).json()
+            inner_html = self.data_to_html(page, data, inner_html)
         except Http404:
             if request.cache.cms_router:
                 raise
@@ -84,20 +90,27 @@ class CMS(core.CMS):
     def context_data(self, request):
         return request.api.get('contents/context').json()['result']
 
-    def html_main(self, request, page, inner_html):
-        path = page.urlargs.get('path', 'index')
-        path = api_path(request, 'contents', page.name, path)
+    def html_content(self, request, path, context):
+        page = self.as_page()
+        path = api_path(request, 'contents', path)
         data = request.api.get(path).json()
-        template = Template(data.pop('body', None))
-        inner_html = request.app.cms.replace_html_main(template, inner_html)
-        meta = dict(page.meta or ())
-        meta.update(data)
-        html_content(request, meta)
-        return inner_html
+        html = self.data_to_html(page, data)
+        context = self.app.context(request, context)
+        return html.render(self.app, context)
 
-    def all(self, request):
-        api_path = self.api_path(request)
-        return request.api.get(api_path).json()['result']
+    def data_to_html(self, page, data, inner_html=None):
+        template = Template(data.pop('body', None))
+        inner_html = self.app.cms.replace_html_main(template, inner_html)
+        replace(page, data, 'inner_template')
+        replace(page, data, 'body_template')
+        reader = get_reader(self.app, ext=data.pop('type', 'html'))
+        page.meta = page.meta or {}
+        page.meta.update(data)
+        return Template(reader.process(inner_html).body)
+
+    def all(self, request, name):
+        path = api_path(request, 'contents', name)
+        return request.api.get(path).json()['result']
 
 
 class LazyContext:
@@ -121,3 +134,8 @@ class LazyContext:
             self.context = body
             context[self.key] = body
         return self.context
+
+
+def replace(page, data, key):
+    if key in data:
+        page[key] = data.pop(key)

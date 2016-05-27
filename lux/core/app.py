@@ -266,8 +266,8 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
         # CONTENT base parameters
         Parameter('CONTENT_GROUPS', {
             "site": {
-                "path": "/",
-                "template": "home.html"
+                "path": "*",
+                "body_template": "home.html"
             }
         }, 'List of content model configurations'),
         Parameter('CONTENT_LINKS',
@@ -606,10 +606,11 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
 
         If the file is not found an empty string is returned.
         """
-        filename = self.template_full_path(name)
-        if filename:
-            with open(filename, 'r') as file:
-                return Template(file.read())
+        if name:
+            filename = self.template_full_path(name)
+            if filename:
+                with open(filename, 'r') as file:
+                    return Template(file.read())
         return Template()
 
     def html_content(self, request, name, context):

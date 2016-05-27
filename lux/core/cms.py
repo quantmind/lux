@@ -1,11 +1,15 @@
 from pulsar.apps.wsgi import Route
-from pulsar.utils.structures import AttributeDictionary
+
+from lux.utils import absolute_uri
 
 from .extension import app_attribute
 from .templates import Template
 
 
-class Page(AttributeDictionary):
+HEAD_META = frozenset(('title', 'description', 'author', 'keywords'))
+
+
+class Page:
     """An object representing an HTML page
 
     .. attribute:: name
@@ -28,6 +32,39 @@ class Page(AttributeDictionary):
 
         dictionary of page metadata
     """
+    def __init__(self, name=None, path=None, body_template=None,
+                 inner_template=None, meta=None, urlargs=None):
+        self.name = name
+        self.path = path
+        self.body_template = body_template
+        self.inner_template = inner_template
+        self.meta = dict(meta or ())
+        self.urlargs = urlargs
+
+    def __repr__(self):
+        return self.name or self.__class__.__name__
+    __str__ = __repr__
+
+    def render_inner(self, request):
+        return self.render(request, self.inner_template)
+
+    def render(self, request, template):
+        if template:
+            app = request.app
+            context = app.context(request)
+            context.update(self.meta)
+            return template.render(app, context)
+        return ''
+
+    def copy(self):
+        return self.__copy__()
+
+    def __copy__(self):
+        cls = self.__class__
+        page = cls.__new__(cls)
+        page.__dict__ = self.__dict__.copy()
+        page.meta = self.meta.copy()
+        return page
 
 
 class CMS:
@@ -47,14 +84,14 @@ class CMS:
         return self.app.config
 
     def page(self, path):
-        '''Obtain a page object from a request path.
+        """Obtain a page object from a request path.
 
-        This method always return a :class:`.Page`. If there are no
-        registered pages which match the path, it return an empty Page.
-        '''
+        This method always return a :class:`.Page`. If no
+        registered pages match the path, it returns an empty :class:`.Page`.
+        """
         return self.match(path) or Page()
 
-    def as_page(self, page):
+    def as_page(self, page=None):
         if not isinstance(page, Page):
             page = Page(body_template=page)
         return page
@@ -75,15 +112,46 @@ class CMS:
         for route, page in self.sitemap():
             matched = route.match(path)
             if matched is not None and '__remaining__' not in matched:
-                return Page(page, urlargs=matched)
+                page = page.copy()
+                page.urlargs = matched
+                return page
 
     def sitemap(self):
         return app_sitemap(self.app)
 
     def render_body(self, request, page, context):
-        '''Render a ``page`` with a ``context`` dictionary
-        '''
-        html_main = self.replace_html_main(page.body_template, page.inner_html)
+        meta = page.meta
+        doc = request.html_document
+        doc.meta.update({
+            'og:image': absolute_uri(request, meta.pop('image', None)),
+            'og:published_time': meta.pop('date', None),
+            'og:modified_time': meta.pop('modified', None)
+        })
+
+        if meta.pop('priority', None) == 0:
+            doc.meta['head_robots'] = ['noindex', 'nofollow']
+        #
+        # Add head keys
+        head = {}
+        page_meta = {}
+        for key, value in meta.items():
+            bits = key.split('_', 1)
+            if len(bits) == 2 and bits[0] == 'head':
+                # when using file based content __ is replaced by :
+                key = bits[1].replace('__', ':')
+                head[key] = value
+                doc.meta.set(key, value)
+            else:
+                page_meta[key] = value
+
+        # Add head keys if needed
+        for key in HEAD_META:
+            if key not in head and key in page_meta:
+                doc.meta.set(key, page_meta[key])
+
+        doc.jscontext['page'] = page_meta
+        html_main = self.replace_html_main(page.body_template,
+                                           page.inner_template)
         return html_main.render(self.app, context)
 
     def context(self, request, context):
@@ -92,11 +160,14 @@ class CMS:
         return ()
 
     def replace_html_main(self, template, html_main):
-        if isinstance(template, str):
+        if not isinstance(template, Template):
             template = self.app.template(template)
 
         if template:
-            html_main = template.replace(self.html_main_key, html_main)
+            if html_main:
+                html_main = template.replace(self.html_main_key, html_main)
+            else:
+                html_main = template
 
         return Template(html_main)
 
@@ -124,7 +195,8 @@ def app_sitemap(app):
             path = path[1:]
         if path.endswith('/'):
             path = path[:-1]
-        page = Page(page, path=path, name=name)
+        page['name'] = name
+        page = Page(path=path, **page)
 
         if not path or path.startswith('<'):
             variables[path] = page

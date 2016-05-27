@@ -5,15 +5,25 @@ from lux import core
 
 from .message import EmailMultiAlternatives, sanitize_address, DNS_NAME
 
+try:
+    from premailer import transform
+except ImportError:     # pragma    nocover
+
+    def transform(html_message, base_url=None):
+        return html_message
+
 
 class EmailBackend(core.EmailBackend):
 
     def message(self, sender, to, subject, message, html_message):
+        """Prepare an message
+        """
         if not isinstance(to, (list, tuple)):
             to = [to]
         msg = EmailMultiAlternatives(subject, message, sender, to,
                                      encoding=self.app.config['ENCODING'])
         if html_message:
+            html_message = transform(html_message)
             msg.attach_alternative(html_message, 'text/html')
         return msg
 

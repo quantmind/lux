@@ -26,9 +26,13 @@ RESET_PASSWORD_URL = '/auth/reset-password'
 CONTENT_REPO = os.path.dirname(__file__)
 CONTENT_LOCATION = 'content'
 CONTENT_GROUPS = {
-    "articles": {},
+    "articles": {
+        "path": "articles",
+        "body_template": "home.html"
+    },
     "site": {
-        "path": "",
+        "path": "*",
+        "body_template": "home.html",
         "meta": {
             "image": "/media/lux/see.jpg"
         }

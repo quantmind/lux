@@ -140,14 +140,11 @@ class HtmlRouter(Router):
         # render the inner part of the html page
         if isinstance(inner_html, Html):
             inner_html = inner_html.render(request)
-        page.inner_html = cms.inner_html(request, page, inner_html)
+        page.inner_template = cms.inner_html(request, page, inner_html)
 
         # This request is for the inner template only
         if request.url_data.get('template') == 'ui':
-            rnd = app.template_engine(page.template_engine)
-            context = app.context(request)
-            context.update(page.meta or ())
-            request.response.content = rnd(inner_html, context)
+            request.response.content = page.render_inner(request)
             return request.response
 
         return app.html_response(request, page)

@@ -1,16 +1,12 @@
 import os
 
-from pulsar import Http404
-
 from lux.core import Parameter, LuxExtension
-from lux.extensions.rest import api_path
 
 from .models import ContentModel
 from .rest import ContentCRUD
 from .cms import CMS, LazyContext
 from .github import GithubHook, EventHandler, PullRepo
 from .files import content_location
-from .contents import html_partial
 
 
 __all__ = ['Content',
@@ -61,14 +57,3 @@ class Extension(LuxExtension):
             return os.path.join(repo, 'templates', name)
         else:
             return super().get_template_full_path(app, name)
-
-    def html_content(self, request, path, context):
-        url = api_path(request, 'contents', path)
-        if url:
-            try:
-                meta = request.api.get(url).json()
-            except Http404:
-                pass
-            app = request.app
-            context = app.context(request, context)
-            return html_partial(app, meta, context)
