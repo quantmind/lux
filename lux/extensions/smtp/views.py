@@ -3,8 +3,6 @@ from pulsar import MethodNotAllowed, as_coroutine
 from lux import forms
 from lux.forms import WebFormRouter, Layout, Fieldset, Submit, formreg
 
-from pulsar.apps.wsgi import Json
-
 
 class ContactForm(forms.Form):
     """
@@ -65,7 +63,7 @@ class ContactRouter(WebFormRouter):
 
         else:
             data = form.tojson()
-        return Json(data).http_response(request)
+        return self.json_response(request, data)
 
     def html_content(self, request, content, context):
         app = request.app

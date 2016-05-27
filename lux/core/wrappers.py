@@ -110,26 +110,29 @@ class RedirectRouter(Router):
 
 
 class JsonRouter(Router):
+    model = RouterParam()
     response_content_types = ['application/json']
 
-    def json(self, request, data):
+    def json_response(self, request, data):
         """Return a response as application/json
         """
         return Json(data).http_response(request)
 
+    def get_model(self, request, model=None):
+        model = request.app.models.get(model or self.model)
+        if not model:
+            raise Http404
+        return model
 
-class HtmlRouter(Router):
+
+class HtmlRouter(JsonRouter):
     """Extend pulsar :class:`~pulsar.apps.wsgi.routers.Router`
     with content management.
     """
     response_content_types = DEFAULT_CONTENT_TYPES
-    model = RouterParam()
 
     def get(self, request):
         return self.html_response(request, self.get_html(request))
-
-    def json_response(self, request, data):
-        return Json(data).http_response(request)
 
     def html_response(self, request, inner_html):
         app = request.app
@@ -169,12 +172,6 @@ class HtmlRouter(Router):
         """key for a child router
         """
         return '%s%s' % (self.name, prefix) if self.name else prefix
-
-    def get_model(self, request, model=None):
-        model = request.app.models.get(model or self.model)
-        if not model:
-            raise Http404
-        return model
 
     def make_router(self, rule, **params):
         """Create a new :class:`.Router` form rule and parameters

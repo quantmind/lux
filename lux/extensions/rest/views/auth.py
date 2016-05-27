@@ -36,7 +36,7 @@ class SignUp(JsonRouter):
 
         backend = request.cache.auth_backend
         data = backend.signup_confirm(request, request.urlargs['key'])
-        return self.json(request, data)
+        return self.json_response(request, data)
 
 
 class ResetPassword(JsonRouter):
@@ -114,7 +114,7 @@ class Authorization(api.RestRouter):
                       'message': 'password changed'}
         else:
             result = form.tojson()
-        return self.json(request, result)
+        return self.json_response(request, result)
 
     @route('keys/<key>', method=('head', 'options'))
     def key(self, request):

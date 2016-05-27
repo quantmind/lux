@@ -27,7 +27,7 @@ from .models import RestModel, RestColumn, ModelMixin, is_rel_column
 from .client import ApiClient
 from .views.actions import (AuthenticationError, check_username, login,
                             logout, user_permissions)
-from .views.api import RestRoot, RestRouter, RestMixin
+from .views.api import RestRoot, RestRouter
 from .views.auth import Authorization
 from .pagination import Pagination, GithubPagination
 from .forms import RelationshipField, UniqueField
@@ -43,7 +43,6 @@ __all__ = ['RestModel',
            'auth_backend',
            'Authorization',
            'RestRouter',
-           'RestMixin',
            'Pagination',
            'GithubPagination',
            'AuthenticationError',

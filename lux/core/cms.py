@@ -6,7 +6,8 @@ from .extension import app_attribute
 from .templates import Template
 
 
-HEAD_META = frozenset(('title', 'description', 'author', 'keywords'))
+HEAD_META = set(('title', 'description', 'author', 'keywords'))
+SKIP_META = set(('priority', 'order', 'url'))
 
 
 class Page:
@@ -33,7 +34,7 @@ class Page:
         dictionary of page metadata
     """
     def __init__(self, name=None, path=None, body_template=None,
-                 inner_template=None, meta=None, urlargs=None):
+                 inner_template=None, meta=None, urlargs=None, **kw):
         self.name = name
         self.path = path
         self.body_template = body_template
@@ -44,6 +45,10 @@ class Page:
     def __repr__(self):
         return self.name or self.__class__.__name__
     __str__ = __repr__
+
+    @property
+    def priority(self):
+        return self.meta.get('priority')
 
     def render_inner(self, request):
         return self.render(request, self.inner_template)
@@ -97,11 +102,11 @@ class CMS:
         return page
 
     def inner_html(self, request, page, inner_html):
-        '''Render the inner part of the page template (``html_main``)
+        """Render the inner part of the page template (``html_main``)
 
         ``html`` is the html rendered by the Router, indipendently from the
         CMS layout. It can be en empty string.
-        '''
+        """
         return self.replace_html_main(page.inner_template, inner_html)
 
     def match(self, path):
@@ -120,36 +125,37 @@ class CMS:
         return app_sitemap(self.app)
 
     def render_body(self, request, page, context):
-        meta = page.meta
         doc = request.html_document
-        doc.meta.update({
-            'og:image': absolute_uri(request, meta.pop('image', None)),
-            'og:published_time': meta.pop('date', None),
-            'og:modified_time': meta.pop('modified', None)
-        })
 
-        if meta.pop('priority', None) == 0:
-            doc.meta['head_robots'] = ['noindex', 'nofollow']
+        if not page.priority:
+            doc.meta.set('robots', ['noindex', 'nofollow'])
+
+        doc.meta.update({
+            'og:image': absolute_uri(request, page.meta.pop('image', None)),
+            'og:published_time': page.meta.pop('date', None),
+            'og:modified_time': page.meta.pop('modified', None)
+        })
         #
         # Add head keys
-        head = {}
-        page_meta = {}
-        for key, value in meta.items():
+        head = set(HEAD_META)
+        meta = {}
+        for key, value in page.meta.items():
             bits = key.split('_', 1)
             if len(bits) == 2 and bits[0] == 'head':
                 # when using file based content __ is replaced by :
                 key = bits[1].replace('__', ':')
                 head[key] = value
                 doc.meta.set(key, value)
-            else:
-                page_meta[key] = value
+                head.discard(key)
+            elif key not in SKIP_META:
+                meta[key] = value
 
         # Add head keys if needed
-        for key in HEAD_META:
-            if key not in head and key in page_meta:
-                doc.meta.set(key, page_meta[key])
+        for key in head:
+            if key in meta:
+                doc.meta.set(key, meta[key])
 
-        doc.jscontext['page'] = page_meta
+        doc.jscontext['page'] = meta
         html_main = self.replace_html_main(page.body_template,
                                            page.inner_template)
         return html_main.render(self.app, context)

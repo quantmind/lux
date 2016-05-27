@@ -12,11 +12,9 @@ class ContentTest(test.AppTestCase):
     async def test_media_404(self):
         request = await self.client.get('/media/')
         self.assertEqual(request.response.status_code, 404)
-        request = await self.client.get('/media/webalone/lux.png')
-        self.assertEqual(request.response.status_code, 404)
-        request = await self.client.get('/media/website/foo.jpg')
+        request = await self.client.get('/media/bla.png')
         self.assertEqual(request.response.status_code, 404)
 
     async def test_media_200(self):
-        request = await self.client.get('/media/website/lux.png')
+        request = await self.client.get('/media/lux.png')
         self.assertEqual(request.response.status_code, 200)

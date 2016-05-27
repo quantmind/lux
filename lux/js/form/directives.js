@@ -65,7 +65,8 @@ ${inner}
             $scope.form.$pending = false;
             var data = response.data;
             _.forEach(data, function (value, key) {
-                $scope.model[key] = value.id || value;
+                if (value !== null)
+                    $scope.model[key] = value.id || value;
             })
         }
 

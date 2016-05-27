@@ -1,7 +1,6 @@
-from lux.core import Router
-
 from pulsar import BadRequest
-from pulsar.apps.wsgi import Json
+
+from lux.core import JsonRouter
 
 from ..models import ModelMixin, RestModel
 
@@ -10,7 +9,7 @@ REST_CONTENT_TYPES = ['application/json']
 DIRECTIONS = ('asc', 'desc')
 
 
-class RestRoot(Router):
+class RestRoot(JsonRouter):
     '''Api Root
 
     Provide a get method for displaying a dictionary of api names - api urls
@@ -22,20 +21,22 @@ class RestRoot(Router):
         routes = {}
         for router in self.routes:
             url = '%s%s' % (request.absolute_uri(), router.route.rule)
-            if isinstance(router, RestMixin):
+            if isinstance(router, RestRouter):
                 routes[router.model.api_name] = url
             else:
                 routes[router.name] = url
         return routes
 
     def get(self, request):
-        return Json(self.apis(request)).http_response(request)
+        return self.json_response(request, self.apis(request))
 
 
-class RestMixin(ModelMixin):
+class RestRouter(ModelMixin, JsonRouter):
     '''A mixin to be used in conjunction with Routers, usually
     as the first class in the multi-inheritance declaration
     '''
+    response_content_types = REST_CONTENT_TYPES
+
     def __init__(self, *args, **kwargs):
         url = None
         if args:
@@ -53,11 +54,6 @@ class RestMixin(ModelMixin):
         assert url is not None, "Model %s has no valid url" % self.model
         super().__init__(url, *args, **kwargs)
 
-    def json(self, request, data):
-        '''Return a response as application/json
-        '''
-        return Json(data).http_response(request)
-
     def json_data_files(self, request):
         content_type, _ = request.content_type_options
         try:
@@ -67,10 +63,6 @@ class RestMixin(ModelMixin):
             raise BadRequest('Expected application/json content type')
         except ValueError:
             raise BadRequest('Problems parsing JSON')
-
-
-class RestRouter(RestMixin, Router):
-    response_content_types = REST_CONTENT_TYPES
 
     def urlargs(self, request):
         return request.urlargs

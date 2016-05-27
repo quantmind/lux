@@ -22,7 +22,7 @@ LOGOUT_URL = '/auth/logout'
 REGISTER_URL = '/auth/signup'
 RESET_PASSWORD_URL = '/auth/reset-password'
 
-
+SERVE_STATIC_FILES = os.path.join(os.path.dirname(__file__), 'media')
 CONTENT_REPO = os.path.dirname(__file__)
 CONTENT_LOCATION = 'content'
 CONTENT_GROUPS = {

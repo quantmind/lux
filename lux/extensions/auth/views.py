@@ -86,7 +86,7 @@ class RegistrationCRUD(RestRouter):
             request.response.status_code = 201
         else:
             data = form.tojson()
-        return self.json(request, data)
+        return self.json_response(request, data)
 
     @route(method=('get', 'options'))
     def metadata(self, request):
@@ -101,7 +101,7 @@ class RegistrationCRUD(RestRouter):
 
         if backend.has_permission(request, model.name, 'read'):
             meta = model.meta(request)
-            return self.json(request, meta)
+            return self.json_response(request, meta)
         raise PermissionDenied
 
 
@@ -133,7 +133,7 @@ class UserRest(RestRouter):
         """
         user = self.get_instance(request)
         data = self.model.serialise(request, user)
-        return self.json(request, data)
+        return self.json_response(request, data)
 
     def post(self, request):
         """Update authenticated user and/or user profile
@@ -149,7 +149,7 @@ class UserRest(RestRouter):
             data = model.serialise(request, user)
         else:
             data = form.tojson()
-        return self.json(request, data)
+        return self.json_response(request, data)
 
     @route('permissions', method=['get', 'options'])
     def get_permissions(self, request):
@@ -160,7 +160,7 @@ class UserRest(RestRouter):
             request.app.fire('on_preflight', request, methods=['GET'])
             return request.response
         permissions = user_permissions(request)
-        return self.json(request, permissions)
+        return self.json_response(request, permissions)
 
 
 class Authorization(RestAuthorization):

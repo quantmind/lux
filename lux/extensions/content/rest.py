@@ -52,7 +52,7 @@ class ContentCRUD(rest.RestRouter):
             data = model.serialise(request, content)
             if data == request.response:
                 return data
-            return self.json(request, data)
+            return self.json_response(request, data)
 
         elif request.method == 'HEAD':
             return request.response

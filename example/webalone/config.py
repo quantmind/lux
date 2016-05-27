@@ -13,5 +13,4 @@ AUTHENTICATION_BACKENDS = ['lux.extensions.auth.SessionBackend',
                            'lux.extensions.rest.backends.CsrfBackend',
                            'lux.extensions.rest.backends.BrowserBackend']
 
-SERVE_STATIC_FILES = True
 HTML_SCRIPTS = ['website/website']

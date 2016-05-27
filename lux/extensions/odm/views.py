@@ -66,7 +66,7 @@ class CRUD(RestRouter):
         else:
             data = form.tojson()
 
-        return self.json(request, data)
+        return self.json_response(request, data)
 
     # Additional Routes
 
@@ -82,7 +82,7 @@ class CRUD(RestRouter):
         model = self.model
         if backend.has_permission(request, model.name, 'read'):
             meta = model.meta(request)
-            return self.json(request, meta)
+            return self.json_response(request, meta)
 
         raise PermissionDenied
 
@@ -141,4 +141,4 @@ class CRUD(RestRouter):
             else:
                 raise MethodNotAllowed
 
-            return self.json(request, data)
+            return self.json_response(request, data)

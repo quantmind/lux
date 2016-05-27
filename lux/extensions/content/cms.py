@@ -57,6 +57,8 @@ class CMS(core.CMS):
         for route, page in self.sitemap():
             if page.name in processed:
                 continue
+            if not page.priority:
+                continue
             url = '%s/sitemap.xml' % page.path if page.path else 'sitemap1.xml'
             sitemap = RouterMap(url, name=page.name)
             middleware.append(sitemap)
