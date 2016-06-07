@@ -23,5 +23,5 @@ export default function ($compile) {
 const fatureTpl = `<a ng-href='{{ feature.href }}' class='feature' ng-class='feature.class'>
 <h2 class='text-center icon'><i ng-class='feature.icon' class='fa-2x'></i></h2>
 <h3 class='text-center title'>{{ feature.title }}</h3>
-<p class='text-center lead description'>{{ description }}</p>
+<h4 class='text-center description'>{{ description }}</h4>
 </a>`;

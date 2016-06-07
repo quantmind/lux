@@ -59,19 +59,16 @@ export function asHtml(el) {
     return wrapper.append(el).html();
 }
 
+
 export function compile(lazy, html, scope, cloneAttachFunc) {
     lazy.$compile(html)(scope, cloneAttachFunc);
 }
 
 
-export function asFunction (value) {
-    return function () {
-        return value;
-    };
-}
-
-export function extractValue (value) {
-    if (_.isFunction(value))
-        value = value();
-    return value;
+export function mergeArray (array1, array2) {
+    if (_.isArray(array1) && _.isArray(array2))
+        array2.forEach((value, index) => {
+            array1[index] = value;
+        });
+    return array1;
 }

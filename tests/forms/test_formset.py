@@ -91,3 +91,4 @@ class FormsetTests(test.TestCase):
         self.assertTrue(form.is_valid())
         self.assertEqual(form.cleaned_data['body'], 'fooo')
         self.assertEqual(len(form.cleaned_data['users']), 2)
+        self.assertTrue(form.is_valid())

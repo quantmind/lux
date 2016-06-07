@@ -82,6 +82,8 @@ class Fieldset(FormElement):
         self.children = children
         self.attrs = attrs
         self.all = attrs.pop('all', self.all)
+        if 'showLabels' in attrs:   # legacy
+            attrs['labelSrOnly'] = not attrs.pop('showLabels')
         if not self.attrs.get('type') and self.type:
             self.attrs['type'] = self.type
         self.type = self.attrs.get('type')

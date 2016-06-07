@@ -27,9 +27,7 @@
 }
 
 a.feature {
-    *,
-    &:hover,
-    &:visited {
+    @include setLinkSelectorStyle {
         text-decoration: none;
     }
 }

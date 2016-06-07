@@ -1,6 +1,6 @@
 import _ from '../ng';
 import LuxComponent from '../lux/component';
-import {compile, asHtml, mergeOptions} from './utils';
+import {compile, asHtml, mergeOptions, mergeArray} from './utils';
 
 
 export function fieldInnerTemplate (formName) {
@@ -16,6 +16,8 @@ export class FormElement extends LuxComponent {
         this.$fieldType = type;
         this.$luxform = $scope.luxform;
         this.tag = tag;
+        // set name first - it may be needed by other attributes
+        this.name = field.name;
         let directives = [];
         _.forEach(field, (value, key) => {
             if (isDirective(key))
@@ -157,10 +159,14 @@ export class Form extends FormElement {
 
         function success (response) {
             form.$pending = false;
-            var data = response.data;
+            var data = response.data,
+                current;
             _.forEach(data, function (value, key) {
-                if (value !== null)
-                    model[key] = value.id || value;
+                if (value !== null) {
+                    current = model[key];
+                    if (_.isArray(current)) mergeArray(current, value);
+                    else model[key] = value.id || value;
+                }
             });
         }
 

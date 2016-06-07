@@ -35,7 +35,7 @@ class FormSet:
         return self.related_form.is_bound if self.related_form else False
 
     def is_valid(self, exclude_missing=False):
-        return self._unwind()
+        self._unwind()
         return bool(self._errors)
 
     def _unwind(self):

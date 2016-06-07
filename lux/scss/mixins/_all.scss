@@ -47,7 +47,7 @@
 
 
 @mixin setLinkSelectorStyle {
-    &:hover, &:active, &:visited {
+    *, &:hover, &:active, &:visited {
         @content;
     }
 }

@@ -62,7 +62,7 @@ export const sidebarTemplate = `<lux-navbar class="sidebar-navbar" ng-class="{'s
             </div>
         </div>
     </div>
-    <ul class="sidebar-menu">
+    <ul class="nav">
         <li ng-if="section.name" ng-repeat-start="section in sidebar.sections" class="header">
             {{section.name}}
         </li>
