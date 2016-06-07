@@ -10,6 +10,10 @@ export default function (ngModule) {
 
         cfg.setAction('submit', submitForm);
 
+        cfg.setAction('addForm', addForm);
+
+        cfg.setAction('removeForm', removeForm);
+
         cfg.onSuccess('default', defaultOnSuccess);
     }
 
@@ -21,7 +25,7 @@ function submitForm (e) {
     var form = this.$form,
         $lux = this.$lux,
         $cfg = this.$cfg,
-        info = this.info,
+        info = this.$luxform,
         action = info.action;
 
     if (!action) return;
@@ -89,4 +93,24 @@ function defaultOnSuccess (response, form) {
     }
 
     form.addMessages(messages);
+}
+
+
+function addForm (e) {
+    var $luxform = this.$luxform;
+    if ($luxform && $luxform.$formset) {
+        e.preventDefault();
+        e.stopPropagation();
+        $luxform.$formset.$newForm();
+    }
+}
+
+
+function removeForm (e) {
+    var $luxform = this.$luxform;
+    if ($luxform && $luxform.$formset) {
+        e.preventDefault();
+        e.stopPropagation();
+        $luxform.$formset.$removeForm($luxform);
+    }
 }

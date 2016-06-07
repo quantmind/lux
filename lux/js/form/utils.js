@@ -59,8 +59,8 @@ export function asHtml(el) {
     return wrapper.append(el).html();
 }
 
-export function compile(lazy, html, scope) {
-    lazy.$compile(html)(scope);
+export function compile(lazy, html, scope, cloneAttachFunc) {
+    lazy.$compile(html)(scope, cloneAttachFunc);
 }
 
 

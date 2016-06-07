@@ -62,3 +62,32 @@ class FormsetTests(test.TestCase):
         children = data['children']
         self.assertEqual(len(children), 2)
         self.assertEqual(children[0]['name'], 'users')
+
+    def test_validation_empty_formset(self):
+        form = EmailUserForm(data={'body': 'fooo'})
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data, {'body': 'fooo'})
+
+    def test_validation_fail(self):
+        form = EmailUserForm(data={'body': 'fooo', 'users': 'foo'})
+        self.assertFalse(form.is_valid())
+
+    def test_validation_fail2(self):
+        users = [
+            {'email': 'foo@gmail.com'}
+        ]
+        form = EmailUserForm(data={'body': 'fooo', 'users': users})
+        self.assertFalse(form.is_valid())
+        self.assertEqual(len(form.errors), 1)
+        self.assertEqual(len(form.errors['users']), 1)
+
+    def test_validation(self):
+        users = [
+            {'name': 'foo', 'email': 'foo@gmail.com'},
+            {'name': 'bla', 'email': 'bla@gmail.com'}
+        ]
+        form = EmailUserForm(data={'body': 'fooo',
+                                   'users': users})
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data['body'], 'fooo')
+        self.assertEqual(len(form.cleaned_data['users']), 2)

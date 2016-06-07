@@ -397,6 +397,15 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
     def require(self, *extensions):
         return super().require(self, *extensions)
 
+    def has(self, *extensions):
+        """Check if this application has a set of ``extensions``
+        """
+        try:
+            self.require(*extensions)
+        except ImproperlyConfigured:
+            return False
+        return True
+
     def clone_callable(self, **params):
         return self.callable.clone(**params)
 

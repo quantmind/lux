@@ -8,6 +8,10 @@ export default class LuxComponent {
         this.$id = $lux.id();
     }
 
+    get $log () {
+        return this.$lux.$log;
+    }
+
     get $compile () {
         return this.$lux.$compile;
     }
@@ -15,9 +19,13 @@ export default class LuxComponent {
     get $injector () {
         return this.$lux.$injector;
     }
-    
+
     get $window () {
         return this.$lux.$window;
+    }
+
+    get $timeout () {
+        return this.$lux.$timeout;
     }
 
     addMessages (messages, level) {

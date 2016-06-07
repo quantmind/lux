@@ -108,7 +108,12 @@ export default function (ngModule) {
         p.setType({
             name: 'a',
             template: anchorTpl,
-            class: FormElement
+            class: FormElement,
+            defaultOptions: function (field) {
+                return {
+                    title: field.href || ''
+                }
+            }
         });
 
         // Fieldset
@@ -142,10 +147,10 @@ value="${field.value}"
 title="${field.title}"
 placeholder="${field.placeholder}"
 ${field.directives}
-ng-model="model['${field.name}']"
+ng-model="field.value"
 ng-required="field.required"
 ng-readonly="field.readonly"
-ng-disabled="${field.disabled}"
+ng-disabled="field.disabled"
 ng-minlength="field.minlength"
 ng-maxlength="field.maxlength"
 >`
@@ -156,7 +161,7 @@ function selectTpl (field) {
 id="${field.id}"
 name="${field.name}"
 ${field.directives}
-ng-model="model['${field.name}']"
+ng-model="field.value"
 ng-options="option.label for option in field.options track by option.value"
 ng-required="field.required"
 ng-readonly="field.readonly"
@@ -172,10 +177,10 @@ name="${field.name}"
 placeholder="${field.placeholder}"
 rows="${field.rows}"
 ${field.directives}
-ng-model="model['${field.name}']"
+ng-model="field.value"
 ng-required="field.required"
 ng-readonly="field.readonly"
-ng-disabled="${field.disabled}">
+ng-disabled="field.disabled">
 "${field.value}"
 </textarea>`;
 }
@@ -185,7 +190,7 @@ function checkboxTpl (field) {
     return `<div class="checkbox">
 <label>
 <input type="checkbox"
-ng-model="model['${field.name}']">
+ng-model="field.value">
 ${field.label}
 </label>
 </div>`;
@@ -200,7 +205,7 @@ const radioTpl = `
              id="{{id + '_'+ $index}}"
              tabindex="0"
              ng-value="option[to.valueProp || 'value']"
-             ng-model="model[field.name]">
+             ng-model="field.value">
       {{option[to.labelProp || 'name']}}
     </label>
   </div>
@@ -232,7 +237,9 @@ function anchorTpl (field) {
 
     return `<a class="btn btn-${theme}"
 href="#"
-ng-click="field.click"
+ng-click="field.$click($event)"
+title="${field.title}"
+ng-hide="${field.hide}"
 >${icon}</a>`;
 }
 
@@ -243,10 +250,10 @@ id="${field.id}"
 name="${field.name}"
 ${field.directives}
 theme="bootstrap"
-ng-model="model['${field.name}']"
+ng-model="field.value"
 ng-required="field.required"
 ng-readonly="field.readonly"
-ng-disabled="${field.disabled}"
+ng-disabled="field.disabled"
 >
 <ui-select-match placeholder="${field.placeholder}">{{$select.selected.label}}</ui-select-match>
 <ui-select-choices repeat="item.value as item in field.options | filter: $select.search">

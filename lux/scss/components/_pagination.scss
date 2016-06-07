@@ -26,6 +26,14 @@
     }
 }
 
+a.feature {
+    *,
+    &:hover,
+    &:visited {
+        text-decoration: none;
+    }
+}
+
 @media (max-width: $screen-md-min) {
     .features article {
         width: 50%;

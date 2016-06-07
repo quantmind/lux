@@ -7,43 +7,6 @@ from .fields import Field
 from .formsets import FormSet
 
 
-class FieldList(list):
-    '''A list of :class:`Field` and :class:`FieldList`.
-     It can be used to specify fields using a declarative list in a
-     :class:`Form` class.
-     For example::
-
-         from lux import forms
-
-         class MyForm(forms.Form):
-             some_fields = forms.FieldList(('name',forms.CharField()),
-                                           ('description',forms.CharField()))
-
-    .. attribute:: withprefix
-
-        if ``True`` the :class:`Fieldlist` attribute name in the form is
-        prefixed to the field names.
-    '''
-
-    def __init__(self, data=None, withprefix=True):
-        self.withprefix = withprefix
-        super(FieldList, self).__init__(data or ())
-
-    def fields(self, prefix=None):
-        for nf in self:
-            name, field = nf[0], nf[1]
-            initial = nf[2] if len(nf) > 2 else None
-            if isinstance(field, self.__class__):
-                for name2, field2 in field.fields(name):
-                    yield name2, field2
-            else:
-                if prefix and self.withprefix:
-                    name = '%s%s' % (prefix, name)
-                if isinstance(field, type):
-                    field = field(initial=initial)
-                yield name, field
-
-
 def get_form_meta_data(bases, attrs):
     fields = []
     inlines = []
@@ -52,9 +15,6 @@ def get_form_meta_data(bases, attrs):
             # field name priority is the name in the instance
             obj.name = obj.name or name
             fields.append((obj.name, attrs.pop(name)))
-        elif isinstance(obj, FieldList):
-            obj = attrs.pop(name)
-            fields.extend(obj.fields(name + '__'))
         elif isinstance(obj, FormSet):
             obj.name = name
             inlines.append((name, attrs.pop(name)))
@@ -94,7 +54,6 @@ class Form(metaclass=FormType):
         It sets the :attr:`rawdata` attribute.
     :parameter files: dictionary type object containing files to upload.
     :parameter initial: set the :attr:`initial` attribute.
-    :parameter prefix: set the :attr:`prefix` attribute.
     :parameter previous_state:  An optional instance of a model class,
                                 representing the state before changes
                                 have been made.
@@ -114,12 +73,6 @@ class Form(metaclass=FormType):
 
         The input data, if available this :class:`Form` is bound and can
         be validated via the :meth:`is_valid` method.
-
-    .. attribute:: prefix
-
-        String to use as prefix for field names.
-
-        Default: ``''``.
 
     .. attribute:: request
 
@@ -155,7 +108,7 @@ class Form(metaclass=FormType):
     model = None
 
     def __init__(self, request=None, data=None, files=None, initial=None,
-                 prefix=None, previous_state=None, model=None):
+                 previous_state=None, model=None):
         self.request = request
         self.is_bound = data is not None or files is not None
         if self.is_bound:
@@ -171,7 +124,6 @@ class Form(metaclass=FormType):
             self.initial = dict(initial.items())
         else:
             self.initial = {}
-        self.prefix = prefix or ''
         self.model = model or self.model
         self.messages = {}
         self.changed = False
@@ -268,7 +220,7 @@ class Form(metaclass=FormType):
                 msg = {'message': '\n'.join(msg)}
                 field = self.dfields.get(name)
                 if field:
-                    msg['field'] = field.html_name
+                    msg['field'] = field.name
                 messages.append(msg)
             return data
 
@@ -325,7 +277,7 @@ class Form(metaclass=FormType):
         # Loop over form fields
         for name, field in self.base_fields.items():
             bfield = BoundField(self, field)
-            key = bfield.html_name
+            key = bfield.name
             if (is_bound and exclude_missing and key not in rawdata and
                key not in files):
                 continue
@@ -385,10 +337,6 @@ class BoundField(object):
     .. attribute::    name
 
         The :attr:`field` name (the key in the forms's fields dictionary).
-
-    .. attribute::    html_name
-
-        The :attr:`field` name to be used in HTML.
     '''
 
     def __init__(self, form, field):
@@ -396,7 +344,6 @@ class BoundField(object):
         self.field = field
         self.request = form.request
         self.name = field.name
-        self.html_name = field.html_name(form.prefix)
         self.value = None
 
     def clean(self, value):

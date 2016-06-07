@@ -1,4 +1,5 @@
 import _ from '../ng';
+import LuxComponent from '../lux/component';
 import {compile, asHtml, mergeOptions} from './utils';
 
 
@@ -7,12 +8,11 @@ export function fieldInnerTemplate (formName) {
 }
 
 
-export class FormElement {
+export class FormElement extends LuxComponent {
 
     constructor ($scope, $lux, $cfg, field, type, tag) {
-        this.$id = $lux.id();
+        super($lux);
         this.$cfg = $cfg;
-        this.$log = $lux.$log;
         this.$fieldType = type;
         this.$luxform = $scope.luxform;
         this.tag = tag;
@@ -63,16 +63,29 @@ export class FormElement {
         $element.html(asHtml(template));
         var compileHtml = fieldType.compile || compile;
         compileHtml($scope.$lux, $element.contents(), $scope);
-
         //var $el = _.element(template);
         //$element.replaceWith($el);
         //var compileHtml = fieldType.compile || compile;
         //compileHtml(this.$lux, $el, $scope);
+        this.$timeout(() => {
+            field.$postCompile();
+        });
     }
 
+    $postCompile () {}
+
     $click ($event) {
-        var action = this.$cfg.getAction(this.type);
+        var action = this.$cfg.getAction(this.click || this.type);
         if (action) action.call(this, $event);
+    }
+
+    get $last () {
+        if (this.$formset)
+            return this.$formset.$isLast(this);
+    }
+
+    get $count () {
+        return this.$formset ? this.$formset.value.length : 1;
     }
 }
 
@@ -87,8 +100,8 @@ export class Form extends FormElement {
         var formset = $scope.formset;
 
         if (formset) {
-            this.model = $scope.model;
             this.$formset = formset;
+            this.model = $scope.model;
             this.tag = 'ng-form';
             this.name = formset.name + '_' + formset.counter();
             this.classes = 'form-inline formset';
@@ -129,30 +142,30 @@ export class Form extends FormElement {
         super.addMessages(formMessage, level);
     }
 
-    $compile ($scope, $element) {
-        super.$compile($scope, $element);
+    $postCompile () {
+        // if (this.$formset)
 
-        if (this.$formset)
-
-        var action = this.action;
+        var form = this.$form,
+            action = this.action,
+            model = this.model;
 
         if (!action || action.action != 'update') return;
 
-        var api = $scope.$lux.api(action);
-        $scope.$form.$pending = true;
+        var api = this.$lux.api(action);
+        form.$pending = true;
         api.get().then(success, failure);
 
         function success (response) {
-            $scope.$form.$pending = false;
+            form.$pending = false;
             var data = response.data;
             _.forEach(data, function (value, key) {
                 if (value !== null)
-                    $scope.model[key] = value.id || value;
-            })
+                    model[key] = value.id || value;
+            });
         }
 
         function failure () {
-            $scope.$form.$pending = false;
+            form.$pending = false;
         }
     }
 
@@ -232,16 +245,26 @@ export class Formset extends FormElement {
         return this.$counter++;
     }
 
-    newModel () {
+    $compile ($scope, $element) {
+        $scope.field = this.$formset;
+        $scope.formset = this;
+        super.$compile($scope, $element);
+    }
+
+    $newForm () {
         var model = {};
         this.value.push(model);
         return model;
     }
 
-    $compile ($scope, $element) {
-        $scope.field = this.$formset;
-        $scope.formset = this;
-        super.$compile($scope, $element);
+    $removeForm(form) {
+        var index = this.value.indexOf(form.model);
+        if (index > -1)
+            this.value.splice(index, 1);
+    }
+
+    $isLast (form) {
+        return this.value.indexOf(form.model) === this.value.length-1;
     }
 }
 
@@ -255,17 +278,19 @@ function isDirective(key) {
 function createFormset (form) {
     form.children.push({
         tag: "a",
-        theme: "danger btn-xs",
+        theme: "danger btn-sm",
         label: "remove",
         icon: "fa fa-trash",
         title: "remove",
+        hide: "field.$luxform.$count === 1",
         click: "removeForm"
     });
     form.children.push({
         tag: "a",
-        theme: "default btn-xs",
+        theme: "default btn-sm",
         icon: "fa fa-plus",
         title: "add",
+        hide: "!field.$luxform.$last",
         click: "addForm"
     });
     return form;
